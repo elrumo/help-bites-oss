@@ -166,6 +166,8 @@ struct AssistantRetrievalTest: View {
   @State private var query = ""
   @State private var testing = false
   @State private var results: [AssistantRetrievedFaq]?  // nil until the first run
+  @State private var generating = false
+  @State private var answer: (text: String, model: String)?
   @State private var error = ""
 
   var body: some View {
@@ -181,8 +183,20 @@ struct AssistantRetrievalTest: View {
         Button(testing ? "Retrieving…" : "Retrieve") { Task { await run() } }
           .buttonStyle(.lnSecondaryCompact)
           .disabled(testing || trimmedQuery.isEmpty)
+        Button(generating ? "Generating…" : "Generate answer") { Task { await generate() } }
+          .buttonStyle(.lnSecondaryCompact)
+          .disabled(generating || trimmedQuery.isEmpty)
       }
       ErrorText(message: error)
+      if let answer {
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Generated answer · \(answer.model)").font(.lnCaption).foregroundStyle(Theme.textDimmed)
+          Text(answer.text).font(.lnMeta).foregroundStyle(Theme.text).textSelection(.enabled)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.elevated.opacity(0.6), in: RoundedRectangle(cornerRadius: Metrics.radius))
+      }
       if let results {
         if results.isEmpty {
           Text("No knowledge matched — check the assignments above and that FAQs are active.").font(.lnMeta).foregroundStyle(Theme.textMuted)
@@ -228,6 +242,19 @@ struct AssistantRetrievalTest: View {
     do {
       let response: Response = try await session.send("/v1/admin/support-agents/\(assistantId)/retrieve", body: Input(query: trimmedQuery))
       results = response.results
+    } catch { self.error = error.localizedDescription }
+  }
+
+  /// POST …/generate: retrieval plus the grounded LLM answer, without touching a conversation.
+  private func generate() async {
+    struct Input: Encodable, Sendable { let query: String }
+    struct Response: Decodable, Sendable { let answer, model: String }
+    guard !trimmedQuery.isEmpty, !generating else { return }
+    generating = true; error = ""; answer = nil
+    defer { generating = false }
+    do {
+      let response: Response = try await session.send("/v1/admin/support-agents/\(assistantId)/generate", body: Input(query: trimmedQuery))
+      answer = (response.answer, response.model)
     } catch { self.error = error.localizedDescription }
   }
 }
