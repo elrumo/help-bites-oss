@@ -46,7 +46,9 @@ if [ -n "$domain" ]; then
   set_var S3_PUBLIC_URL "https://files.$domain/help-bites"
   set_var HELPBITES_DOMAIN "$domain"
   set_var COMPOSE_PROFILES proxy,rustfs
-  next="Open https://$domain once DNS for $domain and files.$domain points here."
+  SETUP_TOKEN_VALUE="$(secret)"
+  set_var SETUP_TOKEN "$SETUP_TOKEN_VALUE"
+  next="Open https://$domain once DNS for $domain and files.$domain points here. The sign-up form asks for the setup token: $SETUP_TOKEN_VALUE"
 else
   set_var APP_URL http://localhost:3100
   set_var ADMIN_URL http://localhost:3100
@@ -59,5 +61,5 @@ fi
 echo "Wrote .env. Next:"
 echo "  docker compose up -d"
 echo "  $next and create the first operator account."
-echo "Whoever opens that page first becomes the owner, so do it right away."
+if [ -z "$domain" ]; then echo "Whoever opens that page first becomes the owner, so do it right away."; fi
 echo "Email (Mailgun) and AI replies stay off until you fill in MAILGUN_* / LITELLM_* in .env."

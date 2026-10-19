@@ -56,6 +56,10 @@ services:
       # Attachments go straight to S3 from the app; Parse never stores files.
       PARSE_SERVER_FILE_UPLOAD_OPTIONS: '{"enableForPublic":false,"enableForAnonymousUser":false,"enableForAuthenticatedUser":false}'
       PARSE_SERVER_SESSION_LENGTH: "2592000"
+      # Ten wrong passwords lock an account for 15 minutes. The app signs
+      # operators in (and checks the password for an email change) through
+      # Parse, so this caps guessing however the requests are spread out.
+      PARSE_SERVER_ACCOUNT_LOCKOUT: '{"duration":15,"threshold":10}'
       # Lets the schema script declare indexes on Mongo's own key names
       # (`_p_conversation`, `_created_at`); Parse otherwise rejects `_created_at`
       # and would pass `createdAt` through to Mongo unmapped.
@@ -113,6 +117,10 @@ services:
       PARSE_URL: http://sb-parse:1337/parse
       REDIS_URL: redis://sb-redis:6379
       MEILI_URL: http://sb-meili:7700
+      # env_file hands the app every .env value, the Meilisearch master key
+      # included. Once MEILI_API_KEY (bun run search:key) is in .env, uncomment
+      # this so the app only carries its scoped key; sb-meili keeps the master key.
+      # MEILI_MASTER_KEY: ""
       GLITCHTIP_API_URL: ${GLITCHTIP_API_URL:-http://sb-glitchtip:8000}
       BUGSINK_API_URL: ${BUGSINK_API_URL:-http://sb-bugsink:8000}
       # transformers.js caches the embedding model here (persisted across boots).

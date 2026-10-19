@@ -4,15 +4,15 @@ defineRouteMeta({
   openAPI: {
     tags: ['Agent'],
     summary: 'Set a new password from a reset token',
-    description: 'Consumes the token from the emailed link and sets a new password.',
-    requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['token', 'password'], properties: { token: { type: 'string' }, password: { type: 'string', minLength: 8 } } } } } },
-    responses: { 200: { description: '{ ok }' }, 400: { description: 'Bad or expired token' }, 429: { description: 'Rate limited' } }
+    description: 'Consumes the token from the emailed link and sets a new password. Every session of the account ends, and so do its admin API keys unless `revokeApiKeys` is false.',
+    requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['token', 'password'], properties: { token: { type: 'string' }, password: { type: 'string', minLength: 8 }, revokeApiKeys: { type: 'boolean', default: true } } } } } },
+    responses: { 200: { description: '{ ok, revokedApiKeys }' }, 400: { description: 'Bad or expired token' }, 429: { description: 'Rate limited' } }
   }
 })
 
 export default defineEventHandler(async (event) => {
   await rateLimit(`sb:rl:login:${clientIp(event) || 'ip'}`, LIMITS.adminLoginPerIp.limit, LIMITS.adminLoginPerIp.window)
-  const { token, password } = (await readBody(event).catch(() => ({}))) as { token?: string, password?: string }
+  const { token, password, revokeApiKeys } = (await readBody(event).catch(() => ({}))) as { token?: string, password?: string, revokeApiKeys?: boolean }
 
   const agentId = token ? readResetToken(process.env.PARSE_MASTER_KEY || '', token) : null
   if (!agentId) throw createError({ statusCode: 400, statusMessage: 'This reset link is invalid or has expired' })
@@ -29,7 +29,10 @@ export default defineEventHandler(async (event) => {
     await useRedis().del(usedKey).catch(() => {})
     throw error
   })
-  // A reset is how a stolen account is taken back: every session ends with it.
+  // A reset is how a stolen account is taken back: every session ends with it,
+  // and so do its API keys (one minted by whoever had the account would
+  // outlive the reset), unless the owner says they are theirs to keep.
   await revokeAgentSessions(agentId)
-  return { ok: true }
+  const revokedApiKeys = revokeApiKeys === false ? 0 : await revokeAgentApiKeys(agentId)
+  return { ok: true, revokedApiKeys }
 })

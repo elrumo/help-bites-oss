@@ -6,7 +6,7 @@ everything from one panel, and a drop-in widget or your own UI talks to a
 documented API.
 
 - **API** — `/v1/*`, OpenAPI at `/_docs/scalar`. Every `/v1/admin/*` operation accepts either an operator session or a general `ak_…` admin key created in the panel’s API keys page, either for the whole workspace or limited to chosen projects.
-- **Panel** — `/inbox`, `/projects`, `/emails`, `/agents`, `/knowledge`, `/assistants`. A fresh install shows a sign-up form for the first operator; teammates are added from the Team page (or `bun run add-agent`).
+- **Panel** — `/inbox`, `/projects`, `/emails`, `/agents`, `/knowledge`, `/assistants`. A fresh install shows a sign-up form for the first operator (set `SETUP_TOKEN` so only you can complete it); teammates are added from the Team page (or `bun run add-agent`).
 - **Knowledge** — upload `SUPPORT_FAQ.md`, review the detected FAQs, organize them in a path tree, and assign them to AI assistants that suggest or (optionally) send grounded answers. Hybrid search via Meilisearch.
 - **Widget** — `/widget.js` + `/embed`
 - **Feedback boards** — a public board per project (posts, votes, comments, roadmap). Drop in `/feedback.js` or build on `/v1/feedback`; operators triage it under Project → Feedback.

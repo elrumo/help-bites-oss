@@ -34,6 +34,7 @@
     "@iconify-json/heroicons": "^1.2.3",
     "@iconify-json/lucide": "^1.2.101",
     "@nuxt/ui": "^4.9.0",
+    "@scalar/api-reference": "1.73.0",
     "@sentry/bun": "^11.4.0",
     "@sentry/vue": "^11.4.0",
     "@speed-highlight/core": "^1.2.24",

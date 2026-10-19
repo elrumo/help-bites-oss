@@ -85,6 +85,8 @@ export async function requireAgentIdentity(event: H3Event): Promise<AgentContext
     agent = key?.get('agent') as ParseObject | null
     if (agent) {
       await rateLimit(`sb:rl:admin-key:${key!.id}`, 600, 60)
+      if (adminApiKeyExpired(key!)) throw createError({ statusCode: 401, statusMessage: 'This API key has expired; create a new one' })
+      noteAdminApiKeyUse(key!)
       apiKeyId = key!.id || ''
       apiKeyWorkspaceId = pointerId(key!.get('workspace'))
       apiKeyProjectIds = keyProjectIds(key!)

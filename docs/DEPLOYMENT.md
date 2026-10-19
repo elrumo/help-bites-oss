@@ -214,8 +214,10 @@ Dokploy terminates TLS and routes to the container port. Point `APP_URL` at the
 > **If you expose `sb-meili` publicly:** the compose runs it with
 > `MEILI_ENV=production`, and `/health` is unauthenticated. Set a strong
 > `MEILI_MASTER_KEY` — it's the only thing protecting your search data and
-> settings. If you don't need external search access, don't attach a domain to it
-> at all.
+> settings — and give the app its own scoped `MEILI_API_KEY` (see
+> [Meilisearch](#meilisearch)). Better still, restrict the domain to the
+> addresses that need it (a Traefik `ipAllowList` middleware), or don't attach a
+> domain to it at all if you don't need external search access.
 
 ### 4. Deploy
 
@@ -335,6 +337,7 @@ without it; **Optional** means a feature stays off until you set it.
 |---|---|---|---|
 | `APP_URL` | **Yes** (prod) | `http://localhost:3100` | Public origin of this deployment. Used by `widget.js`, email CTAs, and the API examples in the panel. Set to your real HTTPS domain. |
 | `ADMIN_URL` | Optional | falls back to `APP_URL` | Only set if the operator panel lives on a different host than `APP_URL`. Used in operator email links (e.g. password reset, new-message CTAs). |
+| `SETUP_TOKEN` | Recommended | _(empty: open)_ | While no operator exists, the first sign-up must enter this value, so whoever reaches a fresh deploy first can't claim it. Any long random string; unused once the first operator exists. `scripts/install.sh help.example.com` generates one. |
 | `TRUST_PROXY_HOPS` | Optional | `1` | How many reverse proxies stand in front of the app. Per-IP rate limits read the client from `X-Forwarded-For` counting this many entries from the right, since the left-most entry is whatever the client sent. `1` fits Dokploy's Traefik; set `2` behind e.g. Cloudflare → Traefik. |
 | `NITRO_PORT` | No | `3000` (set by compose) | Port the app listens on inside the container. Leave it. |
 | `APP_ROLE` | Optional | `all` | `all` runs everything in one process. The hosted overlay splits `web`, `worker` (schedulers, the job queue, pushes: whatever must run once) and `embedder` (the local model, served at `/v1/internal/embeddings`). |
@@ -368,7 +371,8 @@ for you.
 | Variable | Required | Default | Notes |
 |---|---|---|---|
 | `MEILI_URL` | Recommended | `http://localhost:7700` (compose overrides to `http://sb-meili:7700`) | Hybrid knowledge + full-text search. If unreachable, the app falls back to a Parse keyword scan. |
-| `MEILI_MASTER_KEY` | Recommended | `change-me-meili` | **Set a strong value in production**, especially if `sb-meili` is exposed via a domain — the container runs with `MEILI_ENV=production`. |
+| `MEILI_MASTER_KEY` | Recommended | `change-me-meili` | **Set a strong value in production**, especially if `sb-meili` is exposed via a domain — the container runs with `MEILI_ENV=production`. `sb-meili` needs it; the app only as a fallback for `MEILI_API_KEY`. |
+| `MEILI_API_KEY` | Recommended | _(empty: the master key)_ | The app's scoped Meilisearch key, printed by `bun run search:key` (see [Meilisearch](#meilisearch)). |
 
 ### Knowledge embeddings
 
@@ -510,6 +514,8 @@ PARSE_SERVER_DATABASE_URI=mongodb://sb-mongo:27017/helpbites
 
 # --- Meilisearch (strong key; the endpoint may be public) ---
 MEILI_MASTER_KEY=<32+ random chars>
+# The app's scoped key, from `docker compose exec app bun scripts/meili-key.mjs` after the first deploy.
+MEILI_API_KEY=<printed key>
 
 # --- Embeddings: run locally on CPU (default). To offload:
 # EMBEDDING_ENDPOINT=https://embeddings.yourdomain.com/v1/embeddings
@@ -644,6 +650,20 @@ creates the indexes, settings, and the userProvided embedder. If you expose it
 publicly, set a strong `MEILI_MASTER_KEY`. To use Meilisearch Cloud, set
 `MEILI_URL` and `MEILI_MASTER_KEY` and drop the `sb-meili` service.
 
+The app shouldn't hold the master key, which can mint keys and delete every
+index. Give it a scoped one:
+
+1. `docker compose exec app bun scripts/meili-key.mjs` (locally: `bun run
+   search:key`). It creates the app's key, limited to the `knowledge`,
+   `conversations` and `endusers` indexes and the actions the app uses, and
+   prints it. Re-running prints the same key.
+2. Put `MEILI_API_KEY=<that key>` in `.env` and redeploy.
+3. Uncomment `MEILI_MASTER_KEY: ""` under the `app` service in
+   `docker-compose.yml` and redeploy again: the app container no longer carries
+   the master key; `sb-meili` keeps it.
+
+Until `MEILI_API_KEY` is set the app uses `MEILI_MASTER_KEY` and logs a warning.
+
 ### LLM endpoint (AI auto-reply)
 
 Any OpenAI-compatible / LiteLLM endpoint. Set `LITELLM_API_BASE_URL`,
@@ -675,10 +695,15 @@ group. Push stays disabled until these are present.
 ## First run
 
 1. **Create the first operator.** Open `APP_URL` — a fresh install shows a
-   sign-up form. That first sign-up becomes the first operator, so do it
-   straight after deploying: until then anyone who finds the URL can claim the
-   instance. (Add teammates later from the Team page, or
-   `docker compose exec app bun scripts/add-agent.mjs`.)
+   sign-up form. That first sign-up becomes the first operator, so set
+   `SETUP_TOKEN` (the form then asks for it) or finish it straight after
+   deploying: until then anyone who finds the URL can claim the instance. (Add
+   teammates later from the Team page, or
+   `docker compose exec app bun scripts/add-agent.mjs`.) Admin API keys act as
+   their owner, expire after 90 days unless you choose otherwise, and are
+   revoked with a password reset. Changing an account's email asks for the
+   password and tells the old address, and Parse locks an account for 15
+   minutes after ten wrong passwords.
 2. **Create a project.** Panel → Projects → New project. You get a public key
    (`pk_…`) and a secret (`sk_…`). Set the site URL, allowed widget origins, the
    reply name, and notification emails.
@@ -920,8 +945,11 @@ Parse keyword scan — functional but not hybrid. Check `sb-meili` health and
 response buffering on `/v1/events` (`proxy_buffering off` in nginx; Caddy is fine
 by default) and allow long read timeouts.
 
-**Meili rejects requests / 403.** In production it needs `MEILI_MASTER_KEY`. Make
-sure the same value is set for both `sb-meili` and the app.
+**Meili rejects requests / 403.** In production it needs a key: the app sends
+`MEILI_API_KEY`, or `MEILI_MASTER_KEY` when that is unset. A scoped key made for
+another master key (the master key changed) is refused; run `meili-key.mjs`
+again with the current one. With only the master key, make sure the same value
+is set for both `sb-meili` and the app.
 
 **Email never sends.** All three of `MAILGUN_API_KEY`, `MAILGUN_DOMAIN`,
 `MAILGUN_FROM_EMAIL` must be set, and `MAILGUN_API_BASE_URL` must match your
@@ -934,7 +962,8 @@ Mailgun region (EU vs US).
 Before you expose a deployment:
 
 - [ ] Changed `PARSE_MASTER_KEY` from the default to a long random value.
-- [ ] Changed `MEILI_MASTER_KEY` (especially if `sb-meili` has a public domain).
+- [ ] Changed `MEILI_MASTER_KEY` (especially if `sb-meili` has a public domain), and gave the app a scoped `MEILI_API_KEY`.
+- [ ] Set `SETUP_TOKEN` before the first visit, so only you can create the first operator.
 - [ ] Changed `S3_SECRET_KEY` (RustFS reuses it as its root credential if self-hosting).
 - [ ] `APP_URL` is your real HTTPS origin; TLS terminated by Dokploy/proxy.
 - [ ] Did **not** attach a public domain to `sb-parse` unless you need it.
