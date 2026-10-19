@@ -13,5 +13,5 @@ export default defineEventHandler(async (event) => {
   // Ensure the row exists: a widget subscribes before its user has written anything.
   const { endUser, projectId } = await requireEndUser(event, { ensure: true })
   const endUserId = endUser?.id || ''
-  return streamProjectEvents(event, projectId, e => e.audience !== 'agent' && e.projectId === projectId && e.endUserId === endUserId)
+  return streamProjectEvents(event, projectId, e => e.audience !== 'agent' && e.projectId === projectId && e.endUserId === endUserId, endUserEvent)
 })

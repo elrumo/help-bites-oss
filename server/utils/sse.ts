@@ -18,10 +18,10 @@ export function streamWorkspaceEvents(event: H3Event, workspaceId: string, accep
   }))
 }
 
-/** One project's events (an end user's widget, or an operator watching one project). */
-export function streamProjectEvents(event: H3Event, projectId: string, accept: (e: SupportEvent) => boolean = () => true) {
+/** One project's events (an end user's widget, or an operator watching one project). `map` reshapes what one audience may see; the event itself is shared with every other listener, so never mutate it. */
+export function streamProjectEvents(event: H3Event, projectId: string, accept: (e: SupportEvent) => boolean = () => true, map: (e: SupportEvent) => unknown = e => e) {
   return openStream(event, push => subscribeProjectEvents(projectId, (e) => {
-    if (accept(e)) push(e.type, JSON.stringify(e))
+    if (accept(e)) push(e.type, JSON.stringify(map(e)))
   }))
 }
 
