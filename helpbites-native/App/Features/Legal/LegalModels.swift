@@ -1,4 +1,5 @@
 import Foundation
+import UniformTypeIdentifiers
 
 // The shapes of /v1/admin/legal/** (shared/legal/types.ts, server/utils/legal.ts).
 
@@ -85,6 +86,9 @@ struct LegalCoverage: Codable, Equatable, Sendable {
   let covered: [LegalRequirementBrief]
   let gaps: [LegalRequirementBrief]
   let unreviewedPacks: [String]
+  /// False for text nobody tied to requirements (an import): every requirement would show as a gap, so only the AI check says anything.
+  let mapped: Bool?
+  var isMapped: Bool { mapped ?? true }
 }
 
 struct LegalFinding: Codable, Identifiable, Equatable, Sendable {
@@ -156,6 +160,41 @@ struct LegalWizardSpec: Decodable, Sendable {
   let label: String
   let questions: [LegalQuestion]
   let defaults: LegalAnswers
+  /// Whether answers were saved for reuse (`saveAnswers`), so `defaults` carries more than the company details.
+  let shared: Bool?
+}
+
+/// A .md, .txt or .html file picked with `fileImporter`, read as text for an import.
+struct LegalImportFile: Sendable {
+  let name: String
+  let text: String
+
+  private struct Unreadable: LocalizedError {
+    let errorDescription: String?
+  }
+
+  static let maxBytes = 500_000
+
+  static var types: [UTType] { [.plainText, .html] + ["md", "markdown"].compactMap { UTType(filenameExtension: $0) } }
+
+  /// markdown, html or text from the extension; nil lets the server detect it.
+  var format: String? {
+    switch (name as NSString).pathExtension.lowercased() {
+    case "md", "markdown": "markdown"
+    case "html", "htm": "html"
+    case "txt": "text"
+    default: nil
+    }
+  }
+
+  static func read(_ url: URL) throws -> LegalImportFile {
+    let scoped = url.startAccessingSecurityScopedResource()
+    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+    let data = try Data(contentsOf: url)
+    if data.count > maxBytes { throw Unreadable(errorDescription: "That file is too large. Policies are text; the limit is 500 KB.") }
+    guard let text = String(data: data, encoding: .utf8) else { throw Unreadable(errorDescription: "That file is not text.") }
+    return LegalImportFile(name: url.lastPathComponent, text: text)
+  }
 }
 
 struct LegalSuggestion: Decodable, Sendable {

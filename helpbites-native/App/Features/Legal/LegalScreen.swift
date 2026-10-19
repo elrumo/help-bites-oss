@@ -10,8 +10,9 @@ struct LegalScreen: View {
   @State private var loading = true
   @State private var error = ""
   @State private var sheet: Sheet?
-  /// The document the wizard just made, pushed when its sheet closes.
-  @State private var created: String?
+  /// The document the wizard just made, pushed when its sheet closes, and whether to analyse it there.
+  @State private var created: (id: String, analyse: Bool)?
+  @State private var analyseNext = false
   @State private var path: String?
 
   private enum Sheet: String, Identifiable { case wizard, analyse, look; var id: String { rawValue } }
@@ -60,15 +61,15 @@ struct LegalScreen: View {
     }
     .sheet(item: $sheet, onDismiss: {
       // Open the new draft once the wizard is gone, as the web does.
-      if let created { path = created; self.created = nil }
+      if let created { analyseNext = created.analyse; path = created.id; self.created = nil }
     }) { sheet in
       switch sheet {
-      case .wizard: LegalWizardSheet(projectId: projectId, document: nil) { created = $0.id }
+      case .wizard: LegalWizardSheet(projectId: projectId, document: nil) { created = ($0.id, $1) }
       case .analyse: LegalAnalyseSheet()
       case .look: LegalLookSheet(projectId: projectId)
       }
     }
-    .navigationDestination(item: $path) { id in LegalDocumentScreen(projectId: projectId, documentId: id) }
+    .navigationDestination(item: $path) { id in LegalDocumentScreen(projectId: projectId, documentId: id, analyseOnLoad: analyseNext) }
     .routes()
     .task { await load() }
   }

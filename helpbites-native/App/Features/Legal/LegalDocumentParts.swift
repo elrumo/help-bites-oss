@@ -71,12 +71,16 @@ struct LegalCoverageSummary: View {
   let coverage: LegalCoverage
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
-      Text("\(coverage.covered.count) of \(coverage.total) applicable requirements covered").font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
+      if coverage.isMapped {
+        Text("\(coverage.covered.count) of \(coverage.total) applicable requirements covered").font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
+      }
       if !coverage.unreviewedPacks.isEmpty {
         Label("The rulepacks used here have not been reviewed by a person yet. Have a lawyer check this document.", systemImage: "exclamationmark.triangle")
           .font(.lnCaption).foregroundStyle(Theme.warning)
       }
-      if coverage.gaps.isEmpty {
+      if !coverage.isMapped {
+        Text("This text is not tied to the requirements yet. Run the AI check to see what it covers.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+      } else if coverage.gaps.isEmpty {
         Text("Every applicable requirement is answered by a section.").font(.lnMeta).foregroundStyle(Theme.textMuted)
       } else {
         ForEach(coverage.gaps) { gap in

@@ -5,13 +5,15 @@ import SwiftUI
 struct LegalDocumentScreen: View {
   let projectId: String
   let documentId: String
+  /// Set by the import wizard when the person asked to analyse what they imported.
+  var analyseOnLoad = false
   @Environment(SessionStore.self) private var session
   @State private var store: LegalDocumentStore?
 
   var body: some View {
     Group {
       if let store {
-        LegalDocumentContent(projectId: projectId, store: store)
+        LegalDocumentContent(projectId: projectId, store: store, analyseOnLoad: analyseOnLoad)
       } else {
         Color.clear.projectScreen(projectId, "Document")
       }
@@ -23,6 +25,8 @@ struct LegalDocumentScreen: View {
 private struct LegalDocumentContent: View {
   let projectId: String
   @Bindable var store: LegalDocumentStore
+  let analyseOnLoad: Bool
+  @State private var analysed = false
   @Environment(SessionStore.self) private var session
   @Environment(\.dismiss) private var dismiss
   @Environment(\.openURL) private var openURL
@@ -80,9 +84,12 @@ private struct LegalDocumentContent: View {
       }
     }
     .sheet(isPresented: $showWizard) {
-      if let document { LegalWizardSheet(projectId: projectId, document: document) { _ in Task { await store.load() } } }
+      if let document { LegalWizardSheet(projectId: projectId, document: document) { _, _ in Task { await store.load() } } }
     }
-    .task { await store.load() }
+    .task {
+      await store.load()
+      if analyseOnLoad, !analysed, store.document != nil { analysed = true; await store.checkWithAI() }
+    }
   }
 
   private var confirmTitle: String {
