@@ -75,5 +75,7 @@ export const LIMITS = {
   campaignTestsPerAgent: { limit: 20, window: 600 },
   // Hosted legal pages are read by crawlers and every app launch that links to them.
   legalReadsPerIp: { limit: 600, window: 60 },
-  legalAiPerAgent: { limit: 10, window: 60 }
+  legalAiPerAgent: { limit: 10, window: 60 },
+  // Each scan reads up to ten repos from GitHub.
+  legalScanPerAgent: { limit: 6, window: 60 }
 } as const

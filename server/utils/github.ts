@@ -234,3 +234,38 @@ export async function frameFiles(project: ParseObject, frames: FramePath[]): Pro
     return []
   }
 }
+
+// ---- reading a repo (never writing) -----------------------------------------------
+
+/** Dependency manifests worth reading: they say which SDKs and services a project uses. */
+const MANIFESTS = new Set(['package.json', 'requirements.txt', 'pyproject.toml', 'Pipfile', 'Gemfile', 'go.mod', 'Cargo.toml', 'composer.json', 'pubspec.yaml', 'Podfile', 'build.gradle', 'build.gradle.kts', 'pom.xml'])
+const MAX_MANIFESTS = 8
+const MAX_MANIFEST_BYTES = 200_000
+
+export type RepoSnapshot = { repo: string, tree: string[], files: Array<{ path: string, content: string }> }
+
+/** Which blobs of a repo tree to read: manifests near the top, not in vendored code, smallest paths first. */
+export function pickManifests(tree: Array<{ path: string, type: string, size?: number }>): string[] {
+  return tree
+    .filter(item => item.type === 'blob' && MANIFESTS.has(item.path.slice(item.path.lastIndexOf('/') + 1)) && (item.size ?? 0) <= MAX_MANIFEST_BYTES)
+    .map(item => item.path)
+    .filter(path => path.split('/').length <= 3 && !/(^|\/)(node_modules|vendor|Pods|\.git|third_party)\//.test(path))
+    .sort((a, b) => a.split('/').length - b.split('/').length || a.localeCompare(b))
+    .slice(0, MAX_MANIFESTS)
+}
+
+const encodePath = (path: string) => path.split('/').map(encodeURIComponent).join('/')
+
+/** The file list of a repo's default branch and the text of a few manifests. A manifest that cannot be read is skipped. */
+export async function fetchRepoSnapshot(repo: ProjectRepo): Promise<RepoSnapshot> {
+  const token = await installationToken(repo.installationId)
+  const root = `/repos/${encodePath(repo.fullName)}`
+  const { tree } = await gh<{ tree: Array<{ path: string, type: string, size?: number }> }>(`${root}/git/trees/${encodeURIComponent(repo.defaultBranch)}?recursive=1`, token)
+  const files = await Promise.all(pickManifests(tree).map(async (path) => {
+    try {
+      const file = await gh<{ content?: string, encoding?: string }>(`${root}/contents/${encodePath(path)}?ref=${encodeURIComponent(repo.defaultBranch)}`, token)
+      return file.encoding === 'base64' && file.content ? { path, content: Buffer.from(file.content, 'base64').toString('utf8') } : null
+    } catch { return null }
+  }))
+  return { repo: repo.fullName, tree: tree.filter(item => item.type === 'blob').map(item => item.path), files: files.filter((file): file is { path: string, content: string } => !!file) }
+}
