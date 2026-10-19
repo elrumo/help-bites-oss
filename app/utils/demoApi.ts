@@ -1,7 +1,7 @@
-import { DEFAULT_FEEDBACK_CONFIG } from '#shared/feedback'
-import { DEFAULT_BOARD_CONFIG, ROADMAP_CATEGORIES } from '#shared/board'
+import { DEFAULT_FEEDBACK_CONFIG, type FeedbackPost } from '#shared/feedback'
+import { DEFAULT_BOARD_CONFIG, ROADMAP_CATEGORIES, type BoardItem } from '#shared/board'
 import { DEFAULT_MARKETING_CONFIG } from '#shared/marketing'
-import { DEFAULT_CHANGELOG_CONFIG } from '#shared/changelog'
+import { DEFAULT_CHANGELOG_CONFIG, type ChangelogEntry, type ChangelogRelease } from '#shared/changelog'
 import type { FeatureFlag } from '#shared/flags'
 import { cloneBlankEmailDocument, cloneEmailTemplateDocument } from '#shared/email/templates'
 import { extractTemplateVariables } from '#shared/email/placeholders'
@@ -286,6 +286,78 @@ function applyProject(p: AdminProject, body: Record<string, any>) {
 }
 
 // ---- routes -------------------------------------------------------------------
+
+// Acme's feedback board, project board and changelog. They tell one story: the
+// Markdown export that Maya and Ren asked for is in progress on the board, and
+// last week's release is drafted from what shipped.
+{
+  const acme = projects[0]!
+  acme.board = { ...DEFAULT_BOARD_CONFIG, enabled: true, syncFeedback: true, labels: [{ key: 'web', label: 'Web', color: 'info' }, { key: 'ios', label: 'iOS', color: 'warning' }, { key: 'api', label: 'API', color: 'success' }] }
+  acme.changelog = { ...DEFAULT_CHANGELOG_CONFIG, enabled: true, autoDraft: true }
+}
+
+const feedbackPosts: FeedbackPost[] = []
+function feedbackPost(number: number, title: string, body: string, type: string, status: string, statusCategory: FeedbackPost['statusCategory'], votes: number, comments: number, authorName: string, minutesAgo: number, extra: Partial<FeedbackPost> = {}) {
+  const post: FeedbackPost = {
+    id: `post_demo${number}`, projectId: 'acme', number, slug: slug(title), title, body, type, platform: '', tags: [], status, statusCategory,
+    voteCount: votes, commentCount: comments, author: { name: authorName, isTeam: false, handle: '', avatarUrl: '' },
+    hidden: false, featured: false, locked: false, showOnChangelog: false, changelogTitle: '', changelogBody: '', shippedIn: '', icon: '',
+    pinnedCommentId: null, duplicateOf: null, refs: [], reactions: [], editedAt: null, completedAt: null, statusChangedAt: ago(minutesAgo),
+    lastActivityAt: ago(minutesAgo), createdAt: ago(minutesAgo + 60 * 24 * 3), updatedAt: ago(minutesAgo), ...extra
+  }
+  feedbackPosts.push(post)
+  return post
+}
+feedbackPost(14, 'Export a notebook to Markdown', 'I keep my notes in git. A Markdown export, one file per page, would let me stop copy-pasting.', 'feature', 'in-progress', 'active', 63, 11, 'Ren Takahashi', 60 * 5, { reactions: [{ key: 'rocket', count: 9 }, { key: '+1', count: 14 }] })
+feedbackPost(15, 'Dark mode on the receipts page', 'The receipts page flashes white at night. It is the only screen that ignores the system theme.', 'improvement', 'planned', 'planned', 41, 6, 'Ines Wu', 60 * 24)
+feedbackPost(16, 'Slack notifications for new tasks', 'Let a channel hear about tasks assigned to the team, so nobody has to refresh the board.', 'feature', 'planned', 'planned', 28, 9, 'Leo Park', 60 * 30)
+feedbackPost(17, 'Calendar shows tasks a day early', 'In Safari every task lands one day before its due date. List view is fine.', 'bug', 'in-progress', 'active', 17, 4, 'Priya Natarajan', 60 * 3)
+feedbackPost(18, 'Rename the workspace URL', 'We renamed the company and the old URL still shows up in invites.', 'feature', 'done', 'done', 22, 3, 'Jonas Weber', 60 * 24 * 2, { completedAt: ago(60 * 24 * 2), shippedIn: '2.4.0' })
+feedbackPost(19, 'Offline mode for the iPad app', 'Notes before a meeting are exactly when the signal drops. Cache the last notebooks.', 'feature', 'open', 'open', 12, 2, 'Ana Souza', 60 * 6)
+
+const postRef = (post: FeedbackPost) => ({ id: post.id, number: post.number, title: post.title, status: post.status, statusCategory: post.statusCategory })
+const demoPost = (number: number) => feedbackPosts.find(post => post.number === number)!
+
+const boardItems: BoardItem[] = []
+function boardItem(number: number, title: string, status: string, statusCategory: BoardItem['statusCategory'], labels: string[], assigneeId: string, priority: BoardItem['priority'], postNumbers: number[], conversationIds: string[], isPublic: boolean, minutesAgo: number) {
+  const posts = postNumbers.map(demoPost)
+  boardItems.push({
+    id: `item_demo${number}`, projectId: 'acme', number, title, description: '', publicDescription: isPublic ? title : '', status, statusCategory,
+    rank: boardItems.length + 1, priority, assigneeId, labels, targetDate: null, public: isPublic,
+    feedbackPostIds: posts.map(post => post.id), conversationIds,
+    voteCount: posts.reduce((sum, post) => sum + post.voteCount, 0),
+    posts: posts.map(post => ({ ...postRef(post), voteCount: post.voteCount, hidden: false })),
+    conversations: conversationIds.map(id => ({ id, subject: id === 'conv_demo5' ? 'Export stuck' : 'Calendar shows tasks a day early', status: 'open', endUserName: id === 'conv_demo5' ? 'Maya Chen' : 'Priya Natarajan' })),
+    completedAt: statusCategory === 'done' ? ago(minutesAgo) : null, createdAt: ago(minutesAgo + 60 * 24 * 5), updatedAt: ago(minutesAgo)
+  })
+}
+boardItem(1, 'Export notebooks to Markdown', 'in-progress', 'active', ['web', 'api'], 'agent_sam', 'high', [14], ['conv_demo5'], true, 60 * 5)
+boardItem(2, 'Fix the Safari calendar offset', 'in-progress', 'active', ['web'], 'agent_sam', 'high', [17], ['conv_demo9'], false, 60 * 3)
+boardItem(3, 'Dark mode on receipts', 'planned', 'planned', ['web'], '', 'normal', [15], [], true, 60 * 24)
+boardItem(4, 'Slack notifications', 'planned', 'planned', ['api'], 'agent_demo', 'normal', [16], [], true, 60 * 30)
+boardItem(5, 'Offline mode for iPad', 'backlog', 'open', ['ios'], '', 'normal', [19], [], false, 60 * 6)
+boardItem(6, 'Rename the workspace URL', 'done', 'done', ['web'], 'agent_sam', 'normal', [18], [], true, 60 * 24 * 2)
+
+const changelogEntries: ChangelogEntry[] = []
+function changelogEntry(number: number, title: string, summary: string, tag: ChangelogEntry['tag'], status: 'draft' | 'published', version: string, minutesAgo: number, ai = false) {
+  const published = status === 'published'
+  changelogEntries.push({
+    id: `entry_demo${number}`, projectId: 'acme', number, slug: slug(title), title, summary, body: summary, bodyFormat: 'markdown', bodyHtml: `<p>${summary}</p>`, excerpt: summary,
+    tag, area: '', releaseId: version ? 'rel_demo1' : '', version, status, publishedAt: published ? ago(minutesAgo) : null, pinned: false, iconGlyph: '', accentColor: '', imageUrl: '',
+    links: [], feedbackPostIds: [], boardItemIds: [], conversationIds: [], commitShas: [], externalId: '',
+    reviewStatus: status === 'draft' ? 'pending' : ai ? 'approved' : null, reviewedBy: null, reviewedAt: null, reviewNotes: null,
+    authorName: ai ? 'AI draft' : 'You', source: ai ? 'internal' : 'admin', aiGenerated: ai, commentCount: 0, sources: [], createdAt: ago(minutesAgo + 60), updatedAt: ago(minutesAgo)
+  })
+}
+changelogEntry(1, 'Workspace URLs can be renamed', 'Settings → Workspace → URL. The old address keeps redirecting for 30 days.', 'new', 'published', '2.4.0', 60 * 24 * 2)
+changelogEntry(2, 'Faster notebook search', 'Search now runs on the device first, so results appear as you type, even offline.', 'improved', 'published', '2.4.0', 60 * 24 * 2, true)
+changelogEntry(3, 'Invite links no longer expire early', 'Links created near midnight UTC used to lapse a day short.', 'fix', 'published', '2.4.0', 60 * 24 * 2)
+changelogEntry(4, 'Export notebooks to Markdown', 'One zip per notebook with a file per page, images included.', 'new', 'draft', '', 60 * 4, true)
+changelogEntry(5, 'Calendar dates no longer shift in Safari', 'Tasks showed up a day early in the calendar grid. They now land on their due date.', 'fix', 'draft', '', 60 * 3, true)
+
+const changelogReleases: ChangelogRelease[] = [
+  { id: 'rel_demo1', projectId: 'acme', version: '2.4.0', title: 'Workspace URLs and faster search', summary: '', status: 'published', publishedAt: ago(60 * 24 * 2), createdAt: ago(60 * 24 * 3), updatedAt: ago(60 * 24 * 2) }
+]
 
 const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/admin\/me$/, () => ({ agent: ME, workspace: WORKSPACE, role: 'owner', workspaces: [WORKSPACE], edition: 'community', plan: { id: UNLIMITED_PLAN.id, name: UNLIMITED_PLAN.name, unlimited: true }, features: { ...UNLIMITED_PLAN.features, teammatePasswords: true }, links: { sourceCode: '/source' } })],
@@ -631,14 +703,13 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     return { ok: true }
   }],
 
-  // feedback board settings; the board itself starts empty in the demo
+  // Acme's board is filled in above; Fieldnotes starts empty
   ['GET', /^\/feedback\/config$/, ({ query }) => ({ config: find(projects, query.project, 'Project').feedback })],
-  ['GET', /^\/feedback$/, () => ({ posts: [] })],
-  // the project board starts empty too; creating items is not in the demo
-  ['GET', /^\/admin\/board-items$/, ({ query }) => { find(projects, query.project, 'Project'); return { items: [] } }],
-  // the changelog starts empty too
-  ['GET', /^\/admin\/changelog\/entries$/, ({ query }) => { find(projects, query.project, 'Project'); return { entries: [] } }],
-  ['GET', /^\/admin\/changelog\/releases$/, ({ query }) => { find(projects, query.project, 'Project'); return { releases: [] } }],
+  ['GET', /^\/feedback$/, ({ query }) => ({ posts: feedbackPosts.filter(post => post.projectId === query.project).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) })],
+  ['GET', /^\/feedback\/([^/]+)$/, ({ params }) => ({ post: find(feedbackPosts, params[0], 'Post'), comments: [] })],
+  ['GET', /^\/admin\/board-items$/, ({ query }) => { find(projects, query.project, 'Project'); return { items: boardItems.filter(item => item.projectId === query.project) } }],
+  ['GET', /^\/admin\/changelog\/entries$/, ({ query }) => { find(projects, query.project, 'Project'); return { entries: changelogEntries.filter(entry => entry.projectId === query.project) } }],
+  ['GET', /^\/admin\/changelog\/releases$/, ({ query }) => { find(projects, query.project, 'Project'); return { releases: changelogReleases.filter(release => release.projectId === query.project) } }],
   ['GET', /^\/feedback\/roadmap$/, ({ query }) => {
     const { board } = find(projects, query.project, 'Project')
     return { options: board.roadmap, statuses: board.statuses.filter(s => ROADMAP_CATEGORIES.includes(s.category)), items: [] }

@@ -12,7 +12,7 @@
             <UInput v-model="search" icon="i-lucide-search" placeholder="Search errors" class="min-w-48 flex-1" @keyup.enter="load()" />
             <UButton color="neutral" variant="soft" icon="i-lucide-refresh-cw" aria-label="Refresh errors" @click="load()" />
             <UButton color="primary" variant="soft" icon="i-lucide-wand-sparkles" label="Analyze with AI" :loading="analyzing" @click="analyzeAll()" />
-            <UButton color="neutral" variant="soft" icon="i-lucide-plus" label="Connect another" @click="connectOpen = true" />
+            <UButton color="neutral" variant="soft" icon="i-lucide-plus" label="New" @click="connectOpen = true" />
             <UButton color="neutral" variant="soft" icon="i-lucide-bell" label="Alerts" aria-label="Error alerts and emails" @click="alertsOpen = true" />
             <UButton color="neutral" variant="soft" icon="i-lucide-settings-2" label="Manage" aria-label="Manage tracker projects" @click="manageOpen = true" />
           </div>
@@ -26,7 +26,7 @@
               <p class="mt-2 text-xs text-muted">Based on {{ overview!.count }} unresolved error{{ overview!.count === 1 ? '' : 's' }}: titles, locations and counts. Open an error to analyze its stack trace.</p>
             </template>
           </UCard>
-          <UCollapsible v-if="links.length">
+          <!-- <UCollapsible v-if="links.length">
             <UButton color="neutral" variant="soft" size="sm" block class="justify-between" icon="i-lucide-key-round" trailing-icon="i-lucide-chevron-down" :label="`DSN to send errors from your app${links.length > 1 ? ` (${links.length})` : ''}`" />
             <template #content>
               <div class="flex flex-col gap-3 pt-3">
@@ -40,7 +40,7 @@
                 <p class="text-xs text-muted">Pass it to any Sentry SDK as <code class="inline-code">dsn</code>.</p>
               </div>
             </template>
-          </UCollapsible>
+          </UCollapsible> -->
           <UCollapsible v-if="alerts.length">
             <UButton color="neutral" variant="soft" size="sm" block class="justify-between" icon="i-lucide-webhook" trailing-icon="i-lucide-chevron-down" :label="`Check alert rules the moment Bugsink reports an error${alerts.length > 1 ? ` (${alerts.length})` : ''}`" />
             <template #content>
