@@ -293,9 +293,7 @@ export function serializeFeedbackPost(row: ParseObject, ctx: FeedbackContext, vi
     featured: row.get('featured') === true,
     locked: row.get('locked') === true,
     showOnChangelog: row.get('showOnChangelog') === true,
-    changelogTitle: String(row.get('changelogTitle') || ''),
-    changelogBody: String(row.get('changelogBody') || ''),
-    shippedIn: String(row.get('shippedIn') || ''),
+    ...changelogDraft(row),
     icon: String(row.get('icon') || ''),
     pinnedCommentId: String(row.get('pinnedCommentId') || '') || null,
     // A pointer without its data (not included) still names the post.
@@ -325,7 +323,17 @@ export function serializeFeedbackPost(row: ParseObject, ctx: FeedbackContext, vi
       unread: feedbackUnread(row.get('lastActivityAt') as Date | undefined, subscription ? { lastReadAt: subscription.get('lastReadAt') as Date | undefined, createdAt: subscription.createdAt } : undefined)
     })
   }
-  return post
+  return admin ? post : withoutChangelogDraft(post)
+}
+
+function changelogDraft(row: ParseObject): Pick<FeedbackPost, 'changelogTitle' | 'changelogBody' | 'shippedIn'> {
+  return { changelogTitle: String(row.get('changelogTitle') || ''), changelogBody: String(row.get('changelogBody') || ''), shippedIn: String(row.get('shippedIn') || '') }
+}
+
+/** Changelog copy and the version are the team's drafts until the post is on the changelog. */
+export function withoutChangelogDraft(post: FeedbackPost): FeedbackPost {
+  if (post.showOnChangelog && post.statusCategory === 'done') return post
+  return { ...post, changelogTitle: '', changelogBody: '', shippedIn: '' }
 }
 
 function commentVisibility(row: ParseObject): FeedbackCommentVisibility {
@@ -358,7 +366,8 @@ function publicContext(ctx: FeedbackContext): FeedbackContext {
 }
 
 function publishPost(ctx: FeedbackContext, row: ParseObject, type: 'feedback.post.created' | 'feedback.post.updated' = 'feedback.post.updated'): Promise<void> {
-  return publishFeedbackEvent({ type, projectId: ctx.project.id || '', postId: row.id || '', post: serializeFeedbackPost(row, publicContext(ctx)) })
+  // Admin panels merge live posts over their copy, so the draft rides along; feedbackEventForViewer drops it for everyone else.
+  return publishFeedbackEvent({ type, projectId: ctx.project.id || '', postId: row.id || '', post: { ...serializeFeedbackPost(row, publicContext(ctx)), ...changelogDraft(row) } })
 }
 
 function publishComment(ctx: FeedbackContext, row: ParseObject, comment: ParseObject, type: 'feedback.comment.created' | 'feedback.comment.updated'): Promise<void> {
@@ -1594,6 +1603,7 @@ export function feedbackEventForViewer(event: FeedbackEvent, admin: boolean): Fe
   if ((event.type === 'feedback.post.created' || event.type === 'feedback.post.updated') && event.post.hidden) {
     return event.type === 'feedback.post.created' ? null : { type: 'feedback.post.deleted', projectId: event.projectId, postId: event.postId }
   }
+  if (event.type === 'feedback.post.created' || event.type === 'feedback.post.updated') return { ...event, post: withoutChangelogDraft(event.post) }
   if (event.type.startsWith('feedback.comment.') && 'postHidden' in event && event.postHidden) return null
   if ((event.type === 'feedback.comment.created' || event.type === 'feedback.comment.updated') && event.comment.visibility !== 'public') {
     return event.type === 'feedback.comment.created' ? null : { type: 'feedback.comment.deleted', projectId: event.projectId, postId: event.postId, commentId: event.comment.id, commentCount: event.commentCount, postHidden: event.postHidden }

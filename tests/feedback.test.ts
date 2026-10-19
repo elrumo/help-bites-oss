@@ -235,6 +235,24 @@ describe('admin and import fields', () => {
     expect(serializeFeedbackPost(row, ctx(user('u1', true))).adminNote).toBe('secret')
     expect(serializeFeedbackPost(row, ctx({ kind: 'anonymous' }))).toMatchObject({ number: 3, slug: 'dark-mode', tags: [], locked: false, duplicateOf: null })
   })
+
+  test('changelog drafts stay with the team until the post is on the changelog', () => {
+    const fields = { title: 'Dark mode', status: 'done', changelogTitle: 'Dark mode is here', changelogBody: 'Unannounced', shippedIn: 'v3.0', project: { id: 'pr' } }
+    const ctx = (actor: FeedbackActor): FeedbackContext => ({ project: {} as never, config, actor })
+    const draft = { changelogTitle: 'Dark mode is here', changelogBody: 'Unannounced', shippedIn: 'v3.0' }
+    expect(serializeFeedbackPost(fakeRow(fields), ctx({ kind: 'anonymous' }))).toMatchObject({ changelogTitle: '', changelogBody: '', shippedIn: '' })
+    expect(serializeFeedbackPost(fakeRow(fields), ctx(user('u1')))).toMatchObject({ changelogTitle: '', changelogBody: '', shippedIn: '' })
+    expect(serializeFeedbackPost(fakeRow(fields), ctx(user('u1', true)))).toMatchObject(draft)
+    expect(serializeFeedbackPost(fakeRow({ ...fields, showOnChangelog: true, status: 'planned' }), ctx({ kind: 'anonymous' }))).toMatchObject({ changelogTitle: '', shippedIn: '' })
+    expect(serializeFeedbackPost(fakeRow({ ...fields, showOnChangelog: true }), ctx({ kind: 'anonymous' }))).toMatchObject(draft)
+
+    // Live events carry the draft for admin panels; everyone else gets it stripped.
+    const post = { id: 'p1', hidden: false, showOnChangelog: false, statusCategory: 'done', ...draft } as FeedbackPost
+    const updated: FeedbackEvent = { type: 'feedback.post.updated', projectId: 'pr', postId: 'p1', post }
+    expect(feedbackEventForViewer(updated, true)).toBe(updated)
+    expect(feedbackEventForViewer(updated, false)).toEqual({ ...updated, post: { ...post, changelogTitle: '', changelogBody: '', shippedIn: '' } })
+    expect(post.changelogTitle).toBe('Dark mode is here')
+  })
 })
 
 describe('references', () => {
