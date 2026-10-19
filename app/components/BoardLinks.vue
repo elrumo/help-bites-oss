@@ -2,7 +2,7 @@
   <!-- The board items a conversation or post feeds: open one, unlink it, or file a new one. -->
   <div class="space-y-1.5">
     <NuxtLink v-if="board && !board.enabled" :to="`/projects/${projectId}/board`" class="-mx-1 flex items-center gap-2 rounded-lg px-1 py-1 text-[13px] text-muted transition-colors hover:bg-elevated hover:text-default">
-      <UIcon name="i-lucide-square-kanban" class="size-3.5 shrink-0" />Set up the project board
+      <UIcon name="i-lucide-square-kanban" class="size-3.5 shrink-0" />{{ $t('board.setUpBoard') }}
     </NuxtLink>
     <template v-else>
       <div v-if="loading && !linked.length" class="h-7 animate-pulse rounded-md bg-elevated" />
@@ -11,20 +11,20 @@
           <span class="size-2 shrink-0 rounded-full" :class="dotTone(item.status)" :title="statusLabel(item.status)" />
           <span v-if="item.number" class="shrink-0 tabular-nums text-muted">#{{ item.number }}</span>
           <span class="min-w-0 truncate text-default">{{ item.title }}</span>
-          <UIcon v-if="item.public" name="i-lucide-globe" class="size-3 shrink-0 text-dimmed" aria-label="On the public roadmap" />
+          <UIcon v-if="item.public" name="i-lucide-globe" class="size-3 shrink-0 text-dimmed" :aria-label="$t('board.publicRoadmapLabel')" />
         </NuxtLink>
-        <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100" :aria-label="`Unlink #${item.number ?? ''} ${item.title}`" :loading="busy === item.id" @click="unlink(item)" />
+        <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100" :aria-label="$t('board.unlinkItem', { number: item.number ?? '', title: item.title })" :loading="busy === item.id" @click="unlink(item)" />
       </div>
       <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-        <UButton icon="i-lucide-plus" label="New item" size="xs" color="neutral" variant="outline" :loading="creating" @click="createItem" />
+        <UButton icon="i-lucide-plus" :label="$t('board.newItem')" size="xs" color="neutral" variant="outline" :loading="creating" @click="createItem" />
         <USelectMenu
           v-model="picked"
           :items="candidates"
           value-key="value"
           size="xs"
           class="min-w-0 flex-1"
-          placeholder="Add to existing…"
-          :search-input="{ placeholder: 'Search items' }"
+          :placeholder="$t('board.addToExisting')"
+          :search-input="{ placeholder: $t('board.searchItems') }"
           :loading="loadingAll"
           @update:open="open => open && loadAll()"
           @update:model-value="addExisting"
@@ -46,6 +46,7 @@ import type { BoardItem } from '#shared/board'
 const props = defineProps<{ projectId: string, kind: 'feedback' | 'conversation', targetId: string, title: string, description?: string }>()
 
 const { api, projects } = useAgent()
+const { t } = useI18n()
 const board = computed(() => projects.value.find(p => p.id === props.projectId)?.board || null)
 
 const linked = ref<BoardItem[]>([])
@@ -74,7 +75,7 @@ async function load() {
     const query = { project: props.projectId, [props.kind === 'feedback' ? 'feedbackPost' : 'conversation']: props.targetId }
     linked.value = (await api<{ items: BoardItem[] }>('/admin/board-items', { query })).items
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the board'
+    error.value = e?.message || t('board.loadError')
   } finally {
     loading.value = false
   }
@@ -85,7 +86,7 @@ async function loadAll() {
   try {
     all.value = (await api<{ items: BoardItem[] }>('/admin/board-items', { query: { project: props.projectId } })).items
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the board'
+    error.value = e?.message || t('board.loadError')
   } finally {
     loadingAll.value = false
   }
@@ -104,7 +105,7 @@ async function addExisting(itemId: string | undefined) {
     const item = await link(itemId, true)
     if (!linked.value.some(l => l.id === item.id)) linked.value = [...linked.value, item]
   } catch (e: any) {
-    error.value = e?.message || 'Could not link the item'
+    error.value = e?.message || t('board.linkItemError')
   } finally {
     busy.value = ''
     picked.value = undefined
@@ -118,7 +119,7 @@ async function unlink(item: BoardItem) {
     await link(item.id, false)
     linked.value = linked.value.filter(l => l.id !== item.id)
   } catch (e: any) {
-    error.value = e?.message || 'Could not unlink the item'
+    error.value = e?.message || t('board.unlinkItemError')
   } finally {
     busy.value = ''
   }
@@ -128,7 +129,7 @@ async function createItem() {
   creating.value = true
   error.value = ''
   const text = (props.description || '').trim()
-  const title = props.title.trim() || feedbackPlainText(text, 80).split('\n')[0] || 'Untitled'
+  const title = props.title.trim() || feedbackPlainText(text, 80).split('\n')[0] || t('board.untitled')
   try {
     const { item } = await api<{ item: BoardItem }>('/admin/board-items', {
       method: 'POST',
@@ -138,7 +139,7 @@ async function createItem() {
     linked.value = [...linked.value, item]
     all.value = []
   } catch (e: any) {
-    error.value = e?.message || 'Could not create the item'
+    error.value = e?.message || t('board.createError')
   } finally {
     creating.value = false
   }

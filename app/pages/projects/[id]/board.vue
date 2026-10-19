@@ -1,23 +1,23 @@
 <template>
   <div class="flex-1 min-h-0 flex flex-col">
-    <PageHeader :project-id="id" title="Board">
+    <PageHeader :project-id="id" :title="$t('sections.board')">
       <template #title>
-        <span v-if="board?.enabled" class="ml-1 hidden text-xs font-normal tabular-nums text-muted sm:inline">{{ items.length }} {{ items.length === 1 ? 'item' : 'items' }}, {{ publicCount }} on the roadmap</span>
-        <span v-else-if="board" class="ml-1 text-xs font-normal text-warning">Board is off</span>
+        <span v-if="board?.enabled" class="ml-1 hidden text-xs font-normal tabular-nums text-muted sm:inline">{{ $t('board.itemCount', items.length) }}, {{ $t('board.onRoadmap', { count: publicCount }) }}</span>
+        <span v-else-if="board" class="ml-1 text-xs font-normal text-warning">{{ $t('board.boardOff') }}</span>
       </template>
       <template v-if="board && (board.enabled || showSettings)" #actions>
-        <UButton icon="i-lucide-map" label="Public roadmap" color="neutral" variant="ghost" size="sm" @click="copyRoadmapUrl" />
-        <UButton v-if="roadmapReady" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="roadmapUrl" target="_blank" aria-label="Open the public roadmap" />
-        <UButton icon="i-lucide-settings-2" label="Settings" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
-        <UButton icon="i-lucide-plus" label="New item" size="sm" @click="openNew" />
+        <UButton icon="i-lucide-map" :label="$t('board.publicRoadmap')" color="neutral" variant="ghost" size="sm" @click="copyRoadmapUrl" />
+        <UButton v-if="roadmapReady" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="roadmapUrl" target="_blank" :aria-label="$t('board.openRoadmap')" />
+        <UButton icon="i-lucide-settings-2" :label="$t('nav.settings')" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
+        <UButton icon="i-lucide-plus" :label="$t('board.newItem')" size="sm" @click="openNew" />
       </template>
     </PageHeader>
 
     <!-- Not set up yet -->
     <div v-if="board && !board.enabled && !showSettings" class="flex-1 overflow-y-auto">
-      <EmptyState icon="i-lucide-square-kanban" :title="`A board for ${project?.name || 'this project'}`" description="Plan the work behind your feedback and support: items on a kanban, linked to the posts and conversations they answer. Pick which ones go on a public roadmap.">
-        <UButton label="Customize first" color="neutral" variant="outline" @click="showSettings = true" />
-        <UButton label="Turn on the board" :loading="savingBoard" @click="saveBoard({ enabled: true })" />
+      <EmptyState icon="i-lucide-square-kanban" :title="$t('board.boardFor', { name: project?.name || $t('board.thisProject') })" :description="$t('board.setupDescription')">
+        <UButton :label="$t('board.customizeFirst')" color="neutral" variant="outline" @click="showSettings = true" />
+        <UButton :label="$t('board.turnOn')" :loading="savingBoard" @click="saveBoard({ enabled: true })" />
       </EmptyState>
       <p v-if="boardError" class="text-center text-[13px] text-error">{{ boardError }}</p>
     </div>
@@ -26,19 +26,19 @@
       <!-- Toolbar: filters on the left, search on the right -->
       <div class="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-default px-4 py-2.5">
         <button type="button" class="chip h-6 px-2.5 text-xs" :class="roadmapOnly ? 'chip-active' : 'border-transparent text-dimmed'" :aria-pressed="roadmapOnly" @click="roadmapOnly = !roadmapOnly">
-          <UIcon name="i-lucide-globe" class="size-3" />On roadmap<span class="tabular-nums opacity-70">{{ publicCount }}</span>
+          <UIcon name="i-lucide-globe" class="size-3" />{{ $t('board.roadmapChip') }}<span class="tabular-nums opacity-70">{{ publicCount }}</span>
         </button>
-        <USelectMenu v-if="board.labels.length" v-model="labelFilter" :items="labelItems" value-key="value" multiple size="sm" class="w-40" placeholder="Labels" aria-label="Labels" />
-        <USelect v-model="assigneeFilter" :items="assigneeFilterItems" size="sm" class="w-36" aria-label="Assignee" />
-        <USelect v-model="priorityFilter" :items="priorityFilterItems" size="sm" class="w-32" aria-label="Priority" />
-        <UButton v-if="filtering" label="Clear" size="xs" color="neutral" variant="link" @click="clearFilters" />
+        <USelectMenu v-if="board.labels.length" v-model="labelFilter" :items="labelItems" value-key="value" multiple size="sm" class="w-40" :placeholder="$t('board.labels')" :aria-label="$t('board.labels')" />
+        <USelect v-model="assigneeFilter" :items="assigneeFilterItems" size="sm" class="w-36" :aria-label="$t('board.assignee')" />
+        <USelect v-model="priorityFilter" :items="priorityFilterItems" size="sm" class="w-32" :aria-label="$t('board.priority')" />
+        <UButton v-if="filtering" :label="$t('board.clear')" size="xs" color="neutral" variant="link" @click="clearFilters" />
         <div class="ml-auto">
-          <UInput v-model="search" icon="i-lucide-search" placeholder="Search or #12" size="sm" class="w-44 sm:w-56" aria-label="Search items" />
+          <UInput v-model="search" icon="i-lucide-search" :placeholder="$t('board.searchPlaceholder')" size="sm" class="w-44 sm:w-56" :aria-label="$t('board.searchItems')" />
         </div>
       </div>
       <div v-if="actionError" class="flex items-center gap-2 border-b border-default bg-error/10 px-4 py-1.5 text-[13px] text-error">
         <span class="min-w-0 flex-1">{{ actionError }}</span>
-        <UButton icon="i-lucide-x" size="xs" color="error" variant="ghost" square aria-label="Dismiss" @click="actionError = ''" />
+        <UButton icon="i-lucide-x" size="xs" color="error" variant="ghost" square :aria-label="$t('board.dismiss')" @click="actionError = ''" />
       </div>
 
       <div v-if="loading" class="flex gap-3 p-4"><USkeleton v-for="i in 4" :key="i" class="h-64 w-72 shrink-0 rounded-xl" /></div>
@@ -76,7 +76,7 @@
                     <span v-if="item.number" class="tabular-nums">#{{ item.number }}</span>
                     <PriorityIcon v-if="item.priority" :priority="item.priority" />
                     <span class="ml-auto flex items-center gap-1.5">
-                      <UIcon v-if="item.public" name="i-lucide-globe" class="size-3.5 text-primary" aria-label="On the public roadmap" />
+                      <UIcon v-if="item.public" name="i-lucide-globe" class="size-3.5 text-primary" :aria-label="$t('board.publicRoadmapLabel')" />
                       <span v-if="assigneeOf(item)" class="grid size-5 place-items-center rounded-full bg-accented text-[9px] font-semibold text-toned" :title="assigneeOf(item)!.name || assigneeOf(item)!.username">{{ initialsOf(assigneeOf(item)!.name || assigneeOf(item)!.username) }}</span>
                     </span>
                   </span>
@@ -87,17 +87,17 @@
                     </span>
                   </span>
                   <span v-if="item.posts.length || item.conversations.length || item.targetDate" class="mt-2 flex items-center gap-2.5 text-[11px] text-muted">
-                    <span v-if="item.posts.length" class="inline-flex items-center gap-0.5 font-semibold tabular-nums" title="Votes on the linked posts"><UIcon name="i-lucide-chevron-up" class="size-3" />{{ item.voteCount }}</span>
-                    <span v-if="item.posts.length" class="inline-flex items-center gap-0.5 tabular-nums" title="Linked posts"><UIcon name="i-lucide-lightbulb" class="size-3" />{{ item.posts.length }}</span>
-                    <span v-if="item.conversations.length" class="inline-flex items-center gap-0.5 tabular-nums" title="Linked conversations"><UIcon name="i-lucide-message-square" class="size-3" />{{ item.conversations.length }}</span>
-                    <span v-if="item.targetDate" class="ml-auto inline-flex items-center gap-0.5" title="Target date"><UIcon name="i-lucide-calendar" class="size-3" />{{ dayLabel(item.targetDate) }}</span>
+                    <span v-if="item.posts.length" class="inline-flex items-center gap-0.5 font-semibold tabular-nums" :title="$t('board.votesTitle')"><UIcon name="i-lucide-chevron-up" class="size-3" />{{ item.voteCount }}</span>
+                    <span v-if="item.posts.length" class="inline-flex items-center gap-0.5 tabular-nums" :title="$t('board.linkedPosts')"><UIcon name="i-lucide-lightbulb" class="size-3" />{{ item.posts.length }}</span>
+                    <span v-if="item.conversations.length" class="inline-flex items-center gap-0.5 tabular-nums" :title="$t('board.linkedConversations')"><UIcon name="i-lucide-message-square" class="size-3" />{{ item.conversations.length }}</span>
+                    <span v-if="item.targetDate" class="ml-auto inline-flex items-center gap-0.5" :title="$t('board.targetDate')"><UIcon name="i-lucide-calendar" class="size-3" />{{ dayLabel(item.targetDate) }}</span>
                   </span>
                 </button>
               </div>
               <!-- The rest of the column: dropping here appends -->
               <div class="relative min-h-10 flex-1" @dragover.prevent.stop="dragOver = status.key; dropBefore = ''">
                 <div v-if="dragging && dragOver === status.key && dropBefore === ''" class="pointer-events-none absolute inset-x-1 -top-[5px] h-0.5 rounded-full bg-primary" aria-hidden="true" />
-                <p v-if="!(visibleByColumn[status.key] || []).length && !dragging" class="px-1 py-3 text-center text-xs text-dimmed">{{ filtering ? 'Nothing matches' : 'No items' }}</p>
+                <p v-if="!(visibleByColumn[status.key] || []).length && !dragging" class="px-1 py-3 text-center text-xs text-dimmed">{{ filtering ? $t('board.nothingMatches') : $t('board.noItems') }}</p>
               </div>
             </div>
           </section>
@@ -106,26 +106,26 @@
     </template>
 
     <div v-else-if="error" class="p-8 text-sm text-error">{{ error }}</div>
-    <div v-else class="p-8 text-sm text-muted">Loading…</div>
+    <div v-else class="p-8 text-sm text-muted">{{ $t('board.loading') }}</div>
 
     <!-- Item editor -->
-    <USlideover v-model:open="editorOpen" :title="current ? (current.number ? `Item #${current.number}` : 'Item') : 'New item'" :description="current ? `Created ${timeAgo(current.createdAt)}` : 'Private until you put it on the roadmap'" :ui="{ content: 'sm:max-w-2xl' }">
+    <USlideover v-model:open="editorOpen" :title="current ? (current.number ? $t('board.itemNumber', { number: current.number }) : $t('board.item')) : $t('board.newItem')" :description="current ? $t('board.created', { time: timeAgo(current.createdAt) }) : $t('board.privateUntilRoadmap')" :ui="{ content: 'sm:max-w-2xl' }">
       <template #body>
         <div v-if="board" class="space-y-6">
           <div class="space-y-2">
-            <UInput v-model="draft.title" placeholder="Title" variant="none" size="xl" class="w-full" :ui="{ base: 'px-0 text-lg font-semibold' }" :maxlength="200" aria-label="Title" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')" />
-            <UTextarea v-model="draft.description" placeholder="Add a description… (Markdown, internal)" variant="none" :rows="3" autoresize :maxrows="18" class="w-full" :ui="{ base: 'px-0' }" aria-label="Description" @blur="saveText('description')" />
+            <UInput v-model="draft.title" :placeholder="$t('board.title')" variant="none" size="xl" class="w-full" :ui="{ base: 'px-0 text-lg font-semibold' }" :maxlength="200" :aria-label="$t('board.title')" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')" />
+            <UTextarea v-model="draft.description" :placeholder="$t('board.descriptionPlaceholder')" variant="none" :rows="3" autoresize :maxrows="18" class="w-full" :ui="{ base: 'px-0' }" :aria-label="$t('board.description')" @blur="saveText('description')" />
           </div>
 
           <!-- Linear's property rows: quiet until hovered -->
           <section class="grid gap-x-4 sm:grid-cols-2">
-            <USelect v-model="draft.status" :items="statusItems" variant="ghost" size="sm" class="w-full" :ui="property" aria-label="Status" @update:model-value="patch({ status: draft.status })">
+            <USelect v-model="draft.status" :items="statusItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('board.status')" @update:model-value="patch({ status: draft.status })">
               <template #leading><span class="size-2.5 rounded-full" :class="toneDot(statusOf(draft.status)?.color)" /></template>
             </USelect>
-            <USelect v-model="draft.priority" :items="priorityItems" variant="ghost" size="sm" class="w-full" :ui="property" aria-label="Priority" @update:model-value="patch({ priority: draft.priority === 'none' ? '' : draft.priority })">
+            <USelect v-model="draft.priority" :items="priorityItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('board.priority')" @update:model-value="patch({ priority: draft.priority === 'none' ? '' : draft.priority })">
               <template #leading><PriorityIcon v-if="draft.priority !== 'none'" :priority="draft.priority as ConversationPriority" /><UIcon v-else name="i-lucide-minus" class="size-3.5 text-dimmed" /></template>
             </USelect>
-            <USelect v-model="draft.assigneeId" :items="assigneeItems" variant="ghost" size="sm" class="w-full" :ui="property" aria-label="Assignee" @update:model-value="patch({ assigneeId: draft.assigneeId === 'unassigned' ? '' : draft.assigneeId })">
+            <USelect v-model="draft.assigneeId" :items="assigneeItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('board.assignee')" @update:model-value="patch({ assigneeId: draft.assigneeId === 'unassigned' ? '' : draft.assigneeId })">
               <template #leading>
                 <span v-if="draftAssignee" class="grid size-4 place-items-center rounded-full bg-accented text-[8px] font-semibold text-toned">{{ initialsOf(draftAssignee.name || draftAssignee.username) }}</span>
                 <UIcon v-else name="i-lucide-circle-user-round" class="size-4 text-dimmed" />
@@ -133,60 +133,60 @@
             </USelect>
             <label class="group relative flex h-8 items-center rounded-md ps-8 pe-2 text-[13px] text-default hover:bg-elevated">
               <UIcon name="i-lucide-calendar" class="absolute left-2.5 size-3.5 text-dimmed" />
-              <input v-model="draft.targetDate" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.targetDate ? '' : 'text-dimmed'" aria-label="Target date" @change="patch({ targetDate: draft.targetDate || null })">
+              <input v-model="draft.targetDate" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.targetDate ? '' : 'text-dimmed'" :aria-label="$t('board.targetDate')" @change="patch({ targetDate: draft.targetDate || null })">
             </label>
-            <USelectMenu v-if="board.labels.length" v-model="draft.labels" :items="labelItems" value-key="value" multiple variant="ghost" size="sm" class="w-full sm:col-span-2" :ui="property" placeholder="Add labels" aria-label="Labels" @update:model-value="patch({ labels: draft.labels })">
+            <USelectMenu v-if="board.labels.length" v-model="draft.labels" :items="labelItems" value-key="value" multiple variant="ghost" size="sm" class="w-full sm:col-span-2" :ui="property" :placeholder="$t('board.addLabels')" :aria-label="$t('board.labels')" @update:model-value="patch({ labels: draft.labels })">
               <template #leading><UIcon name="i-lucide-tag" class="size-3.5 text-dimmed" /></template>
             </USelectMenu>
           </section>
 
           <section class="space-y-3 rounded-xl border border-default p-3">
-            <USwitch v-model="draft.public" label="On public roadmap" description="Shows once planned, in progress or done — with only the text below." @update:model-value="patch({ public: draft.public })" />
+            <USwitch v-model="draft.public" :label="$t('board.onPublicRoadmap')" :description="$t('board.onPublicRoadmapDescription')" @update:model-value="patch({ public: draft.public })" />
             <template v-if="draft.public">
-              <UFormField label="Public description" hint="Markdown. The roadmap never shows the internal description.">
-                <UTextarea v-model="draft.publicDescription" :rows="2" autoresize :maxrows="10" class="w-full" placeholder="What this means for users" @blur="saveText('publicDescription')" />
+              <UFormField :label="$t('board.publicDescription')" :hint="$t('board.publicDescriptionHint')">
+                <UTextarea v-model="draft.publicDescription" :rows="2" autoresize :maxrows="10" class="w-full" :placeholder="$t('board.publicDescriptionPlaceholder')" @blur="saveText('publicDescription')" />
               </UFormField>
-              <p v-if="!roadmapReady" class="text-xs text-warning">The roadmap is published through the feedback board: turn it on, with its Roadmap view, under Feedback → Settings.</p>
-              <p v-else-if="!roadmapStatus" class="text-xs text-muted">Not on the roadmap yet: {{ statusOf(draft.status)?.label || 'this status' }} stays private.</p>
+              <p v-if="!roadmapReady" class="text-xs text-warning">{{ $t('board.roadmapNeedsFeedback') }}</p>
+              <p v-else-if="!roadmapStatus" class="text-xs text-muted">{{ $t('board.notOnRoadmap', { status: statusOf(draft.status)?.label || $t('board.thisStatus') }) }}</p>
             </template>
           </section>
 
           <template v-if="current">
             <section class="space-y-2">
-              <h3 class="flex items-center gap-2 text-sm font-semibold">Feedback <span class="font-normal text-muted">{{ current.posts.length }}</span><span v-if="current.posts.length" class="ml-auto inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-muted"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ current.voteCount }} votes</span></h3>
+              <h3 class="flex items-center gap-2 text-sm font-semibold">{{ $t('board.feedback') }} <span class="font-normal text-muted">{{ current.posts.length }}</span><span v-if="current.posts.length" class="ml-auto inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-muted"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ $t('board.votes', current.voteCount) }}</span></h3>
               <ul v-if="current.posts.length" class="divide-y divide-default rounded-lg border border-default">
                 <li v-for="post in current.posts" :key="post.id" class="group flex items-center gap-2.5 px-2.5 py-2 text-[13px]">
                   <span class="inline-flex w-8 shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums text-muted"><UIcon name="i-lucide-chevron-up" class="size-3" />{{ post.voteCount }}</span>
                   <span class="min-w-0 flex-1 truncate"><span v-if="post.number" class="mr-1 tabular-nums text-muted">#{{ post.number }}</span>{{ post.title }}</span>
-                  <span v-if="post.hidden" class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-1.5 text-[11px] text-warning" title="Hidden posts never show on the roadmap and do not count"><UIcon name="i-lucide-eye-off" class="size-3" />Hidden</span>
+                  <span v-if="post.hidden" class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-1.5 text-[11px] text-warning" :title="$t('board.hiddenTitle')"><UIcon name="i-lucide-eye-off" class="size-3" />{{ $t('board.hidden') }}</span>
                   <FeedbackStatusBadge :status="feedbackStatusFor(project?.feedback, post.status)" />
-                  <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" :aria-label="`Unlink #${post.number ?? ''}`" @click="setLink('feedback', post.id, false)" />
+                  <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" :aria-label="$t('board.unlinkPost', { number: post.number ?? '' })" @click="setLink('feedback', post.id, false)" />
                 </li>
               </ul>
               <form class="flex gap-2" @submit.prevent="addPost">
-                <UInput v-model="postRef" size="sm" class="w-36" placeholder="#12" aria-label="Post number" />
-                <UButton type="submit" label="Link post" size="sm" color="neutral" variant="soft" :disabled="!postRef.trim()" :loading="linking" />
+                <UInput v-model="postRef" size="sm" class="w-36" placeholder="#12" :aria-label="$t('board.postNumber')" />
+                <UButton type="submit" :label="$t('board.linkPost')" size="sm" color="neutral" variant="soft" :disabled="!postRef.trim()" :loading="linking" />
               </form>
             </section>
 
             <section class="space-y-2">
-              <h3 class="text-sm font-semibold">Conversations <span class="font-normal text-muted">{{ current.conversations.length }}</span></h3>
+              <h3 class="text-sm font-semibold">{{ $t('board.conversations') }} <span class="font-normal text-muted">{{ current.conversations.length }}</span></h3>
               <ul v-if="current.conversations.length" class="divide-y divide-default rounded-lg border border-default">
                 <li v-for="conversation in current.conversations" :key="conversation.id" class="group flex items-center gap-2 px-2.5 text-[13px]">
                   <NuxtLink :to="`/inbox?c=${conversation.id}`" class="flex min-w-0 flex-1 items-center gap-2 py-2 hover:underline">
                     <UIcon name="i-lucide-message-square" class="size-3.5 shrink-0 text-muted" />
-                    <span class="min-w-0 truncate">{{ conversation.subject || 'Conversation' }}</span>
+                    <span class="min-w-0 truncate">{{ conversation.subject || $t('board.conversation') }}</span>
                     <span v-if="conversation.endUserName" class="shrink-0 text-muted">· {{ conversation.endUserName }}</span>
                     <span class="ml-auto shrink-0 rounded-full bg-elevated px-1.5 text-[11px] text-toned">{{ conversation.status }}</span>
                   </NuxtLink>
-                  <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" aria-label="Unlink conversation" @click="setLink('conversation', conversation.id, false)" />
+                  <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" :aria-label="$t('board.unlinkConversation')" @click="setLink('conversation', conversation.id, false)" />
                 </li>
               </ul>
-              <p v-else class="text-xs text-muted">Link conversations from the inbox: open one and use the Board section.</p>
+              <p v-else class="text-xs text-muted">{{ $t('board.linkFromInbox') }}</p>
             </section>
 
             <section class="space-y-2">
-              <h3 class="text-sm font-semibold">Changelog</h3>
+              <h3 class="text-sm font-semibold">{{ $t('sections.changelog') }}</h3>
               <ChangelogLinks :project-id="id" kind="board" :target-id="current.id" :source="{ title: current.title, publicDescription: current.publicDescription }" />
             </section>
           </template>
@@ -196,35 +196,35 @@
       </template>
       <template #footer>
         <div class="flex w-full items-center gap-2">
-          <UButton v-if="current" :label="confirmDelete ? 'Click again to delete' : 'Delete'" icon="i-lucide-trash-2" :color="confirmDelete ? 'error' : 'neutral'" :variant="confirmDelete ? 'solid' : 'ghost'" @click="deleteItem" />
-          <span v-if="current" class="ml-auto text-xs text-muted">{{ savingItem ? 'Saving…' : 'Changes save as you go' }}</span>
+          <UButton v-if="current" :label="confirmDelete ? $t('board.clickAgainDelete') : $t('board.delete')" icon="i-lucide-trash-2" :color="confirmDelete ? 'error' : 'neutral'" :variant="confirmDelete ? 'solid' : 'ghost'" @click="deleteItem" />
+          <span v-if="current" class="ml-auto text-xs text-muted">{{ savingItem ? $t('board.saving') : $t('board.changesSave') }}</span>
           <template v-else>
-            <UButton class="ml-auto" label="Cancel" color="neutral" variant="ghost" @click="editorOpen = false" />
-            <UButton label="Create item" color="primary" :loading="savingItem" :disabled="!draft.title.trim()" @click="createItem" />
+            <UButton class="ml-auto" :label="$t('common.cancel')" color="neutral" variant="ghost" @click="editorOpen = false" />
+            <UButton :label="$t('board.createItem')" color="primary" :loading="savingItem" :disabled="!draft.title.trim()" @click="createItem" />
           </template>
         </div>
       </template>
     </USlideover>
 
     <!-- Board settings -->
-    <USlideover v-model:open="showSettings" title="Board settings" description="The board, its statuses and labels, and the public roadmap." :ui="{ content: 'sm:max-w-3xl' }">
+    <USlideover v-model:open="showSettings" :title="$t('board.settingsTitle')" :description="$t('board.settingsDescription')" :ui="{ content: 'sm:max-w-3xl' }">
       <template #body>
         <div v-if="board" class="space-y-8">
           <section class="space-y-4">
             <div class="flex items-center gap-2">
-              <h3 class="text-sm font-semibold">Board</h3>
-              <span class="text-xs text-muted">{{ savingBoard ? 'Saving…' : boardSaved ? 'Saved' : 'Saves as you change it' }}</span>
+              <h3 class="text-sm font-semibold">{{ $t('sections.board') }}</h3>
+              <span class="text-xs text-muted">{{ savingBoard ? $t('board.saving') : boardSaved ? $t('common.saved') : $t('board.savesAsChange') }}</span>
             </div>
             <div class="grid gap-3 sm:grid-cols-2">
-              <USwitch :model-value="board.enabled" label="Board is on" description="Items, links from the inbox and feedback, and the roadmap." @update:model-value="saveBoard({ enabled: $event })" />
-              <USwitch :model-value="board.syncFeedback" label="Sync linked feedback" description="When an item moves to another status category, its linked posts follow — and their followers get the usual emails." @update:model-value="saveBoard({ syncFeedback: $event })" />
+              <USwitch :model-value="board.enabled" :label="$t('board.boardOn')" :description="$t('board.boardOnDescription')" @update:model-value="saveBoard({ enabled: $event })" />
+              <USwitch :model-value="board.syncFeedback" :label="$t('board.syncFeedback')" :description="$t('board.syncFeedbackDescription')" @update:model-value="saveBoard({ syncFeedback: $event })" />
             </div>
             <div class="grid gap-3 sm:grid-cols-3">
-              <UFormField label="Roadmap layout">
+              <UFormField :label="$t('board.roadmapLayout')">
                 <USelect :model-value="board.roadmap.layout" :items="layoutItems" class="w-full" @update:model-value="saveBoard({ roadmap: { layout: $event } })" />
               </UFormField>
-              <USwitch :model-value="board.roadmap.showLabels" label="Show labels" description="On roadmap cards" class="sm:pt-5" @update:model-value="saveBoard({ roadmap: { showLabels: $event } })" />
-              <USwitch :model-value="board.roadmap.showDates" label="Show dates" description="Target dates; the timeline always does" class="sm:pt-5" @update:model-value="saveBoard({ roadmap: { showDates: $event } })" />
+              <USwitch :model-value="board.roadmap.showLabels" :label="$t('board.showLabels')" :description="$t('board.showLabelsDescription')" class="sm:pt-5" @update:model-value="saveBoard({ roadmap: { showLabels: $event } })" />
+              <USwitch :model-value="board.roadmap.showDates" :label="$t('board.showDates')" :description="$t('board.showDatesDescription')" class="sm:pt-5" @update:model-value="saveBoard({ roadmap: { showDates: $event } })" />
             </div>
             <p v-if="boardError" class="text-sm text-error">{{ boardError }}</p>
           </section>
@@ -256,6 +256,7 @@ const router = useRouter()
 const id = String(route.params.id)
 const { api, projects, loadProjects } = useAgent()
 const toast = useToast()
+const { t } = useI18n()
 const appUrl = useAppUrl()
 
 const project = computed<AdminProject | null>(() => projects.value.find(p => p.id === id) || null)
@@ -278,15 +279,15 @@ const dayLabel = (value: string) => new Date(value).toLocaleDateString(undefined
 
 // A property row: the value reads as plain text until you hover it.
 const property = { base: 'h-8 w-full rounded-md ps-8 text-[13px] text-default', trailing: 'opacity-0 transition-opacity group-hover:opacity-100' }
-const PRIORITY_LABELS: Record<ConversationPriority, string> = { low: 'Low', normal: 'Normal', high: 'High', urgent: 'Urgent' }
-const priorityItems = [{ label: 'No priority', value: 'none' }, ...(['urgent', 'high', 'normal', 'low'] as const).map(value => ({ label: PRIORITY_LABELS[value], value }))]
-const LAYOUT_LABELS: Record<BoardRoadmapLayout, string> = { columns: 'Columns by status', timeline: 'Timeline by quarter', list: 'Compact list' }
-const layoutItems = BOARD_ROADMAP_LAYOUTS.map(value => ({ label: LAYOUT_LABELS[value], value }))
+const PRIORITY_KEYS: Record<ConversationPriority, string> = { low: 'board.low', normal: 'board.normal', high: 'board.high', urgent: 'board.urgent' }
+const priorityItems = computed(() => [{ label: t('board.noPriority'), value: 'none' }, ...(['urgent', 'high', 'normal', 'low'] as const).map(value => ({ label: t(PRIORITY_KEYS[value]), value }))])
+const LAYOUT_KEYS: Record<BoardRoadmapLayout, string> = { columns: 'board.layoutColumns', timeline: 'board.layoutTimeline', list: 'board.layoutList' }
+const layoutItems = computed(() => BOARD_ROADMAP_LAYOUTS.map(value => ({ label: t(LAYOUT_KEYS[value]), value })))
 const statusItems = computed(() => (board.value?.statuses || []).map(s => ({ label: s.label, value: s.key })))
 const labelItems = computed(() => (board.value?.labels || []).map(l => ({ label: l.label, value: l.key })))
-const assigneeItems = computed(() => [{ label: 'Unassigned', value: 'unassigned' }, ...agents.value.map(agent => ({ label: agent.name || agent.username, value: agent.id }))])
-const assigneeFilterItems = computed(() => [{ label: 'Anyone', value: '__all__' }, ...assigneeItems.value])
-const priorityFilterItems = [{ label: 'Any priority', value: '__all__' }, ...priorityItems]
+const assigneeItems = computed(() => [{ label: t('board.unassigned'), value: 'unassigned' }, ...agents.value.map(agent => ({ label: agent.name || agent.username, value: agent.id }))])
+const assigneeFilterItems = computed(() => [{ label: t('board.anyone'), value: '__all__' }, ...assigneeItems.value])
+const priorityFilterItems = computed(() => [{ label: t('board.anyPriority'), value: '__all__' }, ...priorityItems.value])
 
 // ---- the roadmap link ----
 const roadmapUrl = computed(() => (project.value ? `${appUrl.value}/roadmap/${project.value.publicKey}` : ''))
@@ -296,14 +297,14 @@ const publicCount = computed(() => items.value.filter(item => item.public).lengt
 
 async function copyRoadmapUrl() {
   if (!roadmapReady.value) {
-    toast.add({ title: 'Turn on the feedback board first', description: 'The roadmap is published through the feedback board: turn it on, with its Roadmap view, under Feedback → Settings.', icon: 'i-lucide-info', color: 'warning' })
+    toast.add({ title: t('board.turnOnFeedbackTitle'), description: t('board.roadmapNeedsFeedback'), icon: 'i-lucide-info', color: 'warning' })
     return
   }
   try {
     await navigator.clipboard.writeText(roadmapUrl.value)
-    toast.add({ title: 'Roadmap link copied', description: roadmapUrl.value, icon: 'i-lucide-clipboard-check', color: 'success' })
+    toast.add({ title: t('board.roadmapLinkCopied'), description: roadmapUrl.value, icon: 'i-lucide-clipboard-check', color: 'success' })
   } catch {
-    toast.add({ title: 'Your public roadmap', description: roadmapUrl.value, icon: 'i-lucide-map' })
+    toast.add({ title: t('board.yourRoadmap'), description: roadmapUrl.value, icon: 'i-lucide-map' })
   }
 }
 
@@ -418,7 +419,7 @@ async function dropOn(status: string) {
     replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${item.id}`, { method: 'PATCH', body: { status, rank } })).item)
   } catch (e: any) {
     replaceItem(snapshot)
-    actionError.value = e?.message || 'Could not move the item'
+    actionError.value = e?.message || t('board.moveError')
   }
 }
 
@@ -491,7 +492,7 @@ async function patch(body: Record<string, unknown>) {
   try {
     replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${current.value.id}`, { method: 'PATCH', body })).item)
   } catch (e: any) {
-    editorError.value = e?.message || 'Could not save'
+    editorError.value = e?.message || t('board.saveError')
   } finally {
     savingItem.value = false
   }
@@ -528,7 +529,7 @@ async function createItem() {
     editingId.value = item.id
     void router.replace({ query: { ...route.query, item: item.id } })
   } catch (e: any) {
-    editorError.value = e?.message || 'Could not create the item'
+    editorError.value = e?.message || t('board.createError')
   } finally {
     savingItem.value = false
   }
@@ -547,7 +548,7 @@ async function deleteItem() {
     items.value = items.value.filter(i => i.id !== itemId)
     editorOpen.value = false
   } catch (e: any) {
-    editorError.value = e?.message || 'Could not delete'
+    editorError.value = e?.message || t('board.deleteError')
   }
 }
 
@@ -559,7 +560,7 @@ async function setLink(kind: 'feedback' | 'conversation', targetId: string, link
     replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${current.value.id}/links`, { method: 'POST', body: { kind, id: targetId, linked } })).item)
     return true
   } catch (e: any) {
-    editorError.value = e?.message || 'Could not change the link'
+    editorError.value = e?.message || t('board.linkError')
     return false
   } finally {
     linking.value = false
@@ -592,7 +593,7 @@ async function saveBoard(next: Record<string, unknown>) {
     storeProject((await api<{ project: AdminProject }>(`/admin/projects/${id}`, { method: 'PATCH', body: { board: next } })).project)
     boardSaved.value = true
   } catch (e: any) {
-    boardError.value = e?.message || 'Could not save'
+    boardError.value = e?.message || t('board.saveError')
   } finally {
     savingBoard.value = false
   }
@@ -613,7 +614,7 @@ async function saveLists(config: FeedbackBoardConfig) {
     storeProject((await api<{ project: AdminProject }>(`/admin/projects/${id}`, { method: 'PATCH', body: { board: { statuses: config.statuses, labels: config.tags } } })).project)
     listsSaved.value = true
   } catch (e: any) {
-    listsError.value = e?.message || 'Could not save'
+    listsError.value = e?.message || t('board.saveError')
   } finally {
     savingLists.value = false
   }
@@ -629,13 +630,13 @@ onMounted(async () => {
   window.addEventListener('focus', onFocus)
   try {
     if (!project.value) await loadProjects()
-    if (!project.value) throw new Error('Project not found')
+    if (!project.value) throw new Error(t('board.projectNotFound'))
     await Promise.all([
       loadItems(),
       api<{ agents: HumanAgent[] }>('/admin/agents').then((result) => { agents.value = result.agents }).catch(() => {})
     ])
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the board'
+    error.value = e?.message || t('board.loadError')
   } finally {
     loading.value = false
   }
