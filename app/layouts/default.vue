@@ -142,6 +142,9 @@ const newName = ref('')
 const newSite = ref('')
 const creating = ref(false)
 const createError = ref('')
+// The dev page shows a new project's secret once. It goes over in memory: in
+// a URL, browser history and Sentry's navigation breadcrumbs would keep it.
+const newProjectSecret = useState<{ id: string, secret: string } | null>('new-project-secret', () => null)
 async function createProject() {
   creating.value = true
   createError.value = ''
@@ -151,7 +154,8 @@ async function createProject() {
     newName.value = ''
     newSite.value = ''
     await loadProjects().catch(() => {})
-    await navigateTo({ path: `/projects/${result.project.id}/dev`, query: { secret: result.secret } })
+    newProjectSecret.value = { id: result.project.id, secret: result.secret }
+    await navigateTo(`/projects/${result.project.id}/dev`)
   } catch (e: any) {
     createError.value = e?.message || 'Could not create the project'
   } finally {

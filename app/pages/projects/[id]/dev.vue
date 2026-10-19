@@ -170,9 +170,12 @@ const route = useRoute()
 const id = String(route.params.id)
 
 const project = ref<AdminProject | null>(null)
-// A new project lands here with its secret in the URL, once.
-const secret = ref(typeof route.query.secret === 'string' ? route.query.secret : '')
+// A new project lands here with its secret, once, handed over in memory by
+// the default layout.
+const newProjectSecret = useState<{ id: string, secret: string } | null>('new-project-secret', () => null)
+const secret = ref(newProjectSecret.value?.id === id ? newProjectSecret.value.secret : '')
 const justCreated = !!secret.value
+newProjectSecret.value = null
 const tabs: Tab[] = ['chat', 'feedback', 'flags', 'errors', 'email']
 const tab = ref<Tab>(tabs.includes(route.query.tab as Tab) ? route.query.tab as Tab : 'chat')
 const error = ref('')
@@ -215,7 +218,6 @@ onMounted(async () => {
     const found = (await loadProjects()).find(p => p.id === id)
     if (!found) throw new Error('Project not found')
     fill(found)
-    if (justCreated) await navigateTo({ path: route.path }, { replace: true })
   } catch (e: any) {
     error.value = e?.message || 'Could not load the project'
   }
