@@ -203,7 +203,7 @@ const variablesOf = (doc: EmailDocument, declared: TemplateVariable[] = []) => {
   return extractTemplateVariables(doc).map(key => byKey.get(key) || { key })
 }
 function emailTemplate(projectId: string | null, name: string, document: EmailDocument | null, extra: Partial<EmailTemplate> = {}): EmailTemplate {
-  return { id: newId('email'), projectId, masterId: null, folderId: null, key: slug(name), name, description: '', document, variables: document ? variablesOf(document) : [], variableValues: {}, shareMode: null, shareToken: null, lastActorId: null, updatedAt: Date.now(), master: null, ...extra }
+  return { id: newId('email'), projectId, masterId: null, folderId: null, key: slug(name), name, description: '', document, variables: document ? variablesOf(document) : [], variableValues: {}, shareMode: null, shareToken: null, shareExpiresAt: null, lastSharedEdit: null, lastActorId: null, updatedAt: Date.now(), master: null, ...extra }
 }
 const emails: EmailTemplate[] = [
   emailTemplate(null, 'Welcome', cloneEmailTemplateDocument('welcome-soft')!),

@@ -8,6 +8,7 @@
     :back-to="template.projectId ? `/projects/${template.projectId}/email?view=templates` : '/emails?view=templates'"
     :agent-token="token"
     :brand="project"
+    :master="!template.projectId"
     can-rename
     :on-send-test="() => { testOpen = true }"
   >

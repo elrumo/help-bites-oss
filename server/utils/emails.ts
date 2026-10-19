@@ -14,8 +14,9 @@ import { applyProjectAccent, BRAND_VARIABLE_PREFIX, plainTextFor, RECIPIENT_VARI
 //   own      a project's own template, or a detached copy of a master
 //
 // Operators edit everything. A share link opens one template to anyone who
-// has it: view-only, or editable (never for a linked row — its document is
-// the master's).
+// has it until it expires: view-only, or editable. Never editable for a
+// master or linked row (the edit would reach every project using the
+// design) or for mail the server sends itself.
 
 export type ShareMode = 'view' | 'edit'
 
@@ -35,6 +36,10 @@ export type EmailTemplate = {
   variableValues: Record<string, string>
   shareMode: ShareMode | null
   shareToken: string | null
+  /** When the share link stops working; null when it has no date (not shared, or shared before links expired). */
+  shareExpiresAt: number | null
+  /** The last save made through an edit link. */
+  lastSharedEdit: { at: string, ip: string } | null
   lastActorId: string | null
   updatedAt: number
   /** The linked master's design (linked rows only). */
@@ -64,7 +69,7 @@ function readVariables(value: unknown): TemplateVariable[] {
   return Array.isArray(value) ? value.filter(v => v && typeof v.key === 'string') : []
 }
 
-export function serializeEmailTemplate(row: ParseObject, options: { forShare?: boolean } = {}): EmailTemplate {
+export function serializeEmailTemplate(row: ParseObject): EmailTemplate {
   const master = row.get('master') as ParseObject | undefined
   return {
     id: row.id || '',
@@ -78,7 +83,9 @@ export function serializeEmailTemplate(row: ParseObject, options: { forShare?: b
     variables: readVariables(row.get('variables')),
     variableValues: readValues(row.get('values')),
     shareMode: (row.get('shareMode') as ShareMode) || null,
-    shareToken: options.forShare ? null : (row.get('shareToken') as string) || null,
+    shareToken: (row.get('shareToken') as string) || null,
+    shareExpiresAt: millis(row.get('shareExpiresAt')) || null,
+    lastSharedEdit: (row.get('lastSharedEdit') as EmailTemplate['lastSharedEdit']) || null,
     lastActorId: (row.get('lastActorId') as string) || null,
     updatedAt: millis(row.updatedAt),
     // `include('master')` fetched it; a bare pointer has no name yet.
@@ -284,14 +291,62 @@ export function newShareToken(): string {
   return randomBytes(18).toString('base64url')
 }
 
-/** Resolve a share link; `edit` also requires the link to have been shared for editing. */
-export async function findSharedEmail(event: H3Event, token: string, need: ShareMode): Promise<ParseObject> {
+const DAY_MS = 24 * 60 * 60 * 1000
+/** An edit link can rewrite mail that is really sent, so it lives the shortest. */
+export const SHARE_DEFAULT_DAYS: Record<ShareMode, number> = { view: 30, edit: 7 }
+export const SHARE_MAX_DAYS = 90
+
+// Keys the server looks up to send its own mail: the sign-up confirmation
+// (signup.ts), CHANGELOG_CONFIRM_TEMPLATE and CHANGELOG_DIGEST_TEMPLATE.
+// Spelled out: importing the changelog modules here would close an import
+// cycle back through emailSend.
+const SYSTEM_EMAIL_KEYS = new Set(['confirm-subscription', 'changelog-confirm', 'changelog'])
+
+/** Why a template may only be shared view-only, or null when an edit link is fine. */
+export function shareEditRefusal(template: Pick<EmailTemplate, 'projectId' | 'masterId' | 'key'>): string | null {
+  if (template.masterId) return 'A linked master can only be shared view-only; edit the master instead'
+  if (!template.projectId) return 'A master can only be shared view-only: an edit would change it for every project that uses it'
+  if (SYSTEM_EMAIL_KEYS.has(template.key)) return `"${template.key}" is mail the server sends itself, so it can only be shared view-only`
+  return null
+}
+
+/** When a link shared now expires: after `expiresInDays` (1 to 90) if given, else the mode's default. */
+export function shareExpiresAt(mode: ShareMode, expiresInDays: unknown, now = Date.now()): Date {
+  const days = expiresInDays ?? SHARE_DEFAULT_DAYS[mode]
+  if (typeof days !== 'number' || !Number.isInteger(days) || days < 1 || days > SHARE_MAX_DAYS) {
+    throw createError({ statusCode: 400, statusMessage: `expiresInDays must be a whole number from 1 to ${SHARE_MAX_DAYS}` })
+  }
+  return new Date(now + days * DAY_MS)
+}
+
+/**
+ * Whether a share link still opens. A link shared before links expired has no
+ * date and counts as expired, so none lives forever; sharing it again renews
+ * the same URL.
+ */
+export function shareLinkActive(mode: unknown, expiresAt: unknown, now = Date.now()): boolean {
+  return (mode === 'view' || mode === 'edit') && expiresAt instanceof Date && expiresAt.getTime() > now
+}
+
+/** What a share link sees of a template: the design, without the ids, values or master behind it. */
+export type SharedEmailTemplate = Pick<EmailTemplate, 'name' | 'document' | 'variables' | 'lastActorId' | 'updatedAt'>
+
+export function sharedEmailTemplate(template: EmailTemplate): SharedEmailTemplate {
+  return { name: template.name, document: template.document, variables: template.variables, lastActorId: template.lastActorId, updatedAt: template.updatedAt }
+}
+
+/**
+ * Resolve a share link. An expired link answers exactly like a revoked or
+ * unknown one. The mode is what the link may do now: an edit link to a
+ * template that has since become system mail only views.
+ */
+export async function findSharedEmail(event: H3Event, token: string, need: ShareMode): Promise<{ row: ParseObject, mode: ShareMode }> {
   await rateLimit(`sb:rl:emailshare:${clientIp(event) || 'ip'}`, LIMITS.emailSharePerIp.limit, LIMITS.emailSharePerIp.window)
   const row = token ? await new (useParse()).Query('EmailTemplate').equalTo('shareToken', token).include(['master', 'project']).first(MASTER) : null
-  const mode = row?.get('shareMode') as ShareMode | undefined
-  if (!row || !mode) throw createError({ statusCode: 404, statusMessage: 'This share link is no longer active' })
+  if (!row || !shareLinkActive(row.get('shareMode'), row.get('shareExpiresAt'))) throw createError({ statusCode: 404, statusMessage: 'This share link is no longer active' })
+  const mode: ShareMode = row.get('shareMode') === 'edit' && !shareEditRefusal(serializeEmailTemplate(row)) ? 'edit' : 'view'
   if (need === 'edit' && mode !== 'edit') throw createError({ statusCode: 403, statusMessage: 'This link is view-only' })
-  return row
+  return { row, mode }
 }
 
 export async function saveAndBroadcast(row: ParseObject): Promise<EmailTemplate> {

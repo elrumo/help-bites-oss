@@ -256,7 +256,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'bare' })
 
-const repo = 'https://github.com/elrumo/help-bites'
+const repo = 'https://github.com/elrumo/help-bites-oss'
 const appUrl = useAppUrl()
 
 // Signed-in operators have no business on the marketing page. The cookie is a

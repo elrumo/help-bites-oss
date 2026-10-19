@@ -106,7 +106,7 @@ The fastest path to a running app on your machine. Uses the dev Compose overlay,
 which publishes ports on `localhost` and adds a Parse dashboard and RustFS.
 
 ```bash
-git clone https://github.com/elrumo/help-bites.git help-bites
+git clone https://github.com/elrumo/help-bites-oss.git help-bites
 cd help-bites
 cp .env.example .env          # defaults already point at localhost
 bun install
@@ -253,7 +253,7 @@ certificates by itself. Without a domain it prepares a trial on `http://localhos
 By hand:
 
 ```bash
-git clone https://github.com/elrumo/help-bites.git && cd help-bites
+git clone https://github.com/elrumo/help-bites-oss.git && cd help-bites
 cp .env.example .env
 $EDITOR .env      # replace every change-me value (see Environment reference)
 ```

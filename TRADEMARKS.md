@@ -24,4 +24,4 @@ the AGPL (see [LICENSE](LICENSE)); the names and logo are not. This policy says 
 
 ## Questions
 
-Ask through the [repository](https://github.com/elrumo/help-bites). We are happy to say yes to reasonable uses.
+Ask through the [repository](https://github.com/elrumo/help-bites-oss). We are happy to say yes to reasonable uses.

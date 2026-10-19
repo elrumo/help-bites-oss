@@ -2,7 +2,7 @@
   <!-- Edit link: the full editor, saving through the share token. -->
   <EmailEditor
     v-if="shared?.template"
-    :template="shared.template"
+    :template="editable(shared.template)"
     :save="save"
     :stream-url="`/v1/share/emails/${token}/events`"
   >
@@ -30,13 +30,13 @@
 </template>
 
 <script setup lang="ts">
-import type { EmailTemplate } from '~~/server/utils/emails'
+import type { EmailTemplate, SharedEmailTemplate } from '~~/server/utils/emails'
 import EmailEditor from '~/components/email/EmailEditor.vue'
 
 // No agent middleware: the token in the URL is the credential.
 definePageMeta({ layout: 'bare' })
 
-type Shared = { mode: 'view' | 'edit', name: string, subject: string, html: string, template?: EmailTemplate }
+type Shared = { mode: 'view' | 'edit', name: string, subject: string, html: string, template?: SharedEmailTemplate }
 
 const token = String(useRoute().params.token)
 const shared = ref<Shared | null>(null)
@@ -50,9 +50,14 @@ onMounted(async () => {
   }
 })
 
+// The editor takes a whole template; an edit link carries only the design.
+function editable(design: SharedEmailTemplate): EmailTemplate {
+  return { id: '', projectId: null, masterId: null, folderId: null, key: '', description: '', variableValues: {}, shareMode: 'edit', shareToken: null, shareExpiresAt: null, lastSharedEdit: null, master: null, ...design }
+}
+
 async function save(patch: Record<string, unknown>) {
   const { name: _name, ...design } = patch
-  return (await $fetch<{ template: EmailTemplate }>(`/v1/share/emails/${token}`, { method: 'PATCH', body: design })).template
+  return editable((await $fetch<{ template: SharedEmailTemplate }>(`/v1/share/emails/${token}`, { method: 'PATCH', body: design })).template)
 }
 
 useHead({ title: () => shared.value?.name || 'Shared email', meta: [{ name: 'robots', content: 'noindex' }] })

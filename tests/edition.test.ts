@@ -19,12 +19,12 @@ describe('edition registry', () => {
 
 describe('sourceCodeUrl', () => {
   test('points at the upstream repository by default', () => {
-    expect(sourceCodeUrl({})).toBe('https://github.com/elrumo/help-bites')
+    expect(sourceCodeUrl({})).toBe('https://github.com/elrumo/help-bites-oss')
   })
 
   test('a fork names its own repository, pinned to the running commit on GitHub', () => {
     expect(sourceCodeUrl({ SOURCE_CODE_URL: 'https://github.com/acme/desk/', GIT_SHA: 'abc1234' })).toBe('https://github.com/acme/desk/tree/abc1234')
     expect(sourceCodeUrl({ SOURCE_CODE_URL: 'https://git.acme.dev/desk', GIT_SHA: 'abc1234' })).toBe('https://git.acme.dev/desk')
-    expect(sourceCodeUrl({ GIT_SHA: 'not a sha' })).toBe('https://github.com/elrumo/help-bites')
+    expect(sourceCodeUrl({ GIT_SHA: 'not a sha' })).toBe('https://github.com/elrumo/help-bites-oss')
   })
 })
