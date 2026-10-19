@@ -5,15 +5,18 @@ struct TeamScreen: View {
   @Environment(SessionStore.self) private var session
   @Environment(Workspace.self) private var workspace
   @Environment(\.horizontalSizeClass) private var sizeClass
-  @State private var people: [Agent] = []
+  @State private var people: [TeamMember] = []
+  @State private var invitations: [TeamInvitation] = []
   @State private var assistants: [SupportAgent] = []
   @State private var loading = true
   @State private var filter = Filter.all
   @State private var query = ""
   @State private var error = ""
   @State private var addingTeammate = false
+  @State private var inviting = false
   @State private var addingAssistant = false
   @State private var removing: Row?
+  @State private var revoking: Row?
 
   private enum Filter { case all, people, ai }
 
@@ -23,17 +26,23 @@ struct TeamScreen: View {
     let isAI: Bool
     let name, detail, project, status, projectId: String
     let isMe: Bool
+    var role: TeamRole? = nil
+    var invitationId: String? = nil
+    var isInvite: Bool { invitationId != nil }
   }
 
   private var rows: [Row] {
     let projectNames = Dictionary(workspace.projects.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
     let humans = people.map { agent in
-      Row(id: "human-\(agent.id)", agentId: agent.id, isAI: false, name: agent.name.isEmpty ? agent.username : agent.name, detail: [agent.username, agent.email].filter { !$0.isEmpty }.joined(separator: " · "), project: "All projects", status: "active", projectId: "", isMe: agent.id == session.agent?.id)
+      Row(id: "human-\(agent.id)", agentId: agent.id, isAI: false, name: agent.name.isEmpty ? agent.username : agent.name, detail: [agent.username, agent.email].filter { !$0.isEmpty }.joined(separator: " · "), project: "All projects", status: "active", projectId: "", isMe: agent.id == session.agent?.id, role: TeamRole(agent.role))
+    }
+    let invited = invitations.map { invite in
+      Row(id: "invite-\(invite.id)", agentId: invite.id, isAI: false, name: invite.email, detail: "Invited\(invite.invitedBy.isEmpty ? "" : " by \(invite.invitedBy)")", project: "All projects", status: "pending", projectId: "", isMe: false, role: TeamRole(invite.role), invitationId: invite.id)
     }
     let bots = assistants.map { agent in
       Row(id: "ai-\(agent.id)", agentId: agent.id, isAI: true, name: agent.name, detail: !agent.description.isEmpty ? agent.description : !agent.model.isEmpty ? agent.model : "No description", project: projectNames[agent.projectId] ?? "No project", status: agent.status, projectId: agent.projectId, isMe: false)
     }
-    return humans + bots
+    return humans + invited + bots
   }
 
   private var visibleRows: [Row] {
@@ -48,8 +57,8 @@ struct TeamScreen: View {
       VStack(spacing: 10) {
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(spacing: 6) {
-            Pill(label: "All", count: people.count + assistants.count, isActive: filter == .all) { filter = .all }
-            Pill(label: "People", count: people.count, isActive: filter == .people) { filter = .people }
+            Pill(label: "All", count: people.count + invitations.count + assistants.count, isActive: filter == .all) { filter = .all }
+            Pill(label: "People", count: people.count + invitations.count, isActive: filter == .people) { filter = .people }
             Pill(label: "AI", count: assistants.count, isActive: filter == .ai) { filter = .ai }
           }
         }
@@ -83,9 +92,12 @@ struct TeamScreen: View {
     .panelScreen("Team")
     .toolbar {
       ToolbarItemGroup(placement: .topBarTrailing) {
-        IconButton(systemImage: "person.badge.plus", label: "Add teammate") { addingTeammate = true }
-        Button { addingAssistant = true } label: { Label("New AI agent", systemImage: "plus") }
-          .disabled(workspace.projects.isEmpty)
+        if session.canManage {
+          IconButton(systemImage: "envelope.badge.person.crop", label: "Invite by email") { inviting = true }
+          if session.hasFeature("teammatePasswords") { IconButton(systemImage: "person.badge.plus", label: "Add teammate with a password") { addingTeammate = true } }
+          Button { addingAssistant = true } label: { Label("New AI agent", systemImage: "plus") }
+            .disabled(workspace.projects.isEmpty)
+        }
       }
     }
     .task {
@@ -93,9 +105,13 @@ struct TeamScreen: View {
       await load()
     }
     .alert(error, isPresented: Binding(get: { !error.isEmpty }, set: { if !$0 { error = "" } })) { Button("OK", role: .cancel) {} }
-    .confirmationDialog("Remove \(removing?.name ?? "")? They will be signed out everywhere.", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }), titleVisibility: .visible, presenting: removing) { row in
+    .confirmationDialog("Remove \(removing?.name ?? "") from this workspace? They lose access to it at once.", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }), titleVisibility: .visible, presenting: removing) { row in
       Button("Remove", role: .destructive) { Task { await remove(row) } }
     }
+    .confirmationDialog("Revoke the invitation to \(revoking?.name ?? "")?", isPresented: Binding(get: { revoking != nil }, set: { if !$0 { revoking = nil } }), titleVisibility: .visible, presenting: revoking) { row in
+      Button("Revoke", role: .destructive) { Task { await revoke(row) } }
+    }
+    .sheet(isPresented: $inviting) { TeamInviteSheet { await load() } }
     .sheet(isPresented: $addingTeammate) { TeamAddTeammateSheet { await load() } }
     .sheet(isPresented: $addingAssistant) { TeamNewAssistantSheet() }
   }
@@ -110,34 +126,65 @@ struct TeamScreen: View {
           .background(Theme.accent.opacity(0.12), in: Circle())
           .accessibilityHidden(true)
       } else {
-        Avatar(name: row.name, size: 28)
+        if row.isInvite {
+          Image(systemName: "envelope").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.textMuted)
+            .frame(width: 28, height: 28).background(Theme.elevated, in: Circle()).accessibilityHidden(true)
+        } else {
+          Avatar(name: row.name, size: 28)
+        }
       }
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 6) {
           Text(row.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-          Tag(text: row.isAI ? "AI agent" : "Teammate", tint: row.isAI ? Theme.accent : nil)
+          Tag(text: row.isAI ? "AI agent" : row.isInvite ? "Invited" : "Teammate", tint: row.isAI ? Theme.accent : nil)
           if row.isMe { Text("You").font(.lnCaption).foregroundStyle(Theme.textMuted) }
         }
         Text(row.detail).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
       }
       Spacer(minLength: 8)
-      VStack(alignment: .trailing, spacing: 4) {
-        if sizeClass == .regular { Text(row.project).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1) }
-        StatusDot(status: row.status)
+      if let role = row.role { roleControl(row, role) }
+      else {
+        VStack(alignment: .trailing, spacing: 4) {
+          if sizeClass == .regular { Text(row.project).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1) }
+          StatusDot(status: row.status)
+        }
       }
       if row.isAI {
         if !row.projectId.isEmpty { Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textDimmed) }
-      } else if !row.isMe {
-        IconButton(systemImage: "trash", label: "Remove teammate") { removing = row }
+      } else if row.isInvite {
+        if session.canManage { IconButton(systemImage: "xmark", label: "Revoke the invitation to \(row.name)") { revoking = row } }
+      } else if session.canManage && !row.isMe && canChange(row) {
+        IconButton(systemImage: "trash", label: "Remove \(row.name)") { removing = row }
       }
     }
     .padding(.vertical, 8)
     .frame(minHeight: Metrics.rowHeight)
   }
 
+  /// The role as a menu when you may change it, else a quiet label. Only owners touch owners.
+  @ViewBuilder private func roleControl(_ row: Row, _ role: TeamRole) -> some View {
+    if session.canManage && !row.isMe && !row.isInvite && canChange(row) {
+      Menu {
+        ForEach(TeamRole.allCases.filter { session.teamRole.canGrant($0) }) { option in
+          Button { Task { await setRole(row, option) } } label: { if option == role { Label(option.label, systemImage: "checkmark") } else { Text(option.label) } }
+        }
+      } label: {
+        HStack(spacing: 4) { Text(role.label); Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold)) }
+          .font(.lnCaptionMedium).foregroundStyle(Theme.textToned)
+      }
+      .menuIndicator(.hidden).fixedSize()
+      .accessibilityLabel("Role of \(row.name)")
+    } else {
+      Text(role.label).font(.lnCaption).foregroundStyle(Theme.textMuted)
+    }
+  }
+
+  private func canChange(_ row: Row) -> Bool { row.role != .owner || session.isOwner }
+
   private func load() async {
-    struct People: Decodable, Sendable { let agents: [Agent] }
+    struct People: Decodable, Sendable { let agents: [TeamMember] }
     struct Assistants: Decodable, Sendable { let agents: [SupportAgent] }
+    struct Invites: Decodable, Sendable { let invitations: [TeamInvitation] }
     let session = session
     do {
       async let humans: People = session.get("/v1/admin/agents")
@@ -145,10 +192,27 @@ struct TeamScreen: View {
       let (fetchedPeople, fetchedBots) = try await (humans, bots)
       people = fetchedPeople.agents
       assistants = fetchedBots.agents
+      if session.canManage { invitations = (try await session.get("/v1/admin/invitations") as Invites).invitations } else { invitations = [] }
     } catch {
       if !Task.isCancelled { self.error = error.localizedDescription }
     }
     loading = false
+  }
+
+  private func setRole(_ row: Row, _ role: TeamRole) async {
+    struct Input: Encodable, Sendable { let role: String }
+    struct Output: Decodable, Sendable { let agent: TeamMember }
+    do {
+      let output: Output = try await session.send("/v1/admin/agents/\(row.agentId)", method: "PATCH", body: Input(role: role.rawValue))
+      people = people.map { $0.id == output.agent.id ? output.agent : $0 }
+    } catch { self.error = error.localizedDescription }
+  }
+
+  private func revoke(_ row: Row) async {
+    do {
+      try await session.delete("/v1/admin/invitations/\(row.agentId)")
+      invitations.removeAll { $0.id == row.agentId }
+    } catch { self.error = error.localizedDescription }
   }
 
   private func remove(_ row: Row) async {
@@ -167,6 +231,7 @@ private struct TeamAddTeammateSheet: View {
   @State private var email = ""
   @State private var username = ""
   @State private var password = ""
+  @State private var role = TeamRole.admin
   @State private var saving = false
   @State private var error = ""
 
@@ -174,7 +239,7 @@ private struct TeamAddTeammateSheet: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 16) {
-          Text("Create a teammate account for someone who will work in the support inbox.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+          Text("Create a teammate account for someone who will work in the support inbox. Share the username and password with them yourself; nothing is emailed.").font(.lnMeta).foregroundStyle(Theme.textMuted)
           LabeledField(label: "Name") { TextField("", text: $name).textFieldStyle(.linear) }
           LabeledField(label: "Email", hint: "Optional") {
             TextField("", text: $email).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -183,6 +248,7 @@ private struct TeamAddTeammateSheet: View {
             TextField("", text: $username).textFieldStyle(.linear).textInputAutocapitalization(.never).autocorrectionDisabled()
           }
           LabeledField(label: "Password", hint: "At least 8 characters") { SecureField("", text: $password).textFieldStyle(.linear) }
+          LabeledField(label: "Role") { MenuPicker(selection: $role, options: TeamRole.allCases.filter { session.teamRole.canGrant($0) }.map { PickerOption(value: $0, label: $0.label) }, title: "Role") }
           ErrorText(message: error)
         }
         .padding(20)
@@ -203,13 +269,13 @@ private struct TeamAddTeammateSheet: View {
   }
 
   private func save() async {
-    struct Input: Encodable, Sendable { let name, email, username, password: String }
-    struct Output: Decodable, Sendable { let agent: Agent }
+    struct Input: Encodable, Sendable { let name, email, username, password, role: String }
+    struct Output: Decodable, Sendable { let agent: TeamMember }
     saving = true
     error = ""
     defer { saving = false }
     do {
-      let _: Output = try await session.send("/v1/admin/agents", body: Input(name: name, email: email, username: username, password: password))
+      let _: Output = try await session.send("/v1/admin/agents", body: Input(name: name, email: email, username: username, password: password, role: role.rawValue))
       await onAdded()
       dismiss()
     } catch { self.error = error.localizedDescription }
