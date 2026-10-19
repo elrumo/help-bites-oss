@@ -11,6 +11,7 @@
             <USelect v-model="status" :items="statusItems" class="w-40" @update:model-value="load()" />
             <UInput v-model="search" icon="i-lucide-search" placeholder="Search errors" class="min-w-48 flex-1" @keyup.enter="load()" />
             <UButton color="neutral" variant="soft" icon="i-lucide-refresh-cw" aria-label="Refresh errors" @click="load()" />
+            <UButton color="primary" variant="soft" icon="i-lucide-wand-sparkles" label="Analyze with AI" :loading="analyzing" @click="analyzeAll()" />
             <UButton color="neutral" variant="soft" icon="i-lucide-plus" label="Connect another" @click="connectOpen = true" />
             <UButton color="neutral" variant="soft" icon="i-lucide-bell" label="Alerts" aria-label="Error alerts and emails" @click="alertsOpen = true" />
             <UButton color="neutral" variant="soft" icon="i-lucide-settings-2" label="Manage" aria-label="Manage tracker projects" @click="manageOpen = true" />
@@ -18,6 +19,13 @@
           <div v-if="links.length > 1" class="flex flex-wrap gap-2" role="group" aria-label="Filter by tracker project">
             <UButton v-for="pill in [{ id: '', label: 'All' }, ...links]" :key="pill.id" size="xs" :color="linkFilter === pill.id ? 'primary' : 'neutral'" :variant="linkFilter === pill.id ? 'solid' : 'soft'" class="rounded-full" :aria-pressed="linkFilter === pill.id" :label="pill.label" @click="linkFilter = pill.id; load()" />
           </div>
+          <UCard v-if="overview || overviewError">
+            <p v-if="overviewError" class="text-sm text-error">{{ overviewError }}</p>
+            <template v-else>
+              <MarkdownBlock :text="overview!.text" />
+              <p class="mt-2 text-xs text-muted">Based on {{ overview!.count }} unresolved error{{ overview!.count === 1 ? '' : 's' }}: titles, locations and counts. Open an error to analyze its stack trace.</p>
+            </template>
+          </UCard>
           <UCollapsible v-if="links.length">
             <UButton color="neutral" variant="soft" size="sm" block class="justify-between" icon="i-lucide-key-round" trailing-icon="i-lucide-chevron-down" :label="`DSN to send errors from your app${links.length > 1 ? ` (${links.length})` : ''}`" />
             <template #content>
@@ -83,6 +91,13 @@ const links = computed(() => project.value?.errorLinks || [])
 const alerts = computed(() => links.value.filter(item => item.alertWebhookUrl && (!linkFilter.value || item.id === linkFilter.value)))
 const error = ref('')
 const copied = ref('')
+const overview = ref<{ text: string, count: number } | null>(null)
+const overviewError = ref('')
+const analyzing = ref(false)
+async function analyzeAll() {
+  analyzing.value = true; overviewError.value = ''
+  try { overview.value = await api('/admin/errors/analyze', { method: 'POST', body: { project: id } }) } catch (cause: any) { overview.value = null; overviewError.value = cause.message || 'Could not analyze errors' } finally { analyzing.value = false }
+}
 async function copy(text: string, key: string) {
   try { await navigator.clipboard.writeText(text); copied.value = key; setTimeout(() => { if (copied.value === key) copied.value = '' }, 1500) } catch {}
 }

@@ -4,13 +4,15 @@
       <button type="button" class="flex min-w-0 flex-1 items-center gap-3 text-left" :aria-expanded="open" @click="toggle">
         <UIcon name="i-lucide-chevron-right" class="size-4 shrink-0 text-muted transition-transform" :class="open ? 'rotate-90' : ''" />
         <UIcon name="i-lucide-bug" :class="issue.level === 'error' || issue.level === 'fatal' ? 'text-error' : 'text-warning'" class="size-4 shrink-0" />
-        <span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium text-highlighted">{{ issue.title }}</span><span class="block truncate text-xs text-muted">{{ issue.culprit || 'Unknown location' }} · {{ issue.count || 1 }} events</span></span>
+        <span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium text-highlighted">{{ issue.title }}</span><span class="block truncate text-xs text-muted">{{ issue.culprit || 'Unknown location' }} · {{ issue.count || 1 }} events<template v-if="issue.lastSeen"> · last seen {{ new Date(issue.lastSeen).toLocaleString() }}</template></span></span>
       </button>
       <UBadge v-if="showLink" color="neutral" variant="subtle" size="sm" class="shrink-0 rounded-full">{{ issue.linkLabel }}</UBadge>
       <UButton :to="issue.url" target="_blank" color="neutral" variant="ghost" size="xs" icon="i-lucide-arrow-up-right" :aria-label="`Open in ${issue.providerName}`" />
       <UDropdownMenu :items="[statusItems]"><UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-ellipsis" aria-label="Change status" /></UDropdownMenu>
     </div>
-    <div v-if="open" class="space-y-4 border-t border-default bg-elevated/30 p-4">
+    <UCollapsible :open="open">
+      <template #content>
+    <div class="space-y-4 border-t border-default bg-elevated/30 p-4">
       <div v-if="loading" class="space-y-2" aria-busy="true"><USkeleton class="h-4 w-1/2" /><USkeleton class="h-24 w-full" /></div>
       <p v-else-if="loadError" class="text-sm text-error">{{ loadError }}</p>
       <template v-else-if="detail">
@@ -61,6 +63,8 @@
         <p v-else-if="!analyzing" class="text-xs text-muted">Reads the stack trace and, when GitHub repos are connected to the project, the source files it passes through.</p>
       </section>
     </div>
+      </template>
+    </UCollapsible>
   </div>
 </template>
 
