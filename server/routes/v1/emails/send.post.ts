@@ -21,7 +21,7 @@ defineRouteMeta({
               variables: { type: 'object', description: 'Values for the `{{placeholders}}`. `{{recipient.email}}` and `{{recipient.name}}` fill in per message, `{{project.*}}` from the project.' },
               subject: { type: 'string', description: 'Overrides the template\'s subject; required for `html` without a `<title>`. Placeholders fill in.' },
               text: { type: 'string', description: 'The plain-text part. Generated from the HTML when omitted.' },
-              from: { type: 'string', description: 'Sender name, or `Name <address>` (or an object `{ name, email }`). A different address must be on the project\'s sending domain.' },
+              from: { type: 'string', description: 'Sender name, or `Name <address>` (or an object `{ name, email }`). A different address must be on a domain the project set up (its `mailDomain`, or its `fromEmail`\'s); a project on the server\'s default sender can only use the default address.' },
               replyTo: { type: 'string' },
               headers: { type: 'object', description: 'Extra headers such as `List-Unsubscribe`. Values may use placeholders, filled per recipient.' },
               tags: { type: 'array', items: { type: 'string' }, maxItems: 3 },

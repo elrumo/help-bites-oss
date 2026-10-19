@@ -185,6 +185,30 @@ describe('sender and log hygiene', () => {
     expect(status(() => projectEmailSender(project, { fromEmail: 'ceo@bank.example' }))).toBe(400)
   })
 
+  test('on the shared defaults only the default address; a domain the project set up allows any address on it', () => {
+    const saved = { from: process.env.MAILGUN_FROM_EMAIL, domain: process.env.MAILGUN_DOMAIN }
+    const restore = (key: string, value: string | undefined) => (value === undefined ? delete process.env[key] : (process.env[key] = value))
+    try {
+      process.env.MAILGUN_FROM_EMAIL = 'support@helpbites.example'
+      process.env.MAILGUN_DOMAIN = 'mail.helpbites.example'
+      const onDefaults = row('p2', { name: 'Other' })
+      expect(projectEmailSender(onDefaults, { fromEmail: 'Support@helpbites.example' })).toMatchObject({ fromEmail: 'support@helpbites.example', domain: 'mail.helpbites.example' })
+      expect(status(() => projectEmailSender(onDefaults, { fromEmail: 'security@helpbites.example' }))).toBe(400)
+      expect(status(() => projectEmailSender(onDefaults, { fromEmail: 'noreply@mail.helpbites.example' }))).toBe(400)
+
+      const ownAddress = row('p3', { fromEmail: 'hi@acme.example' })
+      expect(projectEmailSender(ownAddress, { fromEmail: 'billing@acme.example' }).fromEmail).toBe('billing@acme.example')
+      expect(status(() => projectEmailSender(ownAddress, { fromEmail: 'security@helpbites.example' }))).toBe(400)
+
+      const ownDomain = row('p4', { mailDomain: 'news.acme.example' })
+      expect(projectEmailSender(ownDomain, { fromEmail: 'digest@news.acme.example' })).toMatchObject({ fromEmail: 'digest@news.acme.example', domain: 'news.acme.example' })
+      expect(status(() => projectEmailSender(ownDomain, { fromEmail: 'security@helpbites.example' }))).toBe(400)
+    } finally {
+      restore('MAILGUN_FROM_EMAIL', saved.from)
+      restore('MAILGUN_DOMAIN', saved.domain)
+    }
+  })
+
   test('values that unlock something never reach the log; long ones are cut', () => {
     expect(redactEmailVariables({ link: 'https://x.test/reset?t=1', inviteCode: 'ABCD', firstName: 'Ada', resetUrl: 'u', bodyHtml: 'x'.repeat(400) })).toEqual([
       { key: 'link', value: '[redacted]' },
