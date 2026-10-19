@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto'
 import { describe, expect, test } from 'bun:test'
 import { nextStepAt, validateSequenceInput } from '../shared/marketing'
-import { confirmToken, readConfirmToken, readSignup, signupOriginAllowed, signupPage } from '../server/utils/signup'
+import { confirmToken, readConfirmToken, readSignup, signupOriginAllowed, signupPage, topicChoiceDiffers } from '../server/utils/signup'
 import { nextWebhookAttempt, webhookSignature, WEBHOOK_BACKOFF_MINUTES } from '../server/utils/webhooks'
 
 process.env.HELPBITES_SECRET = 'test-secret-that-is-at-least-32-characters-long'
@@ -28,6 +28,14 @@ describe('sign-up', () => {
     expect(signupOriginAllowed('https://help.example.com', ['https://app.example.com'], 'https://help.example.com')).toBe(true)
     expect(signupOriginAllowed('https://evil.example', ['https://app.example.com'], 'https://help.example.com')).toBe(false)
     expect(signupOriginAllowed('https://anywhere.example', [], 'https://help.example.com')).toBe(true)
+  })
+
+  test('only a different topic choice counts, judged on the project\'s current topics', () => {
+    expect(topicChoiceDiffers(['news', 'tips'], ['tips'], ['tips'])).toBe(false)
+    expect(topicChoiceDiffers(['news', 'tips'], ['tips', 'retired'], ['tips'])).toBe(false)
+    expect(topicChoiceDiffers(['news', 'tips'], [], ['tips'])).toBe(true)
+    expect(topicChoiceDiffers(['news', 'tips'], ['news'], [])).toBe(true)
+    expect(topicChoiceDiffers([], ['news'], [])).toBe(false)
   })
 
   test('confirm links expire after a week and cannot be forged', () => {

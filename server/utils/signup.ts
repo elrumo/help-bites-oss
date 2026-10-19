@@ -3,7 +3,7 @@ import { createError, getHeader, type H3Event } from 'h3'
 import { cleanTopicKeys, normalizeEmail } from '#shared/contacts'
 import { normalizeMarketingConfig } from '#shared/marketing'
 import { poweredByFor, withPoweredByHtml, withPoweredByText, type PoweredBy } from './branding'
-import { publicBaseUrl } from './campaigns'
+import { publicBaseUrl, unsubscribeLinks } from './campaigns'
 import { findContactBy, saveContact, upsertContacts } from './contacts'
 import { deliverEmails, newEmailBatchId, SYSTEM_EMAIL_ACTOR } from './emailDelivery'
 import { marketingSender } from './campaigns'
@@ -58,14 +58,19 @@ export function readConfirmToken(token: string, now = Date.now()): { projectId: 
   return { projectId, contactId }
 }
 
-export async function sendConfirmation(project: ParseObject, contact: ParseObject): Promise<void> {
-  const email = String(contact.get('email') || '')
-  // A form can be pointed at someone else's address: at most a few confirmation mails per address a day.
+/** A form can be pointed at someone else's address: at most a few mails per address a day, confirmations and preference links together. */
+async function addressMailAllowed(project: ParseObject, email: string): Promise<boolean> {
   try {
     await rateLimit(`sb:rl:confirm:${project.id}:${createHash('sha256').update(email).digest('hex')}`, LIMITS.confirmMailsPerAddress.limit, LIMITS.confirmMailsPerAddress.window)
+    return true
   } catch {
-    return
+    return false
   }
+}
+
+export async function sendConfirmation(project: ParseObject, contact: ParseObject): Promise<void> {
+  const email = String(contact.get('email') || '')
+  if (!await addressMailAllowed(project, email)) return
   const url = `${publicBaseUrl()}/u/confirm/${confirmToken(project.id || '', contact.id || '')}`
   const name = String(contact.get('name') || '')
   const own = await new (useParse()).Query('EmailTemplate').equalTo('project', project).equalTo('key', 'confirm-subscription').include('master').first(MASTER)
@@ -83,6 +88,29 @@ export async function sendConfirmation(project: ParseObject, contact: ParseObjec
     sender: marketingSender(project),
     log: { source: 'system', kind: own ? 'template' : 'message', template: own || null, templateKey: own ? 'confirm-subscription' : '', templateName: own ? 'Confirm subscription' : 'Confirm subscription', variables: { confirmUrl: url }, batchId: newEmailBatchId(), actor: SYSTEM_EMAIL_ACTOR }
   }])
+}
+
+/** A subscriber changes topics on their own preferences page, never from the public form. */
+async function sendPreferencesLink(project: ParseObject, contact: ParseObject): Promise<void> {
+  const email = String(contact.get('email') || '')
+  if (!await addressMailAllowed(project, email)) return
+  const { preferencesUrl } = unsubscribeLinks(publicBaseUrl(), project.id || '', contact.id || '')
+  const name = String(contact.get('name') || '')
+  const rendered = renderMessageEmail({ appName: String(project.get('name') || ''), senderName: String(project.get('name') || ''), recipientName: name, subject: `Your email preferences for ${project.get('name') || 'our newsletter'}`, body: `Someone asked to change which emails you get from ${project.get('name') || 'us'}. If it was you, pick your topics on your preferences page. If not, ignore this message: nothing has changed.`, ctaUrl: preferencesUrl, ctaLabel: 'Choose your topics', attachmentUrls: [] })
+  await deliverEmails([{
+    project,
+    to: { email, name },
+    subject: rendered.subject,
+    html: rendered.html,
+    text: rendered.text,
+    sender: marketingSender(project),
+    log: { source: 'system', kind: 'message', template: null, templateKey: '', templateName: 'Email preferences', variables: { preferencesUrl }, batchId: newEmailBatchId(), actor: SYSTEM_EMAIL_ACTOR }
+  }])
+}
+
+/** Whether a form's topic choice differs from the contact's opt-outs; only the project's current topics count. */
+export function topicChoiceDiffers(topics: string[], current: string[], wanted: string[]): boolean {
+  return topics.some(key => current.includes(key) !== wanted.includes(key))
 }
 
 /** Take a sign-up. Never says whether the address was already there. */
@@ -104,8 +132,12 @@ export async function handleSignup(event: H3Event, project: ParseObject, input: 
   await checkGauge(await projectWorkspaceId(project), 'contacts').catch(closedAtLimit)
   const existing = await findContactBy(project, { email: input.email })
   if (existing?.get('subscription') === 'subscribed') {
-    // Already in: a new topic choice still counts, nothing else changes.
-    if (unsubscribedTopics) await saveContact(project, existing, { unsubscribedTopics }, { via: 'form' })
+    // Already in. Anyone can type an address in here, so a different topic
+    // choice is not applied: the subscriber gets their preferences link.
+    const current = (existing.get('unsubscribedTopics') as string[] | undefined) || []
+    if (unsubscribedTopics && topicChoiceDiffers(marketing.topics.map(t => t.key), current, unsubscribedTopics)) {
+      void sendPreferencesLink(project, existing).catch(error => console.error('[signup] preferences link failed:', (error as Error).message))
+    }
     // The same answer as for anyone new.
     return { pending: marketing.doubleOptIn }
   }
