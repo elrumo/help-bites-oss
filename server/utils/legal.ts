@@ -1,8 +1,10 @@
 import { createError, getQuery, getRouterParam, type H3Event } from 'h3'
-import { aiTldr, applySectionEdits, checkCoverage, composeDocument, humanTldr, mergeRecomposed, sectionsToMarkdown, type SectionEdit } from '#shared/legal/compose'
-import { normalizeLegalConfig, withEntityDefaults } from '#shared/legal/config'
+import { aiTldr, applySectionEdits, checkCoverage, composeDocument, humanTldr, mergeRecomposed, newSectionId, sectionsToMarkdown, type SectionEdit } from '#shared/legal/compose'
+import { normalizeLegalConfig, validateLegalConfig, withEntityDefaults } from '#shared/legal/config'
+import { LEGAL_IMPORT_FORMATS, parseImported, type LegalImportFormat } from '#shared/legal/import'
 import { LEGAL_DOC_TYPES, type LegalAnswers, type LegalDocType, type LegalSection, type LegalTldr } from '#shared/legal/types'
 import { validateAnswers } from '#shared/legal/wizard'
+import { answeredRegions } from '#shared/legal/when'
 import { nextChangelogSlug } from './changelogRender'
 import { renderLegalHtml } from './legalRender'
 
@@ -12,6 +14,7 @@ import { renderLegalHtml } from './legalRender'
 
 export const LEGAL_SECTIONS_MAX = 60
 export const LEGAL_BODY_MAX = 20_000
+export const LEGAL_IMPORT_MAX = 200_000
 const TITLE_MAX = 200
 
 function badRequest(message: string): never {
@@ -134,7 +137,8 @@ const brief = (r: Brief): Brief => ({ id: r.id, pack: r.pack, summary: r.summary
 /** What a set of sections covers and lacks: the rulepack requirements that apply, split in two. */
 export function coverageReport(type: LegalDocType, answers: LegalAnswers, sections: LegalSection[]) {
   const coverage = checkCoverage(type, answers, sections)
-  return { total: coverage.total, covered: coverage.covered.map(brief), gaps: coverage.gaps.map(brief), unreviewedPacks: coverage.unreviewedPacks }
+  // `mapped` is false for text nobody tied to requirements (an import): its structural gaps would be every requirement, so only the AI check says anything.
+  return { total: coverage.total, covered: coverage.covered.map(brief), gaps: coverage.gaps.map(brief), unreviewedPacks: coverage.unreviewedPacks, mapped: sections.some(s => s.satisfies.length > 0) }
 }
 
 export function legalCoverage(row: ParseObject) {
@@ -236,19 +240,60 @@ export async function createLegalDocument(project: ParseObject, input: CreateLeg
   return row
 }
 
+const isImportFormat = (value: unknown): value is LegalImportFormat => (LEGAL_IMPORT_FORMATS as readonly string[]).includes(value as string)
+
+/** mode "import": the person's own text, split into sections they can edit. Nothing is rewritten; answers (regions, mostly) are optional and only decide which rules apply when it is analysed. */
+export async function importLegalDocument(project: ParseObject, input: Pick<CreateLegalInput, 'type' | 'answers' | 'title' | 'slug' | 'locale'> & { text?: unknown, format?: unknown }): Promise<ParseObject> {
+  if (typeof input.text !== 'string' || !input.text.trim()) badRequest('Pass the document text in `text`')
+  if (input.text.length > LEGAL_IMPORT_MAX) badRequest(`text is at most ${LEGAL_IMPORT_MAX} characters`)
+  if (input.format !== undefined && !isImportFormat(input.format)) badRequest(`format is one of ${LEGAL_IMPORT_FORMATS.join(', ')}`)
+  const parsed = parseImported(input.text, { format: input.format, max: LEGAL_BODY_MAX })
+  if (!parsed.sections.length) badRequest('No text found to import')
+  const sections: LegalSection[] = parsed.sections.map(s => ({ id: newSectionId(), heading: s.heading, body: s.body, source: 'human', locked: false, satisfies: [] }))
+  // Lenient: an imported document has no required questions.
+  const { answers } = validateAnswers(input.type, { ...sharedAnswersOf(project), ...(input.answers && typeof input.answers === 'object' ? input.answers : {}) })
+  return await createLegalDocument(project, { type: input.type, mode: 'blank', title: input.title || parsed.title, slug: input.slug, locale: input.locale, prepared: { answers, jurisdictions: answeredRegions(answers), sections } })
+}
+
 function defaultTitle(type: LegalDocType): string {
   return { privacy: 'Privacy Policy', terms: 'Terms of Service', cookies: 'Cookie Policy', refund: 'Refund Policy' }[type]
 }
 
-/** The answers a project's saved identity already supplies, so a wizard can start pre-filled. */
+/** Answers given once and reused by every new document (`Project.legalAnswers`). Who the operator is lives in `Project.legal.entity` instead. */
+export function sharedAnswersOf(project: ParseObject): LegalAnswers {
+  const raw = project.get('legalAnswers')
+  return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as LegalAnswers : {}
+}
+
+/** The answers a project's saved identity and shared answers already supply, so a wizard can start pre-filled. */
 export function legalDefaults(project: ParseObject): LegalAnswers {
-  return withEntityDefaults({}, normalizeLegalConfig(project.get('legal')), { name: String(project.get('name') || ''), siteUrl: String(project.get('siteUrl') || '') })
+  return withEntityDefaults({ ...sharedAnswersOf(project) }, normalizeLegalConfig(project.get('legal')), { name: String(project.get('name') || ''), siteUrl: String(project.get('siteUrl') || '') })
+}
+
+const ENTITY_ANSWERS = { entity_name: 'name', entity_address: 'address', contact_email: 'email', dpo_contact: 'dpo' } as const
+
+/**
+ * Remembers a document's (already cleaned) answers for the project's next ones.
+ * Who you are goes to the identity, which "Identity and look" edits; the app name
+ * and website stay the project's own. A document keeps its own copy either way.
+ */
+export async function saveSharedAnswers(project: ParseObject, answers: LegalAnswers): Promise<void> {
+  const shared = { ...sharedAnswersOf(project) }
+  const entity: Record<string, string> = {}
+  for (const [key, value] of Object.entries(answers)) {
+    if (key in ENTITY_ANSWERS) {
+      if (typeof value === 'string' && value) entity[ENTITY_ANSWERS[key as keyof typeof ENTITY_ANSWERS]] = value
+    } else if (key !== 'app_name' && key !== 'website_url') shared[key] = value
+  }
+  project.set('legalAnswers', shared)
+  if (Object.keys(entity).length) project.set('legal', validateLegalConfig({ entity }, normalizeLegalConfig(project.get('legal'))).config)
+  await project.save(null, MASTER)
 }
 
 /** Raw wizard answers → cleaned answers, with the project's saved identity filling gaps. 400 when a required answer is missing. */
 export function prepareAnswers(project: ParseObject, type: LegalDocType, raw: unknown): LegalAnswers {
   const config = normalizeLegalConfig(project.get('legal'))
-  const merged = withEntityDefaults((raw && typeof raw === 'object' ? raw : {}) as LegalAnswers, config, { name: String(project.get('name') || ''), siteUrl: String(project.get('siteUrl') || '') })
+  const merged = withEntityDefaults({ ...sharedAnswersOf(project), ...(raw && typeof raw === 'object' ? raw : {}) } as LegalAnswers, config, { name: String(project.get('name') || ''), siteUrl: String(project.get('siteUrl') || '') })
   const { answers, errors } = validateAnswers(type, merged)
   if (errors.length) badRequest(errors.join('; '))
   return answers

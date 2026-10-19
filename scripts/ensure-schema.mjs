@@ -192,6 +192,8 @@ const SCHEMAS = {
       changelogSeq: { type: 'Number' },
       // Legal pages: the operator's identity and the look of the hosted pages (shared/legal/config.ts).
       legal: { type: 'Object' },
+      // Wizard answers saved for reuse by the next legal document (server/utils/legal.ts saveSharedAnswers).
+      legalAnswers: { type: 'Object' },
       flags: { type: 'Array' },
       errors: { type: 'Object' },
       // Error alert rules { rules, emails } (shared/errorAlerts.ts).

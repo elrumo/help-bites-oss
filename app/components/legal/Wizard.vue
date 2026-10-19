@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model:open="open" :title="document ? $t('legal.wizard.titleRecompose') : $t('legal.wizard.titleNew')" :ui="{ content: 'sm:max-w-2xl', header: 'relative z-10 bg-default' }">
+  <UModal v-model:open="open" :title="document ? $t('legal.wizard.titleRecompose') : step === 2 ? $t('legal.wizard.titleImport') : $t('legal.wizard.titleNew')" :ui="{ content: 'sm:max-w-2xl', header: 'relative z-10 bg-default' }">
     <template #body>
       <div v-if="step === 0" class="space-y-5">
         <div>
@@ -26,6 +26,10 @@
               <span class="block text-[13px] font-medium text-highlighted">{{ $t('legal.wizard.modeAi') }}</span>
               <span class="block text-[13px] text-muted">{{ $t('legal.wizard.modeAiHint') }}</span>
             </button>
+            <button type="button" class="w-full rounded-lg border px-3 py-2.5 text-left transition-colors" :class="mode === 'import' ? 'border-primary bg-primary/5' : 'border-default'" @click="mode = 'import'">
+              <span class="block text-[13px] font-medium text-highlighted">{{ $t('legal.wizard.modeImport') }}</span>
+              <span class="block text-[13px] text-muted">{{ $t('legal.wizard.modeImportHint') }}</span>
+            </button>
           </div>
         </div>
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
@@ -35,8 +39,32 @@
         </div>
       </div>
 
+      <form v-else-if="step === 2" class="space-y-4" @submit.prevent="submitImport">
+        <p class="text-[13px] text-muted">{{ $t('legal.wizard.importIntro') }}</p>
+        <UFormField :label="$t('legal.wizard.uploadFile')" :help="$t('legal.wizard.uploadHelp')">
+          <UInput type="file" accept=".md,.markdown,.txt,.html,.htm,text/*" class="w-full" @change="onFile" />
+        </UFormField>
+        <UFormField :label="$t('legal.wizard.pasteText')">
+          <UTextarea v-model="importText" :rows="9" :placeholder="$t('legal.wizard.pastePlaceholder')" class="w-full" @update:model-value="importFormat = undefined" />
+        </UFormField>
+        <UFormField :label="$t('legal.wizard.titleField')" :hint="$t('legal.optional')" :help="$t('legal.wizard.titleHelp')">
+          <UInput v-model="importTitle" :placeholder="LEGAL_DOC_LABELS[type]" class="w-full" />
+        </UFormField>
+        <UFormField :label="$t('legal.analyse.regions')" :help="$t('legal.wizard.regionsHelp')">
+          <USelectMenu :model-value="listOf('regions')" multiple :items="regionOptions" value-key="value" :placeholder="$t('legal.selectRegions')" class="w-full" @update:model-value="answers.regions = $event" />
+        </UFormField>
+        <USwitch v-model="analyse" :label="$t('legal.wizard.analyseAfter')" />
+        <USwitch v-model="saveAnswers" :label="$t('legal.wizard.reuseRegions')" />
+        <p v-if="error" class="text-sm text-error">{{ error }}</p>
+        <div class="flex items-center gap-2 pt-2">
+          <UButton color="neutral" variant="ghost" icon="i-lucide-arrow-left" :label="$t('legal.wizard.back')" @click="step = 0" />
+          <UButton class="ml-auto" color="neutral" variant="ghost" :label="$t('common.cancel')" @click="open = false" />
+          <UButton type="submit" :label="$t('legal.wizard.import')" :loading="loading" :disabled="!importText.trim()" />
+        </div>
+      </form>
+
       <form v-else class="space-y-4" @submit.prevent="submit">
-        <p class="text-[13px] text-muted">{{ $t('legal.wizard.intro') }}</p>
+        <p class="text-[13px] text-muted">{{ hasShared ? $t('legal.wizard.introShared') : $t('legal.wizard.intro') }}</p>
         <div v-if="hasRepos" class="space-y-2 rounded-lg border border-default p-3">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
             <UButton size="sm" color="neutral" variant="subtle" icon="i-lucide-git-branch" :label="$t('legal.wizard.suggestFromRepos')" :loading="scanning" @click="suggest" />
@@ -67,8 +95,8 @@
           <USelectMenu v-else-if="q.id === 'regions'" :model-value="listOf(q.id)" multiple :items="q.options" value-key="value" :placeholder="$t('legal.selectRegions')" class="w-full" @update:model-value="answers[q.id] = $event" />
           <UCheckboxGroup v-else :model-value="listOf(q.id)" :items="q.options" @update:model-value="answers[q.id] = $event" />
         </UFormField>
-        <UFormField help="Off keeps them with this document only. Questions only this kind of document asks, like the refund window, are asked per document either way.">
-          <USwitch v-model="saveAnswers" label="Reuse these answers for my other documents" />
+        <UFormField :help="$t('legal.wizard.reuseAnswersHelp')">
+          <USwitch v-model="saveAnswers" :label="$t('legal.wizard.reuseAnswers')" />
         </UFormField>
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
         <div class="flex items-center gap-2 pt-2">
@@ -194,11 +222,10 @@ const FORMATS: Record<string, 'markdown' | 'html' | 'text'> = { md: 'markdown', 
 async function onFile(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
-  if (file.size > 500_000) { error.value = 'That file is too large. Policies are text; the limit is 500 KB.'; return }
+  if (file.size > 500_000) { error.value = t('legal.wizard.fileTooLarge'); return }
   error.value = ''
   importText.value = await file.text()
   importFormat.value = FORMATS[file.name.split('.').pop()?.toLowerCase() || '']
-  if (!importTitle.value) importTitle.value = file.name.replace(/\.[^.]+$/, '')
 }
 
 async function submitImport() {
@@ -212,7 +239,7 @@ async function submitImport() {
     open.value = false
     emit('done', result.document, analyse.value)
   } catch (e: any) {
-    error.value = e?.message || 'Could not import'
+    error.value = e?.message || t('legal.wizard.couldNotImport')
   } finally {
     loading.value = false
   }
