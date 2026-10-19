@@ -113,6 +113,10 @@ services:
       PARSE_URL: http://sb-parse:1337/parse
       REDIS_URL: redis://sb-redis:6379
       MEILI_URL: http://sb-meili:7700
+      # env_file hands the app every .env value, the Meilisearch master key
+      # included. Once MEILI_API_KEY (bun run search:key) is in .env, uncomment
+      # this so the app only carries its scoped key; sb-meili keeps the master key.
+      # MEILI_MASTER_KEY: ""
       GLITCHTIP_API_URL: ${GLITCHTIP_API_URL:-http://sb-glitchtip:8000}
       BUGSINK_API_URL: ${BUGSINK_API_URL:-http://sb-bugsink:8000}
       # transformers.js caches the embedding model here (persisted across boots).

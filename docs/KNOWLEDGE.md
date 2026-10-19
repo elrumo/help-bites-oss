@@ -121,7 +121,7 @@ and ingestion are written against those.
 - `bun run seed:knowledge` — seed a demo model from `scripts/fixtures/SUPPORT_FAQ.md`
   against a running app.
 
-Env: `MEILI_URL`, `MEILI_MASTER_KEY`; `ICON_EMBEDDING_MODEL`, `ICON_EMBEDDING_DEVICE`,
+Env: `MEILI_URL`, `MEILI_API_KEY` (or, as a fallback, `MEILI_MASTER_KEY`); `ICON_EMBEDDING_MODEL`, `ICON_EMBEDDING_DEVICE`,
 `TRANSFORMERS_CACHE`, `EMBEDDING_ENDPOINT`, `KNOWLEDGE_DISABLE_EMBEDDINGS`;
 `LITELLM_API_BASE_URL`, `LITELLM_API_KEY`, `LLM_DEFAULT_MODEL`. See `.env.example`.
 
