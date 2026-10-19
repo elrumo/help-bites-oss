@@ -250,7 +250,7 @@ struct ProjectSettingsScreen: View {
       VStack(spacing: 0) {
         HStack(spacing: 8) {
           if let url = ProjectIcon.url(form.brandLogoUrl) {
-            AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
+            CachedAsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
               .frame(width: 24, height: 24).clipShape(RoundedRectangle(cornerRadius: 6))
           } else {
             Text(String((form.name.isEmpty ? "?" : form.name).prefix(1)).uppercased()).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white)
@@ -267,7 +267,7 @@ struct ProjectSettingsScreen: View {
           }
           HStack(alignment: .bottom, spacing: 8) {
             if let url = ProjectIcon.url(form.assistantLogoUrl) {
-              AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
+              CachedAsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
                 .frame(width: 24, height: 24).clipShape(Circle())
             } else {
               Image(systemName: "sparkles").font(.system(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).background(Theme.elevated, in: Circle())
@@ -331,7 +331,7 @@ struct ProjectSettingsScreen: View {
   private func widgetImage(_ image: SettingsImage) -> some View {
     Group {
       if let url = ProjectIcon.url(url(of: image)) {
-        AsyncImage(url: url) { $0.resizable().scaledToFit() } placeholder: { ProgressView() }
+        CachedAsyncImage(url: url) { $0.resizable().scaledToFit() } placeholder: { ProgressView() }
       } else {
         Image(systemName: image.placeholder).font(.system(size: 18)).foregroundStyle(Theme.textDimmed)
       }

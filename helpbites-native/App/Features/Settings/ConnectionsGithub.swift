@@ -44,7 +44,7 @@ struct GithubSection: View {
         } else {
           ForEach(installations) { item in
             HStack(spacing: 12) {
-              AsyncImage(url: item.avatar.flatMap(URL.init(string:))) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
+              CachedAsyncImage(url: item.avatar.flatMap(URL.init(string:))) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
                 .frame(width: 28, height: 28).clipShape(Circle())
               VStack(alignment: .leading, spacing: 2) {
                 Text(item.account).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)

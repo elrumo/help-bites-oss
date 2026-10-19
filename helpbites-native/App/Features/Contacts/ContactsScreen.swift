@@ -204,7 +204,7 @@ private struct PeopleRow: View {
 
   @ViewBuilder private var avatar: some View {
     if let url = URL(string: contact.avatarUrl), !contact.avatarUrl.isEmpty {
-      AsyncImage(url: url) { phase in
+      CachedAsyncImage(url: url) { phase in
         if let image = phase.image { image.resizable().scaledToFill().frame(width: 24, height: 24).clipShape(Circle()) }
         else { Avatar(name: contact.displayName) }
       }

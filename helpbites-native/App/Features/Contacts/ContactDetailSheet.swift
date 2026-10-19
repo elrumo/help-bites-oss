@@ -95,6 +95,10 @@ struct ContactDetailSheet: View {
           }
         }
 
+        Section("Billing") {
+          ContactBillingSection(projectId: projectId, contactId: contact.id, revenue: contact.attributes["stripe_revenue"].flatMap { if case .number(let value) = $0 { value } else { nil } }, customerId: contact.attributes["stripe_customer"].flatMap { if case .string(let value) = $0 { value } else { nil } })
+        }
+
         Section {
           ErrorText(message: error)
           Button("Erase this person", role: .destructive) { confirmErase = true }

@@ -29,6 +29,18 @@ extension View {
   }
 }
 
+// A Mac sheet sizes to its content, and a ScrollView has none: give every sheet that asked for
+// detents a window-like size (taller when it asked for .large).
+extension View {
+  func presentationDetents(_ detents: [PresentationDetent]) -> some View {
+    let tall = detents.contains(.large)
+    return frame(minWidth: 480, idealWidth: 580, minHeight: tall ? 520 : 360, idealHeight: tall ? 680 : 440)
+  }
+  func presentationDetents(_ detents: [PresentationDetent], selection: Binding<PresentationDetent>) -> some View {
+    presentationDetents(detents)
+  }
+}
+
 extension ToolbarItemPlacement {
   static var topBarLeading: ToolbarItemPlacement { .navigation }
   static var topBarTrailing: ToolbarItemPlacement { .primaryAction }

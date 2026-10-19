@@ -164,7 +164,7 @@ struct InboxPropertiesPanel: View {
   private func about(_ ref: SubjectRef) -> some View {
     let row = HStack(spacing: 8) {
       if let thumb = ref.thumbnailUrl, !thumb.isEmpty, let url = URL(string: thumb) {
-        AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
+        CachedAsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
           .frame(width: 24, height: 24)
           .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
           .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Theme.border))

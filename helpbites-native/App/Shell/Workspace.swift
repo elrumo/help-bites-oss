@@ -150,7 +150,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
       projectsPath = [.project(id, nil)] + (section.map { [.project(id, $0)] } ?? [])
     case .account: tab = .settings; settingsPath = []
     case .apiKeys, .developer, .team, .profile, .workspace, .usage, .ai, .connections: tab = .settings; settingsPath = [route]
-    case .legalDocument(let id, _): go(.project(id, .legal)); if sidebar { /* the section's own stack pushes the document */ } else { projectsPath.append(route) }
+    case .legalDocument(let id, _):
+      if sidebar { tab = .section(id, .legal); return }
+      go(.project(id, .legal)); projectsPath.append(route)
     }
     #endif
   }

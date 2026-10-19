@@ -93,7 +93,7 @@ struct EmailLinkedPanel: View {
           Tag(text: brand.name)
           if let logo = brand.brandLogoUrl, let url = URL(string: logo), !logo.isEmpty {
             HStack(spacing: 5) {
-              AsyncImage(url: url) { $0.resizable().scaledToFit() } placeholder: { Color.clear }.frame(width: 14, height: 14)
+              CachedAsyncImage(url: url) { $0.resizable().scaledToFit() } placeholder: { Color.clear }.frame(width: 14, height: 14)
               Text("Logo")
             }
             .font(.lnCaptionMedium)
