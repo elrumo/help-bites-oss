@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { DEFAULT_CHANGELOG_COPY, changelogCopy } from '../shared/changelog'
 import { changelogConfirmVariables, changelogDigestVariables, greetingFirstName, shouldFlushPending, weeklyWindowFor, weeklyWindowLabel } from '../server/utils/changelogDigest'
-import { createChangelogToken, verifyChangelogToken } from '../server/utils/changelogTokens'
+import { changelogLinkSecret, createChangelogToken, verifyChangelogToken } from '../server/utils/changelogTokens'
 
 const QUIET = 30 * 60 * 1000
 const MAX_WAIT = 60 * 60 * 1000
@@ -168,6 +168,33 @@ describe('signed links', () => {
   test('without a secret nothing is signed or accepted', () => {
     expect(() => createChangelogToken('unsub', 's', issued, '')).toThrow('CHANGELOG_LINK_SECRET')
     expect(verifyChangelogToken('a.b', issued, '')).toEqual({ valid: false, error: 'Links are not configured' })
+  })
+
+  test('a CHANGELOG_LINK_SECRET under 32 characters counts as unset; unset, a key derived from HELPBITES_SECRET signs', () => {
+    const saved = { own: process.env.CHANGELOG_LINK_SECRET, root: process.env.HELPBITES_SECRET }
+    const restore = (key: string, value: string | undefined) => (value === undefined ? delete process.env[key] : (process.env[key] = value))
+    try {
+      process.env.HELPBITES_SECRET = 'root-secret-that-is-at-least-32-characters'
+      process.env.CHANGELOG_LINK_SECRET = 'x'.repeat(31)
+      expect(changelogLinkSecret()).toBe('')
+      expect(() => createChangelogToken('unsub', 's1')).toThrow('32+ characters')
+      expect(verifyChangelogToken(createChangelogToken('unsub', 's1', issued, 'x'.repeat(31)))).toEqual({ valid: false, error: 'Links are not configured' })
+
+      process.env.CHANGELOG_LINK_SECRET = 'x'.repeat(32)
+      const token = createChangelogToken('unsub', 's1', issued)
+      expect(verifyChangelogToken(token, issued, 'x'.repeat(32)).valid).toBe(true)
+
+      delete process.env.CHANGELOG_LINK_SECRET
+      expect(changelogLinkSecret()).toMatch(/^[0-9a-f]{64}$/)
+      expect(verifyChangelogToken(token).valid).toBe(false)
+      expect(verifyChangelogToken(createChangelogToken('unsub', 's1')).valid).toBe(true)
+
+      delete process.env.HELPBITES_SECRET
+      expect(changelogLinkSecret()).toBe('')
+    } finally {
+      restore('CHANGELOG_LINK_SECRET', saved.own)
+      restore('HELPBITES_SECRET', saved.root)
+    }
   })
 
   test('links the Acme backend signed verify here, with the same secret', () => {

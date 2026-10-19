@@ -181,7 +181,7 @@ Everything else:
 | `subject` | Overrides the template's subject. Placeholders fill in. |
 | `text` | The plain-text part. Otherwise the template's own, or generated from the HTML. |
 | `cc`, `bcc` | Up to 10 each, copied on every message. |
-| `from` | A name, `Name <address>`, or `{ name, email }`. The address must be on the project's sending domain. |
+| `from` | A name, `Name <address>`, or `{ name, email }`. The address must be on a domain the project set up itself (its `mailDomain`, or its own sender's domain); a project on the shared default sender can only use that exact address. |
 | `replyTo` | One address. |
 | `headers` | Extra headers such as `List-Unsubscribe`. Values may use placeholders, filled per recipient: `{"List-Unsubscribe":"<{{unsubscribeUrl}}>"}` with each recipient's own `unsubscribeUrl`. `From`, `To`, `Subject`, `Reply-To` and the like are refused. |
 | `tags` | Up to 3, for filtering in Mailgun and in the log. |

@@ -4,7 +4,7 @@
   "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
-    "url": "https://github.com/elrumo/help-bites"
+    "url": "https://github.com/elrumo/help-bites-oss"
   },
   "type": "module",
   "scripts": {
@@ -17,6 +17,7 @@
     "schema:apply": "bun scripts/ensure-schema.mjs --apply",
     "migrate:workspaces": "bun scripts/migrate-workspaces.mjs --apply",
     "search:setup": "bun scripts/ensure-search.mjs",
+    "search:key": "bun scripts/meili-key.mjs",
     "reindex": "bun scripts/reindex.mjs",
     "seed:knowledge": "bun scripts/seed-knowledge.mjs",
     "add-agent": "bun scripts/add-agent.mjs",

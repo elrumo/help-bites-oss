@@ -24,6 +24,7 @@ import {
   type ConversationField
 } from '#shared/support'
 import { defaultStatus, getConversationType, publicFields, statusDefinition } from './conversationTypes'
+import type { SupportEvent } from './events'
 
 // Every write to Conversation / Message goes through here, so the inbox
 // summary on the conversation row (last message, unread counters, status) is
@@ -75,10 +76,23 @@ export function serializeConversation(row: ParseObject): Conversation {
   }
 }
 
+/** A conversation as its end user sees it: triage (priority, assignment, tags) is the team's business. */
+export type EndUserConversation = Omit<Conversation, 'priority' | 'assigneeId' | 'assignedAt' | 'tags'>
+
+export function withoutTriage(conversation: Conversation): EndUserConversation {
+  const { priority: _priority, assigneeId: _assigneeId, assignedAt: _assignedAt, tags: _tags, ...rest } = conversation
+  return rest
+}
+
 /** End-user responses never include fields marked private on the type. */
-export async function serializeConversationForEndUser(row: ParseObject): Promise<Conversation> {
+export async function serializeConversationForEndUser(row: ParseObject): Promise<EndUserConversation> {
   const conversation = serializeConversation(row)
-  return { ...conversation, fields: publicFields(conversation.fields, await getConversationType(row.get('project'), conversation.type)) }
+  return withoutTriage({ ...conversation, fields: publicFields(conversation.fields, await getConversationType(row.get('project'), conversation.type)) })
+}
+
+/** The end-user stream's view of a live event: the shared payload is the agents' one. */
+export function endUserEvent(event: SupportEvent) {
+  return { ...event, conversation: withoutTriage(event.conversation) }
 }
 
 // SSE is a shared transport for agents and users. Field values are fetched with

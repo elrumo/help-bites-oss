@@ -33,7 +33,8 @@ export default defineEventHandler(async (event) => {
 
   const name = String(project.get('name') || 'Changelog')
   const siteUrl = String(project.get('siteUrl') || '').replace(/\/+$/, '')
-  const page = `${getRequestURL(event, { xForwardedHost: true, xForwardedProto: true }).origin}/changelog/${encodeURIComponent(pk)}`
+  // The configured address, not the request's Host: the feed is publicly cached, so a forged header would be served to everyone.
+  const page = `${publicBaseUrl()}/changelog/${encodeURIComponent(pk)}`
 
   const body = items.map((entry) => {
     const version = versionOf.get(entry.id)

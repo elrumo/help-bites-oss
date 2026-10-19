@@ -106,7 +106,7 @@ The fastest path to a running app on your machine. Uses the dev Compose overlay,
 which publishes ports on `localhost` and adds a Parse dashboard and RustFS.
 
 ```bash
-git clone https://github.com/elrumo/help-bites.git help-bites
+git clone https://github.com/elrumo/help-bites-oss.git help-bites
 cd help-bites
 cp .env.example .env          # defaults already point at localhost
 bun install
@@ -253,7 +253,7 @@ certificates by itself. Without a domain it prepares a trial on `http://localhos
 By hand:
 
 ```bash
-git clone https://github.com/elrumo/help-bites.git && cd help-bites
+git clone https://github.com/elrumo/help-bites-oss.git && cd help-bites-oss
 cp .env.example .env
 $EDITOR .env      # replace every change-me value (see Environment reference)
 ```
@@ -461,7 +461,7 @@ API answers 503).
 | `MAILGUN_FROM_EMAIL` | Optional | `support@example.com` | The default from-address. Projects can set their own address and from name. |
 | `MAILGUN_WEBHOOK_SIGNING_KEY` | Optional | _(off)_ | Turns on `/v1/webhooks/mailgun`: delivery status in the email log, and automatic suppression of bounces, complaints and unsubscribes. |
 | `EMAIL_LOG_RETENTION_DAYS` | No | `180` | Days of email log to keep; `0` keeps everything. |
-| `CHANGELOG_LINK_SECRET` | For changelog emails | — | Signs the confirm and unsubscribe links in changelog subscription mail. Its own secret, so rotating a project secret never breaks unsubscribe links already sent. Without it, subscribing and the digest scheduler answer 503/skip. |
+| `CHANGELOG_LINK_SECRET` | For changelog emails | derived from `HELPBITES_SECRET` | Signs the confirm and unsubscribe links in changelog subscription mail. Its own secret, so rotating a project secret never breaks unsubscribe links already sent. 32+ characters; a shorter one counts as unset. Unset, a key derived from `HELPBITES_SECRET` signs them (setting this later voids those links). With neither, subscribing answers 503 and the scheduler logs a warning and does not start. |
 | `ENABLE_CHANGELOG_NOTIFY` | No | off | Set `true` to run the changelog scheduler (every five minutes: the instant sweep and the Monday digest, for each project with `changelog.notify` on). Off, nothing is mailed to subscribers, so a deploy never starts before you say so, and a system that still sends the same digests can be switched off first. `POST /v1/admin/changelog/notify/run` runs a beat by hand either way. |
 
 ### Native push (APNs)

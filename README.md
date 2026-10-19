@@ -19,7 +19,7 @@ documented API.
 ## Self-host in two commands
 
 ```bash
-git clone https://github.com/elrumo/help-bites.git && cd help-bites
+git clone https://github.com/elrumo/help-bites-oss.git && cd help-bites-oss
 scripts/install.sh help.example.com        # or no argument for a trial on http://localhost:3100
 docker compose up -d                       # pulls elrumo/helpbites from Docker Hub
 ```

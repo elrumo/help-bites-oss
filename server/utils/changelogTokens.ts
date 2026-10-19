@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { derivedSecret } from './secrets'
 
 // Signed links for the changelog subscription emails: the confirm link of the
 // double opt-in mail and the unsubscribe link of every notification.
@@ -13,13 +14,22 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 // a project secret must not break every unsubscribe link ever sent. The format
 // (`purpose:subscriptionId:issuedAt`, base64url, HMAC-SHA256 hex) is the one the
 // format other changelog senders commonly use, so links sent before a move still verify with the same secret.
+// Every link hands out a payload and its HMAC, so a short secret can be guessed
+// offline: under 32 characters it counts as not set. Unset, the key is derived
+// from HELPBITES_SECRET; setting CHANGELOG_LINK_SECRET later voids those links.
 
 export type ChangelogTokenPurpose = 'confirm' | 'unsub'
 
 const CONFIRM_EXPIRY_SECONDS = 7 * 24 * 60 * 60
+const MIN_SECRET_LENGTH = 32
 
+export const CHANGELOG_LINK_SECRET_REQUIRED = `Changelog links need CHANGELOG_LINK_SECRET or HELPBITES_SECRET (either ${MIN_SECRET_LENGTH}+ characters) on the server`
+
+/** The signing key; '' when links cannot be signed. */
 export function changelogLinkSecret(): string {
-  return process.env.CHANGELOG_LINK_SECRET || ''
+  const own = process.env.CHANGELOG_LINK_SECRET || ''
+  if (own) return own.length >= MIN_SECRET_LENGTH ? own : ''
+  return derivedSecret('changelog-link')
 }
 
 function sign(payload: string, secret: string): string {
@@ -27,7 +37,7 @@ function sign(payload: string, secret: string): string {
 }
 
 export function createChangelogToken(purpose: ChangelogTokenPurpose, subscriptionId: string, issuedAt: Date = new Date(), secret: string = changelogLinkSecret()): string {
-  if (!secret) throw new Error('CHANGELOG_LINK_SECRET is not set')
+  if (!secret) throw new Error(CHANGELOG_LINK_SECRET_REQUIRED)
   const payload = `${purpose}:${subscriptionId}:${Math.floor(issuedAt.getTime() / 1000)}`
   return `${Buffer.from(payload, 'utf8').toString('base64url')}.${sign(payload, secret)}`
 }

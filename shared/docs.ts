@@ -4,7 +4,7 @@
 // contributors) stays in the repository and is linked to on GitHub when a
 // published page mentions it.
 
-export const REPO_URL = 'https://github.com/elrumo/help-bites'
+export const REPO_URL = 'https://github.com/elrumo/help-bites-oss'
 const BRANCH = 'main'
 
 export const DOC_GROUPS = ['Get started', 'Guides'] as const

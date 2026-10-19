@@ -94,6 +94,14 @@ describe('unsubscribe links', () => {
     expect(html).toContain('method="post" action="/u/tok"')
     expect(html).not.toMatch(/<script/i)
   })
+
+  test('subscribing again from the page waits for the confirmation mail, and says so', () => {
+    const project = fake({ name: 'Acme', marketing: {} })
+    const page = (subscription: string, notice: string) => renderPreferencesPage({ project, contact: fake({ email: 'a@x.io', subscription }), topic: '' }, { token: 'tok', askUnsubscribe: false, notice })
+    expect(page('unsubscribed', '')).toContain('value="resubscribe"')
+    expect(page('pending', 'confirm')).toContain('Check your inbox')
+    expect(page('pending', 'subscribed')).not.toContain('subscribed again')
+  })
 })
 
 describe('marketing settings', () => {

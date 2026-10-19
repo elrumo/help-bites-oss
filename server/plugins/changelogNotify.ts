@@ -14,6 +14,10 @@ const TICK_MS = 5 * 60 * 1000
 export default defineNitroPlugin(() => {
   if (import.meta.prerender || !process.env.PARSE_URL || process.env.ENABLE_CHANGELOG_NOTIFY !== 'true') return
   if (!runsWorkers()) return
+  if (!changelogLinkSecret()) {
+    console.warn(`[changelog] ${CHANGELOG_LINK_SECRET_REQUIRED}: no notifications will go out`)
+    return
+  }
 
   async function beat() {
     const claimed = await useRedis().set('sb:changelog:tick', '1', 'EX', 240, 'NX').catch(() => null)

@@ -944,6 +944,10 @@ const SCHEMAS = {
       values: { type: 'Array' },
       shareToken: { type: 'String' },
       shareMode: { type: 'String' },
+      // A share link without one (shared before links expired) counts as expired.
+      shareExpiresAt: { type: 'Date' },
+      // { at, ip } of the last save made through an edit link.
+      lastSharedEdit: { type: 'Object' },
       lastActorId: { type: 'String' }
     },
     indexes: {

@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please report it privately through GitHub: **Security → Report a vulnerability** on
-[elrumo/help-bites](https://github.com/elrumo/help-bites/security/advisories/new). Do not open a public issue.
+[elrumo/help-bites-oss](https://github.com/elrumo/help-bites-oss/security/advisories/new). Do not open a public issue.
 
 Include what you found, how to reproduce it, and the version (`GET /v1/meta` reports the commit). You will get an
 acknowledgement within a few days. Please give us a reasonable window to ship a fix before disclosing.

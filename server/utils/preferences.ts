@@ -9,10 +9,13 @@ import { pageBrand, renderMarketingPage } from './marketingPages'
 import { MASTER, useParse, type ParseObject } from './parse'
 import { loadProjectUnscoped } from './projects'
 import { readLinkToken } from './secrets'
+import { sendConfirmation } from './signup'
 
 // The page every marketing email links to (/u/<token>): unsubscribe, pick
 // topics, or subscribe again. The signed token names the project, the contact
-// and — for a topic's campaign — the topic, so it needs no sign-in.
+// and — for a topic's campaign — the topic, so it needs no sign-in. It never
+// expires (an unsubscribe link must keep working) and emails get forwarded, so
+// subscribing again goes through the confirmation mail; leaving stays instant.
 
 export type PreferenceLink = { project: ParseObject, contact: ParseObject, topic: string }
 
@@ -47,8 +50,10 @@ export async function applyPreferenceForm(event: H3Event, link: PreferenceLink, 
   if (action === 'unsubscribe') { await unsubscribeByLink(link, 'unsubscribe link'); return 'unsubscribed' }
   if (action === 'unsubscribe-all') { await saveContact(link.project, link.contact, { subscription: 'unsubscribed' }, { via: 'preferences page' }); return 'unsubscribed' }
   if (action === 'resubscribe') {
-    await saveContact(link.project, link.contact, { subscription: 'subscribed', unsubscribedTopics: [] }, { via: 'preferences page', explicit: true, consent: requestConsent(event) })
-    return 'subscribed'
+    if (link.contact.get('subscription') === 'subscribed') return ''
+    await saveContact(link.project, link.contact, { subscription: 'pending' }, { via: 'preferences page', explicit: true, consent: requestConsent(event) })
+    await sendConfirmation(link.project, link.contact)
+    return 'confirm'
   }
   if (action === 'save') {
     const off = topics.filter(t => body[`topic_${t.key}`] === undefined).map(t => t.key)
@@ -60,7 +65,7 @@ export async function applyPreferenceForm(event: H3Event, link: PreferenceLink, 
 
 const NOTICES: Record<string, string> = {
   unsubscribed: 'Done. You will not get these emails any more.',
-  subscribed: 'Welcome back. You are subscribed again.',
+  confirm: 'Check your inbox: we sent you a link to confirm your subscription. It works for seven days.',
   saved: 'Your choices are saved.'
 }
 

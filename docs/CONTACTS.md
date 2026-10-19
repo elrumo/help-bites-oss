@@ -37,9 +37,9 @@ and every email they got.
 
 **Opt-out wins from every side.** Anyone may unsubscribe someone (an API call, a
 sync column, the unsubscribe link, Mailgun). Nobody re-subscribes someone who
-unsubscribed except the person: through the preferences page, a confirmed
-sign-up, or an API call with `resubscribe: true` that you only send when they
-asked again. Imports and syncs only *seed* consent for people who have not
+unsubscribed except the person: through the preferences page (confirmed by
+email), a confirmed sign-up, or an API call with `resubscribe: true` that you
+only send when they asked again. Imports and syncs only *seed* consent for people who have not
 chosen yet (`none`).
 
 ```bash

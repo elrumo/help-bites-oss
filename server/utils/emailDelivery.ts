@@ -79,13 +79,16 @@ export function emailDomainOf(address: string): string {
 
 /**
  * Who a project's mail comes from. A call may change the name and the
- * reply-to freely; a different address must stay on the project's own
- * sending domain, so a project secret can never send as someone else.
+ * reply-to freely; a different address must stay on a domain the project
+ * set up itself, so a project secret can never send as someone else. On the
+ * shared defaults that leaves only the default address: any other one on its
+ * domain could pass as the platform, or as another project.
  */
 export function projectEmailSender(project: ParseObject | null, override: { fromName?: string, fromEmail?: string, replyTo?: string } = {}): EmailSender {
   const defaults = mailgunDefaults()
   const projectFrom = String(project?.get('fromEmail') || '').trim()
-  const domain = String(project?.get('mailDomain') || '').trim() || defaults.domain
+  const projectDomain = String(project?.get('mailDomain') || '').trim()
+  const domain = projectDomain || defaults.domain
   const fromEmail = projectFrom || defaults.fromEmail
   const sender: EmailSender = {
     fromName: String(project?.get('fromName') || project?.get('name') || '').trim() || 'Support',
@@ -97,9 +100,9 @@ export function projectEmailSender(project: ParseObject | null, override: { from
   if (override.replyTo?.trim()) sender.replyTo = override.replyTo.trim()
   const wanted = override.fromEmail?.trim()
   if (wanted && wanted.toLowerCase() !== fromEmail.toLowerCase()) {
-    const allowed = new Set([emailDomainOf(fromEmail), domain.toLowerCase()].filter(Boolean))
+    const allowed = new Set([projectFrom && emailDomainOf(projectFrom), projectDomain.toLowerCase()].filter(Boolean))
     if (!isProbablyEmail(wanted) || !allowed.has(emailDomainOf(wanted))) {
-      throw createError({ statusCode: 400, statusMessage: `"from" must be an address on ${[...allowed].join(' or ') || 'the project\'s sending domain'}` })
+      throw createError({ statusCode: 400, statusMessage: allowed.size ? `"from" must be an address on ${[...allowed].join(' or ')}` : `"from" can only be ${fromEmail || 'the default sender'} until the project has its own sending domain` })
     }
     sender.fromEmail = wanted
   }

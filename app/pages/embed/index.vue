@@ -229,6 +229,8 @@ function requestToken(): Promise<string> {
 }
 
 function onMessage(event: MessageEvent) {
+  // Only the host page itself, never another frame on it.
+  if (event.source !== window.parent) return
   const data = event.data
   if (!data || data.source !== 'help-bites-host') return
   if (!isAllowedOrigin(event.origin)) {
@@ -488,14 +490,14 @@ useEventStream(computed(() => (state.value === 'ready' ? '/v1/events' : null)), 
 onMounted(async () => {
   outbox.hydrate()
   window.addEventListener('message', onMessage)
+  // Standalone mode (no host frame): a token in the URL, for demos and tests.
+  const direct = takeUrlToken()
   try {
     project.value = await $fetch<PublicProject>(`/v1/projects/${pk}/public`)
   } catch {
     waitingText.value = 'Unknown project. Check the data-project key on the widget script.'
     return
   }
-  // Standalone mode (no host frame): a token in the URL, for demos and tests.
-  const direct = typeof route.query.token === 'string' ? route.query.token : ''
   if (direct) {
     token.value = direct
     state.value = 'ready'

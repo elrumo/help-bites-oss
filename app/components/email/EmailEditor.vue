@@ -50,6 +50,8 @@ const props = defineProps<{
   streamToken?: string | null
   backTo?: string
   canRename?: boolean
+  /** A master (no project of its own): turns on the master-only checks. */
+  master?: boolean
   /** The operator's session token; turns on the AI designer, the API panel and image uploads. */
   agentToken?: string | null
   /** The project's brand, for previews and exports of a project template. */
@@ -138,7 +140,7 @@ function replaceDocument(next: EmailDocument, options: { history?: boolean } = {
 }
 
 // ---- checks --------------------------------------------------------------------
-const issues = computed(() => lintEmail(document.value, { master: !props.template.projectId }))
+const issues = computed(() => lintEmail(document.value, { master: props.master }))
 const chatRef = ref<InstanceType<typeof EmailChat> | null>(null)
 
 function fixWithAi() {
@@ -492,7 +494,7 @@ useHead({ title: () => name.value || 'Email' })
                   ref="chatRef"
                   :template-id="template.id"
                   :token="agentToken"
-                  :master="!template.projectId"
+                  :master="master"
                   :document="document"
                   :variables="variables"
                   :selected-id="selectedId"

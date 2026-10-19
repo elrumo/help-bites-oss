@@ -8,6 +8,7 @@
     :back-to="template.projectId ? `/projects/${template.projectId}/email?view=templates` : '/emails?view=templates'"
     :agent-token="token"
     :brand="project"
+    :master="!template.projectId"
     can-rename
     :on-send-test="() => { testOpen = true }"
   >
@@ -17,15 +18,25 @@
     </template>
     <template #actions>
       <UPopover>
-        <UButton :icon="shareMode === 'off' ? 'i-lucide-share-2' : 'i-lucide-globe'" :label="shareMode === 'off' ? 'Share' : 'Shared'" color="neutral" variant="ghost" size="xs" :ui="{ label: 'hidden sm:inline' }" />
+        <UButton :icon="share.mode === 'off' ? 'i-lucide-share-2' : 'i-lucide-globe'" :label="share.mode === 'off' ? 'Share' : 'Shared'" color="neutral" variant="ghost" size="xs" :ui="{ label: 'hidden sm:inline' }" />
         <template #content>
           <div class="w-80 space-y-3 p-3">
             <p class="text-sm font-medium">Share link</p>
-            <URadioGroup v-model="shareMode" :items="shareModes" :disabled="shareBusy" @update:model-value="setShare" />
-            <div v-if="shareUrl" class="flex gap-2">
-              <UInput :model-value="shareUrl" readonly size="sm" class="flex-1" aria-label="Share link" />
-              <UButton icon="i-lucide-copy" size="sm" color="neutral" variant="soft" aria-label="Copy link" @click="copyShare" />
-            </div>
+            <URadioGroup v-model="shareMode" :items="shareModes" :disabled="shareBusy" @update:model-value="pickShareMode" />
+            <template v-if="shareUrl">
+              <div class="flex gap-2">
+                <UInput :model-value="shareUrl" readonly size="sm" class="flex-1" aria-label="Share link" />
+                <UButton icon="i-lucide-copy" size="sm" color="neutral" variant="soft" aria-label="Copy link" @click="copyShare" />
+              </div>
+              <div class="flex items-center gap-2">
+                <p class="min-w-0 flex-1 text-xs" :class="shareExpired ? 'text-error' : 'text-muted'">{{ shareExpiry }}</p>
+                <UButton v-if="shareExpired" label="Renew" size="xs" color="neutral" variant="soft" :disabled="shareBusy" @click="setShare(share.mode)" />
+                <USelect v-model="shareDays" :items="shareDayOptions" placeholder="Set expiry" size="xs" class="w-28" :disabled="shareBusy" aria-label="Link lifetime" @update:model-value="setShare(share.mode)" />
+              </div>
+            </template>
+            <p v-if="template.lastSharedEdit" class="text-xs text-muted">
+              Last edited through a link {{ when(template.lastSharedEdit.at) }} from {{ template.lastSharedEdit.ip || 'an unknown address' }}
+            </p>
           </div>
         </template>
       </UPopover>
@@ -61,8 +72,8 @@ onMounted(async () => {
     // A project's link has no design of its own: edit its master instead.
     if (t.masterId) return navigateTo(`/emails/${t.masterId}`, { replace: true })
     template.value = t
-    shareMode.value = t.shareMode || 'off'
-    shareToken.value = t.shareToken
+    share.value = { mode: t.shareMode || 'off', token: t.shareToken, expiresAt: t.shareExpiresAt }
+    shareMode.value = share.value.mode
     if (!projects.value.length) loadProjects().catch(() => {})
   } catch (error: any) {
     loadError.value = error?.message || 'Could not open this template'
@@ -78,25 +89,39 @@ async function save(patch: Record<string, unknown>) {
 
 // ---- sharing -----------------------------------------------------------------
 type ShareMode = 'off' | 'view' | 'edit'
+type ShareState = { mode: ShareMode, token: string | null, expiresAt: number | null }
+// `share` is what the server holds; the radio's `shareMode` goes back to it when a change is refused.
+const share = ref<ShareState>({ mode: 'off', token: null, expiresAt: null })
 const shareMode = ref<ShareMode>('off')
-const shareToken = ref<string | null>(null)
+// Unset: the server's default for the mode (7 days to edit, 30 to view).
+const shareDays = ref<number>()
 const shareBusy = ref(false)
 const shareModes = [
   { value: 'off', label: 'Off', description: 'Only operators can open it.' },
   { value: 'view', label: 'Anyone with the link can view', description: 'A rendered preview, no sign-in.' },
   { value: 'edit', label: 'Anyone with the link can edit', description: 'Changes sync live. Share with care.' }
 ]
-const shareUrl = computed(() => shareToken.value && shareMode.value !== 'off' ? `${window.location.origin}/share/emails/${shareToken.value}` : '')
+const shareDayOptions = [1, 7, 30, 90].map(days => ({ label: days === 1 ? '1 day' : `${days} days`, value: days }))
+const when = (at: number | string) => new Date(at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+const shareUrl = computed(() => share.value.token && share.value.mode !== 'off' ? `${window.location.origin}/share/emails/${share.value.token}` : '')
+// A link shared before links expired has no date; the server treats it as expired.
+const shareExpired = computed(() => !share.value.expiresAt || share.value.expiresAt <= Date.now())
+const shareExpiry = computed(() => share.value.expiresAt ? `${shareExpired.value ? 'Expired' : 'Expires'} ${when(share.value.expiresAt)}` : 'Expired: renew to use it again')
 
-async function setShare(mode: unknown) {
+function pickShareMode(mode: unknown) {
+  shareDays.value = undefined
+  setShare(mode as ShareMode)
+}
+
+async function setShare(mode: ShareMode) {
   shareBusy.value = true
   try {
-    const res = await api<{ mode: ShareMode, token: string | null }>(`/admin/emails/${id}/share`, { method: 'POST', body: { mode } })
-    shareMode.value = res.mode
-    shareToken.value = res.token
+    const body = { mode, ...(shareDays.value ? { expiresInDays: shareDays.value } : {}) }
+    share.value = await api<ShareState>(`/admin/emails/${id}/share`, { method: 'POST', body })
   } catch (error: any) {
     toast.add({ title: error?.message || 'Could not change sharing', color: 'error' })
   } finally {
+    shareMode.value = share.value.mode
     shareBusy.value = false
   }
 }

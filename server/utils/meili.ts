@@ -12,16 +12,36 @@ export const CONVERSATIONS_INDEX = 'conversations'
 export const ENDUSERS_INDEX = 'endusers'
 
 let clientPromise: Promise<any> | null = null
+let warnedMasterKey = false
 
 export function meiliConfigured(): boolean {
   return Boolean(process.env.MEILI_URL)
+}
+
+/**
+ * The scoped key from `bun run search:key`, else the master key: deployments
+ * from before the scoped key keep working until they switch.
+ */
+export function meiliApiKey(env: Record<string, string | undefined>): { key: string, master: boolean } {
+  if (env.MEILI_API_KEY) return { key: env.MEILI_API_KEY, master: false }
+  return { key: env.MEILI_MASTER_KEY || '', master: Boolean(env.MEILI_MASTER_KEY) }
+}
+
+function meiliKey(): string | undefined {
+  const { key, master } = meiliApiKey(process.env)
+  if (master && !warnedMasterKey) {
+    warnedMasterKey = true
+    // Meili is publicly reachable in production; the master key can mint keys and delete every index.
+    console.warn('[meili] using MEILI_MASTER_KEY: run `bun run search:key`, set MEILI_API_KEY and remove MEILI_MASTER_KEY from the app\'s environment')
+  }
+  return key || undefined
 }
 
 async function useMeili(): Promise<any> {
   const host = process.env.MEILI_URL
   if (!host) throw new Error('MEILI_URL is not set')
   if (!clientPromise) {
-    clientPromise = import('meilisearch').then(m => new m.Meilisearch({ host, apiKey: process.env.MEILI_MASTER_KEY || undefined }))
+    clientPromise = import('meilisearch').then(m => new m.Meilisearch({ host, apiKey: meiliKey() }))
   }
   return clientPromise
 }
@@ -29,7 +49,7 @@ async function useMeili(): Promise<any> {
 /** Raw request for the version-fragile bits (experimental features, embedders). */
 async function meiliFetch(path: string, init: RequestInit): Promise<Response> {
   const host = String(process.env.MEILI_URL || '').replace(/\/+$/, '')
-  const key = process.env.MEILI_MASTER_KEY
+  const key = meiliKey()
   return fetch(`${host}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...(key ? { Authorization: `Bearer ${key}` } : {}), ...(init.headers || {}) } })
 }
 

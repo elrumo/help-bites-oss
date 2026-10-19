@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3'
 import type { FeedbackEvent } from '#shared/feedback'
-import type { SupportEvent } from './events'
+import type { EmailEvent, SupportEvent } from './events'
 
 // One SSE stream per client, written straight into the response body. The
 // Redis subscription is per process and shared, so a stream only costs a
@@ -18,10 +18,10 @@ export function streamWorkspaceEvents(event: H3Event, workspaceId: string, accep
   }))
 }
 
-/** One project's events (an end user's widget, or an operator watching one project). */
-export function streamProjectEvents(event: H3Event, projectId: string, accept: (e: SupportEvent) => boolean = () => true) {
+/** One project's events (an end user's widget, or an operator watching one project). `map` reshapes what one audience may see; the event itself is shared with every other listener, so never mutate it. */
+export function streamProjectEvents(event: H3Event, projectId: string, accept: (e: SupportEvent) => boolean = () => true, map: (e: SupportEvent) => unknown = e => e) {
   return openStream(event, push => subscribeProjectEvents(projectId, (e) => {
-    if (accept(e)) push(e.type, JSON.stringify(e))
+    if (accept(e)) push(e.type, JSON.stringify(map(e)))
   }))
 }
 
@@ -33,10 +33,12 @@ export function streamFeedbackEvents(event: H3Event, projectId: string, map: (e:
   }))
 }
 
-/** Saves to one email template, for everyone editing or previewing it. */
-export function streamEmailEvents(event: H3Event, templateId: string) {
+/** Saves to one email template, for everyone editing it; `map` may rewrite or drop each one (share links). */
+export function streamEmailEvents(event: H3Event, templateId: string, map: (e: EmailEvent) => object | null = e => e) {
   return openStream(event, push => subscribeEmailEvents(templateId, (e) => {
-    if (e.templateId === templateId) push(e.type, JSON.stringify(e))
+    if (e.templateId !== templateId) return
+    const out = map(e)
+    if (out) push(e.type, JSON.stringify(out))
   }))
 }
 

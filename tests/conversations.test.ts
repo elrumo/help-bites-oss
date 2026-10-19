@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { buildThreads, groupMessagesForDisplay, replyTarget } from '../shared/conversations'
-import { MAX_PAGE_SIZE, PAGE_SIZE, pageHasMore, pageSize } from '../server/utils/conversations'
+import { MAX_PAGE_SIZE, PAGE_SIZE, endUserEvent, pageHasMore, pageSize, withoutTriage } from '../server/utils/conversations'
+import type { SupportEvent } from '../server/utils/events'
 import { normalizeContext, normalizeSubjectRef, messagePreview, validateFields } from '../shared/support'
-import type { Message } from '../shared/support'
+import type { Conversation, Message } from '../shared/support'
 
 function msg(id: string, sender: 'user' | 'agent', createdAt: string, extra: Partial<Message> = {}): Message {
   return { id, conversationId: 'c', sender, senderName: sender === 'agent' ? 'Elías' : 'Ada', body: `body ${id}`, attachments: [], context: null, replyToId: '', clientId: '', createdAt, ...extra }
@@ -85,5 +86,21 @@ describe('message paging', () => {
     expect(pageSize('2.9')).toBe(2)
     expect(pageSize(Infinity)).toBe(MAX_PAGE_SIZE)
     expect(pageSize(10)).toBe(10)
+  })
+})
+
+describe('end-user view', () => {
+  const conversation = { id: 'c1', subject: 'Refund', status: 'open', priority: 'urgent', assigneeId: 'a1', assignedAt: '2026-05-01T10:00:00.000Z', tags: ['churn-risk'], unreadByUser: 1 } as unknown as Conversation
+
+  test('triage never reaches the end user', () => {
+    expect(withoutTriage(conversation)).toEqual({ id: 'c1', subject: 'Refund', status: 'open', unreadByUser: 1 } as never)
+  })
+
+  test('live events are reshaped without touching the payload agents share', () => {
+    const event: SupportEvent = { type: 'conversation.updated', projectId: 'p1', endUserId: 'u1', conversationId: 'c1', conversation }
+    const out = endUserEvent(event)
+    expect(out).toMatchObject({ type: 'conversation.updated', conversationId: 'c1' })
+    for (const key of ['priority', 'assigneeId', 'assignedAt', 'tags']) expect(out.conversation).not.toHaveProperty(key)
+    expect(event.conversation.tags).toEqual(['churn-risk'])
   })
 })

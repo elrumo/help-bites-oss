@@ -11,7 +11,8 @@
 import { parseFetch } from './parseRest.mjs'
 
 const HOST = String(process.env.MEILI_URL || '').replace(/\/+$/, '')
-const KEY = process.env.MEILI_MASTER_KEY
+// The scoped key from `bun run search:key`; the master key for older deployments.
+const KEY = process.env.MEILI_API_KEY || process.env.MEILI_MASTER_KEY
 const DIMENSIONS = 768 // Xenova/clip-vit-large-patch14 text encoder
 
 async function meili(path, method = 'GET', body) {

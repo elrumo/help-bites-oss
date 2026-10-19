@@ -50,7 +50,7 @@ const COMMUNITY: EditionHooks = {
   policy: { signup: 'setup', teammatePasswords: true, removeAccountWithLastMembership: true, trackerEnvFallback: true, requireVerifiedEmail: false, reputationGuard: false },
   canCreateWorkspace: async () => true,
   aiCredits: () => 0,
-  brandUrl: 'https://github.com/elrumo/help-bites'
+  brandUrl: 'https://github.com/elrumo/help-bites-oss'
 }
 
 let current: EditionHooks = COMMUNITY
@@ -75,7 +75,7 @@ export function resetEdition(): void {
   current = COMMUNITY
 }
 
-const REPOSITORY = 'https://github.com/elrumo/help-bites'
+const REPOSITORY = 'https://github.com/elrumo/help-bites-oss'
 
 /**
  * Where this deployment's source lives. The AGPL asks a modified network

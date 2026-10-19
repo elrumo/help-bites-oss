@@ -192,12 +192,13 @@ export function errorConversationKey(providerId: ErrorProviderId, issueId: strin
   return `${providerId}:${issueId}`
 }
 
-/** Checks the per-project token embedded in the alert webhook URL. */
-export function verifyErrorWebhook(event: H3Event, project: ParseObject, providerId: ErrorProviderId): void {
-  const errors = errorConfigOf(project)
+/** Checks the per-project token embedded in the alert webhook URL. An unknown project gets the same 401, so the URL tells nobody which project ids exist. */
+export function verifyErrorWebhook(event: H3Event, project: ParseObject | null, providerId: ErrorProviderId): ParseObject {
+  const errors: ErrorConfig = project ? errorConfigOf(project) : {}
   const expected = String(errors.webhookToken || '')
   const supplied = String(getQuery(event).token || '')
-  if (!expected || (errors.provider || 'glitchtip') !== providerId || expected.length !== supplied.length || !timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))) throw createError({ statusCode: 401, statusMessage: 'Invalid webhook token' })
+  if (!project || !expected || (errors.provider || 'glitchtip') !== providerId || expected.length !== supplied.length || !timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))) throw createError({ statusCode: 401, statusMessage: 'Invalid webhook token' })
+  return project
 }
 
 export async function setErrorIssueStatus(project: ParseObject, providerId: ErrorProviderId, issueId: string, statusKey: string): Promise<void> {
