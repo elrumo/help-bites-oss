@@ -23,7 +23,12 @@ export type AiRoute = {
   workspaceId: string
 }
 
-export type WorkspaceAiSettings = { endpoint: string, model: string, ultraModel: string, hasApiKey: boolean }
+/** One saved provider (its key is never returned, only whether one is saved). */
+export type AiProviderSettings = { id: string, kind: string, name: string, endpoint: string, model: string, ultraModel: string, hasApiKey: boolean }
+/** Every provider the workspace saved; `active` is the one calls go to. */
+export type WorkspaceAiSettings = { providers: AiProviderSettings[], active: string }
+
+const MAX_PROVIDERS = 10
 
 const AI_TIMEOUT_MS = 10 * 60 * 1000
 
@@ -31,57 +36,87 @@ export function gatewayEndpoint(): string {
   return String(process.env.LITELLM_API_BASE_URL || '').trim().replace(/\/+$/, '').replace(/\/chat\/completions$/, '')
 }
 
+// Where an endpoint already names its API version (or, for Gemini and Groq, `/openai`), so none is added.
+const VERSIONED = /\/(v\d+(beta\d*)?|openai)$/
+
 function sameEndpoint(a: string, b: string): boolean {
-  const clean = (value: string) => value.trim().replace(/\/+$/, '').replace(/\/chat\/completions$/, '').replace(/\/v\d+$/, '')
+  const clean = (value: string) => value.trim().replace(/\/+$/, '').replace(/\/chat\/completions$/, '').replace(VERSIONED, '')
   return !!a && !!b && clean(a) === clean(b)
 }
 
 export function chatCompletionsUrl(endpoint: string): string {
   const base = endpoint.replace(/\/+$/, '')
   if (/\/chat\/completions$/.test(base)) return base
-  if (/\/v\d+$/.test(base)) return `${base}/chat/completions`
+  if (VERSIONED.test(base)) return `${base}/chat/completions`
   return `${base}/v1/chat/completions`
 }
 
 function baseUrl(endpoint: string): string {
   const base = endpoint.replace(/\/+$/, '').replace(/\/chat\/completions$/, '')
-  return /\/v\d+$/.test(base) ? base : `${base}/v1`
+  return VERSIONED.test(base) ? base : `${base}/v1`
 }
 
-/** The workspace's own AI provider as stored on Workspace.ai (its key sealed). */
-export function readWorkspaceAi(workspace: ParseObject | null | undefined): (WorkspaceAiSettings & { apiKey: string }) | null {
+type StoredProvider = Omit<AiProviderSettings, 'hasApiKey'> & { apiKey?: unknown }
+
+/** The saved providers; a workspace saved before there were several has one provider at the top level. */
+function storedProviders(workspace: ParseObject | null | undefined): { providers: StoredProvider[], active: string } {
   const raw = workspace?.get('ai') as Record<string, unknown> | undefined
+  if (Array.isArray(raw?.providers)) {
+    const providers = (raw.providers as Record<string, unknown>[]).map(p => ({
+      id: String(p.id || ''), kind: String(p.kind || 'custom'), name: String(p.name || ''), endpoint: String(p.endpoint || '').trim(),
+      model: String(p.model || '').trim(), ultraModel: String(p.ultraModel || '').trim(), apiKey: p.apiKey
+    })).filter(p => p.id && p.endpoint)
+    return { providers, active: providers.some(p => p.id === raw.active) ? String(raw.active) : providers[0]?.id || '' }
+  }
   const endpoint = String(raw?.endpoint || '').trim()
-  if (!endpoint) return null
-  const apiKey = raw?.apiKey ? readCredential(raw.apiKey) : ''
-  return { endpoint, model: String(raw?.model || '').trim(), ultraModel: String(raw?.ultraModel || '').trim(), hasApiKey: !!apiKey, apiKey }
+  if (!endpoint) return { providers: [], active: '' }
+  return { providers: [{ id: 'default', kind: 'custom', name: '', endpoint, model: String(raw?.model || '').trim(), ultraModel: String(raw?.ultraModel || '').trim(), apiKey: raw?.apiKey }], active: 'default' }
 }
 
-export function serializeWorkspaceAi(workspace: ParseObject): WorkspaceAiSettings | null {
-  const settings = readWorkspaceAi(workspace)
-  return settings ? { endpoint: settings.endpoint, model: settings.model, ultraModel: settings.ultraModel, hasApiKey: settings.hasApiKey } : null
+/** The workspace's active AI provider, its key unsealed. */
+export function readWorkspaceAi(workspace: ParseObject | null | undefined): (AiProviderSettings & { apiKey: string }) | null {
+  const { providers, active } = storedProviders(workspace)
+  const chosen = providers.find(p => p.id === active)
+  if (!chosen) return null
+  const apiKey = chosen.apiKey ? readCredential(chosen.apiKey as string) : ''
+  return { id: chosen.id, kind: chosen.kind, name: chosen.name, endpoint: chosen.endpoint, model: chosen.model, ultraModel: chosen.ultraModel, hasApiKey: !!apiKey, apiKey }
 }
 
-/** Apply the AI settings form: `endpoint: ''` turns the workspace's own provider off; `apiKey` is write-only ('' clears it, absent keeps it). */
+export function serializeWorkspaceAi(workspace: ParseObject): WorkspaceAiSettings {
+  const { providers, active } = storedProviders(workspace)
+  return { providers: providers.map(({ apiKey, ...rest }) => ({ ...rest, hasApiKey: !!apiKey })), active }
+}
+
+/**
+ * Apply the AI settings form: the whole list of `providers` and which is `active`.
+ * An empty list turns the workspace's own AI off. A provider's `apiKey` is write-only
+ * ('' clears it, absent keeps the saved one while its endpoint is unchanged).
+ */
 export function applyWorkspaceAiInput(workspace: ParseObject, input: Record<string, unknown>): void {
-  const endpoint = safeHttpUrl(input.endpoint).slice(0, 500)
-  if (!endpoint) {
-    workspace.unset('ai')
-    return
+  const previous = new Map(storedProviders(workspace).providers.map(p => [p.id, p]))
+  const providers: StoredProvider[] = []
+  for (const item of (Array.isArray(input.providers) ? input.providers : []).slice(0, MAX_PROVIDERS) as Record<string, unknown>[]) {
+    const endpoint = safeHttpUrl(item?.endpoint).slice(0, 500)
+    if (!endpoint) continue
+    const id = /^[\w-]{1,40}$/.test(String(item.id)) && !providers.some(p => p.id === item.id) ? String(item.id) : crypto.randomUUID()
+    const old = previous.get(id)
+    const next: StoredProvider = {
+      id, endpoint,
+      kind: String(item.kind || 'custom').replace(/\W/g, '').slice(0, 20) || 'custom',
+      name: String(item.name ?? '').trim().slice(0, 60),
+      model: String(item.model ?? '').trim().slice(0, 120),
+      ultraModel: String(item.ultraModel ?? '').trim().slice(0, 120)
+    }
+    if (typeof item.apiKey === 'string') {
+      if (item.apiKey.trim()) next.apiKey = storeCredential(item.apiKey.trim().slice(0, 400))
+    } else if (old?.apiKey && sameEndpoint(old.endpoint, endpoint)) {
+      // A key only follows its own endpoint: pointing a provider elsewhere must not carry it along.
+      next.apiKey = old.apiKey
+    }
+    providers.push(next)
   }
-  const previous = (workspace.get('ai') || {}) as Record<string, unknown>
-  const next: Record<string, unknown> = {
-    endpoint,
-    model: String(input.model ?? previous.model ?? '').trim().slice(0, 120),
-    ultraModel: String(input.ultraModel ?? previous.ultraModel ?? '').trim().slice(0, 120)
-  }
-  if (typeof input.apiKey === 'string') {
-    if (input.apiKey.trim()) next.apiKey = storeCredential(input.apiKey.trim().slice(0, 400))
-  } else if (previous.apiKey && sameEndpoint(String(previous.endpoint || ''), endpoint)) {
-    // A key only follows its own endpoint: pointing the settings elsewhere must not carry it along.
-    next.apiKey = previous.apiKey
-  }
-  workspace.set('ai', next)
+  if (!providers.length) workspace.unset('ai')
+  else workspace.set('ai', { providers, active: providers.some(p => p.id === input.active) ? input.active : providers[0]!.id })
 }
 
 export async function workspaceOfRow(row: ParseObject | null | undefined): Promise<ParseObject | null> {

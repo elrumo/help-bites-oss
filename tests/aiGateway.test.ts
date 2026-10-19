@@ -30,6 +30,9 @@ const row = (id: string, fields: Fields = {}) => {
   return { id, get: (key: string) => data[key], set: (key: string, value: unknown) => { data[key] = value }, unset: (key: string) => { delete data[key] }, data }
 }
 
+/** Save one provider as the workspace's only (and active) one. */
+const one = (workspace: ReturnType<typeof row>, provider: Fields) => ai.applyWorkspaceAiInput(workspace as never, { providers: [provider], active: provider.id })
+
 const env = { ...process.env }
 beforeEach(() => {
   plan = UNLIMITED_PLAN
@@ -60,7 +63,7 @@ describe('where an AI call goes', () => {
 
   test('the workspace\'s own provider comes next, when the plan allows it', async () => {
     const workspace = row('W1')
-    ai.applyWorkspaceAiInput(workspace as never, { endpoint: 'https://openrouter.ai/api/v1', model: 'meta/llama', ultraModel: 'anthropic/big', apiKey: 'or-key' })
+    one(workspace, { endpoint: 'https://openrouter.ai/api/v1', model: 'meta/llama', ultraModel: 'anthropic/big', apiKey: 'or-key' })
     expect(await ai.resolveAi(workspace as never)).toMatchObject({ source: 'workspace', apiKey: 'or-key', model: 'meta/llama', metered: false })
     expect((await ai.resolveAi(workspace as never, { ultra: true }))!.model).toBe('anthropic/big')
     plan = definePlan({ id: 'free', name: 'Free', features: { byoLlm: false } })
@@ -84,25 +87,48 @@ describe('where an AI call goes', () => {
 describe('the workspace AI form', () => {
   test('stores the key sealed and never hands it back', () => {
     const workspace = row('W1')
-    ai.applyWorkspaceAiInput(workspace as never, { endpoint: 'https://api.openai.com/v1', model: 'gpt-4o-mini', apiKey: 'sk-secret' })
+    one(workspace, { id: 'p1', kind: 'openai', name: 'Work', endpoint: 'https://api.openai.com/v1', model: 'gpt-4o-mini', apiKey: 'sk-secret' })
     expect(JSON.stringify(workspace.data)).not.toContain('sk-secret')
-    expect(ai.serializeWorkspaceAi(workspace as never)).toEqual({ endpoint: 'https://api.openai.com/v1', model: 'gpt-4o-mini', ultraModel: '', hasApiKey: true })
+    expect(ai.serializeWorkspaceAi(workspace as never)).toEqual({ active: 'p1', providers: [{ id: 'p1', kind: 'openai', name: 'Work', endpoint: 'https://api.openai.com/v1', model: 'gpt-4o-mini', ultraModel: '', hasApiKey: true }] })
   })
 
   test('a saved key stays when the form leaves it out, but not when the endpoint changes', () => {
     const workspace = row('W1')
-    ai.applyWorkspaceAiInput(workspace as never, { endpoint: 'https://api.openai.com/v1', apiKey: 'sk-secret' })
-    ai.applyWorkspaceAiInput(workspace as never, { endpoint: 'https://api.openai.com/v1/', model: 'gpt-4o' })
+    one(workspace, { id: 'p1', endpoint: 'https://api.openai.com/v1', apiKey: 'sk-secret' })
+    one(workspace, { id: 'p1', endpoint: 'https://api.openai.com/v1/', model: 'gpt-4o' })
     expect(ai.readWorkspaceAi(workspace as never)!.apiKey).toBe('sk-secret')
-    ai.applyWorkspaceAiInput(workspace as never, { endpoint: 'https://other.example/v1' })
+    one(workspace, { id: 'p1', endpoint: 'https://other.example/v1' })
     expect(ai.readWorkspaceAi(workspace as never)!.hasApiKey).toBe(false)
   })
 
-  test('an empty endpoint turns it off', () => {
+  test('several providers, one active; calls go to the active one', async () => {
     const workspace = row('W1')
-    ai.applyWorkspaceAiInput(workspace as never, { endpoint: 'https://api.openai.com/v1', apiKey: 'k' })
-    ai.applyWorkspaceAiInput(workspace as never, { endpoint: '' })
+    ai.applyWorkspaceAiInput(workspace as never, { active: 'b', providers: [
+      { id: 'a', endpoint: 'https://api.openai.com/v1', model: 'gpt-4o', apiKey: 'ka' },
+      { id: 'b', endpoint: 'https://api.anthropic.com/v1', model: 'claude-sonnet-5-5', apiKey: 'kb' }
+    ] })
+    expect(await ai.resolveAi(workspace as never)).toMatchObject({ source: 'workspace', endpoint: 'https://api.anthropic.com/v1', apiKey: 'kb', model: 'claude-sonnet-5-5' })
+    // Resaving without keys keeps each provider's own; an unknown active falls back to the first.
+    ai.applyWorkspaceAiInput(workspace as never, { active: 'gone', providers: [{ id: 'a', endpoint: 'https://api.openai.com/v1' }, { id: 'b', endpoint: 'https://api.anthropic.com/v1' }] })
+    expect(ai.readWorkspaceAi(workspace as never)).toMatchObject({ id: 'a', apiKey: 'ka' })
+    expect(ai.serializeWorkspaceAi(workspace as never).providers.every(p => p.hasApiKey)).toBe(true)
+  })
+
+  test('a workspace saved with a single provider still works', () => {
+    const workspace = row('W1', { ai: { endpoint: 'https://api.openai.com/v1', model: 'gpt-4o', apiKey: secrets.storeCredential('old') } })
+    expect(ai.readWorkspaceAi(workspace as never)).toMatchObject({ id: 'default', model: 'gpt-4o', apiKey: 'old' })
+  })
+
+  test('no providers turns it off', () => {
+    const workspace = row('W1')
+    one(workspace, { endpoint: 'https://api.openai.com/v1', apiKey: 'k' })
+    ai.applyWorkspaceAiInput(workspace as never, { providers: [] })
     expect(ai.readWorkspaceAi(workspace as never)).toBeNull()
+  })
+
+  test('endpoints that already name their version are not given another', () => {
+    expect(ai.chatCompletionsUrl('https://generativelanguage.googleapis.com/v1beta/openai')).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions')
+    expect(ai.chatCompletionsUrl('https://api.groq.com/openai/v1')).toBe('https://api.groq.com/openai/v1/chat/completions')
   })
 })
 

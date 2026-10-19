@@ -1,9 +1,9 @@
 defineRouteMeta({
   openAPI: {
     tags: ['Workspace'],
-    summary: 'This workspace\'s AI provider',
-    description: 'The workspace\'s own OpenAI-compatible provider, if it set one (the key is never returned), whether the server offers its own AI, and whether the plan allows bringing your own.',
-    responses: { 200: { description: '`{ ai: { endpoint, model, ultraModel, hasApiKey } | null, platform: { available, metered }, allowed }`' } }
+    summary: 'This workspace\'s AI providers',
+    description: 'The workspace\'s own OpenAI-compatible providers and which is active (keys are never returned), whether the server offers its own AI, and whether the plan allows bringing your own.',
+    responses: { 200: { description: '`{ ai: { providers: [{ id, kind, name, endpoint, model, ultraModel, hasApiKey }], active }, platform: { available, metered }, allowed }`' } }
   }
 })
 
