@@ -53,6 +53,9 @@ export const LIMITS = {
   changelogReadsPerIp: { limit: 1200, window: 60 },
   // Five comments in ten minutes is far more than a discussion needs and far less than a flood.
   changelogCommentsPerUser: { limit: 5, window: 600 },
+  // AI changelog runs cost credits: by hand, and from GitHub pushes.
+  changelogGeneratePerProject: { limit: 10, window: 3600 },
+  changelogPushPerProject: { limit: 20, window: 3600 },
   emailSharePerIp: { limit: 300, window: 60 },
   emailSendsPerProject: { limit: 120, window: 60 },
   emailRendersPerProject: { limit: 300, window: 60 },

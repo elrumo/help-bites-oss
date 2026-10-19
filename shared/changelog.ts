@@ -85,8 +85,17 @@ export type ChangelogConfig = {
   confirmUrl: string
   unsubscribeUrl: string
   digest: ChangelogDigestConfig
+  /** Entries an AI writes from the project's GitHub commits. They start as drafts nobody has approved. */
+  commitAi: ChangelogCommitAiConfig
   /** Overrides of the words in the emails; see `DEFAULT_CHANGELOG_COPY` for the keys and what `{site}`, `{count}` and `{window}` become. */
   copy: Record<string, string>
+}
+
+export type ChangelogCommitAiConfig = {
+  /** A push to a repo's default branch drafts entries from its new commits. */
+  onPush: boolean
+  /** What a push drafts is published without anyone looking. Off, it waits for review. A generate button press never publishes. */
+  autoPublish: boolean
 }
 
 export type ChangelogDigestConfig = {
@@ -153,6 +162,7 @@ export const DEFAULT_CHANGELOG_CONFIG: ChangelogConfig = {
   confirmUrl: '{siteUrl}/changelog/confirm?token={token}',
   unsubscribeUrl: '{siteUrl}/changelog/unsubscribe?token={token}',
   digest: DEFAULT_CHANGELOG_DIGEST,
+  commitAi: { onPush: false, autoPublish: false },
   copy: {}
 }
 
@@ -177,7 +187,7 @@ export function validateChangelogConfig(value: unknown, base: ChangelogConfig = 
   const errors: string[] = []
   if (value !== undefined && value !== null && (typeof value !== 'object' || Array.isArray(value))) errors.push('changelog must be an object')
   const raw = record(value)
-  const config: ChangelogConfig = { ...base, areas: [...base.areas], reservedSlugs: [...base.reservedSlugs], commentNotify: [...base.commentNotify], digest: { ...base.digest }, copy: { ...base.copy } }
+  const config: ChangelogConfig = { ...base, areas: [...base.areas], reservedSlugs: [...base.reservedSlugs], commentNotify: [...base.commentNotify], digest: { ...base.digest }, commitAi: { ...base.commitAi }, copy: { ...base.copy } }
   if (raw.autoDraft !== undefined) config.autoDraft = Boolean(raw.autoDraft)
   if (raw.enabled !== undefined) config.enabled = Boolean(raw.enabled)
   if (raw.comments !== undefined) config.comments = Boolean(raw.comments)
@@ -187,6 +197,11 @@ export function validateChangelogConfig(value: unknown, base: ChangelogConfig = 
     else config.commentNotify = emails
   }
   if (raw.notify !== undefined) config.notify = Boolean(raw.notify)
+  if (raw.commitAi !== undefined) {
+    const c = record(raw.commitAi)
+    if (c.onPush !== undefined) config.commitAi.onPush = Boolean(c.onPush)
+    if (c.autoPublish !== undefined) config.commitAi.autoPublish = Boolean(c.autoPublish)
+  }
   if (raw.siteName !== undefined) {
     if (typeof raw.siteName !== 'string' || raw.siteName.trim().length > 80) errors.push('siteName is up to 80 characters')
     else config.siteName = raw.siteName.trim()
@@ -516,6 +531,8 @@ export type ChangelogEntry = {
   reviewNotes: string | null
   authorName: string
   source: ChangelogSourceKind | null
+  /** Written by AI from git commits. Stays true after a person edits or approves it. */
+  aiGenerated: boolean
   /** Visible comments, kept by the comments feature. */
   commentCount: number
   /** Linked sources that still exist. */

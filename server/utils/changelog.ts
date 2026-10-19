@@ -300,6 +300,7 @@ function entryFields(row: ParseObject): EntryFields {
     reviewNotes: typeof row.get('reviewNotes') === 'string' ? row.get('reviewNotes') : null,
     authorName: String(row.get('authorName') || ''),
     source: source === 'admin' || source === 'internal' ? source : null,
+    aiGenerated: row.get('aiGenerated') === true,
     commentCount: typeof row.get('commentCount') === 'number' ? row.get('commentCount') as number : 0,
     createdAt: iso(row.createdAt) || '',
     updatedAt: iso(row.updatedAt) || ''
@@ -602,7 +603,8 @@ async function applyEntryValues(project: ParseObject, row: ParseObject, values: 
   else if (values.releaseVersion) setRelease(row, await resolveReleaseByVersion(project, values.releaseVersion, (row.get('publishedAt') as Date | undefined) || new Date()))
 }
 
-type Author = { name: string, source: ChangelogSourceKind }
+/** `ai`: written by a model from git commits (marked on the entry; one published straight away is logged as auto-published). */
+type Author = { name: string, source: ChangelogSourceKind, ai?: boolean }
 
 function authorOf(agent: ParseObject | undefined): Author {
   return agent ? { name: String(agent.get('name') || agent.get('username') || ''), source: 'admin' } : { name: 'automated', source: 'internal' }
@@ -633,8 +635,14 @@ export async function createChangelogEntry(project: ParseObject, agent: ParseObj
   row.set('commentCount', 0)
   row.set('authorName', author.name)
   row.set('source', author.source)
-  // A draft starts out waiting for review; an entry published straight away never was.
+  if (author.ai) row.set('aiGenerated', true)
+  // A draft starts out waiting for review; an entry published straight away never was (an AI one says so).
   if (values.status === 'draft') row.set('reviewStatus', 'pending')
+  else if (author.ai && values.status === 'published') {
+    row.set('reviewStatus', 'approved')
+    row.set('reviewedBy', 'Auto-publish')
+    row.set('reviewedAt', new Date())
+  }
   await applyEntryValues(project, row, values, getChangelogConfig(project))
   row.set('number', await allocateProjectNumber(project, 'changelogSeq', 'ChangelogEntry'))
   await row.save(null, MASTER)
@@ -649,6 +657,15 @@ export type ChangelogBatchResult = {
   /** Entries left out because a commit they cite is already cited by entry `entryId`. */
   skipped: { index: number, commitSha: string, entryId: string }[]
   failed: { index: number, message: string }[]
+}
+
+/** Which of these commits an entry of the project (an archived one too) already cites, and which entry. */
+export async function citedCommitShas(project: ParseObject, shas: string[]): Promise<Map<string, string>> {
+  const known = new Map<string, string>()
+  if (!shas.length) return known
+  const rows = await new (useParse()).Query('ChangelogEntry').equalTo('project', project).containedIn('commitShas', shas).select('commitShas').limit(1000).find(MASTER)
+  for (const row of rows) for (const sha of stringList(row.get('commitShas'))) if (!known.has(sha)) known.set(sha, row.id || '')
+  return known
 }
 
 function shasOf(item: unknown): string[] {
@@ -670,12 +687,7 @@ export async function createChangelogEntries(project: ParseObject, agent: ParseO
   const items = (payload && typeof payload === 'object' ? (payload as Record<string, unknown>).entries : undefined)
   if (!Array.isArray(items) || !items.length || items.length > CHANGELOG_BATCH_MAX) badRequest([`entries must be an array of 1 to ${CHANGELOG_BATCH_MAX} entries`])
 
-  const shas = unique(items.flatMap(shasOf))
-  const known = new Map<string, string>()
-  if (shas.length) {
-    const rows = await new (useParse()).Query('ChangelogEntry').equalTo('project', project).containedIn('commitShas', shas).select('commitShas').limit(1000).find(MASTER)
-    for (const row of rows) for (const sha of stringList(row.get('commitShas'))) if (!known.has(sha)) known.set(sha, row.id || '')
-  }
+  const known = await citedCommitShas(project, unique(items.flatMap(shasOf)))
 
   const result: ChangelogBatchResult = { created: [], skipped: [], failed: [] }
   for (const [index, item] of items.entries()) {

@@ -194,6 +194,10 @@ const SCHEMAS = {
       errors: { type: 'Object' },
       // GitHub repos the project uses: [{ installationId, id, fullName, defaultBranch }] (server/utils/github.ts).
       repos: { type: 'Array' },
+      // The ids of `repos`, so a GitHub push webhook can find the projects that use a repo.
+      repoIds: { type: 'Array' },
+      // The last AI changelog run from commits: { state, startedAt, finishedAt, created, skipped, error }.
+      changelogRun: { type: 'Object' },
       // This project's own error tracker URLs and API tokens (see server/utils/errorTracking.ts).
       errorTrackers: { type: 'Object' },
       // Email sending: this project's own sender (blank = the MAILGUN_* defaults).
@@ -812,6 +816,8 @@ const SCHEMAS = {
       reviewedAt: { type: 'Date' },
       reviewNotes: { type: 'String' },
       authorName: { type: 'String' },
+      // Written by AI from git commits (server/utils/changelogCommits.ts).
+      aiGenerated: { type: 'Boolean' },
       // admin | internal (written with the project secret)
       source: { type: 'String' },
       commentCount: { type: 'Number' },

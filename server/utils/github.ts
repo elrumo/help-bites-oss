@@ -1,5 +1,6 @@
-import { createSign, randomBytes } from 'node:crypto'
+import { createHmac, createSign, randomBytes, timingSafeEqual } from 'node:crypto'
 import { createError } from 'h3'
+import type { CommitInfo } from '#shared/changelogCommits'
 import { matchRepoPath, type FramePath, type PromptFile } from '#shared/errors'
 import { hasRootSecret, readLinkToken, signLinkToken } from './secrets'
 
@@ -185,6 +186,7 @@ export async function setProjectRepos(workspace: ParseObject, project: ParseObje
     if (!repos.some(item => item.id === repo.id)) repos.push({ installationId, id: repo.id, fullName: repo.fullName, defaultBranch: repo.defaultBranch })
   }
   project.set('repos', repos)
+  project.set('repoIds', repos.map(repo => repo.id))
   await project.save(null, MASTER)
   return repos
 }
@@ -268,4 +270,32 @@ export async function fetchRepoSnapshot(repo: ProjectRepo): Promise<RepoSnapshot
     } catch { return null }
   }))
   return { repo: repo.fullName, tree: tree.filter(item => item.type === 'blob').map(item => item.path), files: files.filter((file): file is { path: string, content: string } => !!file) }
+}
+
+// ---- commits and pushes (read-only) -------------------------------------------------
+
+const MAX_COMMIT_PAGES = 10
+
+/** Commits of the repo's default branch, newest first, optionally only since a date; at most `max`. */
+export async function listRepoCommits(repo: ProjectRepo, since: Date | null, max: number): Promise<CommitInfo[]> {
+  const token = await installationToken(repo.installationId)
+  const commits: CommitInfo[] = []
+  for (let page = 1; page <= MAX_COMMIT_PAGES && commits.length < max; page++) {
+    const query = new URLSearchParams({ sha: repo.defaultBranch, per_page: '100', page: String(page), ...(since ? { since: since.toISOString() } : {}) })
+    const list = await gh<Array<{ sha: string, commit: { message: string, author?: { date?: string } | null } }>>(`/repos/${encodePath(repo.fullName)}/commits?${query}`, token)
+    commits.push(...list.map(item => ({ sha: item.sha, message: item.commit.message, date: item.commit.author?.date || '' })))
+    if (list.length < 100) break
+  }
+  return commits.slice(0, max)
+}
+
+/** Set GITHUB_APP_WEBHOOK_SECRET to the app's webhook secret to receive pushes (docs/GITHUB.md). */
+export const githubWebhookSecret = () => env('WEBHOOK_SECRET')
+
+/** GitHub signs the raw body with the webhook secret (`x-hub-signature-256: sha256=<hex>`). */
+export function verifyGithubSignature(rawBody: string, header: string, secret = githubWebhookSecret()): boolean {
+  if (!secret || !header.startsWith('sha256=')) return false
+  const expected = Buffer.from(createHmac('sha256', secret).update(rawBody).digest('hex'))
+  const given = Buffer.from(header.slice(7))
+  return given.length === expected.length && timingSafeEqual(given, expected)
 }

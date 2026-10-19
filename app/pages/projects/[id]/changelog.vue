@@ -7,6 +7,7 @@
       <template #actions>
         <UButton icon="i-lucide-sparkles" label="Public changelog" color="neutral" variant="ghost" size="sm" @click="copyChangelogUrl" />
         <UButton v-if="changelogReady" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="changelogUrl" target="_blank" aria-label="Open the public changelog" />
+        <UButton icon="i-lucide-git-commit-horizontal" label="From commits" color="neutral" variant="ghost" size="sm" @click="openGenerate" />
         <UButton icon="i-lucide-settings-2" label="Settings" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
         <UButton icon="i-lucide-package-plus" label="New release" color="neutral" variant="soft" size="sm" @click="openNewRelease" />
         <UButton icon="i-lucide-plus" label="New entry" size="sm" @click="openNewEntry" />
@@ -27,6 +28,19 @@
           <UButton icon="i-lucide-plus" label="New entry" @click="openNewEntry" />
         </EmptyState>
 
+        <p v-if="aiPending" class="flex items-center gap-2 rounded-lg border border-default bg-elevated px-3 py-2 text-[13px] text-muted">
+          <UIcon name="i-lucide-sparkles" class="size-4 shrink-0 text-primary" />
+          <span><span class="font-medium text-default">{{ aiPending }} AI-written {{ aiPending === 1 ? 'draft is' : 'drafts are' }} waiting for your review.</span> Nothing is public until you approve it.</span>
+        </p>
+
+        <div v-if="selected.size" class="sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-default bg-default px-3 py-2 text-[13px] shadow-sm">
+          <span class="tabular-nums text-muted">{{ selected.size }} selected</span>
+          <UButton label="Approve and publish" icon="i-lucide-check" size="xs" color="primary" variant="soft" :disabled="!selectedDrafts.length" :loading="bulk === 'approve'" @click="approveSelected" />
+          <UButton :label="confirmMerge ? 'Click again: published entries go private' : 'Merge into one draft'" icon="i-lucide-merge" size="xs" :color="confirmMerge ? 'warning' : 'neutral'" variant="soft" :disabled="selected.size < 2 || selected.size > 10" :loading="bulk === 'merge'" @click="mergeSelected" />
+          <UButton label="Clear" size="xs" color="neutral" variant="ghost" class="ml-auto" @click="clearSelection" />
+          <p v-if="bulkError" class="w-full text-sm text-error">{{ bulkError }}</p>
+        </div>
+
         <section v-for="group in groups" :key="group.key" class="space-y-2">
           <header class="flex flex-wrap items-center gap-2">
             <template v-if="group.release">
@@ -41,12 +55,14 @@
             <h2 v-else class="text-sm font-semibold">No release</h2>
           </header>
           <ul class="divide-y divide-default rounded-lg border border-default">
-            <li v-for="entry in group.entries" :key="entry.id">
-              <button type="button" class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] transition-colors hover:bg-elevated" @click="openEntry(entry.id)">
+            <li v-for="entry in group.entries" :key="entry.id" class="flex items-center transition-colors hover:bg-elevated">
+              <UCheckbox :model-value="selected.has(entry.id)" class="pl-3" :aria-label="`Select ${entry.title}`" @update:model-value="toggleSelected(entry.id)" />
+              <button type="button" class="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left text-[13px]" @click="openEntry(entry.id)">
                 <span class="w-16 shrink-0 rounded-full px-1.5 text-center text-[11px] font-semibold" :class="CHANGELOG_TAG_CLASS[entry.tag]">{{ CHANGELOG_TAG_LABELS[entry.tag] }}</span>
                 <span v-if="entry.number" class="shrink-0 tabular-nums text-muted">#{{ entry.number }}</span>
                 <span class="min-w-0 flex-1 truncate">{{ entry.title }}</span>
                 <span v-if="entry.sources.length" class="inline-flex shrink-0 items-center gap-1 text-xs text-muted" :title="`${entry.sources.filter(s => s.done).length} of ${entry.sources.length} linked items are done`"><UIcon name="i-lucide-link" class="size-3" />{{ entry.sources.filter(s => s.done).length }}/{{ entry.sources.length }}</span>
+                <span v-if="entry.aiGenerated" class="shrink-0 rounded-full bg-primary/10 px-1.5 text-[11px] text-primary" title="Written by AI from git commits">AI</span>
                 <span class="shrink-0 rounded-full px-1.5 text-[11px]" :class="STATE_CLASS[stateOf(entry).key]">{{ stateOf(entry).label }}</span>
               </button>
             </li>
@@ -86,6 +102,11 @@
               <input v-model="draft.date" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.date ? '' : 'text-dimmed'" aria-label="Date" :disabled="!current" @change="patch({ publishedAt: draft.date ? `${draft.date}T12:00:00.000Z` : null })">
             </label>
           </section>
+
+          <p v-if="current?.aiGenerated" class="flex items-center gap-2 rounded-lg border border-default bg-elevated px-3 py-2 text-xs text-muted">
+            <UIcon name="i-lucide-sparkles" class="size-3.5 shrink-0 text-primary" />
+            Written by AI from {{ current.commitShas.length }} git {{ current.commitShas.length === 1 ? 'commit' : 'commits' }}. Check it before it goes public; edit it freely.
+          </p>
 
           <section v-if="current && current.status === 'draft' && current.reviewStatus" class="space-y-2 rounded-lg border border-default bg-elevated px-3 py-2">
             <p class="text-xs text-muted">
@@ -142,12 +163,45 @@
       <template #body>
         <div class="space-y-4">
           <USwitch :model-value="project?.changelog.autoDraft || false" label="Draft entries automatically" description="A feedback post or board item reaching a done status gets a draft entry, unless one already links it. Drafts are never published for you. Tickets and errors are always added by hand." @update:model-value="saveSettings({ autoDraft: $event })" />
+          <USwitch :model-value="project?.changelog.commitAi.onPush || false" label="Write entries from new commits" description="A push to a connected repo's default branch has the AI draft entries from its new commits (only the messages are read). They wait for your review. Needs GitHub repos in Settings and the app's webhook (see docs/GITHUB.md)." @update:model-value="saveSettings({ commitAi: { onPush: $event } })" />
+          <USwitch v-if="project?.changelog.commitAi.onPush" :model-value="project?.changelog.commitAi.autoPublish || false" label="Publish them without review" description="What a push drafts goes public immediately, with no one reading it first. Entries made with the From commits button are always drafts." @update:model-value="saveSettings({ commitAi: { autoPublish: $event } })" />
           <USwitch :model-value="project?.changelog.comments || false" label="Comments" description="Signed-in readers can comment on published entries. Your site sends their identity token; admins can hide or delete any comment." @update:model-value="saveSettings({ comments: $event })" />
           <USwitch :model-value="project?.changelog.notify || false" label="Email subscribers" description="Readers can ask for an email when something ships (as it happens, or weekly on Monday). Needs CHANGELOG_LINK_SECRET or HELPBITES_SECRET (either 32+ characters) on the server, and ENABLE_CHANGELOG_NOTIFY=true for the scheduler to send." @update:model-value="saveSettings({ notify: $event })" />
           <USwitch :model-value="project?.changelog.enabled || false" label="Public without the feedback board" description="Serve the changelog page, JSON and RSS even when the feedback board is off. Off, they follow the board's Changelog option." @update:model-value="saveSettings({ enabled: $event })" />
           <p class="text-xs text-muted">{{ savingSettings ? 'Saving…' : settingsSaved ? 'Saved' : 'Saves as you change it' }}</p>
           <p v-if="settingsError" class="text-sm text-error">{{ settingsError }}</p>
           <p class="text-xs text-muted">Unless you turn that on, whether the changelog is public, and its page and RSS feed, follow the feedback board's <NuxtLink :to="`/projects/${id}/feedback`" class="underline underline-offset-2">Changelog option</NuxtLink>.</p>
+        </div>
+      </template>
+    </USlideover>
+
+    <!-- Write from commits -->
+    <USlideover v-model:open="generateOpen" title="Write from commits" description="The AI reads your commit messages and drafts entries. Nothing is published." :ui="{ content: 'sm:max-w-lg' }">
+      <template #body>
+        <div class="space-y-4">
+          <p v-if="repos && !repos.length" class="rounded-lg border border-default bg-elevated px-3 py-2 text-[13px] text-muted">
+            This project has no GitHub repos yet. Connect GitHub and pick its repos in <NuxtLink :to="`/projects/${id}/settings`" class="font-medium text-default underline underline-offset-2">Settings</NuxtLink>.
+          </p>
+          <UFormField label="Commits to read">
+            <USelect v-model="range" :items="rangeItems" class="w-full" />
+          </UFormField>
+          <div v-if="range === 'recent'" class="flex gap-2">
+            <UInput v-model.number="rangeCount" type="number" :min="1" :max="999" class="w-24" aria-label="How many" />
+            <USelect v-model="rangeUnit" :items="unitItems" class="w-36" aria-label="Unit" />
+          </div>
+          <p class="text-xs text-muted">Reads the newest 300 commits of the default branch of each repo. Commits already written up are skipped, and merge commits are ignored. Entries come back as drafts for you to review, merge and edit.</p>
+          <div v-if="run" class="rounded-lg border border-default px-3 py-2 text-[13px]">
+            <template v-if="run.state === 'running'"><UIcon name="i-lucide-loader-circle" class="mr-1 inline size-3.5 animate-spin" />Writing drafts…</template>
+            <template v-else-if="run.state === 'done'">Last run: {{ run.created }} {{ run.created === 1 ? 'draft' : 'drafts' }} created, {{ run.skipped }} {{ run.skipped === 1 ? 'commit' : 'commits' }} already covered<template v-if="run.truncated"> (older commits were not read)</template>.</template>
+            <template v-else><span class="text-error">Last run failed: {{ run.error }}</span></template>
+          </div>
+          <p v-if="generateError" class="text-sm text-error">{{ generateError }}</p>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex w-full items-center gap-2">
+          <UButton class="ml-auto" label="Close" color="neutral" variant="ghost" @click="generateOpen = false" />
+          <UButton label="Generate drafts" icon="i-lucide-sparkles" color="primary" :loading="generating || run?.state === 'running'" :disabled="repos !== null && !repos.length" @click="generate" />
         </div>
       </template>
     </USlideover>
@@ -221,6 +275,7 @@ function stateOf(entry: ChangelogEntry): { key: 'public' | 'waiting' | 'draft', 
   return isEntryPublic(entry, entry.releaseId ? releaseOf(entry.releaseId) : null) ? { key: 'public', label: 'Public' } : { key: 'waiting', label: 'Waiting for release' }
 }
 
+const aiPending = computed(() => entries.value.filter(e => e.aiGenerated && e.status === 'draft').length)
 const publicCount = computed(() => entries.value.filter(e => stateOf(e).key === 'public').length)
 const draftCount = computed(() => entries.value.filter(e => stateOf(e).key !== 'public').length)
 
@@ -454,13 +509,133 @@ async function addSource() {
   if (value && await setLink(sourceKind.value, value, true)) sourceRef.value = ''
 }
 
+// ---- selecting: approve or merge several at once ----
+const selected = ref(new Set<string>())
+const bulk = ref<'' | 'approve' | 'merge'>('')
+const bulkError = ref('')
+const confirmMerge = ref(false)
+const selectedEntries = computed(() => entries.value.filter(e => selected.value.has(e.id)))
+const selectedDrafts = computed(() => selectedEntries.value.filter(e => e.status === 'draft'))
+
+function toggleSelected(entryId: string) {
+  const next = new Set(selected.value)
+  if (!next.delete(entryId)) next.add(entryId)
+  selected.value = next
+  confirmMerge.value = false
+}
+
+function clearSelection() {
+  selected.value = new Set()
+  bulkError.value = ''
+  confirmMerge.value = false
+}
+
+async function approveSelected() {
+  bulk.value = 'approve'
+  bulkError.value = ''
+  try {
+    for (const entry of selectedDrafts.value) await api(`/admin/changelog/entries/${entry.id}/review`, { method: 'POST', body: { action: 'approve' } })
+    toast.add({ title: `${selectedDrafts.value.length} published`, icon: 'i-lucide-check', color: 'success' })
+    clearSelection()
+  } catch (e: any) {
+    bulkError.value = e?.message || 'Could not approve them all'
+  } finally {
+    bulk.value = ''
+    await loadAll().catch(() => {})
+  }
+}
+
+/** One new draft from the selection (the editor opens on it); the originals are archived, and their commits and links move over. */
+async function mergeSelected() {
+  const picked = selectedEntries.value
+  if (picked.some(e => e.status === 'published') && !confirmMerge.value) {
+    confirmMerge.value = true
+    setTimeout(() => { confirmMerge.value = false }, 3500)
+    return
+  }
+  bulk.value = 'merge'
+  bulkError.value = ''
+  try {
+    const { entry } = await api<{ entry: ChangelogEntry }>('/admin/changelog/entries/merge', {
+      method: 'POST',
+      query: { project: id },
+      body: { refs: picked.map(e => e.id), entry: { title: picked[0]!.title, body: picked.map(e => e.body).filter(Boolean).join('\n\n'), tag: picked[0]!.tag, status: 'draft' } }
+    })
+    clearSelection()
+    await loadAll()
+    openEntry(entry.id)
+  } catch (e: any) {
+    bulkError.value = e?.message || 'Could not merge them'
+  } finally {
+    bulk.value = ''
+  }
+}
+
+// ---- writing entries from commits ----
+type Run = { state: 'running' | 'done' | 'failed', created: number, skipped: number, truncated?: boolean, error?: string }
+const generateOpen = ref(false)
+const generating = ref(false)
+const generateError = ref('')
+const run = ref<Run | null>(null)
+const repos = ref<{ id: number }[] | null>(null)
+const range = ref<'all' | 'recent'>('recent')
+const rangeCount = ref(2)
+const rangeUnit = ref(7)
+const rangeItems = [{ label: 'All commits', value: 'all' }, { label: 'Only recent commits', value: 'recent' }]
+const unitItems = [{ label: 'days', value: 1 }, { label: 'weeks', value: 7 }, { label: 'months', value: 30 }]
+let poll: ReturnType<typeof setInterval> | undefined
+
+async function loadRun() {
+  run.value = (await api<{ run: Run | null }>('/admin/changelog/generate', { query: { project: id } })).run
+}
+
+function watchRun() {
+  clearInterval(poll)
+  poll = setInterval(async () => {
+    const before = run.value?.state
+    await loadRun().catch(() => {})
+    if (run.value?.state === 'running') return
+    clearInterval(poll)
+    if (before === 'running') await loadAll().catch(() => {})
+  }, 3000)
+}
+
+async function openGenerate() {
+  generateError.value = ''
+  generateOpen.value = true
+  try {
+    const [, mine] = await Promise.all([loadRun(), api<{ repos: { id: number }[] }>(`/admin/projects/${id}/repos`)])
+    repos.value = mine.repos
+    if (run.value?.state === 'running') watchRun()
+  } catch (e: any) {
+    generateError.value = e?.message || 'Could not load'
+  }
+}
+
+async function generate() {
+  generating.value = true
+  generateError.value = ''
+  try {
+    const days = range.value === 'all' ? null : Math.max(1, Math.floor(Number(rangeCount.value) || 1)) * rangeUnit.value
+    await api('/admin/changelog/generate', { method: 'POST', query: { project: id }, body: { days } })
+    await loadRun()
+    watchRun()
+  } catch (e: any) {
+    generateError.value = e?.message || 'Could not start'
+  } finally {
+    generating.value = false
+  }
+}
+
+onBeforeUnmount(() => clearInterval(poll))
+
 // ---- settings ----
 const showSettings = ref(false)
 const savingSettings = ref(false)
 const settingsSaved = ref(false)
 const settingsError = ref('')
 
-async function saveSettings(next: { autoDraft?: boolean, enabled?: boolean, comments?: boolean, notify?: boolean }) {
+async function saveSettings(next: { autoDraft?: boolean, enabled?: boolean, comments?: boolean, notify?: boolean, commitAi?: { onPush?: boolean, autoPublish?: boolean } }) {
   savingSettings.value = true
   settingsSaved.value = false
   settingsError.value = ''

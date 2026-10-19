@@ -275,6 +275,20 @@ With **auto-draft** on (Project → Changelog → Settings), a feedback post or 
 item reaching a done status drafts an entry for it, unless an entry already links
 it. Drafts are never published for you. Tickets and errors are always manual.
 
+**Write from commits (AI).** With GitHub repos connected to the project ([GITHUB.md](GITHUB.md)),
+*Changelog → From commits* has the AI read the repos' commit messages (never the code) and draft
+entries from them: for all commits, or only the last N days, weeks or months. It reads the newest
+300 commits of each repo's default branch, ignores merge commits and any commit an entry already
+cites, groups related commits, and skips what users would not notice (refactors, CI, dependency
+bumps). The entries come back as **drafts** marked *AI*, waiting for review; nothing is public
+until you approve one. In the list, select entries to approve several at once or **merge**
+them into one new draft (the originals are archived); open one to edit it. Settings has two more
+switches: **Write entries from new commits** drafts entries on every push to a repo's default
+branch (needs the GitHub webhook), and **Publish them without review** makes those pushes
+publish what they write with no human looking. That second one is off by default and only
+applies to pushes; the button never publishes. A project's pushes run at most 20 times an hour.
+Uses the workspace's AI like every other AI feature (and counts toward its credits).
+
 ### Public
 
 | | |
@@ -387,6 +401,7 @@ everyone but admins until the post is on the changelog.
 | `POST /v1/changelog/subscribe/unsubscribe` | `{ token }` or `?token=` → `{ ok: true }` |
 | `GET /v1/admin/changelog/subscriptions/summary` | Counts: active `instant`, `weekly`, `pending`, `unsubscribed` |
 | `POST /v1/admin/changelog/subscriptions/import` | Secret or operator only: `subscriptions` (up to 500) and past `runs`; created, or updated by `externalId`/email. Someone who unsubscribed here is never reactivated by an import, so a stale copy can be re-run safely; nobody is emailed |
+| `POST /v1/admin/changelog/generate` | `{ days? }`: have the AI draft entries from the project's GitHub commits (all, or the last `days`). Background; always drafts (`aiGenerated: true`). `GET` returns `{ run }`: `running` / `done` / `failed`, with `created` and `skipped` |
 | `POST /v1/admin/changelog/notify/run` | `{ job: "instant" \| "weekly", dryRun, now }`: run a beat by hand, or only report what it would do |
 
 **What goes out and when.** A publish (an entry created published, a draft approved or

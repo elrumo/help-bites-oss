@@ -19,6 +19,7 @@ export default defineNitroPlugin(() => {
   if (import.meta.prerender || !process.env.PARSE_URL || !process.env.REDIS_URL) return
 
   registerJobHandler('ai.autoReply', payload => runAutoReply(String(payload.conversationId || ''), String(payload.messageId || '')), { maxAttempts: 3, leaseSeconds: 300 })
+  registerJobHandler('changelog.commits', payload => runChangelogCommits(payload), { maxAttempts: 3, leaseSeconds: 15 * 60 })
   registerJobHandler('knowledge.index', payload => runKnowledgeIndex({ modelId: String(payload.modelId || ''), documentId: String(payload.documentId || ''), all: payload.all === true }))
   // Both walk all of a workspace's data.
   registerJobHandler('workspace.export', payload => runWorkspaceExport(String(payload.workspaceId || ''), String(payload.requestedBy || '')), { maxAttempts: 3, leaseSeconds: 30 * 60 })

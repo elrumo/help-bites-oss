@@ -5,6 +5,8 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- Changelog entries can be drafted by AI from a project's GitHub commits (on demand, or on every push), always as drafts
+  waiting for review unless the project turns on publishing without review. Select entries to approve or merge them.
 - Published as open source (AGPL-3.0). The community image is built and pushed to Docker Hub and GHCR on every tagged
   release, for amd64 and arm64.
 - `docker-compose.yml` pulls the published image; `docker-compose.build.yml` builds from source.

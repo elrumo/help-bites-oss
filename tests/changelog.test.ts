@@ -62,6 +62,7 @@ const entry = (fields: Partial<ChangelogEntry> = {}): ChangelogEntry => ({
   reviewedBy: 'Reviewer Secret',
   reviewedAt: '2026-10-01T00:00:00.000Z',
   reviewNotes: 'internal notes',
+  aiGenerated: false,
   authorName: 'Elías',
   source: 'internal',
   commentCount: 2,
