@@ -12,10 +12,19 @@ struct ProjectsAdminProject: Decodable, Sendable {
   let fromEmail, replyTo, mailDomain: String?
   let letUsersChooseType, allowOtherType, hasActionWebhookSecret, emailLogContent: Bool?
   let errors: ProjectErrors?
+  /// Every tracker project it reports to (`errors` is the first); nil from an older server.
+  let errorLinks: [ErrorLink]?
+  /// Chat and feedback with only an email address; nil from an older server.
+  let allowAnonymousUsers: Bool?
   let feedback: Feedback?
   let flags: [ProjectsFlag]?
   /// The project board's settings; nil from a server without boards.
   let board: BoardConfig?
+
+  /// `ErrorLinkView` (server/utils/errorTracking.ts): one tracker project of this project.
+  struct ErrorLink: Decodable, Identifiable, Sendable, Equatable {
+    let id, label, name, team, serverId, provider, providerName, dsn, url, alertWebhookUrl: String
+  }
 
   /// What other screens need of the feedback board: whether it is on, offers a
   /// roadmap, and its statuses (a linked post's status badge).
@@ -37,7 +46,8 @@ struct ProjectsAdminProject: Decodable, Sendable {
   }
 
   /// One response decoded twice: the full row for the form, the shared one for `Workspace`.
-  private struct Saved: Decodable, Sendable {
+  /// Any `{ project, … }` reply decodes as this (error-link routes, connect).
+  struct Saved: Decodable, Sendable {
     let full: ProjectsAdminProject
     let shared: Project
     enum CodingKeys: CodingKey { case project }

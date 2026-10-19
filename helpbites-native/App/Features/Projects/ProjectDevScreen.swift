@@ -1,43 +1,65 @@
-import PhotosUI
 import SwiftUI
 
-/// A project's keys, install snippets and settings (web: projects/[id]/dev.vue).
+/// A project's keys, install snippets and webhooks (web: projects/[id]/dev.vue).
+/// Name, branding and email sending are on Settings.
 struct ProjectDevScreen: View {
   let projectId: String
   @Environment(Workspace.self) private var workspace
   @Environment(SessionStore.self) private var session
   @Environment(\.horizontalSizeClass) private var sizeClass
+  @Environment(\.openURL) private var openURL
 
   @State private var project: ProjectsAdminProject?
-  @State private var form = DevForm()
   @State private var loadError = ""
+  @State private var tab = Tab.chat
   @State private var secret = ""
+  @State private var justCreated = false
   @State private var keyError = ""
   @State private var confirmRotate = false
   @State private var copied = ""
+  @State private var connectErrorsOpen = false
+  // Security and webhooks
+  @State private var originsText = ""
+  @State private var webhookUrl = ""
+  @State private var webhookSecret = ""
   @State private var saving = false
   @State private var saved = false
   @State private var saveError = ""
-  @State private var uploading: DevLogo?
-  @State private var brandPick: PhotosPickerItem?
-  @State private var assistantPick: PhotosPickerItem?
-  @State private var iconPick: PhotosPickerItem?
-  @State private var connectErrorsOpen = false
-  /// The server's sender, greyed out behind blank email fields (`GET /v1/admin/email-settings`).
-  @State private var emailDefaults: EmailDefaults?
+
+  private enum Tab: String, CaseIterable, Identifiable {
+    case chat, feedback, flags, errors, email
+    var id: String { rawValue }
+    var label: String {
+      switch self {
+      case .chat: "Chat widget"
+      case .feedback: "Feedback"
+      case .flags: "Flags"
+      case .errors: "Errors"
+      case .email: "Email API"
+      }
+    }
+    var systemImage: String {
+      switch self {
+      case .chat: "bubble.left.and.text.bubble.right"
+      case .feedback: "lightbulb"
+      case .flags: "switch.2"
+      case .errors: "ladybug"
+      case .email: "envelope"
+      }
+    }
+  }
+
+  private enum Tone { case ok, warn, off }
 
   var body: some View {
     ScrollView {
       Group {
         if let project {
-          VStack(alignment: .leading, spacing: 44) {
-            keys(project)
-            connect(project)
-            feedbackBoard(project)
-            featureFlags(project)
-            errorTracking(project)
-            email(project)
-            settings(project)
+          VStack(alignment: .leading, spacing: 40) {
+            header(project)
+            credentials(project)
+            integrations(project)
+            security(project)
           }
         } else if !loadError.isEmpty {
           ErrorText(message: loadError)
@@ -45,144 +67,233 @@ struct ProjectDevScreen: View {
           SkeletonRows(count: 4)
         }
       }
-      .frame(maxWidth: 640, alignment: .leading)
+      .frame(maxWidth: 720, alignment: .leading)
       .padding(.horizontal, 20)
       .padding(.vertical, 28)
       .frame(maxWidth: .infinity)
     }
     .scrollDismissesKeyboard(.interactively)
     .projectScreen(projectId, "Dev")
+    .toolbar {
+      ToolbarItemGroup(placement: .primaryAction) {
+        Button { workspace.go(.developer) } label: { Label("Guide", systemImage: "book") }
+        if let docs = URL(string: appURL + "/_docs/scalar") {
+          Button { openURL(docs) } label: { Label("API reference", systemImage: "chevron.left.forwardslash.chevron.right") }
+        }
+      }
+    }
     .confirmationDialog("Rotate the secret?", isPresented: $confirmRotate, titleVisibility: .visible) {
       Button("Rotate secret", role: .destructive) { Task { await rotate() } }
     } message: {
       Text("Tokens minted with the current one stop working right away.")
     }
-    .onChange(of: brandPick) { _, item in Task { await upload(.brand, item) } }
-    .onChange(of: assistantPick) { _, item in Task { await upload(.assistant, item) } }
-    .onChange(of: iconPick) { _, item in Task { await upload(.icon, item) } }
     .sheet(isPresented: $connectErrorsOpen) {
-      ConnectErrorTrackingSheet(projectId: projectId) { connected in project = connected }
+      ConnectErrorTrackingSheet(projectId: projectId, projectName: project?.name ?? "", existing: project?.errorLinks ?? []) { connected in fill(connected) }
     }
     .task {
-      // Just created: show the secret once, as the web's ?secret= does.
-      if let fresh = workspace.newProjectSecrets.removeValue(forKey: projectId) { secret = fresh }
+      // Just created: show the secret once, as the web does.
+      if let fresh = workspace.newProjectSecrets.removeValue(forKey: projectId) { secret = fresh; justCreated = true }
       await load()
     }
   }
 
   // MARK: Sections
 
-  private func keys(_ project: ProjectsAdminProject) -> some View {
-    VStack(alignment: .leading, spacing: 14) {
-      heading("Keys")
+  private func header(_ project: ProjectsAdminProject) -> some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Text("Connect \(project.name)").font(.lnTitle).foregroundStyle(Theme.textHighlighted)
+      Text("Keys, snippets and webhooks for your code. Name, branding and email sending are in project settings.")
+        .font(.lnMeta).foregroundStyle(Theme.textMuted)
+      Button("Project settings") { workspace.go(.project(projectId, .settings)) }.buttonStyle(.lnGhost).padding(.leading, -10)
+    }
+  }
+
+  private func credentials(_ project: ProjectsAdminProject) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      heading("Credentials")
       Card {
         CardRow {
-          LabeledField(label: "Public key") {
+          LabeledField(label: "Public key", hint: "Names the project. Safe in browsers.") {
+            HStack(spacing: 8) { code(project.publicKey); copyButton(project.publicKey, id: "pk") }
+          }
+        }
+        CardRow {
+          LabeledField(label: "Secret key", hint: "Signs identity tokens and calls the server API. Never ship it to a browser.") {
             HStack(spacing: 8) {
-              code(project.publicKey)
-              copyButton(project.publicKey, id: "public")
+              code(secret.isEmpty ? String(repeating: "•", count: 24) : secret)
+              if !secret.isEmpty { copyButton(secret, id: "sk") }
+              IconButton(systemImage: secret.isEmpty ? "eye" : "eye.slash", label: secret.isEmpty ? "Reveal secret" : "Hide secret", bordered: true) {
+                if secret.isEmpty { Task { await reveal() } } else { secret = "" }
+              }
+              IconButton(systemImage: "arrow.triangle.2.circlepath", label: "Rotate secret", bordered: true) { confirmRotate = true }
             }
           }
         }
         CardRow(divider: false) {
-          LabeledField(label: "Secret") {
-            HStack(spacing: 8) {
-              code(secret.isEmpty ? String(repeating: "•", count: 28) : secret)
-              if secret.isEmpty {
-                Button("Reveal") { Task { await reveal() } }.buttonStyle(.lnSecondaryCompact)
-              } else {
-                copyButton(secret, id: "secret")
-              }
-              Button("Rotate") { confirmRotate = true }.buttonStyle(.lnSecondaryCompact)
-            }
+          LabeledField(label: "Base URL", hint: "Where your site and server reach HelpBites.") {
+            HStack(spacing: 8) { code(appURL); copyButton(appURL, id: "url") }
           }
         }
       }
       ErrorText(message: keyError)
-      Text("The secret signs identity tokens on your server. Never ship it to a browser. Rotating it invalidates tokens minted with the old one.")
-        .font(.lnCaption).foregroundStyle(Theme.textMuted)
+      if justCreated {
+        Label("Your new project's secret is shown above. You can reveal it again here any time; rotating it invalidates tokens minted with the old one.", systemImage: "info.circle")
+          .font(.lnCaption).foregroundStyle(Theme.textMuted)
+      }
     }
   }
 
-  private func connect(_ project: ProjectsAdminProject) -> some View {
-    VStack(alignment: .leading, spacing: 16) {
-      heading("Connect \(project.name)")
-      VStack(alignment: .leading, spacing: 6) {
-        paragraph("Point your website at this HelpBites endpoint:")
-        HStack(spacing: 8) {
-          code(appURL)
-          Button(copied == "base" ? "Copied" : "Copy") { copy(appURL, id: "base") }.buttonStyle(.lnSecondaryCompact)
+  // MARK: Integrations: each tile is a tab for its guide below.
+
+  private func integrations(_ project: ProjectsAdminProject) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      heading("Integrations")
+      LazyVGrid(columns: [GridItem(.adaptive(minimum: sizeClass == .regular ? 130 : 150), spacing: 8)], spacing: 8) {
+        ForEach(Tab.allCases) { item in
+          let (tone, status) = summary(item, project)
+          Button { tab = item } label: {
+            VStack(alignment: .leading, spacing: 6) {
+              Label { Text(item.label) } icon: { Image(systemName: item.systemImage).foregroundStyle(Theme.textMuted) }
+                .font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+              HStack(spacing: 6) {
+                Circle().fill(color(tone)).frame(width: 6, height: 6)
+                Text(status).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
+              }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(tab == item ? Theme.elevated : Color.clear, in: RoundedRectangle(cornerRadius: Metrics.radiusLarge))
+            .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(tab == item ? Theme.borderAccented : Theme.border))
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityAddTraits(tab == item ? .isSelected : [])
         }
       }
-      paragraph("On your server, mint a token for the signed-in user. Any language works; this is Node:")
-      CodeBlock(code: mintSnippet(project.publicKey))
-      paragraph("On your site, load the widget and hand it that token:")
-      CodeBlock(code: widgetSnippet(project.publicKey))
-      paragraph("Or build your own UI against the [API](\(appURL)/_docs/scalar), sending `Authorization: Bearer <token>`. Pass `assistantId` when opening a conversation to route it to a specific assistant (copy the ID from the Assistants tab).")
+      VStack(alignment: .leading, spacing: 18) {
+        switch tab {
+        case .chat: chatPanel(project)
+        case .feedback: feedbackPanel(project)
+        case .flags: flagsPanel(project)
+        case .errors: errorsPanel(project)
+        case .email: emailPanel(project)
+        }
+      }
+      .padding(16)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
     }
   }
 
-  private func feedbackBoard(_ project: ProjectsAdminProject) -> some View {
-    let enabled = project.feedback?.enabled == true
-    return VStack(alignment: .leading, spacing: 16) {
-      HStack(spacing: 10) {
-        heading("Feedback board")
-        StatusDot(status: enabled ? "on" : "off", label: enabled ? "On" : "Off")
-        Spacer(minLength: 0)
+  private func summary(_ tab: Tab, _ project: ProjectsAdminProject) -> (Tone, String) {
+    switch tab {
+    case .chat:
+      let origins = project.allowedOrigins.count
+      return (origins > 0 ? .ok : .warn, origins > 0 ? "\(origins) allowed origin\(origins == 1 ? "" : "s")" : "No allowed origins")
+    case .feedback:
+      let on = project.feedback?.enabled == true
+      return (on ? .ok : .off, on ? "Board on" : "Off")
+    case .flags:
+      let flags = project.flags?.count ?? 0
+      return (flags > 0 ? .ok : .off, flags > 0 ? "\(flags) flag\(flags == 1 ? "" : "s")" : "None yet")
+    case .errors:
+      let connected = project.errors?.connected == true
+      return (connected ? .ok : .off, connected ? (project.errors?.providerName ?? "Connected") : "Not connected")
+    case .email:
+      return (.ok, (project.fromEmail ?? "").isEmpty ? "Default sender" : project.fromEmail ?? "")
+    }
+  }
+
+  private func color(_ tone: Tone) -> Color {
+    switch tone {
+    case .ok: Theme.success
+    case .warn: Theme.warning
+    case .off: Theme.textDimmed
+    }
+  }
+
+  private func panelHead(_ text: String, @ViewBuilder actions: () -> some View) -> some View {
+    VStack(alignment: .leading, spacing: 4) {
+      paragraph(text)
+      HStack(spacing: 4) { actions() }.padding(.leading, -10)
+    }
+  }
+
+  private func step(_ number: Int, _ title: String, _ text: String? = nil, snippet: String? = nil) -> some View {
+    HStack(alignment: .top, spacing: 12) {
+      Text("\(number)").font(.system(size: 11, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textToned)
+        .frame(width: 24, height: 24).background(Theme.elevated, in: Circle()).overlay(Circle().strokeBorder(Theme.border))
+      VStack(alignment: .leading, spacing: 8) {
+        Text(title).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).frame(minHeight: 24, alignment: .leading)
+        if let text { paragraph(text) }
+        if let snippet { CodeBlock(code: snippet) }
+      }
+    }
+  }
+
+  private func chatPanel(_ project: ProjectsAdminProject) -> some View {
+    VStack(alignment: .leading, spacing: 18) {
+      panelHead("Your server signs a short token for the signed-in user; the widget hands it to HelpBites.") {
+        manage(.settings, label: "Widget settings")
+      }
+      step(1, "Mint a token on your server", "Any language works; this is Node with no dependencies.", snippet: mintSnippet(project.publicKey))
+      step(2, "Load the widget on your site", "Only the allowed origins below may host it.", snippet: widgetSnippet(project.publicKey))
+      step(3, "Or build your own UI", "Call the [API](\(appURL)/_docs/scalar) with `Authorization: Bearer <token>`. Pass `assistantId` when opening a conversation to route it to a specific assistant (copy the ID from the Assistants tab).")
+    }
+  }
+
+  private func feedbackPanel(_ project: ProjectsAdminProject) -> some View {
+    VStack(alignment: .leading, spacing: 18) {
+      panelHead("A public board where users post ideas, vote and comment. \(project.feedback?.enabled == true ? "It is on." : "Turn it on from the Feedback page.")") {
         manage(.feedback)
       }
-      paragraph("Drop the ready-made board into any page. Anyone can read it; pass the same token as the chat so signed-in users can post, vote and comment:")
-      CodeBlock(code: feedbackSnippet(project.publicKey))
-      paragraph("Or build your own UI on `/v1/feedback` ([API](\(appURL)/_docs/scalar)): read with `?pk=\(project.publicKey)`, write with the identity token. Add `role: \"admin\"` to a token to let one of your staff moderate. Bring old feedback over with `POST /v1/feedback/import` and the secret.")
+      step(1, "Drop the board into any page", "Anyone can read it; pass the same token as the chat so signed-in users can post, vote and comment.", snippet: feedbackSnippet(project.publicKey))
+      step(2, "Or build your own UI", "Use `/v1/feedback` ([API](\(appURL)/_docs/scalar)): read with `?pk=\(project.publicKey)`, write with the identity token. Add `role: \"admin\"` to a token to let one of your staff moderate. Bring old feedback over with `POST /v1/feedback/import` and the secret.")
     }
   }
 
-  private func featureFlags(_ project: ProjectsAdminProject) -> some View {
-    VStack(alignment: .leading, spacing: 16) {
-      HStack(spacing: 10) {
-        heading("Feature flags")
-        Tag(text: "\(project.flags?.count ?? 0)")
-        Spacer(minLength: 0)
-        manage(.flags)
-      }
-      paragraph("Read them from your server with the secret and decide `admins` flags against your own admin check and each flag's `allow` list. Cache about 30 seconds, keep the last good answer through a blip, then use each flag's `fallback`; treat unknown flags as off. A browser can ask with `?pk=` or the identity token instead and gets `enabled` already worked out (`role: \"admin\"` counts as an admin).")
+  private func flagsPanel(_ project: ProjectsAdminProject) -> some View {
+    VStack(alignment: .leading, spacing: 14) {
+      panelHead("Read flags from your server with the secret and decide them against your own admin check.") { manage(.flags) }
+      paragraph("Decide `admins` flags against your own admin check and each flag's `allow` list. Cache about 30 seconds, keep the last good answer through a blip, then use each flag's `fallback`; treat unknown flags as off. A browser can ask with `?pk=` or the identity token instead and gets `enabled` already worked out (`role: \"admin\"` counts as an admin).")
       CodeBlock(code: flagsSnippet)
     }
   }
 
-  private func errorTracking(_ project: ProjectsAdminProject) -> some View {
-    let errors = project.errors
-    let connected = errors?.connected == true
-    return VStack(alignment: .leading, spacing: 16) {
-      HStack(spacing: 10) {
-        heading("Error tracking")
-        StatusDot(status: connected ? "on" : "off", label: connected ? "Connected" : "Off")
-        Spacer(minLength: 0)
-        Button { workspace.go(.project(projectId, .errors)) } label: {
-          HStack(spacing: 4) { Text("Errors"); Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold)) }
-        }
-        .buttonStyle(.lnGhost)
-      }
+  private func errorsPanel(_ project: ProjectsAdminProject) -> some View {
+    let links = project.errorLinks ?? []
+    let connected = project.errors?.connected == true
+    return VStack(alignment: .leading, spacing: 14) {
       if connected {
-        paragraph("Reporting to \(errors?.providerName ?? "the tracker").")
-        if let webhook = errors?.alertWebhookUrl, !webhook.isEmpty {
-          paragraph("To get alerts in the inbox, open the project's alerts in Bugsink, click Add, set Kind to **Custom** and use this Webhook url:")
-          CodeBlock(code: webhook)
+        panelHead("Reporting to \(links.count > 1 ? links.map(\.label).joined(separator: ", ") : project.errors?.providerName ?? "the tracker").") {
+          Button("Manage servers") { workspace.go(.connections) }.buttonStyle(.lnGhost)
+          Button("Connect another") { connectErrorsOpen = true }.buttonStyle(.lnGhost)
+          manage(.errors, label: "Errors")
         }
-        paragraph("Use this DSN in browser and server SDKs. Set the same stable HelpBites identity id as the Sentry user id to show a customer’s errors in their conversation.")
-        CodeBlock(code: sentrySnippet(errors?.dsn ?? ""))
+        ForEach(links.filter { !$0.alertWebhookUrl.isEmpty }) { link in
+          VStack(alignment: .leading, spacing: 6) {
+            paragraph("To get \(links.count > 1 ? "\(link.label)'s " : "")alerts in the inbox, open the project's alerts in Bugsink, click Add, set Kind to **Slack** and use this Webhook url:")
+            CodeBlock(code: link.alertWebhookUrl)
+          }
+        }
+        paragraph("Use this DSN in browser and server SDKs\(links.count > 1 ? " (\(links[0].label))" : ""). Set the same stable HelpBites identity id as the Sentry user id to show a customer’s errors in their conversation.")
+        CodeBlock(code: sentrySnippet(project.errors?.dsn ?? ""))
+        ForEach(links.dropFirst()) { link in
+          VStack(alignment: .leading, spacing: 6) {
+            paragraph("DSN for \(link.label):")
+            CodeBlock(code: link.dsn)
+          }
+        }
       } else {
-        paragraph("Connect GlitchTip or Bugsink to give this project a Sentry-compatible DSN and send alerts to the inbox.")
-        Button("Connect error tracking") { connectErrorsOpen = true }.buttonStyle(.lnPrimaryCompact)
+        panelHead("Connect GlitchTip or Bugsink to give this project a Sentry-compatible DSN and send alerts to the inbox.") { manage(.errors, label: "Errors") }
+        Button { connectErrorsOpen = true } label: { Label("Connect error tracking", systemImage: "link") }.buttonStyle(.lnPrimaryCompact)
       }
     }
   }
 
-  private func email(_ project: ProjectsAdminProject) -> some View {
-    VStack(alignment: .leading, spacing: 16) {
-      HStack(spacing: 10) {
-        heading("Email")
-        Spacer(minLength: 0)
+  private func emailPanel(_ project: ProjectsAdminProject) -> some View {
+    VStack(alignment: .leading, spacing: 14) {
+      panelHead("Send from your server with the secret.") {
         manage(.email, label: "Templates")
         NavigationLink {
           EmailLibraryScreen(projectId: projectId, initialTab: .log)
@@ -191,151 +302,56 @@ struct ProjectDevScreen: View {
         }
         .buttonStyle(.lnGhost)
       }
-      paragraph("Send from your server with the secret: one of this project's templates by its send key, your own HTML (in the body, or uploaded as an `html` file), or a plain message in the project's layout. Each recipient gets their own message and a row in the log; `GET /v1/email-logs` reads it back.")
+      paragraph("Send one of this project's templates by its send key, your own HTML (in the body, or uploaded as an `html` file), or a plain message in the project's layout. Each recipient gets their own message and a row in the log; `GET /v1/email-logs` reads it back. The sender is set in project settings.")
+      Button("Email settings") { workspace.go(.project(projectId, .settings)) }.buttonStyle(.lnGhost).padding(.leading, -10)
       CodeBlock(code: emailSnippet)
     }
   }
 
-  private func emailSending() -> some View {
-    VStack(alignment: .leading, spacing: 16) {
-      VStack(alignment: .leading, spacing: 2) {
-        Text("Email sending").font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
-        Text("Who this project's email comes from: the send API, notifications and feedback updates. Blank fields use the server's defaults, shown greyed out.")
-          .font(.lnCaption).foregroundStyle(Theme.textMuted)
-      }
-      pair {
-        LabeledField(label: "From address") { emailField(emailDefaults?.fromEmail.nonEmpty ?? "hello@mail.example.com", text: $form.fromEmail) }
-      } _: {
-        LabeledField(label: "Sending domain") {
-          TextField(emailDefaults?.domain.nonEmpty ?? "mail.example.com", text: $form.mailDomain).textFieldStyle(.linear).font(.lnMono)
-            .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-        }
-      }
-      pair {
-        LabeledField(label: "Reply-to") { emailField("Replies go to the from address", text: $form.replyTo) }
-      } _: {
-        LabeledField(label: "Email log", hint: "Shows the message itself in the log. It can include sign-in and reset links.") {
-          toggle("Keep a copy of each email", isOn: $form.emailLogContent)
-        }
-      }
-      Text("The from name is **Reply as** above. The sending domain must be in the same Mailgun account as the server's API key, and the from address should be on it.")
-        .font(.lnCaption).foregroundStyle(Theme.textMuted)
-    }
-    .padding(16)
-    .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
-  }
+  // MARK: Security and webhooks
 
-  private func emailField(_ prompt: String, text: Binding<String>) -> some View {
-    TextField(prompt, text: text).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
-  }
-
-  private func settings(_ project: ProjectsAdminProject) -> some View {
-    VStack(alignment: .leading, spacing: 18) {
-      Rectangle().fill(Theme.border).frame(height: 1).padding(.bottom, 10)
-      heading("Settings")
-      LabeledField(label: "Name") { TextField("", text: $form.name).textFieldStyle(.linear) }
-      LabeledField(label: "Chat notice", hint: "Shown centered at the top of every new chat — e.g. “A human always reads this; an AI may answer first.” Leave blank to hide.") {
-        LinearTextEditor(text: $form.chatNotice, placeholder: "A human will always read this chat, but an AI might answer your questions first.", minHeight: 64)
-      }
-      iconField(project)
-      pair { logoField(.brand) } _: { logoField(.assistant) }
-      Text("Uploads apply when you save.").font(.lnCaption).foregroundStyle(Theme.textMuted).padding(.top, -8)
-      pair {
-        LabeledField(label: "Site URL", hint: "Used in email links") { urlField("https://app.example.com", text: $form.siteUrl) }
-      } _: {
-        LabeledField(label: "Inbox path", hint: "Where the widget lives on that site") { urlField("/app", text: $form.inboxPath) }
-      }
-      pair {
-        LabeledField(label: "Action webhook URL", hint: "Receives signed operator actions") { urlField("https://api.example.com/helpbites/actions", text: $form.actionWebhookUrl) }
-      } _: {
-        LabeledField(label: "Action webhook secret", hint: project.hasActionWebhookSecret == true ? "Leave blank to keep the current secret." : "At least 16 characters.") {
-          SecureField("••••••••••••••••", text: $form.actionWebhookSecret).textFieldStyle(.linear)
+  private func security(_ project: ProjectsAdminProject) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      heading("Security and webhooks")
+      VStack(alignment: .leading, spacing: 16) {
+        LabeledField(label: "Allowed origins", hint: "One per line. Only these sites may host the widget.") {
+          LinearTextEditor(text: $originsText, placeholder: "https://app.example.com", minHeight: 64, monospaced: true)
+            .autocorrectionDisabled().textInputAutocapitalization(.never).keyboardType(.URL)
         }
-      }
-      LabeledField(label: "Allowed origins", hint: "One per line. Only these sites may host the widget.") {
-        LinearTextEditor(text: $form.allowedOrigins, placeholder: "https://app.example.com", minHeight: 64, monospaced: true)
-          .autocorrectionDisabled().textInputAutocapitalization(.never).keyboardType(.URL)
-      }
-      pair {
-        LabeledField(label: "Reply as", hint: "Signs your replies and their emails") { TextField("Elías", text: $form.fromName).textFieldStyle(.linear) }
-      } _: {
-        LabeledField(label: "Notify these emails when a user writes", hint: "Comma separated") {
-          TextField("you@example.com", text: $form.notifyEmails).textFieldStyle(.linear)
-            .keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
-        }
-      }
-      emailSending()
-      pair {
-        LabeledField(label: "Accent colour", hint: "The widget's send button and your bubbles") {
-          HStack(spacing: 10) {
-            ColorPicker("Accent colour", selection: accentBinding, supportsOpacity: false).labelsHidden()
-            TextField("#0f766e", text: $form.accent).textFieldStyle(.linear).frame(maxWidth: 140)
-              .textInputAutocapitalization(.never).autocorrectionDisabled()
+        pair {
+          LabeledField(label: "Action webhook URL", hint: "Receives signed operator actions") {
+            TextField("https://api.example.com/helpbites/actions", text: $webhookUrl).textFieldStyle(.linear)
+              .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+          }
+        } _: {
+          LabeledField(label: "Action webhook secret", hint: project.hasActionWebhookSecret == true ? "Leave blank to keep the current secret." : "At least 16 characters.") {
+            SecureField("••••••••••••••••", text: $webhookSecret).textFieldStyle(.linear)
           }
         }
-      } _: {
-        LabeledField(label: "Attachments") { toggle("Users can attach images", isOn: $form.allowAttachments) }
-      }
-      LabeledField(label: "Request type", hint: "Only takes effect once you have more than one ticket type.") {
-        VStack(alignment: .leading, spacing: 10) {
-          toggle("Let users choose a request type when starting a chat", isOn: $form.letUsersChooseType)
-          toggle("Offer an “Other” option (creates a plain support ticket)", isOn: $form.allowOtherType).disabled(!form.letUsersChooseType)
-        }
-      }
-      ErrorText(message: saveError)
-      HStack(spacing: 12) {
-        Button { Task { await save() } } label: {
-          if saving { ProgressView().tint(.white) } else { Text("Save changes") }
-        }
-        .buttonStyle(.lnPrimary)
-        .disabled(saving || uploading != nil)
-        if saved { Text("Saved").font(.lnMeta).foregroundStyle(Theme.textMuted) }
-      }
-    }
-  }
-
-  private func iconField(_ project: ProjectsAdminProject) -> some View {
-    LabeledField(label: DevLogo.icon.label, hint: DevLogo.icon.hint) {
-      HStack(spacing: 12) {
-        ProjectTile(id: project.id, name: form.name, accent: form.accent, icon: form.iconUrl, size: 40)
-        PhotosPicker(selection: $iconPick, matching: .images, preferredItemEncoding: .compatible) {
-          if uploading == .icon { ProgressView() } else { Text("Upload") }
-        }
-        .buttonStyle(.lnSecondaryCompact)
-        .disabled(uploading != nil)
-        if !form.iconUrl.isEmpty {
-          Button("Remove") { setLogo(.icon, "") }.buttonStyle(.lnGhost)
-        }
-      }
-    }
-  }
-
-  private func logoField(_ logo: DevLogo) -> some View {
-    let url = logo == .brand ? form.brandLogoUrl : form.assistantLogoUrl
-    let busy = uploading == logo
-    return LabeledField(label: logo.label, hint: logo.hint) {
-      HStack(spacing: 12) {
-        Group {
-          if !url.isEmpty, let image = URL(string: url) {
-            AsyncImage(url: image) { $0.resizable().scaledToFit() } placeholder: { ProgressView() }
-          } else {
-            Image(systemName: logo.placeholder).font(.system(size: 18)).foregroundStyle(Theme.textDimmed)
+        HStack(spacing: 12) {
+          Button { Task { await saveSecurity() } } label: {
+            if saving { ProgressView().tint(.white) } else { Text("Save") }
+          }
+          .buttonStyle(.lnPrimaryCompact)
+          .disabled(saving || !securityDirty(project))
+          if !saveError.isEmpty {
+            Text(saveError).font(.lnMeta).foregroundStyle(Theme.error)
+          } else if saved && !securityDirty(project) {
+            Text("Saved").font(.lnMeta).foregroundStyle(Theme.textMuted)
           }
         }
-        .frame(width: 40, height: 40)
-        .background(Theme.elevated)
-        .clipShape(RoundedRectangle(cornerRadius: Metrics.radius))
-        .accessibilityLabel(Text(logo.label))
-        PhotosPicker(selection: logo == .brand ? $brandPick : $assistantPick, matching: .images, preferredItemEncoding: .compatible) {
-          if busy { ProgressView() } else { Text("Upload") }
-        }
-        .buttonStyle(.lnSecondaryCompact)
-        .disabled(uploading != nil)
-        if !url.isEmpty {
-          Button("Remove") { setLogo(logo, "") }.buttonStyle(.lnGhost)
-        }
       }
+      .padding(16)
+      .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
     }
+  }
+
+  private var origins: [String] {
+    originsText.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+  }
+
+  private func securityDirty(_ project: ProjectsAdminProject) -> Bool {
+    origins != project.allowedOrigins || webhookUrl != (project.actionWebhookUrl ?? "") || !webhookSecret.isEmpty
   }
 
   // MARK: Small pieces
@@ -352,7 +368,7 @@ struct ProjectDevScreen: View {
   }
 
   private func code(_ text: String) -> some View {
-    Text(text).font(.lnMono).foregroundStyle(Theme.text).textSelection(.enabled)
+    Text(text).font(.lnMono).foregroundStyle(Theme.text).textSelection(.enabled).lineLimit(1).truncationMode(.middle)
       .padding(.horizontal, 10).padding(.vertical, 8)
       .frame(maxWidth: .infinity, alignment: .leading)
       .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
@@ -369,25 +385,13 @@ struct ProjectDevScreen: View {
     .buttonStyle(.lnGhost)
   }
 
-  private func urlField(_ prompt: String, text: Binding<String>) -> some View {
-    TextField(prompt, text: text).textFieldStyle(.linear).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-  }
-
-  private func toggle(_ label: String, isOn: Binding<Bool>) -> some View {
-    Toggle(isOn: isOn) { Text(label).font(.lnCallout).foregroundStyle(Theme.text) }.tint(Theme.accent)
-  }
-
-  /// Two fields side by side on iPad, stacked on iPhone (the web's `sm:grid-cols-2`).
+  /// Two fields side by side on iPad and Mac, stacked on iPhone (the web's `sm:grid-cols-2`).
   private func pair<First: View, Second: View>(@ViewBuilder _ first: () -> First, @ViewBuilder _ second: () -> Second) -> some View {
-    let layout = sizeClass == .regular ? AnyLayout(HStackLayout(alignment: .top, spacing: 16)) : AnyLayout(VStackLayout(alignment: .leading, spacing: 18))
+    let layout = sizeClass == .regular ? AnyLayout(HStackLayout(alignment: .top, spacing: 16)) : AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
     return layout {
       first().frame(maxWidth: .infinity, alignment: .leading)
       second().frame(maxWidth: .infinity, alignment: .leading)
     }
-  }
-
-  private var accentBinding: Binding<Color> {
-    Binding(get: { Color(hexString: form.accent) ?? Theme.accent }, set: { form.accent = $0.hexString })
   }
 
   private var appURL: String { session.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/")) }
@@ -401,25 +405,17 @@ struct ProjectDevScreen: View {
     }
   }
 
-  private func setLogo(_ logo: DevLogo, _ url: String) {
-    switch logo {
-    case .brand: form.brandLogoUrl = url
-    case .assistant: form.assistantLogoUrl = url
-    case .icon: form.iconUrl = url
-    }
-  }
-
   // MARK: Requests
 
+  private func fill(_ loaded: ProjectsAdminProject) {
+    project = loaded
+    originsText = loaded.allowedOrigins.joined(separator: "\n")
+    webhookUrl = loaded.actionWebhookUrl ?? ""
+    webhookSecret = ""
+  }
+
   private func load() async {
-    do {
-      let loaded = try await ProjectsAdminProject.load(projectId, session: session)
-      project = loaded
-      form = DevForm(loaded)
-    } catch {
-      loadError = error.localizedDescription
-    }
-    emailDefaults = try? await session.get("/v1/admin/email-settings")
+    do { fill(try await ProjectsAdminProject.load(projectId, session: session)) } catch { loadError = error.localizedDescription }
   }
 
   private func reveal() async {
@@ -440,75 +436,16 @@ struct ProjectDevScreen: View {
     } catch { keyError = error.localizedDescription }
   }
 
-  /// `POST /projects/:id/logo` returns the stored image; the URL lands on the project when you save.
-  private func upload(_ logo: DevLogo, _ item: PhotosPickerItem?) async {
-    guard let item else { return }
-    uploading = logo
-    saveError = ""
-    defer {
-      uploading = nil
-      switch logo {
-      case .brand: brandPick = nil
-      case .assistant: assistantPick = nil
-      case .icon: iconPick = nil
-      }
-    }
-    do {
-      guard let data = try await item.loadTransferable(type: Data.self) else { throw APIError.server("Could not read that image") }
-      // The server sniffs PNG, JPEG, GIF or WebP; anything else (HEIC) goes up as JPEG.
-      let magic: [[UInt8]] = [[0x89, 0x50, 0x4E, 0x47], [0xFF, 0xD8, 0xFF], [0x47, 0x49, 0x46], [0x52, 0x49, 0x46, 0x46]]
-      let accepted = magic.contains { data.starts(with: $0) }
-      guard let file = accepted ? data : PlatformImage(data: data)?.jpegBytes(quality: 0.9) else {
-        throw APIError.server("Only PNG, JPEG, GIF and WebP images are accepted")
-      }
-      let stored: Attachment = try await session.upload("/v1/admin/projects/\(projectId)/logo", file: file, filename: "logo", mimeType: accepted ? "application/octet-stream" : "image/jpeg")
-      setLogo(logo, stored.url)
-    } catch {
-      saveError = error.localizedDescription
-    }
-  }
-
-  private func save() async {
-    let accent = form.accent.trimmingCharacters(in: .whitespaces)
-    guard accent.isEmpty || accent.wholeMatch(of: /#[0-9a-fA-F]{6}/) != nil else {
-      saveError = "Accent colour must be a hex value like #0f766e."
-      return
-    }
-    saving = true
-    saved = false
-    saveError = ""
+  /// Origins and the action webhook only; everything else on the project is untouched.
+  private func saveSecurity() async {
+    struct Input: Encodable, Sendable { let allowedOrigins: [String]; let actionWebhookUrl: String; let actionWebhookSecret: String? }
+    saving = true; saved = false; saveError = ""
     defer { saving = false }
-    let body = DevInput(
-      name: form.name,
-      chatNotice: form.chatNotice,
-      brandLogoUrl: form.brandLogoUrl,
-      assistantLogoUrl: form.assistantLogoUrl,
-      iconUrl: form.iconUrl,
-      siteUrl: form.siteUrl,
-      inboxPath: form.inboxPath,
-      allowedOrigins: form.allowedOrigins.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty },
-      fromName: form.fromName,
-      notifyEmails: form.notifyEmails,
-      fromEmail: form.fromEmail.trimmingCharacters(in: .whitespaces),
-      replyTo: form.replyTo.trimmingCharacters(in: .whitespaces),
-      mailDomain: form.mailDomain.trimmingCharacters(in: .whitespaces),
-      emailLogContent: form.emailLogContent,
-      allowAttachments: form.allowAttachments,
-      letUsersChooseType: form.letUsersChooseType,
-      allowOtherType: form.allowOtherType,
-      actionWebhookUrl: form.actionWebhookUrl,
-      actionWebhookSecret: form.actionWebhookSecret.isEmpty ? nil : form.actionWebhookSecret,
-      // `theme` is replaced whole on the server: send `dark` back so saving here keeps it.
-      theme: ProjectTheme(accent: accent.isEmpty ? nil : accent, dark: project?.theme.dark)
-    )
     do {
-      let updated = try await ProjectsAdminProject.save(projectId, body, workspace: workspace)
-      project = updated
-      form = DevForm(updated)
+      let updated = try await ProjectsAdminProject.save(projectId, Input(allowedOrigins: origins, actionWebhookUrl: webhookUrl, actionWebhookSecret: webhookSecret.isEmpty ? nil : webhookSecret), workspace: workspace)
+      fill(updated)
       saved = true
-    } catch {
-      saveError = error.localizedDescription
-    }
+    } catch { saveError = error.localizedDescription }
   }
 
   // MARK: Snippets (the web page's, with this project's key and this server's URL)
@@ -598,76 +535,4 @@ struct ProjectDevScreen: View {
     }
     """
   }
-}
-
-private enum DevLogo {
-  case brand, assistant, icon
-  var label: String {
-    switch self {
-    case .brand: "Brand logo"
-    case .assistant: "Assistant logo"
-    case .icon: "Project icon"
-    }
-  }
-  var hint: String {
-    switch self {
-    case .brand: "Optional. Shown in the chat header."
-    case .assistant: "Optional. Avatar for AI replies."
-    case .icon: "Optional. Replaces the coloured initial in the sidebar, headers and lists."
-    }
-  }
-  var placeholder: String { self == .brand ? "photo" : "sparkles" }
-}
-
-/// The server's default sender, from `GET /v1/admin/email-settings`.
-private struct EmailDefaults: Decodable, Sendable {
-  let fromEmail, domain: String
-}
-
-private extension String {
-  var nonEmpty: String? { isEmpty ? nil : self }
-}
-
-/// The settings form, filled from the project like the web's `fill()`.
-private struct DevForm {
-  var name = "", chatNotice = "", brandLogoUrl = "", assistantLogoUrl = "", iconUrl = "", siteUrl = "", inboxPath = ""
-  var allowedOrigins = "", fromName = "", notifyEmails = "", actionWebhookUrl = "", actionWebhookSecret = ""
-  var fromEmail = "", replyTo = "", mailDomain = ""
-  var accent = "#0f766e"
-  var allowAttachments = true, letUsersChooseType = false, allowOtherType = false, emailLogContent = false
-
-  init() {}
-  init(_ project: ProjectsAdminProject) {
-    name = project.name
-    chatNotice = project.chatNotice ?? ""
-    brandLogoUrl = project.brandLogoUrl ?? ""
-    assistantLogoUrl = project.assistantLogoUrl ?? ""
-    iconUrl = project.iconUrl ?? ""
-    fromEmail = project.fromEmail ?? ""
-    replyTo = project.replyTo ?? ""
-    mailDomain = project.mailDomain ?? ""
-    emailLogContent = project.emailLogContent ?? false
-    siteUrl = project.siteUrl
-    inboxPath = project.inboxPath
-    allowedOrigins = project.allowedOrigins.joined(separator: "\n")
-    fromName = project.fromName
-    notifyEmails = project.notifyEmails.joined(separator: ", ")
-    actionWebhookUrl = project.actionWebhookUrl ?? ""
-    accent = project.theme.accent ?? "#0f766e"
-    allowAttachments = project.allowAttachments
-    letUsersChooseType = project.letUsersChooseType ?? false
-    allowOtherType = project.allowOtherType ?? false
-  }
-}
-
-/// The PATCH body the web's Dev page sends. `actionWebhookSecret` is write-only: nil keeps the current one.
-private struct DevInput: Encodable, Sendable {
-  let name, chatNotice, brandLogoUrl, assistantLogoUrl, iconUrl, siteUrl, inboxPath: String
-  let allowedOrigins: [String]
-  let fromName, notifyEmails, fromEmail, replyTo, mailDomain: String
-  let emailLogContent: Bool
-  let allowAttachments, letUsersChooseType, allowOtherType: Bool
-  let actionWebhookUrl: String
-  let actionWebhookSecret: String?
-  let theme: ProjectTheme
 }
