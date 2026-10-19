@@ -29,6 +29,8 @@ struct AssistantsScreen: View {
       .navigationDestination(item: $opened) { AssistantDetailScreen(assistantId: $0) }
       // Runs again when a pushed assistant pops, so renames, copies and deletes show.
       .task { await load() }
+      // .task may not rerun on a pop (macOS); reload explicitly.
+      .onChange(of: opened) { if opened == nil { Task { await load() } } }
   }
 
   @ViewBuilder private var content: some View {
