@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
 import { applyTrackerSettings, bugsinkActionsFor, bugsinkIssueRow, buildErrorPrompt, issueQuery, levelToPriority, parseAlertWebhook, parseBugsinkWebhook, pickTrackerSettings } from '#shared/errors'
+import { verifyErrorWebhook } from '../server/utils/errorTracking'
 
 test('error helpers parse, quote and trim safely', () => {
   expect(parseAlertWebhook({ attachments: [{ title: 'Boom', title_link: 'https://gt.example/acme/issues/42/' }, {}] })).toEqual([{ issueId: '42', title: 'Boom', url: 'https://gt.example/acme/issues/42/', culprit: '' }])
@@ -29,4 +30,17 @@ test('tracker settings resolve whole layers and never carry a token to a new hos
   expect(applyTrackerSettings(full, { url: 'https://evil.example', org: 'acme' }, [...required]).error).toBe('Missing token')
   expect(applyTrackerSettings(full, { url: 'ftp://gt.example', token: 'n', org: 'acme' }, [...required]).error).toMatch(/http/)
   expect(applyTrackerSettings(full, { url: '' }, [...required])).toEqual({ settings: null, error: '' })
+})
+
+test('an alert webhook answers an unknown project exactly like a wrong token', () => {
+  const project = { id: 'p1', get: (key: string) => (key === 'errors' ? { provider: 'bugsink', webhookToken: 'secret-token' } : undefined) } as any
+  const hook = (token: string) => ({ path: `/v1/webhooks/bugsink/p1?token=${token}` }) as any
+  const refusal = (fn: () => unknown) => {
+    try { fn() } catch (error) { return { status: (error as { statusCode?: number }).statusCode, message: (error as { statusMessage?: string }).statusMessage } }
+    return null
+  }
+  expect(verifyErrorWebhook(hook('secret-token'), project, 'bugsink')).toBe(project)
+  expect(refusal(() => verifyErrorWebhook(hook('secret-token'), project, 'glitchtip'))).toEqual({ status: 401, message: 'Invalid webhook token' })
+  expect(refusal(() => verifyErrorWebhook(hook('wrong-token!'), project, 'bugsink'))).toEqual({ status: 401, message: 'Invalid webhook token' })
+  expect(refusal(() => verifyErrorWebhook(hook('secret-token'), null, 'bugsink'))).toEqual({ status: 401, message: 'Invalid webhook token' })
 })
