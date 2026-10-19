@@ -162,7 +162,8 @@ export async function confirmChangelogSubscription(token: string): Promise<{ fre
   const result = verifyChangelogToken(token)
   if (!result.valid || result.purpose !== 'confirm') throw invalid()
   const row = await findSubscriptionById(result.subscriptionId)
-  if (!row) throw invalid()
+  // An unsubscribe outranks a confirm link still sitting in an inbox: coming back takes a new subscribe, and a new link.
+  if (!row || row.get('status') === 'unsubscribed') throw invalid()
 
   const frequency = (row.get('pendingFrequency') || row.get('frequency') || 'instant') as ChangelogFrequency
   row.set('frequency', frequency)
