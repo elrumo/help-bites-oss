@@ -63,6 +63,15 @@ struct EmailFontStack: Identifiable, Sendable {
     EmailFontStack(label: "Courier mono", value: mono)
   ]
 
+  /// Whether this device has the font family installed.
+  static func hasFamily(_ family: String) -> Bool {
+    #if os(macOS)
+    NSFontManager.shared.availableFontFamilies.contains(family)
+    #else
+    !UIFont.fontNames(forFamilyName: family).isEmpty
+    #endif
+  }
+
   /// The closest system design for the canvas (the Preview shows the real font).
   static func design(_ stack: String) -> Font.Design {
     let lower = stack.lowercased()

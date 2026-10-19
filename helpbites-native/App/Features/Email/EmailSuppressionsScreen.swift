@@ -159,7 +159,7 @@ struct EmailSuppressionsScreen: View {
     .frame(minHeight: Metrics.rowHeight)
     .contextMenu {
       Button { removing = row } label: { Label("Email it again", systemImage: "arrow.uturn.backward") }
-      Button { UIPasteboard.general.string = row.email } label: { Label("Copy address", systemImage: "doc.on.doc") }
+      Button { Clipboard.copy(row.email) } label: { Label("Copy address", systemImage: "doc.on.doc") }
     }
     .linearRow()
   }

@@ -82,7 +82,7 @@ struct APIKeysScreen: View {
             .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
             .accessibilityLabel("New API key")
           Button {
-            UIPasteboard.general.string = created.key
+            Clipboard.copy(created.key)
             copied = true
           } label: { Label(copied ? "Copied" : "Copy key", systemImage: copied ? "checkmark" : "doc.on.clipboard") }
             .buttonStyle(.lnPrimary)

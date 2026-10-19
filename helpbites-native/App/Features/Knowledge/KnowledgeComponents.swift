@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 /// "12 FAQs": the number, then the word (components/knowledge/Stat.vue).
 struct KnowledgeStat: View {
@@ -115,15 +114,6 @@ struct KnowledgeMarkdown: View {
     flush()
     return blocks
   }
-}
-
-/// The system share sheet, for a downloaded source document.
-struct KnowledgeShareSheet: UIViewControllerRepresentable {
-  let url: URL
-  func makeUIViewController(context: Context) -> UIActivityViewController {
-    UIActivityViewController(activityItems: [url], applicationActivities: nil)
-  }
-  func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
 #Preview("Markdown answer") {

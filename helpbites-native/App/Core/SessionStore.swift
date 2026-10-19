@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-import UIKit
 
 enum SessionPhase { case loading, signedOut, signedIn }
 
@@ -125,7 +124,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
   func registerPushDevice() async {
     let push = PushRegistration.shared
     guard !push.token.isEmpty else { return }
-    let platform = UIDevice.current.userInterfaceIdiom == .pad ? "ipados" : "ios"
+    let platform = Platform.deviceName
     do { let _: EmptyBody = try await api.send("/v1/admin/devices", method: "POST", token: token, body: DeviceInput(token: push.token, platform: platform, env: push.environment)) }
     catch { if case APIError.unauthorized = error { await recover(error) } }
   }

@@ -207,7 +207,7 @@ private struct EmailCanvasBlock: View {
     let size = CGFloat((block.fontSize ?? 0) > 0 ? block.fontSize! : [28, 22, 18][block.level - 1])
     guard let stack = block.fontFamily else { return .system(size: size, weight: .bold) }
     let family = stack.split(separator: ",").first.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " '\"")) } ?? ""
-    if !family.isEmpty, !UIFont.fontNames(forFamilyName: family).isEmpty { return .custom(family, size: size).weight(.bold) }
+    if !family.isEmpty, EmailFontStack.hasFamily(family) { return .custom(family, size: size).weight(.bold) }
     return .system(size: size, weight: .bold, design: EmailFontStack.design(stack))
   }
 
@@ -280,7 +280,7 @@ private struct EmailCanvasBlock: View {
   /// Custom HTML and components can't be drawn natively: a non-interactive rendering of just this block.
   private func rendered(_ title: String, systemImage: String) -> some View {
     let doc = JSONValue.object(["settings": .object(settings.fields), "blocks": .array([block.json])])
-    return EmailHTMLPreview(html: EmailRender.html(doc), interactive: false)
+    return SandboxedWebView(html: EmailRender.html(doc), interactive: false)
       .frame(height: 220)
       .allowsHitTesting(false)
       .overlay(alignment: .topTrailing) {
@@ -420,7 +420,7 @@ struct EmailPreviewPane: View {
   var body: some View {
     GeometryReader { geometry in
       let scale = min(1, geometry.size.width / device.width)
-      EmailHTMLPreview(html: html)
+      SandboxedWebView(html: html)
         .frame(width: device.width, height: geometry.size.height / max(scale, 0.3))
         .scaleEffect(scale, anchor: .top)
         .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)

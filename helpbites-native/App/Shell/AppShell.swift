@@ -44,7 +44,7 @@ struct AppShell: View {
     .sheet(isPresented: $workspace.paletteOpen) { CommandPalette().environment(workspace) }
     .sheet(isPresented: $workspace.newProjectOpen) { NewProjectSheet().environment(workspace) }
     .onChange(of: sizeClass, initial: true) { _, size in
-      workspace.sidebar = UIDevice.current.userInterfaceIdiom != .phone && size == .regular
+      workspace.sidebar = !Platform.isPhone && size == .regular
       // Narrowed to a tab bar (iPad split view): a section tab exists only in the sidebar.
       if !workspace.sidebar, case .section(let id, let section) = workspace.tab { workspace.go(.project(id, section)) }
     }
@@ -78,7 +78,11 @@ struct AppShell: View {
         Text(project.name)
       }
     }
+    #if os(iOS)
     if #available(iOS 27, *) { section.defaultSectionExpansion(.collapsed) } else { section }
+    #else
+    section
+    #endif
   }
 }
 

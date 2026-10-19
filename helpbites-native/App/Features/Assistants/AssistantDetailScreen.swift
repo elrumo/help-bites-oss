@@ -240,7 +240,7 @@ struct AssistantDetailScreen: View {
   }
 
   private func copyID() {
-    UIPasteboard.general.string = assistantId
+    Clipboard.copy(assistantId)
     idCopied = true
     Task { try? await Task.sleep(for: .seconds(1.5)); idCopied = false }
   }

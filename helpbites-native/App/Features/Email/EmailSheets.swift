@@ -237,7 +237,7 @@ struct EmailShareSheet: View {
                 .background(Theme.field, in: RoundedRectangle(cornerRadius: Metrics.radius))
                 .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
               IconButton(systemImage: copied ? "checkmark" : "doc.on.doc", label: "Copy link", bordered: true) {
-                UIPasteboard.general.string = link
+                Clipboard.copy(link)
                 copied = true
               }
               if let url = URL(string: link) {

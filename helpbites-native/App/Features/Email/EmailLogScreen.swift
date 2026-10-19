@@ -563,7 +563,7 @@ struct EmailLogDetailSheet: View {
           .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
           .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
         } else {
-          EmailHTMLPreview(html: html)
+          SandboxedWebView(html: html)
             .frame(height: 448)
             .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: Metrics.radius))
@@ -590,7 +590,7 @@ struct EmailLogDetailSheet: View {
           .disabled(suppressing)
         }
         Button {
-          UIPasteboard.general.string = detail.id
+          Clipboard.copy(detail.id)
           copied = true
         } label: { Label(copied ? "Copied" : "Copy entry id", systemImage: copied ? "checkmark" : "doc.on.clipboard") }
           .buttonStyle(.lnGhost)

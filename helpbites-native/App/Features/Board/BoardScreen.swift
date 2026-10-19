@@ -336,7 +336,7 @@ private struct BoardView: View {
   @ViewBuilder private var roadmapMenu: some View {
     if store.roadmapReady, let url = store.roadmapURL {
       Menu {
-        Button { UIPasteboard.general.string = url.absoluteString } label: { Label("Copy link", systemImage: "doc.on.doc") }
+        Button { Clipboard.copy(url.absoluteString) } label: { Label("Copy link", systemImage: "doc.on.doc") }
         Link(destination: url) { Label("Open in browser", systemImage: "safari") }
         ShareLink(item: url) { Label("Share…", systemImage: "square.and.arrow.up") }
       } label: {

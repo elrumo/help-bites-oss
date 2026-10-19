@@ -233,7 +233,7 @@ struct CardRow<Content: View>: View {
   var body: some View {
     VStack(spacing: 0) {
       content().padding(.horizontal, 14).padding(.vertical, 11).frame(maxWidth: .infinity, alignment: .leading)
-      if divider { Rectangle().fill(Theme.border).frame(height: 1 / UIScreen.main.scale).padding(.leading, 14) }
+      if divider { Rectangle().fill(Theme.border).frame(height: Hairline.width).padding(.leading, 14) }
     }
   }
 }
@@ -318,7 +318,7 @@ struct CodeBlock: View {
     }
     .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
     .overlay(alignment: .topTrailing) {
-      Button { UIPasteboard.general.string = code } label: { Image(systemName: "doc.on.doc").font(.system(size: 12)).foregroundStyle(Theme.textMuted).padding(8) }
+      Button { Clipboard.copy(code) } label: { Image(systemName: "doc.on.doc").font(.system(size: 12)).foregroundStyle(Theme.textMuted).padding(8) }
         .buttonStyle(.plain).accessibilityLabel("Copy code")
     }
   }
@@ -332,8 +332,10 @@ extension View {
     self
       .navigationTitle(title)
       .navigationBarTitleDisplayMode(.inline)
+      #if os(iOS)
       .toolbarBackground(Theme.panel, for: .navigationBar)
       .toolbarBackground(.visible, for: .navigationBar)
+      #endif
       .background(Theme.panel)
   }
 

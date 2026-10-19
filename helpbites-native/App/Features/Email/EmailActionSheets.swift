@@ -253,7 +253,7 @@ struct EmailAPISheet: View {
           }
 
           section("Fetch it rendered", code: fetchSnippet, note: "Variables are query parameters. Without `format=html` you get JSON: `{ subject, html, text, variables }`, ready for any mail provider.") {
-            Button { UIPasteboard.general.string = fetchURL; copiedURL = true } label: {
+            Button { Clipboard.copy(fetchURL); copiedURL = true } label: {
               Label(copiedURL ? "Copied" : "Copy URL", systemImage: copiedURL ? "checkmark" : "link")
             }
             .buttonStyle(.lnGhost)

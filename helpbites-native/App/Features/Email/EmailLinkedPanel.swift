@@ -42,7 +42,7 @@ struct EmailLinkedPanel: View {
         VStack(alignment: .leading, spacing: 28) {
           Text("Linked master: its design, this project's brand and values.").font(.lnMeta).foregroundStyle(Theme.textMuted)
           if let master {
-            EmailHTMLPreview(html: EmailRender.html(EmailRender.resolve(document: master.document, variables: master.variables, values: values, linked: true, brand: brand)))
+            SandboxedWebView(html: EmailRender.html(EmailRender.resolve(document: master.document, variables: master.variables, values: values, linked: true, brand: brand)))
               .frame(height: 320)
               .background(Theme.elevated)
               .clipShape(RoundedRectangle(cornerRadius: Metrics.radiusLarge))

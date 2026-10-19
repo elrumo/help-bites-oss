@@ -393,7 +393,7 @@ struct ProjectDevScreen: View {
   private var appURL: String { session.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/")) }
 
   private func copy(_ value: String, id: String) {
-    UIPasteboard.general.string = value
+    Clipboard.copy(value)
     copied = id
     Task {
       try? await Task.sleep(for: .seconds(1.5))
@@ -458,7 +458,7 @@ struct ProjectDevScreen: View {
       // The server sniffs PNG, JPEG, GIF or WebP; anything else (HEIC) goes up as JPEG.
       let magic: [[UInt8]] = [[0x89, 0x50, 0x4E, 0x47], [0xFF, 0xD8, 0xFF], [0x47, 0x49, 0x46], [0x52, 0x49, 0x46, 0x46]]
       let accepted = magic.contains { data.starts(with: $0) }
-      guard let file = accepted ? data : UIImage(data: data)?.jpegData(compressionQuality: 0.9) else {
+      guard let file = accepted ? data : PlatformImage(data: data)?.jpegBytes(quality: 0.9) else {
         throw APIError.server("Only PNG, JPEG, GIF and WebP images are accepted")
       }
       let stored: Attachment = try await session.upload("/v1/admin/projects/\(projectId)/logo", file: file, filename: "logo", mimeType: accepted ? "application/octet-stream" : "image/jpeg")

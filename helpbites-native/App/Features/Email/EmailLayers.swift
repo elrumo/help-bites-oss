@@ -6,7 +6,7 @@ import SwiftUI
 /// inspector's arrows.
 struct EmailLayersPanel: View {
   @Bindable var store: EmailEditorStore
-  @State private var editMode = EditMode.inactive
+  @State private var editing = false
 
   var body: some View {
     let blocks = store.design.blocks
@@ -15,8 +15,8 @@ struct EmailLayersPanel: View {
         Text("Layers · \(blocks.count)").font(.lnMetaMedium).foregroundStyle(Theme.textMuted)
         Spacer()
         if !blocks.isEmpty {
-          Button(editMode.isEditing ? "Done" : "Edit") {
-            withAnimation { editMode = editMode.isEditing ? .inactive : .active }
+          Button(editing ? "Done" : "Edit") {
+            withAnimation { editing.toggle() }
           }
           .buttonStyle(.lnGhost)
         }
@@ -43,7 +43,9 @@ struct EmailLayersPanel: View {
           }
         }
         .listStyle(.plain)
-        .environment(\.editMode, $editMode)
+        #if os(iOS)
+        .environment(\.editMode, .constant(editing ? .active : .inactive))
+        #endif
       }
     }
   }

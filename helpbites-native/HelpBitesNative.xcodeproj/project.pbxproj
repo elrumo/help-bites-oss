@@ -18,12 +18,14 @@
 		168D7A2E8D6B6879656A03BC /* KnowledgeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C54EEEA57049744249352AB9 /* KnowledgeScreen.swift */; };
 		17CD17F3B7EFFC27B4AB0CD7 /* ContactDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78ED9446B7E6ACFDC738C80F /* ContactDetailSheet.swift */; };
 		1801796081B7AD8042DA1EA6 /* ProjectConversationsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40176AC267ECC00A49544BD /* ProjectConversationsScreen.swift */; };
+		184F2EA125AFD5E0137DFAF9 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 306B85E2B452BB9FD20C380F /* Platform.swift */; };
 		1B3CF4CD22D3C353B7EFBD12 /* Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DBB4A69ADAEAC123BC84F3 /* Push.swift */; };
 		225E89A3EA05823FE6FCBBA3 /* TicketTypesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B56AE86410EB418B9C7CD5D /* TicketTypesScreen.swift */; };
 		256E4BB57B4000B3CD393E7D /* FeedbackPostEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4E63426E9489CB63264A1C /* FeedbackPostEditor.swift */; };
 		2597F4A9001C784ABD2BBE7E /* InboxConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1466D3DCC72D7181AB2D461 /* InboxConversation.swift */; };
 		26C12A1B141F466BF7D4F410 /* KnowledgeComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B09FB00EA649539572608390 /* KnowledgeComponents.swift */; };
 		2827718F6057616D2ABEDF5B /* AssistantsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4399D8D3565E838D22F753CC /* AssistantsScreen.swift */; };
+		2911B6390733C75BD7A233DB /* PlatformCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF87469FAE0800C32242EBBB /* PlatformCompat.swift */; };
 		2FBE9E1F91BCCBD0C01B1758 /* EmailStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8862529C877EF137DE9E84 /* EmailStatus.swift */; };
 		3007F5A5D41727F257769438 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5487CCF1A07C447444712523 /* Theme.swift */; };
 		313DC85BEA4A532C375535DD /* EmailInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = D146ECC2234F0DA8AD109E2E /* EmailInspector.swift */; };
@@ -54,7 +56,6 @@
 		7C500E2A939AF1DB371227E3 /* AssistantKnowledge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1AABE2CB4992F68B540934 /* AssistantKnowledge.swift */; };
 		7CC0D56773B787DC31A2F959 /* ContactsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F13F42091095DA123C48694 /* ContactsScreen.swift */; };
 		80AA022D378F94CA41F26BEA /* EmailEditorFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD8A2598FD923CEB888755D /* EmailEditorFields.swift */; };
-		80B8450955EE02114485CA00 /* EmailWebViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9928B9C83897D9B3FFAD4A74 /* EmailWebViews.swift */; };
 		816F107C970E43AE0D3495A9 /* ProjectScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54980534EE0B68CF0ED125B9 /* ProjectScreen.swift */; };
 		8239B8C6BDECD03C60F0C30E /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA931ACDD34E4C9F39ED27B /* RootView.swift */; };
 		8D191CA8C16F49DD00A2EBBC /* EmailLogScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 097B8480C92448FAE7E66E7C /* EmailLogScreen.swift */; };
@@ -101,6 +102,7 @@
 		2C8862529C877EF137DE9E84 /* EmailStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailStatus.swift; sourceTree = "<group>"; };
 		2D316A690FFBA08DB0574721 /* EmailDesignStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailDesignStyle.swift; sourceTree = "<group>"; };
 		2FB2B0E6FF0E0040293D49B9 /* BoardItemEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardItemEditor.swift; sourceTree = "<group>"; };
+		306B85E2B452BB9FD20C380F /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
 		30A1D376ADD0DEBA16A2A080 /* EmailEditorStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailEditorStore.swift; sourceTree = "<group>"; };
 		3A4E63426E9489CB63264A1C /* FeedbackPostEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackPostEditor.swift; sourceTree = "<group>"; };
 		3BD8A2598FD923CEB888755D /* EmailEditorFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailEditorFields.swift; sourceTree = "<group>"; };
@@ -136,7 +138,6 @@
 		8B384FEDEACF5942FDB85E58 /* InboxNewConversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxNewConversation.swift; sourceTree = "<group>"; };
 		8FA931ACDD34E4C9F39ED27B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		962DE386D5AA9C17E6EDC13E /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
-		9928B9C83897D9B3FFAD4A74 /* EmailWebViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailWebViews.swift; sourceTree = "<group>"; };
 		994B21B0BA5D44F33314C606 /* EmailActionSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailActionSheets.swift; sourceTree = "<group>"; };
 		9C1AABE2CB4992F68B540934 /* AssistantKnowledge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantKnowledge.swift; sourceTree = "<group>"; };
 		9DFEDA5B1D5025082C3FD506 /* BoardModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardModels.swift; sourceTree = "<group>"; };
@@ -152,6 +153,7 @@
 		B40176AC267ECC00A49544BD /* ProjectConversationsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectConversationsScreen.swift; sourceTree = "<group>"; };
 		BB11DF49144E1A43E11C90A1 /* HelpBitesNativeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpBitesNativeApp.swift; sourceTree = "<group>"; };
 		BC639C90F634EC463322EEBD /* BoardLinksSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardLinksSection.swift; sourceTree = "<group>"; };
+		BF87469FAE0800C32242EBBB /* PlatformCompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformCompat.swift; sourceTree = "<group>"; };
 		C54EEEA57049744249352AB9 /* KnowledgeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeScreen.swift; sourceTree = "<group>"; };
 		C9C046F32D80D62F9701168D /* KnowledgeModelScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeModelScreen.swift; sourceTree = "<group>"; };
 		D0EF38DFF62B48EDF2A6CB43 /* KnowledgeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeModels.swift; sourceTree = "<group>"; };
@@ -265,7 +267,6 @@
 				630B44ACEB5A8AA306D9B8D4 /* EmailSheets.swift */,
 				2C8862529C877EF137DE9E84 /* EmailStatus.swift */,
 				4711D007B64E1D08792D8CF0 /* EmailSuppressionsScreen.swift */,
-				9928B9C83897D9B3FFAD4A74 /* EmailWebViews.swift */,
 			);
 			path = Email;
 			sourceTree = "<group>";
@@ -287,6 +288,8 @@
 			children = (
 				E4EB03A1DB8F2EDA54E2748B /* APIClient.swift */,
 				6286A8CE54C5D1233C199F9F /* Models.swift */,
+				306B85E2B452BB9FD20C380F /* Platform.swift */,
+				BF87469FAE0800C32242EBBB /* PlatformCompat.swift */,
 				68DBB4A69ADAEAC123BC84F3 /* Push.swift */,
 				0B7BEE5E7F23E7B55139DD5A /* SessionStore.swift */,
 			);
@@ -518,7 +521,6 @@
 				A2A572DC3CC2A207758DB955 /* EmailSheets.swift in Sources */,
 				2FBE9E1F91BCCBD0C01B1758 /* EmailStatus.swift in Sources */,
 				D9CEC0DF51ED70F55EC47C24 /* EmailSuppressionsScreen.swift in Sources */,
-				80B8450955EE02114485CA00 /* EmailWebViews.swift in Sources */,
 				9EBB69A2DCC7EC31A64314C2 /* ErrorsScreen.swift in Sources */,
 				AD397FB2CB9827CA65B1F978 /* FeedbackBoardSettings.swift in Sources */,
 				DD90306D989E9CF6954EBC66 /* FeedbackModels.swift in Sources */,
@@ -541,6 +543,8 @@
 				168D7A2E8D6B6879656A03BC /* KnowledgeScreen.swift in Sources */,
 				7122ECE2DCE5D25DC38E13A5 /* KnowledgeThemesSheet.swift in Sources */,
 				C3601F91CAAF0CC00C9EA1B3 /* Models.swift in Sources */,
+				184F2EA125AFD5E0137DFAF9 /* Platform.swift in Sources */,
+				2911B6390733C75BD7A233DB /* PlatformCompat.swift in Sources */,
 				D3844AD4C4C71521BDB56ADD /* ProjectChrome.swift in Sources */,
 				1801796081B7AD8042DA1EA6 /* ProjectConversationsScreen.swift in Sources */,
 				0D630453518DCBB742AC811E /* ProjectDevScreen.swift in Sources */,
@@ -607,6 +611,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -670,6 +675,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -688,8 +694,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/HelpBitesNative.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HelpBites;
@@ -697,11 +708,17 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.helpbites.operator;
 				SDKROOT = iphoneos;
-				SUPPORTS_MACCATALYST = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				TARGETED_DEVICE_FAMILY = "1,2,6";
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -711,8 +728,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/HelpBitesNative.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HelpBites;
@@ -720,11 +742,17 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.helpbites.operator;
 				SDKROOT = iphoneos;
-				SUPPORTS_MACCATALYST = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				TARGETED_DEVICE_FAMILY = "1,2,6";
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};

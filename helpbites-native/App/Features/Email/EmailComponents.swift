@@ -226,7 +226,7 @@ struct EmailComponentEditor: View {
         .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
     } else {
       let block = EmailDesignBlock.component(id: "preview", componentId: "preview", name: name, html: html, fields: fields)
-      EmailHTMLPreview(html: EmailRender.html(.object(["settings": EmailRender.defaultSettings(title: name.isEmpty ? "Component" : name), "blocks": .array([block.json])])), interactive: false)
+      SandboxedWebView(html: EmailRender.html(.object(["settings": EmailRender.defaultSettings(title: name.isEmpty ? "Component" : name), "blocks": .array([block.json])])), interactive: false)
         .frame(height: 260)
         .clipShape(RoundedRectangle(cornerRadius: Metrics.radius))
         .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
@@ -395,7 +395,7 @@ struct EmailComponentLibrary: View {
   private func card(_ component: EmailComponentDef) -> some View {
     VStack(alignment: .leading, spacing: 0) {
       Button { editing = EmailComponentRequest(component: component) } label: {
-        EmailHTMLPreview(html: EmailRender.html(.object(["settings": EmailRender.defaultSettings(title: component.name), "blocks": .array([component.instance(id: component.id).json])])), interactive: false)
+        SandboxedWebView(html: EmailRender.html(.object(["settings": EmailRender.defaultSettings(title: component.name), "blocks": .array([component.instance(id: component.id).json])])), interactive: false)
           .frame(height: 150)
           .allowsHitTesting(false)
           .frame(maxWidth: .infinity)

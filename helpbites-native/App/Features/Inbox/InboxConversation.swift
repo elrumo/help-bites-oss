@@ -78,7 +78,9 @@ private struct InboxCompactChrome: ViewModifier {
           }
         }
         // A chat gets the whole screen, as in Messages: the composer sits where the tab bar was.
+        #if os(iOS)
         .toolbar(.hidden, for: .tabBar)
+        #endif
     } else {
       content
     }
@@ -349,7 +351,7 @@ private struct InboxTranscript: View {
       .controlGroupStyle(.palette)
       Button { withAnimation(.snappy) { threadId = threads.rootOf[message.id] ?? message.id } } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
       if !message.body.isEmpty {
-        Button { UIPasteboard.general.string = message.body } label: { Label("Copy", systemImage: "doc.on.doc") }
+        Button { Clipboard.copy(message.body) } label: { Label("Copy", systemImage: "doc.on.doc") }
       }
       if message.sender == "agent" {
         Button(role: .destructive) { unsending = message } label: { Label("Delete", systemImage: "trash") }
@@ -538,7 +540,7 @@ private struct InboxSourceTag { let text: String; let ai: Bool }
 private struct InboxPickedImage: Identifiable {
   let id = UUID()
   let data: Data
-  let thumbnail: UIImage
+  let thumbnail: PlatformImage
 }
 
 /// Linear's comment box: Reply / Internal note above a bordered card. Notes tint it amber.
@@ -612,7 +614,7 @@ private struct InboxComposer: View {
     ScrollView(.horizontal, showsIndicators: false) {
       HStack(spacing: 10) {
         ForEach(images) { image in
-          Image(uiImage: image.thumbnail)
+          Image(platformImage: image.thumbnail)
             .resizable()
             .scaledToFill()
             .frame(width: 56, height: 56)
@@ -715,7 +717,7 @@ private struct InboxComposer: View {
       guard images.count < 4 else { break }
       guard let raw = try? await item.loadTransferable(type: Data.self),
             let encoded = await Task.detached(priority: .userInitiated, operation: { InboxImageEncoding.encode(raw) }).value,
-            let thumbnail = UIImage(data: encoded.thumbnail) else {
+            let thumbnail = PlatformImage(data: encoded.thumbnail) else {
         workspace.inbox.threadError = "Couldn't read that image."
         continue
       }

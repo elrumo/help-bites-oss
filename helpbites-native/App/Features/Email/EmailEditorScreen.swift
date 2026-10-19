@@ -353,7 +353,7 @@ private struct EmailEditorRoot: View {
       Button { withSaved { .test($0) } } label: { Label("Send test", systemImage: "paperplane") }
       Button { withSaved { .share($0) } } label: { Label("Share", systemImage: "link") }
       Menu {
-        Button { UIPasteboard.general.string = store.previewHTML } label: { Label("Copy HTML", systemImage: "doc.on.doc") }
+        Button { Clipboard.copy(store.previewHTML) } label: { Label("Copy HTML", systemImage: "doc.on.doc") }
         Button { shareHTML() } label: { Label("Share HTML file", systemImage: "doc.richtext") }
         Button { shareJSON() } label: { Label("Share JSON file", systemImage: "curlybraces.square") }
         Button { withSaved { .api($0) } } label: { Label("Use via API", systemImage: "chevron.left.forwardslash.chevron.right") }
@@ -384,7 +384,7 @@ private struct EmailEditorRoot: View {
     case .api(let item):
       EmailAPISheet(template: item) { key in store.updateKey(key) }
     case .file(let url):
-      EmailActivitySheet(url: url).presentationDetents([.medium, .large])
+      ShareSheet(url: url).presentationDetents([.medium, .large])
     case .checks:
       NavigationStack {
         EmailChecksList(store: store, onSelect: { self.modal = nil }, onFix: { self.modal = nil; fixWithAI() })

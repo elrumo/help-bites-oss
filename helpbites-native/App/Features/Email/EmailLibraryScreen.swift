@@ -203,7 +203,7 @@ struct EmailLibraryScreen: View {
         if let index = templates.firstIndex(where: { $0.id == row.id }) { templates[index].key = key }
       }
     }
-    .sheet(item: $sharedFile) { EmailActivitySheet(url: $0.url).presentationDetents([.medium, .large]) }
+    .sheet(item: $sharedFile) { ShareSheet(url: $0.url).presentationDetents([.medium, .large]) }
     .fullScreenCover(item: $editing, onDismiss: { Task { await load() } }) { EmailEditorScreen(target: $0) }
     // One importer for both kinds: a second .fileImporter on the same view would never show.
     .fileImporter(isPresented: $importing, allowedContentTypes: importKind == .json ? [.json] : [.html]) { result in
@@ -375,7 +375,7 @@ struct EmailLibraryScreen: View {
       Menu {
         Button {
           if let html = EmailExport.html(t, brand: brand) {
-            UIPasteboard.general.string = html
+            Clipboard.copy(html)
             show("Email HTML copied")
           }
         } label: { Label("Copy HTML", systemImage: "doc.on.clipboard") }

@@ -60,7 +60,7 @@ struct KnowledgeDocumentsSheet: View {
       .sheet(item: $importing, onDismiss: { Task { await load() } }) { request in
         KnowledgeImportSheet(modelId: modelId, themes: themes, initialPreview: request.preview)
       }
-      .sheet(item: $shared) { KnowledgeShareSheet(url: $0.url).presentationDetents([.medium, .large]) }
+      .sheet(item: $shared) { ShareSheet(url: $0.url).presentationDetents([.medium, .large]) }
       .confirmationDialog("Delete document?", isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }), titleVisibility: .visible, presenting: pendingDelete) { pending in
         Button("Delete", role: .destructive) { Task { await delete(pending.document, confirmed: true) } }
       } message: { pending in
