@@ -1,5 +1,6 @@
 import { createSign, randomBytes } from 'node:crypto'
 import { createError } from 'h3'
+import { matchRepoPath, type FramePath, type PromptFile } from '#shared/errors'
 import { hasRootSecret, readLinkToken, signLinkToken } from './secrets'
 
 // GitHub, as a GitHub App the server owner registers once (docs/GITHUB.md).
@@ -186,4 +187,50 @@ export async function setProjectRepos(workspace: ParseObject, project: ParseObje
   project.set('repos', repos)
   await project.save(null, MASTER)
   return repos
+}
+
+// ---- reading a project's code (read-only) -----------------------------------------
+
+const MAX_FILE_BYTES = 100_000
+
+/** One file at the repo's default branch, or null when it is missing, a directory or too big to be worth sending. */
+export async function readRepoFile(repo: ProjectRepo, path: string): Promise<string | null> {
+  const token = await installationToken(repo.installationId)
+  const file = await gh<{ type?: string, size?: number, content?: string, encoding?: string }>(`/repos/${repo.fullName}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(repo.defaultBranch)}`, token).catch(() => null)
+  if (!file || file.type !== 'file' || file.encoding !== 'base64' || !file.content || (file.size || 0) > MAX_FILE_BYTES) return null
+  return Buffer.from(file.content, 'base64').toString('utf8')
+}
+
+/** Every file path at the default branch (GitHub truncates the list for huge repos; those just match less). */
+async function repoFilePaths(repo: ProjectRepo): Promise<string[]> {
+  const token = await installationToken(repo.installationId)
+  const tree = await gh<{ tree: Array<{ path: string, type: string }> }>(`/repos/${repo.fullName}/git/trees/${encodeURIComponent(repo.defaultBranch)}?recursive=1`, token).catch(() => null)
+  return (tree?.tree || []).filter(item => item.type === 'blob').map(item => item.path)
+}
+
+export const MAX_PROMPT_FILES = 3
+
+/**
+ * The project's own source for the files an error passed through: at most
+ * MAX_PROMPT_FILES, each matched to exactly one repo path by suffix. Nothing
+ * (and no error) when GitHub isn't set up or the project has no repos.
+ */
+export async function frameFiles(project: ParseObject, frames: FramePath[]): Promise<PromptFile[]> {
+  const repos = projectRepos(project)
+  if (!repos.length || !frames.length || !githubConfigured()) return []
+  try {
+    const trees = await Promise.all(repos.map(async repo => ({ repo, paths: await repoFilePaths(repo) })))
+    const files: PromptFile[] = []
+    for (const frame of frames) {
+      if (files.length >= MAX_PROMPT_FILES) break
+      const hits = trees.flatMap(({ repo, paths }) => { const path = matchRepoPath(frame.path, paths); return path ? [{ repo, path }] : [] })
+      if (hits.length !== 1) continue
+      const text = await readRepoFile(hits[0]!.repo, hits[0]!.path)
+      if (text) files.push({ repo: hits[0]!.repo.fullName, path: hits[0]!.path, line: frame.line, text })
+    }
+    return files
+  } catch (error) {
+    console.warn('[github] could not read repo files for the AI note:', (error as Error).message)
+    return []
+  }
 }

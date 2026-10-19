@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { applyTrackerSettings, bugsinkActionsFor, bugsinkIssueRow, buildErrorPrompt, issueQuery, levelToPriority, parseAlertWebhook, parseBugsinkWebhook, pickTrackerSettings } from '#shared/errors'
+import { applyTrackerSettings, bugsinkActionsFor, bugsinkIssueRow, buildErrorPrompt, errorFramePaths, matchRepoPath, issueQuery, levelToPriority, parseAlertWebhook, parseBugsinkWebhook, pickTrackerSettings } from '#shared/errors'
 import { verifyErrorWebhook } from '../server/utils/errorTracking'
 
 test('error helpers parse, quote and trim safely', () => {
@@ -47,4 +47,37 @@ test('an alert webhook answers an unknown project exactly like a wrong token', (
   expect(refusal(() => verifyErrorWebhook(hook('secret-token'), project, 'glitchtip'))).toEqual({ status: 401, message: 'Invalid webhook token' })
   expect(refusal(() => verifyErrorWebhook(hook('wrong-token!'), project, 'bugsink'))).toEqual({ status: 401, message: 'Invalid webhook token' })
   expect(refusal(() => verifyErrorWebhook(hook('secret-token'), null, 'bugsink'))).toEqual({ status: 401, message: 'Invalid webhook token' })
+})
+
+const frameEvent = { exception: { values: [{ type: 'TypeError', value: 'x is undefined', stacktrace: { frames: [
+  { filename: 'app/pages/index.vue', lineno: 10, in_app: true },
+  { filename: 'node_modules/vue/dist/vue.js', lineno: 1, in_app: true },
+  { filename: 'https://app.example.com/_nuxt/entry.min.js?v=1', lineno: 1, in_app: true },
+  { abs_path: '/build/src/utils/cart.ts', lineno: 42, in_app: true },
+  { filename: 'lib/other.ts', lineno: 3, in_app: false },
+  { filename: 'src/utils/cart.ts', lineno: 7, in_app: true }
+] } }] } }
+
+test('frame paths are the in-app source files, innermost first, without bundles or dependencies', () => {
+  expect(errorFramePaths(frameEvent)).toEqual([{ path: 'src/utils/cart.ts', line: 7 }, { path: 'build/src/utils/cart.ts', line: 42 }, { path: 'app/pages/index.vue', line: 10 }])
+  expect(errorFramePaths(null)).toEqual([])
+})
+
+test('a frame matches one repo path by suffix, either way, or nothing', () => {
+  const paths = ['src/utils/cart.ts', 'app/pages/index.vue', 'a/util.ts', 'b/util.ts']
+  expect(matchRepoPath('build/src/utils/cart.ts', paths)).toBe('src/utils/cart.ts')
+  expect(matchRepoPath('pages/index.vue', paths)).toBe('app/pages/index.vue')
+  expect(matchRepoPath('util.ts', paths)).toBeNull()
+  expect(matchRepoPath('missing.ts', paths)).toBeNull()
+})
+
+test('repo files join the prompt as untrusted data, windowed around the failing line', () => {
+  const text = Array.from({ length: 200 }, (_, i) => `line${i + 1}`).join('\n')
+  const prompt = buildErrorPrompt(frameEvent, [{ repo: 'acme/web', path: 'src/utils/cart.ts', line: 100, text }])
+  expect(prompt).toContain('untrusted data')
+  expect(prompt).toContain('--- acme/web/src/utils/cart.ts')
+  expect(prompt).toContain('100: line100')
+  expect(prompt).not.toContain('line1\n')
+  expect(prompt).not.toContain('line200')
+  expect(buildErrorPrompt(frameEvent)).not.toContain('untrusted data')
 })

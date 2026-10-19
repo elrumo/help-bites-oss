@@ -6,6 +6,14 @@ project in either [GlitchTip](https://glitchtip.com) or
 operators are notified, and (when LiteLLM is configured) an internal AI note
 suggests a cause and fix. Resolving or ignoring either side syncs the other.
 
+**Repo context.** If the project has [GitHub repos](GITHUB.md) connected, the AI
+note also sees the source of the files in the stack trace (up to 3 files, around
+the failing line, read from each repo's default branch, so they can differ from
+the release that failed). Only the event's in-app frames count, and a frame is
+used only if its path matches exactly one file across the project's repos. It is
+sent as untrusted data, like the event. No repos, or GitHub not set up: the note
+is written from the event alone.
+
 Add your trackers once in **Settings → Error tracking**: a name, the URL and API
 token (plus the organisation slug for GlitchTip). Add as many servers as you
 like, GlitchTip and Bugsink alike; every project in the workspace can use any
