@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model:open="open" title="Settings" description="Your account, the panel's look, the workspace, its team, AI provider and API keys." :ui="{ content: 'sm:max-w-3xl overflow-hidden' }">
+  <UModal v-model:open="open" title="Settings" description="Your account, the panel's look, the workspace, its team, AI provider, connections and API keys." :ui="{ content: 'sm:max-w-3xl overflow-hidden' }">
     <template #content="{ close }">
       <div class="flex h-[min(640px,88vh)] flex-col sm:flex-row">
         <nav class="flex shrink-0 gap-1 overflow-x-auto border-b border-default bg-muted p-2 sm:w-52 sm:flex-col sm:border-r sm:border-b-0 sm:p-3" aria-label="Settings">
@@ -97,8 +97,12 @@
             <SettingsUsage v-else-if="current.key === 'usage'" />
             <SettingsTeam v-else-if="current.key === 'team'" />
             <SettingsWorkspaceAi v-else-if="current.key === 'ai'" />
-            <SettingsErrorServers v-else-if="current.key === 'error-tracking'" />
-            <SettingsGithubConnection v-else-if="current.key === 'github'" />
+            <!-- Connections: the outside accounts the workspace reads from -->
+            <div v-else-if="current.key === 'connections'" class="space-y-8">
+              <section class="space-y-3"><h3 class="flex items-center gap-2 text-[13px] font-semibold text-highlighted"><UIcon name="i-lucide-github" class="size-4" />GitHub</h3><SettingsGithubConnection /></section>
+              <section class="space-y-3"><h3 class="flex items-center gap-2 text-[13px] font-semibold text-highlighted"><UIcon name="i-lucide-circle-dollar-sign" class="size-4" />Stripe</h3><SettingsStripeConnections @navigate="open = false" /></section>
+              <section class="space-y-3"><h3 class="flex items-center gap-2 text-[13px] font-semibold text-highlighted"><UIcon name="i-lucide-bug" class="size-4" />Error tracking</h3><SettingsErrorServers /></section>
+            </div>
             <SettingsApiKeys v-else-if="current.key === 'api-keys'" />
             <component :is="extra.component" v-else-if="extra" />
           </div>
@@ -115,8 +119,8 @@ const tab = useState('settings-tab', () => '')
 const newProjectOpen = useState('new-project-open', () => false)
 const { api, agent, projects, demo, context, logout } = useAgent()
 const colorMode = useColorMode()
-// GitHub's install callback lands on /projects?github=…, which reopens its tab.
-if (useRoute().query.github) tab.value = 'github'
+// GitHub's install callback lands on /projects?github=…, which reopens the connections tab.
+if (useRoute().query.github) tab.value = 'connections'
 
 // Plan & usage only shows when the plan has limits, so never on a self-hosted install.
 const coreTabs = computed(() => [
@@ -127,14 +131,15 @@ const coreTabs = computed(() => [
   { key: 'projects', label: 'Projects', icon: 'i-lucide-boxes' },
   { key: 'team', label: 'Team', icon: 'i-lucide-users-round' },
   { key: 'ai', label: 'AI', icon: 'i-lucide-sparkles' },
-  { key: 'error-tracking', label: 'Error tracking', icon: 'i-lucide-bug' },
-  { key: 'github', label: 'GitHub', icon: 'i-lucide-github' },
+  { key: 'connections', label: 'Connections', icon: 'i-lucide-plug-zap' },
   { key: 'api-keys', label: 'API keys', icon: 'i-lucide-key-round' }
 ])
 // Tabs the cloud edition registers (app/utils/editionUi.ts) follow the core ones.
 const { settingsTabs } = editionUi()
 const tabs = computed(() => [...coreTabs.value, ...settingsTabs])
-const current = computed(() => tabs.value.find(item => item.key === tab.value) || tabs.value[0]!)
+// GitHub and error tracking used to be tabs of their own; links that still open them land on Connections.
+const key = computed(() => (tab.value === 'github' || tab.value === 'error-tracking' ? 'connections' : tab.value))
+const current = computed(() => tabs.value.find(item => item.key === key.value) || tabs.value[0]!)
 const extra = computed(() => settingsTabs.find(item => item.key === current.value.key))
 const open = computed({ get: () => !!tab.value, set: (value) => { tab.value = value ? (tab.value || 'account') : '' } })
 
