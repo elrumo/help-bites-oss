@@ -108,9 +108,14 @@ Pausing a sequence holds everyone where they are. Each step's log batch id is
 
 - JSON works too: `POST /v1/subscribe { pk, email, name?, topics? }` → `202 { ok, pending }`.
 - `website` is a honeypot. The project's allowed origins apply to browser
-  forms. Sign-ups are limited per IP and per project, and confirmation mails
-  to three per address per day (no subscription bombing). The answer is the
-  same whether or not the address was known.
+  forms. Sign-ups are limited per IP and per project, and mails to one
+  address (confirmations and preference links together) to three a day (no
+  subscription bombing). The answer is the same whether or not the address
+  was known.
+- Anyone can type an address into a form, so it never changes what an
+  existing subscriber gets: a different topic choice emails them their
+  preferences link instead. Someone who unsubscribed is always sent the
+  confirmation email, double opt-in or not.
 - With double opt-in (the default) the person is `pending` until they press
   the button behind the link in the confirmation email (valid for seven days);
   that click, with when and from where, is their recorded consent. Give the
@@ -121,7 +126,10 @@ Pausing a sequence holds everyone where they are. Each step's log batch id is
 
 `/u/<token>` — every campaign links to it. Topic checkboxes, "unsubscribe from
 all", and "subscribe again" for someone who left. Plain HTML, no sign-in: the
-signed token names the project, the contact and the campaign's topic.
+signed token names the project, the contact and the campaign's topic. The link
+never expires, so unsubscribing always works, instantly; since emails get
+forwarded, "subscribe again" sends the confirmation email (valid seven days)
+rather than subscribing on the spot.
 
 ## Event webhook
 

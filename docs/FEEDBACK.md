@@ -358,7 +358,10 @@ comments too.
 With `changelog.notify` on, people can ask to be emailed about the changelog: an
 **instant** mail once a burst of publishes has gone quiet, or a **weekly** digest on
 Monday morning. It is off by default, and also needs the server to have
-`CHANGELOG_LINK_SECRET` (and `ENABLE_CHANGELOG_NOTIFY=true` for the scheduler).
+`CHANGELOG_LINK_SECRET` (32+ characters) or `HELPBITES_SECRET` to sign its links
+(and `ENABLE_CHANGELOG_NOTIFY=true` for the scheduler). A post's changelog title,
+text and version (`changelogTitle`, `changelogBody`, `shippedIn`) stay blank for
+everyone but admins until the post is on the changelog.
 
 - **Signed in**: send their identity token (it carries an email). They are subscribed
   at once at `instant` or `weekly`, or `off` unsubscribes them. `GET /v1/changelog/subscription`
