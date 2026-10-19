@@ -260,6 +260,12 @@ struct KnowledgeImportSheet: View {
       }
       .font(.lnCallout)
       .foregroundStyle(Theme.text)
+      .dropDestination(for: URL.self) { urls, _ in
+        // The web's drop zone: take the first .md/.markdown/.txt file dropped.
+        guard let url = urls.first(where: { ["md", "markdown", "txt"].contains($0.pathExtension.lowercased()) }) else { return false }
+        do { file = try KnowledgePickedFile.read(url); error = "" } catch { self.error = error.localizedDescription }
+        return true
+      }
       .padding(28)
       .frame(maxWidth: .infinity)
       .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.borderAccented, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
