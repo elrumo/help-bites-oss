@@ -222,10 +222,14 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 - **Connect GlitchTip or Bugsink.** HelpBites creates the Sentry-compatible project
   and DSN for you, and wires the alerts.
-- **Errors become conversations.** A new error opens a conversation and notifies
-  operators. Resolving either side resolves the other.
-- **Cause-and-fix note.** Optionally, an AI note suggests a cause and a fix for each
-  new error (needs an LLM endpoint).
+- **Browse and triage.** The Errors page lists issues; open one for its stack trace,
+  event details, breadcrumbs and tags, and resolve or ignore it. Errors don't create
+  inbox conversations.
+- **Alert rules.** Email the team when an error is new, passes a total, or happens
+  N times within a time window.
+- **Fix with AI.** Analyze an error for cause and fix (reading the stack-trace files
+  from the project's GitHub repos), or copy the same context as a prompt for a
+  coding agent (the analysis needs an LLM endpoint).
 - **Customer errors.** A customer's recent errors show alongside their
   conversation.
 

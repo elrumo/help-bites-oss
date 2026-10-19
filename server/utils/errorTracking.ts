@@ -35,6 +35,8 @@ export interface ErrorProvider {
   listIssues(creds: TrackerCredentials, errors: ErrorConfig, input: IssueListInput): Promise<{ issues: Array<Record<string, any> & { id: string }>, next: string }>
   setIssueStatus(creds: TrackerCredentials, issueId: string, statusKey: string): Promise<void>
   latestEvent(creds: TrackerCredentials, issueId: string): Promise<unknown>
+  /** The tracker's own record of the issue (first/last seen, event count, state). */
+  issue(creds: TrackerCredentials, issueId: string): Promise<unknown>
 }
 
 const providers: Record<ErrorProviderId, ErrorProvider> = { glitchtip, bugsink }
@@ -280,4 +282,10 @@ export async function setErrorIssueStatus(project: ParseObject, providerId: Erro
 export async function latestErrorEvent(project: ParseObject, providerId: ErrorProviderId, issueId: string, linkId = ''): Promise<unknown> {
   const { provider, creds } = await linkCredentials(project, providerId, linkId)
   return provider.latestEvent(creds, issueId)
+}
+
+export async function errorIssueDetail(project: ParseObject, providerId: ErrorProviderId, issueId: string, linkId = '') {
+  const { provider, creds } = await linkCredentials(project, providerId, linkId)
+  const [issue, event] = await Promise.all([provider.issue(creds, issueId), provider.latestEvent(creds, issueId)])
+  return { issue, event }
 }

@@ -2,17 +2,31 @@
 
 HelpBites can provision a separate Sentry-compatible project for each HelpBites
 project in either [GlitchTip](https://glitchtip.com) or
-[Bugsink](https://www.bugsink.com). New errors become `error` conversations,
-operators are notified, and (when LiteLLM is configured) an internal AI note
-suggests a cause and fix. Resolving or ignoring either side syncs the other.
+[Bugsink](https://www.bugsink.com). The **Errors** page lists a project's issues; click one to
+expand its stack trace, event details, breadcrumbs and tags (from the latest event), and resolve
+or ignore it in the tracker. Errors don't create inbox conversations (earlier ones stay, and
+resolving one still resolves the issue).
 
-**Repo context.** If the project has [GitHub repos](GITHUB.md) connected, the AI
-note also sees the source of the files in the stack trace (up to 3 files, around
+**Alerts.** The **Alerts** button sets rules that email the team (the addresses typed there,
+else the project's notify emails): *a new error appears*, *an error totals N events*, or *an
+error happens N times within M minutes*, each for all tracker projects or one, with a
+cooldown before the same error can alert again. Rules are checked once a minute by polling the
+tracker (first page of unresolved issues per tracker project), and immediately when a tracker's
+alert webhook calls. The first check of a tracker project only learns what exists, so a new rule
+doesn't announce old errors as new. Rate windows count from when polling first saw the issue.
+Needs Mailgun for the emails.
+
+**Fix with AI.** An expanded error has **Analyze and suggest a fix** (cause, fix, how to verify,
+impact; needs an LLM endpoint, saved for 6 hours) and **Copy prompt for a coding agent** (the
+same context, no AI call).
+
+**Repo context.** If the project has [GitHub repos](GITHUB.md) connected, the analysis and the
+prompt also include the source of the files in the stack trace (up to 3 files, around
 the failing line, read from each repo's default branch, so they can differ from
 the release that failed). Only the event's in-app frames count, and a frame is
 used only if its path matches exactly one file across the project's repos. It is
-sent as untrusted data, like the event. No repos, or GitHub not set up: the note
-is written from the event alone.
+sent as untrusted data, like the event. No repos, or GitHub not set up: it is
+written from the event alone.
 
 Add your trackers once in **Settings → Error tracking**: a name, the URL and API
 token (plus the organisation slug for GlitchTip). Add as many servers as you
@@ -70,7 +84,7 @@ can't add alert destinations, so the dialog then shows a webhook URL: in
 Bugsink open **Projects** and the **Other Projects** tab (the API creates the
 team and project without adding any user as a member, so they're not under
 My Projects), click the alerts (megaphone) icon next to the project, click **Add**, set Kind to **Slack** and paste the URL as the
-Webhook url (older Bugsink has no Custom kind; HelpBites reads the Slack payload and still accepts Custom). Bugsink's **Test** button then opens one "Bugsink test alert" conversation in the inbox, so you can see the webhook works. The same URL stays on the Dev and Errors pages. If Bugsink and
+Webhook url (older Bugsink has no Custom kind; HelpBites reads the Slack payload and still accepts Custom). The webhook is optional: it only makes alert rules run right away instead of within a minute. The same URL stays on the Dev and Errors pages. If Bugsink and
 HelpBites talk over a private network, set `ALERTS_WEBHOOK_DENY_NON_GLOBAL=false`
 on Bugsink.
 
@@ -82,8 +96,8 @@ give a different **Project name**; a name that already exists in the team is
 reused. Each one has its own DSN, alert webhook URL and token. The Errors page
 shows one pill per tracker project ("All" merges each one's newest page;
 pick a pill to page further), and `GET /v1/admin/errors?link=` takes the id from
-`project.errorLinks`. Status changes and AI notes go back to the tracker project
-an alert came from.
+`project.errorLinks`. Status changes go back to the tracker project
+an issue came from.
 
 **Manage** (Errors page) lists each tracker project with its tracker, project name, team, DSN and alert webhook. You can change the name its pill shows or remove it; removing only stops HelpBites reporting there (the tracker project and past conversations stay), and the tracker, name and team are fixed, so to change them remove it and connect again. The alert webhook instructions sit in a collapsible on the same page.
 

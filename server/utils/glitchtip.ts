@@ -1,5 +1,5 @@
 import { createError } from 'h3'
-import { glitchtipStatusFor, issueQuery } from '#shared/errors'
+import { flattenEvent, glitchtipStatusFor, issueQuery } from '#shared/errors'
 import type { ErrorConfig, ErrorProvider, TrackerCredentials } from './errorTracking'
 
 async function gt<T>(creds: TrackerCredentials, path: string, options: RequestInit = {}): Promise<{ data: T, headers: Headers }> {
@@ -71,6 +71,10 @@ export const glitchtip: ErrorProvider = {
   },
 
   async latestEvent(creds, issueId) {
-    return (await gt(creds, `/issues/${encodeURIComponent(issueId)}/events/latest/`)).data
+    return flattenEvent((await gt(creds, `/issues/${encodeURIComponent(issueId)}/events/latest/`)).data)
+  },
+
+  async issue(creds, issueId) {
+    return (await gt(creds, `/issues/${encodeURIComponent(issueId)}/`)).data
   }
 }

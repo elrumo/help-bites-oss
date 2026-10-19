@@ -103,4 +103,23 @@ export async function notifyUserOfAgentMessage(opts: { project: ParseObject, con
   })
 }
 
+/** Error alert rules fired: one mail to the team listing what crossed its lines. */
+export async function notifyErrorAlerts(project: ParseObject, to: string[], lines: string[]): Promise<Result> {
+  const appName = String(project.get('name') || 'Support')
+  const first = lines[0]!.split('\n')[0]
+  return deliver(project, 'Error alert', {
+    to,
+    fromName: `${appName} errors`,
+    appName,
+    senderName: 'Error tracker',
+    recipientName: '',
+    subject: lines.length === 1 ? `Error alert: ${first}` : `${lines.length} error alerts for ${appName}`,
+    body: lines.join('\n\n'),
+    ctaUrl: `${String(process.env.ADMIN_URL || process.env.APP_URL || '').replace(/\/+$/, '')}/projects/${project.id}/errors`,
+    ctaLabel: 'Open errors',
+    attachmentUrls: [],
+    unmetered: true
+  })
+}
+
 export type { Message }

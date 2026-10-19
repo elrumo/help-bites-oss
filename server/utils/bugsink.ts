@@ -86,5 +86,9 @@ export const bugsink: ErrorProvider = {
     const { results } = await bs<Page<{ id: string }>>(creds, `/events/?issue=${encodeURIComponent(issueId)}&order=desc`)
     if (!results[0]) return null
     return (await bs<{ data?: unknown }>(creds, `/events/${encodeURIComponent(results[0].id)}/`)).data || null
+  },
+
+  async issue(creds, issueId) {
+    return bs(creds, `/issues/${encodeURIComponent(issueId)}/`)
   }
 }

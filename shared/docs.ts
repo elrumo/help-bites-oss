@@ -62,7 +62,7 @@ export const DOCS: readonly DocPage[] = [
   {
     slug: 'errors',
     title: 'Error tracking',
-    description: 'Connect GlitchTip or Bugsink so new errors become conversations in your inbox, tied to the customer who hit them.',
+    description: 'Connect GlitchTip or Bugsink to browse errors, get alert emails when one spikes, and fix them with AI that reads your GitHub repos.',
     group: 'Guides',
     file: 'ERRORS.md'
   }

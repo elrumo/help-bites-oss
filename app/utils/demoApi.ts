@@ -123,6 +123,7 @@ const errorServers = [
   { id: 'srv-glitchtip', provider: 'glitchtip', providerName: 'GlitchTip', name: 'example.glitchtip.com', url: 'https://example.glitchtip.com', apiUrl: '', org: 'helpbites', hasToken: true, builtIn: false },
   { id: 'srv-bugsink', provider: 'bugsink', providerName: 'Bugsink', name: 'example.bugsink.com', url: 'https://example.bugsink.com', apiUrl: '', org: '', hasToken: true, builtIn: false }
 ]
+const errorAlerts: { rules: any[], emails: string[] } = { rules: [{ id: 'r1', name: 'Spike', kind: 'rate', threshold: 10, windowMinutes: 60, cooldownMinutes: 60, link: '', enabled: true }], emails: [] }
 const errorIssues = [
   { id: '1001', title: 'TypeError: Cannot read properties of undefined', culprit: 'checkout.ts:42', level: 'error', count: 12, lastSeen: ago(8), status: 'unresolved', url: 'https://example.glitchtip.com/helpbites/issues/1001', conversationId: '' },
   { id: '1002', title: 'Network request failed', culprit: 'api.ts:18', level: 'warning', count: 3, lastSeen: ago(90), status: 'resolved', url: 'https://example.glitchtip.com/helpbites/issues/1002', conversationId: '' }
@@ -401,6 +402,26 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     return { project: p }
   }],
   ['GET', /^\/admin\/errors$/, ({ query }) => ({ issues: errorIssues.filter(issue => !query.status || issue.status === query.status).map(issue => ({ ...issue, linkId: 'main', linkLabel: 'Acme', provider: 'glitchtip', providerName: 'GlitchTip' })), next: '' })],
+  ['GET', /^\/admin\/errors\/alerts$/, () => ({ ...errorAlerts, notifyEmails: ['team@acme.app'], recent: [{ at: Date.now() - 3_600_000, rule: 'Spike', title: 'TypeError: Cannot read properties of undefined', url: '', link: 'Acme', count: 12 }] })],
+  ['PUT', /^\/admin\/errors\/alerts$/, ({ body }) => { errorAlerts.rules = body.rules; errorAlerts.emails = body.emails; return errorAlerts }],
+  ['GET', /^\/admin\/errors\/([^/]+)$/, ({ params }) => {
+    const issue = errorIssues.find(item => item.id === params[0]) || fail(404, 'Error not found')
+    return {
+      issue: { shortId: `ACME-${issue.id}`, status: issue.status, count: issue.count, firstSeen: ago(60 * 24 * 3), lastSeen: issue.lastSeen },
+      exception: { type: 'TypeError', value: issue.title },
+      frames: [
+        { file: 'src/checkout.ts', line: 42, function: 'submitOrder', context: '  const total = cart.items.reduce((sum, item) => sum + item.price, 0)', before: ['async function submitOrder(cart) {'], after: ['  return pay(total)'], inApp: true },
+        { file: 'node_modules/react/index.js', line: 1204, function: 'dispatch', context: '', before: [], after: [], inApp: false }
+      ],
+      tags: [['environment', 'production'], ['browser', 'Chrome 130'], ['release', '1.8.2']],
+      breadcrumbs: [{ at: ago(9), category: 'navigation', level: 'info', message: '/cart → /checkout' }, { at: ago(8), category: 'ui.click', level: 'info', message: 'button#pay' }],
+      details: [['Request', 'POST https://acme.app/api/checkout'], ['Environment', 'production'], ['User', 'u_1042']],
+      eventId: 'demo', at: issue.lastSeen
+    }
+  }],
+  ['POST', /^\/admin\/errors\/([^/]+)\/analyze$/, ({ body }) => body.prompt
+    ? { prompt: 'Exception: TypeError: Cannot read properties of undefined', files: ['acme/web/src/checkout.ts'] }
+    : { text: '**Likely cause**\n\n`cart.items` is undefined when the cart is empty.\n\n**Suggested fix**\n\n```diff\n- const total = cart.items.reduce(...)\n+ const total = (cart.items ?? []).reduce(...)\n```\n\n**How to verify**\n\nSubmit an empty cart.\n\n**Impact**\n\nCheckout fails for empty carts.', files: ['acme/web/src/checkout.ts'], cached: false }],
   ['PUT', /^\/admin\/errors\/([^/]+)$/, ({ params, body }) => {
     const issue = errorIssues.find(item => item.id === params[0]) || fail(404, 'Error not found')
     issue.status = body.status === 'open' ? 'unresolved' : body.status === 'closed' ? 'ignored' : 'resolved'

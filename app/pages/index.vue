@@ -407,7 +407,7 @@ const features = [
     title: 'Your team and your tools',
     hint: 'Roles, error tracking and flags that sit next to support.',
     items: [
-      { term: 'Error tracking', desc: 'Connect GlitchTip or Bugsink. New errors open conversations, and resolving either side resolves the other.' },
+      { term: 'Error tracking', desc: 'Connect GlitchTip or Bugsink. Browse errors with their stack traces, get alert emails when one spikes, and fix them with AI that reads your GitHub repos.' },
       { term: 'Feature flags', desc: 'Switch features on, off or for admins only, from the panel, without a deploy.' },
       { term: 'Your own ticket types', desc: 'Support is built in. Add types with their own statuses, fields and actions, and actions call back to your app over a signed webhook.' },
       { term: 'Roles for your team', desc: 'Agents answer, admins run projects and the team, owners handle billing. Invite people by email.' }
