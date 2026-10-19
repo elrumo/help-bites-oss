@@ -16,7 +16,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
   var error = ""
   /// A password-reset link opened into the app, picked up by the sign-in screen.
   var pendingResetLink = ""
-  private var workspaceId = ""
+  private(set) var workspaceId = ""
 
   var workspace: WorkspaceSummary? { context?.workspace }
   var workspaces: [WorkspaceSummary] { context?.workspaces ?? [] }
@@ -80,6 +80,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
     workspaceId = id
     UserDefaults.standard.set(id, forKey: "helpbites.workspace")
     await api.setWorkspace(id)
+    SnapshotCache.clear()
     struct Input: Encodable, Sendable { let defaultWorkspaceId: String }
     let _: EmptyBody? = try? await send("/v1/admin/me", method: "PATCH", body: Input(defaultWorkspaceId: id))
     await refreshContext()

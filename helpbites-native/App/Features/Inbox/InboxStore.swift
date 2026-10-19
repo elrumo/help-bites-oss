@@ -87,7 +87,18 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
 
   private var events: Task<Void, Never>?
 
-  init(session: SessionStore) { self.session = session }
+  init(session: SessionStore) {
+    self.session = session
+    // The last unfiltered page, so the queue has rows on the first frame while the real one loads.
+    if let cached = SnapshotCache.load(InboxResponse.self, "inbox") {
+      conversations = cached.conversations
+      endUsers = cached.endUsers
+      hasMore = cached.hasMore
+      totalUnread = cached.totalUnread
+      counts = cached.counts ?? counts
+      unreadByProject = cached.unreadByProject ?? [:]
+    }
+  }
 
   var myAgentId: String { session.agent?.id ?? "" }
   /// This agent's tapback key, matching the server's `actor` field.
@@ -135,6 +146,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
       } else {
         conversations = page.conversations
       }
+      if !more, !filtersActive, search.isEmpty, queue != .archived { SnapshotCache.save(page, "inbox") }
       endUsers.merge(page.endUsers) { _, new in new }
       hasMore = page.hasMore
       totalUnread = page.totalUnread

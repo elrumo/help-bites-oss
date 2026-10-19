@@ -8,6 +8,7 @@ struct ContactDetailSheet: View {
   /// The saved contact, or nil once it is erased.
   var onChange: (Contact?) -> Void
   @Environment(SessionStore.self) private var session
+  @Environment(Workspace.self) private var workspace
   @Environment(\.dismiss) private var dismiss
   @State private var name = ""
   @State private var tags = ""
@@ -16,6 +17,8 @@ struct ContactDetailSheet: View {
   @State private var error = ""
   @State private var confirmResubscribe = false
   @State private var confirmErase = false
+  @State private var conversations: [Conversation] = []
+  @State private var emails: [EmailLogEntry] = []
 
   var body: some View {
     NavigationStack {
@@ -58,6 +61,44 @@ struct ContactDetailSheet: View {
           LabeledContent("Last seen", value: contact.lastSeenAt.map { DateText.day($0) } ?? "—")
         }
 
+        Section("Conversations") {
+          if conversations.isEmpty { Text("None yet.").font(.lnMeta).foregroundStyle(Theme.textMuted) }
+          ForEach(conversations) { conversation in
+            Button {
+              workspace.go(.inbox)
+              Task { await workspace.inbox.select(conversation.id) }
+              dismiss()
+            } label: {
+              HStack {
+                Text(conversation.subject.isEmpty ? (conversation.lastMessagePreview.isEmpty ? "Conversation" : conversation.lastMessagePreview) : conversation.subject).lineLimit(1)
+                Spacer(minLength: 8)
+                Tag(text: conversation.status.capitalized)
+                Text(DateText.short(conversation.lastMessageAt ?? conversation.createdAt)).font(.lnCaption).foregroundStyle(Theme.textMuted)
+              }
+              .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+          }
+        }
+
+        if !contact.email.isEmpty {
+          Section("Email") {
+            if emails.isEmpty { Text("Nothing sent yet.").font(.lnMeta).foregroundStyle(Theme.textMuted) }
+            ForEach(emails) { entry in
+              HStack {
+                Text(entry.subject ?? "").lineLimit(1)
+                Spacer(minLength: 8)
+                Text(EmailStatusText.style(entry.status ?? "").label).font(.lnCaption).foregroundStyle(Theme.textMuted)
+                Text(DateText.short(entry.createdAt)).font(.lnCaption).foregroundStyle(Theme.textMuted)
+              }
+            }
+          }
+        }
+
+        Section("Billing") {
+          ContactBillingSection(projectId: projectId, contactId: contact.id, revenue: contact.attributes["stripe_revenue"].flatMap { if case .number(let value) = $0 { value } else { nil } }, customerId: contact.attributes["stripe_customer"].flatMap { if case .string(let value) = $0 { value } else { nil } })
+        }
+
         Section {
           ErrorText(message: error)
           Button("Erase this person", role: .destructive) { confirmErase = true }
@@ -74,6 +115,14 @@ struct ContactDetailSheet: View {
       }
       .confirmationDialog("Erase \(contact.displayName)? Their conversations, feedback and email history go too.", isPresented: $confirmErase, titleVisibility: .visible) {
         Button("Erase", role: .destructive) { Task { await erase() } }
+      }
+    }
+    .task {
+      // Their conversations (open one in the inbox) and the email we sent them.
+      if let result: InboxResponse = try? await session.get("/v1/admin/conversations", query: ["project": projectId, "endUser": contact.id, "limit": "20"]) { conversations = result.conversations }
+      if !contact.email.isEmpty {
+        struct Logs: Decodable, Sendable { let logs: [EmailLogEntry] }
+        if let result: Logs = try? await session.get("/v1/admin/email-logs", query: ["project": projectId, "to": contact.email, "limit": "20"]) { emails = result.logs.filter { $0.to == contact.email } }
       }
     }
     .onAppear {

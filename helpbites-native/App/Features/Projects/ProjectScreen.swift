@@ -167,7 +167,7 @@ struct ProjectOverviewScreen: View {
     .task { await load() }
   }
 
-  /// The web's `settings` section lives on native Dev; `?view=` is dropped.
+  /// `?view=` is dropped; an unknown section opens Dev.
   private func section(_ path: String) -> ProjectSection {
     ProjectSection(rawValue: String(path.split(separator: "?").first ?? "")) ?? .dev
   }

@@ -237,6 +237,11 @@ struct BoardItemEditor: View {
         }
       }
 
+      VStack(alignment: .leading, spacing: 8) {
+        Text("Changelog").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+        ChangelogLinksSection(projectId: store.projectId, kind: "board", targetId: item.id, source: ["title": item.title, "publicDescription": item.publicDescription])
+      }
+
       Button { confirmDelete = true } label: { Label("Delete item", systemImage: "trash") }.buttonStyle(GhostButtonStyle(tint: Theme.error))
     }
   }

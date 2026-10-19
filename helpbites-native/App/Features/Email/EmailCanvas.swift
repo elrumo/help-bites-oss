@@ -215,7 +215,7 @@ private struct EmailCanvasBlock: View {
     let width = (block.width ?? 0) > 0 ? CGFloat(block.width!) : nil
     // Sized by height (a badge) when it has no width: the width follows the picture.
     let height = width == nil && (block.imageHeight ?? 0) > 0 ? CGFloat(block.imageHeight!) : nil
-    return AsyncImage(url: URL(string: block.src)) { phase in
+    return CachedAsyncImage(url: URL(string: block.src)) { phase in
       if let image = phase.image {
         image.resizable().scaledToFit()
       } else {

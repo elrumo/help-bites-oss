@@ -2,19 +2,29 @@
 
 ## Current implementation
 
-`HelpBitesNative.xcodeproj` is the iOS/iPadOS SwiftUI client described below,
-which also builds for the Mac with Mac Catalyst (iOS 18 / macOS 15 and later).
-Open it in Xcode, set `APP_BASE_URL` in `Config/Debug.xcconfig` to a reachable
-HTTPS tunnel/LAN address for a physical device, then run the `HelpBitesNative`
-scheme on a simulator, a device, or My Mac. The simulator default is
+`HelpBitesNative.xcodeproj` is one SwiftUI target that runs natively on iPhone,
+iPad and the Mac (iOS 18 / macOS 15 and later; no Mac Catalyst). The Mac gets a
+real sidebar window (`Shell/MacShell.swift`); the few UIKit/AppKit differences
+live in `Core/Platform.swift` and `Core/PlatformCompat.swift`. Open it in Xcode,
+set `APP_BASE_URL` in `Config/Debug.xcconfig` to a reachable HTTPS tunnel/LAN
+address for a physical device, then run the `HelpBitesNative` scheme on a
+simulator, a device, or My Mac.
+
+Launch speed: the signed-in shell paints from `SnapshotCache` (last `/me`,
+projects and inbox page) before the network answers, startup requests run in
+parallel, notification permission waits until after sign-in, and remote images
+go through `CachedAsyncImage`. Release builds use whole-module optimisation and
+thin LTO. The simulator default is
 `http://localhost:3100`.
 
 The companion server changes live outside this directory: `Device` schema,
 device registration routes, and the event-bus APNs fan-out. Push stays disabled
 until APNs credentials are present in the server environment.
 
-The app wears the web panel's Linear-style design, and gets around the way each
-platform does. iPhone has a tab bar (Inbox, Projects, Templates, Settings), with
+The app covers every page of the web panel (inbox, projects and all their
+sections including Changelog, Legal and Revenue, Knowledge, Email, workspace
+settings, AI, connections, team and invitations). It wears the web panel's
+Linear-style design, and gets around the way each platform does. iPhone has a tab bar (Inbox, Projects, Templates, Settings), with
 each tab's pages pushed beneath it: Projects › project › section. On iPad the
 tabs open into a sidebar, which is all the Mac shows; the sidebar also lists
 every project's sections, as the web's does. The Mac menu bar (and iPad's ⌘

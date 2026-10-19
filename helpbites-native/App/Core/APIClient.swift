@@ -23,7 +23,8 @@ actor APIClient {
   init(baseURL: String) {
     self.baseURL = URL(string: baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))) ?? URL(string: "http://localhost:3100")!
     let configuration = URLSessionConfiguration.default
-    configuration.timeoutIntervalForRequest = 30
+    // AI calls (drafting, checks, generation) answer in a minute or two; the web doesn't cut them off either.
+    configuration.timeoutIntervalForRequest = 300
     configuration.httpMaximumConnectionsPerHost = 8
     configuration.waitsForConnectivity = false
     configuration.httpShouldUsePipelining = true

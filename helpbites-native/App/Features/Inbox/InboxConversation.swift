@@ -385,7 +385,7 @@ private struct InboxTranscript: View {
 
   private func attachment(_ file: Attachment) -> some View {
     Button { if let url = URL(string: file.url) { preview = PreviewItem(url: url) } } label: {
-      AsyncImage(url: URL(string: file.url)) { phase in
+      CachedAsyncImage(url: URL(string: file.url)) { phase in
         if let image = phase.image {
           image.resizable().scaledToFit()
         } else {
@@ -408,7 +408,7 @@ private struct InboxTranscript: View {
   private func sourceLabel(_ tag: InboxSourceTag, store: InboxStore) -> some View {
     HStack(spacing: 4) {
       if tag.ai, let raw = store.project?.assistantLogoUrl, !raw.isEmpty, let url = URL(string: raw) {
-        AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Image(systemName: "sparkles") }
+        CachedAsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Image(systemName: "sparkles") }
           .frame(width: 14, height: 14)
           .clipShape(Circle())
       } else {
@@ -427,7 +427,7 @@ private struct InboxTranscript: View {
     let host = context.url.flatMap { URL(string: $0)?.host() } ?? ""
     let card = HStack(spacing: 10) {
       if let thumb = context.thumbnailUrl, !thumb.isEmpty, let url = URL(string: thumb) {
-        AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
+        CachedAsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
           .frame(width: 36, height: 36)
           .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
       } else {

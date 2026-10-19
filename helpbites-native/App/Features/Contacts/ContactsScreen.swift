@@ -2,10 +2,9 @@ import SwiftUI
 
 /// A project's people (web: projects/[id]/contacts.vue): the app's users,
 /// imports, database syncs and sign-ups; the saved segments; and the sources
-/// they sync from. Importing a CSV and connecting a database are on the web.
+/// they sync from.
 struct ContactsScreen: View {
   let projectId: String
-  @Environment(SessionStore.self) private var session
   @State private var tab = "people"
 
   var body: some View {
@@ -27,220 +26,246 @@ struct ContactsScreen: View {
   }
 }
 
+/// The people list's state: filters, the current page and the cursor. Loads supersede each
+/// other, and the next page is fetched as the end of the list scrolls into view.
+@MainActor @Observable final class ContactsStore {
+  private(set) var contacts: [Contact] = []
+  private(set) var next = ""
+  private(set) var loading = true
+  private(set) var loadingMore = false
+  var error = ""
+  var search = ""
+  var subscription = ""
+  var segment = ""
+  private var generation = 0
+
+  var queryKey: String { [search.trimmingCharacters(in: .whitespaces), subscription, segment].joined(separator: "\u{1f}") }
+  var filtered: Bool { !search.trimmingCharacters(in: .whitespaces).isEmpty || !subscription.isEmpty || !segment.isEmpty }
+
+  private func query(_ projectId: String) -> [String: String] {
+    var query = ["project": projectId, "limit": "50"]
+    let term = search.trimmingCharacters(in: .whitespaces)
+    if !term.isEmpty { query["q"] = term }
+    if !subscription.isEmpty { query["subscription"] = subscription }
+    if !segment.isEmpty { query["segment"] = segment }
+    return query
+  }
+
+  func load(_ projectId: String, session: SessionStore) async {
+    generation += 1
+    let run = generation
+    loading = true
+    do {
+      let page: ContactPage = try await session.get("/v1/contacts", query: query(projectId))
+      guard run == generation else { return }
+      contacts = page.contacts
+      next = page.nextCursor ?? ""
+      error = ""
+    } catch {
+      guard run == generation, !Task.isCancelled else { return }
+      self.error = error.localizedDescription
+    }
+    loading = false
+  }
+
+  func loadMore(_ projectId: String, session: SessionStore) async {
+    guard !next.isEmpty, !loading, !loadingMore else { return }
+    let run = generation
+    loadingMore = true
+    defer { loadingMore = false }
+    var query = query(projectId)
+    query["cursor"] = next
+    do {
+      let page: ContactPage = try await session.get("/v1/contacts", query: query)
+      guard run == generation else { return }
+      let known = Set(contacts.map(\.id))
+      contacts += page.contacts.filter { !known.contains($0.id) }
+      next = page.nextCursor ?? ""
+    } catch { if run == generation { self.error = error.localizedDescription } }
+  }
+
+  func replace(_ contact: Contact) { if let i = contacts.firstIndex(where: { $0.id == contact.id }) { contacts[i] = contact } }
+  func remove(_ id: String) { contacts.removeAll { $0.id == id } }
+}
+
 private struct PeopleList: View {
   let projectId: String
   @Environment(SessionStore.self) private var session
-  @State private var contacts: [Contact] = []
-  @State private var next = ""
-  @State private var search = ""
-  @State private var subscription = ""
-  @State private var loading = true
-  @State private var error = ""
+  @State private var store = ContactsStore()
+  @State private var segments: [ContactSegment] = []
   @State private var open: Contact?
+  @State private var importing = false
+  @State private var adding = false
 
   var body: some View {
-    List {
+    @Bindable var filters = store
+    VStack(spacing: 0) {
       HStack(spacing: 8) {
-        SearchField(text: $search, prompt: "Name, email or id") { Task { await load() } }
+        SearchField(text: $filters.search, prompt: "Name, email or id")
         Menu {
-          Button("Anyone") { subscription = "" }
-          ForEach(SubscriptionStatus.allCases) { status in Button(status.label) { subscription = status.rawValue } }
+          Picker("Subscription", selection: $filters.subscription) {
+            Text("Anyone").tag("")
+            ForEach(SubscriptionStatus.allCases) { Text($0.label).tag($0.rawValue) }
+          }
+          if !segments.isEmpty {
+            Picker("Segment", selection: $filters.segment) {
+              Text("Everyone").tag("")
+              ForEach(segments) { Text($0.name).tag($0.id) }
+            }
+          }
         } label: {
-          Label(subscription.isEmpty ? "Anyone" : SubscriptionStatus.of(subscription).label, systemImage: "line.3.horizontal.decrease")
-            .font(.lnMetaMedium).foregroundStyle(Theme.textToned)
+          Image(systemName: "line.3.horizontal.decrease")
+            .foregroundStyle(Theme.textToned)
+            .overlay(alignment: .topTrailing) { if !store.subscription.isEmpty || !store.segment.isEmpty { Circle().fill(Theme.accent).frame(width: 7, height: 7).offset(x: 4, y: -3) } }
         }
+        .menuStyle(.borderlessButton).fixedSize()
+        .accessibilityLabel("Filter contacts")
       }
-      .linearRow()
-      if !error.isEmpty { ErrorText(message: error).linearRow() }
-      if loading && contacts.isEmpty { SkeletonRows(count: 6).linearRow() }
-      else if contacts.isEmpty {
-        EmptyState(systemImage: "person.2", title: search.isEmpty && subscription.isEmpty ? "No contacts yet" : "Nobody matches", message: search.isEmpty && subscription.isEmpty ? "Your app's users show up here as they use support or feedback. Import a CSV or sync your database on the web." : "Try another filter.").linearRow()
-      }
-      ForEach(contacts) { contact in
-        Button { open = contact } label: { row(contact) }.buttonStyle(.plain).linearRow()
-      }
-      if !next.isEmpty { Button("Load more") { Task { await load(cursor: next) } }.buttonStyle(.lnSecondaryCompact).linearRow() }
+      .padding(.horizontal, 12).padding(.bottom, 8)
+      if !store.error.isEmpty { ErrorText(message: store.error).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 6) }
+      list
     }
-    .linearList()
-    .refreshable { await load() }
-    .task(id: subscription) { await load() }
+    .background(Theme.panel)
+    // Filters reload; typing is debounced, a newer filter cancels this one.
+    .task(id: store.queryKey) {
+      try? await Task.sleep(for: .milliseconds(300))
+      guard !Task.isCancelled else { return }
+      await store.load(projectId, session: session)
+    }
+    .task { if let r: SegmentsResponse = try? await session.get("/v1/segments", query: ["project": projectId]) { segments = r.segments } }
+    .toolbar {
+      ToolbarItemGroup(placement: .primaryAction) {
+        Button { importing = true } label: { Label("Import CSV", systemImage: "square.and.arrow.down") }
+        Button { adding = true } label: { Label("Add contact", systemImage: "plus") }
+      }
+    }
     .sheet(item: $open) { contact in
       ContactDetailSheet(projectId: projectId, contact: contact) { changed in
-        if let changed { contacts = contacts.map { $0.id == changed.id ? changed : $0 } } else { contacts.removeAll { $0.id == contact.id } }
+        if let changed { store.replace(changed) } else { store.remove(contact.id) }
+      }
+    }
+    .sheet(isPresented: $importing) { CsvImportSheet(projectId: projectId) { Task { await store.load(projectId, session: session) } } }
+    .sheet(isPresented: $adding) { AddContactSheet(projectId: projectId) { contact in
+      Task { await store.load(projectId, session: session); open = contact }
+    } }
+  }
+
+  private struct SegmentsResponse: Decodable, Sendable { let segments: [ContactSegment] }
+
+  private var list: some View {
+    let rows = store.contacts
+    return List {
+      ForEach(rows) { contact in
+        Button { open = contact } label: { PeopleRow(contact: contact) }
+          .buttonStyle(.plain)
+          .linearRow()
+          // The next page loads as the last rows scroll into view: only the visible rows are ever built.
+          .onAppear { if contact.id == rows[max(0, rows.count - 10)].id { Task { await store.loadMore(projectId, session: session) } } }
+      }
+      if store.loadingMore { ProgressView().frame(maxWidth: .infinity).linearRow() }
+    }
+    .linearList()
+    .refreshable { await store.load(projectId, session: session) }
+    .overlay {
+      if rows.isEmpty {
+        if store.loading { SkeletonRows(count: 8).frame(maxHeight: .infinity, alignment: .top) }
+        else {
+          EmptyState(systemImage: "person.2", title: store.filtered ? "Nobody matches" : "No contacts yet", message: store.filtered ? "Try another filter." : "Your app's users show up here as they use support or feedback. Import a CSV, sync your database under Sources, or add people through the API.") {
+            if !store.filtered {
+              Button("Import CSV") { importing = true }.buttonStyle(.lnSecondaryCompact)
+              Button("Add contact") { adding = true }.buttonStyle(.lnPrimaryCompact)
+            }
+          }
+        }
       }
     }
   }
+}
 
-  private func row(_ contact: Contact) -> some View {
+private struct PeopleRow: View {
+  let contact: Contact
+  var body: some View {
     let status = SubscriptionStatus.of(contact.subscription)
-    return HStack(spacing: 12) {
+    HStack(spacing: 12) {
+      avatar
       VStack(alignment: .leading, spacing: 2) {
         Text(contact.displayName).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
         if !contact.name.isEmpty, !contact.email.isEmpty { Text(contact.email).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1) }
       }
       Spacer(minLength: 8)
-      Tag(text: status.label, tint: status.tint)
+      if let tag = contact.tags.first { Tag(text: contact.tags.count > 1 ? "\(tag) +\(contact.tags.count - 1)" : tag).fixedSize() }
+      Tag(text: status.label, tint: status.tint).fixedSize()
       Text(DateText.short(contact.lastSeenAt ?? contact.createdAt)).font(.lnCaption).foregroundStyle(Theme.textMuted).frame(minWidth: 32, alignment: .trailing)
     }
     .frame(minHeight: Metrics.rowHeight)
     .contentShape(Rectangle())
+    .accessibilityElement(children: .combine)
   }
 
-  private func load(cursor: String = "") async {
-    loading = true
-    defer { loading = false }
-    do {
-      var query = ["project": projectId]
-      if !search.isEmpty { query["q"] = search }
-      if !subscription.isEmpty { query["subscription"] = subscription }
-      if !cursor.isEmpty { query["cursor"] = cursor }
-      let page: ContactPage = try await session.get("/v1/contacts", query: query)
-      contacts = cursor.isEmpty ? page.contacts : contacts + page.contacts
-      next = page.nextCursor ?? ""
-      error = ""
-    } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
+  @ViewBuilder private var avatar: some View {
+    if let url = URL(string: contact.avatarUrl), !contact.avatarUrl.isEmpty {
+      CachedAsyncImage(url: url) { phase in
+        if let image = phase.image { image.resizable().scaledToFill().frame(width: 24, height: 24).clipShape(Circle()) }
+        else { Avatar(name: contact.displayName) }
+      }
+    } else {
+      Avatar(name: contact.displayName)
+    }
   }
 }
 
-private struct SegmentsList: View {
+/// Someone your app knows by email, by id, or both (web: the "Add a contact" modal).
+private struct AddContactSheet: View {
   let projectId: String
+  var onAdded: (Contact) -> Void
   @Environment(SessionStore.self) private var session
-  @State private var segments: [ContactSegment] = []
-  @State private var counts: [String: Int] = [:]
-  @State private var loading = true
+  @Environment(\.dismiss) private var dismiss
+  @State private var email = ""
+  @State private var name = ""
+  @State private var externalId = ""
+  @State private var optedIn = false
+  @State private var saving = false
   @State private var error = ""
 
   var body: some View {
-    List {
-      if !error.isEmpty { ErrorText(message: error).linearRow() }
-      if loading && segments.isEmpty { SkeletonRows(count: 3).linearRow() }
-      else if segments.isEmpty { EmptyState(systemImage: "line.3.horizontal.decrease.circle", title: "No segments yet", message: "Build them on the web: plan, tags, when people were last seen. Then email exactly that group.").linearRow() }
-      ForEach(segments) { segment in
-        HStack(spacing: 12) {
-          Image(systemName: "line.3.horizontal.decrease.circle").foregroundStyle(Theme.textMuted)
-          VStack(alignment: .leading, spacing: 2) {
-            Text(segment.name).font(.lnRow).foregroundStyle(Theme.textHighlighted)
-            Text("\(segment.filter.rules.count) rule\(segment.filter.rules.count == 1 ? "" : "s")").font(.lnMeta).foregroundStyle(Theme.textMuted)
-          }
-          Spacer()
-          Text(counts[segment.id].map { "\($0) people" } ?? "…").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
+    NavigationStack {
+      Form {
+        Section {
+          TextField("Email", text: $email).inputHints(.emailAddress, capitalization: .never).autocorrectionDisabled()
+          TextField("Name (optional)", text: $name)
+          TextField("User id (your app's id, optional)", text: $externalId).inputHints(.asciiCapable, capitalization: .never).autocorrectionDisabled()
         }
-        .frame(minHeight: Metrics.rowHeight)
-        .linearRow()
-        .swipeActions { Button("Delete", role: .destructive) { Task { await remove(segment) } } }
+        Section {
+          Toggle("They asked to get marketing email", isOn: $optedIn)
+        } footer: { Text("Records your panel as the consent source.") }
+        Section { ErrorText(message: error) }
+      }
+      .formStyle(.grouped)
+      .navigationTitle("Add a contact")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+        ToolbarItem(placement: .confirmationAction) {
+          Button("Add") { Task { await add() } }
+            .disabled(saving || (email.trimmingCharacters(in: .whitespaces).isEmpty && externalId.trimmingCharacters(in: .whitespaces).isEmpty))
+        }
       }
     }
-    .linearList()
-    .refreshable { await load() }
-    .task { await load() }
+    #if os(macOS)
+    .frame(minWidth: 420, minHeight: 380)
+    #endif
   }
 
-  private func load() async {
-    struct Response: Decodable, Sendable { let segments: [ContactSegment] }
-    struct Preview: Decodable, Sendable { let count: Int }
-    struct Input: Encodable, Sendable { let project, segment: String }
-    loading = true
-    defer { loading = false }
+  private func add() async {
+    struct Input: Encodable, Sendable { let project: String; let email, name: String; let externalId, subscription: String? }
+    struct Output: Decodable, Sendable { let contact: Contact }
+    saving = true
+    defer { saving = false }
+    let id = externalId.trimmingCharacters(in: .whitespaces)
     do {
-      segments = (try await session.get("/v1/segments", query: ["project": projectId]) as Response).segments
-      error = ""
-      for segment in segments {
-        let preview: Preview = try await session.send("/v1/segments/preview", body: Input(project: projectId, segment: segment.id))
-        counts[segment.id] = preview.count
-      }
-    } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
-  }
-
-  private func remove(_ segment: ContactSegment) async {
-    do {
-      try await session.delete("/v1/segments/\(segment.id)?project=\(projectId)")
-      segments.removeAll { $0.id == segment.id }
-    } catch { self.error = error.localizedDescription }
-  }
-}
-
-private struct SourcesList: View {
-  let projectId: String
-  @Environment(SessionStore.self) private var session
-  @State private var sources: [ContactSource] = []
-  @State private var ready = true
-  @State private var loading = true
-  @State private var error = ""
-
-  private static let icons = ["parse": "server.rack", "postgres": "cylinder.split.1x2", "firestore": "flame"]
-
-  var body: some View {
-    List {
-      if !ready {
-        Label("Set HELPBITES_SECRET on the server: database credentials are stored encrypted with it.", systemImage: "key")
-          .font(.lnMeta).foregroundStyle(Theme.warning).linearRow()
-      }
-      if !error.isEmpty { ErrorText(message: error).linearRow() }
-      if loading && sources.isEmpty { SkeletonRows(count: 2).linearRow() }
-      else if sources.isEmpty { EmptyState(systemImage: "cylinder.split.1x2", title: "No databases connected", message: "Connect your Parse server, Postgres or Supabase, or Firestore on the web; HelpBites keeps contacts in step, read only.").linearRow() }
-      ForEach(sources) { source in row(source).linearRow() }
-    }
-    .linearList()
-    .refreshable { await load() }
-    .task { await load() }
-  }
-
-  private func row(_ source: ContactSource) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-      HStack(spacing: 10) {
-        Image(systemName: Self.icons[source.kind] ?? "cylinder").foregroundStyle(Theme.textMuted)
-        VStack(alignment: .leading, spacing: 2) {
-          Text(source.name).font(.lnRow).foregroundStyle(Theme.textHighlighted)
-          Text("\(source.what) · \(source.schedule)\(source.config.updatedField == nil ? " · full scan" : "")").font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
-        }
-        Spacer(minLength: 8)
-        if !source.enabled { Tag(text: "Paused") }
-        else if source.status == "running" { Tag(text: "Syncing", tint: Theme.info) }
-        else if source.status == "error" { Tag(text: "Failing", tint: Theme.error) }
-        else { Tag(text: "Up to date", tint: Theme.success) }
-        Menu {
-          Button { Task { await run(source, reset: false) } } label: { Label("Sync now", systemImage: "arrow.clockwise") }
-          Button { Task { await run(source, reset: true) } } label: { Label("Read everything again", systemImage: "arrow.counterclockwise") }
-          Button { Task { await toggle(source) } } label: { Label(source.enabled ? "Pause" : "Resume", systemImage: source.enabled ? "pause" : "play") }
-        } label: {
-          Image(systemName: "ellipsis").font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
-        }
-        .accessibilityLabel("Source actions")
-      }
-      if !source.lastError.isEmpty { Text(source.lastError).font(.lnMono).foregroundStyle(Theme.error).lineLimit(3) }
-      Text("Read \(source.stats.seen) · new \(source.stats.created) · updated \(source.stats.updated)\(source.stats.failed > 0 ? " · failed \(source.stats.failed)" : "")\(source.lastRunAt.map { " · \(DateText.short($0))" } ?? "")")
-        .font(.lnCaption).foregroundStyle(Theme.textMuted)
-    }
-    .padding(.vertical, 6)
-  }
-
-  private func load() async {
-    struct Response: Decodable, Sendable { let sources: [ContactSource]; let ready: Bool }
-    loading = true
-    defer { loading = false }
-    do {
-      let response: Response = try await session.get("/v1/admin/contact-sources", query: ["project": projectId])
-      sources = response.sources
-      ready = response.ready
-      error = ""
-    } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
-  }
-
-  private func run(_ source: ContactSource, reset: Bool) async {
-    struct Input: Encodable, Sendable { let project: String; let reset: Bool }
-    struct Output: Decodable, Sendable { let source: ContactSource }
-    do {
-      let output: Output = try await session.send("/v1/admin/contact-sources/\(source.id)/run", body: Input(project: projectId, reset: reset))
-      sources = sources.map { $0.id == source.id ? output.source : $0 }
-    } catch { self.error = error.localizedDescription }
-  }
-
-  private func toggle(_ source: ContactSource) async {
-    struct Input: Encodable, Sendable { let project: String; let enabled: Bool }
-    struct Output: Decodable, Sendable { let source: ContactSource }
-    do {
-      let output: Output = try await session.send("/v1/admin/contact-sources/\(source.id)", method: "PATCH", body: Input(project: projectId, enabled: !source.enabled))
-      sources = sources.map { $0.id == source.id ? output.source : $0 }
+      let output: Output = try await session.send("/v1/contacts", body: Input(project: projectId, email: email.trimmingCharacters(in: .whitespaces), name: name, externalId: id.isEmpty ? nil : id, subscription: optedIn ? "subscribed" : nil))
+      onAdded(output.contact)
+      dismiss()
     } catch { self.error = error.localizedDescription }
   }
 }

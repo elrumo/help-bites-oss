@@ -8,6 +8,7 @@ struct SettingsScreen: View {
   @State private var endpoint = ""
   @State private var confirmSignOut = false
   @State private var newWorkspaceOpen = false
+  @State private var joinOpen = false
 
   var body: some View {
     ScrollView {
@@ -36,6 +37,7 @@ struct SettingsScreen: View {
             }
             Divider()
             Button { newWorkspaceOpen = true } label: { Label("New workspace…", systemImage: "plus") }
+            Button { joinOpen = true } label: { Label("Join with an invitation…", systemImage: "envelope.open") }
           } label: {
             HStack(spacing: 10) {
               Image(systemName: "building.2").font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
@@ -57,7 +59,7 @@ struct SettingsScreen: View {
           link(.team, "Team", "person.2")
           link(.ai, "AI", "sparkles")
           link(.connections, "Connections", "powerplug")
-          link(.apiKeys, "API keys", "key")
+          if session.canManage { link(.apiKeys, "API keys", "key") }
           link(.developer, "Developer", "chevron.left.forwardslash.chevron.right", divider: false)
         }
 
@@ -97,6 +99,7 @@ struct SettingsScreen: View {
     .panelScreen("Settings")
     .onAppear { endpoint = session.endpoint }
     .sheet(isPresented: $newWorkspaceOpen) { NewWorkspaceSheet() }
+    .sheet(isPresented: $joinOpen) { AcceptInvitationSheet() }
   }
 
   private func link(_ route: AppRoute, _ title: String, _ systemImage: String, divider: Bool = true) -> some View {

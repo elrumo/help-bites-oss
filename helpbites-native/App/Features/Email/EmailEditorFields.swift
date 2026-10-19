@@ -685,7 +685,7 @@ struct EmailImageSourceField: View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(spacing: 10) {
         if let url = thumbnailURL {
-          AsyncImage(url: url) { image in
+          CachedAsyncImage(url: url) { image in
             image.resizable().scaledToFill()
           } placeholder: {
             Image(systemName: "photo").font(.system(size: 16)).foregroundStyle(Theme.textDimmed)

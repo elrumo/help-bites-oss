@@ -77,7 +77,7 @@ struct AppShell: View {
     let section = TabSection {
       ForEach(ProjectSection.allCases) { section in
         Tab(section.label, systemImage: section.systemImage, value: AppTab.section(project.id, section)) {
-          NavigationStack { RouteView(route: .project(project.id, section)) }
+          NavigationStack { RouteView(route: .project(project.id, section)).routes() }
         }
         .tabPlacement(.sidebarOnly)
       }
@@ -120,7 +120,7 @@ struct RouteView: View {
       case .tickets: TicketTypesScreen(projectId: id)
       case .feedback: FeedbackScreen(projectId: id)
       case .board: BoardScreen(projectId: id)
-      case .email: EmailLibraryScreen(projectId: id)
+      case .email: EmailLibraryScreen(projectId: id, initialTab: .log)
       case .campaigns: CampaignsScreen(projectId: id)
       case .flags: FlagsScreen(projectId: id)
       case .errors: ErrorsScreen(projectId: id)
@@ -220,6 +220,7 @@ struct CommandPalette: View {
       VStack(spacing: 0) {
         SearchField(text: $query, prompt: "Go to a page or project…").focused($focused).padding(12)
         Rectangle().fill(Theme.border).frame(height: 1)
+        if query.trimmingCharacters(in: .whitespaces).count >= 2 { GlobalSearchResults(query: query) { dismiss() } }
         List(entries) { entry in
           Button {
             workspace.go(entry.route)
