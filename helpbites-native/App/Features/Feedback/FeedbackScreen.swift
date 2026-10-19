@@ -263,24 +263,10 @@ struct FeedbackScreen: View {
 
   // MARK: Raw requests
 
-  /// `SessionStore.send` cannot carry a query string (the path is appended verbatim,
-  /// so "?" gets escaped), and creating a post needs `?project=`.
+  /// Creating a post names the project in the query (an operator posts as the team).
   private func createPost(_ input: FeedbackPostInput) async throws -> FeedbackPost {
-    var request = try rawRequest("/v1/feedback", query: [URLQueryItem(name: "project", value: projectId)])
-    request.httpMethod = "POST"
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.httpBody = try JSONEncoder().encode(input)
-    let (data, response) = try await URLSession.shared.data(for: request)
-    let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-    if status == 401 {
-      await session.recover(APIError.unauthorized)
-      throw APIError.unauthorized
-    }
-    guard (200..<300).contains(status) else {
-      let body = try? JSONDecoder().decode(ErrorBody.self, from: data)
-      throw APIError.server(body?.statusMessage ?? body?.message ?? "Request failed (\(status)).")
-    }
-    return try JSONDecoder().decode(PostResponse.self, from: data).post
+    let result: PostResponse = try await session.send("/v1/feedback?project=\(projectId)", body: input)
+    return result.post
   }
 
   private func rawRequest(_ path: String, query: [URLQueryItem]) throws -> URLRequest {
@@ -291,6 +277,8 @@ struct FeedbackScreen: View {
     var request = URLRequest(url: url)
     request.setValue("application/json", forHTTPHeaderField: "Accept")
     request.setValue("Bearer \(session.token)", forHTTPHeaderField: "Authorization")
+    // The workspace the app acts in, as APIClient sends it.
+    if let workspace = UserDefaults.standard.string(forKey: "helpbites.workspace"), !workspace.isEmpty { request.setValue(workspace, forHTTPHeaderField: "X-Workspace") }
     return request
   }
 
@@ -313,7 +301,6 @@ struct FeedbackScreen: View {
   }
   private struct ConfigInput: Encodable, Sendable { let feedback: FeedbackBoardConfig }
   private struct CommentInput: Encodable, Sendable { let body: String; let visibility: String? }
-  private struct ErrorBody: Decodable, Sendable { let statusMessage: String?; let message: String? }
   private struct LiveEvent: Decodable, Sendable {
     let type: String
     let postId: String?
@@ -335,6 +322,7 @@ private struct FeedbackBoardView: View {
   @State var store: FeedbackBoardStore
   @State private var showSettings = false
   @State private var editor: FeedbackEditorRoute?
+  @Environment(Workspace.self) private var workspace
 
   var body: some View {
     content
@@ -386,10 +374,26 @@ private struct FeedbackBoardView: View {
     }
     if store.config?.enabled == true {
       ToolbarItemGroup(placement: .topBarTrailing) {
+        changelogMenu
         Button { showSettings = true } label: { Label("Settings", systemImage: "slider.horizontal.3") }
         Button { editor = FeedbackEditorRoute(postId: nil) } label: { Label("New post", systemImage: "plus") }
       }
     }
+  }
+
+  /// The public changelog (/changelog/<public key>): copy its link or open it. It is published
+  /// through the board, so it only exists once the board's Changelog view is on.
+  @ViewBuilder private var changelogMenu: some View {
+    let key = workspace.project(store.projectId)?.publicKey ?? ""
+    let base = store.session.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    let url = URL(string: "\(base)/changelog/\(key)")
+    let ready = store.config?.changelog == true && url != nil && !key.isEmpty
+    Menu {
+      Button {
+        if ready { Clipboard.copy(url?.absoluteString) } else { store.alert = "Turn on the changelog first. It is published through the feedback board: turn the board on, with its Changelog view, under Settings." }
+      } label: { Label("Copy changelog link", systemImage: "link") }
+      if ready, let url { Link(destination: url) { Label("Open public changelog", systemImage: "arrow.up.right.square") } }
+    } label: { Label("Public changelog", systemImage: "sparkles") }
   }
 
   // Not set up yet: what the board is, and the two ways in.
