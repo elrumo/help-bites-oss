@@ -45,6 +45,7 @@ struct InboxPropertiesPanel: View {
             BoardLinksSection(projectId: conversation.projectId, kind: "conversation", targetId: conversation.id, title: conversation.subject, description: lastCustomerMessage(store))
           }
         }
+        section("Changelog") { InboxChangelogLinks(projectId: conversation.projectId, conversationId: conversation.id, type: conversation.type) }
         if let ref = conversation.subjectRef {
           section("About") { about(ref) }
         }
