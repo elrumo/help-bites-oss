@@ -9,7 +9,7 @@ import Observation
 /// The view pills above the list. They filter the loaded page on the client,
 /// as the web panel does; their counts come from the server's facets.
 enum InboxQueue: String, CaseIterable, Identifiable {
-  case all, unassigned, mine, open, unread
+  case all, unassigned, mine, open, unread, archived
   var id: String { rawValue }
   var label: String { rawValue.capitalized }
 }
@@ -51,6 +51,10 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   /// Unread messages across every project; the sidebar badge.
   var totalUnread = 0
   private(set) var unreadByProject: [String: Int] = [:]
+  /// Archived conversations in scope; the Archived view's count.
+  private(set) var archivedCount = 0
+  /// The conversation awaiting a delete confirmation; the inbox screen asks once for every entry point.
+  var pendingDelete: Conversation?
   private(set) var hasMore = false
   private(set) var loading = false
   var error = ""
@@ -102,7 +106,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   // MARK: - Queue
 
   /// Changes whenever the server query does; the screen reloads on it.
-  var queryKey: String { [projectFilter, statusFilter, priorityFilter, typeFilter, search.trimmingCharacters(in: .whitespaces)].joined(separator: "\u{1f}") }
+  var queryKey: String { [projectFilter, statusFilter, priorityFilter, typeFilter, search.trimmingCharacters(in: .whitespaces), queue == .archived ? "archived" : ""].joined(separator: "\u{1f}") }
   var filtersActive: Bool { !projectFilter.isEmpty || !statusFilter.isEmpty || !priorityFilter.isEmpty || !typeFilter.isEmpty }
 
   func clearFilters() { projectFilter = ""; statusFilter = ""; priorityFilter = ""; typeFilter = "" }
@@ -118,6 +122,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
     if !statusFilter.isEmpty { query["status"] = statusFilter }
     if !priorityFilter.isEmpty { query["priority"] = priorityFilter }
     if !typeFilter.isEmpty { query["type"] = typeFilter }
+    if queue == .archived { query["archived"] = "true" }
     let term = search.trimmingCharacters(in: .whitespaces)
     if !term.isEmpty { query["q"] = term }
     if more, let last = conversations.last?.lastMessageAt { query["before"] = last }
@@ -135,6 +140,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
       totalUnread = page.totalUnread
       counts = page.counts ?? InboxCounts(status: [:], type: [:], assignee: [:])
       unreadByProject = page.unreadByProject ?? [:]
+      archivedCount = page.archivedCount ?? 0
       if let current, let row = conversations.first(where: { $0.id == current.id }) { self.current = row }
     } catch {
       guard run == generation else { return }
@@ -146,7 +152,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   var visible: [Conversation] {
     let me = myAgentId
     switch queue {
-    case .all: return conversations
+    case .all, .archived: return conversations
     case .unassigned: return conversations.filter { ($0.assigneeId ?? "").isEmpty }
     case .mine: return conversations.filter { !me.isEmpty && $0.assigneeId == me }
     case .open: return conversations.filter { $0.statusCategory == "open" || $0.status == "open" }
@@ -161,6 +167,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
     case .mine: counts.assignee[myAgentId] ?? 0
     case .open: counts.status["open"] ?? 0
     case .unread: totalUnread
+    case .archived: archivedCount
     }
   }
 
@@ -191,6 +198,33 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
     let openKey = statuses.first { $0.isDefault == true }?.key ?? statuses.first { $0.category == "open" }?.key ?? "open"
     let doneKey = statuses.first { $0.isTerminal == true }?.key ?? statuses.first { $0.category == "resolved" || $0.category == "closed" }?.key ?? "done"
     await setStatus(conversation.id, isDone(conversation) ? openKey : doneKey)
+  }
+
+  /// Archive takes a thread out of the queue without losing it; unarchive brings it back.
+  func setArchived(_ conversation: Conversation, _ archived: Bool) async {
+    struct Input: Encodable, Sendable { let archived: Bool }
+    let id = conversation.id
+    do {
+      let result: ConversationResponse = try await session.send("/v1/admin/conversations/\(id)/archive", body: Input(archived: archived))
+      archivedCount = max(0, archivedCount + (archived ? 1 : -1))
+      totalUnread = max(0, totalUnread + (archived ? -1 : 1) * conversation.unreadByAgent)
+      upsert(result.conversation)
+      if id == selectedId { deselect() }
+    } catch {
+      if id == selectedId { threadError = error.localizedDescription } else { self.error = error.localizedDescription }
+    }
+  }
+
+  /// Permanently remove a conversation and all of its messages.
+  func delete(_ conversation: Conversation) async {
+    let id = conversation.id
+    do {
+      try await session.delete("/v1/admin/conversations/\(id)")
+      if conversation.archivedAt != nil { archivedCount = max(0, archivedCount - 1) } else { totalUnread = max(0, totalUnread - conversation.unreadByAgent) }
+      remove(id)
+    } catch {
+      if id == selectedId { threadError = error.localizedDescription } else { self.error = error.localizedDescription }
+    }
   }
 
   func setStatus(_ id: String, _ status: String) async {
@@ -411,6 +445,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   }
 
   private func apply(_ event: SupportEvent) {
+    if event.type == "conversation.deleted" { remove(event.conversationId); return }
     let inserted = upsert(event.conversation)
     if inserted, endUsers[event.conversation.endUserId] == nil { Task { await loadEndUser(event.conversationId) } }
     let open = event.conversationId == selectedId
@@ -455,6 +490,11 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   @discardableResult
   private func upsert(_ conversation: Conversation) -> Bool {
     if current?.id == conversation.id { current = conversation }
+    // Archived rows belong to the Archived view only; the queue never lists them.
+    if (conversation.archivedAt != nil) != (queue == .archived) {
+      conversations.removeAll { $0.id == conversation.id }
+      return false
+    }
     var inserted = false
     if let index = conversations.firstIndex(where: { $0.id == conversation.id }) {
       conversations[index] = conversation
@@ -466,6 +506,13 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
     }
     conversations.sort { ($0.lastMessageAt ?? "") > ($1.lastMessageAt ?? "") }
     return inserted
+  }
+
+  /// Drop a conversation everywhere, closing it if it is the open one.
+  private func remove(_ id: String) {
+    conversations.removeAll { $0.id == id }
+    if selectedId == id { deselect() }
+    if current?.id == id { current = nil; messages = [] }
   }
 
   private func update(_ id: String, _ change: (inout Conversation) -> Void) {

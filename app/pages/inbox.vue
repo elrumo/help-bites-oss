@@ -44,7 +44,7 @@
       </header>
 
       <div class="flex shrink-0 gap-1 overflow-x-auto px-3 py-2.5 [scrollbar-width:none]" role="tablist" aria-label="Queue views">
-        <button v-for="item in viewItems" :key="item.key" type="button" role="tab" :aria-selected="view === item.key" class="chip h-6 px-2.5 text-xs" :class="view === item.key ? 'chip-active' : ''" @click="view = item.key">
+        <button v-for="item in viewItems" :key="item.key" type="button" role="tab" :aria-selected="view === item.key" class="chip h-6 px-2.5 text-xs" :class="view === item.key ? 'chip-active' : ''" @click="setView(item.key)">
           {{ item.label }}<span class="tabular-nums text-dimmed">{{ item.count }}</span>
         </button>
       </div>
@@ -59,9 +59,12 @@
         @select="select"
         @toggle-read="toggleRead"
         @toggle-done="toggleDone"
+        @toggle-archive="toggleArchive"
+        @delete="remove"
       >
         <template #empty>
-          <EmptyState icon="i-lucide-inbox" title="Nothing in this view" description="New customer messages land here as they arrive." />
+          <EmptyState v-if="view === 'archived'" icon="i-lucide-archive" title="Nothing archived" description="Archive a conversation to clear it from the queue. It comes back if the customer writes again." />
+          <EmptyState v-else icon="i-lucide-inbox" title="Nothing in this view" description="New customer messages land here as they arrive." />
         </template>
       </ChatConversationList>
       <button v-if="hasMore" type="button" class="h-10 shrink-0 border-t border-default text-[13px] font-medium text-muted transition-colors hover:bg-elevated hover:text-highlighted" @click="loadList(true)">Load older conversations</button>
@@ -86,6 +89,15 @@
           <USelect v-if="activeConversation" :model-value="activeConversation.status" :items="statusItems" color="neutral" variant="outline" size="sm" class="w-auto xl:hidden" :ui="{ base: 'rounded-full' }" aria-label="Status" @update:model-value="setStatus(activeId, String($event))">
             <template #leading><StatusIcon :category="activeConversation.statusCategory" /></template>
           </USelect>
+          <UTooltip v-if="activeConversation" text="Copy conversation">
+            <UButton :icon="copiedConversation ? 'i-lucide-check' : 'i-lucide-copy'" color="neutral" variant="ghost" size="sm" square class="text-muted" aria-label="Copy conversation" :loading="copyingConversation" @click="copyConversation" />
+          </UTooltip>
+          <UTooltip v-if="activeConversation" :text="activeConversation.archivedAt ? 'Unarchive' : 'Archive'">
+            <UButton :icon="activeConversation.archivedAt ? 'i-lucide-archive-restore' : 'i-lucide-archive'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="activeConversation.archivedAt ? 'Unarchive conversation' : 'Archive conversation'" @click="toggleArchive(activeId)" />
+          </UTooltip>
+          <UTooltip v-if="activeConversation" text="Delete">
+            <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" size="sm" square class="text-muted hover:text-error" aria-label="Delete conversation" @click="remove(activeId)" />
+          </UTooltip>
           <UTooltip text="Details">
             <UButton icon="i-lucide-panel-right" color="neutral" variant="ghost" size="sm" square class="text-muted xl:hidden" aria-label="Open conversation details" @click="showContext = true" />
           </UTooltip>
@@ -165,7 +177,7 @@
 
 <script setup lang="ts">
 import type { Attachment, Conversation, ConversationAction, ConversationType, Message } from '#shared/support'
-import { replyTarget, sortByCreatedAt } from '#shared/conversations'
+import { conversationToText, replyTarget, sortByCreatedAt } from '#shared/conversations'
 import type { SupportEvent } from '~~/server/utils/events'
 import type { ChatListItem } from '~/components/chat/ChatConversationList.vue'
 import type { InboxEndUser } from '~/components/inbox/ConversationContext.vue'
@@ -173,7 +185,7 @@ import { newOutboxId, useChatOutbox, type OutboxEntry } from '~/composables/useC
 
 definePageMeta({ middleware: 'agent' })
 
-type QueueView = 'all' | 'unassigned' | 'mine' | 'open' | 'unread'
+type QueueView = 'all' | 'unassigned' | 'mine' | 'open' | 'unread' | 'archived'
 type QueueCounts = { status: Record<string, number>, type: Record<string, number>, assignee: Record<string, number> }
 type HumanAgent = { id: string, username: string, email: string, name: string }
 
@@ -181,6 +193,7 @@ const { api, token, agent, projects, loadProjects, agentHeaders } = useAgent()
 const route = useRoute()
 const router = useRouter()
 const outbox = useChatOutbox()
+const toast = useToast()
 const totalUnread = useState<number>('inbox-total-unread', () => 0)
 
 const conversations = ref<Conversation[]>([])
@@ -189,6 +202,7 @@ const listLoading = ref(false)
 const listError = ref('')
 const hasMore = ref(false)
 const queueCounts = ref<QueueCounts>({ status: {}, type: {}, assignee: {} })
+const archivedCount = ref(0)
 const view = ref<QueueView>('all')
 const projectFilter = ref('all')
 const statusFilter = ref('any')
@@ -212,7 +226,8 @@ const viewItems = computed(() => [
   { key: 'unassigned' as const, label: 'Unassigned', count: queueCounts.value.assignee.unassigned || 0 },
   { key: 'mine' as const, label: 'Mine', count: agent.value?.id ? queueCounts.value.assignee[agent.value.id] || 0 : 0 },
   { key: 'open' as const, label: 'Open', count: queueCounts.value.status.open || 0 },
-  { key: 'unread' as const, label: 'Unread', count: totalUnread.value }
+  { key: 'unread' as const, label: 'Unread', count: totalUnread.value },
+  { key: 'archived' as const, label: 'Archived', count: archivedCount.value }
 ])
 
 function scheduleLoad() {
@@ -229,19 +244,27 @@ function clearFilters() {
   void loadList()
 }
 
+// Archived threads live on the server side of the query, not in the loaded page.
+async function setView(next: QueueView) {
+  const refetch = (view.value === 'archived') !== (next === 'archived')
+  view.value = next
+  if (refetch) await loadList()
+}
+
 async function loadList(more = false) {
   listLoading.value = true
   listError.value = ''
   try {
     const last = more ? conversations.value[conversations.value.length - 1] : null
-    const result = await api<{ conversations: Conversation[], endUsers: Record<string, InboxEndUser>, hasMore: boolean, totalUnread: number, counts: QueueCounts }>('/admin/conversations', {
-      query: { project: projectFilter.value === 'all' ? undefined : projectFilter.value, status: statusFilter.value === 'any' ? undefined : statusFilter.value, priority: priorityFilter.value === 'any' ? undefined : priorityFilter.value, type: typeFilter.value || undefined, q: searchQuery.value.trim() || undefined, before: last?.lastMessageAt || undefined }
+    const result = await api<{ conversations: Conversation[], endUsers: Record<string, InboxEndUser>, hasMore: boolean, totalUnread: number, counts: QueueCounts, archivedCount: number }>('/admin/conversations', {
+      query: { project: projectFilter.value === 'all' ? undefined : projectFilter.value, status: statusFilter.value === 'any' ? undefined : statusFilter.value, priority: priorityFilter.value === 'any' ? undefined : priorityFilter.value, type: typeFilter.value || undefined, q: searchQuery.value.trim() || undefined, archived: view.value === 'archived' ? 'true' : undefined, before: last?.lastMessageAt || undefined }
     })
     conversations.value = more ? [...conversations.value, ...result.conversations] : result.conversations
     endUsers.value = { ...endUsers.value, ...result.endUsers }
     hasMore.value = result.hasMore
     totalUnread.value = result.totalUnread
     queueCounts.value = result.counts
+    archivedCount.value = result.archivedCount || 0
   } catch (error: any) {
     listError.value = error?.message || 'Could not load the inbox'
   } finally { listLoading.value = false }
@@ -257,7 +280,7 @@ const filteredConversations = computed(() => conversations.value.filter((convers
 const listItems = computed<ChatListItem[]>(() => filteredConversations.value.map((conversation) => {
   const user = endUsers.value[conversation.endUserId]
   const project = projectsById.value[conversation.projectId]
-  return { id: conversation.id, title: user?.name || user?.email || user?.externalId || 'Unknown customer', subtitle: conversation.subject || conversation.context?.label || '', preview: conversation.lastMessageFrom === 'agent' ? `You: ${conversation.lastMessagePreview}` : conversation.lastMessagePreview, timestamp: conversation.lastMessageAt, unreadCount: conversation.unreadByAgent, projectId: conversation.projectId, projectName: project?.name, projectAccent: project?.theme?.accent, projectIconUrl: project?.iconUrl, priority: conversation.priority, done:conversation.statusCategory === 'resolved' || conversation.statusCategory === 'closed' || conversation.status === 'done' }
+  return { id: conversation.id, title: user?.name || user?.email || user?.externalId || 'Unknown customer', subtitle: conversation.subject || conversation.context?.label || '', preview: conversation.lastMessageFrom === 'agent' ? `You: ${conversation.lastMessagePreview}` : conversation.lastMessagePreview, timestamp: conversation.lastMessageAt, unreadCount: conversation.unreadByAgent, projectId: conversation.projectId, projectName: project?.name, projectAccent: project?.theme?.accent, projectIconUrl: project?.iconUrl, priority: conversation.priority, archived: Boolean(conversation.archivedAt), done: conversation.statusCategory === 'resolved' || conversation.statusCategory === 'closed' || conversation.status === 'done' }
 }))
 
 const activeId = ref('')
@@ -298,6 +321,8 @@ async function select(id: string) {
     const [detail, list] = await Promise.all([api<{ conversation: Conversation, endUser: InboxEndUser }>(`/admin/conversations/${id}`), api<{ messages: Message[], hasMore: boolean }>(`/admin/conversations/${id}/messages`)])
     if (activeId.value !== id) return
     activeUser.value = detail.endUser
+    // A deep link to an archived thread opens the Archived view so its row exists.
+    if (detail.conversation.archivedAt && view.value !== 'archived') { view.value = 'archived'; await loadList() }
     upsertConversation(detail.conversation)
     await loadTypes(detail.conversation.projectId)
     messages.value = list.messages
@@ -325,7 +350,17 @@ async function loadTypes(projectId: string) {
   if (typesByProject.value[projectId]) return
   try { const { types } = await api<{ types: ConversationType[] }>(`/admin/projects/${projectId}/types`); typesByProject.value = { ...typesByProject.value, [projectId]: types } } catch { /* The built-in support type remains usable. */ }
 }
+function removeConversation(id: string) {
+  conversations.value = conversations.value.filter(item => item.id !== id)
+  if (activeId.value === id) void select('')
+}
 function upsertConversation(conversation: Conversation) {
+  // Archived rows belong to the Archived view only, and the queue never shows them.
+  if (Boolean(conversation.archivedAt) !== (view.value === 'archived')) {
+    const hadRow = conversations.value.some(item => item.id === conversation.id)
+    if (hadRow) removeConversation(conversation.id)
+    return
+  }
   const index = conversations.value.findIndex(item => item.id === conversation.id)
   if (index === -1) conversations.value = [conversation, ...conversations.value]
   else conversations.value.splice(index, 1, conversation)
@@ -353,6 +388,53 @@ async function toggleDone(id: string) {
   const openKey = statuses.find(status => status.isDefault)?.key || statuses.find(status => status.category === 'open')?.key || 'open'
   const doneKey = statuses.find(status => status.isTerminal)?.key || statuses.find(status => status.category === 'resolved' || status.category === 'closed')?.key || 'done'
   void setStatus(id, isDone ? openKey : doneKey)
+}
+const copyingConversation = ref(false)
+const copiedConversation = ref(false)
+// Copies the whole thread as plain text for an LLM, pulling in any pages that are not loaded yet.
+async function copyConversation() {
+  const conversation = activeConversation.value
+  if (!conversation || copyingConversation.value) return
+  copyingConversation.value = true
+  try {
+    let all = messages.value
+    let more = hasEarlier.value
+    while (more && all[0]) {
+      const page = await api<{ messages: Message[], hasMore: boolean }>(`/admin/conversations/${conversation.id}/messages`, { query: { before: all[0].createdAt } })
+      const known = new Set(all.map(message => message.id))
+      all = [...page.messages.filter(message => !known.has(message.id)), ...all]
+      more = page.hasMore && page.messages.length > 0
+    }
+    const user = activeUser.value
+    await navigator.clipboard.writeText(conversationToText(conversation, all, { customer: [user?.name, user?.email].filter(Boolean).join(' · ') || user?.externalId, project: activeProject.value?.name }))
+    copiedConversation.value = true
+    setTimeout(() => { copiedConversation.value = false }, 1500)
+    toast.add({ title: 'Conversation copied', icon: 'i-lucide-copy' })
+  } catch (error: any) { toast.add({ title: 'Could not copy the conversation', description: error?.message, color: 'error', icon: 'i-lucide-circle-alert' }) } finally { copyingConversation.value = false }
+}
+
+async function toggleArchive(id: string) {
+  const conversation = conversations.value.find(item => item.id === id)
+  if (!conversation) return
+  const archive = !conversation.archivedAt
+  try {
+    const { conversation: updated } = await api<{ conversation: Conversation }>(`/admin/conversations/${id}/archive`, { method: 'POST', body: { archived: archive } })
+    archivedCount.value = Math.max(0, archivedCount.value + (archive ? 1 : -1))
+    if (archive && conversation.unreadByAgent > 0) totalUnread.value = Math.max(0, totalUnread.value - conversation.unreadByAgent)
+    upsertConversation(updated)
+    toast.add({ title: archive ? 'Conversation archived' : 'Conversation unarchived', icon: archive ? 'i-lucide-archive' : 'i-lucide-archive-restore' })
+  } catch (error: any) { threadError.value = listError.value = error?.message || 'Could not archive the conversation' }
+}
+async function remove(id: string) {
+  const conversation = conversations.value.find(item => item.id === id)
+  if (!conversation || !confirm('Delete this conversation? Every message in it is removed for good, for the customer too. Archive it to keep the history.')) return
+  try {
+    await api(`/admin/conversations/${id}`, { method: 'DELETE' })
+    if (conversation.archivedAt) archivedCount.value = Math.max(0, archivedCount.value - 1)
+    else if (conversation.unreadByAgent > 0) totalUnread.value = Math.max(0, totalUnread.value - conversation.unreadByAgent)
+    removeConversation(id)
+    toast.add({ title: 'Conversation deleted', icon: 'i-lucide-trash-2' })
+  } catch (error: any) { threadError.value = listError.value = error?.message || 'Could not delete the conversation' }
 }
 async function setStatus(id: string, status: string) {
   const conversation = conversations.value.find(item => item.id === id)
@@ -408,6 +490,7 @@ async function react(message: Message, emoji: string) {
 async function onCreated(conversationId: string) { await loadList(); await select(conversationId) }
 
 useEventStream(computed(() => '/v1/admin/events'), token, (event: SupportEvent) => {
+  if (event.type === 'conversation.deleted') { removeConversation(event.conversationId); return }
   upsertConversation(event.conversation)
   if (event.type === 'message.created') {
     if (event.message.sender === 'user' && event.conversationId !== activeId.value) totalUnread.value += 1

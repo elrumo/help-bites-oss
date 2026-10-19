@@ -2,7 +2,7 @@
 // threads. Derived from a flat message log, minus the
 // conversation derivation — here conversations are real rows from the API.
 
-import { messagePreview, type Message } from './support'
+import { messagePreview, type Conversation, type Message } from './support'
 
 export interface MessageRun {
   key: string
@@ -132,4 +132,58 @@ export function replyTarget(messages: Message[], rootId: string, ownSender: stri
 
 export function sortByCreatedAt(a: Message, b: Message): number {
   return String(a.createdAt || '').localeCompare(String(b.createdAt || ''))
+}
+
+export function eventLabel(message: Message): string {
+  const event = message.event || {}
+  if (event.type === 'created') return 'Ticket created'
+  if (event.type === 'status.changed') return `Status changed to ${String(event.to || '')}`
+  if (event.type === 'assigned') return event.assignee ? `Assigned to ${String(event.assignee)}` : 'Assignment cleared'
+  if (event.type === 'action.performed') return `${String(event.actionKey || 'Host action')} · ${String(event.result || 'pending')}`
+  if (event.type === 'board.linked' || event.type === 'board.unlinked') {
+    const item = `${event.number ? `#${String(event.number)} ` : ''}${String(event.title || 'an item')}`
+    return event.type === 'board.linked' ? `Linked to board item ${item}` : `Unlinked from board item ${item}`
+  }
+  if (event.type === 'changelog.linked' || event.type === 'changelog.unlinked') {
+    const entry = `${event.number ? `#${String(event.number)} ` : ''}${String(event.title || 'an entry')}`
+    return event.type === 'changelog.linked' ? `Linked to changelog entry ${entry}` : `Unlinked from changelog entry ${entry}`
+  }
+  return 'Ticket updated'
+}
+
+export interface ConversationTextMeta {
+  customer?: string
+  project?: string
+}
+
+// Plain text for pasting into an LLM: a short header of facts, then one block per
+// message in order, with the speaker made explicit and nothing but text in it.
+export function conversationToText(conversation: Conversation, messages: Message[], meta: ConversationTextMeta = {}): string {
+  const stamp = (iso: string) => String(iso || '').slice(0, 16).replace('T', ' ') + ' UTC'
+  const byId = new Map(messages.map(message => [message.id, message]))
+  const header = [
+    `Support conversation: ${conversation.subject || conversation.context?.label || 'Untitled'}`,
+    meta.project && `Project: ${meta.project}`,
+    meta.customer && `Customer: ${meta.customer}`,
+    `Status: ${conversation.status}`,
+    conversation.type && `Type: ${conversation.type}`,
+    `Priority: ${conversation.priority}`,
+    conversation.tags?.length && `Tags: ${conversation.tags.join(', ')}`,
+    conversation.context?.label && `About: ${conversation.context.label}${conversation.context.url ? ` (${conversation.context.url})` : ''}`,
+    `Started: ${stamp(conversation.createdAt)}`
+  ].filter(Boolean)
+
+  const blocks = [...messages].filter(message => !message.delivery).sort(sortByCreatedAt).map((message) => {
+    const time = stamp(message.createdAt)
+    if (message.kind === 'event') return `[${time}] (system) ${eventLabel(message)}`
+    const role = message.sender === 'user' ? 'Customer' : message.supportAgentId ? 'AI assistant' : 'Support agent'
+    const label = `${role}${message.senderName ? ` (${message.senderName})` : ''}${message.visibility === 'internal' ? ' [internal note, not visible to the customer]' : ''}`
+    const parent = message.replyToId ? byId.get(message.replyToId) : null
+    const lines = [`[${time}] ${label}${parent ? ` replying to ${parent.senderName || parent.sender}` : ''}:`, message.body]
+    if (message.context?.label) lines.push(`Context: ${message.context.label}${message.context.url ? ` (${message.context.url})` : ''}`)
+    for (const attachment of message.attachments || []) lines.push(`Attachment: ${attachment.url} (${attachment.mime})`)
+    return lines.join('\n')
+  })
+
+  return `${header.join('\n')}\n\n---\n\n${blocks.join('\n\n')}\n`
 }

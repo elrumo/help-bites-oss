@@ -54,6 +54,8 @@ struct Conversation: Codable, Identifiable, Equatable, Sendable {
   let lastMessagePreview, lastMessageFrom: String
   var unreadByAgent, unreadByUser: Int
   var userReadAt, agentReadAt: String?
+  /// Set while the team has archived it; archived threads leave the inbox queue.
+  let archivedAt: String?
   let createdAt: String
 }
 
@@ -71,7 +73,7 @@ struct Message: Codable, Identifiable, Equatable, Sendable {
 
 struct ConversationDetail: Codable, Sendable { let conversation: Conversation; let endUser: EndUser; let project: Project }
 struct InboxCounts: Codable, Sendable { let status, type, assignee: [String: Int] }
-struct InboxResponse: Codable, Sendable { let conversations: [Conversation]; let endUsers: [String: EndUser]; let hasMore: Bool; let totalUnread: Int; let counts: InboxCounts?; let unreadByProject: [String: Int]? }
+struct InboxResponse: Codable, Sendable { let conversations: [Conversation]; let endUsers: [String: EndUser]; let hasMore: Bool; let totalUnread: Int; let counts: InboxCounts?; let unreadByProject: [String: Int]?; let archivedCount: Int? }
 struct MessagePage: Codable, Sendable { let messages: [Message]; let hasMore: Bool }
 struct LoginResponse: Codable, Sendable { let sessionToken: String; let agent: Agent }
 struct MeResponse: Codable, Sendable { let agent: Agent }

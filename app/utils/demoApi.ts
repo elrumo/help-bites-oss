@@ -150,7 +150,7 @@ function seed(projectId: string, user: Omit<EndUser, 'id' | 'projectId'>, subjec
   const conversation: Conversation = {
     id, projectId, endUserId: endUser.id, assistantId: '', subject, status: status.key, statusCategory: status.category, type: type.key, priority: 'normal',
     assigneeId: '', assignedAt: null, tags: [], fields: {}, subjectRef: null, reopenedAt: null, closedAt: null, doneAt: null, context: null,
-    lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 0, userReadAt: null, agentReadAt: null,
+    lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 0, userReadAt: null, agentReadAt: null, archivedAt: null,
     createdAt: ago(thread[0]![2]), ...extra
   }
   const agentName = projects.find(p => p.id === projectId)!.fromName
@@ -504,18 +504,21 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/admin\/conversations$/, ({ query }) => {
     const q = (query.q || '').toLowerCase()
     const scoped = conversations.filter(c => !query.project || c.projectId === query.project)
+    const live = scoped.filter(c => !c.archivedAt)
     const rows = scoped
+      .filter(c => query.archived === 'any' || (query.archived === 'true' ? c.archivedAt : !c.archivedAt))
       .filter(c => (!query.status || c.status === query.status) && (!query.priority || c.priority === query.priority) && (!query.type || c.type === query.type) && (!query.endUser || c.endUserId === query.endUser))
       .filter(c => !q || Object.values(userOf(c)).some(v => v.toLowerCase().includes(q)))
       .sort((a, b) => String(b.lastMessageAt).localeCompare(String(a.lastMessageAt)))
     const counts = { status: {} as Record<string, number>, type: {} as Record<string, number>, assignee: {} as Record<string, number> }
-    for (const c of scoped) for (const [bucket, key] of [['status', c.status], ['type', c.type], ['assignee', c.assigneeId || 'unassigned']] as const) counts[bucket][key] = (counts[bucket][key] || 0) + 1
+    for (const c of live) for (const [bucket, key] of [['status', c.status], ['type', c.type], ['assignee', c.assigneeId || 'unassigned']] as const) counts[bucket][key] = (counts[bucket][key] || 0) + 1
     return {
       conversations: rows,
       endUsers: Object.fromEntries(rows.map(c => [c.endUserId, serializeUser(userOf(c))])),
       hasMore: false,
-      totalUnread: conversations.reduce((sum, c) => sum + c.unreadByAgent, 0),
-      counts
+      totalUnread: conversations.filter(c => !c.archivedAt).reduce((sum, c) => sum + c.unreadByAgent, 0),
+      counts,
+      archivedCount: scoped.length - live.length
     }
   }],
   ['POST', /^\/admin\/conversations$/, ({ body }) => {
@@ -526,7 +529,7 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const conversation: Conversation = {
       id: newId('conv'), projectId: p.id, endUserId: user.id, assistantId: '', subject: String(body.subject || ''), status: status.key, statusCategory: status.category, type: 'support', priority: 'normal',
       assigneeId: ME.id, assignedAt: now(), tags: [], fields: {}, subjectRef: null, reopenedAt: null, closedAt: null, doneAt: null, context: null,
-      lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 1, userReadAt: null, agentReadAt: now(), createdAt: now()
+      lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 1, userReadAt: null, agentReadAt: now(), archivedAt: null, createdAt: now()
     }
     conversations.push(conversation)
     messages.push(message(conversation.id, 'agent', p.fromName, String(body.body || ''), now()))
@@ -561,6 +564,17 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     c.unreadByAgent = read ? 0 : Math.max(1, c.unreadByAgent)
     c.agentReadAt = read ? now() : null
     return { conversation: c }
+  }],
+  ['POST', /^\/admin\/conversations\/([^/]+)\/archive$/, ({ params, body }) => {
+    const c = find(conversations, params[0], 'Conversation')
+    c.archivedAt = body.archived === false ? null : now()
+    return { conversation: c }
+  }],
+  ['DELETE', /^\/admin\/conversations\/([^/]+)$/, ({ params }) => {
+    const c = find(conversations, params[0], 'Conversation')
+    conversations.splice(conversations.indexOf(c), 1)
+    for (let i = messages.length - 1; i >= 0; i--) if (messages[i]!.conversationId === c.id) messages.splice(i, 1)
+    return { deleted: true }
   }],
   ['POST', /^\/admin\/conversations\/([^/]+)\/status$/, ({ params, body }) => {
     const c = find(conversations, params[0], 'Conversation')

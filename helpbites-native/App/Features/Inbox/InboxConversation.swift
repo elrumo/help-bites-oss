@@ -73,6 +73,7 @@ private struct InboxCompactChrome: ViewModifier {
             ToolbarItem(placement: .principal) { InboxCompactTitle(conversation: conversation, name: name) }
             ToolbarItemGroup(placement: .topBarTrailing) {
               InboxStatusMenu(conversation: conversation)
+              InboxActionsMenu(conversation: conversation)
               Button { detailsOpen = true } label: { Label("Details", systemImage: "sidebar.right") }
             }
           }
@@ -134,12 +135,35 @@ private struct InboxConversationHeader: View {
       if !subject.isEmpty { Text(subject).font(.lnMeta).foregroundStyle(Theme.textMuted) }
       Spacer(minLength: 8)
       if showStatus { InboxStatusMenu(conversation: conversation) }
+      InboxActionsMenu(conversation: conversation)
     }
     .font(.lnMetaMedium)
     .lineLimit(1)
     .padding(.horizontal, 16)
     .frame(height: 48)
     .overlay(alignment: .bottom) { Rectangle().fill(Theme.border).frame(height: 1) }
+  }
+}
+
+/// Archive (or bring back) and delete the open conversation. Delete asks first, in the inbox screen's dialog.
+private struct InboxActionsMenu: View {
+  let conversation: Conversation
+  @Environment(Workspace.self) private var workspace
+
+  var body: some View {
+    let store = workspace.inbox
+    let archived = conversation.archivedAt != nil
+    Menu {
+      Button { Task { await store.setArchived(conversation, !archived) } } label: {
+        Label(archived ? "Unarchive" : "Archive", systemImage: archived ? "tray.and.arrow.up" : "archivebox")
+      }
+      Button(role: .destructive) { store.pendingDelete = conversation } label: { Label("Delete", systemImage: "trash") }
+    } label: {
+      Image(systemName: "ellipsis.circle")
+        .frame(width: 28, height: 28)
+        .contentShape(Rectangle())
+    }
+    .accessibilityLabel("More actions")
   }
 }
 

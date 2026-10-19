@@ -19,6 +19,22 @@ test('the demo answers the inbox from memory and refuses what it does not fake',
   await expect(demoApi('/admin/knowledge/models', { method: 'POST', body: {} })).rejects.toMatchObject({ statusCode: 403 })
 })
 
+test('the demo archives, unarchives and deletes conversations', async () => {
+  const { conversations } = await demoApi<any>('/admin/conversations', { query: { project: 'acme' } })
+  const id = conversations[0].id
+  await demoApi(`/admin/conversations/${id}/archive`, { method: 'POST', body: {} })
+  expect((await demoApi<any>('/admin/conversations', { query: { project: 'acme' } })).conversations.map((c: any) => c.id)).not.toContain(id)
+  const archived = await demoApi<any>('/admin/conversations', { query: { project: 'acme', archived: 'true' } })
+  expect(archived.conversations.map((c: any) => c.id)).toEqual([id])
+  expect(archived.archivedCount).toBe(1)
+
+  await demoApi(`/admin/conversations/${id}/archive`, { method: 'POST', body: { archived: false } })
+  expect((await demoApi<any>('/admin/conversations', { query: { project: 'acme' } })).conversations.map((c: any) => c.id)).toContain(id)
+
+  await demoApi(`/admin/conversations/${id}`, { method: 'DELETE' })
+  await expect(demoApi(`/admin/conversations/${id}`)).rejects.toMatchObject({ statusCode: 404 })
+})
+
 test('the demo answers the CRM: contacts, segments and sources', async () => {
   const { contacts } = await demoApi<any>('/contacts', { query: { project: 'acme' } })
   expect(contacts.length).toBeGreaterThan(0)

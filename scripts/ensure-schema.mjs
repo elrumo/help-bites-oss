@@ -519,7 +519,8 @@ const SCHEMAS = {
       unreadByAgent: { type: 'Number' },
       unreadByUser: { type: 'Number' },
       userReadAt: { type: 'Date' },
-      agentReadAt: { type: 'Date' }
+      agentReadAt: { type: 'Date' },
+      archivedAt: { type: 'Date' }
     },
     indexes: {
       project_status_last: { _p_project: 1, status: 1, lastMessageAt: -1 },

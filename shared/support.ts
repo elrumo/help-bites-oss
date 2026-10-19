@@ -140,6 +140,8 @@ export type Conversation = {
   unreadByUser: number
   userReadAt: string | null
   agentReadAt: string | null
+  /** Set while the team has archived it: hidden from the inbox queue, kept for history. */
+  archivedAt: string | null
   createdAt: string
 }
 
