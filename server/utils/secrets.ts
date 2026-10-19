@@ -16,6 +16,11 @@ function key(purpose: string): Buffer {
   return createHmac('sha256', process.env.HELPBITES_SECRET!).update(`helpbites:${purpose}`).digest()
 }
 
+/** A purpose-bound key (hex) for code that signs in its own format; '' without the root secret. */
+export function derivedSecret(purpose: string): string {
+  return hasRootSecret() ? key(purpose).toString('hex') : ''
+}
+
 /** AES-256-GCM: `v1.<iv>.<tag>.<ciphertext>`, base64url. */
 export function sealSecret(plain: string): string {
   const iv = randomBytes(12)

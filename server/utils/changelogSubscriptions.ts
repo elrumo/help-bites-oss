@@ -11,7 +11,7 @@ import {
 } from '#shared/changelog'
 import { changelogConfirmVariables } from './changelogDigest'
 import { sendChangelogTemplate } from './changelogMail'
-import { changelogLinkSecret, createChangelogToken, verifyChangelogToken } from './changelogTokens'
+import { CHANGELOG_LINK_SECRET_REQUIRED, changelogLinkSecret, createChangelogToken, verifyChangelogToken } from './changelogTokens'
 
 // Who gets emailed about the changelog, and how often.
 //
@@ -40,7 +40,7 @@ export function changelogNotifyEnabled(project: ParseObject): boolean {
 /** Subscriptions need the project to have them on and the link secret to sign with. */
 export function requireChangelogNotify(project: ParseObject): void {
   if (!changelogNotifyEnabled(project)) throw createError({ statusCode: 404, statusMessage: 'This changelog has no notifications' })
-  if (!changelogLinkSecret()) throw createError({ statusCode: 503, statusMessage: 'Changelog notifications are not configured on this server' })
+  if (!changelogLinkSecret()) throw createError({ statusCode: 503, statusMessage: CHANGELOG_LINK_SECRET_REQUIRED })
 }
 
 function siteUrlOf(project: ParseObject): string {
