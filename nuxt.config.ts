@@ -1,4 +1,6 @@
 import { existsSync } from 'node:fs'
+import { copyFile, mkdir } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { DOCS, docPath } from './shared/docs'
 
 // Two editions from one codebase (docs/EDITIONS.md). A cloud build adds the
@@ -69,15 +71,26 @@ export default defineNuxtConfig({
       production: 'runtime',
       meta: { title: 'help-bites API', description: 'Support chat for any app. Authenticate end users with a host-signed identity token, agents with a Parse session.', version: '1.0.0' },
       route: '/_docs/openapi.json',
-      ui: { scalar: { route: '/_docs/scalar', theme: 'purple' }, swagger: false }
+      // Nitro's own Scalar page loads its bundle, unpinned, from a CDN onto this
+      // origin; server/routes/_docs/scalar.get.ts serves a pinned copy instead.
+      ui: { scalar: false, swagger: false }
     }
   },
 
   hooks: {
     // JSON errors for /v1 (server/error.ts) ahead of Nuxt's own handler, which
-    // setting nitro.errorHandler here would replace.
-    'nitro:config'(config) {
-      config.errorHandler = ['~~/server/error', ...[config.errorHandler || []].flat()]
+    // setting nitro.errorHandler here would replace. Also Scalar's self-contained
+    // browser bundle, at /_docs/scalar-standalone.js: only that file, since the
+    // rest of its dist/browser is ~40 MB of lazy chunks and source maps the page
+    // never asks for. It falls through, so /_docs/scalar and /_docs/openapi.json
+    // still reach their handlers.
+    async 'nitro:config'(nitro) {
+      nitro.errorHandler = ['~~/server/error', ...[nitro.errorHandler || []].flat()]
+      const dir = resolve(nitro.rootDir!, 'node_modules/.cache/scalar')
+      await mkdir(dir, { recursive: true })
+      await copyFile(resolve(nitro.rootDir!, 'node_modules/@scalar/api-reference/dist/browser/standalone.js'), resolve(dir, 'scalar-standalone.js'))
+      nitro.publicAssets ||= []
+      nitro.publicAssets.push({ dir, baseURL: '/_docs', fallthrough: true })
     }
   }
 })
