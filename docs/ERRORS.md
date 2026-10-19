@@ -6,14 +6,19 @@ project in either [GlitchTip](https://glitchtip.com) or
 operators are notified, and (when LiteLLM is configured) an internal AI note
 suggests a cause and fix. Resolving or ignoring either side syncs the other.
 
-Open Project → Dev (or Errors) → **Connect error tracking** and pick a tracker.
-For one that isn't set up yet, enter its URL and API token (plus the
-organisation slug for GlitchTip) right there, for all projects or only this
-one. A project's own settings win, then the all-projects ones, then the
-`GLITCHTIP_*` / `BUGSINK_*` env vars below; no restart needed. Tokens are
-stored master-key-only (all projects in Parse Config, a project's own on the
-Project) and never sent back to the browser. **Change URL or token** on the Dev
-page edits them after connecting. A project uses one tracker at a time.
+Add your trackers once in **Settings → Error tracking**: a name, the URL and API
+token (plus the organisation slug for GlitchTip). Add as many servers as you
+like, GlitchTip and Bugsink alike; every project in the workspace can use any
+of them. Then open Project → Dev (or Errors) → **Connect error tracking**,
+pick a server from the list (or add a new one right there) and connect. No env
+vars or restart needed. Tokens are stored master-key-only in the workspace's
+settings and never sent back to the browser. A project uses one server at a
+time, and a server can't be removed while projects report to it.
+
+Where the edition shares one tracker with everyone (the community edition), a
+server configured with the `GLITCHTIP_*` / `BUGSINK_*` env vars below also
+shows up in the list, read-only. Projects connected before servers existed keep
+working with the settings they had.
 
 ## GlitchTip
 
@@ -25,7 +30,7 @@ docker compose exec sb-glitchtip ./manage.py createsuperuser
 
 Log in to GlitchTip, create an organisation, then create a token at
 `/profile/auth-tokens` with `org:read`, `team:write`, `project:admin`, and
-`event:write`. Enter the URL, token and organisation slug in Connect error
+`event:write`. Enter the URL, token and organisation slug in Settings → Error
 tracking, or set `GLITCHTIP_URL`, `GLITCHTIP_TOKEN` and `GLITCHTIP_ORG`.
 `GLITCHTIP_SECRET_KEY` and `GLITCHTIP_DB_PASSWORD` configure the bundled
 service itself. In Compose the app reaches it at `http://sb-glitchtip:8000`, so
@@ -48,7 +53,7 @@ docker compose exec sb-bugsink bugsink-manage create_auth_token
 
 A token from Bugsink's **Tokens** page works too if it has `teams:read`,
 `teams:manage`, `projects:read`, `projects:manage`, `issues:read`,
-`issues:triage` and `events:read`. Enter the URL and token in Connect error
+`issues:triage` and `events:read`. Enter the URL and token in Settings → Error
 tracking (API URL `http://sb-bugsink:8000` in Compose), or set `BUGSINK_URL` and
 `BUGSINK_TOKEN`.
 

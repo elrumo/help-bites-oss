@@ -104,7 +104,7 @@
             <!-- Error tracking -->
             <template v-else-if="tab === 'errors'">
               <div class="panel-head">
-                <p v-if="project.errors?.connected">Reporting to {{ project.errors.providerName }}. <UButton variant="link" size="sm" class="p-0" label="Change URL or token" @click="connectErrorsOpen = true" /></p>
+                <p v-if="project.errors?.connected">Reporting to {{ project.errors.providerName }}. <UButton variant="link" size="sm" class="p-0" label="Manage servers" @click="settingsTab = 'error-tracking'" /></p>
                 <p v-else>Connect GlitchTip or Bugsink to give this project a Sentry-compatible DSN and send alerts to the inbox.</p>
                 <UButton :to="`/projects/${id}/errors`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" label="Errors" />
               </div>
@@ -114,7 +114,7 @@
                 <CodeBlock :code="sentrySnippet" lang="js" />
               </template>
               <UButton v-else size="sm" icon="i-lucide-plug" label="Connect error tracking" @click="connectErrorsOpen = true" />
-              <ConnectErrorTrackingModal v-model:open="connectErrorsOpen" :project-id="id" :provider="project.errors?.provider || undefined" @connected="onErrorsConnected" />
+              <ConnectErrorTrackingModal v-model:open="connectErrorsOpen" :project-id="id" @connected="onErrorsConnected" />
             </template>
 
             <!-- Email -->
@@ -181,6 +181,7 @@ const saved = ref(false)
 const saveError = ref('')
 const copied = ref('')
 const connectErrorsOpen = ref(false)
+const settingsTab = useState('settings-tab', () => '')
 const security = reactive({ allowedOriginsText: '', actionWebhookUrl: '', actionWebhookSecret: '' })
 
 const dots: Record<Tone, string> = { ok: 'bg-success', warn: 'bg-warning', off: 'bg-(--ui-text-dimmed)' }

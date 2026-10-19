@@ -96,6 +96,7 @@
             <SettingsUsage v-else-if="current.key === 'usage'" />
             <SettingsTeam v-else-if="current.key === 'team'" />
             <SettingsWorkspaceAi v-else-if="current.key === 'ai'" />
+            <SettingsErrorServers v-else-if="current.key === 'error-tracking'" />
             <SettingsApiKeys v-else-if="current.key === 'api-keys'" />
             <component :is="extra.component" v-else-if="extra" />
           </div>
@@ -122,6 +123,7 @@ const coreTabs = computed(() => [
   { key: 'projects', label: 'Projects', icon: 'i-lucide-boxes' },
   { key: 'team', label: 'Team', icon: 'i-lucide-users-round' },
   { key: 'ai', label: 'AI', icon: 'i-lucide-sparkles' },
+  { key: 'error-tracking', label: 'Error tracking', icon: 'i-lucide-bug' },
   { key: 'api-keys', label: 'API keys', icon: 'i-lucide-key-round' }
 ])
 // Tabs the cloud edition registers (app/utils/editionUi.ts) follow the core ones.

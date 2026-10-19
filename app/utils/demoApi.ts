@@ -119,6 +119,10 @@ function asContact(u: EndUser) {
 }
 const conversations: Conversation[] = []
 const messages: Message[] = []
+const errorServers = [
+  { id: 'srv-glitchtip', provider: 'glitchtip', providerName: 'GlitchTip', name: 'example.glitchtip.com', url: 'https://example.glitchtip.com', apiUrl: '', org: 'helpbites', hasToken: true, builtIn: false },
+  { id: 'srv-bugsink', provider: 'bugsink', providerName: 'Bugsink', name: 'example.bugsink.com', url: 'https://example.bugsink.com', apiUrl: '', org: '', hasToken: true, builtIn: false }
+]
 const errorIssues = [
   { id: '1001', title: 'TypeError: Cannot read properties of undefined', culprit: 'checkout.ts:42', level: 'error', count: 12, lastSeen: ago(8), status: 'unresolved', url: 'https://example.glitchtip.com/helpbites/issues/1001', conversationId: '' },
   { id: '1002', title: 'Network request failed', culprit: 'api.ts:18', level: 'warning', count: 3, lastSeen: ago(90), status: 'resolved', url: 'https://example.glitchtip.com/helpbites/issues/1002', conversationId: '' }
@@ -363,13 +367,18 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     types[params[0]!] = (types[params[0]!] || []).filter(t => t.id !== params[1])
     return { deleted: true }
   }],
-  ['GET', /^\/admin\/errors\/providers$/, () => ({ providers: [
-    { id: 'glitchtip', name: 'GlitchTip', configured: true, source: 'global', required: ['url', 'token', 'org'], missing: [], manualAlerts: false, settings: { project: null, global: { url: 'https://example.glitchtip.com', apiUrl: '', org: 'helpbites', hasToken: true } } },
-    { id: 'bugsink', name: 'Bugsink', configured: true, source: 'global', required: ['url', 'token'], missing: [], manualAlerts: true, settings: { project: null, global: { url: 'https://example.bugsink.com', apiUrl: '', org: '', hasToken: true } } }
+  ['GET', /^\/admin\/errors\/servers$/, () => ({ servers: errorServers, providers: [
+    { id: 'glitchtip', name: 'GlitchTip', required: ['url', 'token', 'org'], manualAlerts: false },
+    { id: 'bugsink', name: 'Bugsink', required: ['url', 'token'], manualAlerts: true }
   ] })],
+  ['POST', /^\/admin\/errors\/servers$/, ({ body }) => {
+    const id = `srv${errorServers.length + 1}`
+    errorServers.push({ id, provider: body.provider, providerName: body.provider === 'bugsink' ? 'Bugsink' : 'GlitchTip', name: body.name || new URL(body.url).host, url: body.url, apiUrl: '', org: body.org || '', hasToken: Boolean(body.token), builtIn: false })
+    return { id, servers: errorServers }
+  }],
   ['POST', /^\/admin\/errors\/connect$/, ({ body }) => {
     const p = find(projects, body.project, 'Project')
-    p.errors = body.provider === 'bugsink'
+    p.errors = errorServers.find(server => server.id === body.server)?.provider === 'bugsink'
       ? { connected: true, provider: 'bugsink', providerName: 'Bugsink', dsn: 'https://public@example.bugsink.com/42', url: 'https://example.bugsink.com/issues/42/', alertWebhookUrl: `https://help.example.com/v1/webhooks/bugsink/${p.id}?token=demo` }
       : { connected: true, provider: 'glitchtip', providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }
     return { project: p }
