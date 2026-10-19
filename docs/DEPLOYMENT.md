@@ -226,6 +226,7 @@ Hit **Deploy**. On boot the `app` container runs, in order:
 ```sh
 bun scripts/ensure-schema.mjs --apply      # create/patch classes, CLPs, indexes
 bun scripts/migrate-workspaces.mjs --apply # an older install moves into one workspace
+bun scripts/migrate-changelog-public.mjs --apply # projects whose board published the changelog get their own switch
 bun scripts/ensure-search.mjs              # create Meili indexes + settings, backfill workspaceId
 bun .output/server/index.mjs               # start the app
 ```

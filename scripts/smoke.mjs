@@ -139,7 +139,7 @@ else assert(sawReply, `end user SSE stream received the agent reply (${events.le
 // --- feedback board ---
 const noBoard = await fetch(`${BASE}/v1/feedback?pk=${project.publicKey}`)
 assert(noBoard.status === 404, 'a project has no feedback board until it is enabled')
-const enabled = await api(`/v1/admin/projects/${project.id}`, { token: agentToken, method: 'PATCH', body: { feedback: { enabled: true, platforms: [{ key: 'web', label: 'Web' }, { key: 'app', label: 'App' }], postUrlTemplate: 'https://example.test/feedback?post={id}' } } })
+const enabled = await api(`/v1/admin/projects/${project.id}`, { token: agentToken, method: 'PATCH', body: { feedback: { enabled: true, platforms: [{ key: 'web', label: 'Web' }, { key: 'app', label: 'App' }], postUrlTemplate: 'https://example.test/feedback?post={id}' }, changelog: { enabled: true } } })
 assert(enabled.project.feedback.enabled && enabled.project.feedback.statuses.length === 5, 'board enabled with default statuses')
 const badConfig = await fetch(`${BASE}/v1/admin/projects/${project.id}`, { method: 'PATCH', headers: { Authorization: `Bearer ${agentToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ feedback: { statuses: [{ key: 'x', category: 'nope' }] } }) })
 assert(badConfig.status === 400, 'an invalid status category is rejected')
@@ -376,7 +376,7 @@ assert((await api(`/v1/feedback/${viaItem.id}?pk=${project.publicKey}`)).post.sh
 
 const standaloneChangelog = await fetch(`${BASE}/changelog/${project.publicKey}?theme=dark`, { redirect: 'manual' })
 const changelogLocation = standaloneChangelog.headers.get('location') || ''
-assert(standaloneChangelog.status === 302 && changelogLocation.includes(`pk=${project.publicKey}`) && changelogLocation.includes('only=changelog') && changelogLocation.includes('theme=dark'), 'the standalone changelog URL opens the changelog-only embed')
+assert(standaloneChangelog.status === 302 && changelogLocation.includes(`pk=${project.publicKey}`) && changelogLocation.includes('/embed/changelog') && changelogLocation.includes('theme=dark'), 'the standalone changelog URL opens the changelog embed')
 assert((await api(`/v1/admin/changelog/entries/${loose.id}`, { token: agentToken, method: 'DELETE' })).deleted, 'entries can be deleted')
 
 // --- changelog for a host's own site: slugs, sanitised bodies, who may write, review, import, merge ---
@@ -451,7 +451,7 @@ assert((await rawWith('/v1/admin/changelog/entries/merge', staff, { method: 'POS
 await api(`/v1/admin/projects/${project.id}`, { token: agentToken, method: 'PATCH', body: { feedback: { changelog: false }, changelog: { enabled: true, areas: ['site', 'editor'] } } })
 assert((await api(`/v1/changelog?pk=${project.publicKey}&flat=1&limit=1`)).entries.length === 1, 'with changelog.enabled it is public without the board’s Changelog option')
 assert((await rawWith('/v1/admin/changelog/entries', staff, { method: 'POST', body: { title: 'Odd area', area: 'billing' } })).status === 400, 'an area outside the project’s list is refused')
-await api(`/v1/admin/projects/${project.id}`, { token: agentToken, method: 'PATCH', body: { changelog: { enabled: false, areas: [] }, feedback: { changelog: true } } })
+await api(`/v1/admin/projects/${project.id}`, { token: agentToken, method: 'PATCH', body: { changelog: { areas: [] }, feedback: { changelog: true } } })
 
 // --- changelog comments: signed-in readers, moderation, counts, import, erasure ---
 const { entry: talk } = await api('/v1/admin/changelog/entries', { token: staff, method: 'POST', body: { title: 'Commentable', status: 'published' } })

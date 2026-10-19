@@ -16,6 +16,7 @@
     "schema": "bun scripts/ensure-schema.mjs",
     "schema:apply": "bun scripts/ensure-schema.mjs --apply",
     "migrate:workspaces": "bun scripts/migrate-workspaces.mjs --apply",
+    "migrate:changelog-public": "bun scripts/migrate-changelog-public.mjs --apply",
     "search:setup": "bun scripts/ensure-search.mjs",
     "search:key": "bun scripts/meili-key.mjs",
     "reindex": "bun scripts/reindex.mjs",

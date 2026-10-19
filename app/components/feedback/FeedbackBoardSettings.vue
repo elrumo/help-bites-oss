@@ -21,7 +21,7 @@
         <UCheckbox v-model="draft.showAuthorNames" label="Show author names" description="Admins always see them." />
         <UCheckbox v-model="draft.emailNotifications" label="Email notifications" description="Status changes and new comments to a post's followers, mentions to whoever is mentioned." />
         <UCheckbox v-model="draft.roadmap" label="Roadmap view" description="Planned, in-progress and done columns in the embed." />
-        <UCheckbox v-model="draft.changelog" label="Changelog" description="Done posts marked for the changelog, plus an RSS feed." />
+        <UCheckbox v-model="draft.changelog" label="Changelog" description="A Changelog tab in the board. Needs Public changelog on in Project → Changelog → Settings." />
       </div>
     </section>
 

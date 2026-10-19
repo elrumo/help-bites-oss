@@ -61,6 +61,7 @@ export default defineNuxtConfig({
     // browsers guess a freshness of days.
     '/widget.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/feedback.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
+    '/changelog.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/v1/**': { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Workspace', 'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS' } }
   },
 

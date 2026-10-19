@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
   project.set('publicKey', newPublicKey())
   project.set('secret', secret)
   project.set('allowAttachments', true)
+  project.set('changelogPublicMigrated', true)
   project.set('workspace', ctx.workspace)
   await applyProjectInput(project, payload)
   await project.save(null, MASTER)

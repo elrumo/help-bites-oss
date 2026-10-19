@@ -30,4 +30,4 @@ EXPOSE 3000
 # separate migration step. ensure-search never fails the boot (Meili is
 # optional). With several app containers, let one of them migrate
 # (RUN_MIGRATIONS=1, the default) and set RUN_MIGRATIONS=0 on the rest.
-CMD ["sh", "-c", "if [ \"${RUN_MIGRATIONS:-1}\" = 1 ]; then bun scripts/ensure-schema.mjs --apply && bun scripts/migrate-workspaces.mjs --apply && bun scripts/ensure-search.mjs; fi && exec bun .output/server/index.mjs"]
+CMD ["sh", "-c", "if [ \"${RUN_MIGRATIONS:-1}\" = 1 ]; then bun scripts/ensure-schema.mjs --apply && bun scripts/migrate-workspaces.mjs --apply && bun scripts/migrate-changelog-public.mjs --apply && bun scripts/ensure-search.mjs; fi && exec bun .output/server/index.mjs"]

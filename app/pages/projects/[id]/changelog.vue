@@ -20,8 +20,7 @@
     <div v-else class="flex-1 min-h-0 overflow-y-auto">
       <div class="mx-auto max-w-4xl space-y-8 px-4 py-4 md:px-6">
         <p v-if="project && !changelogReady" class="rounded-lg border border-default bg-elevated px-3 py-2 text-[13px] text-muted">
-          The public changelog is published through the feedback board: turn it on, with its Changelog option, under
-          <NuxtLink :to="`/projects/${id}/feedback`" class="font-medium text-default underline underline-offset-2">Feedback → Settings</NuxtLink>.
+          The public changelog is off. Turn on <button type="button" class="font-medium text-default underline underline-offset-2" @click="showSettings = true">Public changelog</button> in Settings to serve its page, JSON and RSS; it does not need the feedback board.
         </p>
 
         <EmptyState v-if="!entries.length && !releases.length" icon="i-lucide-sparkles" title="Nothing here yet" description="Write what shipped, in your own words, and group it into releases. Entries stay private until you publish them; link the posts, board items, tickets and errors they come from so you can see what is done.">
@@ -167,7 +166,7 @@
           <USwitch v-if="project?.changelog.commitAi.onPush" :model-value="project?.changelog.commitAi.autoPublish || false" label="Publish them without review" description="What a push drafts goes public immediately, with no one reading it first. Entries made with the From commits button are always drafts." @update:model-value="saveSettings({ commitAi: { autoPublish: $event } })" />
           <USwitch :model-value="project?.changelog.comments || false" label="Comments" description="Signed-in readers can comment on published entries. Your site sends their identity token; admins can hide or delete any comment." @update:model-value="saveSettings({ comments: $event })" />
           <USwitch :model-value="project?.changelog.notify || false" label="Email subscribers" description="Readers can ask for an email when something ships (as it happens, or weekly on Monday). Needs CHANGELOG_LINK_SECRET or HELPBITES_SECRET (either 32+ characters) on the server, and ENABLE_CHANGELOG_NOTIFY=true for the scheduler to send." @update:model-value="saveSettings({ notify: $event })" />
-          <USwitch :model-value="project?.changelog.enabled || false" label="Public without the feedback board" description="Serve the changelog page, JSON and RSS even when the feedback board is off. Off, they follow the board's Changelog option." @update:model-value="saveSettings({ enabled: $event })" />
+          <USwitch :model-value="project?.changelog.enabled || false" label="Public changelog" description="Serve the changelog page, embed, JSON and RSS to everyone. Independent of the feedback board, whose Changelog tab also needs this on." @update:model-value="saveSettings({ enabled: $event })" />
           <p class="text-xs text-muted">{{ savingSettings ? 'Saving…' : settingsSaved ? 'Saved' : 'Saves as you change it' }}</p>
           <p v-if="settingsError" class="text-sm text-error">{{ settingsError }}</p>
           <p class="text-xs text-muted">Unless you turn that on, whether the changelog is public, and its page and RSS feed, follow the feedback board's <NuxtLink :to="`/projects/${id}/feedback`" class="underline underline-offset-2">Changelog option</NuxtLink>.</p>
@@ -291,11 +290,11 @@ const groups = computed(() => {
 
 // ---- the public link ----
 const changelogUrl = computed(() => (project.value ? `${appUrl.value}/changelog/${project.value.publicKey}` : ''))
-const changelogReady = computed(() => Boolean(project.value?.feedback.enabled && project.value.feedback.changelog))
+const changelogReady = computed(() => Boolean(project.value?.changelog.enabled))
 
 async function copyChangelogUrl() {
   if (!changelogReady.value) {
-    toast.add({ title: 'Turn on the changelog first', description: 'The changelog is published through the feedback board: turn the board on, with its Changelog option, under Feedback → Settings.', icon: 'i-lucide-info', color: 'warning' })
+    toast.add({ title: 'Turn on the public changelog first', description: 'Switch on “Public changelog” in the Changelog settings. It does not need the feedback board.', icon: 'i-lucide-info', color: 'warning' })
     return
   }
   try {

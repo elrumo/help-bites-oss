@@ -70,9 +70,11 @@ Only the project's **allowed origins** can hand the board a token; any other
 site still gets a read-only board.
 
 **The changelog on its own page**: `https://YOUR-SUPPORT-HOST/changelog/pk_…`
-(optional `?theme=light|dark|system`) shows just the Changelog view, read-only,
-like `/roadmap/pk_…`. It needs the board live with its *Changelog* option on.
-*Public changelog* in Project → Changelog (and Feedback) copies the link. The same
+(optional `?theme=light|dark|system`) shows the changelog, read-only. It needs only
+*Public changelog* on in Project → Changelog → Settings, not the board; the
+*Public changelog* button there copies the link. To put it in your page, add
+`<div id="changelog"></div><script src="https://YOUR-SUPPORT-HOST/changelog.js" data-project="pk_…" data-target="#changelog" defer></script>`
+(`data-theme` optional). The same
 entries are at `GET /v1/projects/pk_…/changelog.rss` and `GET /v1/changelog?pk=pk_…`;
 see [Changelog](#changelog).
 
@@ -298,12 +300,13 @@ Uses the workspace's AI like every other AI feature (and counts toward its credi
 | Flat list | `GET /v1/changelog?pk=pk_…&flat=1`, or any of `limit` (≤100), `skip`, `tag`, `area`, `version` (a release's), `since`: `{ entries, total, hasMore }`, newest first, each entry carrying its release's `version` |
 | One entry | `GET /v1/changelog/:ref?pk=pk_…` by slug, `#N` number or id |
 | RSS | `GET /v1/projects/pk_…/changelog.rss`, one item per published entry |
-| In your page | the board embed's *Changelog* tab, or `['setView', 'changelog']` |
+| In your page | `changelog.js` (a read-only embed that grows with its content; no board needed), the board embed's *Changelog* tab, or your own UI on the JSON above |
 
-All of them need the changelog to be public: the board live with its *Changelog*
-option on, or `changelog.enabled` (Project → Changelog → Settings, or
-`PATCH /v1/admin/projects/:id {"changelog":{"enabled":true}}`), which serves the
-changelog without a feedback board. A public entry carries `slug`, `summary`,
+All of them need the changelog to be public: `changelog.enabled` (Project →
+Changelog → Settings, or `PATCH /v1/admin/projects/:id {"changelog":{"enabled":true}}`).
+It is its own switch: the feedback board's *Changelog* option only adds a tab to
+the board, and only when this is on. (Projects that were public through the
+board were switched on by `scripts/migrate-changelog-public.mjs`.) A public entry carries `slug`, `summary`,
 `bodyHtml` (the text rendered and **sanitised once, when it was saved**: put it
 in your page as it is), `excerpt`, `area`, `pinned`, `iconGlyph`, `accentColor`,
 `imageUrl`, `links` and `commentCount` besides its title and tag; never what it

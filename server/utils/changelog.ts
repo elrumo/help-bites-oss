@@ -48,13 +48,12 @@ export function getChangelogConfig(project: ParseObject): ChangelogConfig {
 }
 
 /**
- * Whether the project's changelog is public. Either it opted in on its own
- * (`changelog.enabled`), or, as it always was, its feedback board is live with
- * the Changelog option on.
+ * Whether the project's changelog is public: its own switch (`changelog.enabled`),
+ * independent of the feedback board. Projects that were public through the
+ * board's Changelog option were switched on by scripts/migrate-changelog-public.mjs.
  */
 export function changelogIsPublic(project: ParseObject): boolean {
-  const feedback = getFeedbackConfig(project)
-  return getChangelogConfig(project).enabled || (feedback.enabled && feedback.changelog)
+  return getChangelogConfig(project).enabled
 }
 
 function badRequest(errors: string[]): never {

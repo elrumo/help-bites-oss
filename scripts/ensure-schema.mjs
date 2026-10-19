@@ -180,6 +180,8 @@ const SCHEMAS = {
       actionWebhookUrl: { type: 'String' },
       actionWebhookSecret: { type: 'String' },
       feedback: { type: 'Object' },
+      // Set once scripts/migrate-changelog-public.mjs has given the project its own changelog switch (new projects start with it).
+      changelogPublicMigrated: { type: 'Boolean' },
       // Last allocated feedback post number (atomic increment).
       feedbackPostSeq: { type: 'Number' },
       // The project board (statuses, labels, roadmap options) and its `#N` counter.

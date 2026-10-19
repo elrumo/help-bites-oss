@@ -13,5 +13,7 @@ export default defineEventHandler(async (event) => {
   const project = serializePublicProject(ctx.project)
   // A project board, when on, is what the Roadmap view shows; otherwise it lists posts.
   const roadmapSource = getBoardConfig(ctx.project).enabled ? 'board' : 'posts'
-  return { config: ctx.config, roadmapSource, project: { name: project.name, publicKey: project.publicKey, theme: project.theme, brandLogoUrl: project.brandLogoUrl, allowedOrigins: project.allowedOrigins, poweredBy: await poweredByFor(ctx.project) }, viewer: feedbackViewer(ctx.actor) }
+  // Readers get the Changelog tab only when the option and the project's public changelog are both on; operators see the stored option.
+  const config = ctx.actor.kind === 'agent' ? ctx.config : { ...ctx.config, changelog: ctx.config.changelog && changelogIsPublic(ctx.project) }
+  return { config, roadmapSource, project: { name: project.name, publicKey: project.publicKey, theme: project.theme, brandLogoUrl: project.brandLogoUrl, allowedOrigins: project.allowedOrigins, poweredBy: await poweredByFor(ctx.project) }, viewer: feedbackViewer(ctx.actor) }
 })
