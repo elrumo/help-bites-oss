@@ -11,6 +11,8 @@ if (edition === 'cloud' && !existsSync(new URL('./ee/nuxt.config.ts', import.met
   throw new Error('HELPBITES_EDITION=cloud needs the commercial ee/ layer, which is not part of the open-source repository (see docs/EDITIONS.md)')
 }
 
+const baselineHeaders = { 'X-Frame-Options': 'SAMEORIGIN', 'Content-Security-Policy': "frame-ancestors 'self'", 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin' }
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-11-20',
   extends: edition === 'cloud' ? ['./ee'] : [],
@@ -44,9 +46,11 @@ export default defineNuxtConfig({
   routeRules: {
     // The panel and the embed are client-rendered, as they were.
     '/**': { ssr: false },
-    '/': { ssr: true, prerender: true },
-    '/docs': { ssr: true, prerender: true },
-    '/docs/**': { ssr: true, prerender: true },
+    // Prerendered, so served as a static file before server middleware runs:
+    // they get the baseline headers here instead (see server/middleware/securityHeaders.ts).
+    '/': { ssr: true, prerender: true, headers: baselineHeaders },
+    '/docs': { ssr: true, prerender: true, headers: baselineHeaders },
+    '/docs/**': { ssr: true, prerender: true, headers: baselineHeaders },
 
     // The embed page is meant to be framed by any connected site; everything
     // else must never be.
