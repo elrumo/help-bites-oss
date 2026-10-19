@@ -317,6 +317,85 @@ const SCHEMAS = {
       enabled_next: { enabled: 1, nextRunAt: 1 }
     }
   },
+  // A project's Stripe connection (server/utils/stripe.ts): the restricted key
+  // sealed with HELPBITES_SECRET, and where the sync stopped.
+  StripeAccount: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      projectId: { type: 'String' },
+      secretSealed: { type: 'String' },
+      accountName: { type: 'String' },
+      currency: { type: 'String' },
+      livemode: { type: 'Boolean' },
+      enabled: { type: 'Boolean' },
+      status: { type: 'String' },
+      cursor: { type: 'Object' },
+      stats: { type: 'Object' },
+      lastRunAt: { type: 'Date' },
+      nextRunAt: { type: 'Date' },
+      lastError: { type: 'String' }
+    },
+    indexes: {
+      project_1: { _p_project: 1 },
+      enabled_next: { enabled: 1, nextRunAt: 1 }
+    }
+  },
+  // A Stripe charge. Amounts are in the currency's smallest unit; `net` is what
+  // stayed (0 unless it succeeded), `month` is YYYY-MM (UTC). Plain strings and
+  // numbers, with the project id as a string beside the pointer, so the revenue
+  // reports can aggregate them.
+  StripePayment: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      projectId: { type: 'String' },
+      stripeId: { type: 'String' },
+      customerId: { type: 'String' },
+      email: { type: 'String' },
+      status: { type: 'String' },
+      currency: { type: 'String' },
+      amount: { type: 'Number' },
+      refunded: { type: 'Number' },
+      net: { type: 'Number' },
+      paidAtSec: { type: 'Number' },
+      month: { type: 'String' },
+      description: { type: 'String' },
+      receiptUrl: { type: 'String' },
+      invoiceId: { type: 'String' }
+    },
+    indexes: {
+      project_stripe: { projectId: 1, stripeId: 1 },
+      project_paid: { projectId: 1, paidAtSec: -1 },
+      project_customer: { projectId: 1, customerId: 1 },
+      project_email: { projectId: 1, email: 1 }
+    }
+  },
+  // A Stripe subscription; `mrr` is its monthly recurring revenue (0 unless it pays today).
+  StripeSubscription: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      projectId: { type: 'String' },
+      stripeId: { type: 'String' },
+      customerId: { type: 'String' },
+      email: { type: 'String' },
+      status: { type: 'String' },
+      plan: { type: 'String' },
+      currency: { type: 'String' },
+      amount: { type: 'Number' },
+      interval: { type: 'String' },
+      intervalCount: { type: 'Number' },
+      mrr: { type: 'Number' },
+      startedAtSec: { type: 'Number' },
+      canceledAtSec: { type: 'Number' },
+      currentPeriodEndSec: { type: 'Number' },
+      cancelAtPeriodEnd: { type: 'Boolean' }
+    },
+    indexes: {
+      project_stripe: { projectId: 1, stripeId: 1 },
+      project_customer: { projectId: 1, customerId: 1 },
+      project_email: { projectId: 1, email: 1 },
+      project_status: { projectId: 1, status: 1 }
+    }
+  },
   // A broadcast: one template to an audience, sent by the worker in chunks
   // (server/utils/campaigns.ts). `snapshot` freezes the design when sending
   // starts; `cursor` is the last contact id sent to. Recipients are EmailLog

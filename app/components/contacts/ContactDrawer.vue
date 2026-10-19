@@ -6,6 +6,7 @@
  */
 import type { Contact, ContactAttributeValue, ContactSubscription } from '#shared/contacts'
 import type { Conversation } from '#shared/support'
+import { STRIPE_ATTR, formatMoney, fromMinor, type StripePaymentDto, type StripeSubscriptionDto } from '#shared/stripe'
 import type { EmailLogEntry } from '~~/server/utils/emailLogs'
 import type { AdminProject } from '~~/server/utils/projects'
 import { SUBSCRIPTION_STATUS } from '~/utils/contactStatus'
@@ -22,6 +23,8 @@ const open = computed({ get: () => Boolean(id.value), set: (v) => { if (!v) id.v
 const contact = ref<Contact | null>(null)
 const conversations = ref<Conversation[]>([])
 const emails = ref<EmailLogEntry[]>([])
+// Stripe: null until it says it is connected (a 403 for roles that may not see money also leaves it null).
+const billing = ref<{ currency: string, subscriptions: StripeSubscriptionDto[], payments: StripePaymentDto[] } | null>(null)
 const saving = ref(false)
 
 const name = ref('')
@@ -33,6 +36,7 @@ async function load() {
   contact.value = null
   conversations.value = []
   emails.value = []
+  billing.value = null
   if (!current) return
   try {
     const { contact: c } = await api<{ contact: Contact }>(`/contacts/${current}`, { query: { project: props.project.id } })
@@ -42,6 +46,7 @@ async function load() {
     tags.value = [...c.tags]
     attributes.value = Object.entries(c.attributes).map(([key, value]) => ({ key, value: String(value) }))
     api<{ conversations: Conversation[] }>('/admin/conversations', { query: { project: props.project.id, endUser: c.id, limit: 20 } }).then(r => { conversations.value = r.conversations }).catch(() => {})
+    api<NonNullable<typeof billing.value>>('/admin/stripe/contact', { query: { project: props.project.id, contact: c.id } }).then((r) => { if (id.value === current && r.currency) billing.value = r }).catch(() => {})
     if (c.email) api<{ logs: EmailLogEntry[] }>('/admin/email-logs', { query: { project: props.project.id, to: c.email, limit: 20 } }).then(r => { emails.value = r.logs.filter(l => l.to === c.email) }).catch(() => {})
   } catch (e: any) {
     toast.add({ title: e?.message || 'Could not load the contact', color: 'error' })
@@ -104,6 +109,12 @@ async function erase() {
 const subscriptionItems = computed(() => (Object.keys(SUBSCRIPTION_STATUS) as ContactSubscription[])
   .filter(s => s !== 'pending' || contact.value?.subscription === 'pending')
   .map(value => ({ label: SUBSCRIPTION_STATUS[value].label, value, icon: SUBSCRIPTION_STATUS[value].icon })))
+const money = (minor: number, currency: string) => formatMoney(fromMinor(minor, currency), currency)
+const attr = (key: string) => contact.value?.attributes[key]
+const INTERVALS: Record<string, string> = { day: 'day', week: 'week', month: 'mo', year: 'yr' }
+const every = (s: StripeSubscriptionDto) => `${money(s.amount, s.currency)}/${s.intervalCount > 1 ? `${s.intervalCount} ` : ''}${INTERVALS[s.interval] || s.interval}`
+const SUB_COLOR: Record<string, 'success' | 'info' | 'warning' | 'error' | 'neutral'> = { active: 'success', trialing: 'info', past_due: 'warning', unpaid: 'error', canceled: 'neutral' }
+const stripeUrl = computed(() => (attr(STRIPE_ATTR.customer) ? `https://dashboard.stripe.com/customers/${attr(STRIPE_ATTR.customer)}` : ''))
 const fullDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString() : '—')
 const dirty = computed(() => contact.value && (name.value !== contact.value.name || JSON.stringify(tags.value) !== JSON.stringify(contact.value.tags) || JSON.stringify(attributes.value) !== JSON.stringify(Object.entries(contact.value.attributes).map(([key, value]) => ({ key, value: String(value) })))))
 </script>
@@ -151,6 +162,32 @@ const dirty = computed(() => contact.value && (name.value !== contact.value.name
           <dt class="text-muted">Last seen</dt><dd>{{ fullDate(contact.lastSeenAt) }}</dd>
           <template v-if="contact.sources.length"><dt class="text-muted">Synced from</dt><dd>{{ contact.sources.length }} source{{ contact.sources.length === 1 ? '' : 's' }}</dd></template>
         </dl>
+
+        <section v-if="billing" class="space-y-2">
+          <div class="flex items-center gap-2">
+            <h3 class="text-xs font-semibold text-muted">Billing</h3>
+            <span v-if="attr(STRIPE_ATTR.revenue)" class="text-xs text-muted">{{ formatMoney(Number(attr(STRIPE_ATTR.revenue)), billing.currency) }} paid in total</span>
+            <UButton v-if="stripeUrl" :to="stripeUrl" target="_blank" color="neutral" variant="ghost" size="xs" icon="i-lucide-arrow-up-right" label="Stripe" class="ml-auto" />
+          </div>
+          <p v-if="!billing.subscriptions.length && !billing.payments.length" class="text-xs text-dimmed">No subscriptions or payments from Stripe.</p>
+          <ul v-if="billing.subscriptions.length" class="divide-y divide-default rounded-lg border border-default" aria-label="Subscriptions">
+            <li v-for="s in billing.subscriptions" :key="s.id" class="flex items-center gap-2 px-3 py-2">
+              <span class="min-w-0 flex-1 truncate">{{ s.plan }}<span class="text-muted"> · {{ every(s) }}</span></span>
+              <UBadge :label="s.cancelAtPeriodEnd && s.status === 'active' ? 'Ends ' + logTime(s.currentPeriodEnd) : s.status.replace('_', ' ')" :color="SUB_COLOR[s.status] || 'neutral'" variant="subtle" size="sm" />
+              <span class="w-14 text-right text-xs text-muted" :title="s.canceledAt ? 'Canceled' : 'Started'">{{ logTime(s.canceledAt || s.startedAt) }}</span>
+            </li>
+          </ul>
+          <ul v-if="billing.payments.length" class="divide-y divide-default rounded-lg border border-default" aria-label="Payments">
+            <li v-for="p in billing.payments" :key="p.id" class="flex items-center gap-2 px-3 py-2">
+              <span class="min-w-0 flex-1 truncate">{{ p.description || 'Payment' }}</span>
+              <UBadge v-if="p.status !== 'succeeded'" :label="p.status" color="error" variant="subtle" size="sm" />
+              <UBadge v-else-if="p.refunded" :label="p.refunded >= p.amount ? 'Refunded' : 'Part refunded'" color="neutral" variant="subtle" size="sm" />
+              <a v-if="p.receiptUrl" :href="p.receiptUrl" target="_blank" rel="noopener" class="tabular-nums hover:underline">{{ money(p.amount, p.currency) }}</a>
+              <span v-else class="tabular-nums">{{ money(p.amount, p.currency) }}</span>
+              <span class="w-14 text-right text-xs text-muted">{{ logTime(p.paidAt) }}</span>
+            </li>
+          </ul>
+        </section>
 
         <section class="space-y-2">
           <h3 class="text-xs font-semibold text-muted">Conversations</h3>

@@ -8,6 +8,7 @@
 import { watchDebounced } from '@vueuse/core'
 import type { Contact, ContactSubscription } from '#shared/contacts'
 import type { ContactSegment } from '#shared/segments'
+import { BILLING_FILTERS, STRIPE_ATTR, formatMoney, type StripeConnection } from '#shared/stripe'
 import type { AdminProject } from '~~/server/utils/projects'
 import ContactsTabs from '~/components/contacts/ContactsTabs.vue'
 import ContactDrawer from '~/components/contacts/ContactDrawer.vue'
@@ -32,6 +33,11 @@ const error = ref('')
 const search = ref('')
 const subscription = ref<ContactSubscription | 'all'>('all')
 const segment = ref(String(route.query.segment || 'all'))
+// Stripe filters appear once Stripe is connected (a sync writes stripe_* attributes on contacts).
+const stripe = ref<StripeConnection | null>(null)
+const billing = ref('all')
+const minRevenue = ref('')
+const revenueOf = (c: Contact) => Number(c.attributes[STRIPE_ATTR.revenue]) || 0
 
 const subscriptionItems = [{ label: 'Anyone', value: 'all' }, ...Object.entries(SUBSCRIPTION_STATUS).map(([value, s]) => ({ label: s.label, value, icon: s.icon }))]
 const segmentItems = computed(() => [{ label: 'Everyone', value: 'all' }, ...segments.value.map(s => ({ label: s.name, value: s.id }))])
@@ -40,9 +46,11 @@ const query = computed(() => ({
   project: props.project.id,
   q: search.value.trim() || undefined,
   subscription: subscription.value === 'all' ? undefined : subscription.value,
-  segment: segment.value === 'all' ? undefined : segment.value
+  segment: segment.value === 'all' ? undefined : segment.value,
+  billing: billing.value === 'all' ? undefined : billing.value,
+  minRevenue: Number(minRevenue.value) > 0 ? Number(minRevenue.value) : undefined
 }))
-const filtered = computed(() => Boolean(query.value.q || query.value.subscription || query.value.segment))
+const filtered = computed(() => Boolean(query.value.q || query.value.subscription || query.value.segment || query.value.billing || query.value.minRevenue))
 
 async function load() {
   error.value = ''
@@ -73,6 +81,7 @@ async function loadMore() {
 
 onMounted(() => {
   load()
+  api<{ connection: StripeConnection }>('/admin/stripe', { query: { project: props.project.id } }).then((r) => { stripe.value = r.connection.connected ? r.connection : null }).catch(() => {})
   api<{ segments: ContactSegment[] }>('/segments', { query: { project: props.project.id } }).then(r => { segments.value = r.segments }).catch(() => {})
 })
 watchDebounced(query, load, { debounce: 300, deep: true })
@@ -118,6 +127,10 @@ const displayName = (c: Contact) => c.name || c.email || c.externalId || 'Unname
         <UInput v-model="search" icon="i-lucide-search" placeholder="Name, email or id" size="sm" class="hidden w-48 sm:block" aria-label="Search contacts" />
         <USelect v-model="segment" :items="segmentItems" value-key="value" size="sm" class="hidden w-36 md:flex" aria-label="Segment" />
         <USelect v-model="subscription" :items="subscriptionItems" value-key="value" size="sm" class="hidden w-36 lg:flex" aria-label="Subscription" />
+        <template v-if="stripe">
+          <USelect v-model="billing" :items="[...BILLING_FILTERS]" value-key="value" size="sm" class="hidden w-36 xl:flex" aria-label="Billing" />
+          <UInput v-model="minRevenue" type="number" min="0" placeholder="Spent over" size="sm" class="hidden w-28 xl:block" aria-label="Spent more than" />
+        </template>
         <UButton icon="i-lucide-file-up" label="Import" size="sm" color="neutral" variant="outline" @click="importOpen = true" />
         <UButton icon="i-lucide-plus" label="Add" size="sm" @click="addOpen = true" />
       </template>
@@ -141,6 +154,7 @@ const displayName = (c: Contact) => c.name || c.email || c.externalId || 'Unname
             <span class="hidden min-w-0 max-w-56 shrink items-center gap-1 overflow-hidden md:flex">
               <UBadge v-for="tag in c.tags.slice(0, 3)" :key="tag" :label="tag" color="neutral" variant="soft" size="sm" />
             </span>
+            <span v-if="stripe" class="hidden w-20 shrink-0 text-right text-xs tabular-nums text-muted xl:block" title="Revenue from Stripe">{{ revenueOf(c) ? formatMoney(revenueOf(c), stripe.currency) : '' }}</span>
             <UTooltip :text="SUBSCRIPTION_STATUS[c.subscription].hint">
               <UBadge :icon="SUBSCRIPTION_STATUS[c.subscription].icon" :label="SUBSCRIPTION_STATUS[c.subscription].label" :color="SUBSCRIPTION_STATUS[c.subscription].color" variant="subtle" size="sm" class="w-32 shrink-0 justify-start" />
             </UTooltip>

@@ -1,4 +1,6 @@
 import { CONTACT_SUBSCRIPTIONS } from '#shared/contacts'
+import { billingRules } from '#shared/stripe'
+import { compileSegmentFilter } from '#shared/segments'
 
 defineRouteMeta({
   openAPI: {
@@ -7,6 +9,8 @@ defineRouteMeta({
     description: 'The project\'s people, newest first: your app\'s users (from identity tokens), imports, database syncs and sign-ups. Page with `cursor` (the `nextCursor` of the previous page). `q` searches name, email and id and returns one page of best matches. `externalId` or `email` looks one person up.',
     parameters: [
       { name: 'segment', in: 'query', schema: { type: 'string' }, description: 'Only this segment\'s contacts (segment id).' },
+      { name: 'billing', in: 'query', schema: { type: 'string', enum: ['paying', 'never', 'active', 'trialing', 'past_due', 'canceled'] }, description: 'Stripe billing status, once Stripe is connected: paying (has paid), never (never paid) or a subscription status.' },
+      { name: 'minRevenue', in: 'query', schema: { type: 'number' }, description: 'Only people who paid more than this in total (Stripe, in the account\'s main currency).' },
       { name: 'q', in: 'query', schema: { type: 'string' } },
       { name: 'tag', in: 'query', schema: { type: 'string' } },
       { name: 'subscription', in: 'query', schema: { type: 'string', enum: ['none', 'pending', 'subscribed', 'unsubscribed'] } },
@@ -36,8 +40,11 @@ export default defineEventHandler(async (event) => {
   const subscription = text('subscription')
   if (subscription && !CONTACT_SUBSCRIPTIONS.includes(subscription as never)) throw createError({ statusCode: 400, statusMessage: 'Unknown subscription' })
 
+  // The segment and the billing filters both narrow the list.
+  const billing = billingRules(text('billing'), text('minRevenue') ? Number(text('minRevenue')) : undefined)
+  const wheres = [text('segment') ? await segmentWhere(project, text('segment')) : {}, compileSegmentFilter({ match: 'all', rules: billing })].filter(w => Object.keys(w).length)
   return listContacts(project, {
-    where: text('segment') ? await segmentWhere(project, text('segment')) : undefined,
+    where: wheres.length > 1 ? { $and: wheres } : wheres[0],
     q: text('q'),
     tag: text('tag'),
     subscription,
