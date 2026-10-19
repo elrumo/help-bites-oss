@@ -481,15 +481,20 @@ function requestSignIn(reason: 'vote' | 'post' | 'comment') {
 }
 
 function onMessage(event: MessageEvent) {
+  // Only the host page itself, never another frame on it.
+  if (event.source !== window.parent) return
   const data = event.data
   if (!data || data.source !== 'help-bites-feedback-host') return
-  if (data.type === 'token' && !isAllowedOrigin(event.origin)) {
+  const allowed = isAllowedOrigin(event.origin)
+  if (data.type === 'token' && !allowed) {
     // Reading stays open; only identity needs an allowed origin.
     console.warn(`[help-bites] ${event.origin} is not an allowed origin for this project; staying signed out.`)
     canSignIn.value = false
     return
   }
-  parentOrigin.value = event.origin
+  // Any host may steer the view (it could put ?view= and ?post= on the frame
+  // anyway); only an allowed one becomes the origin the board posts to.
+  if (allowed) parentOrigin.value = event.origin
   if (data.type === 'token') {
     canSignIn.value = Boolean(data.canSignIn)
     setToken(typeof data.token === 'string' && data.token ? data.token : null)
@@ -932,6 +937,8 @@ function reportHeight() {
 
 onMounted(async () => {
   window.addEventListener('message', onMessage)
+  // Standalone (no host frame): a token in the URL, for demos and tests.
+  const direct = takeUrlToken()
   if (inline) {
     // The frame is sized to us, so the document must not stretch to the frame.
     document.documentElement.style.height = 'auto'
@@ -963,8 +970,6 @@ onMounted(async () => {
     loadError.value = error?.statusCode === 404 ? (only ? `This project has no public ${only}.` : 'This project has no feedback board yet.') : `The ${only || 'feedback board'} could not be loaded.`
     return
   }
-  // Standalone (no host frame): a token in the URL, for demos and tests.
-  const direct = typeof route.query.token === 'string' ? route.query.token : ''
   if (direct) token.value = direct
   // Read straight away; a token from the host only refines the view.
   await loadPosts()
