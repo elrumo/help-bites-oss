@@ -192,6 +192,8 @@ const SCHEMAS = {
       legal: { type: 'Object' },
       flags: { type: 'Array' },
       errors: { type: 'Object' },
+      // GitHub repos the project uses: [{ installationId, id, fullName, defaultBranch }] (server/utils/github.ts).
+      repos: { type: 'Array' },
       // This project's own error tracker URLs and API tokens (see server/utils/errorTracking.ts).
       errorTrackers: { type: 'Object' },
       // Email sending: this project's own sender (blank = the MAILGUN_* defaults).

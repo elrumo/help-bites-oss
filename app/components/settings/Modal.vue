@@ -98,6 +98,7 @@
             <SettingsTeam v-else-if="current.key === 'team'" />
             <SettingsWorkspaceAi v-else-if="current.key === 'ai'" />
             <SettingsErrorServers v-else-if="current.key === 'error-tracking'" />
+            <SettingsGithubConnection v-else-if="current.key === 'github'" />
             <SettingsApiKeys v-else-if="current.key === 'api-keys'" />
             <component :is="extra.component" v-else-if="extra" />
           </div>
@@ -114,6 +115,8 @@ const tab = useState('settings-tab', () => '')
 const newProjectOpen = useState('new-project-open', () => false)
 const { api, agent, projects, demo, context, logout } = useAgent()
 const colorMode = useColorMode()
+// GitHub's install callback lands on /projects?github=…, which reopens its tab.
+if (useRoute().query.github) tab.value = 'github'
 
 // Plan & usage only shows when the plan has limits, so never on a self-hosted install.
 const coreTabs = computed(() => [
@@ -125,6 +128,7 @@ const coreTabs = computed(() => [
   { key: 'team', label: 'Team', icon: 'i-lucide-users-round' },
   { key: 'ai', label: 'AI', icon: 'i-lucide-sparkles' },
   { key: 'error-tracking', label: 'Error tracking', icon: 'i-lucide-bug' },
+  { key: 'github', label: 'GitHub', icon: 'i-lucide-github' },
   { key: 'api-keys', label: 'API keys', icon: 'i-lucide-key-round' }
 ])
 // Tabs the cloud edition registers (app/utils/editionUi.ts) follow the core ones.

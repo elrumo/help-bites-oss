@@ -144,6 +144,12 @@
             </div>
           </section>
 
+          <!-- GitHub -->
+          <section id="github" class="section">
+            <header><h2 class="section-title">GitHub repos</h2><p class="section-hint">The code behind {{ form.name || 'this project' }}. AI error notes and legal documents read these; HelpBites never writes to them.</p></header>
+            <div class="card"><SettingsProjectRepos :project-id="id" /></div>
+          </section>
+
           <!-- Save bar: rides the bottom of the page while there is something to save. -->
           <div v-if="dirty || saveError" class="sticky bottom-4 z-10 flex justify-center">
             <div class="flex items-center gap-3 rounded-full border border-default bg-default/95 py-1.5 pr-1.5 pl-4 shadow-lg backdrop-blur" role="status">
@@ -194,7 +200,8 @@ const sections = [
   { id: 'branding', label: 'Branding' },
   { id: 'widget', label: 'Chat widget' },
   { id: 'email', label: 'Email' },
-  { id: 'collaborators', label: 'Collaborators' }
+  { id: 'collaborators', label: 'Collaborators' },
+  { id: 'github', label: 'GitHub repos' }
 ]
 const widgetImages = [
   { field: 'brandLogoUrl' as const, label: 'Brand logo', icon: 'i-lucide-image' },
