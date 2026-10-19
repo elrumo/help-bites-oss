@@ -42,6 +42,7 @@ struct FeedbackPostEditor: View {
             form(config)
             if let current {
               boardLinks(current)
+              changelogLinks(current)
               thread(current)
             }
           }
@@ -106,13 +107,15 @@ struct FeedbackPostEditor: View {
 
     Card {
       CardRow { FeedbackToggleRow(title: "Featured", detail: "Highlight on roadmaps and landing pages", isOn: $draft.featured) }
-      CardRow { FeedbackToggleRow(title: "On changelog", detail: "Once done", isOn: $draft.showOnChangelog) }
       CardRow { FeedbackToggleRow(title: "Hidden", detail: "Only admins see it", isOn: $draft.hidden) }
       CardRow(divider: false) { FeedbackToggleRow(title: "Locked", detail: "Only the team can vote, comment or react", isOn: $draft.locked) }
     }
 
-    LabeledField(label: "Shipped in", hint: "A release or changelog entry") {
-      TextField("v2.4", text: $draft.shippedIn).textFieldStyle(.linear).autocorrectionDisabled()
+    HStack(alignment: .top, spacing: 12) {
+      LabeledField(label: "Shipped in", hint: "Set when its release is published") {
+        TextField("v2.4", text: $draft.shippedIn).textFieldStyle(.linear).autocorrectionDisabled()
+      }
+      LabeledField(label: "Shipped on") { shippedOn }
     }
 
     if let current {
@@ -128,20 +131,6 @@ struct FeedbackPostEditor: View {
     }
 
     LabeledField(label: "Team note", hint: "Private to admins") { LinearTextEditor(text: $draft.adminNote, minHeight: 64) }
-
-    VStack(alignment: .leading, spacing: 14) {
-      SectionLabel("Changelog entry")
-      LabeledField(label: "Title", hint: "Defaults to the post title") { TextField("", text: $draft.changelogTitle).textFieldStyle(.linear) }
-      HStack(alignment: .top, spacing: 12) {
-        LabeledField(label: "Icon") {
-          TextField("Emoji or lucide:rocket", text: $draft.icon).textFieldStyle(.linear).textInputAutocapitalization(.never).autocorrectionDisabled()
-        }
-        LabeledField(label: "Shipped on") { shippedOn }
-      }
-      LabeledField(label: "Text", hint: "Markdown; defaults to the post text") { LinearTextEditor(text: $draft.changelogBody, minHeight: 72) }
-    }
-    .padding(14)
-    .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
 
     if let current, !(current.externalId ?? "").isEmpty || !(current.metadata ?? [:]).isEmpty {
       DisclosureGroup {
@@ -265,6 +254,20 @@ struct FeedbackPostEditor: View {
         Text("Board").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
         BoardLinksSection(projectId: store.projectId, kind: "feedback", targetId: post.id, title: post.title, description: post.body)
           .padding(.horizontal, -8)
+      }
+    }
+  }
+
+  // MARK: Changelog
+
+  /// The changelog entries this post is behind.
+  private func changelogLinks(_ post: FeedbackPost) -> some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Rectangle().fill(Theme.borderMuted).frame(height: 1).padding(.top, 12)
+      Text("Changelog").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+      FeedbackChangelogLinks(projectId: store.projectId, post: post) {
+        dismiss()
+        workspace.go(.project(store.projectId, .changelog))
       }
     }
   }

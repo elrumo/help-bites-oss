@@ -96,7 +96,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
         CardRow { FeedbackToggleRow(title: "Show author names", detail: "Admins always see them.", isOn: $draft.board.showAuthorNames) }
         CardRow { FeedbackToggleRow(title: "Email notifications", detail: "Status changes and new comments to a post's followers, mentions to whoever is mentioned.", isOn: $draft.board.emailNotifications) }
         CardRow { FeedbackToggleRow(title: "Roadmap view", detail: "Planned, in-progress and done columns in the embed.", isOn: $draft.board.roadmap) }
-        CardRow(divider: false) { FeedbackToggleRow(title: "Changelog", detail: "Done posts marked for the changelog, plus an RSS feed.", isOn: $draft.board.changelog) }
+        CardRow(divider: false) { FeedbackToggleRow(title: "Changelog", detail: "A Changelog tab in the board. Needs Public changelog on in Project → Changelog → Settings.", isOn: $draft.board.changelog) }
       }
     }
   }
