@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { applyTrackerSettings, bugsinkActionsFor, bugsinkIssueRow, buildErrorPrompt, issueQuery, levelToPriority, parseAlertWebhook, parseBugsinkWebhook, pickTrackerSettings } from '#shared/errors'
-import { verifyErrorWebhook } from '../server/utils/errorTracking'
+import { errorLinkOf, errorLinksOf, verifyErrorWebhook } from '../server/utils/errorTracking'
 
 test('error helpers parse, quote and trim safely', () => {
   expect(parseAlertWebhook({ attachments: [{ title: 'Boom', title_link: 'https://gt.example/acme/issues/42/' }, {}] })).toEqual([{ issueId: '42', title: 'Boom', url: 'https://gt.example/acme/issues/42/', culprit: '' }])
@@ -37,14 +37,25 @@ test('tracker settings resolve whole layers and never carry a token to a new hos
 })
 
 test('an alert webhook answers an unknown project exactly like a wrong token', () => {
-  const project = { id: 'p1', get: (key: string) => (key === 'errors' ? { provider: 'bugsink', webhookToken: 'secret-token' } : undefined) } as any
+  const error = { provider: 'bugsink', dsn: 'https://k@bs/1', webhookToken: 'secret-token', label: 'web', more: [{ provider: 'bugsink', dsn: 'https://k@bs/2', webhookToken: 'other-secret', label: 'api', linkId: 'ab12' }] }
+  const project = { id: 'p1', get: (key: string) => (key === 'errors' ? error : key === 'name' ? 'Acme' : undefined) } as any
   const hook = (token: string) => ({ path: `/v1/webhooks/bugsink/p1?token=${token}` }) as any
   const refusal = (fn: () => unknown) => {
     try { fn() } catch (error) { return { status: (error as { statusCode?: number }).statusCode, message: (error as { statusMessage?: string }).statusMessage } }
     return null
   }
-  expect(verifyErrorWebhook(hook('secret-token'), project, 'bugsink')).toBe(project)
+  expect(verifyErrorWebhook(hook('secret-token'), project, 'bugsink')).toMatchObject({ project, link: { linkId: 'main', label: 'web' } })
+  expect(verifyErrorWebhook(hook('other-secret'), project, 'bugsink').link).toMatchObject({ linkId: 'ab12', label: 'api' })
   expect(refusal(() => verifyErrorWebhook(hook('secret-token'), project, 'glitchtip'))).toEqual({ status: 401, message: 'Invalid webhook token' })
   expect(refusal(() => verifyErrorWebhook(hook('wrong-token!'), project, 'bugsink'))).toEqual({ status: 401, message: 'Invalid webhook token' })
   expect(refusal(() => verifyErrorWebhook(hook('secret-token'), null, 'bugsink'))).toEqual({ status: 401, message: 'Invalid webhook token' })
+})
+
+test('a project lists its tracker projects, the first as main and a legacy one named after the project', () => {
+  const project = (errors: unknown) => ({ id: 'p1', get: (key: string) => (key === 'errors' ? errors : key === 'name' ? 'Acme' : undefined) }) as any
+  expect(errorLinksOf(project({}))).toEqual([])
+  expect(errorLinksOf(project({ dsn: 'https://k@gt/1' }))).toMatchObject([{ linkId: 'main', label: 'Acme' }])
+  expect(errorLinksOf(project({ dsn: 'https://k@bs/1', label: 'web', more: [{ dsn: 'https://k@bs/2', linkId: 'ab12', label: 'api' }, { linkId: 'half-made' }] })).map(link => [link.linkId, link.label])).toEqual([['main', 'web'], ['ab12', 'api']])
+  expect(errorLinkOf(project({ dsn: 'https://k@bs/1', more: [{ dsn: 'https://k@bs/2', linkId: 'ab12' }] }), 'ab12')?.dsn).toBe('https://k@bs/2')
+  expect(errorLinkOf(project({ dsn: 'https://k@bs/1' }), 'gone')?.linkId).toBe('main')
 })

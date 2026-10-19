@@ -79,7 +79,7 @@ function project(id: string, name: string, siteUrl: string, accent: string, flag
     inboxPath: '/inbox', fromName: `${name} Support`, notifyEmails: [`support@${new URL(siteUrl).host}`],
     fromEmail: '', replyTo: '', mailDomain: '', emailLogContent: false,
     actionWebhookUrl: '', hasActionWebhookSecret: false, flags,
-    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, createdAt: ago(60 * 24 * 90)
+    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, errorLinks: id === 'acme' ? [{ id: 'main', label: 'Acme', provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }] : [], createdAt: ago(60 * 24 * 90)
   }
 }
 
@@ -378,12 +378,16 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   }],
   ['POST', /^\/admin\/errors\/connect$/, ({ body }) => {
     const p = find(projects, body.project, 'Project')
-    p.errors = errorServers.find(server => server.id === body.server)?.provider === 'bugsink'
-      ? { connected: true, provider: 'bugsink', providerName: 'Bugsink', dsn: 'https://public@example.bugsink.com/42', url: 'https://example.bugsink.com/issues/42/', alertWebhookUrl: `https://help.example.com/v1/webhooks/bugsink/${p.id}?token=demo` }
-      : { connected: true, provider: 'glitchtip', providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }
-    return { project: p }
+    const bugsink = errorServers.find(server => server.id === body.server)?.provider === 'bugsink'
+    const label = body.name || p.name
+    const link = bugsink
+      ? { id: `l${p.errorLinks.length + 1}`, label, provider: 'bugsink' as const, providerName: 'Bugsink', dsn: 'https://public@example.bugsink.com/42', url: 'https://example.bugsink.com/issues/42/', alertWebhookUrl: `https://help.example.com/v1/webhooks/bugsink/${p.id}?token=demo${p.errorLinks.length}` }
+      : { id: `l${p.errorLinks.length + 1}`, label, provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }
+    if (!p.errorLinks.some(item => item.label === label)) p.errorLinks.push(link)
+    if (!p.errors.connected) p.errors = { connected: true, provider: link.provider, providerName: link.providerName, dsn: link.dsn, url: link.url, alertWebhookUrl: link.alertWebhookUrl }
+    return { project: p, link }
   }],
-  ['GET', /^\/admin\/errors$/, ({ query }) => ({ issues: errorIssues.filter(issue => !query.status || issue.status === query.status), next: '' })],
+  ['GET', /^\/admin\/errors$/, ({ query }) => ({ issues: errorIssues.filter(issue => !query.status || issue.status === query.status).map(issue => ({ ...issue, linkId: 'main', linkLabel: 'Acme', provider: 'glitchtip', providerName: 'GlitchTip' })), next: '' })],
   ['PUT', /^\/admin\/errors\/([^/]+)$/, ({ params, body }) => {
     const issue = errorIssues.find(item => item.id === params[0]) || fail(404, 'Error not found')
     issue.status = body.status === 'open' ? 'unresolved' : body.status === 'closed' ? 'ignored' : 'resolved'

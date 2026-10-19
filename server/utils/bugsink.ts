@@ -50,9 +50,8 @@ export const bugsink: ErrorProvider = {
     return (await bs<Page<{ name: string }>>(creds, '/teams/')).results.map(row => row.name)
   },
 
-  async connect(creds, project) {
+  async connect(creds, _project, _existing, _webhookUrl, name) {
     const teamId = await ensureTeam(creds)
-    const name = String(project.get('name') || `hb-${project.id}`)
     let row = await findProject(creds, teamId, name)
     if (!row) {
       await bs(creds, '/projects/', { method: 'POST', body: JSON.stringify({ team: teamId, name, alert_on_new_issue: true, alert_on_regression: true, alert_on_unmute: true }) })

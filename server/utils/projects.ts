@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { createError } from 'h3'
 import type { PoweredBy } from './branding'
 import { invalidate, onInvalidate } from './cacheBus'
+import type { ErrorLinkView } from './errorTracking'
 import { safeHttpUrl } from '#shared/support'
 import { normalizeFeedbackConfig, validateFeedbackConfig, type FeedbackBoardConfig } from '#shared/feedback'
 import { normalizeBoardConfig, validateBoardConfig, type BoardConfig } from '#shared/board'
@@ -67,6 +68,8 @@ export type AdminProject = PublicProject & {
   legal: LegalConfig
   /** `alertWebhookUrl` is set only for trackers whose alerts must be pointed at HelpBites by hand. */
   errors: { connected: boolean, provider: string, providerName: string, dsn: string, url: string, alertWebhookUrl: string }
+  /** Every tracker project it reports to (`errors` is the first), each a pill on the Errors page. */
+  errorLinks: ErrorLinkView[]
   /** Newsletter settings: topics, postal address, double opt-in, its own sender. */
   marketing: MarketingConfig
   /** Signed event webhooks (contact.subscription_changed, email.suppressed). */
@@ -299,6 +302,7 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
     changelog: normalizeChangelogConfig(project.get('changelog')),
     legal: normalizeLegalConfig(project.get('legal')),
     errors: { connected: Boolean(errors.dsn), provider: errors.dsn ? tracker.id : '', providerName: errors.dsn ? tracker.name : '', dsn: String(errors.dsn || ''), url: issuesUrlOf(errors), alertWebhookUrl: errors.dsn && tracker.manualAlerts ? errorWebhookUrl(project, errors) : '' },
+    errorLinks: errorLinksOf(project).map(link => errorLinkView(project, link)),
     marketing: normalizeMarketingConfig(project.get('marketing')),
     eventWebhookUrl: String(project.get('eventWebhookUrl') || ''),
     hasEventWebhookSecret: Boolean(project.get('eventWebhookSecret')),

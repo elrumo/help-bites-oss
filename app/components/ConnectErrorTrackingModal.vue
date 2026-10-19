@@ -1,15 +1,15 @@
 <template>
-  <UModal v-model:open="open" title="Connect error tracking" description="Pick the GlitchTip or Bugsink server this project reports to. HelpBites creates the project there and turns new errors into inbox conversations.">
+  <UModal v-model:open="open" title="Connect error tracking" :description="existing.length ? 'Add another GlitchTip or Bugsink project this project reports to. Its errors join the others, each tagged with its name.' : 'Pick the GlitchTip or Bugsink server this project reports to. HelpBites creates the project there and turns new errors into inbox conversations.'">
     <template #body>
-      <div v-if="connected?.errors.alertWebhookUrl" class="space-y-3">
-        <p class="text-sm">Connected to {{ connected.errors.providerName }}. One step left: Bugsink can't add alert destinations through its API, so add this webhook by hand.</p>
+      <div v-if="link?.alertWebhookUrl" class="space-y-3">
+        <p class="text-sm">Connected to {{ link.providerName }}. One step left: Bugsink can't add alert destinations through its API, so add this webhook by hand.</p>
         <ol class="list-decimal space-y-1 pl-5 text-sm text-muted">
-          <li>In Bugsink, open <span class="text-default">Projects</span>, find {{ connected.name }} (under <span class="text-default">Team Projects</span>, or <span class="text-default">Other Projects</span> if you aren't in its team) and click its alerts (megaphone) icon.</li>
+          <li>In Bugsink, open <span class="text-default">Projects</span>, find {{ link.label }} (under <span class="text-default">Team Projects</span>, or <span class="text-default">Other Projects</span> if you aren't in its team) and click its alerts (megaphone) icon.</li>
           <li>Click <span class="text-default">Add</span>, set Kind to <span class="text-default">Slack</span> (HelpBites reads Slack-format alerts) and paste this as the Webhook url. Leave Discord and Mattermost alone.</li>
         </ol>
-        <CodeBlock :code="connected.errors.alertWebhookUrl" lang="bash" />
+        <CodeBlock :code="link.alertWebhookUrl" lang="bash" />
         <div class="flex justify-end gap-2 pt-2">
-          <UButton color="neutral" variant="soft" :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'" :label="copied ? 'Copied' : 'Copy URL'" @click="copy(connected.errors.alertWebhookUrl)" />
+          <UButton color="neutral" variant="soft" :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'" :label="copied ? 'Copied' : 'Copy URL'" @click="copy(link.alertWebhookUrl)" />
           <UButton label="Done" @click="open = false" />
         </div>
       </div>
@@ -26,6 +26,9 @@
               </span>
             </button>
           </div>
+          <UFormField v-if="current && !adding" :label="`Project name in ${current.providerName}`" :description="existing.length ? `Already connected: ${existing.map(item => item.label).join(', ')}. A new name creates another project; an existing one in the team is reused.` : 'Created if it does not exist yet, or reused if it does.'">
+            <UInput v-model="name" class="w-full" :placeholder="project?.name" />
+          </UFormField>
           <UFormField v-if="current?.provider === 'bugsink' && teams.length && !adding" label="Team" description="Pick a team you belong to so the project shows under Team Projects in Bugsink.">
             <USelect v-model="team" :items="teams" class="w-full" />
           </UFormField>
@@ -35,7 +38,7 @@
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
         <div class="flex justify-end gap-2 pt-2">
           <UButton color="neutral" variant="ghost" @click="open = false">Cancel</UButton>
-          <UButton :loading="busy" :disabled="!current || adding" :label="current ? `Connect ${current.name}` : 'Connect'" @click="submit" />
+          <UButton :loading="busy" :disabled="!current || adding || (existing.length > 0 && !name.trim())" :label="current ? `Connect ${current.name}` : 'Connect'" @click="submit" />
         </div>
       </div>
     </template>
@@ -44,13 +47,14 @@
 
 <script setup lang="ts">
 import type { AdminProject } from '~~/server/utils/projects'
+import type { ErrorLinkView } from '~~/server/utils/errorTracking'
 import type { ErrorProviderView, ErrorServerView } from '~/components/settings/ErrorServerForm.vue'
 
 const open = defineModel<boolean>('open', { default: false })
 const props = defineProps<{ projectId: string }>()
 const emit = defineEmits<{ (event: 'connected', project: AdminProject): void }>()
 
-const { api } = useAgent()
+const { api, projects } = useAgent()
 const blurbs: Record<string, string> = {
   glitchtip: 'Creates the project, DSN and an inbox alert automatically.',
   bugsink: 'Creates the project and DSN; you paste one alert webhook into Bugsink.'
@@ -62,7 +66,10 @@ const adding = ref(false)
 const loading = ref(false)
 const busy = ref(false)
 const error = ref('')
-const connected = ref<AdminProject | null>(null)
+const link = ref<ErrorLinkView | null>(null)
+const name = ref('')
+const project = computed(() => projects.value.find(item => item.id === props.projectId))
+const existing = computed(() => project.value?.errorLinks || [])
 const copied = ref(false)
 const teams = ref<string[]>([])
 const team = ref('')
@@ -86,7 +93,7 @@ function added(result: { id: string, servers: ErrorServerView[] }) {
 
 watch(open, async (value) => {
   if (!value) return
-  connected.value = null; copied.value = false; error.value = ''; adding.value = false; loading.value = true
+  link.value = null; copied.value = false; name.value = existing.value.length ? '' : project.value?.name || ''; error.value = ''; adding.value = false; loading.value = true
   try {
     const result = await api<{ servers: ErrorServerView[], providers: ErrorProviderView[] }>('/admin/errors/servers')
     servers.value = result.servers; providers.value = result.providers
@@ -101,9 +108,9 @@ async function copy(text: string) {
 async function submit() {
   busy.value = true; error.value = ''
   try {
-    const result = await api<{ project: AdminProject }>('/admin/errors/connect', { method: 'POST', body: { project: props.projectId, server: selected.value, team: team.value } })
+    const result = await api<{ project: AdminProject, link: ErrorLinkView }>('/admin/errors/connect', { method: 'POST', body: { project: props.projectId, server: selected.value, team: team.value, name: name.value.trim() } })
     emit('connected', result.project)
-    if (result.project.errors.alertWebhookUrl) connected.value = result.project
+    if (result.link.alertWebhookUrl) link.value = result.link
     else open.value = false
   } catch (cause: any) { error.value = cause.message || 'Could not connect error tracking' } finally { busy.value = false }
 }

@@ -104,14 +104,15 @@
             <!-- Error tracking -->
             <template v-else-if="tab === 'errors'">
               <div class="panel-head">
-                <p v-if="project.errors?.connected">Reporting to {{ project.errors.providerName }}. <UButton variant="link" size="sm" class="p-0" label="Manage servers" @click="settingsTab = 'error-tracking'" /></p>
+                <p v-if="project.errors?.connected">Reporting to {{ project.errorLinks.length > 1 ? project.errorLinks.map(item => item.label).join(', ') : project.errors.providerName }}. <UButton variant="link" size="sm" class="p-0" label="Manage servers" @click="settingsTab = 'error-tracking'" /> <UButton variant="link" size="sm" class="p-0" label="Connect another" @click="connectErrorsOpen = true" /></p>
                 <p v-else>Connect GlitchTip or Bugsink to give this project a Sentry-compatible DSN and send alerts to the inbox.</p>
                 <UButton :to="`/projects/${id}/errors`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" label="Errors" />
               </div>
               <template v-if="project.errors?.connected">
-                <p v-if="project.errors.alertWebhookUrl" class="step-text">To get alerts in the inbox, open the project's alerts in Bugsink, click Add, set Kind to <span class="font-medium">Slack</span> and use this Webhook url: <code class="inline-code break-all">{{ project.errors.alertWebhookUrl }}</code>.</p>
-                <p class="step-text">Use this DSN in browser and server SDKs. Set the same stable HelpBites identity id as the Sentry user id to show a customer’s errors in their conversation.</p>
+                <p v-for="item in project.errorLinks.filter(link => link.alertWebhookUrl)" :key="item.id" class="step-text">To get {{ project.errorLinks.length > 1 ? `${item.label}'s` : '' }} alerts in the inbox, open the project's alerts in Bugsink, click Add, set Kind to <span class="font-medium">Slack</span> and use this Webhook url: <code class="inline-code break-all">{{ item.alertWebhookUrl }}</code>.</p>
+                <p class="step-text">Use this DSN in browser and server SDKs{{ project.errorLinks.length > 1 ? ` (${project.errorLinks[0]?.label})` : '' }}. Set the same stable HelpBites identity id as the Sentry user id to show a customer’s errors in their conversation.</p>
                 <CodeBlock :code="sentrySnippet" lang="js" />
+                <p v-for="item in project.errorLinks.slice(1)" :key="item.id" class="step-text">DSN for {{ item.label }}: <code class="inline-code break-all">{{ item.dsn }}</code></p>
               </template>
               <UButton v-else size="sm" icon="i-lucide-plug" label="Connect error tracking" @click="connectErrorsOpen = true" />
               <ConnectErrorTrackingModal v-model:open="connectErrorsOpen" :project-id="id" @connected="onErrorsConnected" />

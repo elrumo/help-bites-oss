@@ -66,6 +66,17 @@ Webhook url (older Bugsink has no Custom kind; HelpBites reads the Slack payload
 HelpBites talk over a private network, set `ALERTS_WEBHOOK_DENY_NON_GLOBAL=false`
 on Bugsink.
 
+### More than one tracker project
+
+A HelpBites project can report to several tracker projects (a web app and an
+API, say). Run **Connect error tracking** again from the Errors or Dev page and
+give a different **Project name**; a name that already exists in the team is
+reused. Each one has its own DSN, alert webhook URL and token. The Errors page
+shows one pill per tracker project ("All" merges each one's newest page;
+pick a pill to page further), and `GET /v1/admin/errors?link=` takes the id from
+`project.errorLinks`. Status changes and AI notes go back to the tracker project
+an alert came from.
+
 Bugsink can't search issues by Sentry user id, so a customer's recent errors
 don't show in their conversation sidebar. Status and text filters on the Errors
 page apply to each page of 250 issues.

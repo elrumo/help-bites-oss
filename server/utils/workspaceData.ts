@@ -180,7 +180,7 @@ const EXPORT_LINK_SECONDS = 7 * 24 * 3600
 
 // Credentials, not data: an export ends up in someone's downloads folder.
 const SECRET_FIELDS: Record<string, string[]> = {
-  Project: ['secret', 'actionWebhookSecret', 'eventWebhookSecret', 'errors.webhookToken', 'errorTrackers.*.token'],
+  Project: ['secret', 'actionWebhookSecret', 'eventWebhookSecret', 'errors.webhookToken', 'errors.more.*.webhookToken', 'errorTrackers.*.token'],
   AdminApiKey: ['hash'],
   EndUserSession: ['hash'],
   EndUser: ['verifyCodeHash'],

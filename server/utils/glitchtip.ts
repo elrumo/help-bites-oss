@@ -34,12 +34,11 @@ export const glitchtip: ErrorProvider = {
     return errors.slug && url ? `${url}/${org}/issues` : ''
   },
 
-  async connect(creds, project, existing, webhookUrl) {
+  async connect(creds, _project, existing, webhookUrl, name) {
     const { org, team } = creds
     await ensureTeam(creds)
     // GlitchTip derives the slug from the name and ignores one sent on create,
     // so reuse the team's project with this name or take the slug it returns.
-    const name = String(project.get('name') || `hb-${project.id}`)
     const path = `/teams/${encodeURIComponent(org)}/${encodeURIComponent(team)}/projects/`
     const { data: projects } = await gt<Array<{ slug: string, name: string }>>(creds, path)
     const slug = projects.find(row => row.name === name)?.slug || (await gt<{ slug: string }>(creds, path, { method: 'POST', body: JSON.stringify({ name }) })).data.slug

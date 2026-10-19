@@ -5,9 +5,12 @@ import { bugsink } from './bugsink'
 import { glitchtip } from './glitchtip'
 
 export type ErrorProviderId = 'glitchtip' | 'bugsink'
-/** Stored on the Project as `errors`. Rows from before Bugsink support have no `provider` and are GlitchTip;
- * rows from before in-app settings have no `issuesUrl` and build it from the env. */
-export type ErrorConfig = { provider?: ErrorProviderId, slug?: string, projectId?: string, dsn?: string, alertId?: string, webhookToken?: string, issuesUrl?: string, serverId?: string }
+/** Stored on the Project as `errors`, which is its first tracker project; further ones are in `more`. Rows from before Bugsink
+ * support have no `provider` and are GlitchTip; rows from before in-app settings have no `issuesUrl` and build it from the env.
+ * `label` is the project's name in the tracker, shown as a pill; `linkId` is set on `more` entries (the first one is `main`). */
+export type ErrorConfig = { provider?: ErrorProviderId, slug?: string, projectId?: string, dsn?: string, alertId?: string, webhookToken?: string, issuesUrl?: string, serverId?: string, label?: string, linkId?: string, more?: ErrorConfig[] }
+export type ErrorLinkView = { id: string, label: string, provider: ErrorProviderId, providerName: string, dsn: string, url: string, alertWebhookUrl: string }
+export const MAIN_LINK = 'main'
 export type IssueListInput = { status?: string, userId?: string, search?: string, cursor?: string, limit?: number }
 /** What a provider talks to: requests go to `api`, people open `url`. */
 export type TrackerCredentials = { url: string, api: string, token: string, org: string, team: string, /** Typed in by a workspace (not the server's env): fetched through the outbound guard. */ tenant?: boolean }
@@ -27,7 +30,8 @@ export interface ErrorProvider {
   issuesUrl(creds: TrackerCredentials, errors: ErrorConfig): string
   /** Teams a new project can be created under, when the tracker has them to choose from. */
   listTeams?(creds: TrackerCredentials): Promise<string[]>
-  connect(creds: TrackerCredentials, project: ParseObject, existing: ErrorConfig, webhookUrl: string): Promise<ErrorConfig>
+  /** `name` is the tracker project to create or reuse. */
+  connect(creds: TrackerCredentials, project: ParseObject, existing: ErrorConfig, webhookUrl: string, name: string): Promise<ErrorConfig>
   listIssues(creds: TrackerCredentials, errors: ErrorConfig, input: IssueListInput): Promise<{ issues: Array<Record<string, any> & { id: string }>, next: string }>
   setIssueStatus(creds: TrackerCredentials, issueId: string, statusKey: string): Promise<void>
   latestEvent(creds: TrackerCredentials, issueId: string): Promise<unknown>
@@ -52,6 +56,24 @@ export function errorConfigOf(project: ParseObject): ErrorConfig {
 
 export function providerOf(errors: ErrorConfig): ErrorProvider {
   return providers[errors.provider || 'glitchtip']
+}
+
+/** Every tracker project this HelpBites project reports to, the first as `main`. */
+export function errorLinksOf(project: ParseObject): ErrorConfig[] {
+  const { more = [], ...main } = errorConfigOf(project)
+  const name = String(project.get('name') || '')
+  return [...(main.dsn ? [{ ...main, linkId: MAIN_LINK, label: main.label || name }] : []), ...more.filter(link => link.dsn).map(link => ({ ...link, label: link.label || name }))]
+}
+
+/** One link by id; without (or with an unknown) id, the first. */
+export function errorLinkOf(project: ParseObject, linkId = ''): ErrorConfig | undefined {
+  const links = errorLinksOf(project)
+  return links.find(link => link.linkId === linkId) || links[0]
+}
+
+export function errorLinkView(project: ParseObject, link: ErrorConfig): ErrorLinkView {
+  const provider = providerOf(link)
+  return { id: link.linkId || MAIN_LINK, label: link.label || '', provider: provider.id, providerName: provider.name, dsn: String(link.dsn || ''), url: issuesUrlOf(link), alertWebhookUrl: provider.manualAlerts ? errorWebhookUrl(project, link) : '' }
 }
 
 const isComplete = (provider: ErrorProvider, settings?: TrackerSettings) => Boolean(pickTrackerSettings(provider.required, [['project', settings]]))
@@ -82,8 +104,7 @@ function credentialsFrom(provider: ErrorProvider, settings: TrackerSettings): Tr
 // A URL a workspace typed in is reached through the outbound guard; the server's own (env) is trusted.
 const serverCredentials = (server: ErrorServer): TrackerCredentials => ({ ...credentialsFrom(providers[server.provider], server), tenant: !isEnvServer(server) })
 
-async function trackerCredentials(provider: ErrorProvider, project: ParseObject): Promise<TrackerCredentials> {
-  const errors = errorConfigOf(project)
+async function trackerCredentials(provider: ErrorProvider, project: ParseObject, errors: ErrorConfig): Promise<TrackerCredentials> {
   const servers = [...await workspaceServers(pointerId(project.get('workspace'))), ...envServers()]
   if (errors.serverId) {
     const server = servers.find(item => item.id === errors.serverId)
@@ -141,10 +162,7 @@ export async function deleteErrorServer(workspace: ParseObject, id: string): Pro
   const server = servers.find(item => item.id === id)
   if (!server) throw createError({ statusCode: 404, statusMessage: 'Error tracking server not found' })
   const projects = await new (useParse()).Query('Project').equalTo('workspace', workspace).exists('errors').limit(1000).find(MASTER)
-  const using = projects.filter((project) => {
-    const errors = errorConfigOf(project)
-    return errors.dsn && (errors.serverId ? errors.serverId === id : id === `legacy-${server.provider}` && providerOf(errors).id === server.provider)
-  })
+  const using = projects.filter(project => errorLinksOf(project).some(errors => errors.serverId ? errors.serverId === id : id === `legacy-${server.provider}` && providerOf(errors).id === server.provider))
   if (using.length) throw createError({ statusCode: 409, statusMessage: `${using.length} project${using.length === 1 ? ' reports' : 's report'} to this server. Remove ${using.length === 1 ? 'its' : 'their'} error tracking first.` })
   workspace.set('settings', { ...(workspace.get('settings') as Record<string, unknown> || {}), [SERVERS_KEY]: servers.filter(item => item.id !== id) })
   await workspace.save(null, MASTER)
@@ -171,31 +189,41 @@ export async function listErrorTeams(workspaceId: string, serverId: string) {
   return { default: creds.team, teams: teams.includes(creds.team) ? teams : [creds.team, ...teams] }
 }
 
-/** Connects a project to one of its workspace's servers. Older clients name only a tracker: its first server is used. `team` overrides the tracker's default team. */
-export async function connectErrorTracking(project: ParseObject, target: { serverId?: string, providerId?: ErrorProviderId, team?: string }): Promise<ErrorConfig> {
+/** Connects a project to one of its workspace's servers; more than once adds another tracker project (`name`) next to the first.
+ * Older clients name only a tracker: its first server is used. `team` overrides the tracker's default team. */
+export async function connectErrorTracking(project: ParseObject, target: { serverId?: string, providerId?: ErrorProviderId, team?: string, name?: string }): Promise<ErrorConfig> {
   const servers = [...await workspaceServers(pointerId(project.get('workspace'))), ...envServers()]
   const server = servers.find(item => target.serverId ? item.id === target.serverId : item.provider === target.providerId)
   if (!server) throw createError({ statusCode: target.serverId ? 404 : 501, statusMessage: target.serverId ? 'Error tracking server not found' : 'That tracker is not set up. Add a server first.' })
   const provider = providers[server.provider]
-  const existing = errorConfigOf(project)
-  if (existing.dsn) {
-    if (providerOf(existing).id === provider.id && (!existing.serverId || existing.serverId === server.id)) return existing
-    throw createError({ statusCode: 409, statusMessage: `This project is already connected to ${providerOf(existing).name}` })
-  }
+  const name = target.name?.trim().slice(0, 100) || String(project.get('name') || `hb-${project.id}`)
+  const links = errorLinksOf(project)
+  const same = links.find(link => providerOf(link).id === provider.id && (!link.serverId || link.serverId === server.id) && link.label === name)
+  if (same) return same
   const creds = { ...serverCredentials(server), team: target.team?.trim().slice(0, 100) || serverCredentials(server).team }
-  const draft: ErrorConfig = { provider: provider.id, serverId: server.id, webhookToken: existing.webhookToken || randomBytes(32).toString('hex') }
-  const connected = await provider.connect(creds, project, existing, errorWebhookUrl(project, draft))
-  const errors = { ...draft, ...connected, issuesUrl: provider.issuesUrl(creds, connected) }
-  project.set('errors', errors)
+  const draft: ErrorConfig = { provider: provider.id, serverId: server.id, webhookToken: randomBytes(32).toString('hex') }
+  const connected = await provider.connect(creds, project, {}, errorWebhookUrl(project, draft), name)
+  const link: ErrorConfig = { ...draft, ...connected, label: name, issuesUrl: provider.issuesUrl(creds, connected) }
+  const main = errorConfigOf(project)
+  if (!links.length) project.set('errors', { ...link, more: main.more || [] })
+  else project.set('errors', { ...main, more: [...(main.more || []), { ...link, linkId: randomBytes(4).toString('hex') }] })
   await project.save(null, MASTER)
-  return errors
+  return errorLinksOf(project).find(item => item.webhookToken === link.webhookToken)!
 }
 
-export async function listIssues(project: ParseObject, input: IssueListInput) {
-  const errors = errorConfigOf(project)
-  if (!errors.dsn) return { issues: [], next: '' }
-  const provider = providerOf(errors)
-  return provider.listIssues(await trackerCredentials(provider, project), errors, input)
+export type ErrorIssue = Record<string, any> & { id: string, provider: ErrorProviderId, providerName: string, linkId: string, linkLabel: string }
+
+/** One link's issues, or with no `linkId` every link's first page merged newest first. ponytail: no cursor across links, so "all" shows each one's first page; pick a link to page further. */
+export async function listIssues(project: ParseObject, input: IssueListInput, linkId = ''): Promise<{ issues: ErrorIssue[], next: string }> {
+  const one = linkId ? errorLinkOf(project, linkId) : undefined
+  const links = one ? [one] : errorLinksOf(project)
+  const pages = await Promise.all(links.map(async (link) => {
+    const provider = providerOf(link)
+    const page = await provider.listIssues(await trackerCredentials(provider, project, link), link, input)
+    return { next: page.next, issues: page.issues.map((issue): ErrorIssue => ({ ...issue, provider: provider.id, providerName: provider.name, linkId: link.linkId || MAIN_LINK, linkLabel: link.label || '' })) }
+  }))
+  const issues = pages.flatMap(page => page.issues)
+  return { issues: links.length > 1 ? issues.sort((a, b) => String(b.lastSeen || '').localeCompare(String(a.lastSeen || ''))) : issues, next: links.length === 1 ? pages[0]?.next || '' : '' }
 }
 
 /** Conversations created from alerts are keyed by provider so two trackers never collide. */
@@ -203,21 +231,30 @@ export function errorConversationKey(providerId: ErrorProviderId, issueId: strin
   return `${providerId}:${issueId}`
 }
 
-/** Checks the per-project token embedded in the alert webhook URL. An unknown project gets the same 401, so the URL tells nobody which project ids exist. */
-export function verifyErrorWebhook(event: H3Event, project: ParseObject | null, providerId: ErrorProviderId): ParseObject {
-  const errors: ErrorConfig = project ? errorConfigOf(project) : {}
-  const expected = String(errors.webhookToken || '')
-  const supplied = String(getQuery(event).token || '')
-  if (!project || !expected || (errors.provider || 'glitchtip') !== providerId || expected.length !== supplied.length || !timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))) throw createError({ statusCode: 401, statusMessage: 'Invalid webhook token' })
-  return project
+/** Checks the per-link token embedded in the alert webhook URL and returns the link it belongs to. An unknown project gets the same 401, so the URL tells nobody which project ids exist. */
+export function verifyErrorWebhook(event: H3Event, project: ParseObject | null, providerId: ErrorProviderId): { project: ParseObject, link: ErrorConfig } {
+  const supplied = Buffer.from(String(getQuery(event).token || ''))
+  const link = project && errorLinksOf(project).find((item) => {
+    const expected = Buffer.from(String(item.webhookToken || ''))
+    return expected.length > 0 && providerOf(item).id === providerId && expected.length === supplied.length && timingSafeEqual(expected, supplied)
+  })
+  if (!project || !link) throw createError({ statusCode: 401, statusMessage: 'Invalid webhook token' })
+  return { project, link }
 }
 
-export async function setErrorIssueStatus(project: ParseObject, providerId: ErrorProviderId, issueId: string, statusKey: string): Promise<void> {
+async function linkCredentials(project: ParseObject, providerId: ErrorProviderId, linkId: string) {
   const provider = providers[providerId]
-  await provider.setIssueStatus(await trackerCredentials(provider, project), issueId, statusKey)
+  const link = errorLinkOf(project, linkId)
+  if (!link) throw createError({ statusCode: 404, statusMessage: 'Error tracking is not connected' })
+  return { provider, creds: await trackerCredentials(provider, project, link) }
 }
 
-export async function latestErrorEvent(project: ParseObject, providerId: ErrorProviderId, issueId: string): Promise<unknown> {
-  const provider = providers[providerId]
-  return provider.latestEvent(await trackerCredentials(provider, project), issueId)
+export async function setErrorIssueStatus(project: ParseObject, providerId: ErrorProviderId, issueId: string, statusKey: string, linkId = ''): Promise<void> {
+  const { provider, creds } = await linkCredentials(project, providerId, linkId)
+  await provider.setIssueStatus(creds, issueId, statusKey)
+}
+
+export async function latestErrorEvent(project: ParseObject, providerId: ErrorProviderId, issueId: string, linkId = ''): Promise<unknown> {
+  const { provider, creds } = await linkCredentials(project, providerId, linkId)
+  return provider.latestEvent(creds, issueId)
 }

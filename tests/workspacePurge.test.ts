@@ -172,11 +172,11 @@ describe('export lines', () => {
   test('a row keeps its data and loses its credentials', () => {
     const project = {
       objectId: 'p1', name: 'Acme', publicKey: 'pk_1', secret: 'sk_live', actionWebhookUrl: 'https://x.io/a', actionWebhookSecret: 'whsec_a', eventWebhookSecret: 'whsec_e',
-      errors: { dsn: 'https://k@glitch/1', webhookToken: 'tok' }, errorTrackers: { glitchtip: { url: 'https://glitch', token: 'gt' }, bugsink: { url: 'https://bs', token: 'bt' } },
+      errors: { dsn: 'https://k@glitch/1', webhookToken: 'tok', more: [{ dsn: 'https://k@bs/2', webhookToken: 'tok2', label: 'api' }] }, errorTrackers: { glitchtip: { url: 'https://glitch', token: 'gt' }, bugsink: { url: 'https://bs', token: 'bt' } },
       workspace: { __type: 'Pointer', className: 'Workspace', objectId: 'ws1' }
     }
     const line = exportLine('Project', project)
-    expect(line).toEqual({ class: 'Project', data: { objectId: 'p1', name: 'Acme', publicKey: 'pk_1', actionWebhookUrl: 'https://x.io/a', errors: { dsn: 'https://k@glitch/1' }, errorTrackers: { glitchtip: { url: 'https://glitch' }, bugsink: { url: 'https://bs' } }, workspace: { __type: 'Pointer', className: 'Workspace', objectId: 'ws1' } } })
+    expect(line).toEqual({ class: 'Project', data: { objectId: 'p1', name: 'Acme', publicKey: 'pk_1', actionWebhookUrl: 'https://x.io/a', errors: { dsn: 'https://k@glitch/1', more: [{ dsn: 'https://k@bs/2', label: 'api' }] }, errorTrackers: { glitchtip: { url: 'https://glitch' }, bugsink: { url: 'https://bs' } }, workspace: { __type: 'Pointer', className: 'Workspace', objectId: 'ws1' } } })
     // Pure: the row's own JSON is untouched.
     expect(project.secret).toBe('sk_live')
     expect(project.errorTrackers.glitchtip.token).toBe('gt')
