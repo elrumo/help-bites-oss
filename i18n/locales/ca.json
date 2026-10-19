@@ -1403,6 +1403,8 @@
       "openError": "No s'ha pogut obrir aquesta entrada",
       "plainText": "Text sense format",
       "previewEmail": "Previsualitza el correu",
+      "viewEmail": "Mostra el correu",
+      "templatePreviewNote": "Vista prèvia de la plantilla amb els valors amb què es va enviar. No es va desar el correu tal com es va enviar.",
       "project": "Projecte",
       "redacted": "No es guarda: els enllaços, codis i tokens no es registren",
       "refresh": "Actualitza",
@@ -2439,7 +2441,26 @@
       "writeIt": "Redacta-ho",
       "create": "Crea",
       "couldNotReadRepos": "No s'han pogut llegir els teus repositoris",
-      "couldNotLoadQuestions": "No s'han pogut carregar les preguntes"
+      "couldNotLoadQuestions": "No s'han pogut carregar les preguntes",
+      "titleImport": "Importar un document legal",
+      "modeImport": "Ja en tinc un",
+      "modeImportHint": "Enganxa el teu text actual o puja un fitxer. Les teves paraules es conserven tal qual, dividides en seccions que pots editar, i després pots analitzar-lo segons les normes.",
+      "importIntro": "Enganxa el text o puja un fitxer Markdown, HTML o de text pla. Es divideix pels seus títols; no es reescriu res i no s'envia res a una IA tret que l'analitzis.",
+      "uploadFile": "Puja un fitxer",
+      "uploadHelp": ".md, .txt o .html",
+      "pasteText": "O enganxa el text",
+      "pastePlaceholder": "Enganxa aquí el teu document actual",
+      "titleField": "Títol",
+      "titleHelp": "Es pren del text si en té.",
+      "regionsHelp": "Decideix amb quines lleis i polítiques es comprova.",
+      "analyseAfter": "Analitza'l segons les normes en importar-lo (usa IA)",
+      "reuseRegions": "Reutilitza aquestes regions en els meus altres documents",
+      "import": "Importa",
+      "fileTooLarge": "El fitxer és massa gran. Les polítiques són text; el límit és de 500 KB.",
+      "couldNotImport": "No s'ha pogut importar",
+      "reuseAnswers": "Reutilitza aquestes respostes en els meus altres documents",
+      "reuseAnswersHelp": "Si ho desactives, només es queden en aquest document. Les preguntes que només fa aquest tipus de document, com el termini de reemborsament, es fan per document en qualsevol cas.",
+      "introShared": "Respon el que correspongui. Les teves dades d'empresa desades i les respostes anteriors ja estan omplertes. És una eina de redacció, no assessorament legal."
     },
     "analyse": {
       "title": "Analitza un text legal",
@@ -3110,7 +3131,8 @@
       "restoreConfirm": "Vols substituir el text de treball per la versió {version}? Després el podràs revisar i publicar.",
       "replaceSummaryConfirm": "Vols substituir el resum que has escrit per un de generat per IA?",
       "deleteConfirm": "Vols eliminar aquest document i les seves versions? La seva pàgina pública deixarà de funcionar.",
-      "loadError": "No s'ha pogut carregar el document"
+      "loadError": "No s'ha pogut carregar el document",
+      "notMapped": "Aquest text encara no està vinculat als requisits. Executa la comprovació amb IA per veure què cobreix."
     },
     "campaign": {
       "fallbackTitle": "Campanya",

@@ -38,7 +38,7 @@
       </div>
     </div>
 
-    <LegalWizard v-model:open="wizardOpen" :project-id="id" @done="(doc) => navigateTo(`/projects/${id}/legal/${doc.id}`)" />
+    <LegalWizard v-model:open="wizardOpen" :project-id="id" @done="(doc, analyse) => navigateTo({ path: `/projects/${id}/legal/${doc.id}`, query: analyse ? { analyse: '1' } : {} })" />
     <LegalAnalyse v-model:open="analyseOpen" />
     <LegalLook v-model:open="lookOpen" :project-id="id" />
   </div>

@@ -1403,6 +1403,8 @@
       "openError": "Could not open this entry",
       "plainText": "Plain text",
       "previewEmail": "Preview the email",
+      "viewEmail": "View email",
+      "templatePreviewNote": "Template preview, rendered with the values it was sent with. The email as sent was not kept.",
       "project": "Project",
       "redacted": "Not kept: links, codes and tokens stay out of the log",
       "refresh": "Refresh",
@@ -2439,7 +2441,26 @@
       "writeIt": "Write it",
       "create": "Create",
       "couldNotReadRepos": "Could not read your repos",
-      "couldNotLoadQuestions": "Could not load the questions"
+      "couldNotLoadQuestions": "Could not load the questions",
+      "titleImport": "Import a legal document",
+      "modeImport": "I already have one",
+      "modeImportHint": "Paste your existing text or upload a file. Your words are kept as they are, split into sections you can edit, and you can analyse it against the rules afterwards.",
+      "importIntro": "Paste the text or upload a Markdown, HTML or plain text file. It is split at its headings; nothing is rewritten and nothing is sent to an AI unless you analyse it.",
+      "uploadFile": "Upload a file",
+      "uploadHelp": ".md, .txt or .html",
+      "pasteText": "Or paste the text",
+      "pastePlaceholder": "Paste your existing document here",
+      "titleField": "Title",
+      "titleHelp": "Taken from the text when it has one.",
+      "regionsHelp": "Decides which laws and policies it is checked against.",
+      "analyseAfter": "Analyse it against the rules once imported (uses AI)",
+      "reuseRegions": "Reuse these regions for my other documents",
+      "import": "Import",
+      "fileTooLarge": "That file is too large. Policies are text; the limit is 500 KB.",
+      "couldNotImport": "Could not import",
+      "reuseAnswers": "Reuse these answers for my other documents",
+      "reuseAnswersHelp": "Off keeps them with this document only. Questions only this kind of document asks, like the refund window, are asked per document either way.",
+      "introShared": "Answer what applies. Your saved company details and earlier answers are filled in. This is a drafting tool, not legal advice."
     },
     "analyse": {
       "title": "Analyse a legal text",
@@ -3110,7 +3131,8 @@
       "restoreConfirm": "Replace the working text with version {version}? You can then review and publish it.",
       "replaceSummaryConfirm": "Replace the summary you wrote with an AI-written one?",
       "deleteConfirm": "Delete this document and its versions? Its public page will stop working.",
-      "loadError": "Could not load the document"
+      "loadError": "Could not load the document",
+      "notMapped": "This text is not tied to the requirements yet. Run the AI check to see what it covers."
     },
     "campaign": {
       "fallbackTitle": "Campaign",

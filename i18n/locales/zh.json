@@ -1403,6 +1403,8 @@
       "openError": "无法打开此记录",
       "plainText": "纯文本",
       "previewEmail": "预览邮件",
+      "viewEmail": "查看邮件",
+      "templatePreviewNote": "按发送时的值渲染的模板预览。发送的原始邮件未保留。",
       "project": "项目",
       "redacted": "未保存：链接、验证码和令牌不会记入日志",
       "refresh": "刷新",
@@ -2439,7 +2441,26 @@
       "writeIt": "撰写",
       "create": "创建",
       "couldNotReadRepos": "无法读取您的代码库",
-      "couldNotLoadQuestions": "无法加载问题"
+      "couldNotLoadQuestions": "无法加载问题",
+      "titleImport": "导入法律文件",
+      "modeImport": "我已经有一份",
+      "modeImportHint": "粘贴现有文本或上传文件。内容保持原样，按章节拆分后即可编辑，之后还可以对照规则进行分析。",
+      "importIntro": "粘贴文本，或上传 Markdown、HTML 或纯文本文件。系统按标题拆分；不会改写任何内容，除非你选择分析，否则也不会发送给 AI。",
+      "uploadFile": "上传文件",
+      "uploadHelp": ".md、.txt 或 .html",
+      "pasteText": "或粘贴文本",
+      "pastePlaceholder": "在此粘贴你现有的文件",
+      "titleField": "标题",
+      "titleHelp": "文本中有标题时将自动采用。",
+      "regionsHelp": "决定对照哪些法律和政策进行检查。",
+      "analyseAfter": "导入后对照规则进行分析（使用 AI）",
+      "reuseRegions": "在我的其他文件中沿用这些地区",
+      "import": "导入",
+      "fileTooLarge": "文件太大。政策文件是文本，大小上限为 500 KB。",
+      "couldNotImport": "无法导入",
+      "reuseAnswers": "在我的其他文件中沿用这些回答",
+      "reuseAnswersHelp": "关闭后仅保留在本文件中。仅某类文件才会询问的问题（例如退款期限）无论如何都按文件分别询问。",
+      "introShared": "请回答适用的问题。已保存的公司信息和之前的回答已自动填入。这是起草工具，不构成法律意见。"
     },
     "analyse": {
       "title": "分析法律文本",
@@ -3110,7 +3131,8 @@
       "restoreConfirm": "用版本 {version} 替换当前编辑中的文本？之后可以再审阅并发布。",
       "replaceSummaryConfirm": "要用 AI 撰写的摘要替换你写的摘要吗？",
       "deleteConfirm": "删除此文档及其所有版本？其公开页面将停止工作。",
-      "loadError": "无法加载文档"
+      "loadError": "无法加载文档",
+      "notMapped": "此文本尚未与各项要求关联。运行 AI 检查即可查看其覆盖情况。"
     },
     "campaign": {
       "fallbackTitle": "营销活动",

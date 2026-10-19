@@ -1403,6 +1403,8 @@
       "openError": "No se pudo abrir esta entrada",
       "plainText": "Texto sin formato",
       "previewEmail": "Previsualizar el correo",
+      "viewEmail": "Ver correo",
+      "templatePreviewNote": "Vista previa de la plantilla con los valores con los que se envió. No se guardó el correo tal como se envió.",
       "project": "Proyecto",
       "redacted": "No se guarda: los enlaces, códigos y tokens no se incluyen en el registro",
       "refresh": "Actualizar",
@@ -2439,7 +2441,26 @@
       "writeIt": "Redactar",
       "create": "Crear",
       "couldNotReadRepos": "No se pudieron leer tus repositorios",
-      "couldNotLoadQuestions": "No se pudieron cargar las preguntas"
+      "couldNotLoadQuestions": "No se pudieron cargar las preguntas",
+      "titleImport": "Importar un documento legal",
+      "modeImport": "Ya tengo uno",
+      "modeImportHint": "Pega tu texto actual o sube un archivo. Tus palabras se conservan tal cual, divididas en secciones que puedes editar, y después puedes analizarlo según las normas.",
+      "importIntro": "Pega el texto o sube un archivo Markdown, HTML o de texto plano. Se divide por sus títulos; no se reescribe nada y no se envía nada a una IA salvo que lo analices.",
+      "uploadFile": "Subir un archivo",
+      "uploadHelp": ".md, .txt o .html",
+      "pasteText": "O pega el texto",
+      "pastePlaceholder": "Pega aquí tu documento actual",
+      "titleField": "Título",
+      "titleHelp": "Se toma del texto si lo tiene.",
+      "regionsHelp": "Decide con qué leyes y políticas se comprueba.",
+      "analyseAfter": "Analizarlo según las normas al importarlo (usa IA)",
+      "reuseRegions": "Reutilizar estas regiones en mis otros documentos",
+      "import": "Importar",
+      "fileTooLarge": "El archivo es demasiado grande. Las políticas son texto; el límite es 500 KB.",
+      "couldNotImport": "No se pudo importar",
+      "reuseAnswers": "Reutilizar estas respuestas en mis otros documentos",
+      "reuseAnswersHelp": "Si lo desactivas, se quedan solo en este documento. Las preguntas que solo hace este tipo de documento, como el plazo de reembolso, se hacen por documento en cualquier caso.",
+      "introShared": "Responde lo que corresponda. Tus datos de empresa guardados y tus respuestas anteriores ya están rellenados. Es una herramienta de redacción, no asesoramiento legal."
     },
     "analyse": {
       "title": "Analizar un texto legal",
@@ -3110,7 +3131,8 @@
       "restoreConfirm": "¿Reemplazar el texto de trabajo por la versión {version}? Después podrás revisarlo y publicarlo.",
       "replaceSummaryConfirm": "¿Reemplazar el resumen que escribiste por uno escrito por IA?",
       "deleteConfirm": "¿Eliminar este documento y sus versiones? Su página pública dejará de funcionar.",
-      "loadError": "No se pudo cargar el documento"
+      "loadError": "No se pudo cargar el documento",
+      "notMapped": "Este texto aún no está vinculado a los requisitos. Ejecuta la comprobación con IA para ver qué cubre."
     },
     "campaign": {
       "fallbackTitle": "Campaña",

@@ -74,16 +74,17 @@
           <section class="rounded-xl border border-default p-4">
             <div class="flex items-center justify-between">
               <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.legalDoc.rulesCheck') }}</h3>
-              <span v-if="coverage" class="text-xs text-muted">{{ $t('projectTools.legalDoc.covered', { covered: coverage.covered.length, total: coverage.total }) }}</span>
+              <span v-if="coverage?.mapped" class="text-xs text-muted">{{ $t('projectTools.legalDoc.covered', { covered: coverage.covered.length, total: coverage.total }) }}</span>
             </div>
             <p v-if="coverage?.unreviewedPacks.length" class="mt-2 text-xs text-warning">{{ $t('projectTools.legalDoc.unreviewed') }}</p>
-            <ul v-if="coverage?.gaps.length" class="mt-3 space-y-2">
+            <ul v-if="coverage?.mapped && coverage.gaps.length" class="mt-3 space-y-2">
               <li v-for="g in coverage.gaps" :key="g.id" class="text-[13px]">
                 <p class="text-highlighted">{{ g.summary }}</p>
                 <p class="text-xs text-dimmed">{{ g.citation }} · {{ g.severity }}</p>
               </li>
             </ul>
-            <p v-else-if="coverage" class="mt-2 text-[13px] text-muted">{{ $t('projectTools.legalDoc.allCovered') }}</p>
+            <p v-else-if="coverage?.mapped" class="mt-2 text-[13px] text-muted">{{ $t('projectTools.legalDoc.allCovered') }}</p>
+            <p v-else-if="coverage" class="mt-2 text-[13px] text-muted">{{ $t('projectTools.legalDoc.notMapped') }}</p>
             <UButton icon="i-lucide-scan-search" :label="$t('projectTools.legalDoc.checkWithAi')" size="xs" color="neutral" variant="soft" class="mt-3" :disabled="dirty" :loading="busy === 'check'" @click="checkWithAi" />
             <ul v-if="findings" class="mt-3 space-y-2">
               <li v-for="f in findings.filter(x => x.status !== 'ok')" :key="f.requirement" class="text-[13px]">
@@ -120,7 +121,7 @@ import type { LegalFinding, LegalSection } from '#shared/legal/types'
 definePageMeta({ middleware: 'agent' })
 
 type Doc = { id: string, type: any, slug: string, title: string, status: string, sections: LegalSection[], answers: any, tldr: { text: string, source: string } | null, effectiveDate: string | null, version: number, path: string }
-type Coverage = { total: number, covered: any[], gaps: { id: string, summary: string, citation: string, severity: string }[], unreviewedPacks: string[] }
+type Coverage = { total: number, covered: any[], gaps: { id: string, summary: string, citation: string, severity: string }[], unreviewedPacks: string[], mapped: boolean }
 
 const { api } = useAgent()
 const route = useRoute()
@@ -268,5 +269,9 @@ async function remove() {
   if (await run('delete', () => call('', 'DELETE'))) await navigateTo(`/projects/${id}/legal`)
 }
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  // Sent by the import wizard when the person asked to analyse what they imported.
+  if (route.query.analyse && doc.value) await checkWithAi()
+})
 </script>
