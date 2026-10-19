@@ -11,6 +11,13 @@ repos. HelpBites only ever reads them: the app asks for read-only access.
 2. Project → Settings → **GitHub repos**: pick the repos this project uses (up
    to 10, from any connected account).
 
+**What reads them.** AI error notes ([ERRORS.md](ERRORS.md)): when an error
+arrives, HelpBites lists each repo's files at its default branch, matches the
+stack-trace paths by path suffix (a path must match exactly one file), and reads
+up to 3 of them (100 KB max each; the prompt gets about 80 lines around the
+failing line). The text goes to the AI as untrusted data. Nothing is stored,
+and failures (no repos, GitHub not set up, a repo that is gone) skip silently.
+
 Changing which repos the app can see happens on GitHub (the app's installation
 settings); the lists here are read live. *Disconnect* only forgets the link in
 HelpBites; uninstall the app on GitHub to revoke access there too. A connection
