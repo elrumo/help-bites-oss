@@ -86,7 +86,9 @@ export const scoped = {
     if (projectId) await requireProject(ctx, projectId)
     return pinned(ctx, await loadChangelogEntry(ref, projectId), 'Entry not found')
   },
-  changelogRelease: async (ctx: MemberContext, id: string) => pinned(ctx, await loadChangelogRelease(id), 'Release not found')
+  changelogRelease: async (ctx: MemberContext, id: string) => pinned(ctx, await loadChangelogRelease(id), 'Release not found'),
+
+  legalDocument: async (ctx: MemberContext, id: string) => viaProject(ctx, await getLegalDocument(id), 'Document not found')
 }
 
 /** For tests: forget cached model → workspace answers. */

@@ -188,6 +188,8 @@ const SCHEMAS = {
       // Changelog options (`autoDraft`) and its entries' `#N` counter.
       changelog: { type: 'Object' },
       changelogSeq: { type: 'Number' },
+      // Legal pages: the operator's identity and the look of the hosted pages (shared/legal/config.ts).
+      legal: { type: 'Object' },
       flags: { type: 'Array' },
       errors: { type: 'Object' },
       // This project's own error tracker URLs and API tokens (see server/utils/errorTracking.ts).
@@ -827,6 +829,49 @@ const SCHEMAS = {
       project_board_items: { _p_project: 1, boardItemIds: 1 },
       project_conversations: { _p_project: 1, conversationIds: 1 },
       project_commits: { _p_project: 1, commitShas: 1 }
+    }
+  },
+  // A hosted legal document (privacy policy, terms, …) served at /legal/<publicKey>/<slug>.
+  // `sections` is the source of truth ({ id, clauseId, heading, body, source, locked, satisfies });
+  // `bodyHtml` is them rendered and sanitised once, on write. `version` counts publishes.
+  LegalDocument: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      // privacy | terms | cookies | refund
+      type: { type: 'String' },
+      // The URL key: unique within the project (checked on write, Parse can't index that).
+      slug: { type: 'String' },
+      locale: { type: 'String' },
+      title: { type: 'String' },
+      // draft | published
+      status: { type: 'String' },
+      sections: { type: 'Array' },
+      // The wizard's answers, so the document can be recomposed.
+      answers: { type: 'Object' },
+      jurisdictions: { type: 'Array' },
+      // { text, source: 'ai' | 'human' }
+      tldr: { type: 'Object' },
+      bodyHtml: { type: 'String' },
+      effectiveDate: { type: 'Date' },
+      publishedAt: { type: 'Date' },
+      version: { type: 'Number' }
+    },
+    indexes: {
+      project_slug: { _p_project: 1, slug: 1 },
+      project_type: { _p_project: 1, type: 1 }
+    }
+  },
+  // A snapshot taken each time a document is published.
+  LegalDocumentVersion: {
+    fields: {
+      document: { type: 'Pointer', targetClass: 'LegalDocument' },
+      version: { type: 'Number' },
+      snapshot: { type: 'Object' },
+      note: { type: 'String' },
+      authorName: { type: 'String' }
+    },
+    indexes: {
+      document_version: { _p_document: 1, version: -1 }
     }
   },
   // Readers' comments on a published entry. Authored by the host's own user id (the identity

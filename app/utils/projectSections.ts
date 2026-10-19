@@ -9,6 +9,7 @@ export const projectSections = [
   { path: 'feedback', label: 'Feedback', icon: 'i-lucide-lightbulb' },
   { path: 'board', label: 'Board', icon: 'i-lucide-square-kanban' },
   { path: 'changelog', label: 'Changelog', icon: 'i-lucide-scroll-text' },
+  { path: 'legal', label: 'Legal', icon: 'i-lucide-scale' },
   { path: 'email', label: 'Email', icon: 'i-lucide-mail' },
   { path: 'campaigns', label: 'Campaigns', icon: 'i-lucide-megaphone' },
   { path: 'flags', label: 'Flags', icon: 'i-lucide-toggle-right' },

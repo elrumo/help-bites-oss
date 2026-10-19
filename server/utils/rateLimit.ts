@@ -72,5 +72,8 @@ export const LIMITS = {
   anonCodesPerIp: { limit: 30, window: 3600 },
   anonConfirmPerIp: { limit: 60, window: 3600 },
   anonConfirmPerAddress: { limit: 20, window: 3600 },
-  campaignTestsPerAgent: { limit: 20, window: 600 }
+  campaignTestsPerAgent: { limit: 20, window: 600 },
+  // Hosted legal pages are read by crawlers and every app launch that links to them.
+  legalReadsPerIp: { limit: 600, window: 60 },
+  legalAiPerAgent: { limit: 10, window: 60 }
 } as const

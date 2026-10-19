@@ -5,6 +5,7 @@ import deployment from '../../docs/DEPLOYMENT.md'
 import errors from '../../docs/ERRORS.md'
 import feedback from '../../docs/FEEDBACK.md'
 import flags from '../../docs/FLAGS.md'
+import legal from '../../docs/LEGAL.md'
 
 // The text of each published guide, bundled into the server at build time (the
 // image ships .output only, never docs/). One import per entry in
@@ -14,7 +15,8 @@ const SOURCES: Record<string, string> = {
   'DEPLOYMENT.md': deployment,
   'ERRORS.md': errors,
   'FEEDBACK.md': feedback,
-  'FLAGS.md': flags
+  'FLAGS.md': flags,
+  'LEGAL.md': legal
 }
 
 const rendered = new Map<string, Promise<RenderedDoc>>()

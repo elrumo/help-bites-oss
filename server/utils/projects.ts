@@ -6,6 +6,7 @@ import { safeHttpUrl } from '#shared/support'
 import { normalizeFeedbackConfig, validateFeedbackConfig, type FeedbackBoardConfig } from '#shared/feedback'
 import { normalizeBoardConfig, validateBoardConfig, type BoardConfig } from '#shared/board'
 import { normalizeChangelogConfig, validateChangelogConfig, type ChangelogConfig } from '#shared/changelog'
+import { normalizeLegalConfig, validateLegalConfig, type LegalConfig } from '#shared/legal/config'
 import { normalizeFlags, validateFlags, type FeatureFlag } from '#shared/flags'
 import { normalizeMarketingConfig, validateMarketingConfig, type MarketingConfig } from '#shared/marketing'
 
@@ -62,6 +63,8 @@ export type AdminProject = PublicProject & {
   board: BoardConfig
   /** Changelog options. Admin-only; what the changelog shows publicly is the entries themselves. */
   changelog: ChangelogConfig
+  /** Legal pages: the operator's identity and the look of the hosted pages. Admin-only. */
+  legal: LegalConfig
   /** `alertWebhookUrl` is set only for trackers whose alerts must be pointed at HelpBites by hand. */
   errors: { connected: boolean, provider: string, providerName: string, dsn: string, url: string, alertWebhookUrl: string }
   /** Newsletter settings: topics, postal address, double opt-in, its own sender. */
@@ -219,6 +222,12 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
     project.set('changelog', config)
   }
+  if (input.legal !== undefined) {
+    // Partial, like `changelog`: only the keys sent change.
+    const { config, errors } = validateLegalConfig(input.legal, normalizeLegalConfig(project.get('legal')))
+    if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
+    project.set('legal', config)
+  }
   if (input.marketing !== undefined) {
     // Partial, like `feedback`.
     const { config, errors } = validateMarketingConfig(input.marketing, normalizeMarketingConfig(project.get('marketing')))
@@ -288,6 +297,7 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
     flags: normalizeFlags(project.get('flags')),
     board: normalizeBoardConfig(project.get('board')),
     changelog: normalizeChangelogConfig(project.get('changelog')),
+    legal: normalizeLegalConfig(project.get('legal')),
     errors: { connected: Boolean(errors.dsn), provider: errors.dsn ? tracker.id : '', providerName: errors.dsn ? tracker.name : '', dsn: String(errors.dsn || ''), url: issuesUrlOf(errors), alertWebhookUrl: errors.dsn && tracker.manualAlerts ? errorWebhookUrl(project, errors) : '' },
     marketing: normalizeMarketingConfig(project.get('marketing')),
     eventWebhookUrl: String(project.get('eventWebhookUrl') || ''),

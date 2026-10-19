@@ -53,6 +53,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'FLAGS.md'
   },
   {
+    slug: 'legal',
+    title: 'Legal documents',
+    description: 'Host your privacy policy, terms, cookie and refund policies on HelpBites: build them from reviewed clauses or with AI, check them against the rules, and link to a styled public page.',
+    group: 'Guides',
+    file: 'LEGAL.md'
+  },
+  {
     slug: 'errors',
     title: 'Error tracking',
     description: 'Connect GlitchTip or Bugsink so new errors become conversations in your inbox, tied to the customer who hit them.',

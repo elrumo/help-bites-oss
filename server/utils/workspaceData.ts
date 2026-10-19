@@ -86,6 +86,8 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   ChangelogComment: { scope: 'project' },
   ChangelogSubscription: { scope: 'project' },
   ChangelogNotifyRun: { scope: 'project' },
+  LegalDocument: { scope: 'project' },
+  LegalDocumentVersion: { scope: 'parent', parent: { field: 'document', className: 'LegalDocument' } },
   EmailFolder: { scope: 'workspace' },
   EmailComponent: { scope: 'workspace' },
   EmailTemplate: { scope: 'workspace' },
