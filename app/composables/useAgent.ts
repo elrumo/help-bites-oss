@@ -53,7 +53,7 @@ function readDemo() {
 }
 
 export function useAgent() {
-  const token = useCookie<string | null>('sb_agent', { maxAge: 60 * 60 * 24 * 30, sameSite: 'lax', default: () => null })
+  const token = useCookie<string | null>('sb_agent', { maxAge: 60 * 60 * 24 * 30, sameSite: 'lax', secure: import.meta.client && location.protocol === 'https:', default: () => null })
   const agent = useState<Agent | null>('agent', () => null)
   const projects = useState<AdminProject[]>('projects', () => [])
   const demo = useState('demo', () => import.meta.client && readDemo())
