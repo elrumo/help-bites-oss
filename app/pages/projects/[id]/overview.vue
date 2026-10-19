@@ -1,15 +1,15 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="id" title="Overview">
+    <PageHeader :project-id="id" :title="$t('sections.overview')">
       <template #actions>
-        <UTooltip text="Refresh"><UButton icon="i-lucide-refresh-cw" size="sm" color="neutral" variant="ghost" square class="text-muted" aria-label="Refresh" :loading="loading" @click="load" /></UTooltip>
+        <UTooltip :text="$t('projectPages.overview.refresh')"><UButton icon="i-lucide-refresh-cw" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('projectPages.overview.refresh')" :loading="loading" @click="load" /></UTooltip>
       </template>
     </PageHeader>
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div class="mx-auto max-w-4xl space-y-10 px-6 py-8">
         <UAlert v-if="error" color="error" variant="subtle" icon="i-lucide-circle-alert" :title="error" />
 
-        <section aria-label="At a glance">
+        <section :aria-label="$t('projectPages.overview.atAGlance')">
           <div v-if="!overview" class="grid grid-cols-2 gap-3 lg:grid-cols-4"><USkeleton v-for="n in 4" :key="n" class="h-[66px] rounded-xl" /></div>
           <div v-else class="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <NuxtLink v-for="tile in overview.stats" :key="tile.key" :to="link(tile.section)" class="rounded-xl border border-default bg-default px-4 py-3 transition-colors hover:bg-elevated/60">
@@ -20,7 +20,7 @@
         </section>
 
         <section v-if="overview" class="space-y-3">
-          <h2 class="text-[15px] font-semibold text-highlighted">Needs attention</h2>
+          <h2 class="text-[15px] font-semibold text-highlighted">{{ $t('projectPages.overview.needsAttention') }}</h2>
           <div v-if="overview.attention.length" class="divide-y divide-default overflow-hidden rounded-xl border border-default">
             <NuxtLink v-for="item in overview.attention" :key="item.key" :to="link(item.section)" class="flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-elevated/60">
               <UIcon name="i-lucide-circle-alert" class="size-4 shrink-0 text-warning" />
@@ -29,11 +29,11 @@
               <UIcon name="i-lucide-chevron-right" class="size-4 shrink-0 text-dimmed" />
             </NuxtLink>
           </div>
-          <p v-else class="flex items-center gap-2 text-sm text-muted"><UIcon name="i-lucide-circle-check" class="size-4 text-success" />All clear. Nothing needs you right now.</p>
+          <p v-else class="flex items-center gap-2 text-sm text-muted"><UIcon name="i-lucide-circle-check" class="size-4 text-success" />{{ $t('projectPages.overview.allClear') }}</p>
         </section>
 
         <section v-if="overview" class="space-y-3">
-          <h2 class="text-[15px] font-semibold text-highlighted">Status</h2>
+          <h2 class="text-[15px] font-semibold text-highlighted">{{ $t('projectPages.overview.status') }}</h2>
           <div class="divide-y divide-default overflow-hidden rounded-xl border border-default">
             <NuxtLink v-for="row in overview.health" :key="row.key" :to="link(row.section)" class="flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-elevated/60">
               <span class="size-2 shrink-0 rounded-full" :class="dots[row.state]" />
@@ -45,7 +45,7 @@
         </section>
 
         <section v-if="overview" class="space-y-3">
-          <h2 class="text-[15px] font-semibold text-highlighted">Latest activity</h2>
+          <h2 class="text-[15px] font-semibold text-highlighted">{{ $t('projectPages.overview.latestActivity') }}</h2>
           <div v-if="overview.activity.length" class="divide-y divide-default overflow-hidden rounded-xl border border-default">
             <NuxtLink v-for="item in overview.activity" :key="item.id" :to="item.conversationId ? `/inbox?c=${item.conversationId}` : link(item.section)" class="flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-elevated/60">
               <UIcon :name="iconOf(item.section)" class="size-4 shrink-0 text-muted" />
@@ -56,7 +56,7 @@
               <span class="shrink-0 text-xs text-dimmed">{{ timeAgo(item.at) }}</span>
             </NuxtLink>
           </div>
-          <EmptyState v-else icon="i-lucide-clock" title="Nothing yet" description="Conversations, feedback and finished board items will show up here." />
+          <EmptyState v-else icon="i-lucide-clock" :title="$t('projectPages.overview.nothingYet')" :description="$t('projectPages.overview.activityEmpty')" />
         </section>
       </div>
     </div>
@@ -71,6 +71,7 @@ definePageMeta({ middleware: 'agent' })
 const route = useRoute()
 const id = String(route.params.id)
 const { api } = useAgent()
+const { t } = useI18n()
 
 const overview = ref<ProjectOverview | null>(null)
 const loading = ref(false)
@@ -86,7 +87,7 @@ async function load() {
   try {
     overview.value = await api<ProjectOverview>(`/admin/projects/${id}/overview`)
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the overview'
+    error.value = e?.message || t('projectPages.overview.loadError')
   } finally {
     loading.value = false
   }

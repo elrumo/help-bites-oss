@@ -1,20 +1,20 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="id" title="Flags">
+    <PageHeader :project-id="id" :title="$t('sections.flags')">
       <template #actions>
-        <UButton icon="i-lucide-plus" label="Add flag" size="sm" @click="openEditor(-1)" />
+        <UButton icon="i-lucide-plus" :label="$t('projectPages.flags.addFlag')" size="sm" @click="openEditor(-1)" />
       </template>
     </PageHeader>
 
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div class="mx-auto max-w-3xl space-y-6 px-6 py-8">
         <div>
-          <h2 class="text-[15px] font-semibold text-highlighted">Feature flags</h2>
-          <p class="mt-1 text-[13px] text-muted">Switch features of your app on, off, or on for admins only. Your app reads them from <code class="font-mono text-xs">GET /v1/flags</code>; the Dev section shows how.</p>
+          <h2 class="text-[15px] font-semibold text-highlighted">{{ $t('projectPages.flags.featureFlags') }}</h2>
+          <p class="mt-1 text-[13px] text-muted">{{ $t('projectPages.flags.intro') }} <code class="font-mono text-xs">GET /v1/flags</code>{{ $t('projectPages.flags.introEnd') }}</p>
         </div>
 
-        <EmptyState v-if="!flags.length" icon="i-lucide-toggle-right" title="No flags yet" description="Add a flag, name it after the feature it gates, and your app can read it on its next poll." class="rounded-xl border border-dashed border-default">
-          <UButton icon="i-lucide-plus" label="Add flag" @click="openEditor(-1)" />
+        <EmptyState v-if="!flags.length" icon="i-lucide-toggle-right" :title="$t('projectPages.flags.noFlags')" :description="$t('projectPages.flags.noFlagsDescription')" class="rounded-xl border border-dashed border-default">
+          <UButton icon="i-lucide-plus" :label="$t('projectPages.flags.addFlag')" @click="openEditor(-1)" />
         </EmptyState>
 
         <ul v-else class="divide-y divide-default overflow-hidden rounded-xl border border-default">
@@ -24,13 +24,13 @@
               <p v-if="flag.description" class="truncate text-[13px] text-muted">{{ flag.description }}</p>
               <div class="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-dimmed">
                 <UBadge v-for="t in flag.targets" :key="t" :label="t" color="neutral" variant="soft" size="sm" />
-                <span v-if="flag.fallback !== 'off'">Fallback: {{ labelOf(flag.fallback) }}</span>
-                <span v-if="flag.allow.length && (flag.state === 'admins' || flag.fallback === 'admins')">+{{ flag.allow.length }} allowed</span>
+                <span v-if="flag.fallback !== 'off'">{{ $t('projectPages.flags.fallback', { state: labelOf(flag.fallback) }) }}</span>
+                <span v-if="flag.allow.length && (flag.state === 'admins' || flag.fallback === 'admins')">{{ $t('projectPages.flags.allowed', { count: flag.allow.length }) }}</span>
               </div>
             </div>
 
             <div class="ml-auto flex items-center gap-2">
-              <div class="inline-flex shrink-0 rounded-lg bg-elevated p-0.5" role="radiogroup" :aria-label="`${flag.key} state`">
+              <div class="inline-flex shrink-0 rounded-lg bg-elevated p-0.5" role="radiogroup" :aria-label="$t('projectPages.flags.stateAria', { key: flag.key })">
                 <button
                   v-for="option in stateItems"
                   :key="option.value"
@@ -45,7 +45,7 @@
                   <span class="size-1.5 rounded-full" :class="option.dot" aria-hidden="true" />{{ option.label }}
                 </button>
               </div>
-              <UButton icon="i-lucide-pencil" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="`Edit ${flag.key}`" @click="openEditor(i)" />
+              <UButton icon="i-lucide-pencil" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('projectPages.flags.editKey', { key: flag.key })" @click="openEditor(i)" />
             </div>
           </li>
         </ul>
@@ -53,35 +53,35 @@
       </div>
     </div>
 
-    <UModal v-model:open="editorOpen" :title="editing < 0 ? 'New flag' : 'Edit flag'">
+    <UModal v-model:open="editorOpen" :title="editing < 0 ? $t('projectPages.flags.newFlag') : $t('projectPages.flags.editFlag')">
       <template #body>
         <form class="space-y-4" @submit.prevent="saveEditor">
-          <UFormField label="Key" :hint="editing < 0 ? 'Can’t be changed later' : undefined">
+          <UFormField :label="$t('projectPages.flags.key')" :hint="editing < 0 ? $t('projectPages.flags.keyHint') : undefined">
             <UInput v-model="form.key" placeholder="flag_key" class="w-full font-mono" :disabled="editing >= 0" required autofocus />
           </UFormField>
-          <UFormField label="Description">
-            <UInput v-model="form.description" placeholder="What it gates" class="w-full" />
+          <UFormField :label="$t('projectPages.flags.description')">
+            <UInput v-model="form.description" :placeholder="$t('projectPages.flags.descriptionPlaceholder')" class="w-full" />
           </UFormField>
           <div class="grid gap-4 sm:grid-cols-2">
-            <UFormField label="State">
+            <UFormField :label="$t('projectPages.flags.state')">
               <USelect v-model="form.state" :items="stateItems" class="w-full" />
             </UFormField>
-            <UFormField label="If unreachable" hint="HelpBites down">
+            <UFormField :label="$t('projectPages.flags.ifUnreachable')" :hint="$t('projectPages.flags.ifUnreachableHint')">
               <USelect v-model="form.fallback" :items="stateItems" class="w-full" />
             </UFormField>
           </div>
-          <UFormField label="Targets">
+          <UFormField :label="$t('projectPages.flags.targets')">
             <UInputTags v-model="form.targets" placeholder="frontend, backend…" class="w-full" />
           </UFormField>
-          <UFormField v-if="form.state === 'admins' || form.fallback === 'admins'" label="Also on for" hint="User ids or emails treated as admins">
-            <UInputTags v-model="form.allow" placeholder="user id or email" class="w-full" />
+          <UFormField v-if="form.state === 'admins' || form.fallback === 'admins'" :label="$t('projectPages.flags.alsoOn')" :hint="$t('projectPages.flags.alsoOnHint')">
+            <UInputTags v-model="form.allow" :placeholder="$t('projectPages.flags.allowPlaceholder')" class="w-full" />
           </UFormField>
 
           <p v-if="error" class="text-sm text-error">{{ error }}</p>
           <div class="flex items-center gap-2 pt-2">
-            <UButton v-if="editing >= 0" icon="i-lucide-trash-2" label="Delete" color="error" variant="ghost" :disabled="saving" @click="remove" />
-            <UButton class="ml-auto" color="neutral" variant="ghost" label="Cancel" @click="editorOpen = false" />
-            <UButton type="submit" :label="editing < 0 ? 'Create' : 'Save'" :loading="saving" />
+            <UButton v-if="editing >= 0" icon="i-lucide-trash-2" :label="$t('projectPages.flags.delete')" color="error" variant="ghost" :disabled="saving" @click="remove" />
+            <UButton class="ml-auto" color="neutral" variant="ghost" :label="$t('common.cancel')" @click="editorOpen = false" />
+            <UButton type="submit" :label="editing < 0 ? $t('projectPages.flags.create') : $t('projectPages.flags.save')" :loading="saving" />
           </div>
         </form>
       </template>
@@ -96,16 +96,17 @@ import type { AdminProject } from '~~/server/utils/projects'
 definePageMeta({ middleware: 'agent' })
 
 const { api, projects, loadProjects } = useAgent()
+const { t } = useI18n()
 const id = String(useRoute().params.id)
 const project = computed(() => projects.value.find(p => p.id === id) || null)
 const flags = computed(() => project.value?.flags || [])
 
-const stateItems: { label: string, value: FlagState, dot: string }[] = [
-  { label: 'Off', value: 'off', dot: 'bg-error' },
-  { label: 'Admins only', value: 'admins', dot: 'bg-warning' },
-  { label: 'On', value: 'on', dot: 'bg-success' }
-]
-const labelOf = (state: FlagState) => stateItems.find(s => s.value === state)?.label
+const stateItems = computed<{ label: string, value: FlagState, dot: string }[]>(() => [
+  { label: t('projectPages.flags.off'), value: 'off', dot: 'bg-error' },
+  { label: t('projectPages.flags.adminsOnly'), value: 'admins', dot: 'bg-warning' },
+  { label: t('projectPages.flags.on'), value: 'on', dot: 'bg-success' }
+])
+const labelOf = (state: FlagState) => stateItems.value.find(s => s.value === state)?.label
 
 const saving = ref(false)
 const error = ref('')
@@ -119,7 +120,7 @@ async function persist(next: FeatureFlag[]) {
     projects.value = projects.value.map(p => (p.id === id ? result.project : p))
     return true
   } catch (e: any) {
-    error.value = e?.message || 'Could not save flags'
+    error.value = e?.message || t('projectPages.flags.saveError')
     return false
   } finally {
     saving.value = false
@@ -153,11 +154,11 @@ async function saveEditor() {
 
 async function remove() {
   const flag = flags.value[editing.value]
-  if (!flag || !confirm(`Delete “${flag.key}”? Apps reading it will treat it as off.`)) return
+  if (!flag || !confirm(t('projectPages.flags.deleteConfirm', { key: flag.key }))) return
   if (await persist(flags.value.filter((_, i) => i !== editing.value))) editorOpen.value = false
 }
 
 onMounted(() => {
-  if (!project.value) void loadProjects().catch(e => { error.value = e?.message || 'Could not load the project' })
+  if (!project.value) void loadProjects().catch(e => { error.value = e?.message || t('projectPages.flags.loadError') })
 })
 </script>

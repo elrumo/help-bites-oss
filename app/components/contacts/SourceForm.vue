@@ -15,6 +15,7 @@ const emit = defineEmits<{ saved: [] }>()
 
 const { api } = useAgent()
 const toast = useToast()
+const { t } = useI18n()
 
 const kind = ref('parse')
 const name = ref('')
@@ -48,7 +49,7 @@ watch(open, (value) => {
 })
 
 const kindItems = computed(() => props.kinds.map(k => ({ label: k.label, value: k.kind })))
-const scheduleItems = [{ label: 'Every 15 minutes', value: 15 }, { label: 'Hourly', value: 60 }, { label: 'Every 6 hours', value: 360 }, { label: 'Daily', value: 1440 }, { label: 'Only when I click Sync', value: 0 }]
+const scheduleItems = computed(() => [{ label: t('contacts.sources.every15'), value: 15 }, { label: t('contacts.sources.hourly'), value: 60 }, { label: t('contacts.sources.every6Hours'), value: 360 }, { label: t('contacts.sources.daily'), value: 1440 }, { label: t('contacts.sources.scheduleManual'), value: 0 }])
 const fieldItems = computed(() => fields.value.map(f => ({ label: f, value: f })))
 
 function secretBody(): unknown {
@@ -78,7 +79,7 @@ async function test() {
     mapping.externalId ||= kind.value === 'parse' ? 'objectId' : kind.value === 'firestore' ? 'id' : conn.idField
     mapping.name ||= pick(/^(name|fullname|displayname|username)$/)
   } catch (e: any) {
-    toast.add({ title: e?.message || 'Could not connect', color: 'error' })
+    toast.add({ title: e?.message || t('contacts.sources.connectError'), color: 'error' })
   } finally {
     testing.value = false
   }
@@ -99,7 +100,7 @@ async function save() {
     open.value = false
     emit('saved')
   } catch (e: any) {
-    toast.add({ title: e?.message || 'Could not save', color: 'error' })
+    toast.add({ title: e?.message || t('contacts.sources.saveError'), color: 'error' })
   } finally {
     saving.value = false
   }
@@ -109,34 +110,34 @@ const cell = (value: unknown) => (value === null || value === undefined ? '' : t
 </script>
 
 <template>
-  <UModal v-model:open="open" :title="source ? `Edit ${source.name}` : 'Connect a database'" description="Read only. HelpBites reads the columns you map and never writes back." :ui="{ content: 'max-w-2xl' }">
+  <UModal v-model:open="open" :title="source ? $t('contacts.sources.editTitle', { name: source.name }) : $t('contacts.sources.connect')" :description="$t('contacts.sources.formDescription')" :ui="{ content: 'max-w-2xl' }">
     <template #body>
       <form class="space-y-5 text-[13px]" @submit.prevent="save">
         <div class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="Kind"><USelect v-model="kind" :items="kindItems" value-key="value" class="w-full" :disabled="Boolean(source)" /></UFormField>
-          <UFormField label="Name"><UInput v-model="name" placeholder="App users" class="w-full" /></UFormField>
+          <UFormField :label="$t('contacts.sources.kind')"><USelect v-model="kind" :items="kindItems" value-key="value" class="w-full" :disabled="Boolean(source)" /></UFormField>
+          <UFormField :label="$t('common.name')"><UInput v-model="name" :placeholder="$t('contacts.sources.namePlaceholder')" class="w-full" /></UFormField>
         </div>
 
         <div v-if="kind === 'parse'" class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="Server URL" class="sm:col-span-2"><UInput v-model="conn.serverUrl" placeholder="https://api.example.com/parse" class="w-full" /></UFormField>
-          <UFormField label="Application id"><UInput v-model="conn.appId" class="w-full" /></UFormField>
-          <UFormField label="Class"><UInput v-model="conn.className" placeholder="_User" class="w-full font-mono" /></UFormField>
-          <UFormField label="Master key" :hint="source ? 'Blank keeps the saved one' : ''" class="sm:col-span-2"><UInput v-model="secret.masterKey" type="password" autocomplete="off" class="w-full" /></UFormField>
+          <UFormField :label="$t('contacts.sources.serverUrl')" class="sm:col-span-2"><UInput v-model="conn.serverUrl" placeholder="https://api.example.com/parse" class="w-full" /></UFormField>
+          <UFormField :label="$t('contacts.sources.appId')"><UInput v-model="conn.appId" class="w-full" /></UFormField>
+          <UFormField :label="$t('contacts.sources.className')"><UInput v-model="conn.className" placeholder="_User" class="w-full font-mono" /></UFormField>
+          <UFormField :label="$t('contacts.sources.masterKey')" :hint="source ? $t('contacts.sources.blankKeeps') : ''" class="sm:col-span-2"><UInput v-model="secret.masterKey" type="password" autocomplete="off" class="w-full" /></UFormField>
         </div>
         <div v-else-if="kind === 'postgres'" class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="Connection string" :hint="source ? 'Blank keeps the saved one' : 'A read-only user is best'" class="sm:col-span-2"><UInput v-model="secret.url" type="password" autocomplete="off" placeholder="postgres://reader:…@db.example.com:5432/app" class="w-full" /></UFormField>
-          <UFormField label="Table or view" class="sm:col-span-2"><UInput v-model="conn.table" placeholder="public.users" class="w-full font-mono" /></UFormField>
-          <UFormField label="Id column"><UInput v-model="conn.idField" class="w-full font-mono" /></UFormField>
-          <UFormField label="Updated-at column" hint="Optional; without it each run reads everything"><UInput v-model="conn.updatedField" placeholder="updated_at" class="w-full font-mono" /></UFormField>
+          <UFormField :label="$t('contacts.sources.connectionString')" :hint="source ? $t('contacts.sources.blankKeeps') : $t('contacts.sources.readOnlyHint')" class="sm:col-span-2"><UInput v-model="secret.url" type="password" autocomplete="off" placeholder="postgres://reader:…@db.example.com:5432/app" class="w-full" /></UFormField>
+          <UFormField :label="$t('contacts.sources.table')" class="sm:col-span-2"><UInput v-model="conn.table" placeholder="public.users" class="w-full font-mono" /></UFormField>
+          <UFormField :label="$t('contacts.sources.idColumn')"><UInput v-model="conn.idField" class="w-full font-mono" /></UFormField>
+          <UFormField :label="$t('contacts.sources.updatedAtColumn')" :hint="$t('contacts.sources.updatedAtHint')"><UInput v-model="conn.updatedField" placeholder="updated_at" class="w-full font-mono" /></UFormField>
         </div>
         <div v-else class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="Service account key" :hint="source ? 'Blank keeps the saved one' : 'Firebase → Project settings → Service accounts'" class="sm:col-span-2"><UTextarea v-model="secret.json" :rows="3" placeholder="{ &quot;type&quot;: &quot;service_account&quot;, … }" class="w-full font-mono text-xs" /></UFormField>
-          <UFormField label="Collection"><UInput v-model="conn.collection" class="w-full font-mono" /></UFormField>
-          <UFormField label="Updated-at field" hint="Optional"><UInput v-model="conn.updatedField" placeholder="updatedAt" class="w-full font-mono" /></UFormField>
+          <UFormField :label="$t('contacts.sources.serviceAccountKey')" :hint="source ? $t('contacts.sources.blankKeeps') : $t('contacts.sources.serviceAccountHint')" class="sm:col-span-2"><UTextarea v-model="secret.json" :rows="3" placeholder="{ &quot;type&quot;: &quot;service_account&quot;, … }" class="w-full font-mono text-xs" /></UFormField>
+          <UFormField :label="$t('contacts.sources.collection')"><UInput v-model="conn.collection" class="w-full font-mono" /></UFormField>
+          <UFormField :label="$t('contacts.sources.updatedAtField')" :hint="$t('contacts.form.optional')"><UInput v-model="conn.updatedField" placeholder="updatedAt" class="w-full font-mono" /></UFormField>
         </div>
 
         <div class="flex justify-end">
-          <UButton :label="fields.length ? 'Connect again' : 'Connect'" icon="i-lucide-plug" color="neutral" variant="outline" :loading="testing" @click="test" />
+          <UButton :label="fields.length ? $t('contacts.sources.connectAgain') : $t('contacts.sources.connectButton')" icon="i-lucide-plug" color="neutral" variant="outline" :loading="testing" @click="test" />
         </div>
 
         <template v-if="fields.length">
@@ -148,27 +149,27 @@ const cell = (value: unknown) => (value === null || value === undefined ? '' : t
           </div>
 
           <div class="grid gap-3 sm:grid-cols-2">
-            <UFormField label="Email"><OptionalSelect v-model="mapping.email" :items="fieldItems" class="w-full" /></UFormField>
-            <UFormField label="User id" hint="The sub of your identity tokens"><OptionalSelect v-model="mapping.externalId" :items="fieldItems" class="w-full" /></UFormField>
-            <UFormField label="Name"><OptionalSelect v-model="mapping.name" :items="fieldItems" class="w-full" /></UFormField>
-            <UFormField label="Tags"><OptionalSelect v-model="mapping.tags" :items="fieldItems" class="w-full" /></UFormField>
-            <UFormField label="Opted in" hint="A true/false column"><OptionalSelect v-model="mapping.subscribed" :items="fieldItems" class="w-full" /></UFormField>
-            <UFormField label="Sync"><USelect v-model="everyMinutes" :items="scheduleItems" value-key="value" class="w-full" /></UFormField>
+            <UFormField :label="$t('contacts.form.email')"><OptionalSelect v-model="mapping.email" :items="fieldItems" class="w-full" /></UFormField>
+            <UFormField :label="$t('contacts.form.userId')" :hint="$t('contacts.sources.userIdHint')"><OptionalSelect v-model="mapping.externalId" :items="fieldItems" class="w-full" /></UFormField>
+            <UFormField :label="$t('common.name')"><OptionalSelect v-model="mapping.name" :items="fieldItems" class="w-full" /></UFormField>
+            <UFormField :label="$t('contacts.form.tags')"><OptionalSelect v-model="mapping.tags" :items="fieldItems" class="w-full" /></UFormField>
+            <UFormField :label="$t('contacts.sources.optedIn')" :hint="$t('contacts.sources.optedInHint')"><OptionalSelect v-model="mapping.subscribed" :items="fieldItems" class="w-full" /></UFormField>
+            <UFormField :label="$t('contacts.sources.sync')"><USelect v-model="everyMinutes" :items="scheduleItems" value-key="value" class="w-full" /></UFormField>
           </div>
-          <UFormField label="Keep as attributes">
+          <UFormField :label="$t('contacts.sources.keepAsAttributes')">
             <UCheckboxGroup v-model="asAttributes" :items="attributeColumns.map(c => ({ label: c, value: c }))" orientation="horizontal" class="flex-wrap" />
           </UFormField>
           <URadioGroup
             v-if="!mapping.subscribed"
             v-model="consent"
-            :items="[{ label: 'Leave marketing consent as it is', value: 'keep' }, { label: 'Everyone here agreed to marketing email', value: 'subscribed', description: 'Recorded as their consent. Nobody who unsubscribed is subscribed again.' }]"
+            :items="[{ label: $t('contacts.sources.consentKeep'), value: 'keep' }, { label: $t('contacts.sources.consentSubscribed'), value: 'subscribed', description: $t('contacts.sources.consentSubscribedDescription') }]"
           />
-          <p v-if="!mapping.email && !mapping.externalId" class="text-error">Map the email or the user id.</p>
+          <p v-if="!mapping.email && !mapping.externalId" class="text-error">{{ $t('contacts.sources.mapRequired') }}</p>
         </template>
 
         <div class="flex justify-end gap-2 border-t border-default pt-4">
-          <UButton color="neutral" variant="ghost" @click="open = false">Cancel</UButton>
-          <UButton type="submit" :loading="saving" :disabled="!fields.length || (!mapping.email && !mapping.externalId)">{{ source ? 'Save' : 'Save and sync' }}</UButton>
+          <UButton color="neutral" variant="ghost" @click="open = false">{{ $t('common.cancel') }}</UButton>
+          <UButton type="submit" :loading="saving" :disabled="!fields.length || (!mapping.email && !mapping.externalId)">{{ source ? $t('contacts.save') : $t('contacts.sources.saveAndSync') }}</UButton>
         </div>
       </form>
     </template>

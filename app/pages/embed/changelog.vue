@@ -6,15 +6,15 @@
         <span v-else class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-500 text-sm font-semibold text-white" aria-hidden="true">{{ initials }}</span>
         <div class="min-w-0 flex-1">
           <h1 class="truncate text-[17px] font-semibold leading-tight">{{ title }}</h1>
-          <p class="line-clamp-2 text-[13px] text-stone-500 dark:text-stone-400">New features, improvements and fixes, newest first.</p>
+          <p class="line-clamp-2 text-[13px] text-stone-500 dark:text-stone-400">{{ $t('embed.changelog.description') }}</p>
         </div>
       </div>
     </header>
 
     <main class="mx-auto max-w-3xl px-4 py-4">
       <p v-if="error" class="py-12 text-center text-sm text-stone-500">{{ error }}</p>
-      <div v-else-if="loading" class="py-12 text-center text-sm text-stone-500">Loading…</div>
-      <EmptyState v-else-if="!items.length" icon="i-lucide-sparkles" title="Nothing shipped yet" description="What we ship shows up here." />
+      <div v-else-if="loading" class="py-12 text-center text-sm text-stone-500">{{ $t('embed.loading') }}</div>
+      <EmptyState v-else-if="!items.length" icon="i-lucide-sparkles" :title="$t('embed.changelog.empty')" :description="$t('embed.changelog.emptyDescription')" />
       <ol v-else class="relative space-y-8 border-l border-stone-200 pl-5 dark:border-stone-800">
         <li v-for="item in items" :key="item.kind === 'release' ? `r-${item.release.id}` : `e-${item.entry.id}`" class="relative">
           <span class="absolute -left-[27px] top-1 grid size-3.5 place-items-center rounded-full bg-primary-600 ring-4 ring-stone-50 dark:ring-stone-950" aria-hidden="true" />
@@ -34,7 +34,7 @@
     </main>
 
     <p v-if="projectInfo?.poweredBy" class="py-3 text-center text-[11px] leading-tight">
-      <a :href="projectInfo.poweredBy.url" target="_blank" rel="noopener" class="text-dimmed transition-colors hover:text-muted">Powered by HelpBites</a>
+      <a :href="projectInfo.poweredBy.url" target="_blank" rel="noopener" class="text-dimmed transition-colors hover:text-muted">{{ $t('embed.poweredBy') }}</a>
     </p>
   </div>
 </template>
@@ -60,6 +60,7 @@ if (['light', 'dark', 'system'].includes(themeParam)) colorMode.preference = the
 
 type ProjectInfo = { name: string, theme: { accent?: string }, brandLogoUrl: string, poweredBy?: { url: string } | null }
 
+const { t } = useI18n()
 const rootRef = ref<HTMLElement | null>(null)
 const projectInfo = ref<ProjectInfo | null>(null)
 const changelog = ref<PublicChangelog>({ releases: [], entries: [] })
@@ -67,7 +68,7 @@ const loading = ref(true)
 const error = ref('')
 
 const items = computed(() => changelogTimeline(changelog.value))
-const title = computed(() => (projectInfo.value?.name ? `${projectInfo.value.name} changelog` : 'Changelog'))
+const title = computed(() => (projectInfo.value?.name ? t('embed.changelog.namedTitle', { name: projectInfo.value.name }) : t('embed.changelog.title')))
 const initials = computed(() => (projectInfo.value?.name || 'C').trim().slice(0, 1).toUpperCase())
 
 // Nuxt UI's theme is `inline`: derive the shades from the project accent.
@@ -94,7 +95,7 @@ onMounted(async () => {
     if (rootRef.value) resizeObserver.observe(rootRef.value)
   }
   if (!pk) {
-    error.value = 'Missing project key. Check the data-project attribute on the changelog script.'
+    error.value = t('embed.changelog.missingKey')
     loading.value = false
     return
   }
@@ -110,7 +111,7 @@ onMounted(async () => {
     const anchor = decodeURIComponent(location.hash.slice(1))
     if (anchor) document.getElementById(anchor)?.scrollIntoView()
   } catch (e: any) {
-    error.value = e?.statusCode === 404 ? 'This project has no public changelog.' : 'The changelog could not be loaded.'
+    error.value = e?.statusCode === 404 ? t('embed.changelog.none') : t('embed.changelog.loadFailed')
   } finally {
     loading.value = false
   }

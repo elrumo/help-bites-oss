@@ -13,6 +13,7 @@ const props = defineProps<{ project: AdminProject }>()
 const { api, projects } = useAgent()
 const toast = useToast()
 const appUrl = useAppUrl()
+const { t } = useI18n()
 
 const form = reactive<MarketingConfig>(JSON.parse(JSON.stringify(props.project.marketing)))
 const webhookUrl = ref(props.project.eventWebhookUrl)
@@ -31,9 +32,9 @@ async function save() {
     const i = projects.value.findIndex(p => p.id === project.id)
     if (i >= 0) projects.value[i] = project
     webhookSecret.value = ''
-    toast.add({ title: 'Saved', color: 'success' })
+    toast.add({ title: t('common.saved'), color: 'success' })
   } catch (e: any) {
-    toast.add({ title: e?.message || 'Could not save', color: 'error' })
+    toast.add({ title: e?.message || t('campaigns.settings.saveError'), color: 'error' })
   } finally {
     saving.value = false
   }
@@ -50,60 +51,60 @@ const snippet = computed(() => `<form action="${appUrl.value}/v1/subscribe" meth
 
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="project.id" title="Campaigns">
+    <PageHeader :project-id="project.id" :title="$t('campaigns.title')">
       <template #title><CampaignsTabs current="settings" /></template>
-      <template #actions><UButton label="Save" size="sm" :loading="saving" @click="save" /></template>
+      <template #actions><UButton :label="$t('campaigns.save')" size="sm" :loading="saving" @click="save" /></template>
     </PageHeader>
 
     <div class="min-h-0 flex-1 overflow-y-auto">
       <form class="mx-auto max-w-2xl space-y-8 px-6 py-6 text-[13px]" @submit.prevent="save">
         <section class="space-y-3">
-          <h2 class="text-sm font-semibold text-highlighted">Required in every campaign</h2>
-          <UFormField label="Postal address" hint="Shown as {{project.address}}; the law requires it in marketing email">
+          <h2 class="text-sm font-semibold text-highlighted">{{ $t('campaigns.settings.required') }}</h2>
+          <UFormField :label="$t('campaigns.settings.postalAddress')" :hint="$t('campaigns.settings.postalAddressHint')">
             <UInput v-model="form.postalAddress" placeholder="Acme Inc, 1 Main Street, Lisbon, Portugal" class="w-full" />
           </UFormField>
         </section>
 
         <section class="space-y-3">
           <div class="flex items-center gap-2">
-            <h2 class="flex-1 text-sm font-semibold text-highlighted">Topics</h2>
-            <UButton icon="i-lucide-plus" label="Topic" size="xs" color="neutral" variant="ghost" @click="addTopic" />
+            <h2 class="flex-1 text-sm font-semibold text-highlighted">{{ $t('campaigns.settings.topics') }}</h2>
+            <UButton icon="i-lucide-plus" :label="$t('campaigns.settings.topic')" size="xs" color="neutral" variant="ghost" @click="addTopic" />
           </div>
-          <p class="text-muted">Newsletters people can opt out of one by one on their preferences page. A campaign can go to one topic's readers.</p>
-          <p v-if="!form.topics.length" class="text-xs text-dimmed">No topics: one list for everything.</p>
+          <p class="text-muted">{{ $t('campaigns.settings.topicsIntro') }}</p>
+          <p v-if="!form.topics.length" class="text-xs text-dimmed">{{ $t('campaigns.settings.noTopics') }}</p>
           <div v-for="(t, i) in form.topics" :key="i" class="grid grid-cols-[1fr_8rem_auto] gap-1.5">
-            <UInput v-model="t.name" placeholder="Product updates" size="sm" @blur="keyFor(t)" />
-            <UInput v-model="t.key" placeholder="key" size="sm" class="font-mono" />
-            <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square aria-label="Remove topic" @click="form.topics.splice(i, 1)" />
-            <UInput v-model="t.description" placeholder="What it is, in a line" size="sm" class="col-span-2" />
+            <UInput v-model="t.name" :placeholder="$t('campaigns.settings.topicNamePlaceholder')" size="sm" @blur="keyFor(t)" />
+            <UInput v-model="t.key" :placeholder="$t('campaigns.settings.topicKeyPlaceholder')" size="sm" class="font-mono" />
+            <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square :aria-label="$t('campaigns.settings.removeTopic')" @click="form.topics.splice(i, 1)" />
+            <UInput v-model="t.description" :placeholder="$t('campaigns.settings.topicDescriptionPlaceholder')" size="sm" class="col-span-2" />
           </div>
         </section>
 
         <section class="space-y-3">
-          <h2 class="text-sm font-semibold text-highlighted">Sign-up form</h2>
-          <USwitch v-model="form.doubleOptIn" label="Double opt-in" description="New sign-ups confirm by email before they get anything. Strongly recommended." />
-          <UFormField label="After signing up, go to" hint="Optional; otherwise a HelpBites thank-you page">
+          <h2 class="text-sm font-semibold text-highlighted">{{ $t('campaigns.settings.signupForm') }}</h2>
+          <USwitch v-model="form.doubleOptIn" :label="$t('campaigns.settings.doubleOptIn')" :description="$t('campaigns.settings.doubleOptInDescription')" />
+          <UFormField :label="$t('campaigns.settings.redirect')" :hint="$t('campaigns.settings.redirectHint')">
             <UInput v-model="form.confirmRedirectUrl" placeholder="https://example.com/thanks" class="w-full" />
           </UFormField>
-          <UFormField label="Hosted sign-up page"><UInput :model-value="signupUrl" readonly class="w-full font-mono text-xs" /></UFormField>
-          <UFormField label="Or a form on your site"><UTextarea :model-value="snippet" readonly :rows="6" class="w-full font-mono text-xs" /></UFormField>
+          <UFormField :label="$t('campaigns.settings.hostedPage')"><UInput :model-value="signupUrl" readonly class="w-full font-mono text-xs" /></UFormField>
+          <UFormField :label="$t('campaigns.settings.siteForm')"><UTextarea :model-value="snippet" readonly :rows="6" class="w-full font-mono text-xs" /></UFormField>
         </section>
 
         <section class="space-y-3">
-          <h2 class="text-sm font-semibold text-highlighted">Sender</h2>
-          <p class="text-muted">Optional. A separate domain keeps newsletter reputation apart from support and account email. It must be a sending domain of the same Mailgun account.</p>
+          <h2 class="text-sm font-semibold text-highlighted">{{ $t('campaigns.settings.sender') }}</h2>
+          <p class="text-muted">{{ $t('campaigns.settings.senderIntro') }}</p>
           <div class="grid gap-3 sm:grid-cols-3">
-            <UFormField label="From name"><UInput v-model="form.fromName" :placeholder="project.fromName || project.name" class="w-full" /></UFormField>
-            <UFormField label="From address"><UInput v-model="form.fromEmail" placeholder="news@news.example.com" class="w-full" /></UFormField>
-            <UFormField label="Mailgun domain"><UInput v-model="form.mailDomain" placeholder="news.example.com" class="w-full" /></UFormField>
+            <UFormField :label="$t('campaigns.settings.fromName')"><UInput v-model="form.fromName" :placeholder="project.fromName || project.name" class="w-full" /></UFormField>
+            <UFormField :label="$t('campaigns.settings.fromAddress')"><UInput v-model="form.fromEmail" placeholder="news@news.example.com" class="w-full" /></UFormField>
+            <UFormField :label="$t('campaigns.settings.mailDomain')"><UInput v-model="form.mailDomain" placeholder="news.example.com" class="w-full" /></UFormField>
           </div>
         </section>
 
         <section class="space-y-3">
-          <h2 class="text-sm font-semibold text-highlighted">Event webhook</h2>
-          <p class="text-muted">HelpBites never writes to your database. It tells your app instead: <code class="font-mono">contact.subscription_changed</code> and <code class="font-mono">email.suppressed</code>, signed like the action webhook (<code class="font-mono">x-helpbites-signature</code>), retried for a day.</p>
+          <h2 class="text-sm font-semibold text-highlighted">{{ $t('campaigns.settings.webhook') }}</h2>
+          <p class="text-muted">{{ $t('campaigns.settings.webhookIntro') }} <code class="font-mono">contact.subscription_changed</code> {{ $t('campaigns.settings.and') }} <code class="font-mono">email.suppressed</code>{{ $t('campaigns.settings.signedLike') }} (<code class="font-mono">x-helpbites-signature</code>){{ $t('campaigns.settings.retried') }}</p>
           <UFormField label="URL"><UInput v-model="webhookUrl" placeholder="https://api.example.com/hooks/helpbites" class="w-full" /></UFormField>
-          <UFormField label="Signing secret" :hint="project.hasEventWebhookSecret ? 'Set; type a new one to replace it' : '16+ characters'"><UInput v-model="webhookSecret" type="password" autocomplete="off" class="w-full" /></UFormField>
+          <UFormField :label="$t('campaigns.settings.signingSecret')" :hint="project.hasEventWebhookSecret ? $t('campaigns.settings.secretSet') : $t('campaigns.settings.secretLength')"><UInput v-model="webhookSecret" type="password" autocomplete="off" class="w-full" /></UFormField>
         </section>
       </form>
     </div>

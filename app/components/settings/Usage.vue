@@ -4,20 +4,20 @@
     <template v-else-if="snapshot">
       <div class="flex items-center gap-3">
         <div class="min-w-0 flex-1">
-          <p class="text-[15px] font-semibold text-highlighted">{{ snapshot.plan.name }} plan</p>
-          <p class="mt-1 text-[13px] text-muted">Monthly counts start over on the 1st, and daily ones at midnight (UTC).</p>
+          <p class="text-[15px] font-semibold text-highlighted">{{ $t('workspaceSettings.usage.planName', { name: snapshot.plan.name }) }}</p>
+          <p class="mt-1 text-[13px] text-muted">{{ $t('workspaceSettings.usage.resetNote') }}</p>
         </div>
-        <UButton v-if="upgrade" label="Upgrade" size="sm" @click="upgrade?.()" />
+        <UButton v-if="upgrade" :label="$t('workspaceSettings.upgrade')" size="sm" @click="upgrade?.()" />
       </div>
 
       <div v-if="rows.length" class="space-y-2">
-        <p class="section-label">Usage</p>
+        <p class="section-label">{{ $t('workspaceSettings.usage.usage') }}</p>
         <ul class="divide-y divide-default overflow-hidden rounded-xl border border-default">
           <li v-for="row in rows" :key="row.metric" class="space-y-2 px-4 py-3">
             <div class="flex items-center gap-2">
               <span class="min-w-0 truncate text-[13px] font-medium text-highlighted">{{ row.label }}</span>
-              <UTooltip v-if="row.soft" text="Counted, but going past it never stops anything">
-                <UBadge size="xs" color="neutral" variant="subtle">Soft</UBadge>
+              <UTooltip v-if="row.soft" :text="$t('workspaceSettings.usage.softTooltip')">
+                <UBadge size="xs" color="neutral" variant="subtle">{{ $t('workspaceSettings.usage.soft') }}</UBadge>
               </UTooltip>
               <span class="ml-auto shrink-0 text-xs tabular-nums text-muted">{{ row.used }} / {{ row.limit }}</span>
             </div>
@@ -27,7 +27,7 @@
       </div>
 
       <div class="space-y-2">
-        <p class="section-label">Included</p>
+        <p class="section-label">{{ $t('workspaceSettings.usage.included') }}</p>
         <ul class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
           <li v-for="item in included" :key="item.label" class="flex items-center gap-2 text-[13px]" :class="item.on ? 'text-default' : 'text-muted'">
             <UIcon :name="item.on ? 'i-lucide-check' : 'i-lucide-x'" class="size-4 shrink-0" :class="item.on ? 'text-primary' : 'text-dimmed'" />
@@ -48,6 +48,7 @@ import type { UsageSnapshot } from '~~/server/utils/usage'
 // features it includes. Only shown when the plan has limits at all.
 const { api } = useAgent()
 const { upgrade } = editionUi()
+const { t } = useI18n()
 const snapshot = ref<UsageSnapshot | null>(null)
 const loading = ref(true)
 const error = ref('')
@@ -61,7 +62,7 @@ const rows = computed(() => {
     const limit = s.limits[metric]
     if (limit === null) return []
     const used = s.usage[metric] || 0
-    const label = metric === 'storageBytes' ? 'Storage' : METRIC_LABELS[metric].many.replace(/^./, c => c.toUpperCase())
+    const label = metric === 'storageBytes' ? t('workspaceSettings.usage.storage') : METRIC_LABELS[metric].many.replace(/^./, c => c.toUpperCase())
     return [{ metric, label, used: amount(metric, used), limit: amount(metric, limit), percent: limit ? Math.min(100, Math.round(used / limit * 100)) : 100, soft: !!s.soft[metric] }]
   })
 })
@@ -71,8 +72,8 @@ const included = computed(() => {
   if (!s) return []
   return [
     ...FEATURES.map(feature => ({ label: FEATURE_LABELS[feature], on: s.features[feature] })),
-    ...(s.apiPerMinute !== null ? [{ label: `Admin API: ${s.apiPerMinute.toLocaleString('en-US')} requests a minute`, on: true }] : []),
-    ...(s.emailLogDays !== null ? [{ label: `Email log kept for ${s.emailLogDays} days`, on: true }] : [])
+    ...(s.apiPerMinute !== null ? [{ label: t('workspaceSettings.usage.apiPerMinute', { count: s.apiPerMinute.toLocaleString('en-US') }), on: true }] : []),
+    ...(s.emailLogDays !== null ? [{ label: t('workspaceSettings.usage.emailLog', { count: s.emailLogDays }), on: true }] : [])
   ]
 })
 
@@ -80,7 +81,7 @@ onMounted(async () => {
   try {
     snapshot.value = await api<UsageSnapshot>('/admin/usage')
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the plan\'s usage'
+    error.value = e?.message || t('workspaceSettings.usage.loadFailed')
   }
   loading.value = false
 })

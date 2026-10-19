@@ -1,37 +1,37 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader title="Team">
+    <PageHeader :title="$t('admin.agents.title')">
       <template #actions>
-        <UButton icon="i-lucide-user-plus" label="Add teammate" color="neutral" variant="outline" size="sm" @click="showTeammate = true" />
-        <UButton icon="i-lucide-bot" label="New AI agent" size="sm" :disabled="!projects.length" @click="showAssistant = true" />
+        <UButton icon="i-lucide-user-plus" :label="$t('admin.agents.addTeammate')" color="neutral" variant="outline" size="sm" @click="showTeammate = true" />
+        <UButton icon="i-lucide-bot" :label="$t('admin.agents.newAi')" size="sm" :disabled="!projects.length" @click="showAssistant = true" />
       </template>
     </PageHeader>
-    <div class="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-default px-4 py-2.5" role="tablist" aria-label="Agent type">
+    <div class="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-default px-4 py-2.5" role="tablist" :aria-label="$t('admin.agents.agentType')">
       <button v-for="item in tabs" :key="item.key" type="button" role="tab" :aria-selected="tab === item.key" class="chip h-6 px-2.5 text-xs" :class="tab === item.key ? 'chip-active' : ''" @click="tab = item.key">{{ item.label }}<span class="tabular-nums text-dimmed">{{ item.count }}</span></button>
-      <UInput v-model="query" icon="i-lucide-search" size="sm" class="ml-auto w-52" placeholder="Search" />
+      <UInput v-model="query" icon="i-lucide-search" size="sm" class="ml-auto w-52" :placeholder="$t('common.search')" />
     </div>
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div class="mx-auto max-w-5xl space-y-7 px-4 py-6 sm:px-8">
         <div v-if="loading" class="space-y-3"><USkeleton v-for="i in 5" :key="i" class="h-16 rounded-xl" /></div>
-        <EmptyState v-else-if="!visibleRows.length" icon="i-lucide-users-round" title="No matching agents" description="Try a different filter, or add a teammate or AI agent." />
+        <EmptyState v-else-if="!visibleRows.length" icon="i-lucide-users-round" :title="$t('admin.agents.noMatch')" :description="$t('admin.agents.noMatchHint')" />
         <div v-else class="overflow-hidden rounded-xl border border-default">
           <div v-for="row in visibleRows" :key="`${row.kind}-${row.id}`" class="flex min-h-14 items-center gap-3 border-b border-default px-4 last:border-b-0">
             <span class="grid size-7 shrink-0 place-items-center rounded-full" :class="row.kind === 'ai' ? 'bg-primary/10 text-primary' : 'bg-elevated text-toned'"><UIcon v-if="row.kind === 'ai'" name="i-lucide-bot" class="size-4" /><span v-else class="text-[11px] font-semibold">{{ row.initials }}</span></span>
-            <div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><NuxtLink v-if="row.kind === 'ai'" :to="`/assistants/${row.id}`" class="truncate font-semibold text-highlighted hover:text-primary">{{ row.name }}</NuxtLink><p v-else class="truncate font-semibold text-highlighted">{{ row.name }}</p><UBadge size="xs" :color="row.kind === 'ai' ? 'primary' : 'neutral'" variant="subtle">{{ row.kind === 'ai' ? 'AI agent' : 'Teammate' }}</UBadge><span v-if="row.isMe" class="text-xs text-muted">You</span></div><p class="mt-0.5 truncate text-sm text-muted">{{ row.detail }}</p></div>
-            <div class="hidden text-right text-xs text-muted sm:block"><p>{{ row.project }}</p><p class="mt-1 capitalize">{{ row.status }}</p></div>
-            <UButton v-if="row.kind === 'ai'" :to="`/assistants/${row.id}`" icon="i-lucide-arrow-up-right" color="neutral" variant="ghost" square aria-label="Configure AI agent" />
-            <UButton v-else-if="!row.isMe" icon="i-lucide-trash-2" color="error" variant="ghost" square aria-label="Remove teammate" @click="removeTeammate(row)" />
+            <div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><NuxtLink v-if="row.kind === 'ai'" :to="`/assistants/${row.id}`" class="truncate font-semibold text-highlighted hover:text-primary">{{ row.name }}</NuxtLink><p v-else class="truncate font-semibold text-highlighted">{{ row.name }}</p><UBadge size="xs" :color="row.kind === 'ai' ? 'primary' : 'neutral'" variant="subtle">{{ row.kind === 'ai' ? $t('admin.agents.aiAgent') : $t('admin.agents.teammate') }}</UBadge><span v-if="row.isMe" class="text-xs text-muted">{{ $t('admin.agents.you') }}</span></div><p class="mt-0.5 truncate text-sm text-muted">{{ row.detail }}</p></div>
+            <div class="hidden text-right text-xs text-muted sm:block"><p>{{ row.project }}</p><p class="mt-1 capitalize">{{ $t(`admin.statuses.${row.status}`) }}</p></div>
+            <UButton v-if="row.kind === 'ai'" :to="`/assistants/${row.id}`" icon="i-lucide-arrow-up-right" color="neutral" variant="ghost" square :aria-label="$t('admin.agents.configureAi')" />
+            <UButton v-else-if="!row.isMe" icon="i-lucide-trash-2" color="error" variant="ghost" square :aria-label="$t('admin.agents.removeTeammate')" @click="removeTeammate(row)" />
           </div>
         </div>
       </div>
     </div>
 
-    <UModal v-model:open="showTeammate" title="Add teammate" description="Create a teammate account for someone who will work in the support inbox.">
-      <template #body><form class="space-y-4" @submit.prevent="createTeammate"><div class="grid gap-4 sm:grid-cols-2"><UFormField label="Name"><UInput v-model="teammateForm.name" class="w-full" /></UFormField><UFormField label="Email" hint="Optional"><UInput v-model="teammateForm.email" type="email" class="w-full" /></UFormField><UFormField label="Username"><UInput v-model="teammateForm.username" class="w-full" required autocomplete="off" /></UFormField><UFormField label="Password" hint="At least 8 characters"><UInput v-model="teammateForm.password" type="password" class="w-full" required minlength="8" autocomplete="new-password" /></UFormField></div><p v-if="error" class="text-sm text-error">{{ error }}</p><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" @click="showTeammate = false">Cancel</UButton><UButton type="submit" :loading="saving">Add teammate</UButton></div></form></template>
+    <UModal v-model:open="showTeammate" :title="$t('admin.agents.addTeammate')" :description="$t('admin.agents.addTeammateHint')">
+      <template #body><form class="space-y-4" @submit.prevent="createTeammate"><div class="grid gap-4 sm:grid-cols-2"><UFormField :label="$t('common.name')"><UInput v-model="teammateForm.name" class="w-full" /></UFormField><UFormField :label="$t('login.email')" :hint="$t('admin.optional')"><UInput v-model="teammateForm.email" type="email" class="w-full" /></UFormField><UFormField :label="$t('login.username')"><UInput v-model="teammateForm.username" class="w-full" required autocomplete="off" /></UFormField><UFormField :label="$t('login.password')" :hint="$t('login.passwordHint')"><UInput v-model="teammateForm.password" type="password" class="w-full" required minlength="8" autocomplete="new-password" /></UFormField></div><p v-if="error" class="text-sm text-error">{{ error }}</p><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" @click="showTeammate = false">{{ $t('common.cancel') }}</UButton><UButton type="submit" :loading="saving">{{ $t('admin.agents.addTeammate') }}</UButton></div></form></template>
     </UModal>
 
-    <UModal v-model:open="showAssistant" title="New AI agent" description="Start with a focused project and configure its knowledge access afterwards.">
-      <template #body><form class="space-y-4" @submit.prevent="createAssistant"><UFormField label="Project"><USelect v-model="assistantForm.projectId" :items="assistantProjectItems" class="w-full" /></UFormField><UFormField label="Name"><UInput v-model="assistantForm.name" class="w-full" required /></UFormField><UFormField label="Description" hint="Optional"><UTextarea v-model="assistantForm.description" class="w-full" :rows="3" /></UFormField><p v-if="error" class="text-sm text-error">{{ error }}</p><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" @click="showAssistant = false">Cancel</UButton><UButton type="submit" :loading="saving">Create AI agent</UButton></div></form></template>
+    <UModal v-model:open="showAssistant" :title="$t('admin.agents.newAi')" :description="$t('admin.agents.newAiHint')">
+      <template #body><form class="space-y-4" @submit.prevent="createAssistant"><UFormField :label="$t('admin.project')"><USelect v-model="assistantForm.projectId" :items="assistantProjectItems" class="w-full" /></UFormField><UFormField :label="$t('common.name')"><UInput v-model="assistantForm.name" class="w-full" required /></UFormField><UFormField :label="$t('admin.description')" :hint="$t('admin.optional')"><UTextarea v-model="assistantForm.description" class="w-full" :rows="3" /></UFormField><p v-if="error" class="text-sm text-error">{{ error }}</p><div class="flex justify-end gap-2"><UButton color="neutral" variant="ghost" @click="showAssistant = false">{{ $t('common.cancel') }}</UButton><UButton type="submit" :loading="saving">{{ $t('admin.agents.createAi') }}</UButton></div></form></template>
     </UModal>
   </div>
 </template>
@@ -45,6 +45,7 @@ type Tab = 'all' | 'human' | 'ai'
 type Row = { id: string, kind: 'human' | 'ai', name: string, detail: string, project: string, status: string, initials: string, isMe?: boolean }
 
 const { api, agent: me, projects, loadProjects } = useAgent()
+const { t } = useI18n()
 const tab = ref<Tab>('all')
 const query = ref('')
 const humanAgents = ref<HumanAgent[]>([])
@@ -59,10 +60,10 @@ const assistantForm = reactive({ projectId: '', name: '', description: '' })
 
 const projectsById = computed(() => Object.fromEntries(projects.value.map(project => [project.id, project])))
 const allRows = computed<Row[]>(() => [
-  ...humanAgents.value.map(agent => ({ id: agent.id, kind: 'human' as const, name: agent.name || agent.username, detail: [agent.username, agent.email].filter(Boolean).join(' · '), project: 'All projects', status: 'active', initials: (agent.name || agent.username || '?').slice(0, 2).toUpperCase(), isMe: agent.id === me.value?.id })),
-  ...aiAgents.value.map(agent => ({ id: agent.id, kind: 'ai' as const, name: agent.name, detail: agent.description || agent.model || 'No description', project: projectsById.value[agent.projectId]?.name || 'No project', status: agent.status, initials: 'AI' }))
+  ...humanAgents.value.map(agent => ({ id: agent.id, kind: 'human' as const, name: agent.name || agent.username, detail: [agent.username, agent.email].filter(Boolean).join(' · '), project: t('admin.agents.allProjects'), status: 'active', initials: (agent.name || agent.username || '?').slice(0, 2).toUpperCase(), isMe: agent.id === me.value?.id })),
+  ...aiAgents.value.map(agent => ({ id: agent.id, kind: 'ai' as const, name: agent.name, detail: agent.description || agent.model || t('admin.agents.noDescription'), project: projectsById.value[agent.projectId]?.name || t('admin.agents.noProject'), status: agent.status, initials: 'AI' }))
 ])
-const tabs = computed(() => [{ key: 'all' as const, label: 'All', count: allRows.value.length }, { key: 'human' as const, label: 'People', count: humanAgents.value.length }, { key: 'ai' as const, label: 'AI', count: aiAgents.value.length }])
+const tabs = computed(() => [{ key: 'all' as const, label: t('admin.agents.tabAll'), count: allRows.value.length }, { key: 'human' as const, label: t('admin.agents.tabPeople'), count: humanAgents.value.length }, { key: 'ai' as const, label: t('admin.agents.tabAi'), count: aiAgents.value.length }])
 const visibleRows = computed(() => allRows.value.filter(row => (tab.value === 'all' || row.kind === tab.value) && `${row.name} ${row.detail} ${row.project}`.toLowerCase().includes(query.value.trim().toLowerCase())))
 const assistantProjectItems = computed(() => projects.value.map(project => ({ label: project.name, value: project.id })))
 
@@ -76,16 +77,16 @@ async function load() {
 async function createTeammate() {
   saving.value = true; error.value = ''
   try { await api('/admin/agents', { method: 'POST', body: teammateForm }); Object.assign(teammateForm, { name: '', email: '', username: '', password: '' }); showTeammate.value = false; await load() }
-  catch (cause: any) { error.value = cause?.message || 'Could not add teammate' } finally { saving.value = false }
+  catch (cause: any) { error.value = cause?.message || t('admin.agents.couldNotAdd') } finally { saving.value = false }
 }
 async function createAssistant() {
   saving.value = true; error.value = ''
   try { const { agent } = await api<{ agent: SupportAgent }>('/admin/support-agents', { method: 'POST', body: assistantForm }); await navigateTo(`/assistants/${agent.id}`) }
-  catch (cause: any) { error.value = cause?.message || 'Could not create AI agent' } finally { saving.value = false }
+  catch (cause: any) { error.value = cause?.message || t('admin.agents.couldNotCreateAi') } finally { saving.value = false }
 }
 async function removeTeammate(row: Row) {
-  if (!confirm(`Remove ${row.name}? They will be signed out everywhere.`)) return
-  try { await api(`/admin/agents/${row.id}`, { method: 'DELETE' }); await load() } catch (cause: any) { error.value = cause?.message || 'Could not remove teammate' }
+  if (!confirm(t('admin.agents.removeConfirm', { name: row.name }))) return
+  try { await api(`/admin/agents/${row.id}`, { method: 'DELETE' }); await load() } catch (cause: any) { error.value = cause?.message || t('admin.agents.couldNotRemove') }
 }
 onMounted(async () => { await loadProjects(); assistantForm.projectId = projects.value[0]?.id || ''; await load() })
 </script>

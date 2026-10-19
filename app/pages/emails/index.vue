@@ -14,6 +14,7 @@ import EmailSuppressions from '~/components/email/EmailSuppressions.vue'
 definePageMeta({ middleware: 'agent' })
 
 const route = useRoute()
+const { t } = useI18n()
 const view = computed(() => String(route.query.view || 'log'))
-useHead({ title: () => (view.value === 'suppressions' ? 'Suppressed addresses' : view.value === 'components' ? 'Email components' : view.value === 'templates' ? 'Email templates' : 'Email log') })
+useHead({ title: () => (view.value === 'suppressions' ? t('emailLibrary.page.suppressed') : view.value === 'components' ? t('emailLibrary.page.components') : view.value === 'templates' ? t('layout.emailTemplates') : t('layout.emailLog')) })
 </script>

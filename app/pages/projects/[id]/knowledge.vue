@@ -1,15 +1,15 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="projectId" title="Knowledge base">
+    <PageHeader :project-id="projectId" :title="$t('sections.knowledge')">
       <template #actions>
-        <UButton icon="i-lucide-plus" label="New model" color="neutral" variant="outline" size="sm" @click="showCreate = true" />
+        <UButton icon="i-lucide-plus" :label="$t('knowledge.newModel')" color="neutral" variant="outline" size="sm" @click="showCreate = true" />
       </template>
     </PageHeader>
 
     <div class="min-h-0 flex-1 overflow-y-auto py-2">
       <div v-if="loading" class="space-y-1 px-4 py-2"><USkeleton v-for="i in 3" :key="i" class="h-9" /></div>
-      <EmptyState v-else-if="!models.length" icon="i-lucide-book-open" title="No knowledge models yet" description="A model holds the FAQs and source documents this project's assistants answer from.">
-        <UButton icon="i-lucide-plus" label="New model" @click="showCreate = true" />
+      <EmptyState v-else-if="!models.length" icon="i-lucide-book-open" :title="$t('knowledge.project.emptyTitle')" :description="$t('knowledge.project.emptyDescription')">
+        <UButton icon="i-lucide-plus" :label="$t('knowledge.newModel')" @click="showCreate = true" />
       </EmptyState>
       <NuxtLink
         v-for="m in models"
@@ -25,15 +25,15 @@
       </NuxtLink>
     </div>
 
-    <UModal v-model:open="showCreate" title="New knowledge model" description="Name it after a product or support area within this project.">
+    <UModal v-model:open="showCreate" :title="$t('knowledge.newModelTitle')" :description="$t('knowledge.project.newModelDescription')">
       <template #body>
         <form class="space-y-4" @submit.prevent="create">
-          <UFormField label="Name"><UInput v-model="form.name" class="w-full" autofocus required /></UFormField>
-          <UFormField label="Description" hint="Optional"><UTextarea v-model="form.description" class="w-full" :rows="3" /></UFormField>
+          <UFormField :label="$t('common.name')"><UInput v-model="form.name" class="w-full" autofocus required /></UFormField>
+          <UFormField :label="$t('knowledge.description')" :hint="$t('knowledge.optional')"><UTextarea v-model="form.description" class="w-full" :rows="3" /></UFormField>
           <p v-if="error" class="text-[13px] text-error">{{ error }}</p>
           <div class="flex justify-end gap-2 pt-2">
-            <UButton color="neutral" variant="ghost" @click="showCreate = false">Cancel</UButton>
-            <UButton type="submit" :loading="creating">Create model</UButton>
+            <UButton color="neutral" variant="ghost" @click="showCreate = false">{{ $t('common.cancel') }}</UButton>
+            <UButton type="submit" :loading="creating">{{ $t('knowledge.createModel') }}</UButton>
           </div>
         </form>
       </template>
@@ -49,6 +49,7 @@ definePageMeta({ middleware: 'agent' })
 const route = useRoute()
 const projectId = String(route.params.id)
 const { api } = useAgent()
+const { t } = useI18n()
 
 const models = ref<KnowledgeModel[]>([])
 const loading = ref(true)
@@ -69,7 +70,7 @@ async function create() {
     showCreate.value = false
     Object.assign(form, { name: '', description: '' })
     await navigateTo(`/knowledge/models/${model.id}`)
-  } catch (e: any) { error.value = e?.message || 'Could not create the model' } finally { creating.value = false }
+  } catch (e: any) { error.value = e?.message || t('knowledge.couldNotCreate') } finally { creating.value = false }
 }
 
 onMounted(load)

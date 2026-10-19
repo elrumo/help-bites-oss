@@ -11,8 +11,8 @@
           : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-200 hover:border-primary-600 hover:text-primary-700 dark:hover:text-primary-300'
     ]"
     :aria-pressed="voted"
-    :aria-label="readonly ? `${count} votes` : closed ? `${count} votes, voting closed` : voted ? `Remove your vote (${count})` : `Vote (${count})`"
-    :title="closed ? 'Voting is closed' : undefined"
+    :aria-label="readonly ? $t('feedback.voteCount', count) : closed ? $t('feedback.votesClosedAria', count) : voted ? $t('feedback.removeVoteAria', { count }) : $t('feedback.voteAria', { count })"
+    :title="closed ? $t('feedback.votingClosed') : undefined"
     :disabled="closed || readonly"
     @click.stop="emit('vote')"
   >

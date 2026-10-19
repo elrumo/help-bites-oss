@@ -6,10 +6,10 @@
           <span class="grid size-6 place-items-center rounded-md bg-primary-500 text-white" aria-hidden="true"><UIcon name="i-lucide-message-circle-more" class="size-3.5" /></span>
           HelpBites
         </NuxtLink>
-        <NuxtLink to="/docs" class="-ml-3 hidden text-[14px] text-muted transition-colors hover:text-highlighted sm:block"><span class="mr-2 text-dimmed">/</span>Docs</NuxtLink>
+        <NuxtLink to="/docs" class="-ml-3 hidden text-[14px] text-muted transition-colors hover:text-highlighted sm:block"><span class="mr-2 text-dimmed">/</span>{{ $t('docs.home') }}</NuxtLink>
         <div class="ml-auto flex items-center gap-2">
-          <UButton to="/login" label="Sign in" color="neutral" variant="ghost" size="sm" />
-          <UButton to="/demo" label="Try the demo" size="sm" />
+          <UButton to="/login" :label="$t('login.signIn')" color="neutral" variant="ghost" size="sm" />
+          <UButton to="/demo" :label="$t('docs.tryDemo')" size="sm" />
         </div>
       </div>
     </header>
@@ -22,7 +22,7 @@
       <div class="min-w-0">
         <!-- Phones: the same list, folded away until asked for. -->
         <div class="border-b border-default py-3 md:hidden">
-          <UButton color="neutral" variant="ghost" size="sm" icon="i-lucide-menu" :aria-expanded="menuOpen" aria-controls="docs-menu" class="-ml-2.5" @click="menuOpen = !menuOpen">Docs menu</UButton>
+          <UButton color="neutral" variant="ghost" size="sm" icon="i-lucide-menu" :aria-expanded="menuOpen" aria-controls="docs-menu" class="-ml-2.5" @click="menuOpen = !menuOpen">{{ $t('docs.menu') }}</UButton>
           <div v-if="menuOpen" id="docs-menu" class="pb-2 pt-3"><DocsNav /></div>
         </div>
         <slot />
@@ -35,10 +35,10 @@
           <span class="grid size-5 place-items-center rounded-[5px] bg-primary-500 text-white" aria-hidden="true"><UIcon name="i-lucide-message-circle-more" class="size-3" /></span>
           HelpBites
         </p>
-        <a :href="REPO_URL" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">Source</a>
-        <a href="/_docs/scalar" target="_blank" class="text-muted transition-colors hover:text-highlighted">API reference</a>
-        <NuxtLink to="/demo" class="text-muted transition-colors hover:text-highlighted">Demo</NuxtLink>
-        <NuxtLink to="/login" class="text-muted transition-colors hover:text-highlighted">Sign in</NuxtLink>
+        <a :href="REPO_URL" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('docs.source') }}</a>
+        <a href="/_docs/scalar" target="_blank" class="text-muted transition-colors hover:text-highlighted">{{ $t('docs.apiReference') }}</a>
+        <NuxtLink to="/demo" class="text-muted transition-colors hover:text-highlighted">{{ $t('docs.demo') }}</NuxtLink>
+        <NuxtLink to="/login" class="text-muted transition-colors hover:text-highlighted">{{ $t('login.signIn') }}</NuxtLink>
       </div>
     </footer>
   </div>

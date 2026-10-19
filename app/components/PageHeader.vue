@@ -1,7 +1,7 @@
 <template>
   <!-- Linear's page bar: a breadcrumb on the left, the page's actions on the right. -->
   <header class="flex h-12 shrink-0 items-center gap-2 border-b border-default px-4">
-    <nav class="flex min-w-0 flex-1 items-center gap-1.5 text-[13px] font-medium" aria-label="Breadcrumb">
+    <nav class="flex min-w-0 flex-1 items-center gap-1.5 text-[13px] font-medium" :aria-label="$t('shared.breadcrumb')">
       <template v-if="projectId">
         <NuxtLink :to="`/projects/${projectId}/overview`" class="flex min-w-0 shrink items-center gap-2 rounded-md text-muted transition-colors hover:text-highlighted">
           <ProjectDot tile :project-id="projectId" :accent="project?.theme?.accent" :name="project?.name" :icon-url="project?.iconUrl" />

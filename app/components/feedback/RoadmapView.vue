@@ -1,7 +1,7 @@
 <template>
   <!-- The public roadmap in one of three layouts. Cards are board items or, on
        boards without one, single posts; either way a card opens a post. -->
-  <EmptyState v-if="!cardCount" icon="i-lucide-map" title="Nothing on the roadmap yet" description="Planned, in-progress and shipped work shows up here." />
+  <EmptyState v-if="!cardCount" icon="i-lucide-map" :title="$t('feedback.roadmapEmpty')" :description="$t('feedback.roadmapEmptyHint')" />
 
   <!-- Columns: one per status -->
   <div v-else-if="layout === 'columns'" class="grid gap-3" :class="groups.length > 2 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
@@ -14,7 +14,7 @@
         <template v-for="card in group.items" :key="card.id">
           <component :is="card.posts.length === 1 ? 'button' : 'div'" :type="card.posts.length === 1 ? 'button' : undefined" class="block w-full rounded-lg border border-default bg-default p-2.5 text-left shadow-[0_1px_2px_rgb(0_0_0/0.04)]" :class="card.posts.length === 1 ? 'transition-colors hover:border-accented' : ''" @click="card.posts.length === 1 && emit('open', card.posts[0]!.id)">
             <span class="flex items-start gap-2.5">
-              <span class="flex w-6 shrink-0 flex-col items-center pt-0.5 text-[11px] font-semibold tabular-nums text-stone-500" :title="`${card.voteCount} ${card.voteCount === 1 ? 'vote' : 'votes'}`"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ card.voteCount }}</span>
+              <span class="flex w-6 shrink-0 flex-col items-center pt-0.5 text-[11px] font-semibold tabular-nums text-stone-500" :title="$t('feedback.voteCount', card.voteCount)"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ card.voteCount }}</span>
               <span class="min-w-0 flex-1">
                 <span class="block text-[13px] font-medium leading-snug line-clamp-3">{{ card.title }}</span>
                 <span v-if="card.description" class="mt-1 block text-xs leading-relaxed text-stone-500 dark:text-stone-400 line-clamp-3">{{ plain(card.description) }}</span>
@@ -26,7 +26,7 @@
               </span>
             </span>
             <details v-if="card.posts.length > 1" class="mt-2 border-t border-default pt-1.5 text-xs">
-              <summary class="cursor-pointer text-stone-500 hover:text-default">{{ card.posts.length }} requests</summary>
+              <summary class="cursor-pointer text-stone-500 hover:text-default">{{ $t('feedback.requestCount', card.posts.length) }}</summary>
               <ul class="mt-1 space-y-0.5">
                 <li v-for="post in card.posts" :key="post.id">
                   <button type="button" class="flex w-full items-center gap-2 rounded px-1 py-1 text-left hover:bg-elevated" @click="emit('open', post.id)">
@@ -38,7 +38,7 @@
             </details>
           </component>
         </template>
-        <p v-if="!group.items.length" class="px-1 py-4 text-center text-xs text-stone-400">Nothing here yet</p>
+        <p v-if="!group.items.length" class="px-1 py-4 text-center text-xs text-stone-400">{{ $t('feedback.nothingHere') }}</p>
       </div>
     </section>
   </div>
@@ -64,7 +64,7 @@
             <span v-for="label in card.labels || []" :key="label" class="inline-flex items-center gap-1 rounded-full bg-stone-100 px-1.5 py-px dark:bg-stone-800"><span class="size-1.5 rounded-full" :class="dot(labelFor(label)?.color)" />{{ labelFor(label)?.label || label }}</span>
           </span>
           <details v-if="card.posts.length > 1" class="mt-2 border-t border-default pt-1.5 text-xs">
-            <summary class="cursor-pointer text-stone-500 hover:text-default">{{ card.posts.length }} requests</summary>
+            <summary class="cursor-pointer text-stone-500 hover:text-default">{{ $t('feedback.requestCount', card.posts.length) }}</summary>
             <ul class="mt-1 space-y-0.5">
               <li v-for="post in card.posts" :key="post.id">
                 <button type="button" class="flex w-full items-center gap-2 rounded px-1 py-1 text-left hover:bg-elevated" @click="emit('open', post.id)">
@@ -94,7 +94,7 @@
               <span class="block truncate font-medium">{{ card.title }}</span>
               <span v-if="card.description" class="block truncate text-xs text-stone-500 dark:text-stone-400">{{ plain(card.description) }}</span>
               <details v-if="card.posts.length > 1" class="text-xs" @click.stop>
-                <summary class="cursor-pointer text-stone-500 hover:text-default">{{ card.posts.length }} requests</summary>
+                <summary class="cursor-pointer text-stone-500 hover:text-default">{{ $t('feedback.requestCount', card.posts.length) }}</summary>
                 <ul class="mt-1 space-y-0.5">
                   <li v-for="post in card.posts" :key="post.id">
                     <button type="button" class="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-elevated" @click="emit('open', post.id)">

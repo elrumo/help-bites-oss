@@ -6,29 +6,29 @@
       <div v-if="loading" class="space-y-3"><USkeleton class="h-7 w-48" /><USkeleton class="h-11" /></div>
 
       <template v-else-if="!invite">
-        <h1 class="text-xl font-semibold tracking-tight text-highlighted">This invitation has expired</h1>
-        <p class="mt-1 text-[15px] text-muted">{{ error || 'It may have been used or revoked. Ask whoever invited you for a new link.' }}</p>
-        <UButton class="mt-8" to="/login" color="neutral" variant="outline">Go to sign in</UButton>
+        <h1 class="text-xl font-semibold tracking-tight text-highlighted">{{ $t('admin.invite.expired') }}</h1>
+        <p class="mt-1 text-[15px] text-muted">{{ error || $t('admin.invite.expiredHint') }}</p>
+        <UButton class="mt-8" to="/login" color="neutral" variant="outline">{{ $t('admin.invite.goToSignIn') }}</UButton>
       </template>
 
       <form v-else @submit.prevent="accept">
-        <h1 class="text-xl font-semibold tracking-tight text-highlighted">Join {{ invite.workspace.name }}</h1>
-        <p class="mb-8 mt-1 text-[15px] text-muted">{{ invite.invitedBy || 'A teammate' }} invited {{ invite.email }} as {{ ROLE_LABELS[invite.role] || invite.role }}.</p>
+        <h1 class="text-xl font-semibold tracking-tight text-highlighted">{{ $t('admin.invite.join', { workspace: invite.workspace.name }) }}</h1>
+        <p class="mb-8 mt-1 text-[15px] text-muted">{{ $t('admin.invite.invited', { by: invite.invitedBy || $t('admin.invite.aTeammate'), email: invite.email, role: ROLE_LABELS[invite.role] || invite.role }) }}</p>
 
         <template v-if="token">
           <p v-if="error" class="mb-4 text-[13px] text-error">{{ error }}</p>
-          <div class="flex justify-end"><UButton type="submit" size="lg" :loading="saving">Join workspace</UButton></div>
+          <div class="flex justify-end"><UButton type="submit" size="lg" :loading="saving">{{ $t('admin.invite.joinWorkspace') }}</UButton></div>
         </template>
         <template v-else-if="invite.hasAccount">
-          <p class="mb-6 text-[13px] text-muted">{{ invite.email }} already has an account. Sign in with it, and you'll come back here to join.</p>
-          <div class="flex justify-end"><UButton size="lg" :to="{ path: '/login', query: { next: route.fullPath } }">Sign in to accept</UButton></div>
+          <p class="mb-6 text-[13px] text-muted">{{ $t('admin.invite.hasAccount', { email: invite.email }) }}</p>
+          <div class="flex justify-end"><UButton size="lg" :to="{ path: '/login', query: { next: route.fullPath } }">{{ $t('admin.invite.signInToAccept') }}</UButton></div>
         </template>
         <template v-else>
-          <UFormField label="Name" class="mb-4" :ui="labelUi"><UInput v-model="name" autocomplete="name" size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
-          <UFormField label="Email" class="mb-4" :ui="labelUi"><UInput :model-value="invite.email" disabled size="lg" class="w-full" :ui="fieldUi" /></UFormField>
-          <UFormField label="Password" hint="At least 8 characters" class="mb-6" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="new-password" required minlength="8" size="lg" class="w-full" :ui="fieldUi" /></UFormField>
+          <UFormField :label="$t('common.name')" class="mb-4" :ui="labelUi"><UInput v-model="name" autocomplete="name" size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
+          <UFormField :label="$t('login.email')" class="mb-4" :ui="labelUi"><UInput :model-value="invite.email" disabled size="lg" class="w-full" :ui="fieldUi" /></UFormField>
+          <UFormField :label="$t('login.password')" :hint="$t('login.passwordHint')" class="mb-6" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="new-password" required minlength="8" size="lg" class="w-full" :ui="fieldUi" /></UFormField>
           <p v-if="error" class="mb-4 text-[13px] text-error">{{ error }}</p>
-          <div class="flex justify-end"><UButton type="submit" size="lg" :loading="saving">Create account and join</UButton></div>
+          <div class="flex justify-end"><UButton type="submit" size="lg" :loading="saving">{{ $t('admin.invite.createAndJoin') }}</UButton></div>
         </template>
       </form>
     </div>
@@ -44,6 +44,7 @@ type Invite = { workspace: { name: string }, email: string, role: Role, invitedB
 
 const route = useRoute()
 const { token, agent, workspaceId } = useAgent()
+const { t } = useI18n()
 const code = computed(() => String(route.params.token || ''))
 const invite = ref<Invite | null>(null)
 const loading = ref(true)
@@ -80,7 +81,7 @@ async function accept() {
     try { localStorage.setItem('hb-workspace', result.workspace.id) } catch {}
     await reloadNuxtApp({ path: '/inbox' })
   } catch (e: any) {
-    error.value = e?.data?.statusMessage || 'Could not accept the invitation'
+    error.value = e?.data?.statusMessage || t('admin.invite.couldNotAccept')
   } finally {
     saving.value = false
   }

@@ -1,32 +1,32 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="id" title="Errors" />
+    <PageHeader :project-id="id" :title="$t('sections.errors')" />
     <main class="min-h-0 flex-1 overflow-y-auto p-6">
       <div v-if="project" class="mx-auto max-w-4xl space-y-5">
-        <EmptyState v-if="!project.errors?.connected" icon="i-lucide-bug" title="Error tracking isn't connected" description="Connect GlitchTip or Bugsink to browse errors here, get alert emails and fix them with AI.">
-          <UButton label="Connect error tracking" @click="connectOpen = true" />
+        <EmptyState v-if="!project.errors?.connected" icon="i-lucide-bug" :title="$t('projectPages.errors.notConnected')" :description="$t('projectPages.errors.notConnectedDescription')">
+          <UButton :label="$t('projectPages.errors.connect')" @click="connectOpen = true" />
         </EmptyState>
         <template v-else>
           <div class="flex flex-wrap items-center gap-3">
             <USelect v-model="status" :items="statusItems" class="w-40" @update:model-value="load()" />
-            <UInput v-model="search" icon="i-lucide-search" placeholder="Search errors" class="min-w-48 flex-1" @keyup.enter="load()" />
-            <UButton color="neutral" variant="soft" icon="i-lucide-refresh-cw" aria-label="Refresh errors" @click="load()" />
-            <UButton color="primary" variant="soft" icon="i-lucide-wand-sparkles" label="Analyze with AI" :loading="analyzing" @click="analyzeAll()" />
-            <UButton color="neutral" variant="soft" icon="i-lucide-plus" label="New" @click="connectOpen = true" />
-            <UButton color="neutral" variant="soft" icon="i-lucide-bell" label="Alerts" aria-label="Error alerts and emails" @click="alertsOpen = true" />
-            <UButton color="neutral" variant="soft" icon="i-lucide-settings-2" label="Manage" aria-label="Manage tracker projects" @click="manageOpen = true" />
+            <UInput v-model="search" icon="i-lucide-search" :placeholder="$t('projectPages.errors.searchPlaceholder')" class="min-w-48 flex-1" @keyup.enter="load()" />
+            <UButton color="neutral" variant="soft" icon="i-lucide-refresh-cw" :aria-label="$t('projectPages.errors.refreshErrors')" @click="load()" />
+            <UButton color="primary" variant="soft" icon="i-lucide-wand-sparkles" :label="$t('projectPages.errors.analyze')" :loading="analyzing" @click="analyzeAll()" />
+            <UButton color="neutral" variant="soft" icon="i-lucide-plus" :label="$t('projectPages.errors.new')" @click="connectOpen = true" />
+            <UButton color="neutral" variant="soft" icon="i-lucide-bell" :label="$t('projectPages.errors.alerts')" :aria-label="$t('projectPages.errors.alertsAria')" @click="alertsOpen = true" />
+            <UButton color="neutral" variant="soft" icon="i-lucide-settings-2" :label="$t('projectPages.errors.manage')" :aria-label="$t('projectPages.errors.manageAria')" @click="manageOpen = true" />
           </div>
-          <div v-if="links.length > 1" class="flex flex-wrap gap-2" role="group" aria-label="Filter by tracker project">
-            <UButton v-for="pill in [{ id: '', label: 'All' }, ...links]" :key="pill.id" size="xs" :color="linkFilter === pill.id ? 'primary' : 'neutral'" :variant="linkFilter === pill.id ? 'solid' : 'soft'" class="rounded-full" :aria-pressed="linkFilter === pill.id" :label="pill.label" @click="linkFilter = pill.id; load()" />
+          <div v-if="links.length > 1" class="flex flex-wrap gap-2" role="group" :aria-label="$t('projectPages.errors.filterByTracker')">
+            <UButton v-for="pill in [{ id: '', label: $t('projectPages.errors.all') }, ...links]" :key="pill.id" size="xs" :color="linkFilter === pill.id ? 'primary' : 'neutral'" :variant="linkFilter === pill.id ? 'solid' : 'soft'" class="rounded-full" :aria-pressed="linkFilter === pill.id" :label="pill.label" @click="linkFilter = pill.id; load()" />
           </div>
           <UCard v-if="overview || overviewError">
             <p v-if="overviewError" class="text-sm text-error">{{ overviewError }}</p>
             <UCollapsible v-else v-model:open="overviewOpen">
-              <UButton color="neutral" variant="ghost" size="sm" block class="justify-between" icon="i-lucide-sparkles" trailing-icon="i-lucide-chevron-down" :label="`AI overview${overview!.at ? ` from ${new Date(overview!.at).toLocaleString()}` : ''}`" />
+              <UButton color="neutral" variant="ghost" size="sm" block class="justify-between" icon="i-lucide-sparkles" trailing-icon="i-lucide-chevron-down" :label="overview!.at ? $t('projectPages.errors.aiOverviewFrom', { date: new Date(overview!.at).toLocaleString() }) : $t('projectPages.errors.aiOverview')" />
               <template #content>
                 <div class="pt-3">
                   <MarkdownBlock :text="overview!.text" />
-                  <p class="mt-2 text-xs text-muted">Based on {{ overview!.count }} unresolved error{{ overview!.count === 1 ? '' : 's' }}: titles, locations and counts. Open an error to analyze its stack trace.</p>
+                  <p class="mt-2 text-xs text-muted">{{ $t('projectPages.errors.basedOn', overview!.count) }}</p>
                 </div>
               </template>
             </UCollapsible>
@@ -47,15 +47,15 @@
             </template>
           </UCollapsible> -->
           <UCollapsible v-if="alerts.length">
-            <UButton color="neutral" variant="soft" size="sm" block class="justify-between" icon="i-lucide-webhook" trailing-icon="i-lucide-chevron-down" :label="`Check alert rules the moment Bugsink reports an error${alerts.length > 1 ? ` (${alerts.length})` : ''}`" />
+            <UButton color="neutral" variant="soft" size="sm" block class="justify-between" icon="i-lucide-webhook" trailing-icon="i-lucide-chevron-down" :label="alerts.length > 1 ? $t('projectPages.errors.alertRulesCount', { count: alerts.length }) : $t('projectPages.errors.alertRules')" />
             <template #content>
               <div class="flex max-h-96 flex-col gap-3 overflow-y-auto pt-3">
-                <UAlert v-for="item in alerts" :key="item.id" color="neutral" variant="subtle" icon="i-lucide-webhook" :title="links.length > 1 ? item.label : 'Alert webhook'" :description="`In Bugsink, open this project's alerts, click Add, set Kind to Slack and use this Webhook url: ${item.alertWebhookUrl}`" />
+                <UAlert v-for="item in alerts" :key="item.id" color="neutral" variant="subtle" icon="i-lucide-webhook" :title="links.length > 1 ? item.label : $t('projectPages.errors.alertWebhook')" :description="$t('projectPages.errors.alertDescription', { url: item.alertWebhookUrl })" />
               </div>
             </template>
           </UCollapsible>
           <p v-if="error" class="text-sm text-error">{{ error }}</p>
-          <div v-if="loading" class="overflow-hidden rounded-xl border border-default divide-y divide-default" aria-busy="true" aria-label="Loading errors">
+          <div v-if="loading" class="overflow-hidden rounded-xl border border-default divide-y divide-default" aria-busy="true" :aria-label="$t('projectPages.errors.loadingAria')">
             <div v-for="n in 3" :key="n" class="flex items-center gap-3 p-4">
               <USkeleton class="size-4 shrink-0 rounded" />
               <div class="min-w-0 flex-1 space-y-2"><USkeleton class="h-4 w-2/3" /><USkeleton class="h-3 w-1/3" /></div>
@@ -64,9 +64,9 @@
           </div>
           <div v-else class="overflow-hidden rounded-xl border border-default divide-y divide-default">
             <ErrorIssueCard v-for="issue in issues" :key="`${issue.linkId}:${issue.id}`" :issue="issue" :show-link="links.length > 1" :analyzed="analysisKey(issue) in analyses" @open="selected = issue" @status="update(issue, $event)" />
-            <p v-if="!issues.length" class="p-8 text-center text-sm text-muted">No errors found.</p>
+            <p v-if="!issues.length" class="p-8 text-center text-sm text-muted">{{ $t('projectPages.errors.noErrors') }}</p>
           </div>
-          <UButton v-if="next" color="neutral" variant="soft" label="Load more" @click="load(next)" />
+          <UButton v-if="next" color="neutral" variant="soft" :label="$t('projectPages.errors.loadMore')" @click="load(next)" />
         </template>
         <ErrorDrawer v-model:issue="selected" :project-id="id" :saved="selected ? analyses[analysisKey(selected)] : undefined" @analyzed="(issue, result) => analyses[analysisKey(issue)] = result" />
         <ConnectErrorTrackingModal v-model:open="connectOpen" :project-id="id" @connected="onConnected" />
@@ -83,6 +83,7 @@ import type { AdminProject } from '~~/server/utils/projects'
 
 definePageMeta({ middleware: 'agent' })
 const { api, projects, loadProjects } = useAgent()
+const { t } = useI18n()
 const id = String(useRoute().params.id)
 const project = computed(() => projects.value.find(item => item.id === id) || null)
 const issues = ref<any[]>([])
@@ -108,12 +109,12 @@ const overviewError = ref('')
 const analyzing = ref(false)
 async function analyzeAll() {
   analyzing.value = true; overviewError.value = ''
-  try { analyses.value = { ...analyses.value, overview: await api('/admin/errors/analyze', { method: 'POST', body: { project: id } }) }; overviewOpen.value = true } catch (cause: any) { overviewError.value = cause.message || 'Could not analyze errors' } finally { analyzing.value = false }
+  try { analyses.value = { ...analyses.value, overview: await api('/admin/errors/analyze', { method: 'POST', body: { project: id } }) }; overviewOpen.value = true } catch (cause: any) { overviewError.value = cause.message || t('projectPages.errors.analyzeError') } finally { analyzing.value = false }
 }
 async function copy(text: string, key: string) {
   try { await navigator.clipboard.writeText(text); copied.value = key; setTimeout(() => { if (copied.value === key) copied.value = '' }, 1500) } catch {}
 }
-const statusItems = [{ label: 'Unresolved', value: 'unresolved' }, { label: 'Resolved', value: 'resolved' }, { label: 'Ignored', value: 'ignored' }]
+const statusItems = computed(() => [{ label: t('projectPages.errors.unresolved'), value: 'unresolved' }, { label: t('projectPages.errors.resolved'), value: 'resolved' }, { label: t('projectPages.errors.ignored'), value: 'ignored' }])
 
 // Answers can arrive out of order when pills are clicked quickly; only the latest one counts.
 let latest = 0
@@ -128,7 +129,7 @@ async function load(cursor = '') {
     issues.value = cursor ? [...issues.value, ...result.issues] : result.issues
     next.value = result.next
   } catch (cause: any) {
-    if (mine === latest) { error.value = cause.message || 'Could not load errors'; if (!cursor) issues.value = [] }
+    if (mine === latest) { error.value = cause.message || t('projectPages.errors.loadError'); if (!cursor) issues.value = [] }
   } finally { if (mine === latest) loading.value = false }
 }
 async function onManaged(changed: AdminProject) {

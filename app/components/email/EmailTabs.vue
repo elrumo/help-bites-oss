@@ -6,17 +6,18 @@
  * `?view=` of the same page; the log is the one you land on.
  */
 const props = defineProps<{ current: 'templates' | 'components' | 'log' | 'suppressions', masters?: boolean }>()
+const { t } = useI18n()
 
 const tabs = computed(() => [
-  { value: 'templates', label: props.masters ? 'Masters' : 'Templates', icon: 'i-lucide-layout-template' },
-  { value: 'components', label: 'Components', icon: 'i-lucide-puzzle' },
-  { value: 'log', label: 'Log', icon: 'i-lucide-history' },
-  { value: 'suppressions', label: 'Suppressed', icon: 'i-lucide-mail-x' }
+  { value: 'templates', label: props.masters ? t('emailEditor.masters') : t('emailEditor.templates'), icon: 'i-lucide-layout-template' },
+  { value: 'components', label: t('emailEditor.components'), icon: 'i-lucide-puzzle' },
+  { value: 'log', label: t('emailEditor.log'), icon: 'i-lucide-history' },
+  { value: 'suppressions', label: t('emailEditor.suppressed'), icon: 'i-lucide-mail-x' }
 ] as const)
 </script>
 
 <template>
-  <nav class="ml-1.5 flex shrink-0 items-center gap-0.5 rounded-md border border-default p-0.5" aria-label="Email sections">
+  <nav class="ml-1.5 flex shrink-0 items-center gap-0.5 rounded-md border border-default p-0.5" :aria-label="$t('emailEditor.emailSections')">
     <NuxtLink
       v-for="tab in tabs"
       :key="tab.value"

@@ -14,6 +14,7 @@ const emit = defineEmits<{ imported: [] }>()
 
 const { api } = useAgent()
 const toast = useToast()
+const { t } = useI18n()
 
 const MAX_BYTES = 20 * 1024 * 1024
 const BATCH = 1000
@@ -47,9 +48,9 @@ function reset() {
 async function pick(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
-  if (file.size > MAX_BYTES) { toast.add({ title: 'That file is over 20 MB; split it up', color: 'error' }); return }
+  if (file.size > MAX_BYTES) { toast.add({ title: t('contacts.csv.tooBig'), color: 'error' }); return }
   const parsed = csvRecords(await file.text())
-  if (!parsed.columns.length || !parsed.records.length) { toast.add({ title: 'No rows found: the first line should name the columns', color: 'error' }); return }
+  if (!parsed.columns.length || !parsed.records.length) { toast.add({ title: t('contacts.csv.noRows'), color: 'error' }); return }
   fileName.value = file.name
   columns.value = parsed.columns
   records.value = parsed.records
@@ -94,13 +95,13 @@ async function run() {
       total.updated += res.updated
       total.unchanged += res.unchanged
       total.failed += res.failed
-      for (const r of res.results) if (r.error && total.errors.length < 5) total.errors.push(`Row ${i + r.index + 2}: ${r.error}`)
+      for (const r of res.results) if (r.error && total.errors.length < 5) total.errors.push(t('contacts.csv.rowError', { row: i + r.index + 2, error: r.error }))
       done.value = Math.min(i + BATCH, inputs.length)
     }
     summary.value = total
     emit('imported')
   } catch (e: any) {
-    toast.add({ title: e?.message || 'The import stopped', description: `${done.value} of ${inputs.length} rows were imported before it did.`, color: 'error' })
+    toast.add({ title: e?.message || t('contacts.csv.stopped'), description: t('contacts.csv.stoppedDescription', { done: done.value, total: inputs.length }), color: 'error' })
     summary.value = total
   } finally {
     importing.value = false
@@ -109,56 +110,56 @@ async function run() {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Import contacts" description="A CSV file with a header row. Matching people are updated by user id, then by email." :dismissible="!importing" :ui="{ content: 'max-w-2xl' }">
+  <UModal v-model:open="open" :title="$t('contacts.csv.title')" :description="$t('contacts.csv.description')" :dismissible="!importing" :ui="{ content: 'max-w-2xl' }">
     <template #body>
       <div v-if="summary" class="space-y-4 text-[13px]">
-        <p class="text-highlighted">Imported {{ fileName }}.</p>
+        <p class="text-highlighted">{{ $t('contacts.csv.imported', { file: fileName }) }}</p>
         <ul class="grid grid-cols-4 gap-2 text-center">
-          <li class="rounded-lg border border-default p-3"><div class="text-lg font-semibold">{{ summary.created }}</div><div class="text-xs text-muted">new</div></li>
-          <li class="rounded-lg border border-default p-3"><div class="text-lg font-semibold">{{ summary.updated }}</div><div class="text-xs text-muted">updated</div></li>
-          <li class="rounded-lg border border-default p-3"><div class="text-lg font-semibold">{{ summary.unchanged }}</div><div class="text-xs text-muted">unchanged</div></li>
-          <li class="rounded-lg border border-default p-3"><div class="text-lg font-semibold" :class="summary.failed ? 'text-error' : ''">{{ summary.failed }}</div><div class="text-xs text-muted">failed</div></li>
+          <li class="rounded-lg border border-default p-3"><div class="text-lg font-semibold">{{ summary.created }}</div><div class="text-xs text-muted">{{ $t('contacts.csv.created') }}</div></li>
+          <li class="rounded-lg border border-default p-3"><div class="text-lg font-semibold">{{ summary.updated }}</div><div class="text-xs text-muted">{{ $t('contacts.csv.updated') }}</div></li>
+          <li class="rounded-lg border border-default p-3"><div class="text-lg font-semibold">{{ summary.unchanged }}</div><div class="text-xs text-muted">{{ $t('contacts.csv.unchanged') }}</div></li>
+          <li class="rounded-lg border border-default p-3"><div class="text-lg font-semibold" :class="summary.failed ? 'text-error' : ''">{{ summary.failed }}</div><div class="text-xs text-muted">{{ $t('contacts.csv.failed') }}</div></li>
         </ul>
         <ul v-if="summary.errors.length" class="space-y-1 text-xs text-error"><li v-for="e in summary.errors" :key="e">{{ e }}</li></ul>
-        <div class="flex justify-end"><UButton label="Done" @click="open = false" /></div>
+        <div class="flex justify-end"><UButton :label="$t('contacts.csv.done')" @click="open = false" /></div>
       </div>
 
       <div v-else-if="!columns.length" class="space-y-3">
         <label class="flex h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-default text-[13px] text-muted hover:bg-elevated">
           <UIcon name="i-lucide-file-spreadsheet" class="size-6" />
-          Choose a .csv file
+          {{ $t('contacts.csv.choose') }}
           <input type="file" accept=".csv,text/csv" class="sr-only" @change="pick">
         </label>
-        <p class="text-xs text-muted">Exported from Stripe, Mailchimp, a spreadsheet or your database. Up to 20 MB.</p>
+        <p class="text-xs text-muted">{{ $t('contacts.csv.help') }}</p>
       </div>
 
       <div v-else class="space-y-5 text-[13px]">
         <p class="text-muted"><span class="font-medium text-highlighted">{{ fileName }}</span> · {{ records.length }} rows, {{ columns.length }} columns</p>
 
         <div class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="Email"><OptionalSelect v-model="mapping.email" :items="columnItems" class="w-full" /></UFormField>
-          <UFormField label="User id" hint="Your app's id"><OptionalSelect v-model="mapping.externalId" :items="columnItems" class="w-full" /></UFormField>
-          <UFormField label="Name"><OptionalSelect v-model="mapping.name" :items="columnItems" class="w-full" /></UFormField>
-          <UFormField label="Tags" hint="Comma-separated"><OptionalSelect v-model="mapping.tags" :items="columnItems" class="w-full" /></UFormField>
-          <UFormField label="Opted in" hint="yes/no, true/false, 1/0"><OptionalSelect v-model="mapping.subscribed" :items="columnItems" class="w-full" /></UFormField>
+          <UFormField :label="$t('contacts.form.email')"><OptionalSelect v-model="mapping.email" :items="columnItems" class="w-full" /></UFormField>
+          <UFormField :label="$t('contacts.form.userId')" :hint="$t('contacts.form.userIdHint')"><OptionalSelect v-model="mapping.externalId" :items="columnItems" class="w-full" /></UFormField>
+          <UFormField :label="$t('common.name')"><OptionalSelect v-model="mapping.name" :items="columnItems" class="w-full" /></UFormField>
+          <UFormField :label="$t('contacts.form.tags')" :hint="$t('contacts.csv.tagsHint')"><OptionalSelect v-model="mapping.tags" :items="columnItems" class="w-full" /></UFormField>
+          <UFormField :label="$t('contacts.csv.optedIn')" :hint="$t('contacts.csv.optedInHint')"><OptionalSelect v-model="mapping.subscribed" :items="columnItems" class="w-full" /></UFormField>
         </div>
 
-        <UFormField label="Keep as attributes" hint="Segment and personalize with these">
+        <UFormField :label="$t('contacts.csv.keepAsAttributes')" :hint="$t('contacts.csv.attributesHint')">
           <UCheckboxGroup v-model="asAttributes" :items="columns.filter(c => !Object.values(mapping).includes(c)).map(c => ({ label: `${c} → ${attributeKeyFor(c)}`, value: c }))" orientation="horizontal" class="flex-wrap" />
         </UFormField>
 
         <div class="space-y-2">
-          <UCheckbox v-if="!mapping.subscribed" v-model="optedIn" label="Everyone in this file asked for marketing email" description="Only if you have their consent. Nobody who unsubscribed is subscribed again." />
-          <UCheckbox v-model="fillOnly" label="Fill blanks only" description="Keep names and attributes you already have." />
+          <UCheckbox v-if="!mapping.subscribed" v-model="optedIn" :label="$t('contacts.csv.everyoneOptedIn')" :description="$t('contacts.csv.everyoneOptedInDescription')" />
+          <UCheckbox v-model="fillOnly" :label="$t('contacts.csv.fillBlanks')" :description="$t('contacts.csv.fillBlanksDescription')" />
         </div>
 
-        <p v-if="!mapping.email && !mapping.externalId" class="text-error">Pick the email or the user id column.</p>
-        <p v-else class="text-muted">{{ mapped.inputs.length }} people to import<span v-if="mapped.skipped">, {{ mapped.skipped }} rows skipped (no valid email or id)</span>.</p>
+        <p v-if="!mapping.email && !mapping.externalId" class="text-error">{{ $t('contacts.csv.pickColumn') }}</p>
+        <p v-else class="text-muted">{{ $t('contacts.csv.toImport', { count: mapped.inputs.length }) }}<span v-if="mapped.skipped">{{ $t('contacts.csv.skipped', { count: mapped.skipped }) }}</span>.</p>
 
         <UProgress v-if="importing" :model-value="done" :max="mapped.inputs.length" />
         <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="ghost" :disabled="importing" @click="reset">Choose another file</UButton>
-          <UButton :loading="importing" :disabled="!mapped.inputs.length" :label="`Import ${mapped.inputs.length}`" @click="run" />
+          <UButton color="neutral" variant="ghost" :disabled="importing" @click="reset">{{ $t('contacts.csv.another') }}</UButton>
+          <UButton :loading="importing" :disabled="!mapped.inputs.length" :label="$t('contacts.csv.import', { count: mapped.inputs.length })" @click="run" />
         </div>
       </div>
     </template>

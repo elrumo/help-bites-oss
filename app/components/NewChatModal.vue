@@ -1,13 +1,13 @@
 <template>
-  <UModal v-model:open="open" title="New conversation" description="Write to any user of a project. If they have never opened the chat, paste their id from your app and the conversation will be waiting for them.">
+  <UModal v-model:open="open" :title="$t('nav.newConversation')" :description="$t('chat.newChatDescription')">
     <template #body>
       <form class="space-y-4" @submit.prevent="submit">
-        <UFormField label="Project">
+        <UFormField :label="$t('chat.project')">
           <USelect v-model="projectId" :items="projectItems" value-key="value" class="w-full" />
         </UFormField>
 
-        <UFormField label="Who" hint="Search known users, or type an id">
-          <UInput v-model="query" placeholder="Name, email or user id" class="w-full" @input="search" />
+        <UFormField :label="$t('chat.who')" :hint="$t('chat.whoHint')">
+          <UInput v-model="query" :placeholder="$t('chat.whoPlaceholder')" class="w-full" @input="search" />
           <div v-if="results.length" class="mt-2 border border-default rounded-lg divide-y divide-default max-h-40 overflow-y-auto">
             <button v-for="user in results" :key="user.id" type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-elevated" @click="pick(user)">
               <span class="font-medium">{{ user.name || user.externalId }}</span>
@@ -17,29 +17,29 @@
         </UFormField>
 
         <div class="grid grid-cols-2 gap-3">
-          <UFormField label="Name" hint="optional"><UInput v-model="name" class="w-full" /></UFormField>
-          <UFormField label="Email" hint="optional"><UInput v-model="email" type="email" class="w-full" /></UFormField>
+          <UFormField :label="$t('common.name')" :hint="$t('chat.optional')"><UInput v-model="name" class="w-full" /></UFormField>
+          <UFormField :label="$t('nav.email')" :hint="$t('chat.optional')"><UInput v-model="email" type="email" class="w-full" /></UFormField>
         </div>
 
-        <UFormField label="Subject" hint="optional"><UInput v-model="subject" class="w-full" /></UFormField>
-        <UFormField v-if="types.length > 1" label="Ticket type" :description="activeType?.description || undefined">
+        <UFormField :label="$t('chat.subject')" :hint="$t('chat.optional')"><UInput v-model="subject" class="w-full" /></UFormField>
+        <UFormField v-if="types.length > 1" :label="$t('chat.ticketType')" :description="activeType?.description || undefined">
           <USelect v-model="typeKey" :items="typeItems" value-key="value" class="w-full" />
         </UFormField>
         <template v-for="field in intakeFields" :key="field.key">
           <UCheckbox v-if="field.type === 'bool'" v-model="fieldValues[field.key] as boolean | undefined" :label="field.label || field.key" :required="field.required" />
           <UFormField v-else :label="field.label || field.key" :required="field.required">
-            <USelect v-if="field.type === 'select'" v-model="fieldValues[field.key] as string | undefined" :items="field.options || []" placeholder="None" class="w-full" />
+            <USelect v-if="field.type === 'select'" v-model="fieldValues[field.key] as string | undefined" :items="field.options || []" :placeholder="$t('chat.none')" class="w-full" />
             <UTextarea v-else-if="field.type === 'longtext'" v-model="fieldValues[field.key] as string | undefined" :rows="3" autoresize class="w-full" />
             <UInput v-else v-model="fieldValues[field.key] as string | undefined" :type="field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'" :placeholder="field.type === 'url' ? 'https://' : undefined" class="w-full" />
           </UFormField>
         </template>
-        <UFormField label="Message"><UTextarea v-model="body" :rows="4" autoresize class="w-full" required /></UFormField>
-        <UCheckbox v-model="notify" label="Also send by email" />
+        <UFormField :label="$t('chat.message')"><UTextarea v-model="body" :rows="4" autoresize class="w-full" required /></UFormField>
+        <UCheckbox v-model="notify" :label="$t('chat.alsoEmail')" />
 
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
         <div class="flex justify-end gap-2 pt-2">
-          <UButton color="neutral" variant="ghost" @click="open = false">Cancel</UButton>
-          <UButton type="submit" color="primary" :loading="sending" :disabled="!projectId || !externalId || !body.trim()">Send</UButton>
+          <UButton color="neutral" variant="ghost" @click="open = false">{{ $t('common.cancel') }}</UButton>
+          <UButton type="submit" color="primary" :loading="sending" :disabled="!projectId || !externalId || !body.trim()">{{ $t('chat.send') }}</UButton>
         </div>
       </form>
     </template>
@@ -55,6 +55,7 @@ const props = defineProps<{ projects: AdminProject[], defaultProjectId?: string 
 const emit = defineEmits<{ (event: 'created', conversationId: string): void }>()
 
 const { api } = useAgent()
+const { t } = useI18n()
 
 const projectId = ref(props.defaultProjectId || props.projects[0]?.id || '')
 const query = ref('')
@@ -143,7 +144,7 @@ async function submit() {
     open.value = false
     emit('created', result.conversation.id)
   } catch (e: any) {
-    error.value = e?.message || 'Could not send'
+    error.value = e?.message || t('chat.couldNotSend')
   } finally {
     sending.value = false
   }

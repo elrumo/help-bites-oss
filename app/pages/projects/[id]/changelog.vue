@@ -1,16 +1,16 @@
 <template>
   <div class="flex-1 min-h-0 flex flex-col">
-    <PageHeader :project-id="id" title="Changelog">
+    <PageHeader :project-id="id" :title="$t('sections.changelog')">
       <template #title>
-        <span v-if="!loading && !error" class="ml-1 hidden text-xs font-normal tabular-nums text-muted sm:inline">{{ publicCount }} public, {{ draftCount }} {{ draftCount === 1 ? 'draft' : 'drafts' }}</span>
+        <span v-if="!loading && !error" class="ml-1 hidden text-xs font-normal tabular-nums text-muted sm:inline">{{ $t('changelog.publicCount', publicCount) }}, {{ $t('changelog.draftCount', draftCount) }}</span>
       </template>
       <template #actions>
-        <UButton icon="i-lucide-sparkles" label="Public changelog" color="neutral" variant="ghost" size="sm" @click="copyChangelogUrl" />
-        <UButton v-if="changelogReady" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="changelogUrl" target="_blank" aria-label="Open the public changelog" />
-        <UButton icon="i-lucide-git-commit-horizontal" label="From commits" color="neutral" variant="ghost" size="sm" @click="openGenerate" />
-        <UButton icon="i-lucide-settings-2" label="Settings" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
-        <UButton icon="i-lucide-package-plus" label="New release" color="neutral" variant="soft" size="sm" @click="openNewRelease" />
-        <UButton icon="i-lucide-plus" label="New entry" size="sm" @click="openNewEntry" />
+        <UButton icon="i-lucide-sparkles" :label="$t('changelog.publicChangelog')" color="neutral" variant="ghost" size="sm" @click="copyChangelogUrl" />
+        <UButton v-if="changelogReady" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="changelogUrl" target="_blank" :aria-label="$t('changelog.openPublic')" />
+        <UButton icon="i-lucide-git-commit-horizontal" :label="$t('changelog.fromCommits')" color="neutral" variant="ghost" size="sm" @click="openGenerate" />
+        <UButton icon="i-lucide-settings-2" :label="$t('nav.settings')" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
+        <UButton icon="i-lucide-package-plus" :label="$t('changelog.newRelease')" color="neutral" variant="soft" size="sm" @click="openNewRelease" />
+        <UButton icon="i-lucide-plus" :label="$t('changelog.newEntry')" size="sm" @click="openNewEntry" />
       </template>
     </PageHeader>
 
@@ -20,23 +20,23 @@
     <div v-else class="flex-1 min-h-0 overflow-y-auto">
       <div class="mx-auto max-w-4xl space-y-8 px-4 py-4 md:px-6">
         <p v-if="project && !changelogReady" class="rounded-lg border border-default bg-elevated px-3 py-2 text-[13px] text-muted">
-          The public changelog is off. Turn on <button type="button" class="font-medium text-default underline underline-offset-2" @click="showSettings = true">Public changelog</button> in Settings to serve its page, JSON and RSS; it does not need the feedback board.
+          {{ $t('changelog.offBefore') }} <button type="button" class="font-medium text-default underline underline-offset-2" @click="showSettings = true">{{ $t('changelog.publicChangelog') }}</button> {{ $t('changelog.offAfter') }}
         </p>
 
-        <EmptyState v-if="!entries.length && !releases.length" icon="i-lucide-sparkles" title="Nothing here yet" description="Write what shipped, in your own words, and group it into releases. Entries stay private until you publish them; link the posts, board items, tickets and errors they come from so you can see what is done.">
+        <EmptyState v-if="!entries.length && !releases.length" icon="i-lucide-sparkles" :title="$t('changelog.nothingYet')" :description="$t('changelog.emptyDescription')">
           <UButton icon="i-lucide-plus" label="New entry" @click="openNewEntry" />
         </EmptyState>
 
         <p v-if="aiPending" class="flex items-center gap-2 rounded-lg border border-default bg-elevated px-3 py-2 text-[13px] text-muted">
           <UIcon name="i-lucide-sparkles" class="size-4 shrink-0 text-primary" />
-          <span><span class="font-medium text-default">{{ aiPending }} AI-written {{ aiPending === 1 ? 'draft is' : 'drafts are' }} waiting for your review.</span> Nothing is public until you approve it.</span>
+          <span><span class="font-medium text-default">{{ $t('changelog.aiWaiting', aiPending) }}</span> {{ $t('changelog.nothingPublic') }}</span>
         </p>
 
         <div v-if="selected.size" class="sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-default bg-default px-3 py-2 text-[13px] shadow-sm">
-          <span class="tabular-nums text-muted">{{ selected.size }} selected</span>
-          <UButton label="Approve and publish" icon="i-lucide-check" size="xs" color="primary" variant="soft" :disabled="!selectedDrafts.length" :loading="bulk === 'approve'" @click="approveSelected" />
-          <UButton :label="confirmMerge ? 'Click again: published entries go private' : 'Merge into one draft'" icon="i-lucide-merge" size="xs" :color="confirmMerge ? 'warning' : 'neutral'" variant="soft" :disabled="selected.size < 2 || selected.size > 10" :loading="bulk === 'merge'" @click="mergeSelected" />
-          <UButton label="Clear" size="xs" color="neutral" variant="ghost" class="ml-auto" @click="clearSelection" />
+          <span class="tabular-nums text-muted">{{ $t('changelog.selected', { count: selected.size }) }}</span>
+          <UButton :label="$t('changelog.approvePublish')" icon="i-lucide-check" size="xs" color="primary" variant="soft" :disabled="!selectedDrafts.length" :loading="bulk === 'approve'" @click="approveSelected" />
+          <UButton :label="confirmMerge ? $t('changelog.confirmMerge') : $t('changelog.mergeOne')" icon="i-lucide-merge" size="xs" :color="confirmMerge ? 'warning' : 'neutral'" variant="soft" :disabled="selected.size < 2 || selected.size > 10" :loading="bulk === 'merge'" @click="mergeSelected" />
+          <UButton :label="$t('changelog.clear')" size="xs" color="neutral" variant="ghost" class="ml-auto" @click="clearSelection" />
           <p v-if="bulkError" class="w-full text-sm text-error">{{ bulkError }}</p>
         </div>
 
@@ -44,101 +44,101 @@
           <header class="flex flex-wrap items-center gap-2">
             <template v-if="group.release">
               <h2 class="text-sm font-semibold">{{ group.release.version }}<span v-if="group.release.title" class="font-normal text-muted"> · {{ group.release.title }}</span></h2>
-              <span class="rounded-full px-1.5 text-[11px]" :class="group.release.status === 'published' ? 'bg-success/10 text-success' : 'bg-elevated text-toned'">{{ group.release.status === 'published' ? 'Published' : 'Draft' }}</span>
+              <span class="rounded-full px-1.5 text-[11px]" :class="group.release.status === 'published' ? 'bg-success/10 text-success' : 'bg-elevated text-toned'">{{ group.release.status === 'published' ? $t('changelog.published') : $t('changelog.draft') }}</span>
               <time v-if="group.release.publishedAt" class="text-xs text-muted" :datetime="group.release.publishedAt">{{ shortDate(group.release.publishedAt) }}</time>
               <span class="ml-auto flex items-center gap-1">
-                <UButton v-if="group.release.status === 'draft'" label="Publish release" icon="i-lucide-rocket" size="xs" color="primary" variant="soft" :loading="publishing === group.release.id" @click="publishRelease(group.release)" />
-                <UButton icon="i-lucide-pencil" size="xs" color="neutral" variant="ghost" square :aria-label="`Edit release ${group.release.version}`" @click="openRelease(group.release)" />
+                <UButton v-if="group.release.status === 'draft'" :label="$t('changelog.publishRelease')" icon="i-lucide-rocket" size="xs" color="primary" variant="soft" :loading="publishing === group.release.id" @click="publishRelease(group.release)" />
+                <UButton icon="i-lucide-pencil" size="xs" color="neutral" variant="ghost" square :aria-label="$t('changelog.editRelease', { version: group.release.version })" @click="openRelease(group.release)" />
               </span>
             </template>
-            <h2 v-else class="text-sm font-semibold">No release</h2>
+            <h2 v-else class="text-sm font-semibold">{{ $t('changelog.noRelease') }}</h2>
           </header>
           <ul class="divide-y divide-default rounded-lg border border-default">
             <li v-for="entry in group.entries" :key="entry.id" class="flex items-center transition-colors hover:bg-elevated">
-              <UCheckbox :model-value="selected.has(entry.id)" class="pl-3" :aria-label="`Select ${entry.title}`" @update:model-value="toggleSelected(entry.id)" />
+              <UCheckbox :model-value="selected.has(entry.id)" class="pl-3" :aria-label="$t('changelog.selectEntry', { title: entry.title })" @update:model-value="toggleSelected(entry.id)" />
               <button type="button" class="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left text-[13px]" @click="openEntry(entry.id)">
-                <span class="w-16 shrink-0 rounded-full px-1.5 text-center text-[11px] font-semibold" :class="CHANGELOG_TAG_CLASS[entry.tag]">{{ CHANGELOG_TAG_LABELS[entry.tag] }}</span>
+                <span class="w-16 shrink-0 rounded-full px-1.5 text-center text-[11px] font-semibold" :class="CHANGELOG_TAG_CLASS[entry.tag]">{{ $t(TAG_KEYS[entry.tag]) }}</span>
                 <span v-if="entry.number" class="shrink-0 tabular-nums text-muted">#{{ entry.number }}</span>
                 <span class="min-w-0 flex-1 truncate">{{ entry.title }}</span>
-                <span v-if="entry.sources.length" class="inline-flex shrink-0 items-center gap-1 text-xs text-muted" :title="`${entry.sources.filter(s => s.done).length} of ${entry.sources.length} linked items are done`"><UIcon name="i-lucide-link" class="size-3" />{{ entry.sources.filter(s => s.done).length }}/{{ entry.sources.length }}</span>
-                <span v-if="entry.aiGenerated" class="shrink-0 rounded-full bg-primary/10 px-1.5 text-[11px] text-primary" title="Written by AI from git commits">AI</span>
+                <span v-if="entry.sources.length" class="inline-flex shrink-0 items-center gap-1 text-xs text-muted" :title="$t('changelog.linkedDone', { done: entry.sources.filter(s => s.done).length, total: entry.sources.length })"><UIcon name="i-lucide-link" class="size-3" />{{ entry.sources.filter(s => s.done).length }}/{{ entry.sources.length }}</span>
+                <span v-if="entry.aiGenerated" class="shrink-0 rounded-full bg-primary/10 px-1.5 text-[11px] text-primary" :title="$t('changelog.aiTitle')">AI</span>
                 <span class="shrink-0 rounded-full px-1.5 text-[11px]" :class="STATE_CLASS[stateOf(entry).key]">{{ stateOf(entry).label }}</span>
               </button>
             </li>
-            <li v-if="!group.entries.length" class="px-3 py-2.5 text-xs text-muted">No entries yet. Add one and choose this release.</li>
+            <li v-if="!group.entries.length" class="px-3 py-2.5 text-xs text-muted">{{ $t('changelog.noEntries') }}</li>
           </ul>
         </section>
       </div>
     </div>
 
     <!-- Entry editor -->
-    <USlideover v-model:open="entryOpen" :title="current ? (current.number ? `Entry #${current.number}` : 'Entry') : 'New entry'" :description="current ? `Created ${timeAgo(current.createdAt)}` : 'A draft until you publish it'" :ui="{ content: 'sm:max-w-2xl' }">
+    <USlideover v-model:open="entryOpen" :title="current ? (current.number ? $t('changelog.entryNumber', { number: current.number }) : $t('changelog.entry')) : $t('changelog.newEntry')" :description="current ? $t('changelog.created', { time: timeAgo(current.createdAt) }) : $t('changelog.draftUntilPublish')" :ui="{ content: 'sm:max-w-2xl' }">
       <template #body>
         <div class="space-y-6">
           <div class="space-y-2">
-            <UInput v-model="draft.title" placeholder="What changed" variant="none" size="xl" class="w-full" :ui="{ base: 'px-0 text-lg font-semibold' }" :maxlength="200" aria-label="Title" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')" />
-            <UTextarea v-model="draft.body" placeholder="Say it the way your users would. Markdown. This text is public once published." variant="none" :rows="4" autoresize :maxrows="18" class="w-full" :ui="{ base: 'px-0' }" aria-label="Text" @blur="saveText('body')" />
+            <UInput v-model="draft.title" :placeholder="$t('changelog.whatChanged')" variant="none" size="xl" class="w-full" :ui="{ base: 'px-0 text-lg font-semibold' }" :maxlength="200" :aria-label="$t('changelog.title')" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')" />
+            <UTextarea v-model="draft.body" :placeholder="$t('changelog.bodyPlaceholder')" variant="none" :rows="4" autoresize :maxrows="18" class="w-full" :ui="{ base: 'px-0' }" :aria-label="$t('changelog.text')" @blur="saveText('body')" />
           </div>
 
           <section class="grid gap-x-4 gap-y-2 sm:grid-cols-2">
-            <UInput v-model="draft.summary" placeholder="Summary: one line for list cards" size="sm" class="w-full sm:col-span-2" :maxlength="300" aria-label="Summary" @blur="saveField('summary')" />
-            <UInput v-if="current" v-model="draft.slug" placeholder="slug" size="sm" class="w-full" :maxlength="120" aria-label="Slug" :ui="{ base: 'font-mono text-xs' }" @blur="saveField('slug')" />
-            <UInput v-model="draft.area" :placeholder="project?.changelog.areas?.length ? `Area: ${project.changelog.areas.join(', ')}` : 'Area (optional)'" size="sm" class="w-full" :maxlength="40" aria-label="Area" @blur="saveField('area')" />
+            <UInput v-model="draft.summary" :placeholder="$t('changelog.summaryPlaceholder')" size="sm" class="w-full sm:col-span-2" :maxlength="300" :aria-label="$t('changelog.summary')" @blur="saveField('summary')" />
+            <UInput v-if="current" v-model="draft.slug" :placeholder="$t('changelog.slug')" size="sm" class="w-full" :maxlength="120" :aria-label="$t('changelog.slug')" :ui="{ base: 'font-mono text-xs' }" @blur="saveField('slug')" />
+            <UInput v-model="draft.area" :placeholder="project?.changelog.areas?.length ? $t('changelog.areaList', { areas: project.changelog.areas.join(', ') }) : $t('changelog.areaOptional')" size="sm" class="w-full" :maxlength="40" :aria-label="$t('changelog.area')" @blur="saveField('area')" />
           </section>
 
           <section class="grid gap-x-4 sm:grid-cols-2">
-            <USelect v-model="draft.tag" :items="tagItems" variant="ghost" size="sm" class="w-full" :ui="property" aria-label="Type" @update:model-value="patch({ tag: draft.tag })">
+            <USelect v-model="draft.tag" :items="tagItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('changelog.type')" @update:model-value="patch({ tag: draft.tag })">
               <template #leading><UIcon name="i-lucide-tag" class="size-3.5 text-dimmed" /></template>
             </USelect>
-            <USelect v-model="draft.releaseId" :items="releaseItems" variant="ghost" size="sm" class="w-full" :ui="property" aria-label="Release" @update:model-value="patch({ releaseId: draft.releaseId === NO_RELEASE ? null : draft.releaseId })">
+            <USelect v-model="draft.releaseId" :items="releaseItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('changelog.release')" @update:model-value="patch({ releaseId: draft.releaseId === NO_RELEASE ? null : draft.releaseId })">
               <template #leading><UIcon name="i-lucide-package" class="size-3.5 text-dimmed" /></template>
             </USelect>
-            <USelect v-model="draft.status" :items="statusItems" variant="ghost" size="sm" class="w-full" :ui="property" aria-label="Status" @update:model-value="patch({ status: draft.status })">
+            <USelect v-model="draft.status" :items="statusItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('changelog.status')" @update:model-value="patch({ status: draft.status })">
               <template #leading><span class="size-2.5 rounded-full" :class="draft.status === 'published' ? 'bg-emerald-500' : 'bg-stone-400'" /></template>
             </USelect>
             <label class="group relative flex h-8 items-center rounded-md ps-8 pe-2 text-[13px] text-default hover:bg-elevated" :class="current ? '' : 'pointer-events-none opacity-50'">
               <UIcon name="i-lucide-calendar" class="absolute left-2.5 size-3.5 text-dimmed" />
-              <input v-model="draft.date" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.date ? '' : 'text-dimmed'" aria-label="Date" :disabled="!current" @change="patch({ publishedAt: draft.date ? `${draft.date}T12:00:00.000Z` : null })">
+              <input v-model="draft.date" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.date ? '' : 'text-dimmed'" :aria-label="$t('changelog.date')" :disabled="!current" @change="patch({ publishedAt: draft.date ? `${draft.date}T12:00:00.000Z` : null })">
             </label>
           </section>
 
           <p v-if="current?.aiGenerated" class="flex items-center gap-2 rounded-lg border border-default bg-elevated px-3 py-2 text-xs text-muted">
             <UIcon name="i-lucide-sparkles" class="size-3.5 shrink-0 text-primary" />
-            Written by AI from {{ current.commitShas.length }} git {{ current.commitShas.length === 1 ? 'commit' : 'commits' }}. Check it before it goes public; edit it freely.
+            {{ $t('changelog.aiWrittenFrom', current.commitShas.length) }}
           </p>
 
           <section v-if="current && current.status === 'draft' && current.reviewStatus" class="space-y-2 rounded-lg border border-default bg-elevated px-3 py-2">
             <p class="text-xs text-muted">
-              <span class="font-medium text-default">{{ current.reviewStatus === 'rejected' ? 'Sent back' : 'Waiting for review' }}</span>
+              <span class="font-medium text-default">{{ current.reviewStatus === 'rejected' ? $t('changelog.sentBack') : $t('changelog.waitingReview') }}</span>
               <template v-if="current.reviewedBy"> · {{ current.reviewedBy }}<template v-if="current.reviewNotes">: {{ current.reviewNotes }}</template></template>
             </p>
             <div class="flex items-center gap-2">
-              <UInput v-model="reviewNotes" placeholder="Notes (optional)" size="sm" class="min-w-0 flex-1" :maxlength="2000" aria-label="Review notes" />
-              <UButton label="Reject" size="sm" color="neutral" variant="soft" :loading="reviewing === 'reject'" @click="review('reject')" />
-              <UButton label="Approve and publish" size="sm" color="primary" :loading="reviewing === 'approve'" @click="review('approve')" />
+              <UInput v-model="reviewNotes" :placeholder="$t('changelog.notesOptional')" size="sm" class="min-w-0 flex-1" :maxlength="2000" :aria-label="$t('changelog.reviewNotes')" />
+              <UButton :label="$t('changelog.reject')" size="sm" color="neutral" variant="soft" :loading="reviewing === 'reject'" @click="review('reject')" />
+              <UButton :label="$t('changelog.approvePublish')" size="sm" color="primary" :loading="reviewing === 'approve'" @click="review('approve')" />
             </div>
           </section>
 
-          <p v-if="current && stateOf(current).key === 'waiting'" class="rounded-lg border border-default bg-elevated px-3 py-2 text-xs text-muted">Not public yet: its release is still a draft. Publish the release and it goes out with it.</p>
+          <p v-if="current && stateOf(current).key === 'waiting'" class="rounded-lg border border-default bg-elevated px-3 py-2 text-xs text-muted">{{ $t('changelog.notPublicYet') }}</p>
 
           <template v-if="current">
             <section class="space-y-2">
-              <h3 class="flex items-center gap-2 text-sm font-semibold">Made from <span class="font-normal text-muted">{{ current.sources.length }}</span></h3>
+              <h3 class="flex items-center gap-2 text-sm font-semibold">{{ $t('changelog.madeFrom') }} <span class="font-normal text-muted">{{ current.sources.length }}</span></h3>
               <ul v-if="current.sources.length" class="divide-y divide-default rounded-lg border border-default">
                 <li v-for="source in current.sources" :key="`${source.kind}:${source.id}`" class="group flex items-center gap-2 px-2.5 py-2 text-[13px]">
                   <UIcon :name="SOURCE_ICON[source.kind]" class="size-3.5 shrink-0 text-muted" :aria-label="SOURCE_LABEL[source.kind]" />
                   <NuxtLink v-if="sourceLink(source)" :to="sourceLink(source)!" class="min-w-0 flex-1 truncate hover:underline"><span v-if="source.number" class="mr-1 tabular-nums text-muted">#{{ source.number }}</span>{{ source.label || SOURCE_LABEL[source.kind] }}</NuxtLink>
                   <span v-else class="min-w-0 flex-1 truncate"><span v-if="source.number" class="mr-1 tabular-nums text-muted">#{{ source.number }}</span>{{ source.label || SOURCE_LABEL[source.kind] }}</span>
-                  <span class="shrink-0 rounded-full px-1.5 text-[11px]" :class="source.done ? 'bg-success/10 text-success' : 'bg-elevated text-toned'">{{ source.done ? 'Done' : source.status || 'Open' }}</span>
-                  <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" :aria-label="`Unlink ${source.label}`" @click="setLink(source.kind, source.id, false)" />
+                  <span class="shrink-0 rounded-full px-1.5 text-[11px]" :class="source.done ? 'bg-success/10 text-success' : 'bg-elevated text-toned'">{{ source.done ? $t('changelog.done') : source.status || $t('changelog.open') }}</span>
+                  <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" :aria-label="$t('changelog.unlinkSource', { label: source.label })" @click="setLink(source.kind, source.id, false)" />
                 </li>
               </ul>
               <form class="flex gap-2" @submit.prevent="addSource">
-                <USelect v-model="sourceKind" :items="sourceKindItems" size="sm" class="w-36" aria-label="Kind" />
-                <UInput v-model="sourceRef" size="sm" class="w-32" placeholder="#12" aria-label="Number" />
-                <UButton type="submit" label="Link" size="sm" color="neutral" variant="soft" :disabled="!sourceRef.trim()" :loading="linking" />
+                <USelect v-model="sourceKind" :items="sourceKindItems" size="sm" class="w-36" :aria-label="$t('changelog.kind')" />
+                <UInput v-model="sourceRef" size="sm" class="w-32" placeholder="#12" :aria-label="$t('changelog.number')" />
+                <UButton type="submit" :label="$t('changelog.link')" size="sm" color="neutral" variant="soft" :disabled="!sourceRef.trim()" :loading="linking" />
               </form>
-              <p class="text-xs text-muted">Tickets and errors link from the inbox: open one and use the Changelog section. Nothing is copied from what you link.</p>
+              <p class="text-xs text-muted">{{ $t('changelog.linkHint') }}</p>
             </section>
           </template>
 
@@ -147,75 +147,75 @@
       </template>
       <template #footer>
         <div class="flex w-full items-center gap-2">
-          <UButton v-if="current" :label="confirmDelete ? 'Click again to delete' : 'Delete'" icon="i-lucide-trash-2" :color="confirmDelete ? 'error' : 'neutral'" :variant="confirmDelete ? 'solid' : 'ghost'" @click="deleteEntry" />
-          <span v-if="current" class="ml-auto text-xs text-muted">{{ savingEntry ? 'Saving…' : 'Changes save as you go' }}</span>
+          <UButton v-if="current" :label="confirmDelete ? $t('changelog.clickAgainDelete') : $t('changelog.delete')" icon="i-lucide-trash-2" :color="confirmDelete ? 'error' : 'neutral'" :variant="confirmDelete ? 'solid' : 'ghost'" @click="deleteEntry" />
+          <span v-if="current" class="ml-auto text-xs text-muted">{{ savingEntry ? $t('changelog.saving') : $t('changelog.changesSave') }}</span>
           <template v-else>
             <UButton class="ml-auto" label="Cancel" color="neutral" variant="ghost" @click="entryOpen = false" />
-            <UButton label="Create draft" color="primary" :loading="savingEntry" :disabled="!draft.title.trim()" @click="createEntry" />
+            <UButton :label="$t('changelog.createDraft')" color="primary" :loading="savingEntry" :disabled="!draft.title.trim()" @click="createEntry" />
           </template>
         </div>
       </template>
     </USlideover>
 
     <!-- Settings -->
-    <USlideover v-model:open="showSettings" title="Changelog settings" description="How entries get started." :ui="{ content: 'sm:max-w-lg' }">
+    <USlideover v-model:open="showSettings" :title="$t('changelog.settingsTitle')" :description="$t('changelog.settingsDescription')" :ui="{ content: 'sm:max-w-lg' }">
       <template #body>
         <div class="space-y-4">
-          <USwitch :model-value="project?.changelog.autoDraft || false" label="Draft entries automatically" description="A feedback post or board item reaching a done status gets a draft entry, unless one already links it. Drafts are never published for you. Tickets and errors are always added by hand." @update:model-value="saveSettings({ autoDraft: $event })" />
-          <USwitch :model-value="project?.changelog.commitAi.onPush || false" label="Write entries from new commits" description="A push to a connected repo's default branch has the AI draft entries from its new commits (only the messages are read). They wait for your review. Needs GitHub repos in Settings and the app's webhook (see docs/GITHUB.md)." @update:model-value="saveSettings({ commitAi: { onPush: $event } })" />
-          <USwitch v-if="project?.changelog.commitAi.onPush" :model-value="project?.changelog.commitAi.autoPublish || false" label="Publish them without review" description="What a push drafts goes public immediately, with no one reading it first. Entries made with the From commits button are always drafts." @update:model-value="saveSettings({ commitAi: { autoPublish: $event } })" />
-          <USwitch :model-value="project?.changelog.comments || false" label="Comments" description="Signed-in readers can comment on published entries. Your site sends their identity token; admins can hide or delete any comment." @update:model-value="saveSettings({ comments: $event })" />
-          <USwitch :model-value="project?.changelog.notify || false" label="Email subscribers" description="Readers can ask for an email when something ships (as it happens, or weekly on Monday). Needs CHANGELOG_LINK_SECRET or HELPBITES_SECRET (either 32+ characters) on the server, and ENABLE_CHANGELOG_NOTIFY=true for the scheduler to send." @update:model-value="saveSettings({ notify: $event })" />
-          <USwitch :model-value="project?.changelog.enabled || false" label="Public changelog" description="Serve the changelog page, embed, JSON and RSS to everyone. Independent of the feedback board, whose Changelog tab also needs this on." @update:model-value="saveSettings({ enabled: $event })" />
-          <p class="text-xs text-muted">{{ savingSettings ? 'Saving…' : settingsSaved ? 'Saved' : 'Saves as you change it' }}</p>
+          <USwitch :model-value="project?.changelog.autoDraft || false" :label="$t('changelog.autoDraft')" :description="$t('changelog.autoDraftDescription')" @update:model-value="saveSettings({ autoDraft: $event })" />
+          <USwitch :model-value="project?.changelog.commitAi.onPush || false" :label="$t('changelog.commitAi')" :description="$t('changelog.commitAiDescription')" @update:model-value="saveSettings({ commitAi: { onPush: $event } })" />
+          <USwitch v-if="project?.changelog.commitAi.onPush" :model-value="project?.changelog.commitAi.autoPublish || false" :label="$t('changelog.autoPublish')" :description="$t('changelog.autoPublishDescription')" @update:model-value="saveSettings({ commitAi: { autoPublish: $event } })" />
+          <USwitch :model-value="project?.changelog.comments || false" :label="$t('changelog.comments')" :description="$t('changelog.commentsDescription')" @update:model-value="saveSettings({ comments: $event })" />
+          <USwitch :model-value="project?.changelog.notify || false" :label="$t('changelog.emailSubscribers')" :description="$t('changelog.emailSubscribersDescription')" @update:model-value="saveSettings({ notify: $event })" />
+          <USwitch :model-value="project?.changelog.enabled || false" :label="$t('changelog.publicChangelog')" :description="$t('changelog.publicChangelogDescription')" @update:model-value="saveSettings({ enabled: $event })" />
+          <p class="text-xs text-muted">{{ savingSettings ? $t('changelog.saving') : settingsSaved ? $t('common.saved') : $t('changelog.savesAsChange') }}</p>
           <p v-if="settingsError" class="text-sm text-error">{{ settingsError }}</p>
-          <p class="text-xs text-muted">Unless you turn that on, whether the changelog is public, and its page and RSS feed, follow the feedback board's <NuxtLink :to="`/projects/${id}/feedback`" class="underline underline-offset-2">Changelog option</NuxtLink>.</p>
+          <p class="text-xs text-muted">{{ $t('changelog.followsFeedback') }} <NuxtLink :to="`/projects/${id}/feedback`" class="underline underline-offset-2">{{ $t('changelog.changelogOption') }}</NuxtLink>{{ $t('changelog.followsFeedbackEnd') }}</p>
         </div>
       </template>
     </USlideover>
 
     <!-- Write from commits -->
-    <USlideover v-model:open="generateOpen" title="Write from commits" description="The AI reads your commit messages and drafts entries. Nothing is published." :ui="{ content: 'sm:max-w-lg' }">
+    <USlideover v-model:open="generateOpen" :title="$t('changelog.writeFromCommits')" :description="$t('changelog.writeFromCommitsDescription')" :ui="{ content: 'sm:max-w-lg' }">
       <template #body>
         <div class="space-y-4">
           <p v-if="repos && !repos.length" class="rounded-lg border border-default bg-elevated px-3 py-2 text-[13px] text-muted">
-            This project has no GitHub repos yet. Connect GitHub and pick its repos in <NuxtLink :to="`/projects/${id}/settings`" class="font-medium text-default underline underline-offset-2">Settings</NuxtLink>.
+            {{ $t('changelog.noRepos') }} <NuxtLink :to="`/projects/${id}/settings`" class="font-medium text-default underline underline-offset-2">{{ $t('nav.settings') }}</NuxtLink>{{ $t('changelog.noReposAfter') }}
           </p>
-          <UFormField label="Commits to read">
+          <UFormField :label="$t('changelog.commitsToRead')">
             <USelect v-model="range" :items="rangeItems" class="w-full" />
           </UFormField>
           <div v-if="range === 'recent'" class="flex gap-2">
-            <UInput v-model.number="rangeCount" type="number" :min="1" :max="999" class="w-24" aria-label="How many" />
-            <USelect v-model="rangeUnit" :items="unitItems" class="w-36" aria-label="Unit" />
+            <UInput v-model.number="rangeCount" type="number" :min="1" :max="999" class="w-24" :aria-label="$t('changelog.howMany')" />
+            <USelect v-model="rangeUnit" :items="unitItems" class="w-36" :aria-label="$t('changelog.unit')" />
           </div>
-          <p class="text-xs text-muted">Reads the newest 300 commits of the default branch of each repo. Commits already written up are skipped, and merge commits are ignored. Entries come back as drafts for you to review, merge and edit.</p>
+          <p class="text-xs text-muted">{{ $t('changelog.readsNewest') }}</p>
           <div v-if="run" class="rounded-lg border border-default px-3 py-2 text-[13px]">
-            <template v-if="run.state === 'running'"><UIcon name="i-lucide-loader-circle" class="mr-1 inline size-3.5 animate-spin" />Writing drafts…</template>
-            <template v-else-if="run.state === 'done'">Last run: {{ run.created }} {{ run.created === 1 ? 'draft' : 'drafts' }} created, {{ run.skipped }} {{ run.skipped === 1 ? 'commit' : 'commits' }} already covered<template v-if="run.truncated"> (older commits were not read)</template>.</template>
-            <template v-else><span class="text-error">Last run failed: {{ run.error }}</span></template>
+            <template v-if="run.state === 'running'"><UIcon name="i-lucide-loader-circle" class="mr-1 inline size-3.5 animate-spin" />{{ $t('changelog.writingDrafts') }}</template>
+            <template v-else-if="run.state === 'done'">{{ $t('changelog.lastRun') }} {{ $t('changelog.draftsCreated', run.created) }}, {{ $t('changelog.commitsCovered', run.skipped) }}<template v-if="run.truncated">{{ $t('changelog.olderNotRead') }}</template>{{ $t('changelog.sentenceEnd') }}</template>
+            <template v-else><span class="text-error">{{ $t('changelog.lastRunFailed') }} {{ run.error }}</span></template>
           </div>
           <p v-if="generateError" class="text-sm text-error">{{ generateError }}</p>
         </div>
       </template>
       <template #footer>
         <div class="flex w-full items-center gap-2">
-          <UButton class="ml-auto" label="Close" color="neutral" variant="ghost" @click="generateOpen = false" />
-          <UButton label="Generate drafts" icon="i-lucide-sparkles" color="primary" :loading="generating || run?.state === 'running'" :disabled="repos !== null && !repos.length" @click="generate" />
+          <UButton class="ml-auto" :label="$t('changelog.close')" color="neutral" variant="ghost" @click="generateOpen = false" />
+          <UButton :label="$t('changelog.generateDrafts')" icon="i-lucide-sparkles" color="primary" :loading="generating || run?.state === 'running'" :disabled="repos !== null && !repos.length" @click="generate" />
         </div>
       </template>
     </USlideover>
 
     <!-- Release editor -->
-    <USlideover v-model:open="releaseOpen" :title="releaseDraft.id ? `Release ${releaseDraft.version}` : 'New release'" description="A version that groups entries. Nothing in it is public until the release is." :ui="{ content: 'sm:max-w-lg' }">
+    <USlideover v-model:open="releaseOpen" :title="releaseDraft.id ? $t('changelog.releaseTitle', { version: releaseDraft.version }) : $t('changelog.newRelease')" :description="$t('changelog.releaseDescription')" :ui="{ content: 'sm:max-w-lg' }">
       <template #body>
         <form class="space-y-4" @submit.prevent="saveRelease">
-          <UFormField label="Version" required hint="Free text: 2.4, 2026.10…">
+          <UFormField :label="$t('changelog.version')" required :hint="$t('changelog.versionHint')">
             <UInput v-model="releaseDraft.version" class="w-full" :maxlength="60" placeholder="2.4" />
           </UFormField>
-          <UFormField label="Title" hint="Optional headline">
-            <UInput v-model="releaseDraft.title" class="w-full" :maxlength="200" placeholder="The autumn release" />
+          <UFormField :label="$t('changelog.title')" :hint="$t('changelog.optionalHeadline')">
+            <UInput v-model="releaseDraft.title" class="w-full" :maxlength="200" :placeholder="$t('changelog.releasePlaceholder')" />
           </UFormField>
-          <UFormField label="Summary" hint="Optional intro, Markdown">
+          <UFormField :label="$t('changelog.summary')" :hint="$t('changelog.summaryHint')">
             <UTextarea v-model="releaseDraft.summary" :rows="3" autoresize :maxrows="12" class="w-full" :maxlength="2000" />
           </UFormField>
           <p v-if="releaseError" class="text-sm text-error">{{ releaseError }}</p>
@@ -223,9 +223,9 @@
       </template>
       <template #footer>
         <div class="flex w-full items-center gap-2">
-          <UButton v-if="releaseDraft.id" :label="confirmDeleteRelease ? 'Click again to delete' : 'Delete'" icon="i-lucide-trash-2" :color="confirmDeleteRelease ? 'error' : 'neutral'" :variant="confirmDeleteRelease ? 'solid' : 'ghost'" @click="deleteRelease" />
-          <UButton class="ml-auto" label="Cancel" color="neutral" variant="ghost" @click="releaseOpen = false" />
-          <UButton :label="releaseDraft.id ? 'Save' : 'Create release'" color="primary" :loading="savingRelease" :disabled="!releaseDraft.version.trim()" @click="saveRelease" />
+          <UButton v-if="releaseDraft.id" :label="confirmDeleteRelease ? $t('changelog.clickAgainDelete') : $t('changelog.delete')" icon="i-lucide-trash-2" :color="confirmDeleteRelease ? 'error' : 'neutral'" :variant="confirmDeleteRelease ? 'solid' : 'ghost'" @click="deleteRelease" />
+          <UButton class="ml-auto" :label="$t('common.cancel')" color="neutral" variant="ghost" @click="releaseOpen = false" />
+          <UButton :label="releaseDraft.id ? $t('changelog.save') : $t('changelog.createRelease')" color="primary" :loading="savingRelease" :disabled="!releaseDraft.version.trim()" @click="saveRelease" />
         </div>
       </template>
     </USlideover>
@@ -248,6 +248,7 @@ const router = useRouter()
 const id = String(route.params.id)
 const { api, projects, loadProjects } = useAgent()
 const toast = useToast()
+const { t } = useI18n()
 const appUrl = useAppUrl()
 
 const project = computed<AdminProject | null>(() => projects.value.find(p => p.id === id) || null)
@@ -257,21 +258,22 @@ const loading = ref(true)
 const error = ref('')
 
 const NO_RELEASE = '__none__'
-const SOURCE_LABEL: Record<ChangelogLinkKind, string> = { feedback: 'Feedback post', board: 'Board item', conversation: 'Conversation' }
+const SOURCE_LABEL = computed<Record<ChangelogLinkKind, string>>(() => ({ feedback: t('changelog.feedbackPost'), board: t('changelog.boardItem'), conversation: t('changelog.conversation') }))
+const TAG_KEYS: Record<ChangelogTag, string> = { new: 'changelog.tagNew', improved: 'changelog.tagImproved', fix: 'changelog.tagFixed', removed: 'changelog.tagRemoved', breaking: 'changelog.tagBreaking' }
 const SOURCE_ICON: Record<ChangelogLinkKind, string> = { feedback: 'i-lucide-lightbulb', board: 'i-lucide-square-kanban', conversation: 'i-lucide-message-square' }
 const STATE_CLASS = { public: 'bg-success/10 text-success', waiting: 'bg-warning/10 text-warning', draft: 'bg-elevated text-toned' }
 const property = { base: 'h-8 w-full rounded-md ps-8 text-[13px] text-default', trailing: 'opacity-0 transition-opacity group-hover:opacity-100' }
-const tagItems = CHANGELOG_TAGS.map(value => ({ label: CHANGELOG_TAG_LABELS[value], value }))
-const statusItems = [{ label: 'Draft', value: 'draft' }, { label: 'Published', value: 'published' }]
-const sourceKindItems = [{ label: 'Feedback post', value: 'feedback' }, { label: 'Board item', value: 'board' }]
+const tagItems = computed(() => CHANGELOG_TAGS.map(value => ({ label: t(TAG_KEYS[value]), value })))
+const statusItems = computed(() => [{ label: t('changelog.draft'), value: 'draft' }, { label: t('changelog.published'), value: 'published' }])
+const sourceKindItems = computed(() => [{ label: t('changelog.feedbackPost'), value: 'feedback' }, { label: t('changelog.boardItem'), value: 'board' }])
 
 const releaseOf = (releaseId: string) => releases.value.find(r => r.id === releaseId) || null
-const releaseItems = computed(() => [{ label: 'No release', value: NO_RELEASE }, ...releases.value.map(r => ({ label: `${r.version}${r.title ? ` · ${r.title}` : ''}${r.status === 'draft' ? ' (draft)' : ''}`, value: r.id }))])
+const releaseItems = computed(() => [{ label: t('changelog.noRelease'), value: NO_RELEASE }, ...releases.value.map(r => ({ label: `${r.version}${r.title ? ` · ${r.title}` : ''}${r.status === 'draft' ? ` ${t('changelog.draftSuffix')}` : ''}`, value: r.id }))])
 
 /** Where an entry stands: public, a published entry still waiting on its draft release, or a draft. */
 function stateOf(entry: ChangelogEntry): { key: 'public' | 'waiting' | 'draft', label: string } {
-  if (entry.status !== 'published') return { key: 'draft', label: 'Draft' }
-  return isEntryPublic(entry, entry.releaseId ? releaseOf(entry.releaseId) : null) ? { key: 'public', label: 'Public' } : { key: 'waiting', label: 'Waiting for release' }
+  if (entry.status !== 'published') return { key: 'draft', label: t('changelog.draft') }
+  return isEntryPublic(entry, entry.releaseId ? releaseOf(entry.releaseId) : null) ? { key: 'public', label: t('changelog.public') } : { key: 'waiting', label: t('changelog.waitingRelease') }
 }
 
 const aiPending = computed(() => entries.value.filter(e => e.aiGenerated && e.status === 'draft').length)
@@ -294,14 +296,14 @@ const changelogReady = computed(() => Boolean(project.value?.changelog.enabled))
 
 async function copyChangelogUrl() {
   if (!changelogReady.value) {
-    toast.add({ title: 'Turn on the public changelog first', description: 'Switch on “Public changelog” in the Changelog settings. It does not need the feedback board.', icon: 'i-lucide-info', color: 'warning' })
+    toast.add({ title: t('changelog.turnOnFirst'), description: t('changelog.turnOnFirstDescription'), icon: 'i-lucide-info', color: 'warning' })
     return
   }
   try {
     await navigator.clipboard.writeText(changelogUrl.value)
-    toast.add({ title: 'Changelog link copied', description: changelogUrl.value, icon: 'i-lucide-clipboard-check', color: 'success' })
+    toast.add({ title: t('changelog.linkCopied'), description: changelogUrl.value, icon: 'i-lucide-clipboard-check', color: 'success' })
   } catch {
-    toast.add({ title: 'Your public changelog', description: changelogUrl.value, icon: 'i-lucide-sparkles' })
+    toast.add({ title: t('changelog.yourPublic'), description: changelogUrl.value, icon: 'i-lucide-sparkles' })
   }
 }
 
@@ -327,7 +329,7 @@ onMounted(async () => {
     if (!project.value) throw new Error('Project not found')
     await loadAll()
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the changelog'
+    error.value = e?.message || t('changelog.loadError')
   } finally {
     loading.value = false
   }
@@ -409,7 +411,7 @@ async function patch(body: Record<string, unknown>) {
   try {
     replaceEntry((await api<{ entry: ChangelogEntry }>(`/admin/changelog/entries/${current.value.id}`, { method: 'PATCH', body })).entry)
   } catch (e: any) {
-    entryError.value = e?.message || 'Could not save'
+    entryError.value = e?.message || t('changelog.saveError')
     fill(current.value)
   } finally {
     savingEntry.value = false
@@ -432,7 +434,7 @@ async function review(action: 'approve' | 'reject') {
     replaceEntry((await api<{ entry: ChangelogEntry }>(`/admin/changelog/entries/${current.value.id}/review`, { method: 'POST', body: { action, notes: reviewNotes.value } })).entry)
     reviewNotes.value = ''
   } catch (e: any) {
-    entryError.value = e?.message || 'Could not review the entry'
+    entryError.value = e?.message || t('changelog.reviewError')
   } finally {
     reviewing.value = ''
   }
@@ -459,7 +461,7 @@ async function createEntry() {
     editingId.value = entry.id
     void router.replace({ query: { ...route.query, entry: entry.id } })
   } catch (e: any) {
-    entryError.value = e?.message || 'Could not create the entry'
+    entryError.value = e?.message || t('changelog.createError')
   } finally {
     savingEntry.value = false
   }
@@ -478,7 +480,7 @@ async function deleteEntry() {
     entries.value = entries.value.filter(e => e.id !== entryId)
     entryOpen.value = false
   } catch (e: any) {
-    entryError.value = e?.message || 'Could not delete'
+    entryError.value = e?.message || t('changelog.deleteError')
   }
 }
 
@@ -496,7 +498,7 @@ async function setLink(kind: ChangelogLinkKind, targetId: string, linked: boolea
     replaceEntry((await api<{ entry: ChangelogEntry }>(`/admin/changelog/entries/${current.value.id}/links`, { method: 'POST', body: { kind, id: targetId, linked } })).entry)
     return true
   } catch (e: any) {
-    entryError.value = e?.message || 'Could not change the link'
+    entryError.value = e?.message || t('changelog.linkError')
     return false
   } finally {
     linking.value = false
@@ -534,10 +536,10 @@ async function approveSelected() {
   bulkError.value = ''
   try {
     for (const entry of selectedDrafts.value) await api(`/admin/changelog/entries/${entry.id}/review`, { method: 'POST', body: { action: 'approve' } })
-    toast.add({ title: `${selectedDrafts.value.length} published`, icon: 'i-lucide-check', color: 'success' })
+    toast.add({ title: t('changelog.publishedCount', selectedDrafts.value.length), icon: 'i-lucide-check', color: 'success' })
     clearSelection()
   } catch (e: any) {
-    bulkError.value = e?.message || 'Could not approve them all'
+    bulkError.value = e?.message || t('changelog.approveError')
   } finally {
     bulk.value = ''
     await loadAll().catch(() => {})
@@ -564,7 +566,7 @@ async function mergeSelected() {
     await loadAll()
     openEntry(entry.id)
   } catch (e: any) {
-    bulkError.value = e?.message || 'Could not merge them'
+    bulkError.value = e?.message || t('changelog.mergeError')
   } finally {
     bulk.value = ''
   }
@@ -607,7 +609,7 @@ async function openGenerate() {
     repos.value = mine.repos
     if (run.value?.state === 'running') watchRun()
   } catch (e: any) {
-    generateError.value = e?.message || 'Could not load'
+    generateError.value = e?.message || t('changelog.loadRunError')
   }
 }
 
@@ -620,7 +622,7 @@ async function generate() {
     await loadRun()
     watchRun()
   } catch (e: any) {
-    generateError.value = e?.message || 'Could not start'
+    generateError.value = e?.message || t('changelog.startError')
   } finally {
     generating.value = false
   }
@@ -643,7 +645,7 @@ async function saveSettings(next: { autoDraft?: boolean, enabled?: boolean, comm
     projects.value = projects.value.map(p => (p.id === saved.id ? saved : p))
     settingsSaved.value = true
   } catch (e: any) {
-    settingsError.value = e?.message || 'Could not save'
+    settingsError.value = e?.message || t('changelog.saveError')
   } finally {
     savingSettings.value = false
   }
@@ -683,7 +685,7 @@ async function saveRelease() {
     releases.value = releases.value.some(r => r.id === release.id) ? releases.value.map(r => (r.id === release.id ? release : r)) : [release, ...releases.value]
     releaseOpen.value = false
   } catch (e: any) {
-    releaseError.value = e?.message || 'Could not save the release'
+    releaseError.value = e?.message || t('changelog.releaseSaveError')
   } finally {
     savingRelease.value = false
   }
@@ -695,9 +697,9 @@ async function publishRelease(release: ChangelogRelease) {
     await api(`/admin/changelog/releases/${release.id}/publish`, { method: 'POST' })
     // Its draft entries went out with it: refetch rather than patch each.
     await loadAll()
-    toast.add({ title: `${release.version} published`, icon: 'i-lucide-rocket', color: 'success' })
+    toast.add({ title: t('changelog.releasePublished', { version: release.version }), icon: 'i-lucide-rocket', color: 'success' })
   } catch (e: any) {
-    toast.add({ title: 'Could not publish the release', description: e?.message, color: 'error' })
+    toast.add({ title: t('changelog.publishReleaseError'), description: e?.message, color: 'error' })
   } finally {
     publishing.value = ''
   }
@@ -716,7 +718,7 @@ async function deleteRelease() {
     // Its entries stay, as entries of no release.
     await loadAll()
   } catch (e: any) {
-    releaseError.value = e?.message || 'Could not delete the release'
+    releaseError.value = e?.message || t('changelog.releaseDeleteError')
   }
 }
 </script>

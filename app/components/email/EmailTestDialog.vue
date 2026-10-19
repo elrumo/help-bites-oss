@@ -13,6 +13,7 @@ const open = defineModel<boolean>('open', { default: false })
 
 const { api, agent, projects } = useAgent()
 const toast = useToast()
+const { t } = useI18n()
 
 const to = ref('')
 const projectId = ref('')
@@ -39,13 +40,13 @@ async function send() {
       body: { to: to.value.split(/[\s,;]+/).filter(Boolean), variables: values.value, ...(isMaster.value && projectId.value ? { project: projectId.value } : {}) }
     })
     if (res.sent) {
-      toast.add({ title: `Test sent to ${res.results.filter(r => r.status === 'sent').map(r => r.to).join(', ')}`, icon: 'i-lucide-send', color: 'success' })
+      toast.add({ title: t('emailLibrary.test.sentTo', { to: res.results.filter(r => r.status === 'sent').map(r => r.to).join(', ') }), icon: 'i-lucide-send', color: 'success' })
       open.value = false
     } else {
-      toast.add({ title: 'The test was not sent', description: res.results[0]?.error, color: 'error' })
+      toast.add({ title: t('emailLibrary.test.notSent'), description: res.results[0]?.error, color: 'error' })
     }
   } catch (error: any) {
-    toast.add({ title: error?.message || 'Could not send the test', color: 'error' })
+    toast.add({ title: error?.message || t('emailLibrary.test.error'), color: 'error' })
   } finally {
     sending.value = false
   }
@@ -53,24 +54,24 @@ async function send() {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Send a test" :description="`${template?.master?.name || template?.name || 'This template'}, with “[Test]” in the subject. It shows up in the email log.`">
+  <UModal v-model:open="open" :title="$t('emailLibrary.test.title')" :description="$t('emailLibrary.test.description', { name: template?.master?.name || template?.name || $t('emailLibrary.test.thisTemplate') })">
     <template #body>
       <form class="space-y-4" @submit.prevent="send">
-        <UFormField label="To" hint="Up to five addresses">
+        <UFormField :label="$t('emailLibrary.test.to')" :hint="$t('emailLibrary.test.toHint')">
           <UInput v-model="to" type="text" placeholder="you@example.com" class="w-full" required autofocus />
         </UFormField>
-        <UFormField v-if="isMaster && projects.length" label="Brand and sender" help="A master has no project of its own; borrow one's logo, colours and from-address.">
-          <OptionalSelect v-model="projectId" :items="projectItems" none-label="None: sample values only" value-key="value" class="w-full" />
+        <UFormField v-if="isMaster && projects.length" :label="$t('emailLibrary.test.brandSender')" :help="$t('emailLibrary.test.brandSenderHelp')">
+          <OptionalSelect v-model="projectId" :items="projectItems" :none-label="$t('emailLibrary.test.noneLabel')" value-key="value" class="w-full" />
         </UFormField>
         <div v-if="variables.length" class="space-y-2">
-          <p class="text-xs font-medium text-muted">Values</p>
+          <p class="text-xs font-medium text-muted">{{ $t('emailLibrary.test.values') }}</p>
           <UFormField v-for="v in variables" :key="v.key" :label="v.label || v.key" :hint="v.label ? v.key : undefined" size="sm">
             <UInput v-model="values[v.key]" class="w-full" size="sm" />
           </UFormField>
         </div>
         <div class="flex justify-end gap-2 pt-2">
-          <UButton color="neutral" variant="ghost" @click="open = false">Cancel</UButton>
-          <UButton type="submit" icon="i-lucide-send" :loading="sending" :disabled="!to.trim()">Send test</UButton>
+          <UButton color="neutral" variant="ghost" @click="open = false">{{ $t('common.cancel') }}</UButton>
+          <UButton type="submit" icon="i-lucide-send" :loading="sending" :disabled="!to.trim()">{{ $t('emailLibrary.test.send') }}</UButton>
         </div>
       </form>
     </template>

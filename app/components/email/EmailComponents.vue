@@ -18,6 +18,7 @@ const props = defineProps<{ project?: AdminProject | null }>()
 
 const { api } = useAgent()
 const toast = useToast()
+const { t } = useI18n()
 
 const components = ref<EmailComponentDef[]>([])
 const loading = ref(true)
@@ -28,7 +29,7 @@ async function load() {
     const res = await api<{ components: EmailComponentDef[] }>('/admin/email-components', { query: { project: props.project?.id || undefined } })
     components.value = res.components
   } catch (e: any) {
-    toast.add({ title: e?.message || 'Could not load the components', color: 'error' })
+    toast.add({ title: e?.message || t('emailEditor.loadComponentsError'), color: 'error' })
   } finally {
     loading.value = false
   }
@@ -57,28 +58,28 @@ function onSaved(saved: EmailComponentDef) {
 }
 
 async function remove(component: EmailComponentDef) {
-  if (!window.confirm(`Delete “${component.name}”? Emails that use it keep their copy.`)) return
+  if (!window.confirm(t('emailEditor.deleteComponentConfirm', { name: component.name }))) return
   try {
     await api(`/admin/email-components/${component.id}`, { method: 'DELETE' })
     components.value = components.value.filter(c => c.id !== component.id)
   } catch (e: any) {
-    toast.add({ title: e?.message || 'Could not delete it', color: 'error' })
+    toast.add({ title: e?.message || t('emailEditor.deleteComponentError'), color: 'error' })
   }
 }
 </script>
 
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="project?.id" title="Email">
+    <PageHeader :project-id="project?.id" :title="$t('sections.email')">
       <template #title><EmailTabs current="components" :masters="!project" /></template>
       <template #actions>
-        <UInput v-model="search" icon="i-lucide-search" placeholder="Search" size="sm" class="hidden w-44 sm:block" aria-label="Search components" />
-        <UButton icon="i-lucide-plus" label="New component" size="sm" @click="edit(null)" />
+        <UInput v-model="search" icon="i-lucide-search" :placeholder="$t('common.search')" size="sm" class="hidden w-44 sm:block" :aria-label="$t('emailEditor.searchComponents')" />
+        <UButton icon="i-lucide-plus" :label="$t('emailEditor.newComponent')" size="sm" @click="edit(null)" />
       </template>
     </PageHeader>
     <p class="shrink-0 border-b border-default px-6 py-2.5 text-[13px] text-muted">
-      {{ project ? 'This project\'s components and the shared ones.' : 'Shared with every project and master.' }}
-      Insert them from Add in the editor; the AI designer uses them and saves new ones. Each email keeps its own copy.
+      {{ project ? $t('emailEditor.projectComponentsNote') : $t('emailEditor.sharedComponentsNote') }}
+      {{ $t('emailEditor.componentsHelp') }}
     </p>
 
     <div class="min-h-0 flex-1 overflow-y-auto">
@@ -86,12 +87,12 @@ async function remove(component: EmailComponentDef) {
       <EmptyState
         v-else-if="!shown.length"
         icon="i-lucide-puzzle"
-        :title="search ? 'Nothing matches' : 'No components yet'"
-        :description="search ? 'Try another search.' : 'Save a header, footer or badge once and reuse it. Paste HTML here, use Save as component in the editor, or ask the AI designer to make one.'"
+        :title="search ? $t('emailEditor.nothingMatches') : $t('emailEditor.noComponents')"
+        :description="search ? $t('emailEditor.tryAnotherSearch') : $t('emailEditor.noComponentsHint')"
       />
       <div v-else class="grid gap-4 p-6 sm:grid-cols-2 xl:grid-cols-3">
         <article v-for="c in shown" :key="c.id" class="group flex flex-col overflow-hidden rounded-xl border border-default bg-default">
-          <button type="button" class="h-40 overflow-hidden border-b border-default bg-elevated/40 text-left" :aria-label="`Edit ${c.name}`" @click="edit(c)">
+          <button type="button" class="h-40 overflow-hidden border-b border-default bg-elevated/40 text-left" :aria-label="$t('emailEditor.editNamed', { name: c.name })" @click="edit(c)">
             <div class="pointer-events-none origin-top-left scale-[0.6]" style="width: 166%">
               <EmailCardPreview :document="preview(c)" />
             </div>
@@ -99,14 +100,14 @@ async function remove(component: EmailComponentDef) {
           <div class="flex items-start gap-2 p-3">
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium text-highlighted">{{ c.name }}</p>
-              <p class="line-clamp-2 text-xs text-muted">{{ c.description || 'No description' }}</p>
+              <p class="line-clamp-2 text-xs text-muted">{{ c.description || $t('emailEditor.noDescription') }}</p>
               <div class="mt-2 flex flex-wrap gap-1">
-                <UBadge :label="c.projectId ? 'This project' : 'Shared'" color="neutral" variant="subtle" size="sm" />
-                <UBadge :label="`${c.fields.length} field${c.fields.length === 1 ? '' : 's'}`" color="neutral" variant="outline" size="sm" />
+                <UBadge :label="c.projectId ? $t('emailEditor.thisProject') : $t('emailEditor.shared')" color="neutral" variant="subtle" size="sm" />
+                <UBadge :label="$t('emailEditor.fieldCount', c.fields.length)" color="neutral" variant="outline" size="sm" />
               </div>
             </div>
-            <UDropdownMenu :items="[[{ label: 'Edit', icon: 'i-lucide-pencil', onSelect: () => edit(c) }], [{ label: 'Delete', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => remove(c) }]]">
-              <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" size="xs" :aria-label="`${c.name} actions`" />
+            <UDropdownMenu :items="[[{ label: $t('emailEditor.edit'), icon: 'i-lucide-pencil', onSelect: () => edit(c) }], [{ label: $t('emailEditor.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => remove(c) }]]">
+              <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" size="xs" :aria-label="$t('emailEditor.componentActions', { name: c.name })" />
             </UDropdownMenu>
           </div>
         </article>

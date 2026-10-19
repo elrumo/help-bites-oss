@@ -1,30 +1,30 @@
 <template>
-  <UModal v-model:open="open" title="Analyse a legal text" :ui="{ content: 'sm:max-w-2xl', header: 'relative z-10 bg-default' }">
+  <UModal v-model:open="open" :title="$t('legal.analyse.title')" :ui="{ content: 'sm:max-w-2xl', header: 'relative z-10 bg-default' }">
     <template #body>
       <form class="space-y-4" @submit.prevent="run">
-        <p class="text-[13px] text-muted">Paste a policy and see which requirements for your regions it covers. The model can only cite the listed requirements. It is not legal advice.</p>
+        <p class="text-[13px] text-muted">{{ $t('legal.analyse.intro') }}</p>
         <div class="grid gap-4 sm:grid-cols-2">
-          <UFormField label="Document">
+          <UFormField :label="$t('legal.analyse.document')">
             <USelect v-model="type" :items="typeItems" class="w-full" />
           </UFormField>
         </div>
-        <UFormField label="Where are your users?">
-          <USelectMenu v-model="regions" multiple :items="regionItems" value-key="value" placeholder="Select regions" class="w-full" />
+        <UFormField :label="$t('legal.analyse.regions')">
+          <USelectMenu v-model="regions" multiple :items="regionItems" value-key="value" :placeholder="$t('legal.selectRegions')" class="w-full" />
         </UFormField>
-        <UFormField label="Text">
-          <UTextarea v-model="text" :rows="8" placeholder="Paste the policy here" class="w-full" />
+        <UFormField :label="$t('legal.analyse.text')">
+          <UTextarea v-model="text" :rows="8" :placeholder="$t('legal.analyse.textPlaceholder')" class="w-full" />
         </UFormField>
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
         <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="ghost" label="Close" @click="open = false" />
-          <UButton type="submit" label="Analyse" icon="i-lucide-scan-search" :loading="loading" :disabled="!text.trim()" />
+          <UButton color="neutral" variant="ghost" :label="$t('legal.close')" @click="open = false" />
+          <UButton type="submit" :label="$t('legal.analyse.submit')" icon="i-lucide-scan-search" :loading="loading" :disabled="!text.trim()" />
         </div>
       </form>
 
       <ul v-if="findings" class="mt-6 divide-y divide-default overflow-hidden rounded-xl border border-default">
-        <li v-if="!findings.length" class="px-4 py-3 text-[13px] text-muted">No requirements apply to these regions.</li>
+        <li v-if="!findings.length" class="px-4 py-3 text-[13px] text-muted">{{ $t('legal.analyse.noRequirements') }}</li>
         <li v-for="f in findings" :key="f.requirement" class="flex items-start gap-3 px-4 py-3">
-          <UBadge :label="f.status" :color="STATUS_COLOR[f.status]" variant="soft" size="sm" class="mt-0.5 shrink-0" />
+          <UBadge :label="$t(`legal.findingStatus.${f.status}`)" :color="STATUS_COLOR[f.status]" variant="soft" size="sm" class="mt-0.5 shrink-0" />
           <div class="min-w-0">
             <p class="text-[13px] text-highlighted">{{ summaries[f.requirement] || f.requirement }}</p>
             <p class="text-[13px] text-muted">{{ f.note }}</p>
@@ -40,6 +40,7 @@ import { LEGAL_DOC_LABELS, LEGAL_DOC_TYPES, LEGAL_REGIONS, LEGAL_REGION_LABELS, 
 
 const open = defineModel<boolean>('open', { default: false })
 const { api } = useAgent()
+const { t } = useI18n()
 
 const typeItems = LEGAL_DOC_TYPES.map(value => ({ value, label: LEGAL_DOC_LABELS[value] }))
 const regionItems = LEGAL_REGIONS.map(value => ({ value, label: LEGAL_REGION_LABELS[value] }))
@@ -65,7 +66,7 @@ async function run() {
     summaries.value = Object.fromEntries(packs.rulepacks.flatMap(p => p.requirements.map(r => [r.id, r.summary])))
     findings.value = result.findings
   } catch (e: any) {
-    error.value = e?.message || 'Could not analyse the text'
+    error.value = e?.message || t('legal.analyse.couldNotAnalyse')
   } finally {
     loading.value = false
   }

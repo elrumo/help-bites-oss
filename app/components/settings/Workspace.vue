@@ -1,55 +1,55 @@
 <template>
   <div class="space-y-8">
     <form class="space-y-6" @submit.prevent="save">
-      <UFormField label="Workspace name" hint="Shown in the top-left menu and in invitations">
+      <UFormField :label="$t('workspaceSettings.workspace.nameLabel')" :hint="$t('workspaceSettings.workspace.nameHint')">
         <UInput v-model="name" class="w-full sm:w-80" maxlength="80" :disabled="!canEdit" required />
       </UFormField>
       <p v-if="error" class="text-[13px] text-error">{{ error }}</p>
       <div v-if="canEdit" class="flex items-center gap-3">
-        <UButton type="submit" :loading="saving" :disabled="!dirty">Save</UButton>
-        <span v-if="saved && !dirty" class="text-[13px] text-muted">Saved</span>
+        <UButton type="submit" :loading="saving" :disabled="!dirty">{{ $t('workspaceSettings.save') }}</UButton>
+        <span v-if="saved && !dirty" class="text-[13px] text-muted">{{ $t('common.saved') }}</span>
       </div>
-      <p v-else class="text-[13px] text-muted">Only admins and owners can change the workspace's settings.</p>
+      <p v-else class="text-[13px] text-muted">{{ $t('workspaceSettings.adminOnly') }}</p>
     </form>
 
     <div v-if="canExport" class="space-y-2">
-      <p class="section-label">Export data</p>
+      <p class="section-label">{{ $t('workspaceSettings.workspace.exportData') }}</p>
       <div class="flex items-center gap-3 rounded-xl border border-default px-4 py-3">
         <div class="min-w-0 flex-1">
-          <p class="text-[13px] font-medium text-highlighted">Everything in this workspace, as one file</p>
+          <p class="text-[13px] font-medium text-highlighted">{{ $t('workspaceSettings.workspace.exportTitle') }}</p>
           <p class="text-xs text-muted">
-            Conversations, contacts, knowledge, emails and settings as gzipped JSON Lines, without secrets.
-            <template v-if="lastExport">Last export {{ timeAgo(lastExport.at) }} · <a :href="lastExport.url" class="text-primary hover:underline">Download</a></template>
+            {{ $t('workspaceSettings.workspace.exportDescription') }}
+            <template v-if="lastExport">{{ $t('workspaceSettings.workspace.lastExport', { time: timeAgo(lastExport.at) }) }} · <a :href="lastExport.url" class="text-primary hover:underline">{{ $t('workspaceSettings.workspace.download') }}</a></template>
           </p>
         </div>
-        <UButton label="Export data" icon="i-lucide-download" color="neutral" variant="outline" size="sm" class="shrink-0" :loading="exporting" @click="exportData" />
+        <UButton :label="$t('workspaceSettings.workspace.exportData')" icon="i-lucide-download" color="neutral" variant="outline" size="sm" class="shrink-0" :loading="exporting" @click="exportData" />
       </div>
     </div>
 
     <div v-if="canDelete" class="space-y-2">
-      <p class="section-label">Danger zone</p>
+      <p class="section-label">{{ $t('workspaceSettings.workspace.dangerZone') }}</p>
       <div class="flex items-center gap-3 rounded-xl border border-error/30 px-4 py-3">
         <div class="min-w-0 flex-1">
-          <p class="text-[13px] font-medium text-highlighted">Delete workspace</p>
-          <p class="text-xs text-muted">Its projects, conversations, contacts, knowledge and files go for good. Everyone's account stays.</p>
+          <p class="text-[13px] font-medium text-highlighted">{{ $t('workspaceSettings.workspace.deleteWorkspace') }}</p>
+          <p class="text-xs text-muted">{{ $t('workspaceSettings.workspace.deleteDescription') }}</p>
         </div>
-        <UButton label="Delete workspace" color="error" variant="outline" size="sm" class="shrink-0" @click="openDelete" />
+        <UButton :label="$t('workspaceSettings.workspace.deleteWorkspace')" color="error" variant="outline" size="sm" class="shrink-0" @click="openDelete" />
       </div>
     </div>
 
-    <UModal v-model:open="deleteOpen" title="Delete this workspace?" :ui="{ content: 'sm:max-w-md' }">
+    <UModal v-model:open="deleteOpen" :title="$t('workspaceSettings.workspace.deleteTitle')" :ui="{ content: 'sm:max-w-md' }">
       <template #body>
         <form class="space-y-4" @submit.prevent="remove">
-          <p class="text-[13px] text-muted">
-            Everything in <span class="font-medium text-highlighted">{{ workspaceName }}</span> is deleted: its projects, conversations, contacts, knowledge, emails and files. The widget and the API stop answering at once. This can't be undone, so export the data first if you want a copy.
-          </p>
-          <UFormField :label="`Type ${workspaceName} to confirm`">
+          <i18n-t keypath="workspaceSettings.workspace.deleteBody" tag="p" class="text-[13px] text-muted">
+            <template #name><span class="font-medium text-highlighted">{{ workspaceName }}</span></template>
+          </i18n-t>
+          <UFormField :label="$t('workspaceSettings.workspace.typeToConfirm', { name: workspaceName })">
             <UInput v-model="confirmName" class="w-full" autocomplete="off" autofocus />
           </UFormField>
           <p v-if="deleteError" class="text-[13px] text-error">{{ deleteError }}</p>
           <div class="flex justify-end gap-2">
-            <UButton color="neutral" variant="ghost" @click="deleteOpen = false">Cancel</UButton>
-            <UButton type="submit" color="error" :loading="deleting" :disabled="confirmName !== workspaceName">Delete workspace</UButton>
+            <UButton color="neutral" variant="ghost" @click="deleteOpen = false">{{ $t('common.cancel') }}</UButton>
+            <UButton type="submit" color="error" :loading="deleting" :disabled="confirmName !== workspaceName">{{ $t('workspaceSettings.workspace.deleteWorkspace') }}</UButton>
           </div>
         </form>
       </template>
@@ -62,6 +62,7 @@ import { can } from '#shared/roles'
 
 const { api, context, switchWorkspace } = useAgent()
 const toast = useToast()
+const { t } = useI18n()
 const canEdit = computed(() => can(context.value?.role, 'workspace.settings'))
 const canExport = computed(() => can(context.value?.role, 'workspace.export'))
 const canDelete = computed(() => can(context.value?.role, 'workspace.delete'))
@@ -83,7 +84,7 @@ async function save() {
     }
     saved.value = true
   } catch (e: any) {
-    error.value = e?.message || 'Could not save'
+    error.value = e?.message || t('workspaceSettings.workspace.saveFailed')
   } finally {
     saving.value = false
   }
@@ -98,9 +99,9 @@ async function exportData() {
   exporting.value = true
   try {
     await api('/admin/workspace/export', { method: 'POST' })
-    toast.add({ title: 'We\'ll email you a link', description: 'The export runs in the background; a big workspace takes a few minutes.' })
+    toast.add({ title: t('workspaceSettings.workspace.exportStarted'), description: t('workspaceSettings.workspace.exportStartedDescription') })
   } catch (e: any) {
-    toast.add({ title: e?.message || 'Could not start the export', color: 'error' })
+    toast.add({ title: e?.message || t('workspaceSettings.workspace.exportFailed'), color: 'error' })
   } finally {
     exporting.value = false
   }
@@ -131,7 +132,7 @@ async function remove() {
   try {
     await api('/admin/workspace', { method: 'DELETE', body: { confirm: confirmName.value } })
   } catch (e: any) {
-    deleteError.value = e?.message || 'Could not delete the workspace'
+    deleteError.value = e?.message || t('workspaceSettings.workspace.deleteFailed')
     deleting.value = false
     return
   }

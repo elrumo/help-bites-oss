@@ -6,15 +6,16 @@
  */
 defineProps<{ current: 'people' | 'segments' | 'sources' }>()
 
-const tabs = [
-  { value: 'people', label: 'People', icon: 'i-lucide-users' },
-  { value: 'segments', label: 'Segments', icon: 'i-lucide-filter' },
-  { value: 'sources', label: 'Sources', icon: 'i-lucide-database' }
-] as const
+const { t } = useI18n()
+const tabs = computed(() => [
+  { value: 'people', label: t('contacts.tabs.people'), icon: 'i-lucide-users' },
+  { value: 'segments', label: t('contacts.tabs.segments'), icon: 'i-lucide-filter' },
+  { value: 'sources', label: t('contacts.tabs.sources'), icon: 'i-lucide-database' }
+] as const)
 </script>
 
 <template>
-  <nav class="ml-1.5 flex shrink-0 items-center gap-0.5 rounded-md border border-default p-0.5" aria-label="Contacts sections">
+  <nav class="ml-1.5 flex shrink-0 items-center gap-0.5 rounded-md border border-default p-0.5" :aria-label="$t('contacts.tabs.label')">
     <NuxtLink
       v-for="tab in tabs"
       :key="tab.value"

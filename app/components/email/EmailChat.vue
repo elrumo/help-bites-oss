@@ -61,6 +61,7 @@ const emit = defineEmits<{
 const { api } = useAgent()
 const toast = useToast()
 const online = useOnline()
+const { t } = useI18n()
 
 // The designer's mark: an indigo orb, on the greeting and beside each reply.
 const ORB = 'bg-linear-to-br from-primary-400 to-primary-600 text-white ring-1 ring-inset ring-white/20 shadow-primary-500/30'
@@ -108,7 +109,7 @@ const designerFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const res = await fetch(input, init)
   if (res.status === 402) {
     const body = await res.clone().json().catch(() => ({}))
-    planLimit.value = { message: body.statusMessage || body.message || 'Not part of your plan', ...body.data }
+    planLimit.value = { message: body.statusMessage || body.message || t('emailEditor.notInPlan'), ...body.data }
   }
   return res
 }) as typeof fetch
@@ -184,7 +185,7 @@ async function openChat(id?: string) {
     if (!id && chat.value.messages.length) return
     show(state.chatId || crypto.randomUUID(), state.messages, state.streamId)
   } catch (error: any) {
-    if (id) toast.add({ title: 'Could not open that chat', description: error?.message, color: 'error' })
+    if (id) toast.add({ title: t('emailEditor.couldNotOpenChat'), description: error?.message, color: 'error' })
   } finally {
     switching.value = false
   }
@@ -317,7 +318,7 @@ async function recover() {
 const errorText = computed(() => {
   const error = chat.value.error
   if (!error) return ''
-  if (error instanceof TypeError) return 'Lost the connection. The designer keeps working, and this chat catches up when it can.'
+  if (error instanceof TypeError) return t('emailEditor.lostConnection')
   // A refused request's message is the route's JSON error body.
   try {
     const body = JSON.parse(error.message)
@@ -337,12 +338,12 @@ type Segment = { key: string, kind: 'text', text: string } | { key: string, kind
 
 function blockName(id: string): string {
   const b = findBlock(props.document.blocks, id)
-  if (!b) return 'a block'
+  if (!b) return t('emailEditor.aBlock')
   const clip = (s: string) => s.replace(/<[^>]+>/g, '').trim().slice(0, 32)
-  if (b.type === 'heading') return `heading “${clip(b.text)}”`
-  if (b.type === 'text') return `text “${clip(b.html)}”`
-  if (b.type === 'button') return `button “${clip(b.label)}”`
-  if (b.type === 'component') return `component “${clip(b.name)}”`
+  if (b.type === 'heading') return t('emailEditor.blockHeading', { text: clip(b.text) })
+  if (b.type === 'text') return t('emailEditor.blockText', { text: clip(b.html) })
+  if (b.type === 'button') return t('emailEditor.blockButton', { text: clip(b.label) })
+  if (b.type === 'component') return t('emailEditor.blockComponent', { text: clip(b.name) })
   return `${b.type}`
 }
 
@@ -353,31 +354,35 @@ function describe(part: any, key: string): Change {
   const failed = part.state === 'output-error'
   const base = { key, running, failed }
   switch (name) {
-    case 'set_document': return { ...base, icon: 'i-lucide-layout-template', text: running ? 'Designing the email' : 'Designed the email' }
+    case 'set_document': return { ...base, icon: 'i-lucide-layout-template', text: running ? t('emailEditor.designing') : t('emailEditor.designed') }
     case 'update_settings': {
       const keys = Object.keys(input.patch || {})
-      const what = keys.includes('title') ? (keys.includes('preheader') ? 'subject and preheader' : 'subject') : keys.includes('preheader') ? 'preheader' : 'email settings'
-      return { ...base, icon: 'i-lucide-settings-2', text: `Updated the ${what}` }
+      const what = keys.includes('title') ? (keys.includes('preheader') ? t('emailEditor.whatSubjectAndPreheader') : t('emailEditor.whatSubject')) : keys.includes('preheader') ? t('emailEditor.whatPreheader') : t('emailEditor.whatSettings')
+      return { ...base, icon: 'i-lucide-settings-2', text: t('emailEditor.updatedWhat', { what }) }
     }
     case 'update_blocks': {
       const updates = Array.isArray(input.updates) ? input.updates : []
-      if (updates.length === 1) return { ...base, icon: 'i-lucide-pencil', text: `Edited ${blockName(updates[0].id)}`, blockId: updates[0].id }
-      return { ...base, icon: 'i-lucide-pencil', text: updates.length ? `Edited ${updates.length} blocks` : 'Editing blocks' }
+      if (updates.length === 1) return { ...base, icon: 'i-lucide-pencil', text: t('emailEditor.edited', { block: blockName(updates[0].id) }), blockId: updates[0].id }
+      return { ...base, icon: 'i-lucide-pencil', text: updates.length ? t('emailEditor.editedCount', { n: updates.length }) : t('emailEditor.editingBlocks') }
     }
     case 'add_block': {
       const id = String(part.output || '').match(/"(blk_[^"]+)"/)?.[1]
-      return { ...base, icon: 'i-lucide-plus', text: `Added a ${input.type || 'block'}${input.parentId ? ` in ${blockName(input.parentId)}` : ''}`, blockId: id }
+      const type = input.type || t('emailEditor.blockWord')
+      return { ...base, icon: 'i-lucide-plus', text: input.parentId ? t('emailEditor.addedIn', { type, place: blockName(input.parentId) }) : t('emailEditor.added', { type }), blockId: id }
     }
-    case 'replace_block': return { ...base, icon: 'i-lucide-blocks', text: running ? 'Rebuilding a block' : `Rebuilt a block as ${(input.blocks || []).length || 'no'} block${(input.blocks || []).length === 1 ? '' : 's'}` }
-    case 'save_component': return { ...base, icon: 'i-lucide-puzzle', text: running ? 'Saving a component' : `Saved “${input.name || 'a component'}” to the library`, blockId: String(part.output || '').match(/as block "(blk_[^"]+)"|"(blk_[^"]+)"\./)?.slice(1).find(Boolean) }
-    case 'remove_block': return { ...base, icon: 'i-lucide-trash-2', text: 'Removed a block' }
-    case 'move_block': return { ...base, icon: 'i-lucide-arrow-up-down', text: `Moved ${blockName(input.id)}`, blockId: input.id }
-    case 'set_theme': return { ...base, icon: 'i-lucide-palette', text: input.preset ? `Applied the ${input.preset} theme` : 'Restyled the email' }
-    case 'set_variables': return { ...base, icon: 'i-lucide-braces', text: `Set ${(input.variables || []).map((v: TemplateVariable) => `{{${v.key}}}`).join(', ') || 'variables'}` }
+    case 'replace_block': {
+      const n = (input.blocks || []).length
+      return { ...base, icon: 'i-lucide-blocks', text: running ? t('emailEditor.rebuilding') : n ? t('emailEditor.rebuilt', n) : t('emailEditor.rebuiltNone') }
+    }
+    case 'save_component': return { ...base, icon: 'i-lucide-puzzle', text: running ? t('emailEditor.savingComponent') : t('emailEditor.savedComponent', { name: input.name || t('emailEditor.aComponent') }), blockId: String(part.output || '').match(/as block "(blk_[^"]+)"|"(blk_[^"]+)"\./)?.slice(1).find(Boolean) }
+    case 'remove_block': return { ...base, icon: 'i-lucide-trash-2', text: t('emailEditor.removed') }
+    case 'move_block': return { ...base, icon: 'i-lucide-arrow-up-down', text: t('emailEditor.moved', { block: blockName(input.id) }), blockId: input.id }
+    case 'set_theme': return { ...base, icon: 'i-lucide-palette', text: input.preset ? t('emailEditor.appliedTheme', { preset: input.preset }) : t('emailEditor.restyled') }
+    case 'set_variables': return { ...base, icon: 'i-lucide-braces', text: t('emailEditor.setVariables', { list: (input.variables || []).map((v: TemplateVariable) => `{{${v.key}}}`).join(', ') || t('emailEditor.variablesWord') }) }
     case 'check_email': {
       const out = String(part.output || '')
       const count = out && !out.startsWith('All checks') ? out.split('\n').length : 0
-      return { ...base, icon: 'i-lucide-shield-check', text: running ? 'Checking the email' : count ? `Found ${count} issue${count === 1 ? '' : 's'}` : 'All checks pass' }
+      return { ...base, icon: 'i-lucide-shield-check', text: running ? t('emailEditor.checking') : count ? t('emailEditor.foundIssues', count) : t('emailEditor.allChecksPass') }
     }
     default: return { ...base, icon: 'i-lucide-wand-2', text: name.replace(/_/g, ' ') }
   }
@@ -434,45 +439,45 @@ const selectedBlock = computed(() => props.selectedId ? findBlock(props.document
 
 const starters = computed(() => props.master
   ? [
-      { icon: 'i-lucide-hand', label: 'Welcome email', prompt: 'Design a warm welcome email for new users: the project logo at the top, a greeting with {{firstName}}, three quick getting-started steps and one button to {{project.url}}.' },
-      { icon: 'i-lucide-key-round', label: 'Password reset', prompt: 'Design a short, plain password reset email with one button to {{resetUrl}}, a note that the link expires in {{expiresIn}}, and a line for people who did not ask for it.' },
-      { icon: 'i-lucide-receipt', label: 'Receipt', prompt: 'Design a purchase receipt: order number {{orderId}}, an itemised summary, the total {{total}}, and a button to view the order at {{orderUrl}}.' },
-      { icon: 'i-lucide-newspaper', label: 'Product update', prompt: 'Design a product update newsletter: a hero with a headline, three short feature highlights with images, a primary button and a footer with {{unsubscribeUrl}}.' }
+      { icon: 'i-lucide-hand', label: t('emailEditor.starters.welcomeLabel'), prompt: t('emailEditor.starters.welcomeMasterPrompt', { firstName: '{{firstName}}', projectUrl: '{{project.url}}' }) },
+      { icon: 'i-lucide-key-round', label: t('emailEditor.starters.resetLabel'), prompt: t('emailEditor.starters.resetPrompt', { resetUrl: '{{resetUrl}}', expiresIn: '{{expiresIn}}' }) },
+      { icon: 'i-lucide-receipt', label: t('emailEditor.starters.receiptLabel'), prompt: t('emailEditor.starters.receiptPrompt', { orderId: '{{orderId}}', total: '{{total}}', orderUrl: '{{orderUrl}}' }) },
+      { icon: 'i-lucide-newspaper', label: t('emailEditor.starters.updateLabel'), prompt: t('emailEditor.starters.updatePrompt', { unsubscribeUrl: '{{unsubscribeUrl}}' }) }
     ]
   : [
-      { icon: 'i-lucide-hand', label: 'Welcome email', prompt: 'Design a warm welcome email for new users of this project with a greeting using {{firstName}}, three getting-started steps and one clear button.' },
-      { icon: 'i-lucide-message-square-reply', label: 'Support reply', prompt: 'Design a friendly support follow-up email that answers {{question}}, links to {{articleUrl}} and invites a reply.' },
-      { icon: 'i-lucide-calendar', label: 'Event invite', prompt: 'Design an event invitation with the date {{eventDate}}, a short agenda and an RSVP button to {{rsvpUrl}}.' },
-      { icon: 'i-lucide-sparkles', label: 'Launch', prompt: 'Design a launch announcement for a new feature: hero image placeholder, what it does in three bullets, and a button to try it.' }
+      { icon: 'i-lucide-hand', label: t('emailEditor.starters.welcomeLabel'), prompt: t('emailEditor.starters.welcomePrompt', { firstName: '{{firstName}}' }) },
+      { icon: 'i-lucide-message-square-reply', label: t('emailEditor.starters.supportLabel'), prompt: t('emailEditor.starters.supportPrompt', { question: '{{question}}', articleUrl: '{{articleUrl}}' }) },
+      { icon: 'i-lucide-calendar', label: t('emailEditor.starters.eventLabel'), prompt: t('emailEditor.starters.eventPrompt', { eventDate: '{{eventDate}}', rsvpUrl: '{{rsvpUrl}}' }) },
+      { icon: 'i-lucide-sparkles', label: t('emailEditor.starters.launchLabel'), prompt: t('emailEditor.starters.launchPrompt') }
     ])
 
 const quickActions = computed(() => {
   if (selectedBlock.value) {
     const type = selectedBlock.value.type
     return [
-      ...(type === 'html' ? [{ icon: 'i-lucide-blocks', label: 'Convert to blocks', prompt: 'Rebuild the selected custom HTML as editable blocks, matching its design as closely as you can.' }] : []),
-      ...(type === 'html' || type === 'section' ? [{ icon: 'i-lucide-puzzle', label: 'Make reusable', prompt: 'Save the selected block to the component library as a reusable component, with its copy as content fields and its colours and sizes as style fields, then use it here.' }] : []),
-      { icon: 'i-lucide-wand-sparkles', label: 'Improve this', prompt: 'Improve the selected block: sharper copy and better styling, same intent.' },
-      { icon: 'i-lucide-scissors', label: 'Shorter', prompt: 'Make the selected block shorter and punchier without losing meaning.' },
-      { icon: 'i-lucide-smile', label: 'Friendlier', prompt: 'Rewrite the selected block in a warmer, more human tone.' },
-      { icon: 'i-lucide-sparkles', label: 'Make it pop', prompt: 'Make the selected block stand out more: stronger hierarchy and contrast, within the theme.' }
+      ...(type === 'html' ? [{ icon: 'i-lucide-blocks', label: t('emailEditor.quick.convertLabel'), prompt: t('emailEditor.quick.convertPrompt') }] : []),
+      ...(type === 'html' || type === 'section' ? [{ icon: 'i-lucide-puzzle', label: t('emailEditor.quick.reusableLabel'), prompt: t('emailEditor.quick.reusablePrompt') }] : []),
+      { icon: 'i-lucide-wand-sparkles', label: t('emailEditor.quick.improveLabel'), prompt: t('emailEditor.quick.improvePrompt') },
+      { icon: 'i-lucide-scissors', label: t('emailEditor.quick.shorterLabel'), prompt: t('emailEditor.quick.shorterPrompt') },
+      { icon: 'i-lucide-smile', label: t('emailEditor.quick.friendlierLabel'), prompt: t('emailEditor.quick.friendlierPrompt') },
+      { icon: 'i-lucide-sparkles', label: t('emailEditor.quick.popLabel'), prompt: t('emailEditor.quick.popPrompt') }
     ]
   }
   const actions = [
-    { icon: 'i-lucide-pen-line', label: 'Improve copy', prompt: 'Improve the copy across the whole email: clearer, more concrete, more persuasive. Keep the layout.' },
-    { icon: 'i-lucide-paintbrush', label: 'Polish design', prompt: 'Polish the design: spacing rhythm, hierarchy and contrast. Keep the content.' },
-    { icon: 'i-lucide-lightbulb', label: 'Subject ideas', prompt: 'Suggest three subject line and preheader pairs for this email with a one-line reason each, then apply the strongest.' },
-    { icon: 'i-lucide-smartphone', label: 'Mobile check', prompt: 'Make sure this email reads well on a 375px phone: avoid cramped columns, keep buttons easy to tap and text at least 14px.' }
+    { icon: 'i-lucide-pen-line', label: t('emailEditor.quick.improveCopyLabel'), prompt: t('emailEditor.quick.improveCopyPrompt') },
+    { icon: 'i-lucide-paintbrush', label: t('emailEditor.quick.polishLabel'), prompt: t('emailEditor.quick.polishPrompt') },
+    { icon: 'i-lucide-lightbulb', label: t('emailEditor.quick.subjectLabel'), prompt: t('emailEditor.quick.subjectPrompt') },
+    { icon: 'i-lucide-smartphone', label: t('emailEditor.quick.mobileLabel'), prompt: t('emailEditor.quick.mobilePrompt') }
   ]
-  if (props.issues.length) actions.unshift({ icon: 'i-lucide-wrench', label: `Fix ${props.issues.length} issue${props.issues.length === 1 ? '' : 's'}`, prompt: fixPrompt(props.issues) })
+  if (props.issues.length) actions.unshift({ icon: 'i-lucide-wrench', label: t('emailEditor.quick.fixLabel', props.issues.length), prompt: fixPrompt(props.issues) })
   return actions
 })
 
 function fixPrompt(issues: EmailIssue[]): string {
-  return `Fix these problems found by the email checks (skip any that need information only I have, and tell me what I must do):\n${issues.map(i => `- ${i.fix}`).join('\n')}`
+  return t('emailEditor.quick.fixPrompt', { issues: issues.map(i => `- ${i.fix}`).join('\n') })
 }
 
-const placeholder = computed(() => selectedBlock.value ? `Ask for a change to the selected ${selectedBlock.value.type}…` : 'Describe an email, or ask for a change…')
+const placeholder = computed(() => selectedBlock.value ? t('emailEditor.askChangeSelected', { type: selectedBlock.value.type }) : t('emailEditor.describeEmail'))
 </script>
 
 <template>
@@ -480,15 +485,15 @@ const placeholder = computed(() => selectedBlock.value ? `Ask for a change to th
 
     <Teleport v-if="header" :to="header">
       <UPopover v-model:open="historyOpen" :content="{ side: 'bottom', align: 'end' }">
-        <UButton icon="i-lucide-history" size="xs" color="neutral" variant="ghost" aria-label="Chat history" title="Chat history" />
+        <UButton icon="i-lucide-history" size="xs" color="neutral" variant="ghost" :aria-label="$t('emailEditor.chatHistory')" :title="$t('emailEditor.chatHistory')" />
         <template #content>
           <div class="w-72 p-1">
-            <p class="px-2 pt-1.5 pb-1 text-xs font-medium text-muted">Chats</p>
+            <p class="px-2 pt-1.5 pb-1 text-xs font-medium text-muted">{{ $t('emailEditor.chats') }}</p>
             <div v-if="loadingChats && !chats.length" class="space-y-2.5 px-2 py-2" aria-hidden="true">
               <USkeleton class="h-3.5 w-4/5" />
               <USkeleton class="h-3.5 w-3/5" />
             </div>
-            <p v-else-if="!chats.length" class="px-2 pt-1 pb-2 text-sm text-muted">No chats yet. Ask the designer anything to start one.</p>
+            <p v-else-if="!chats.length" class="px-2 pt-1 pb-2 text-sm text-muted">{{ $t('emailEditor.noChats') }}</p>
             <ul v-else class="max-h-80 overflow-y-auto">
               <li
                 v-for="(c, i) in chats"
@@ -499,17 +504,17 @@ const placeholder = computed(() => selectedBlock.value ? `Ask for a change to th
               >
                 <button type="button" class="flex min-w-0 flex-1 items-center gap-2 py-1.5 ps-2 text-left text-sm" @click="openChat(c.id)">
                   <UIcon v-if="c.running" name="i-lucide-loader-circle" class="size-3.5 shrink-0 animate-spin text-primary" />
-                  <span class="min-w-0 flex-1 truncate" :class="c.id === chat.id ? 'text-highlighted' : 'text-toned'">{{ c.title || 'Untitled chat' }}</span>
+                  <span class="min-w-0 flex-1 truncate" :class="c.id === chat.id ? 'text-highlighted' : 'text-toned'">{{ c.title || $t('emailEditor.untitledChat') }}</span>
                   <span class="shrink-0 text-xs text-dimmed">{{ formatChatListStamp(c.updatedAt) }}</span>
                 </button>
                 <UButton
                   v-if="!c.running"
                   :icon="confirmDelete === c.id ? undefined : 'i-lucide-trash-2'"
-                  :label="confirmDelete === c.id ? 'Delete' : undefined"
+                  :label="confirmDelete === c.id ? $t('emailEditor.delete') : undefined"
                   size="xs"
                   :color="confirmDelete === c.id ? 'error' : 'neutral'"
                   :variant="confirmDelete === c.id ? 'soft' : 'ghost'"
-                  :aria-label="confirmDelete === c.id ? 'Confirm: delete this chat' : 'Delete chat'"
+                  :aria-label="confirmDelete === c.id ? $t('emailEditor.confirmDeleteChat') : $t('emailEditor.deleteChat')"
                   :class="confirmDelete !== c.id && '[@media(hover:hover)]:opacity-0 group-hover/chat:opacity-100 focus-visible:opacity-100'"
                   @click="deleteChat(c.id)"
                 />
@@ -518,8 +523,8 @@ const placeholder = computed(() => selectedBlock.value ? `Ask for a change to th
           </div>
         </template>
       </UPopover>
-      <UTooltip text="New chat">
-        <UButton icon="i-lucide-square-pen" size="xs" color="neutral" variant="ghost" aria-label="New chat" :disabled="!chat.messages.length" @click="newChat" />
+      <UTooltip :text="$t('emailEditor.newChat')">
+        <UButton icon="i-lucide-square-pen" size="xs" color="neutral" variant="ghost" :aria-label="$t('emailEditor.newChat')" :disabled="!chat.messages.length" @click="newChat" />
       </UTooltip>
     </Teleport>
 
@@ -542,9 +547,9 @@ const placeholder = computed(() => selectedBlock.value ? `Ask for a change to th
             <UIcon name="i-lucide-sparkles" class="size-5" />
           </span>
           <!-- Inline delays: .animate-row-in sits outside Tailwind's layers, so a delay utility would lose to it. -->
-          <p class="mt-3 animate-row-in text-[15px] font-semibold text-highlighted" style="animation-delay: 80ms">What should this email do?</p>
+          <p class="mt-3 animate-row-in text-[15px] font-semibold text-highlighted" style="animation-delay: 80ms">{{ $t('emailEditor.greeting') }}</p>
           <p class="mt-1 max-w-72 animate-row-in text-xs text-muted" style="animation-delay: 130ms">
-            Describe it, or start from one of these. {{ master ? 'As a master it uses each project\'s logo, name and accent, so write it once for all of them.' : 'Click any block to point at it.' }}
+            {{ $t('emailEditor.describeIt') }} {{ master ? $t('emailEditor.masterHint') : $t('emailEditor.clickBlockHint') }}
           </p>
           <div class="mt-5 flex flex-wrap justify-center gap-1.5">
             <UButton
@@ -632,7 +637,7 @@ const placeholder = computed(() => selectedBlock.value ? `Ask for a change to th
                             </template>
 
                             <p v-if="thinking(message, segs)" class="animate-[fade-in_300ms_var(--ease-out)]">
-                              <UChatShimmer text="Thinking…" class="text-sm" />
+                              <UChatShimmer :text="$t('emailEditor.thinking')" class="text-sm" />
                             </p>
                           </div>
                         </EmailChatClamp>
@@ -643,13 +648,13 @@ const placeholder = computed(() => selectedBlock.value ? `Ask for a change to th
                           class="-ms-1.5 flex items-center gap-0.5 transition-opacity"
                           :class="[message.id !== lastId && '[@media(hover:hover)]:opacity-0 group-hover/message:opacity-100 focus-within:opacity-100', fresh(message) && 'animate-[fade-in_300ms_var(--ease-out)]']"
                         >
-                          <UTooltip v-if="textOf(message)" :text="copied && copiedId === message.id ? 'Copied' : 'Copy'">
-                            <UButton :icon="copied && copiedId === message.id ? 'i-lucide-check' : 'i-lucide-copy'" size="xs" color="neutral" variant="ghost" aria-label="Copy reply" @click="copy(message)" />
+                          <UTooltip v-if="textOf(message)" :text="copied && copiedId === message.id ? $t('emailEditor.copied') : $t('emailEditor.copy')">
+                            <UButton :icon="copied && copiedId === message.id ? 'i-lucide-check' : 'i-lucide-copy'" size="xs" color="neutral" variant="ghost" :aria-label="$t('emailEditor.copyReply')" @click="copy(message)" />
                           </UTooltip>
-                          <UTooltip v-if="message.id === lastId" text="Try again">
-                            <UButton icon="i-lucide-refresh-cw" size="xs" color="neutral" variant="ghost" aria-label="Try again" @click="retry" />
+                          <UTooltip v-if="message.id === lastId" :text="$t('emailEditor.tryAgain')">
+                            <UButton icon="i-lucide-refresh-cw" size="xs" color="neutral" variant="ghost" :aria-label="$t('emailEditor.tryAgain')" @click="retry" />
                           </UTooltip>
-                          <UButton v-if="changedDesign(message) && undoFor(message)" icon="i-lucide-undo-2" label="Undo changes" size="xs" color="neutral" variant="ghost" @click="undoTurn(message)" />
+                          <UButton v-if="changedDesign(message) && undoFor(message)" icon="i-lucide-undo-2" :label="$t('emailEditor.undoChanges')" size="xs" color="neutral" variant="ghost" @click="undoTurn(message)" />
                         </div>
 
                         <!-- Follow-ups fan in once the reply is done, and again when the selection changes them. -->
@@ -660,8 +665,8 @@ const placeholder = computed(() => selectedBlock.value ? `Ask for a change to th
                             :icon="a.icon"
                             :label="a.label"
                             size="xs"
-                            :color="a.label.startsWith('Fix') ? 'warning' : 'neutral'"
-                            :variant="a.label.startsWith('Fix') ? 'soft' : 'outline'"
+                            :color="a.icon === 'i-lucide-wrench' ? 'warning' : 'neutral'"
+                            :variant="a.icon === 'i-lucide-wrench' ? 'soft' : 'outline'"
                             class="animate-row-in"
                             :style="{ animationDelay: `${i * 40}ms` }"
                             @click="send(a.prompt)"
@@ -675,7 +680,7 @@ const placeholder = computed(() => selectedBlock.value ? `Ask for a change to th
             </template>
 
             <template #indicator>
-              <UChatShimmer text="Thinking…" class="text-sm" />
+              <UChatShimmer :text="$t('emailEditor.thinking')" class="text-sm" />
             </template>
           </UChatMessages>
         </div>
@@ -689,12 +694,12 @@ const placeholder = computed(() => selectedBlock.value ? `Ask for a change to th
       <Transition name="fade" mode="out-in">
         <div v-if="!online" key="offline" class="mb-2 flex items-start gap-2 rounded-xl bg-elevated px-3 py-2 text-xs text-muted ring ring-default">
           <UIcon name="i-lucide-wifi-off" class="mt-px size-3.5 shrink-0" />
-          <span>You're offline. Anything the designer is working on carries on, and this chat catches up when you're back.</span>
+          <span>{{ $t('emailEditor.offline') }}</span>
         </div>
         <div v-else-if="chat.error" key="error" class="mb-2 flex items-start gap-2 rounded-xl bg-error/10 py-2 ps-3 pe-2 text-xs text-error">
           <UIcon name="i-lucide-circle-alert" class="mt-px size-3.5 shrink-0" />
           <span class="line-clamp-3 min-w-0 flex-1">{{ errorText }}</span>
-          <UButton label="Retry" size="xs" color="error" variant="soft" class="-my-0.5" @click="recover" />
+          <UButton :label="$t('emailEditor.retry')" size="xs" color="error" variant="soft" class="-my-0.5" @click="recover" />
         </div>
       </Transition>
 
@@ -714,7 +719,7 @@ const placeholder = computed(() => selectedBlock.value ? `Ask for a change to th
           <span :key="selectedBlock.id" class="inline-flex min-w-0 max-w-full animate-[scale-in_200ms_var(--ease-out)] items-center gap-1.5 rounded-lg bg-elevated py-0.5 ps-2 pe-0.5 text-xs text-toned ring ring-default">
             <UIcon :name="EMAIL_BLOCK_META[selectedBlock.type].icon" class="size-3.5 shrink-0 text-primary" />
             <span class="truncate">{{ emailBlockLabel(selectedBlock) }}</span>
-            <UButton icon="i-lucide-x" size="xs" color="neutral" variant="link" aria-label="Clear selection" class="p-0.5" @click="emit('select', null)" />
+            <UButton icon="i-lucide-x" size="xs" color="neutral" variant="link" :aria-label="$t('emailEditor.clearSelection')" class="p-0.5" @click="emit('select', null)" />
           </span>
         </template>
 
@@ -727,7 +732,7 @@ const placeholder = computed(() => selectedBlock.value ? `Ask for a change to th
               color="neutral"
               variant="ghost"
               size="xs"
-              :aria-label="`Model: ${currentTier.label}`"
+              :aria-label="$t('emailEditor.modelName', { name: currentTier.label })"
               class="-ms-1"
               :ui="{ trailingIcon: 'size-3.5 text-dimmed' }"
             />

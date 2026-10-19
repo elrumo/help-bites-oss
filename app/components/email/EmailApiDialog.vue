@@ -14,6 +14,7 @@ const emit = defineEmits<{ (e: 'key', key: string): void }>()
 const { api } = useAgent()
 const toast = useToast()
 const appUrl = useAppUrl()
+const { t } = useI18n()
 
 const key = ref('')
 const savedKey = ref('')
@@ -50,7 +51,7 @@ async function saveKey() {
     key.value = savedKey.value = template.key
     emit('key', template.key)
   } catch (error: any) {
-    toast.add({ title: error?.message || 'Could not save the key', color: 'error' })
+    toast.add({ title: error?.message || t('emailLibrary.api.saveKeyError'), color: 'error' })
   } finally {
     saving.value = false
   }
@@ -58,61 +59,70 @@ async function saveKey() {
 
 async function copy(text: string, what: string) {
   await navigator.clipboard.writeText(text)
-  toast.add({ title: `${what} copied`, icon: 'i-lucide-clipboard-check', color: 'success' })
+  toast.add({ title: t('emailLibrary.common.copied', { what }), icon: 'i-lucide-clipboard-check', color: 'success' })
 }
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Use via API" :description="isProject ? 'From your server, with this project\'s secret (Project → Dev). Never from a browser.' : 'Masters are read by id with an admin API key. Projects that link this master fetch and send it by their own key.'" :ui="{ content: 'max-w-2xl' }">
+  <UModal v-model:open="open" :title="$t('emailLibrary.api.title')" :description="isProject ? $t('emailLibrary.api.descriptionProject') : $t('emailLibrary.api.descriptionMaster')" :ui="{ content: 'max-w-2xl' }">
     <template #body>
       <div v-if="template" class="space-y-6">
-        <UFormField v-if="isProject" label="Send key" description="How your code names this email. Unique in the project.">
+        <UFormField v-if="isProject" :label="$t('emailLibrary.api.sendKey')" :description="$t('emailLibrary.api.sendKeyDescription')">
           <div class="flex gap-2">
-            <UInput v-model="key" class="flex-1 font-mono" aria-label="Send key" @keydown.enter="saveKey" />
-            <UButton label="Save" color="neutral" variant="soft" :disabled="key === savedKey || !key.trim()" :loading="saving" @click="saveKey" />
+            <UInput v-model="key" class="flex-1 font-mono" :aria-label="$t('emailLibrary.api.sendKey')" @keydown.enter="saveKey" />
+            <UButton :label="$t('emailLibrary.common.save')" color="neutral" variant="soft" :disabled="key === savedKey || !key.trim()" :loading="saving" @click="saveKey" />
           </div>
         </UFormField>
 
         <section class="space-y-2">
           <div class="flex items-center gap-2">
-            <h3 class="flex-1 text-sm font-semibold">Fetch it rendered</h3>
-            <UButton icon="i-lucide-link" label="Copy URL" size="xs" color="neutral" variant="ghost" @click="copy(fetchUrl, 'URL')" />
-            <UButton icon="i-lucide-copy" label="Copy" size="xs" color="neutral" variant="soft" @click="copy(fetchSnippet, 'Request')" />
+            <h3 class="flex-1 text-sm font-semibold">{{ $t('emailLibrary.api.fetchTitle') }}</h3>
+            <UButton icon="i-lucide-link" :label="$t('emailLibrary.api.copyUrl')" size="xs" color="neutral" variant="ghost" @click="copy(fetchUrl, $t('emailLibrary.api.urlWhat'))" />
+            <UButton icon="i-lucide-copy" :label="$t('emailLibrary.common.copy')" size="xs" color="neutral" variant="soft" @click="copy(fetchSnippet, $t('emailLibrary.api.requestWhat'))" />
           </div>
           <CodeBlock :code="fetchSnippet" lang="bash" />
-          <p class="text-xs text-muted">Variables are query parameters. Without <code class="font-mono">format=html</code> you get JSON: <code class="font-mono">{ subject, html, text, variables }</code>, ready for any mail provider.</p>
+          <i18n-t keypath="emailLibrary.api.fetchNote" tag="p" class="text-xs text-muted">
+            <template #format><code class="font-mono">format=html</code></template>
+            <template #json><code class="font-mono">{ subject, html, text, variables }</code></template>
+          </i18n-t>
         </section>
 
         <section v-if="isProject" class="space-y-2">
           <div class="flex items-center gap-2">
-            <h3 class="flex-1 text-sm font-semibold">Or send it</h3>
-            <UButton icon="i-lucide-copy" label="Copy" size="xs" color="neutral" variant="soft" @click="copy(sendSnippet, 'Request')" />
+            <h3 class="flex-1 text-sm font-semibold">{{ $t('emailLibrary.api.sendTitle') }}</h3>
+            <UButton icon="i-lucide-copy" :label="$t('emailLibrary.common.copy')" size="xs" color="neutral" variant="soft" @click="copy(sendSnippet, $t('emailLibrary.api.requestWhat'))" />
           </div>
           <CodeBlock :code="sendSnippet" lang="bash" />
-          <p class="text-xs text-muted">Up to 50 recipients, one message each, from the project's sender. A recipient can be <code class="font-mono">{ email, name, variables }</code> for values of their own. In custom HTML, <code class="font-mono">{{ escapedExample }}</code> fills in as text and <code class="font-mono">{{ rawExample }}</code> as HTML.</p>
+          <i18n-t keypath="emailLibrary.api.sendNote" tag="p" class="text-xs text-muted">
+            <template #shape><code class="font-mono">{ email, name, variables }</code></template>
+            <template #escaped><code class="font-mono">{{ escapedExample }}</code></template>
+            <template #raw><code class="font-mono">{{ rawExample }}</code></template>
+          </i18n-t>
         </section>
 
         <section v-if="isProject" class="space-y-2">
           <div class="flex items-center gap-2">
-            <h3 class="flex-1 text-sm font-semibold">See what was sent</h3>
-            <UButton icon="i-lucide-copy" label="Copy" size="xs" color="neutral" variant="soft" @click="copy(logSnippet, 'Request')" />
+            <h3 class="flex-1 text-sm font-semibold">{{ $t('emailLibrary.api.logTitle') }}</h3>
+            <UButton icon="i-lucide-copy" :label="$t('emailLibrary.common.copy')" size="xs" color="neutral" variant="soft" @click="copy(logSnippet, $t('emailLibrary.api.requestWhat'))" />
           </div>
           <CodeBlock :code="logSnippet" lang="bash" />
-          <p class="text-xs text-muted">Every recipient's status, kept current by Mailgun's delivery webhook. Also under Email → Log.</p>
+          <p class="text-xs text-muted">{{ $t('emailLibrary.api.logNote') }}</p>
         </section>
 
         <section v-if="variables.length" class="space-y-2">
-          <h3 class="text-sm font-semibold">Variables</h3>
+          <h3 class="text-sm font-semibold">{{ $t('emailLibrary.api.variables') }}</h3>
           <ul class="divide-y divide-default rounded-lg border border-default text-sm">
             <li v-for="v in variables" :key="v.key" class="flex items-baseline gap-3 px-3 py-2">
               <code class="font-mono text-xs">{{ v.key }}</code>
               <span class="min-w-0 flex-1 truncate text-xs text-muted">{{ v.label }}</span>
-              <span class="truncate text-xs text-dimmed">{{ v.defaultValue ? `defaults to “${v.defaultValue}”` : 'no default' }}</span>
+              <span class="truncate text-xs text-dimmed">{{ v.defaultValue ? $t('emailLibrary.api.defaultsTo', { value: v.defaultValue }) : $t('emailLibrary.api.noDefault') }}</span>
             </li>
           </ul>
         </section>
 
-        <p class="text-xs text-muted">Full reference: <a href="/_docs/scalar" target="_blank" rel="noopener" class="underline">API docs</a>.</p>
+        <i18n-t keypath="emailLibrary.api.fullReference" tag="p" class="text-xs text-muted">
+          <template #link><a href="/_docs/scalar" target="_blank" rel="noopener" class="underline">{{ $t('emailLibrary.api.apiDocs') }}</a></template>
+        </i18n-t>
       </div>
     </template>
   </UModal>

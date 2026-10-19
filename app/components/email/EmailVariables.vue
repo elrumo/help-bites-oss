@@ -45,34 +45,35 @@ function wrap(key: string) {
   <div class="flex h-full flex-col">
     <div class="flex items-center gap-2 border-b border-default px-4 py-3">
       <UIcon name="i-lucide-braces" class="size-4 text-primary" />
-      <span class="text-sm font-semibold text-highlighted">Variables</span>
+      <span class="text-sm font-semibold text-highlighted">{{ $t('emailLibrary.variables.title') }}</span>
     </div>
 
     <div class="flex-1 space-y-4 overflow-y-auto p-4">
-      <p class="text-xs text-muted leading-relaxed">
-        Type <code class="rounded bg-elevated px-1 py-0.5">{{ exampleVar }}</code> anywhere in your
-        text, headings or buttons. Set a sample value to preview, then pass real values via the API at send time.
-      </p>
+      <i18n-t keypath="emailLibrary.variables.intro" tag="p" class="text-xs text-muted leading-relaxed">
+        <template #example><code class="rounded bg-elevated px-1 py-0.5">{{ exampleVar }}</code></template>
+      </i18n-t>
 
       <div v-if="!rows.length" class="rounded-lg border border-dashed border-default p-6 text-center">
         <UIcon name="i-lucide-braces" class="size-6 mx-auto text-dimmed" />
-        <p class="mt-2 text-xs text-muted">No variables yet. Add a <code>{{ examplePlaceholder }}</code> to your copy.</p>
+        <i18n-t keypath="emailLibrary.variables.none" tag="p" class="mt-2 text-xs text-muted">
+          <template #placeholder><code>{{ examplePlaceholder }}</code></template>
+        </i18n-t>
       </div>
 
       <div v-for="v in rows" :key="v.key" class="rounded-lg border border-default p-3 space-y-2.5">
         <div class="flex items-center gap-2">
           <code class="text-xs font-medium text-primary">{{ wrap(v.key) }}</code>
         </div>
-        <UFormField label="Label" size="xs">
+        <UFormField :label="$t('emailLibrary.variables.label')" size="xs">
           <UInput
             :model-value="v.label ?? ''"
-            placeholder="First name"
+            :placeholder="$t('emailLibrary.variables.labelPlaceholder')"
             size="sm"
             class="w-full"
             @update:model-value="update(v.key, 'label', String($event))"
           />
         </UFormField>
-        <UFormField label="Sample value" size="xs">
+        <UFormField :label="$t('emailLibrary.variables.sampleValue')" size="xs">
           <UInput
             :model-value="v.defaultValue ?? ''"
             placeholder="Ada"

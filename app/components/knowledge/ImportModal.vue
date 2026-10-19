@@ -1,10 +1,10 @@
 <template>
-  <UModal v-model:open="open" title="Import a document" :description="step === 'upload' ? 'Upload a Markdown or text FAQ document. You will review what was detected before anything is imported.' : ''" :ui="{ content: 'max-w-3xl' }">
+  <UModal v-model:open="open" :title="$t('knowledge.import.title')" :description="step === 'upload' ? $t('knowledge.import.uploadDescription') : ''" :ui="{ content: 'max-w-3xl' }">
     <template #body>
       <!-- Step 1: upload -->
       <div v-if="step === 'upload'" class="space-y-4">
-        <UFormField v-if="nodes.length" label="Destination path" hint="optional — detected paths nest under this">
-          <OptionalSelect v-model="nodeId" :items="nodeItems" none-label="(model root)" class="w-full" />
+        <UFormField v-if="nodes.length" :label="$t('knowledge.import.destination')" :hint="$t('knowledge.import.destinationHint')">
+          <OptionalSelect v-model="nodeId" :items="nodeItems" :none-label="$t('knowledge.modelRoot')" class="w-full" />
         </UFormField>
         <div
           class="rounded-xl border-2 border-dashed p-8 text-center transition-colors"
@@ -12,30 +12,30 @@
           @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false" @drop.prevent="onDrop"
         >
           <UIcon name="i-lucide-file-up" class="size-8 text-dimmed mx-auto" />
-          <p class="mt-2 text-sm text-muted">Drop a <code>.md</code> or <code>.txt</code> file here, or</p>
-          <UButton class="mt-2" size="sm" color="neutral" variant="soft" @click="fileInput?.click()">Choose a file</UButton>
+          <p class="mt-2 text-sm text-muted">{{ $t('knowledge.import.dropStart') }} <code>.md</code> {{ $t('knowledge.import.dropOr') }} <code>.txt</code> {{ $t('knowledge.import.dropEnd') }}</p>
+          <UButton class="mt-2" size="sm" color="neutral" variant="soft" @click="fileInput?.click()">{{ $t('knowledge.import.chooseFile') }}</UButton>
           <input ref="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" class="hidden" @change="onPick">
           <p v-if="file" class="mt-3 text-sm">{{ file.name }} <span class="text-dimmed">({{ Math.ceil(file.size / 1024) }} KB)</span></p>
         </div>
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
         <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="ghost" @click="open = false">Cancel</UButton>
-          <UButton color="primary" :disabled="!file" :loading="uploading" @click="upload">Parse document</UButton>
+          <UButton color="neutral" variant="ghost" @click="open = false">{{ $t('common.cancel') }}</UButton>
+          <UButton color="primary" :disabled="!file" :loading="uploading" @click="upload">{{ $t('knowledge.import.parse') }}</UButton>
         </div>
       </div>
 
       <!-- Step 2: review -->
       <div v-else-if="step === 'review' && preview" class="space-y-4">
         <div class="flex flex-wrap gap-3 text-sm">
-          <KnowledgeStat :n="preview.counts.faqs" label="FAQs" />
-          <KnowledgeStat :n="preview.counts.nodes" label="paths" />
-          <KnowledgeStat :n="preview.counts.duplicates" label="duplicates" :warn="preview.counts.duplicates > 0" />
-          <KnowledgeStat :n="preview.counts.existing" label="already imported" :warn="preview.counts.existing > 0" />
-          <KnowledgeStat :n="selectedCount" label="selected" />
+          <KnowledgeStat :n="preview.counts.faqs" :label="$t('knowledge.stats.faqs')" />
+          <KnowledgeStat :n="preview.counts.nodes" :label="$t('knowledge.stats.paths')" />
+          <KnowledgeStat :n="preview.counts.duplicates" :label="$t('knowledge.stats.duplicates')" :warn="preview.counts.duplicates > 0" />
+          <KnowledgeStat :n="preview.counts.existing" :label="$t('knowledge.stats.alreadyImported')" :warn="preview.counts.existing > 0" />
+          <KnowledgeStat :n="selectedCount" :label="$t('knowledge.stats.selected')" />
         </div>
 
         <details v-if="preview.warnings.length || preview.invalid.length" class="text-xs text-muted">
-          <summary class="cursor-pointer">{{ preview.warnings.length + preview.invalid.length }} warning(s)</summary>
+          <summary class="cursor-pointer">{{ $t('knowledge.import.warnings', preview.warnings.length + preview.invalid.length) }}</summary>
           <ul class="mt-1 space-y-0.5">
             <li v-for="(w, i) in preview.warnings" :key="`w${i}`">⚠︎ {{ w }}</li>
             <li v-for="(iv, i) in preview.invalid" :key="`i${i}`">⚠︎ {{ iv.section }} — {{ iv.reason }}</li>
@@ -43,9 +43,9 @@
         </details>
 
         <div class="flex items-center gap-2 text-xs">
-          <UButton size="xs" variant="ghost" color="neutral" @click="setAll(true)">Select all</UButton>
-          <UButton size="xs" variant="ghost" color="neutral" @click="setAll(false)">None</UButton>
-          <span class="text-dimmed">Edited questions and deselections apply on import.</span>
+          <UButton size="xs" variant="ghost" color="neutral" @click="setAll(true)">{{ $t('knowledge.import.selectAll') }}</UButton>
+          <UButton size="xs" variant="ghost" color="neutral" @click="setAll(false)">{{ $t('knowledge.import.none') }}</UButton>
+          <span class="text-dimmed">{{ $t('knowledge.import.editHint') }}</span>
         </div>
 
         <ul class="divide-y divide-default border-y border-default max-h-[45vh] overflow-y-auto">
@@ -54,7 +54,7 @@
             <div class="min-w-0 flex-1">
               <UInput v-model="e.question" size="xs" class="w-full" :ui="{ base: 'font-medium' }" />
               <div class="mt-1 flex items-center gap-2 text-xs text-dimmed">
-                <span class="truncate">{{ e.pathCache || '(root)' }}</span>
+                <span class="truncate">{{ e.pathCache || $t('knowledge.root') }}</span>
                 <UBadge v-if="e.duplicate" size="xs" variant="subtle" :color="dupColor(e.duplicate)">{{ dupLabel(e.duplicate) }}</UBadge>
               </div>
             </div>
@@ -63,8 +63,8 @@
 
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
         <div class="flex justify-between gap-2">
-          <UButton color="neutral" variant="ghost" @click="reset">Back</UButton>
-          <UButton color="primary" :disabled="!selectedCount" :loading="committing" @click="commit">Import {{ selectedCount }} FAQ{{ selectedCount === 1 ? '' : 's' }}</UButton>
+          <UButton color="neutral" variant="ghost" @click="reset">{{ $t('knowledge.back') }}</UButton>
+          <UButton color="primary" :disabled="!selectedCount" :loading="committing" @click="commit">{{ $t('knowledge.import.importCount', selectedCount) }}</UButton>
         </div>
       </div>
 
@@ -72,9 +72,9 @@
       <div v-else class="py-6 text-center space-y-3">
         <UIcon :name="doneOk ? 'i-lucide-circle-check' : failed ? 'i-lucide-triangle-alert' : 'i-lucide-refresh-cw'" class="size-8 mx-auto" :class="doneOk ? 'text-primary-500' : failed ? 'text-error' : 'text-dimmed animate-spin'" />
         <p class="text-sm">{{ statusText }}</p>
-        <p v-if="stats" class="text-xs text-muted">{{ stats.created }} created · {{ stats.updated }} updated · {{ stats.skippedDetached }} kept (edited) · {{ stats.outdated }} outdated</p>
+        <p v-if="stats" class="text-xs text-muted">{{ $t('knowledge.import.statsLine', { created: stats.created, updated: stats.updated, kept: stats.skippedDetached, outdated: stats.outdated }) }}</p>
         <div v-if="doneOk || failed" class="flex justify-center">
-          <UButton color="primary" @click="finish">Done</UButton>
+          <UButton color="primary" @click="finish">{{ $t('knowledge.done') }}</UButton>
         </div>
       </div>
     </template>
@@ -90,6 +90,7 @@ const emit = defineEmits<{ imported: [] }>()
 const open = defineModel<boolean>('open', { required: true })
 
 const { api, agentHeaders } = useAgent()
+const { t } = useI18n()
 type ReviewEntry = ImportPreviewEntry & { include: boolean }
 
 const step = ref<'upload' | 'review' | 'processing'>('upload')
@@ -109,7 +110,7 @@ const nodeItems = computed(() => props.nodes.map(n => ({ label: n.pathCache, val
 const selectedCount = computed(() => entries.value.filter(e => e.include).length)
 const failed = computed(() => docStatus.value === 'failed')
 const doneOk = computed(() => docStatus.value === 'processed')
-const statusText = computed(() => failed.value ? 'Import failed while indexing. The FAQs were saved; you can reindex from the model page.' : doneOk.value ? 'Imported and indexed.' : 'Importing and indexing…')
+const statusText = computed(() => failed.value ? t('knowledge.import.failed') : doneOk.value ? t('knowledge.import.indexed') : t('knowledge.import.indexing'))
 
 watch(open, (isOpen) => {
   if (!isOpen) return
@@ -128,7 +129,7 @@ function onPick(e: Event) { file.value = (e.target as HTMLInputElement).files?.[
 function onDrop(e: DragEvent) { dragging.value = false; file.value = e.dataTransfer?.files?.[0] || null }
 function setAll(v: boolean) { entries.value.forEach(e => { e.include = v }) }
 function dupColor(d: string) { return d === 'existing-detached' ? 'warning' : d === 'in-document' ? 'neutral' : 'info' }
-function dupLabel(d: string) { return d === 'in-document' ? 'duplicate in file' : d === 'existing-detached' ? 'edited — will keep yours' : 'updates existing' }
+function dupLabel(d: string) { return d === 'in-document' ? t('knowledge.import.dupInFile') : d === 'existing-detached' ? t('knowledge.import.dupEdited') : t('knowledge.import.dupUpdates') }
 
 async function upload() {
   if (!file.value) return
@@ -145,7 +146,7 @@ async function upload() {
     entries.value = res.preview.entries.map(e => ({ ...e, include: e.duplicate !== 'existing-detached' }))
     step.value = 'review'
   } catch (e: any) {
-    error.value = e?.data?.statusMessage || e?.message || 'Could not parse the document'
+    error.value = e?.data?.statusMessage || e?.message || t('knowledge.import.couldNotParse')
   } finally {
     uploading.value = false
   }
@@ -162,7 +163,7 @@ async function commit() {
     step.value = 'processing'
     poll(preview.value.documentId)
   } catch (e: any) {
-    error.value = e?.message || 'Could not import'
+    error.value = e?.message || t('knowledge.import.couldNotImport')
   } finally {
     committing.value = false
   }

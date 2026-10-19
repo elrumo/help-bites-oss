@@ -6,13 +6,13 @@
 
     <div v-else-if="!items.length" class="h-full flex items-center justify-center">
       <slot name="empty">
-        <p class="px-4 py-10 text-center text-[13px] text-muted">{{ emptyText }}</p>
+        <p class="px-4 py-10 text-center text-[13px] text-muted">{{ emptyText ?? $t('chat.noConversations') }}</p>
       </slot>
     </div>
 
     <template v-else>
       <div v-if="searchable" class="sticky top-0 z-10 bg-default/90 px-3 pb-2 pt-2 backdrop-blur">
-        <UInput v-model="searchQuery" icon="i-lucide-search" placeholder="Search conversations" size="sm" class="w-full" />
+        <UInput v-model="searchQuery" icon="i-lucide-search" :placeholder="$t('chat.searchConversations')" size="sm" class="w-full" />
       </div>
       <!-- Linear's list rows: inset, quiet grey selection, one line of preview. -->
       <UContextMenu v-for="item in filteredItems" :key="item.id" :items="contextItems(item)">
@@ -35,13 +35,13 @@
             <span class="flex items-center justify-between gap-2">
               <span class="truncate text-[13px] text-highlighted" :class="item.unreadCount ? 'font-semibold' : 'font-medium'">{{ item.title }}</span>
               <span class="flex shrink-0 items-center gap-1.5 text-xs text-muted">
-                <PriorityIcon v-if="item.priority === 'high' || item.priority === 'urgent'" :priority="item.priority" :title="`${item.priority} priority`" />
-                <StatusIcon v-if="item.done" category="resolved" title="Done" />
+                <PriorityIcon v-if="item.priority === 'high' || item.priority === 'urgent'" :priority="item.priority" :title="item.priority === 'urgent' ? $t('chat.urgentPriority') : $t('chat.highPriority')" />
+                <StatusIcon v-if="item.done" category="resolved" :title="$t('chat.done')" />
                 {{ formatShort(item.timestamp) }}
               </span>
             </span>
             <span class="mt-0.5 block truncate text-xs text-muted">
-              <span v-if="item.subtitle" class="mr-1.5 font-medium text-toned">{{ item.subtitle }}</span>{{ item.preview || emptyPreview }}
+              <span v-if="item.subtitle" class="mr-1.5 font-medium text-toned">{{ item.subtitle }}</span>{{ item.preview || (emptyPreview ?? $t('chat.noMessagesYet')) }}
             </span>
           </span>
         </button>
@@ -54,6 +54,8 @@
 import Fuse from 'fuse.js'
 import type { ConversationPriority } from '#shared/support'
 import { formatChatListStamp } from './chatTime'
+
+const { t } = useI18n()
 
 export interface ChatListItem {
   id: string
@@ -81,7 +83,7 @@ const props = withDefaults(defineProps<{
   emptyText?: string
   emptyPreview?: string
   searchable?: boolean
-}>(), { activeId: '', loading: false, emptyText: 'No conversations yet.', emptyPreview: 'No messages yet', searchable: true })
+}>(), { activeId: '', loading: false, searchable: true })
 
 const emit = defineEmits<{ (event: 'select' | 'toggle-read' | 'toggle-done' | 'toggle-archive' | 'delete', id: string): void }>()
 
@@ -94,11 +96,11 @@ function initials(title: string): string {
 
 function contextItems(item: ChatListItem) {
   return [[
-    { label: item.unreadCount ? 'Mark as read' : 'Mark as unread', icon: item.unreadCount ? 'i-lucide-circle-check' : 'i-lucide-eye-off', onSelect: () => emit('toggle-read', item.id) },
-    ...(item.done === undefined ? [] : [{ label: item.done ? 'Reopen' : 'Mark as done', icon: item.done ? 'i-lucide-reply' : 'i-lucide-check', onSelect: () => emit('toggle-done', item.id) }])
+    { label: item.unreadCount ? t('chat.markRead') : t('chat.markUnread'), icon: item.unreadCount ? 'i-lucide-circle-check' : 'i-lucide-eye-off', onSelect: () => emit('toggle-read', item.id) },
+    ...(item.done === undefined ? [] : [{ label: item.done ? t('chat.reopen') : t('chat.markDone'), icon: item.done ? 'i-lucide-reply' : 'i-lucide-check', onSelect: () => emit('toggle-done', item.id) }])
   ], ...(item.archived === undefined ? [] : [[
-    { label: item.archived ? 'Unarchive' : 'Archive', icon: item.archived ? 'i-lucide-archive-restore' : 'i-lucide-archive', onSelect: () => emit('toggle-archive', item.id) },
-    { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => emit('delete', item.id) }
+    { label: item.archived ? t('chat.unarchive') : t('chat.archive'), icon: item.archived ? 'i-lucide-archive-restore' : 'i-lucide-archive', onSelect: () => emit('toggle-archive', item.id) },
+    { label: t('chat.delete'), icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => emit('delete', item.id) }
   ]])]
 }
 

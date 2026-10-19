@@ -24,6 +24,7 @@ const props = defineProps<{ project?: AdminProject | null }>()
 
 const { api } = useAgent()
 const toast = useToast()
+const { t } = useI18n()
 const projectId = computed(() => props.project?.id || null)
 
 const templates = ref<EmailTemplate[]>([])
@@ -53,7 +54,7 @@ onMounted(() => load().catch(fail))
 
 function fail(error: any) {
   loading.value = false
-  toast.add({ title: error?.message || 'Something went wrong', color: 'error' })
+  toast.add({ title: error?.message || t('emailLibrary.library.genericError'), color: 'error' })
 }
 
 // ---- folders ------------------------------------------------------------------
@@ -67,25 +68,25 @@ const subfolders = computed(() => search.value ? [] : folders.value.filter(f => 
 const atRoot = computed(() => !folderId.value && !search.value)
 
 function folderMenu(folder: EmailFolder) {
-  return [[{ label: 'Rename', icon: 'i-lucide-pencil', onSelect: () => renameFolder(folder) }, { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => deleteFolder(folder) }]]
+  return [[{ label: t('emailLibrary.common.rename'), icon: 'i-lucide-pencil', onSelect: () => renameFolder(folder) }, { label: t('emailLibrary.common.delete'), icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => deleteFolder(folder) }]]
 }
 
 async function newFolder() {
-  const name = window.prompt('Folder name')?.trim()
+  const name = window.prompt(t('emailLibrary.library.folderName'))?.trim()
   if (!name) return
   const { folder } = await api<{ folder: EmailFolder }>('/admin/email-folders', { method: 'POST', body: { name, project: projectId.value, parent: folderId.value } }).catch(fail) || {}
   if (folder) folders.value.push(folder)
 }
 
 async function renameFolder(folder: EmailFolder) {
-  const name = window.prompt('Rename folder', folder.name)?.trim()
+  const name = window.prompt(t('emailLibrary.library.renameFolder'), folder.name)?.trim()
   if (!name || name === folder.name) return
   const res = await api<{ folder: EmailFolder }>(`/admin/email-folders/${folder.id}`, { method: 'PATCH', body: { name } }).catch(fail)
   if (res) folder.name = res.folder.name
 }
 
 async function deleteFolder(folder: EmailFolder) {
-  if (!window.confirm(`Delete “${folder.name}”? What is inside moves up a level.`)) return
+  if (!window.confirm(t('emailLibrary.library.deleteFolderConfirm', { name: folder.name }))) return
   await api(`/admin/email-folders/${folder.id}`, { method: 'DELETE' }).catch(fail)
   await load().catch(fail)
 }
@@ -158,9 +159,9 @@ async function importHtml(event: Event) {
 // ---- JSON backup: every template of this project (or every master) in one file ----
 const jsonInput = ref<HTMLInputElement | null>(null)
 const transferItems = computed(() => [[
-  { label: 'Import HTML…', icon: 'i-lucide-file-code', onSelect: () => fileInput.value?.click() },
-  { label: 'Import JSON…', icon: 'i-lucide-file-json', onSelect: () => jsonInput.value?.click() },
-  { label: 'Export all as JSON', icon: 'i-lucide-download', onSelect: exportAll }
+  { label: t('emailLibrary.library.importHtml'), icon: 'i-lucide-file-code', onSelect: () => fileInput.value?.click() },
+  { label: t('emailLibrary.library.importJson'), icon: 'i-lucide-file-json', onSelect: () => jsonInput.value?.click() },
+  { label: t('emailLibrary.library.exportAll'), icon: 'i-lucide-download', onSelect: exportAll }
 ]])
 
 async function exportAll() {
@@ -187,7 +188,7 @@ async function importJson(event: Event) {
   try {
     const parsed = JSON.parse(await file.text())
     const templates: unknown[] = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.templates) ? parsed.templates : []
-    if (!templates.length) throw new Error('No templates in that file')
+    if (!templates.length) throw new Error(t('emailLibrary.library.noTemplatesInFile'))
     // The endpoint takes 100 at a time; a dry run first says what will change.
     const run = async (dryRun: boolean) => {
       const total: ImportSummary = { created: 0, updated: 0, unchanged: 0, skipped: 0, failed: 0, results: [] }
@@ -200,9 +201,9 @@ async function importJson(event: Event) {
     }
     const plan = await run(true)
     const errors = plan.results.filter(r => r.error).map(r => `${r.key}: ${r.error}`)
-    if (!window.confirm(`Import ${templates.length} template${templates.length === 1 ? '' : 's'} from ${file.name}?\n\n${plan.created} new, ${plan.updated} updated, ${plan.unchanged} unchanged${plan.failed ? `, ${plan.failed} with errors:\n${errors.slice(0, 5).join('\n')}` : ''}`)) return
+    if (!window.confirm(`${t('emailLibrary.library.importConfirm', { file: file.name }, templates.length)}\n\n${t('emailLibrary.library.importPlan', { created: plan.created, updated: plan.updated, unchanged: plan.unchanged })}${plan.failed ? t('emailLibrary.library.importPlanErrors', { failed: plan.failed, errors: errors.slice(0, 5).join('\n') }) : ''}`)) return
     const done = await run(false)
-    toast.add({ title: `${done.created} created, ${done.updated} updated`, description: done.failed ? `${done.failed} could not be imported` : undefined, color: done.failed ? 'warning' : 'success' })
+    toast.add({ title: t('emailLibrary.library.importedToast', { created: done.created, updated: done.updated }), description: done.failed ? t('emailLibrary.library.importFailed', { failed: done.failed }) : undefined, color: done.failed ? 'warning' : 'success' })
     await load()
   } catch (error) {
     fail(error)
@@ -220,9 +221,9 @@ async function duplicate(t: EmailTemplate) {
 }
 
 /** A new master with this template's design and variables; the project keeps its own copy. */
-async function copyToMasters(t: EmailTemplate) {
-  const res = await api<{ template: EmailTemplate }>('/admin/emails', { method: 'POST', body: { name: t.name, document: t.document, variables: t.variables } }).catch(fail)
-  if (res) toast.add({ title: `Copied “${t.name}” to masters`, color: 'success', actions: [{ label: 'Open master', onClick: () => navigateTo(`/emails/${res.template.id}`) }] })
+async function copyToMasters(tpl: EmailTemplate) {
+  const res = await api<{ template: EmailTemplate }>('/admin/emails', { method: 'POST', body: { name: tpl.name, document: tpl.document, variables: tpl.variables } }).catch(fail)
+  if (res) toast.add({ title: t('emailLibrary.library.copiedToMasters', { name: tpl.name }), color: 'success', actions: [{ label: t('emailLibrary.library.openMaster'), onClick: () => navigateTo(`/emails/${res.template.id}`) }] })
 }
 
 async function move(t: EmailTemplate, folder: string | null) {
@@ -230,11 +231,11 @@ async function move(t: EmailTemplate, folder: string | null) {
   if (res) t.folderId = res.template.folderId
 }
 
-async function remove(t: EmailTemplate) {
-  const what = t.masterId ? `Remove “${t.master?.name || t.name}” from this project? The master stays.` : `Delete “${t.name}”? This cannot be undone.`
+async function remove(tpl: EmailTemplate) {
+  const what = tpl.masterId ? t('emailLibrary.library.removeMasterConfirm', { name: tpl.master?.name || tpl.name }) : t('emailLibrary.library.deleteConfirm', { name: tpl.name })
   if (!window.confirm(what)) return
-  const res = await api(`/admin/emails/${t.id}`, { method: 'DELETE' }).catch(fail)
-  if (res) templates.value = templates.value.filter(x => x.id !== t.id)
+  const res = await api(`/admin/emails/${tpl.id}`, { method: 'DELETE' }).catch(fail)
+  if (res) templates.value = templates.value.filter(x => x.id !== tpl.id)
 }
 
 const exportItemsFor = useEmailExport()
@@ -252,21 +253,21 @@ function exportSource(t: EmailTemplate) {
   }
 }
 
-function menu(t: EmailTemplate) {
+function menu(tpl: EmailTemplate) {
   return [
-    [{ label: t.masterId ? 'Open' : 'Edit', icon: 'i-lucide-pencil', onSelect: () => open(t) }, { label: 'Duplicate', icon: 'i-lucide-copy', onSelect: () => duplicate(t) }, { label: 'Send test…', icon: 'i-lucide-send', onSelect: () => { testTemplate.value = t; testOpen.value = true } }],
+    [{ label: tpl.masterId ? t('emailLibrary.common.open') : t('emailLibrary.common.edit'), icon: 'i-lucide-pencil', onSelect: () => open(tpl) }, { label: t('emailLibrary.common.duplicate'), icon: 'i-lucide-copy', onSelect: () => duplicate(tpl) }, { label: t('emailLibrary.library.sendTest'), icon: 'i-lucide-send', onSelect: () => { testTemplate.value = tpl; testOpen.value = true } }],
     [{
-      label: 'Export',
+      label: t('emailLibrary.library.export'),
       icon: 'i-lucide-code-xml',
-      disabled: !previewOf(t),
-      children: exportItemsFor(() => exportSource(t), () => { apiTemplate.value = t; apiOpen.value = true })
+      disabled: !previewOf(tpl),
+      children: exportItemsFor(() => exportSource(tpl), () => { apiTemplate.value = tpl; apiOpen.value = true })
     }],
     [{
-      label: 'Move to',
+      label: t('emailLibrary.library.moveTo'),
       icon: 'i-lucide-folder-input',
-      children: [{ label: 'Top level', onSelect: () => move(t, null) }, ...folders.value.map(f => ({ label: f.name, onSelect: () => move(t, f.id) }))]
-    }, ...(props.project && !t.masterId ? [{ label: 'Copy to masters', icon: 'i-lucide-library', onSelect: () => copyToMasters(t) }] : [])],
-    [{ label: t.masterId ? 'Remove from project' : 'Delete', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => remove(t) }]
+      children: [{ label: t('emailLibrary.library.topLevel'), onSelect: () => move(tpl, null) }, ...folders.value.map(f => ({ label: f.name, onSelect: () => move(tpl, f.id) }))]
+    }, ...(props.project && !tpl.masterId ? [{ label: t('emailLibrary.library.copyToMasters'), icon: 'i-lucide-library', onSelect: () => copyToMasters(tpl) }] : [])],
+    [{ label: tpl.masterId ? t('emailLibrary.library.removeFromProject') : t('emailLibrary.common.delete'), icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => remove(tpl) }]
   ]
 }
 
@@ -285,28 +286,28 @@ const linkedMasterIds = computed(() => new Set(templates.value.map(t => t.master
 
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="project?.id" title="Email">
+    <PageHeader :project-id="project?.id" :title="$t('nav.email')">
       <template #title><EmailTabs current="templates" :masters="!project" /></template>
       <template #actions>
-        <UInput v-model="search" icon="i-lucide-search" placeholder="Search" size="sm" class="hidden w-44 sm:block" />
-        <UTooltip text="New folder"><UButton icon="i-lucide-folder-plus" size="sm" color="neutral" variant="ghost" square class="text-muted" aria-label="New folder" @click="newFolder" /></UTooltip>
+        <UInput v-model="search" icon="i-lucide-search" :placeholder="$t('common.search')" size="sm" class="hidden w-44 sm:block" />
+        <UTooltip :text="$t('emailLibrary.library.newFolder')"><UButton icon="i-lucide-folder-plus" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('emailLibrary.library.newFolder')" @click="newFolder" /></UTooltip>
         <UDropdownMenu :items="transferItems">
-          <UTooltip text="Import or export"><UButton icon="i-lucide-file-up" size="sm" color="neutral" variant="ghost" square class="text-muted" aria-label="Import or export" /></UTooltip>
+          <UTooltip :text="$t('emailLibrary.library.importExport')"><UButton icon="i-lucide-file-up" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('emailLibrary.library.importExport')" /></UTooltip>
         </UDropdownMenu>
         <input ref="fileInput" type="file" accept=".html,.htm,text/html" class="hidden" @change="importHtml">
         <input ref="jsonInput" type="file" accept=".json,application/json" class="hidden" @change="importJson">
-        <UButton v-if="project" icon="i-lucide-link" label="Add master" size="sm" color="neutral" variant="outline" @click="openLinkPicker" />
-        <UButton icon="i-lucide-plus" :label="project ? 'New template' : 'New master'" size="sm" :loading="busy" @click="pickerOpen = true" />
+        <UButton v-if="project" icon="i-lucide-link" :label="$t('emailLibrary.library.addMaster')" size="sm" color="neutral" variant="outline" @click="openLinkPicker" />
+        <UButton icon="i-lucide-plus" :label="project ? $t('emailLibrary.library.newTemplate') : $t('emailLibrary.library.newMaster')" size="sm" :loading="busy" @click="pickerOpen = true" />
       </template>
     </PageHeader>
     <p class="shrink-0 border-b border-default px-6 py-2.5 text-[13px] text-muted">
-      <template v-if="project">This project's templates, plus masters it uses with its own brand and values.</template>
-      <template v-else>Masters: design once, link into any project. Each project fills in its brand and values.</template>
+      <template v-if="project">{{ $t('emailLibrary.library.projectSubtitle') }}</template>
+      <template v-else>{{ $t('emailLibrary.library.masterSubtitle') }}</template>
     </p>
 
     <div class="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
-      <nav v-if="crumbs.length && !search" class="mb-4 flex flex-wrap items-center gap-1 text-sm" aria-label="Folder">
-        <button type="button" class="text-muted hover:text-default" @click="folderId = null">All</button>
+      <nav v-if="crumbs.length && !search" class="mb-4 flex flex-wrap items-center gap-1 text-sm" :aria-label="$t('emailLibrary.library.folder')">
+        <button type="button" class="text-muted hover:text-default" @click="folderId = null">{{ $t('emailLibrary.library.all') }}</button>
         <template v-for="c in crumbs" :key="c.id">
           <UIcon name="i-lucide-chevron-right" class="size-3.5 text-dimmed" />
           <button type="button" class="hover:text-default" :class="c.id === folderId ? 'font-medium text-highlighted' : 'text-muted'" @click="folderId = c.id">{{ c.name }}</button>
@@ -319,7 +320,7 @@ const linkedMasterIds = computed(() => new Set(templates.value.map(t => t.master
             <UIcon name="i-lucide-folder" class="size-4 shrink-0 text-muted" /><span class="truncate">{{ f.name }}</span>
           </button>
           <UDropdownMenu :items="folderMenu(f)">
-            <UButton icon="i-lucide-ellipsis" size="xs" color="neutral" variant="ghost" aria-label="Folder actions" class="opacity-60 group-hover:opacity-100" />
+            <UButton icon="i-lucide-ellipsis" size="xs" color="neutral" variant="ghost" :aria-label="$t('emailLibrary.library.folderActions')" class="opacity-60 group-hover:opacity-100" />
           </UDropdownMenu>
         </div>
       </div>
@@ -336,30 +337,30 @@ const linkedMasterIds = computed(() => new Set(templates.value.map(t => t.master
             <UIcon name="i-lucide-chevron-right" class="size-3.5 shrink-0 text-dimmed" />
           </button>
           <UDropdownMenu :items="folderMenu(g.folder)">
-            <UButton icon="i-lucide-ellipsis" size="xs" color="neutral" variant="ghost" aria-label="Folder actions" class="opacity-60 group-hover:opacity-100" />
+            <UButton icon="i-lucide-ellipsis" size="xs" color="neutral" variant="ghost" :aria-label="$t('emailLibrary.library.folderActions')" class="opacity-60 group-hover:opacity-100" />
           </UDropdownMenu>
         </div>
-        <p v-if="g.folder && !g.items.length" class="px-1 text-xs text-dimmed">No templates in this folder.</p>
+        <p v-if="g.folder && !g.items.length" class="px-1 text-xs text-dimmed">{{ $t('emailLibrary.library.noTemplatesInFolder') }}</p>
         <div :class="g.folder ? 'flex snap-x gap-4 overflow-x-auto pb-2' : 'grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-4'">
         <UContextMenu v-for="t in g.items" :key="t.id" :items="menu(t)">
         <article class="group flex flex-col overflow-hidden rounded-xl border border-default bg-default transition hover:border-accented hover:shadow-sm" :class="g.folder && 'w-60 shrink-0 snap-start'">
-          <button type="button" class="relative block h-48 overflow-hidden bg-muted text-left" :aria-label="`Open ${t.name}`" @click="open(t)">
+          <button type="button" class="relative block h-48 overflow-hidden bg-muted text-left" :aria-label="$t('emailLibrary.library.openTemplate', { name: t.name })" @click="open(t)">
             <div class="origin-top-left scale-[0.42] w-[238%]">
               <EmailCardPreview v-if="previewOf(t)" :document="previewOf(t)!" />
             </div>
-            <span v-if="t.masterId" class="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-inverted shadow-sm"><UIcon name="i-lucide-link" class="size-3" />Master</span>
+            <span v-if="t.masterId" class="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-inverted shadow-sm"><UIcon name="i-lucide-link" class="size-3" />{{ $t('emailLibrary.common.master') }}</span>
           </button>
           <div class="flex items-start gap-2 border-t border-default px-3 py-2.5">
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium">{{ t.master?.name || t.name }}</p>
               <p class="truncate text-xs text-muted">
                 <template v-if="project"><code class="font-mono">{{ t.key }}</code></template>
-                <template v-else>{{ usage[t.id] ? `Used by ${usage[t.id]} project${usage[t.id] === 1 ? '' : 's'}` : 'Not used yet' }}</template>
+                <template v-else>{{ usage[t.id] ? $t('emailLibrary.library.usedBy', usage[t.id]) : $t('emailLibrary.library.notUsed') }}</template>
                 · {{ new Date(Math.max(t.updatedAt, t.master?.updatedAt || 0)).toLocaleDateString() }}
               </p>
             </div>
             <UDropdownMenu :items="menu(t)">
-              <UButton icon="i-lucide-ellipsis" size="xs" color="neutral" variant="ghost" aria-label="Template actions" />
+              <UButton icon="i-lucide-ellipsis" size="xs" color="neutral" variant="ghost" :aria-label="$t('emailLibrary.library.templateActions')" />
             </UDropdownMenu>
           </div>
         </article>
@@ -369,10 +370,10 @@ const linkedMasterIds = computed(() => new Set(templates.value.map(t => t.master
       <EmptyState
         v-if="!groups.some(g => g.items.length)"
         icon="i-lucide-mail"
-        :title="search ? 'No templates match' : 'No templates here yet'"
-        :description="search ? 'Try another name.' : project ? 'Start one from scratch, or add a master so this project shares its design.' : 'A master is designed once and reused by every project, each with its own logo, colours and copy.'"
+        :title="search ? $t('emailLibrary.library.noMatch') : $t('emailLibrary.library.noTemplatesYet')"
+        :description="search ? $t('emailLibrary.library.noMatchDescription') : project ? $t('emailLibrary.library.emptyProjectDescription') : $t('emailLibrary.library.emptyMasterDescription')"
       >
-        <UButton v-if="!search" icon="i-lucide-plus" :label="project ? 'New template' : 'New master'" @click="pickerOpen = true" />
+        <UButton v-if="!search" icon="i-lucide-plus" :label="project ? $t('emailLibrary.library.newTemplate') : $t('emailLibrary.library.newMaster')" @click="pickerOpen = true" />
       </EmptyState>
       </template>
     </div>
@@ -380,20 +381,22 @@ const linkedMasterIds = computed(() => new Set(templates.value.map(t => t.master
     <EmailTemplatePicker
       v-model:open="pickerOpen"
       :busy="busy"
-      :title="project ? 'New template' : 'New master'"
-      description="Start from a ready-made structure, then make it yours."
+      :title="project ? $t('emailLibrary.library.newTemplate') : $t('emailLibrary.library.newMaster')"
+      :description="$t('emailLibrary.library.pickerDescription')"
       @select="onPick"
       @blank="onBlank"
     />
 
-    <UModal v-model:open="linkOpen" title="Add a master" description="The project uses the master's design with its own brand and values. Edits to the master reach it too.">
+    <UModal v-model:open="linkOpen" :title="$t('emailLibrary.library.addMasterTitle')" :description="$t('emailLibrary.library.addMasterDescription')">
       <template #body>
-        <p v-if="!masters.length" class="text-sm text-muted">No masters yet. <NuxtLink to="/emails" class="underline">Create one</NuxtLink> first.</p>
+        <i18n-t v-if="!masters.length" keypath="emailLibrary.library.noMastersYet" tag="p" class="text-sm text-muted">
+          <template #link><NuxtLink to="/emails" class="underline">{{ $t('emailLibrary.library.createOne') }}</NuxtLink></template>
+        </i18n-t>
         <ul v-else class="divide-y divide-default">
           <li v-for="m in masters" :key="m.id" class="flex items-center gap-3 py-2">
             <span class="min-w-0 flex-1 truncate text-sm">{{ m.name }}</span>
-            <UBadge v-if="linkedMasterIds.has(m.id)" label="In use" color="neutral" variant="soft" size="sm" />
-            <UButton label="Add" size="xs" color="primary" variant="soft" :loading="busy" @click="create({ master: m.id })" />
+            <UBadge v-if="linkedMasterIds.has(m.id)" :label="$t('emailLibrary.library.inUse')" color="neutral" variant="soft" size="sm" />
+            <UButton :label="$t('emailLibrary.common.add')" size="xs" color="primary" variant="soft" :loading="busy" @click="create({ master: m.id })" />
           </li>
         </ul>
       </template>
@@ -402,7 +405,7 @@ const linkedMasterIds = computed(() => new Set(templates.value.map(t => t.master
     <EmailApiDialog v-model:open="apiOpen" :template="apiTemplate" @key="(key) => { if (apiTemplate) apiTemplate.key = key }" />
     <EmailTestDialog v-model:open="testOpen" :template="testTemplate" />
 
-    <USlideover v-model:open="linkedOpen" :title="linkedTemplate?.master?.name || 'Master'" description="Linked master: its design, this project's brand and values." :ui="{ content: 'max-w-xl' }">
+    <USlideover v-model:open="linkedOpen" :title="linkedTemplate?.master?.name || $t('emailLibrary.common.master')" :description="$t('emailLibrary.library.linkedDescription')" :ui="{ content: 'max-w-xl' }">
       <template #body>
         <EmailLinkedPanel v-if="linkedTemplate && project" :template="linkedTemplate" :project="project" @change="onLinkedChange" />
       </template>

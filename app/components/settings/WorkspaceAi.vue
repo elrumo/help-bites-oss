@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <p class="text-[13px] text-muted">
-      Add keys for OpenAI, Anthropic, Gemini or any other OpenAI-compatible provider, and pick the one to use. Assistants without an endpoint of their own, the email designer and error notes then use it{{ state?.platform.available ? ' instead of the server\'s AI' : '' }}{{ state?.platform.metered ? ', and it uses no AI credits' : '' }}.
+      {{ $t('workspaceSettings.ai.intro', { insteadOfServer: state?.platform.available ? $t('workspaceSettings.ai.insteadOfServer') : '', noCredits: state?.platform.metered ? $t('workspaceSettings.ai.noCredits') : '' }) }}
     </p>
 
     <div v-if="loading" class="space-y-2"><USkeleton v-for="i in 3" :key="i" class="h-12" /></div>
@@ -14,8 +14,8 @@
         </span>
       </div>
       <div v-if="!state.allowed" class="flex items-center gap-3">
-        <p class="min-w-0 flex-1 text-[13px] text-muted">The {{ context?.plan.name }} plan doesn't include your own AI provider.</p>
-        <UButton v-if="upgrade" label="Upgrade" size="sm" @click="upgrade?.()" />
+        <p class="min-w-0 flex-1 text-[13px] text-muted">{{ $t('workspaceSettings.ai.planNoByo', { plan: context?.plan.name }) }}</p>
+        <UButton v-if="upgrade" :label="$t('workspaceSettings.upgrade')" size="sm" @click="upgrade?.()" />
       </div>
 
       <div v-if="providers.length" class="divide-y divide-default overflow-hidden rounded-xl border border-default">
@@ -24,7 +24,7 @@
             type="button"
             role="radio"
             :aria-checked="p.id === state.ai.active"
-            :aria-label="`Use ${label(p)}`"
+            :aria-label="$t('workspaceSettings.ai.useAria', { name: label(p) })"
             class="flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-50"
             :class="p.id === state.ai.active ? 'border-primary bg-primary' : 'border-accented hover:border-primary'"
             :disabled="!editable || saving"
@@ -34,52 +34,52 @@
           </button>
           <span class="min-w-0 flex-1">
             <span class="block truncate text-[13px] font-medium text-highlighted">{{ label(p) }}</span>
-            <span class="block truncate text-xs text-muted">{{ [host(p.endpoint), p.model, p.hasApiKey ? '' : 'No key'].filter(Boolean).join(' · ') }}</span>
+            <span class="block truncate text-xs text-muted">{{ [host(p.endpoint), p.model, p.hasApiKey ? '' : $t('workspaceSettings.ai.noKey')].filter(Boolean).join(' · ') }}</span>
           </span>
           <template v-if="editable">
-            <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="sm" :aria-label="`Edit ${label(p)}`" @click="openForm(p)" />
-            <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" size="sm" :aria-label="`Remove ${label(p)}`" :disabled="saving" @click="remove(p)" />
+            <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="sm" :aria-label="$t('workspaceSettings.editNamed', { name: label(p) })" @click="openForm(p)" />
+            <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" size="sm" :aria-label="$t('workspaceSettings.removeNamed', { name: label(p) })" :disabled="saving" @click="remove(p)" />
           </template>
         </div>
       </div>
 
       <form v-if="form" class="space-y-6 rounded-xl border border-default p-4" @submit.prevent="saveForm">
         <div class="grid gap-4 sm:grid-cols-2">
-          <UFormField label="Provider">
+          <UFormField :label="$t('workspaceSettings.ai.provider')">
             <USelect :model-value="form.kind" :items="presets" class="w-full" :disabled="!!form.id" @update:model-value="pickKind" />
           </UFormField>
-          <UFormField label="Name" hint="Optional">
+          <UFormField :label="$t('common.name')" :hint="$t('workspaceSettings.optional')">
             <UInput v-model="form.name" :placeholder="preset?.label" class="w-full" maxlength="60" />
           </UFormField>
-          <UFormField label="Endpoint" hint="OpenAI-compatible" class="sm:col-span-2">
+          <UFormField :label="$t('workspaceSettings.ai.endpoint')" :hint="$t('workspaceSettings.ai.openAiCompatible')" class="sm:col-span-2">
             <UInput v-model="form.endpoint" type="url" placeholder="https://api.openai.com/v1" class="w-full" required />
           </UFormField>
-          <UFormField label="Model" help="For the assistants, error notes and the designer">
+          <UFormField :label="$t('workspaceSettings.ai.model')" :help="$t('workspaceSettings.ai.modelHelp')">
             <UInput v-model="form.model" list="ai-models" :placeholder="preset?.models[0] || 'gpt-4o-mini'" class="w-full" required maxlength="120" />
           </UFormField>
-          <UFormField label="Ultra model" hint="Optional" help="For the designer's Ultra mode; blank uses the model">
-            <UInput v-model="form.ultraModel" list="ai-models" placeholder="Same as the model" class="w-full" maxlength="120" />
+          <UFormField :label="$t('workspaceSettings.ai.ultraModel')" :hint="$t('workspaceSettings.optional')" :help="$t('workspaceSettings.ai.ultraModelHelp')">
+            <UInput v-model="form.ultraModel" list="ai-models" :placeholder="$t('workspaceSettings.ai.sameAsModel')" class="w-full" maxlength="120" />
           </UFormField>
-          <UFormField label="API key" class="sm:col-span-2">
-            <UInput v-model="form.apiKey" type="password" autocomplete="off" :placeholder="keyKept ? 'Saved; leave blank to keep' : ''" class="w-full" />
+          <UFormField :label="$t('workspaceSettings.ai.apiKey')" class="sm:col-span-2">
+            <UInput v-model="form.apiKey" type="password" autocomplete="off" :placeholder="keyKept ? $t('workspaceSettings.keyKept') : ''" class="w-full" />
           </UFormField>
         </div>
         <datalist id="ai-models"><option v-for="m in preset?.models" :key="m" :value="m" /></datalist>
 
         <p v-if="result" class="flex items-start gap-2 text-[13px]" :class="result.ok ? 'text-success' : 'text-error'">
           <UIcon :name="result.ok ? 'i-lucide-circle-check' : 'i-lucide-circle-alert'" class="mt-0.5 size-4 shrink-0" />
-          <span class="min-w-0 break-words">{{ result.ok ? `It works: ${result.model} answered${result.reply ? ` “${result.reply}”` : ''}.` : result.error }}</span>
+          <span class="min-w-0 break-words">{{ result.ok ? (result.reply ? $t('workspaceSettings.ai.worksWithReply', { model: result.model, reply: result.reply }) : $t('workspaceSettings.ai.works', { model: result.model })) : result.error }}</span>
         </p>
         <div class="flex items-center gap-3">
-          <UButton type="submit" :loading="saving">{{ form.id ? 'Save' : 'Add provider' }}</UButton>
-          <UButton color="neutral" variant="outline" :loading="testing" :disabled="!form.endpoint.trim()" @click="test">Test</UButton>
-          <UButton color="neutral" variant="ghost" @click="form = null">Cancel</UButton>
+          <UButton type="submit" :loading="saving">{{ form.id ? $t('workspaceSettings.save') : $t('workspaceSettings.ai.addProvider') }}</UButton>
+          <UButton color="neutral" variant="outline" :loading="testing" :disabled="!form.endpoint.trim()" @click="test">{{ $t('workspaceSettings.ai.test') }}</UButton>
+          <UButton color="neutral" variant="ghost" @click="form = null">{{ $t('common.cancel') }}</UButton>
         </div>
       </form>
-      <UButton v-else-if="editable && providers.length < MAX_PROVIDERS" label="Add a provider" icon="i-lucide-plus" color="neutral" variant="outline" @click="openForm()" />
+      <UButton v-else-if="editable && providers.length < MAX_PROVIDERS" :label="$t('workspaceSettings.ai.addAProvider')" icon="i-lucide-plus" color="neutral" variant="outline" @click="openForm()" />
 
       <p v-if="error" class="text-[13px] text-error">{{ error }}</p>
-      <p v-if="!canEdit" class="text-[13px] text-muted">Only admins and owners can change the workspace's settings.</p>
+      <p v-if="!canEdit" class="text-[13px] text-muted">{{ $t('workspaceSettings.adminOnly') }}</p>
     </template>
   </div>
 </template>
@@ -97,6 +97,7 @@ type TestResult = { ok: boolean, model: string, reply?: string, error?: string }
 
 const { api, context } = useAgent()
 const { upgrade } = editionUi()
+const { t } = useI18n()
 const canEdit = computed(() => can(context.value?.role, 'workspace.settings'))
 const state = ref<State | null>(null)
 const editable = computed(() => canEdit.value && !!state.value?.allowed)
@@ -126,10 +127,10 @@ const status = computed(() => {
   const s = state.value
   if (active.value) {
     const detail = [host(active.value.endpoint), active.value.model].filter(Boolean).join(' · ')
-    return s?.allowed ? { icon: 'i-lucide-plug', title: `Using ${label(active.value)}`, detail } : { icon: 'i-lucide-circle-pause', title: 'Saved, but not in use', detail }
+    return s?.allowed ? { icon: 'i-lucide-plug', title: t('workspaceSettings.ai.usingProvider', { name: label(active.value) }), detail } : { icon: 'i-lucide-circle-pause', title: t('workspaceSettings.ai.savedNotInUse'), detail }
   }
-  if (s?.platform.available) return { icon: 'i-lucide-server', title: 'Using the server\'s AI', detail: s.platform.metered ? 'Each call uses AI credits from your plan.' : 'The AI this server is set up with.' }
-  return { icon: 'i-lucide-circle-off', title: 'No AI set up', detail: 'Connect a provider to use the assistants, the email designer and error notes.' }
+  if (s?.platform.available) return { icon: 'i-lucide-server', title: t('workspaceSettings.ai.usingServer'), detail: s.platform.metered ? t('workspaceSettings.ai.meteredDetail') : t('workspaceSettings.ai.serverDetail') }
+  return { icon: 'i-lucide-circle-off', title: t('workspaceSettings.ai.noneTitle'), detail: t('workspaceSettings.ai.noneDetail') }
 })
 
 function pickKind(kind: string) {
@@ -154,7 +155,7 @@ const draft = () => {
 }
 
 // Saves the whole list; saved providers go without a key so the server keeps theirs.
-async function persist(list: object[], activeId: string, failure = 'Could not save') {
+async function persist(list: object[], activeId: string, failure = t('workspaceSettings.ai.saveFailed')) {
   saving.value = true
   error.value = ''
   try {
@@ -181,13 +182,13 @@ async function saveForm() {
 }
 
 function use(p: AiProviderSettings) {
-  if (p.id !== state.value?.ai.active) persist(providers.value.map(bare), p.id, 'Could not switch provider')
+  if (p.id !== state.value?.ai.active) persist(providers.value.map(bare), p.id, t('workspaceSettings.ai.switchFailed'))
 }
 
 async function remove(p: AiProviderSettings) {
-  if (!confirm(`Remove ${label(p)}? Its saved API key is removed too.`)) return
+  if (!confirm(t('workspaceSettings.ai.removeConfirm', { name: label(p) }))) return
   const rest = providers.value.filter(x => x.id !== p.id).map(bare)
-  if (await persist(rest, state.value!.ai.active === p.id ? rest[0]?.id || '' : state.value!.ai.active, 'Could not remove it') && form.value?.id === p.id) form.value = null
+  if (await persist(rest, state.value!.ai.active === p.id ? rest[0]?.id || '' : state.value!.ai.active, t('workspaceSettings.ai.removeFailed')) && form.value?.id === p.id) form.value = null
 }
 
 async function test() {
@@ -197,7 +198,7 @@ async function test() {
   try {
     result.value = await api<TestResult>('/admin/workspace/ai/test', { method: 'POST', body: draft() })
   } catch (e: any) {
-    error.value = e?.message || 'Could not test the provider'
+    error.value = e?.message || t('workspaceSettings.ai.testFailed')
   } finally {
     testing.value = false
   }
@@ -207,7 +208,7 @@ onMounted(async () => {
   try {
     state.value = await api<State>('/admin/workspace/ai')
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the AI settings'
+    error.value = e?.message || t('workspaceSettings.ai.loadFailed')
   }
   loading.value = false
 })

@@ -27,7 +27,7 @@ function onType(value: unknown) {
 <template>
   <UInput
     :model-value="modelValue ?? ''"
-    :placeholder="placeholder ?? 'Default'"
+    :placeholder="placeholder ?? $t('emailEditor.default')"
     class="w-full"
     :ui="{ base: 'ps-9 font-mono', trailing: 'pe-1' }"
     @update:model-value="onType"
@@ -39,7 +39,7 @@ function onType(value: unknown) {
           class="size-5 rounded-md ring-1 ring-black/15 ring-inset dark:ring-white/20"
           :class="(!modelValue || modelValue === 'transparent') && 'bg-[repeating-conic-gradient(var(--ui-border)_0_25%,transparent_0_50%)] bg-[length:8px_8px]'"
           :style="modelValue && modelValue !== 'transparent' ? { backgroundColor: modelValue } : undefined"
-          aria-label="Pick a color"
+          :aria-label="$t('emailEditor.pickColor')"
         />
         <template #content>
           <UColorPicker
@@ -56,7 +56,7 @@ function onType(value: unknown) {
         size="xs"
         color="neutral"
         variant="link"
-        aria-label="Reset color"
+        :aria-label="$t('emailEditor.resetColor')"
         @click="emit('update:modelValue', undefined)"
       />
     </template>

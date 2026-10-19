@@ -55,7 +55,7 @@ function onDragEnd() {
 <template>
   <div data-email-layers class="min-h-0 flex-1 overflow-y-auto p-2">
     <p v-if="!blocks.length" class="px-2 py-6 text-center text-xs text-muted">
-      No blocks yet. Use Add in the toolbar.
+      {{ $t('emailEditor.noBlocks') }}
     </p>
     <TransitionGroup v-else tag="ul" move-class="transition-transform duration-200 ease-out motion-reduce:transition-none" class="space-y-px">
       <li

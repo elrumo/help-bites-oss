@@ -7,7 +7,7 @@
     :stream-url="`/v1/share/emails/${token}/events`"
   >
     <template #badge>
-      <UBadge label="Shared" icon="i-lucide-globe" color="neutral" variant="soft" size="sm" class="shrink-0" />
+      <UBadge :label="$t('emailLibrary.share.badge')" icon="i-lucide-globe" color="neutral" variant="soft" size="sm" class="shrink-0" />
     </template>
   </EmailEditor>
 
@@ -20,7 +20,7 @@
       </div>
       <UColorModeButton color="neutral" variant="ghost" size="xs" />
     </header>
-    <iframe :srcdoc="shared.html" sandbox="" title="Email preview" class="min-h-0 w-full flex-1 bg-white" />
+    <iframe :srcdoc="shared.html" sandbox="" :title="$t('emailLibrary.preview.frameTitle')" class="min-h-0 w-full flex-1 bg-white" />
   </div>
 
   <div v-else class="grid h-full place-items-center p-6 text-center text-sm text-muted">
@@ -41,12 +41,13 @@ type Shared = { mode: 'view' | 'edit', name: string, subject: string, html: stri
 const token = String(useRoute().params.token)
 const shared = ref<Shared | null>(null)
 const error = ref('')
+const { t } = useI18n()
 
 onMounted(async () => {
   try {
     shared.value = await $fetch<Shared>(`/v1/share/emails/${token}`)
   } catch (e: any) {
-    error.value = e?.data?.statusMessage || 'This link is not active any more.'
+    error.value = e?.data?.statusMessage || t('emailLibrary.share.inactive')
   }
 })
 
@@ -60,5 +61,5 @@ async function save(patch: Record<string, unknown>) {
   return editable((await $fetch<{ template: SharedEmailTemplate }>(`/v1/share/emails/${token}`, { method: 'PATCH', body: design })).template)
 }
 
-useHead({ title: () => shared.value?.name || 'Shared email', meta: [{ name: 'robots', content: 'noindex' }] })
+useHead({ title: () => shared.value?.name || t('emailLibrary.share.pageTitle'), meta: [{ name: 'robots', content: 'noindex' }] })
 </script>

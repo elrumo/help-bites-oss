@@ -4,28 +4,28 @@
     <div v-if="loading && !linked.length" class="h-7 animate-pulse rounded-md bg-elevated" />
     <div v-for="entry in linked" :key="entry.id" class="group -mx-1 flex items-center gap-1.5 rounded-lg px-1 text-[13px] transition-colors hover:bg-elevated">
       <NuxtLink :to="`/projects/${projectId}/changelog?entry=${entry.id}`" class="flex min-w-0 flex-1 items-center gap-2 py-1">
-        <span class="size-2 shrink-0 rounded-full" :class="entry.status === 'published' ? 'bg-emerald-500' : 'bg-stone-400'" :title="entry.status === 'published' ? 'Published' : 'Draft'" />
+        <span class="size-2 shrink-0 rounded-full" :class="entry.status === 'published' ? 'bg-emerald-500' : 'bg-stone-400'" :title="entry.status === 'published' ? $t('changelog.published') : $t('changelog.draft')" />
         <span v-if="entry.number" class="shrink-0 tabular-nums text-muted">#{{ entry.number }}</span>
         <span class="min-w-0 truncate text-default">{{ entry.title }}</span>
       </NuxtLink>
-      <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100" :aria-label="`Unlink #${entry.number ?? ''} ${entry.title}`" :loading="busy === entry.id" @click="unlink(entry)" />
+      <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100" :aria-label="$t('changelog.unlinkEntry', { number: entry.number ?? '', title: entry.title })" :loading="busy === entry.id" @click="unlink(entry)" />
     </div>
 
     <form v-if="composing" class="flex items-center gap-1.5 pt-0.5" @submit.prevent="createEntry">
-      <UInput v-model="title" size="xs" class="min-w-0 flex-1" placeholder="What changed, for your users" :maxlength="200" autofocus aria-label="Entry title" />
-      <UButton type="submit" label="Create draft" size="xs" :loading="creating" :disabled="!title.trim()" />
-      <UButton label="Cancel" size="xs" color="neutral" variant="ghost" @click="composing = false" />
+      <UInput v-model="title" size="xs" class="min-w-0 flex-1" :placeholder="$t('changelog.whatChangedUsers')" :maxlength="200" autofocus :aria-label="$t('changelog.entryTitle')" />
+      <UButton type="submit" :label="$t('changelog.createDraft')" size="xs" :loading="creating" :disabled="!title.trim()" />
+      <UButton :label="$t('common.cancel')" size="xs" color="neutral" variant="ghost" @click="composing = false" />
     </form>
     <div v-else class="flex flex-wrap items-center gap-1.5 pt-0.5">
-      <UButton icon="i-lucide-plus" label="New entry" size="xs" color="neutral" variant="outline" @click="startComposing" />
+      <UButton icon="i-lucide-plus" :label="$t('changelog.newEntry')" size="xs" color="neutral" variant="outline" @click="startComposing" />
       <USelectMenu
         v-model="picked"
         :items="candidates"
         value-key="value"
         size="xs"
         class="min-w-0 flex-1"
-        placeholder="Add to existing…"
-        :search-input="{ placeholder: 'Search entries' }"
+        :placeholder="$t('changelog.addToExisting')"
+        :search-input="{ placeholder: $t('changelog.searchEntries') }"
         :loading="loadingAll"
         @update:open="open => open && loadAll()"
         @update:model-value="addExisting"
@@ -53,6 +53,7 @@ const props = defineProps<{
 }>()
 
 const { api } = useAgent()
+const { t } = useI18n()
 
 const FILTER_KEY = { feedback: 'feedbackPost', board: 'boardItem', conversation: 'conversation' } as const
 const LINK_FIELD = { feedback: 'feedbackPostIds', board: 'boardItemIds', conversation: 'conversationIds' } as const
@@ -70,7 +71,7 @@ const picked = ref<string | undefined>(undefined)
 
 const candidates = computed(() => all.value
   .filter(entry => !linked.value.some(l => l.id === entry.id))
-  .map(entry => ({ label: `${entry.number ? `#${entry.number} ` : ''}${entry.title}${entry.status === 'draft' ? ' (draft)' : ''}`, value: entry.id })))
+  .map(entry => ({ label: `${entry.number ? `#${entry.number} ` : ''}${entry.title}${entry.status === 'draft' ? ` ${t('changelog.draftSuffix')}` : ''}`, value: entry.id })))
 
 async function load() {
   if (!props.targetId || !props.projectId) { linked.value = []; return }
@@ -79,7 +80,7 @@ async function load() {
   try {
     linked.value = (await api<{ entries: ChangelogEntry[] }>('/admin/changelog/entries', { query: { project: props.projectId, [FILTER_KEY[props.kind]]: props.targetId } })).entries
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the changelog'
+    error.value = e?.message || t('changelog.loadError')
   } finally {
     loading.value = false
   }
@@ -90,7 +91,7 @@ async function loadAll() {
   try {
     all.value = (await api<{ entries: ChangelogEntry[] }>('/admin/changelog/entries', { query: { project: props.projectId } })).entries
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the changelog'
+    error.value = e?.message || t('changelog.loadError')
   } finally {
     loadingAll.value = false
   }
@@ -109,7 +110,7 @@ async function addExisting(entryId: string | undefined) {
     const entry = await link(entryId, true)
     if (!linked.value.some(l => l.id === entry.id)) linked.value = [...linked.value, entry]
   } catch (e: any) {
-    error.value = e?.message || 'Could not link the entry'
+    error.value = e?.message || t('changelog.linkEntryError')
   } finally {
     busy.value = ''
     picked.value = undefined
@@ -123,7 +124,7 @@ async function unlink(entry: ChangelogEntry) {
     await link(entry.id, false)
     linked.value = linked.value.filter(l => l.id !== entry.id)
   } catch (e: any) {
-    error.value = e?.message || 'Could not unlink the entry'
+    error.value = e?.message || t('changelog.unlinkEntryError')
   } finally {
     busy.value = ''
   }
@@ -150,7 +151,7 @@ async function createEntry() {
     all.value = []
     composing.value = false
   } catch (e: any) {
-    error.value = e?.message || 'Could not create the entry'
+    error.value = e?.message || t('changelog.createError')
   } finally {
     creating.value = false
   }

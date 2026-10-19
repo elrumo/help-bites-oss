@@ -9,7 +9,7 @@
         variant="ghost"
         size="sm"
         square
-        aria-label="Back to conversations"
+        :aria-label="$t('embed.chat.backToConversations')"
         @click="back"
       />
       <img v-else-if="project?.brandLogoUrl" :src="project.brandLogoUrl" alt="" class="ml-1.5 size-6 shrink-0 rounded-md bg-elevated object-cover">
@@ -25,7 +25,7 @@
         variant="ghost"
         size="sm"
         square
-        aria-label="Close"
+        :aria-label="$t('embed.close')"
         @click="post({ type: 'close' })"
       />
     </header>
@@ -41,11 +41,11 @@
           @select="select"
         >
           <template #empty>
-            <EmptyState icon="i-lucide-messages-square" title="No conversations yet" description="Ask us anything. This is where the answers land." />
+            <EmptyState icon="i-lucide-messages-square" :title="$t('embed.chat.noConversations')" :description="$t('embed.chat.noConversationsDescription')" />
           </template>
         </ChatConversationList>
         <div class="border-t border-default p-3">
-          <UButton block icon="i-lucide-square-pen" label="New message" @click="startComposing" />
+          <UButton block icon="i-lucide-square-pen" :label="$t('embed.chat.newMessage')" @click="startComposing" />
         </div>
       </aside>
 
@@ -65,11 +65,11 @@
               @select="select"
             >
               <template #empty>
-                <EmptyState icon="i-lucide-messages-square" title="No conversations yet" description="Ask us anything. This is where the answers land." />
+                <EmptyState icon="i-lucide-messages-square" :title="$t('embed.chat.noConversations')" :description="$t('embed.chat.noConversationsDescription')" />
               </template>
             </ChatConversationList>
             <div class="border-t border-default p-3">
-              <UButton block icon="i-lucide-square-pen" label="New message" @click="startComposing" />
+              <UButton block icon="i-lucide-square-pen" :label="$t('embed.chat.newMessage')" @click="startComposing" />
               <HumanNote v-if="!chatNotice" class="mt-2" />
               <ChatNotice v-else :text="chatNotice" class="mt-2" />
             </div>
@@ -77,16 +77,16 @@
 
           <!-- Nothing picked yet, list is beside us -->
           <div v-else-if="!activeId && !composing" key="empty" class="absolute inset-0 flex items-center justify-center p-6">
-            <EmptyState icon="i-lucide-messages-square" title="Pick a conversation" description="Or start a new message. A person on our team replies." />
+            <EmptyState icon="i-lucide-messages-square" :title="$t('embed.chat.pickConversation')" :description="$t('embed.chat.pickConversationDescription')" />
           </div>
 
           <!-- New conversation -->
           <div v-else-if="composing" key="compose" class="absolute inset-0 flex flex-col">
             <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
               <ChatNotice :text="chatNotice" />
-              <p class="text-[13px] text-muted">Tell us what's going on. We reply here, and by email if we have yours.</p>
+              <p class="text-[13px] text-muted">{{ $t('embed.chat.tellUs') }}</p>
               <div v-if="showTypePicker" class="space-y-1.5">
-                <p class="section-label">What can we help with?</p>
+                <p class="section-label">{{ $t('embed.chat.whatCanWeHelp') }}</p>
                 <div class="flex flex-wrap gap-1.5">
                   <button
                     v-for="opt in typeOptions"
@@ -103,14 +103,14 @@
                 <img v-if="context.thumbnailUrl" :src="context.thumbnailUrl" alt="" class="size-9 rounded-lg object-cover shrink-0 bg-stone-100 dark:bg-stone-800">
                 <UIcon v-else name="i-lucide-link" class="size-4 shrink-0 text-dimmed" />
                 <span class="min-w-0 flex-1">
-                  <span class="block text-xs font-semibold truncate">About {{ context.label }}</span>
+                  <span class="block text-xs font-semibold truncate">{{ $t('embed.chat.aboutContext', { label: context.label }) }}</span>
                   <span class="block text-[11px] text-stone-500 dark:text-stone-400 truncate">{{ context.type }}</span>
                 </span>
-                <button type="button" class="text-xs text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 transition-colors" @click="context = null">Remove</button>
+                <button type="button" class="text-xs text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 transition-colors" @click="context = null">{{ $t('embed.chat.remove') }}</button>
               </div>
-              <UInput v-model="subject" placeholder="Subject (optional)" class="w-full" :maxlength="200" />
+              <UInput v-model="subject" :placeholder="$t('embed.chat.subjectOptional')" class="w-full" :maxlength="200" />
             </div>
-            <ChatComposer v-model="draft" placeholder="Your message" :error="threadError" :allow-attachments="project?.allowAttachments !== false" :upload="upload" @send="startConversation" @upload-error="threadError = $event">
+            <ChatComposer v-model="draft" :placeholder="$t('embed.chat.yourMessage')" :error="threadError" :allow-attachments="project?.allowAttachments !== false" :upload="upload" @send="startConversation" @upload-error="threadError = $event">
               <template #below><HumanNote v-if="!chatNotice" class="mt-2" /></template>
             </ChatComposer>
           </div>
@@ -132,10 +132,10 @@
               @react="react"
             >
               <template #empty>
-                <EmptyState icon="i-lucide-message-square-dashed" title="No messages yet" description="Say hello. A person on our team picks this up." />
+                <EmptyState icon="i-lucide-message-square-dashed" :title="$t('embed.chat.noMessages')" :description="$t('embed.chat.noMessagesDescription')" />
               </template>
             </ChatTranscript>
-            <ChatComposer v-model="draft" placeholder="Message" :error="threadError" :replying-to="replyingTo" :allow-attachments="project?.allowAttachments !== false" :upload="upload" @send="send" @cancel-reply="threadId = ''" @upload-error="threadError = $event">
+            <ChatComposer v-model="draft" :placeholder="$t('embed.chat.message')" :error="threadError" :replying-to="replyingTo" :allow-attachments="project?.allowAttachments !== false" :upload="upload" @send="send" @cancel-reply="threadId = ''" @upload-error="threadError = $event">
               <template #below><HumanNote v-if="!chatNotice" class="mt-2" /></template>
             </ChatComposer>
           </div>
@@ -144,7 +144,7 @@
     </div>
 
     <p v-if="project?.poweredBy" class="shrink-0 pb-2 text-center text-[11px] leading-tight">
-      <a :href="project.poweredBy.url" target="_blank" rel="noopener" class="text-dimmed transition-colors hover:text-muted">Powered by HelpBites</a>
+      <a :href="project.poweredBy.url" target="_blank" rel="noopener" class="text-dimmed transition-colors hover:text-muted">{{ $t('embed.poweredBy') }}</a>
     </p>
   </div>
 </template>
@@ -172,12 +172,13 @@ const inline = route.query.inline === '1'
 const wide = useMediaQuery('(min-width: 640px)')
 const twoPane = computed(() => inline && wide.value)
 const outbox = useChatOutbox()
+const { t } = useI18n()
 
 const project = ref<PublicProject | null>(null)
 const token = ref<string | null>(null)
 const parentOrigin = ref('')
 const state = ref<'waiting' | 'ready'>('waiting')
-const waitingText = ref('Connecting…')
+const waitingText = ref(t('embed.chat.connecting'))
 
 // Which way the next view slides: into a thread pushes, Back pops.
 const nav = ref<'push' | 'pop'>('push')
@@ -187,13 +188,13 @@ const inSubview = computed(() => Boolean(activeId.value || composing.value))
 // nowhere for Back to go until they have at least one thread.
 const canGoBack = computed(() => Boolean(activeId.value) || hasConversations.value)
 const headerTitle = computed(() => {
-  if (composing.value) return 'New message'
-  if (activeId.value) return activeConversation.value?.subject || project.value?.name || 'Support'
-  return project.value?.name ? `${project.value.name} support` : 'Support'
+  if (composing.value) return t('embed.chat.newMessage')
+  if (activeId.value) return activeConversation.value?.subject || project.value?.name || t('embed.chat.support')
+  return project.value?.name ? t('embed.chat.supportFor', { name: project.value.name }) : t('embed.chat.support')
 })
 const headerNote = computed(() => {
-  if (composing.value) return 'A real person replies'
-  if (activeId.value && activeConversation.value?.status === 'done') return 'Resolved — write again to reopen'
+  if (composing.value) return t('embed.chat.realPersonReplies')
+  if (activeId.value && activeConversation.value?.status === 'done') return t('embed.chat.resolvedNote')
   return ''
 })
 const headerInitials = computed(() => (project.value?.name || 'S').trim().slice(0, 1).toUpperCase())
@@ -234,7 +235,7 @@ function onMessage(event: MessageEvent) {
   const data = event.data
   if (!data || data.source !== 'help-bites-host') return
   if (!isAllowedOrigin(event.origin)) {
-    waitingText.value = `This site (${event.origin}) is not allowed to host the chat. Add it to the project's allowed origins.`
+    waitingText.value = t('embed.chat.originNotAllowed', { origin: event.origin })
     return
   }
   parentOrigin.value = event.origin
@@ -266,8 +267,8 @@ async function api<T = any>(path: string, options: { method?: 'GET' | 'POST' | '
       return api<T>(path, { ...options, retry: false })
     }
     const data = error?.data?.data
-    if (status === 402 && data?.code === 'plan_limit' && data.metric === 'conversations') throw new ConversationLimitReached('We can\'t take new conversations right now. Please try again later.')
-    throw new Error(error?.data?.statusMessage || error?.message || 'Request failed')
+    if (status === 402 && data?.code === 'plan_limit' && data.metric === 'conversations') throw new ConversationLimitReached(t('embed.chat.limitReached'))
+    throw new Error(error?.data?.statusMessage || error?.message || t('embed.chat.requestFailed'))
   }
 }
 
@@ -286,7 +287,7 @@ const OTHER_TYPE = '__other__'
 const selectedType = ref('')
 const typeOptions = computed<{ key: string, label: string }[]>(() => {
   const list = (project.value?.types || []).map(t => ({ key: t.key, label: t.name }))
-  if (project.value?.allowOtherType) list.push({ key: OTHER_TYPE, label: 'Other' })
+  if (project.value?.allowOtherType) list.push({ key: OTHER_TYPE, label: t('embed.chat.other') })
   return list
 })
 const showTypePicker = computed(() => Boolean(project.value?.letUsersChooseType) && typeOptions.value.length > 1)
@@ -303,7 +304,7 @@ async function loadList() {
     // No history yet → open the form directly instead of an empty list.
     else if (!conversations.value.length && !activeId.value && !composing.value) composing.value = true
   } catch (e: any) {
-    waitingText.value = e?.message || 'Could not load your conversations'
+    waitingText.value = e?.message || t('embed.chat.loadConversationsError')
     state.value = 'waiting'
   } finally {
     listLoading.value = false
@@ -312,8 +313,8 @@ async function loadList() {
 
 const listItems = computed<ChatListItem[]>(() => conversations.value.map(c => ({
   id: c.id,
-  title: c.subject || c.context?.label || project.value?.name || 'Conversation',
-  preview: c.lastMessageFrom === 'user' ? `You: ${c.lastMessagePreview}` : c.lastMessagePreview,
+  title: c.subject || c.context?.label || project.value?.name || t('embed.chat.conversation'),
+  preview: c.lastMessageFrom === 'user' ? t('embed.chat.youPreview', { text: c.lastMessagePreview }) : c.lastMessagePreview,
   timestamp: c.lastMessageAt,
   unreadCount: c.unreadByUser
 })))
@@ -341,7 +342,7 @@ const visibleMessages = computed(() => [...messages.value, ...sending.value, ...
 const replyingTo = computed(() => replyTarget(visibleMessages.value, threadId.value, 'user'))
 
 function entryToMessage(entry: OutboxEntry, delivery: 'pending' | 'failed'): Message {
-  return { id: entry.id, conversationId: entry.conversationId, sender: 'user', senderName: 'You', body: entry.body, attachments: entry.attachments, reactions: [], context: (entry.context as Context) || null, replyToId: entry.replyToId, clientId: entry.id, visibility: 'public', kind: 'message', createdAt: entry.createdAt, delivery, deliveryError: delivery === 'failed' ? entry.error : '' }
+  return { id: entry.id, conversationId: entry.conversationId, sender: 'user', senderName: t('embed.you'), body: entry.body, attachments: entry.attachments, reactions: [], context: (entry.context as Context) || null, replyToId: entry.replyToId, clientId: entry.id, visibility: 'public', kind: 'message', createdAt: entry.createdAt, delivery, deliveryError: delivery === 'failed' ? entry.error : '' }
 }
 
 async function select(id: string) {
@@ -359,7 +360,7 @@ async function select(id: string) {
     messages.value = result.messages
     if (result.conversation.unreadByUser > 0) void markRead(id)
   } catch (e: any) {
-    threadError.value = e?.message || 'Could not load the conversation'
+    threadError.value = e?.message || t('embed.chat.loadConversationError')
   } finally {
     threadLoading.value = false
   }
@@ -387,7 +388,7 @@ async function upload(file: File): Promise<Attachment> {
   try {
     return await $fetch<Attachment>('/v1/attachments', { method: 'POST', body: form, headers: { Authorization: `Bearer ${token.value}` } })
   } catch (error: any) {
-    throw new Error(error?.data?.statusMessage || 'Could not upload the image')
+    throw new Error(error?.data?.statusMessage || t('embed.chat.uploadError'))
   }
 }
 
@@ -420,7 +421,7 @@ async function deliver(entry: OutboxEntry) {
       if (!draft.value) draft.value = entry.body
       if (!subject.value) subject.value = entry.subject
     } else {
-      outbox.remember({ ...entry, error: e?.message || 'Could not send' })
+      outbox.remember({ ...entry, error: e?.message || t('embed.chat.sendError') })
     }
   } finally {
     sending.value = sending.value.filter(m => m.id !== entry.id)
@@ -453,7 +454,7 @@ async function unsend(message: Message) {
   try {
     await api(`/messages/${message.id}`, { method: 'DELETE' })
   } catch (e: any) {
-    threadError.value = e?.message || 'Could not unsend'
+    threadError.value = e?.message || t('embed.chat.unsendError')
     void select(activeId.value)
   }
 }
@@ -470,7 +471,7 @@ async function react(message: Message, emoji: string) {
     const result = await api<{ message: Message }>(`/messages/${message.id}/reactions`, { method: 'POST', body: { emoji } })
     replaceMessage(result.message)
   } catch (e: any) {
-    threadError.value = e?.message || 'Could not react'
+    threadError.value = e?.message || t('embed.chat.reactError')
   }
 }
 
@@ -495,7 +496,7 @@ onMounted(async () => {
   try {
     project.value = await $fetch<PublicProject>(`/v1/projects/${pk}/public`)
   } catch {
-    waitingText.value = 'Unknown project. Check the data-project key on the widget script.'
+    waitingText.value = t('embed.chat.unknownProject')
     return
   }
   if (direct) {
@@ -504,7 +505,7 @@ onMounted(async () => {
     void loadList()
   } else {
     post({ type: 'ready' })
-    waitingText.value = 'Waiting for the site to sign you in…'
+    waitingText.value = t('embed.chat.waitingForSignIn')
   }
 })
 

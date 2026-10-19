@@ -17,6 +17,7 @@ const emit = defineEmits<{ (e: 'change', template: EmailTemplate | null, removed
 const { api, token } = useAgent()
 const toast = useToast()
 const appUrl = useAppUrl()
+const { t } = useI18n()
 
 const master = ref(props.template.master)
 const values = ref<Record<string, string>>({ ...props.template.variableValues })
@@ -51,22 +52,22 @@ async function save() {
     const clean = Object.fromEntries(Object.entries(values.value).filter(([, v]) => v !== ''))
     const { template } = await api<{ template: EmailTemplate }>(`/admin/emails/${props.template.id}`, { method: 'PATCH', body: { key: key.value, variableValues: clean } })
     emit('change', { ...template, master: master.value })
-    toast.add({ title: 'Saved', color: 'success' })
+    toast.add({ title: t('common.saved'), color: 'success' })
   } catch (error: any) {
-    toast.add({ title: error?.message || 'Could not save', color: 'error' })
+    toast.add({ title: error?.message || t('emailLibrary.linked.saveError'), color: 'error' })
   } finally {
     saving.value = false
   }
 }
 
 async function detach() {
-  if (!window.confirm('Detach from the master? This project gets its own editable copy, and later edits to the master no longer reach it.')) return
+  if (!window.confirm(t('emailLibrary.linked.detachConfirm'))) return
   const res = await api<{ template: EmailTemplate }>(`/admin/emails/${props.template.id}/detach`, { method: 'POST' }).catch((e) => { toast.add({ title: e.message, color: 'error' }) })
   if (res) emit('change', res.template)
 }
 
 async function remove() {
-  if (!window.confirm('Remove this master from the project? The master itself stays.')) return
+  if (!window.confirm(t('emailLibrary.linked.removeConfirm'))) return
   const res = await api(`/admin/emails/${props.template.id}`, { method: 'DELETE' }).catch((e) => { toast.add({ title: e.message, color: 'error' }) })
   if (res) emit('change', null, props.template.id)
 }
@@ -83,43 +84,44 @@ async function remove() {
     </div>
 
     <section class="space-y-2">
-      <h3 class="text-sm font-semibold">Brand</h3>
+      <h3 class="text-sm font-semibold">{{ $t('emailLibrary.linked.brand') }}</h3>
       <p class="text-xs text-muted">
-        {{ usesBrand ? 'Filled in from this project: ' : 'This master does not use the project brand placeholders yet. Available: ' }}
-        <code class="font-mono">{{ '{' + '{project.name}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.logoUrl}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.url}' + '}' }}</code>.
-        Buttons in the master's brand colour take the project accent.
+        <i18n-t :keypath="usesBrand ? 'emailLibrary.linked.brandUsed' : 'emailLibrary.linked.brandAvailable'" tag="span">
+          <template #tokens><code class="font-mono">{{ '{' + '{project.name}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.logoUrl}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.url}' + '}' }}</code></template>
+        </i18n-t>
+        {{ $t('emailLibrary.linked.brandAccent') }}
       </p>
       <div class="flex flex-wrap items-center gap-2 text-xs">
         <span class="inline-flex items-center gap-1.5 rounded-full border border-default px-2 py-1">{{ project.name }}</span>
-        <span v-if="project.brandLogoUrl" class="inline-flex items-center gap-1.5 rounded-full border border-default px-2 py-1"><img :src="project.brandLogoUrl" alt="" class="size-4 rounded object-contain">Logo</span>
+        <span v-if="project.brandLogoUrl" class="inline-flex items-center gap-1.5 rounded-full border border-default px-2 py-1"><img :src="project.brandLogoUrl" alt="" class="size-4 rounded object-contain">{{ $t('emailLibrary.linked.logo') }}</span>
         <span v-if="project.theme?.accent" class="inline-flex items-center gap-1.5 rounded-full border border-default px-2 py-1"><span class="size-3 rounded-full" :style="{ background: project.theme.accent }" />{{ project.theme.accent }}</span>
       </div>
     </section>
 
     <section class="space-y-3">
-      <h3 class="text-sm font-semibold">Values for this project</h3>
-      <p v-if="!fields.length" class="text-xs text-muted">The master has no variables of its own.</p>
+      <h3 class="text-sm font-semibold">{{ $t('emailLibrary.linked.values') }}</h3>
+      <p v-if="!fields.length" class="text-xs text-muted">{{ $t('emailLibrary.linked.noVariables') }}</p>
       <UFormField v-for="v in fields" :key="v.key" :label="v.label || v.key" :hint="v.label ? v.key : undefined">
-        <UInput v-model="values[v.key]" :placeholder="v.defaultValue || 'Empty'" class="w-full" />
+        <UInput v-model="values[v.key]" :placeholder="v.defaultValue || $t('emailLibrary.linked.empty')" class="w-full" />
       </UFormField>
-      <UFormField label="Send key" hint="Unique in this project" description="What your server passes as template to POST /v1/emails/send.">
+      <UFormField :label="$t('emailLibrary.api.sendKey')" :hint="$t('emailLibrary.linked.sendKeyHint')" :description="$t('emailLibrary.linked.sendKeyDescription')">
         <UInput v-model="key" class="w-full font-mono" />
       </UFormField>
       <div class="flex justify-end">
-        <UButton label="Save" color="primary" :disabled="!dirty" :loading="saving" @click="save" />
+        <UButton :label="$t('emailLibrary.common.save')" color="primary" :disabled="!dirty" :loading="saving" @click="save" />
       </div>
     </section>
 
     <section class="space-y-2">
-      <h3 class="text-sm font-semibold">Send it</h3>
-      <p class="text-xs text-muted">From your server, with the project secret. Your variables override the values above.</p>
+      <h3 class="text-sm font-semibold">{{ $t('emailLibrary.linked.sendIt') }}</h3>
+      <p class="text-xs text-muted">{{ $t('emailLibrary.linked.sendNote') }}</p>
       <CodeBlock :code="snippet" lang="bash" />
     </section>
 
     <div class="flex flex-wrap gap-2 border-t border-default pt-4">
-      <UButton v-if="master" :to="`/emails/${master.id}`" icon="i-lucide-pencil" label="Edit master" size="sm" color="neutral" variant="soft" />
-      <UButton icon="i-lucide-unlink" label="Detach" size="sm" color="neutral" variant="ghost" @click="detach" />
-      <UButton icon="i-lucide-trash-2" label="Remove" size="sm" color="error" variant="ghost" class="ml-auto" @click="remove" />
+      <UButton v-if="master" :to="`/emails/${master.id}`" icon="i-lucide-pencil" :label="$t('emailLibrary.linked.editMaster')" size="sm" color="neutral" variant="soft" />
+      <UButton icon="i-lucide-unlink" :label="$t('emailLibrary.linked.detach')" size="sm" color="neutral" variant="ghost" @click="detach" />
+      <UButton icon="i-lucide-trash-2" :label="$t('emailLibrary.common.remove')" size="sm" color="error" variant="ghost" class="ml-auto" @click="remove" />
     </div>
   </div>
 </template>

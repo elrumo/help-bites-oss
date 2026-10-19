@@ -2,15 +2,16 @@
 /** The campaigns page's sections: broadcasts, automated sequences, and the newsletter settings. */
 defineProps<{ current: 'campaigns' | 'sequences' | 'settings' }>()
 
-const tabs = [
-  { value: 'campaigns', label: 'Campaigns', icon: 'i-lucide-megaphone' },
-  { value: 'sequences', label: 'Sequences', icon: 'i-lucide-workflow' },
-  { value: 'settings', label: 'Settings', icon: 'i-lucide-settings-2' }
-] as const
+const { t } = useI18n()
+const tabs = computed(() => [
+  { value: 'campaigns', label: t('campaigns.tabs.campaigns'), icon: 'i-lucide-megaphone' },
+  { value: 'sequences', label: t('campaigns.tabs.sequences'), icon: 'i-lucide-workflow' },
+  { value: 'settings', label: t('campaigns.tabs.settings'), icon: 'i-lucide-settings-2' }
+] as const)
 </script>
 
 <template>
-  <nav class="ml-1.5 flex shrink-0 items-center gap-0.5 rounded-md border border-default p-0.5" aria-label="Campaign sections">
+  <nav class="ml-1.5 flex shrink-0 items-center gap-0.5 rounded-md border border-default p-0.5" :aria-label="$t('campaigns.tabs.label')">
     <NuxtLink
       v-for="tab in tabs"
       :key="tab.value"

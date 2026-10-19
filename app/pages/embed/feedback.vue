@@ -20,7 +20,7 @@
           <UButton
             v-if="config && screen === 'list' && !only"
             icon="i-lucide-plus"
-            label="New post"
+            :label="$t('embed.feedback.newPost')"
             color="primary"
             size="sm"
             class="shrink-0"
@@ -34,13 +34,13 @@
             size="sm"
             square
             class="rounded-full shrink-0 -mr-1"
-            aria-label="Close"
+            :aria-label="$t('embed.close')"
             @click="post({ type: 'close' })"
           />
         </div>
 
         <!-- Linear's view pills -->
-        <nav v-if="tabs.length > 1" class="mt-3 flex gap-1.5 pb-3" role="tablist" aria-label="Board views">
+        <nav v-if="tabs.length > 1" class="mt-3 flex gap-1.5 pb-3" role="tablist" :aria-label="$t('embed.feedback.views')">
           <button
             v-for="tab in tabs"
             :key="tab.key"
@@ -63,8 +63,8 @@
       <div v-if="config && !viewer.signedIn && screen === 'list' && !onlyChangelog" class="mx-auto w-full px-4 pt-3" :class="contentWidth">
         <div class="flex items-center gap-3 rounded-lg border border-default bg-default px-3.5 py-2.5 text-[13px]">
           <UIcon name="i-lucide-log-in" class="size-4 shrink-0 text-muted" />
-          <span class="min-w-0 flex-1">{{ onlyRoadmap ? 'Sign in to vote and comment.' : 'Sign in to post ideas, vote and comment.' }}</span>
-          <UButton v-if="canSignIn" label="Sign in" size="xs" color="primary" @click="requestSignIn('post')" />
+          <span class="min-w-0 flex-1">{{ onlyRoadmap ? $t('embed.feedback.signInToVote') : $t('embed.feedback.signInToPost') }}</span>
+          <UButton v-if="canSignIn" :label="$t('embed.feedback.signIn')" size="xs" color="primary" @click="requestSignIn('post')" />
         </div>
       </div>
     </Transition>
@@ -85,8 +85,8 @@
           <!-- Board -->
           <template v-if="view === 'board'">
             <div class="flex flex-wrap items-center gap-2">
-              <UInput v-model="search" icon="i-lucide-search" placeholder="Search posts" size="sm" variant="outline" class="min-w-0 flex-1 basis-48" aria-label="Search posts" />
-              <div class="flex rounded-lg bg-elevated p-0.5 text-xs font-medium" role="group" aria-label="Sort">
+              <UInput v-model="search" icon="i-lucide-search" :placeholder="$t('embed.feedback.searchPlaceholder')" size="sm" variant="outline" class="min-w-0 flex-1 basis-48" :aria-label="$t('embed.feedback.searchPlaceholder')" />
+              <div class="flex rounded-lg bg-elevated p-0.5 text-xs font-medium" role="group" :aria-label="$t('embed.feedback.sort')">
                 <button v-for="option in sortOptions" :key="option.key" type="button" class="h-7 rounded-md px-3 transition-colors" :class="sort === option.key ? 'bg-default text-highlighted shadow-[0_1px_2px_rgb(0_0_0/0.08)]' : 'text-muted hover:text-default'" :aria-pressed="sort === option.key" @click="sort = option.key">{{ option.label }}</button>
               </div>
             </div>
@@ -118,7 +118,7 @@
                 :class="mineOnly ? 'chip-active' : ''"
                 :aria-pressed="mineOnly"
                 @click="mineOnly = !mineOnly"
-              ><UIcon name="i-lucide-user" class="size-3" />Mine</button>
+              ><UIcon name="i-lucide-user" class="size-3" />{{ $t('embed.feedback.mine') }}</button>
             </div>
 
             <div v-if="listLoading && !boardPosts.length" class="mt-4 space-y-2.5" aria-busy="true">
@@ -130,23 +130,23 @@
             <TransitionGroup v-else-if="boardPosts.length" tag="div" name="list" class="relative mt-4 space-y-2.5">
               <FeedbackPostRow v-for="item in boardPosts" :key="item.id" :post="item" :config="config!" @open="openPost(item.id)" @vote="vote(item)" />
             </TransitionGroup>
-            <EmptyState v-else icon="i-lucide-lightbulb" :title="search || typeFilter || mineOnly ? 'Nothing matches' : 'No posts yet'" :description="search || typeFilter || mineOnly ? 'Try another search or filter, or post it yourself.' : 'Be the first to suggest something or report a bug.'">
-              <UButton label="New post" icon="i-lucide-plus" size="sm" @click="startCompose" />
+            <EmptyState v-else icon="i-lucide-lightbulb" :title="search || typeFilter || mineOnly ? $t('embed.feedback.nothingMatches') : $t('embed.feedback.noPostsYet')" :description="search || typeFilter || mineOnly ? $t('embed.feedback.tryAnother') : $t('embed.feedback.firstPost')">
+              <UButton :label="$t('embed.feedback.newPost')" icon="i-lucide-plus" size="sm" @click="startCompose" />
             </EmptyState>
           </template>
 
           <!-- Roadmap: board items when the project board drives it, else posts -->
           <template v-else-if="view === 'roadmap'">
-            <div v-if="(roadmapSource === 'board' ? roadmapLoading || (listLoading && !roadmap) : listLoading) && !roadmapCards.length" class="py-12 text-center text-sm text-stone-500">Loading…</div>
+            <div v-if="(roadmapSource === 'board' ? roadmapLoading || (listLoading && !roadmap) : listLoading) && !roadmapCards.length" class="py-12 text-center text-sm text-stone-500">{{ $t('embed.loading') }}</div>
             <p v-else-if="roadmapError" class="py-12 text-center text-sm text-stone-500">{{ roadmapError }}</p>
             <FeedbackRoadmapView v-else :groups="roadmapGrouped" :layout="roadmapLayout" :statuses="roadmapStatuses" :labels="roadmap?.labels" @open="openPost" />
           </template>
 
           <!-- Changelog -->
           <template v-else>
-            <div v-if="changelogLoading && !changelogItems.length" class="py-12 text-center text-sm text-stone-500">Loading…</div>
+            <div v-if="changelogLoading && !changelogItems.length" class="py-12 text-center text-sm text-stone-500">{{ $t('embed.loading') }}</div>
             <p v-else-if="changelogError" class="py-12 text-center text-sm text-stone-500">{{ changelogError }}</p>
-            <EmptyState v-else-if="!changelogItems.length" icon="i-lucide-sparkles" title="Nothing shipped yet" description="What we ship shows up here." />
+            <EmptyState v-else-if="!changelogItems.length" icon="i-lucide-sparkles" :title="$t('embed.changelog.empty')" :description="$t('embed.changelog.emptyDescription')" />
             <ol v-else class="relative space-y-8 border-l border-stone-200 dark:border-stone-800 pl-5">
               <li v-for="item in changelogItems" :key="item.kind === 'release' ? `r-${item.release.id}` : `e-${item.entry.id}`" class="relative">
                 <span class="absolute -left-[27px] top-1 grid size-3.5 place-items-center rounded-full bg-primary-600 ring-4 ring-stone-50 dark:ring-stone-950" aria-hidden="true" />
@@ -182,8 +182,8 @@
                   <span v-if="feedbackTypeFor(config, activePost.type)" class="inline-flex items-center gap-1"><FeedbackIcon :icon="feedbackTypeFor(config, activePost.type)!.icon" fallback="i-lucide-tag" class="size-3.5" />{{ feedbackTypeFor(config, activePost.type)!.label }}</span>
                   <span v-if="feedbackPlatformLabel(config, activePost.platform)" class="inline-flex items-center gap-1"><UIcon name="i-lucide-monitor-smartphone" class="size-3.5" />{{ feedbackPlatformLabel(config, activePost.platform) }}</span>
                   <span v-for="tag in activePost.tags" :key="tag" class="rounded-full bg-stone-100 dark:bg-stone-800 px-1.5 py-px text-[11px]">{{ config?.tags?.find(t => t.key === tag)?.label || tag }}</span>
-                  <span v-if="activePost.locked" class="inline-flex items-center gap-1"><UIcon name="i-lucide-lock" class="size-3.5" />Locked</span>
-                  <span v-if="activePost.hidden" class="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300"><UIcon name="i-lucide-eye-off" class="size-3.5" />Hidden</span>
+                  <span v-if="activePost.locked" class="inline-flex items-center gap-1"><UIcon name="i-lucide-lock" class="size-3.5" />{{ $t('embed.feedback.locked') }}</span>
+                  <span v-if="activePost.hidden" class="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300"><UIcon name="i-lucide-eye-off" class="size-3.5" />{{ $t('embed.feedback.hidden') }}</span>
                 </div>
                 <p class="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
                   {{ authorLabel(activePost.author, activePost.isMine) }} · <span :title="shortDate(activePost.createdAt)">{{ timeAgo(activePost.createdAt) }}</span>
@@ -194,10 +194,10 @@
             <MarkdownBlock v-if="activePost.body" :text="activePost.body" class="mt-4 !text-[15px] leading-relaxed" />
 
             <div v-if="activePost.canEdit || activePost.canDelete" class="mt-4 flex items-center gap-2">
-              <UButton v-if="activePost.canEdit" label="Edit" icon="i-lucide-pencil" size="xs" color="neutral" variant="outline" @click="startEdit(activePost)" />
+              <UButton v-if="activePost.canEdit" :label="$t('embed.feedback.edit')" icon="i-lucide-pencil" size="xs" color="neutral" variant="outline" @click="startEdit(activePost)" />
               <UButton
                 v-if="activePost.canDelete"
-                :label="confirmDelete ? 'Tap again to delete' : 'Delete'"
+                :label="confirmDelete ? $t('embed.feedback.deleteAgain') : $t('embed.feedback.delete')"
                 icon="i-lucide-trash-2"
                 size="xs"
                 :color="confirmDelete ? 'error' : 'neutral'"
@@ -209,19 +209,19 @@
 
             <!-- Moderation, for the host's own staff -->
             <section v-if="viewer.isAdmin" class="mt-5 rounded-xl border border-default bg-default p-3.5">
-              <p class="section-label mb-2.5">Manage</p>
+              <p class="section-label mb-2.5">{{ $t('embed.feedback.manage') }}</p>
               <div class="flex flex-wrap items-center gap-x-5 gap-y-3">
-                <USelect :model-value="activePost.status" :items="statusItems" size="sm" class="w-44" aria-label="Status" @update:model-value="moderate(activePost, { status: $event })" />
-                <USwitch :model-value="activePost.featured" label="Featured" size="sm" @update:model-value="moderate(activePost, { featured: $event })" />
-                <USwitch :model-value="activePost.hidden" label="Hidden" size="sm" @update:model-value="moderate(activePost, { hidden: $event })" />
+                <USelect :model-value="activePost.status" :items="statusItems" size="sm" class="w-44" :aria-label="$t('embed.feedback.status')" @update:model-value="moderate(activePost, { status: $event })" />
+                <USwitch :model-value="activePost.featured" :label="$t('embed.feedback.featured')" size="sm" @update:model-value="moderate(activePost, { featured: $event })" />
+                <USwitch :model-value="activePost.hidden" :label="$t('embed.feedback.hidden')" size="sm" @update:model-value="moderate(activePost, { hidden: $event })" />
               </div>
             </section>
 
             <!-- Comments -->
             <section class="mt-6 border-t border-stone-200 dark:border-stone-800 pt-4">
-              <h3 class="text-[13px] font-semibold">Comments <span class="font-normal text-stone-500 tabular-nums">{{ activePost.commentCount }}</span></h3>
+              <h3 class="text-[13px] font-semibold">{{ $t('embed.feedback.comments') }} <span class="font-normal text-stone-500 tabular-nums">{{ activePost.commentCount }}</span></h3>
 
-              <div v-if="commentsLoading" class="py-6 text-center text-xs text-stone-500">Loading…</div>
+              <div v-if="commentsLoading" class="py-6 text-center text-xs text-stone-500">{{ $t('embed.loading') }}</div>
               <ul v-else class="mt-3 space-y-4">
                 <li v-for="comment in comments" :key="comment.id" class="flex gap-2.5">
                   <span
@@ -230,27 +230,27 @@
                     aria-hidden="true"
                   >
                     <UIcon v-if="comment.author?.isTeam" name="i-lucide-badge-check" class="size-4" />
-                    <template v-else>{{ (comment.author?.name || (comment.isMine ? 'You' : '?')).slice(0, 1).toUpperCase() }}</template>
+                    <template v-else>{{ (comment.author?.name || (comment.isMine ? $t('embed.you') : '?')).slice(0, 1).toUpperCase() }}</template>
                   </span>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1.5 text-xs">
                       <span class="font-semibold">{{ authorLabel(comment.author, comment.isMine, true) }}</span>
-                      <span v-if="comment.author?.isTeam" class="rounded-full bg-primary-600/10 px-1.5 py-px text-[10px] font-semibold text-primary-700 dark:text-primary-300">Team</span>
-                      <span class="text-stone-500" :title="shortDate(comment.createdAt)">{{ timeAgo(comment.createdAt) }}<template v-if="comment.editedAt"> · edited</template></span>
-                      <span v-if="comment.visibility === 'internal'" class="rounded-full bg-amber-500/15 px-1.5 py-px text-[10px] font-semibold text-amber-700 dark:text-amber-300">Team only</span>
+                      <span v-if="comment.author?.isTeam" class="rounded-full bg-primary-600/10 px-1.5 py-px text-[10px] font-semibold text-primary-700 dark:text-primary-300">{{ $t('embed.feedback.team') }}</span>
+                      <span class="text-stone-500" :title="shortDate(comment.createdAt)">{{ timeAgo(comment.createdAt) }}<template v-if="comment.editedAt"> · {{ $t('embed.feedback.edited') }}</template></span>
+                      <span v-if="comment.visibility === 'internal'" class="rounded-full bg-amber-500/15 px-1.5 py-px text-[10px] font-semibold text-amber-700 dark:text-amber-300">{{ $t('embed.feedback.teamOnly') }}</span>
                       <button
                         v-if="comment.canDelete"
                         type="button"
                         class="ml-auto rounded-full px-1.5 text-[11px] transition-colors"
                         :class="confirmCommentId === comment.id ? 'bg-rose-600 text-white' : 'text-stone-400 hover:text-rose-600'"
-                        :aria-label="confirmCommentId === comment.id ? 'Confirm delete' : 'Delete comment'"
+                        :aria-label="confirmCommentId === comment.id ? $t('embed.feedback.confirmDelete') : $t('embed.feedback.deleteComment')"
                         @click="removeComment(comment)"
-                      >{{ confirmCommentId === comment.id ? 'Delete?' : '✕' }}</button>
+                      >{{ confirmCommentId === comment.id ? $t('embed.feedback.deleteQuestion') : '✕' }}</button>
                     </div>
                     <MarkdownBlock :text="comment.body" class="mt-0.5 !text-[14px]" />
                   </div>
                 </li>
-                <li v-if="!comments.length" class="py-3 text-center text-xs text-stone-500">No comments yet.</li>
+                <li v-if="!comments.length" class="py-3 text-center text-xs text-stone-500">{{ $t('embed.feedback.noComments') }}</li>
               </ul>
 
               <form v-if="config?.allowComments || viewer.isAdmin" class="mt-4" @submit.prevent="submitComment">
@@ -259,7 +259,7 @@
                   :rows="2"
                   :maxrows="8"
                   autoresize
-                  :placeholder="viewer.signedIn ? 'Add a comment…' : 'Sign in to comment'"
+                  :placeholder="viewer.signedIn ? $t('embed.feedback.addComment') : $t('embed.feedback.signInToComment')"
                   class="w-full"
                   :ui="{ base: 'text-[14px]' }"
                   :maxlength="8000"
@@ -268,25 +268,25 @@
                   @keydown.ctrl.enter.prevent="submitComment"
                 />
                 <div class="mt-2 flex items-center justify-between gap-2">
-                  <p class="text-[11px] text-stone-400">{{ commentError || 'Markdown works. ⌘↵ to send.' }}</p>
-                  <UButton type="submit" label="Comment" size="sm" color="primary" :disabled="!commentDraft.trim()" :loading="commentSending" />
+                  <p class="text-[11px] text-stone-400">{{ commentError || $t('embed.feedback.markdownHint') }}</p>
+                  <UButton type="submit" :label="$t('embed.feedback.comment')" size="sm" color="primary" :disabled="!commentDraft.trim()" :loading="commentSending" />
                 </div>
               </form>
             </section>
           </div>
-          <div v-else class="py-12 text-center text-sm text-stone-500">Loading…</div>
+          <div v-else class="py-12 text-center text-sm text-stone-500">{{ $t('embed.loading') }}</div>
         </div>
 
         <!-- ========================================================= compose -->
         <div v-else key="compose" class="mx-auto px-4 py-4" :class="contentWidth">
           <button type="button" class="inline-flex items-center gap-1 text-[13px] font-medium text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white transition-colors" @click="back">
-            <UIcon name="i-lucide-chevron-left" class="size-4" />Back
+            <UIcon name="i-lucide-chevron-left" class="size-4" />{{ $t('embed.feedback.back') }}
           </button>
-          <h2 class="mt-3 text-xl font-semibold">{{ editingId ? 'Edit post' : 'New post' }}</h2>
+          <h2 class="mt-3 text-xl font-semibold">{{ editingId ? $t('embed.feedback.editPost') : $t('embed.feedback.newPost') }}</h2>
 
           <form class="mt-4 space-y-4" @submit.prevent="submitPost">
             <div v-if="config?.types.length" class="space-y-1.5">
-              <p class="text-xs font-medium text-stone-500 dark:text-stone-400">What is it?</p>
+              <p class="text-xs font-medium text-stone-500 dark:text-stone-400">{{ $t('embed.feedback.whatIsIt') }}</p>
               <div class="flex flex-wrap gap-2">
                 <button
                   v-for="type in config.types"
@@ -300,13 +300,13 @@
               </div>
             </div>
 
-            <UFormField label="Title" :hint="`${form.title.length}/200`">
-              <UInput v-model="form.title" :maxlength="200" placeholder="Short and specific — e.g. “Export bookmarks as CSV”" class="w-full" size="lg" autofocus />
+            <UFormField :label="$t('embed.feedback.titleLabel')" :hint="`${form.title.length}/200`">
+              <UInput v-model="form.title" :maxlength="200" :placeholder="$t('embed.feedback.titlePlaceholder')" class="w-full" size="lg" autofocus />
             </UFormField>
 
             <Transition name="fade">
               <div v-if="similar.length" class="rounded-xl border border-amber-300/60 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-3">
-                <p class="text-xs font-medium text-amber-900 dark:text-amber-200">Already posted? Vote instead — it counts more.</p>
+                <p class="text-xs font-medium text-amber-900 dark:text-amber-200">{{ $t('embed.feedback.alreadyPosted') }}</p>
                 <ul class="mt-2 space-y-1.5">
                   <li v-for="item in similar" :key="item.id" class="flex items-center gap-2">
                     <FeedbackVote :count="item.voteCount" :voted="item.hasVoted" :closed="!votingOpen(item.statusCategory) || (item.locked && !item.canVote)" size="sm" @vote="vote(item)" />
@@ -317,12 +317,12 @@
               </div>
             </Transition>
 
-            <UFormField label="Details" hint="Markdown works">
-              <UTextarea v-model="form.body" :rows="5" :maxrows="16" autoresize placeholder="What are you trying to do? What happens today, and what should happen instead?" class="w-full" :maxlength="20000" />
+            <UFormField :label="$t('embed.feedback.details')" :hint="$t('embed.feedback.markdownWorks')">
+              <UTextarea v-model="form.body" :rows="5" :maxrows="16" autoresize :placeholder="$t('embed.feedback.detailsPlaceholder')" class="w-full" :maxlength="20000" />
             </UFormField>
 
             <div v-if="config?.platforms.length" class="space-y-1.5">
-              <p class="text-xs font-medium text-stone-500 dark:text-stone-400">Where?</p>
+              <p class="text-xs font-medium text-stone-500 dark:text-stone-400">{{ $t('embed.feedback.where') }}</p>
               <div class="flex flex-wrap gap-2">
                 <button
                   v-for="platform in config.platforms"
@@ -338,8 +338,8 @@
 
             <p v-if="formError" class="text-sm text-error">{{ formError }}</p>
             <div class="flex items-center justify-end gap-2 pt-1">
-              <UButton label="Cancel" color="neutral" variant="ghost" @click="back" />
-              <UButton type="submit" :label="editingId ? 'Save' : 'Post'" color="primary" :disabled="!form.title.trim()" :loading="submitting" />
+              <UButton :label="$t('common.cancel')" color="neutral" variant="ghost" @click="back" />
+              <UButton type="submit" :label="editingId ? $t('embed.feedback.save') : $t('embed.feedback.post')" color="primary" :disabled="!form.title.trim()" :loading="submitting" />
             </div>
           </form>
         </div>
@@ -347,7 +347,7 @@
     </main>
 
     <p v-if="projectInfo?.poweredBy" class="shrink-0 py-3 text-center text-[11px] leading-tight">
-      <a :href="projectInfo.poweredBy.url" target="_blank" rel="noopener" class="text-dimmed transition-colors hover:text-muted">Powered by HelpBites</a>
+      <a :href="projectInfo.poweredBy.url" target="_blank" rel="noopener" class="text-dimmed transition-colors hover:text-muted">{{ $t('embed.poweredBy') }}</a>
     </p>
   </div>
 </template>
@@ -399,6 +399,7 @@ if (['light', 'dark', 'system'].includes(themeParam)) colorMode.preference = the
 type ProjectInfo = { name: string, publicKey: string, theme: { accent?: string }, brandLogoUrl: string, allowedOrigins: string[], poweredBy?: { url: string } | null }
 type View = 'board' | 'roadmap' | 'changelog'
 
+const { t } = useI18n()
 const rootRef = ref<HTMLElement | null>(null)
 const config = ref<FeedbackBoardConfig | null>(null)
 const projectInfo = ref<ProjectInfo | null>(null)
@@ -416,16 +417,16 @@ const nav = ref<'push' | 'pop'>('push')
 
 const contentWidth = computed(() => (view.value === 'roadmap' && screen.value === 'list' && roadmapLayout.value !== 'list' ? 'max-w-5xl' : 'max-w-3xl'))
 const boardTitle = computed(() => (only
-  ? (projectInfo.value?.name ? `${projectInfo.value.name} ${only}` : only === 'roadmap' ? 'Roadmap' : 'Changelog')
-  : config.value?.title || (projectInfo.value?.name ? `${projectInfo.value.name} feedback` : 'Feedback')))
-const boardDescription = computed(() => (onlyRoadmap ? 'What we have planned, what we are building and what has shipped.' : onlyChangelog ? 'New features, improvements and fixes, newest first.' : config.value?.description || 'Ideas, bugs and requests — vote on what matters to you.'))
+  ? (projectInfo.value?.name ? (onlyRoadmap ? t('embed.roadmap.namedTitle', { name: projectInfo.value.name }) : t('embed.changelog.namedTitle', { name: projectInfo.value.name })) : onlyRoadmap ? t('embed.roadmap.title') : t('embed.changelog.title'))
+  : config.value?.title || (projectInfo.value?.name ? t('embed.feedback.namedTitle', { name: projectInfo.value.name }) : t('embed.feedback.title'))))
+const boardDescription = computed(() => (onlyRoadmap ? t('embed.roadmap.description') : onlyChangelog ? t('embed.changelog.description') : config.value?.description || t('embed.feedback.description')))
 const initials = computed(() => (projectInfo.value?.name || 'F').trim().slice(0, 1).toUpperCase())
 const tabs = computed(() => (only ? [] : [
-  { key: 'board' as const, label: 'Feedback', icon: 'i-lucide-messages-square' },
-  ...(config.value?.roadmap ? [{ key: 'roadmap' as const, label: 'Roadmap', icon: 'i-lucide-map' }] : []),
-  ...(config.value?.changelog ? [{ key: 'changelog' as const, label: 'Changelog', icon: 'i-lucide-sparkles' }] : [])
+  { key: 'board' as const, label: t('embed.feedback.title'), icon: 'i-lucide-messages-square' },
+  ...(config.value?.roadmap ? [{ key: 'roadmap' as const, label: t('embed.roadmap.title'), icon: 'i-lucide-map' }] : []),
+  ...(config.value?.changelog ? [{ key: 'changelog' as const, label: t('embed.changelog.title'), icon: 'i-lucide-sparkles' }] : [])
 ]))
-const backLabel = computed(() => (view.value === 'board' ? 'All posts' : view.value === 'roadmap' ? 'Roadmap' : 'Changelog'))
+const backLabel = computed(() => (view.value === 'board' ? t('embed.feedback.allPosts') : view.value === 'roadmap' ? t('embed.roadmap.title') : t('embed.changelog.title')))
 
 // Nuxt UI's theme is `inline`, so utilities read the --ui-color-* scale
 // directly: derive the shades from the project accent.
@@ -477,7 +478,8 @@ function requestSignIn(reason: 'vote' | 'post' | 'comment') {
     post({ type: 'sign-in', reason })
     return
   }
-  showNotice(`Sign in${projectInfo.value?.name ? ` to ${projectInfo.value.name}` : ''} to ${reason}.`)
+  const reasonText = t(`embed.feedback.reason.${reason}`)
+  showNotice(projectInfo.value?.name ? t('embed.feedback.signInForReasonProject', { name: projectInfo.value.name, reason: reasonText }) : t('embed.feedback.signInForReason', { reason: reasonText }))
 }
 
 function onMessage(event: MessageEvent) {
@@ -517,8 +519,8 @@ async function api<T = any>(path: string, options: { method?: 'GET' | 'POST' | '
       token.value = await requestToken()
       return api<T>(path, { ...options, retry: false })
     }
-    if (status === 401) throw new SignInNeeded(error?.data?.statusMessage || 'Sign in to do that')
-    throw new Error(error?.data?.statusMessage || error?.message || 'Something went wrong')
+    if (status === 401) throw new SignInNeeded(error?.data?.statusMessage || t('embed.feedback.signInRequired'))
+    throw new Error(error?.data?.statusMessage || error?.message || t('embed.feedback.somethingWrong'))
   }
 }
 
@@ -571,7 +573,7 @@ async function loadView(next: View) {
 
 // ---- board filters ----
 const search = ref('')
-const sortOptions = [{ key: 'top' as const, label: 'Top' }, { key: 'new' as const, label: 'New' }]
+const sortOptions = computed(() => [{ key: 'top' as const, label: t('embed.feedback.sortTop') }, { key: 'new' as const, label: t('embed.feedback.sortNew') }])
 const sort = ref<'top' | 'new'>('top')
 const statusFilter = ref<string[]>([])
 const typeFilter = ref('')
@@ -733,7 +735,7 @@ async function openPost(id: string) {
   try {
     await loadActivePost(id)
   } catch {
-    showNotice('That post is no longer available.')
+    showNotice(t('embed.feedback.postUnavailable'))
     back()
   } finally {
     commentsLoading.value = false
@@ -764,7 +766,7 @@ async function removePost(item: FeedbackPost) {
     await api(`/feedback/${item.id}`, { method: 'DELETE' })
     drop(item.id)
     back()
-    showNotice('Post deleted.')
+    showNotice(t('embed.feedback.postDeleted'))
   } catch (error) {
     showNotice((error as Error).message)
   } finally {
@@ -788,10 +790,10 @@ async function moderate(item: FeedbackPost, patch: Record<string, unknown>) {
 }
 
 function authorLabel(author: FeedbackAuthor | null, isMine?: boolean, short = false): string {
-  if (isMine) return short ? 'You' : 'Posted by you'
-  const name = author?.name || (author?.isTeam ? projectInfo.value?.name || 'Team' : '')
-  if (short) return name || 'Member'
-  return name ? `Posted by ${name}` : 'Posted by a member'
+  if (isMine) return short ? t('embed.you') : t('embed.feedback.postedByYou')
+  const name = author?.name || (author?.isTeam ? projectInfo.value?.name || t('embed.feedback.team') : '')
+  if (short) return name || t('embed.feedback.member')
+  return name ? t('embed.feedback.postedBy', { name }) : t('embed.feedback.postedByMember')
 }
 
 // ---- comments ----
@@ -886,7 +888,7 @@ async function submitPost() {
     search.value = ''
     if (!statusFilter.value.includes(result.post.status)) statusFilter.value = [...statusFilter.value, result.post.status]
     await openPost(result.post.id)
-    showNotice(wasEditing ? 'Saved.' : 'Posted — thanks!')
+    showNotice(wasEditing ? t('embed.feedback.saved') : t('embed.feedback.postedThanks'))
   } catch (error) {
     if (error instanceof SignInNeeded) requestSignIn('post')
     else formError.value = (error as Error).message
@@ -903,7 +905,7 @@ useEventStream<FeedbackEvent>(computed(() => (config.value ? `/v1/feedback/event
     drop(event.postId)
     if (activeId.value === event.postId && screen.value === 'post') {
       back()
-      showNotice('That post was removed.')
+      showNotice(t('embed.feedback.postRemoved'))
     }
   } else if (event.type === 'feedback.comment.created') {
     if (activeId.value === event.postId && !comments.value.some(c => c.id === event.comment.id)) comments.value = [...comments.value, { isMine: false, canDelete: viewer.value.isAdmin, ...event.comment }]
@@ -949,17 +951,17 @@ onMounted(async () => {
     if (rootRef.value) resizeObserver.observe(rootRef.value)
   }
   if (!pk) {
-    loadError.value = 'Missing project key. Check the data-project attribute on the feedback script.'
+    loadError.value = t('embed.feedback.missingKey')
     return
   }
   try {
     const result = await $fetch<{ config: FeedbackBoardConfig, roadmapSource?: 'board' | 'posts', project: ProjectInfo, viewer: FeedbackViewer }>(`/v1/feedback/config?pk=${encodeURIComponent(pk)}`)
     if (onlyRoadmap && !result.config.roadmap) {
-      loadError.value = 'This project has no public roadmap.'
+      loadError.value = t('embed.roadmap.none')
       return
     }
     if (onlyChangelog && !result.config.changelog) {
-      loadError.value = 'This project has no public changelog.'
+      loadError.value = t('embed.changelog.none')
       return
     }
     config.value = result.config
@@ -967,7 +969,7 @@ onMounted(async () => {
     projectInfo.value = result.project
     statusFilter.value = result.config.statuses.filter(s => ACTIVE_FEEDBACK_CATEGORIES.includes(s.category)).map(s => s.key)
   } catch (error: any) {
-    loadError.value = error?.statusCode === 404 ? (only ? `This project has no public ${only}.` : 'This project has no feedback board yet.') : `The ${only || 'feedback board'} could not be loaded.`
+    loadError.value = error?.statusCode === 404 ? (onlyRoadmap ? t('embed.roadmap.none') : onlyChangelog ? t('embed.changelog.none') : t('embed.feedback.noBoard')) : (onlyRoadmap ? t('embed.roadmap.loadFailed') : onlyChangelog ? t('embed.changelog.loadFailed') : t('embed.feedback.loadFailed'))
     return
   }
   if (direct) token.value = direct

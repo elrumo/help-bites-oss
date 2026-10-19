@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-4">
     <form class="flex gap-2" @submit.prevent="addNode">
-      <UInput v-model="newName" size="sm" class="flex-1" :placeholder="selectedId ? `New sub-path under “${selectedNode?.name}”` : 'New top-level path'" />
-      <UButton type="submit" size="sm" color="neutral" variant="soft" icon="i-lucide-plus" :loading="adding">Add</UButton>
-      <UButton v-if="selectedId" size="sm" color="neutral" variant="ghost" @click="selectedId = ''">Clear</UButton>
+      <UInput v-model="newName" size="sm" class="flex-1" :placeholder="selectedId ? $t('knowledge.tree.subPathPlaceholder', { name: selectedNode?.name }) : $t('knowledge.tree.topLevelPlaceholder')" />
+      <UButton type="submit" size="sm" color="neutral" variant="soft" icon="i-lucide-plus" :loading="adding">{{ $t('knowledge.tree.add') }}</UButton>
+      <UButton v-if="selectedId" size="sm" color="neutral" variant="ghost" @click="selectedId = ''">{{ $t('knowledge.tree.clear') }}</UButton>
     </form>
 
     <p v-if="!nodes.length && !loading" class="text-sm text-muted border border-dashed border-accented rounded-xl p-6 text-center">
-      No paths yet. Add one above, or upload a document — its headings become paths automatically.
+      {{ $t('knowledge.tree.empty') }}
     </p>
 
     <ul v-else class="text-sm">
@@ -22,8 +22,8 @@
           <span v-if="editingId !== n.id" class="truncate">{{ n.name }}</span>
           <UInput v-else v-model="editName" size="xs" autofocus @keyup.enter="rename(n)" @click.stop />
           <span class="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100">
-            <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-square-pen" aria-label="Rename" @click.stop="startRename(n)" />
-            <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2" aria-label="Delete" @click.stop="remove(n)" />
+            <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-square-pen" :aria-label="$t('knowledge.tree.rename')" @click.stop="startRename(n)" />
+            <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2" :aria-label="$t('knowledge.delete')" @click.stop="remove(n)" />
           </span>
         </div>
       </li>
@@ -32,8 +32,8 @@
     <div v-if="selectedNode" class="rounded-lg border border-default p-3 text-sm space-y-2">
       <p class="font-medium">{{ selectedNode.pathCache }}</p>
       <div class="flex flex-wrap items-center gap-2">
-        <UFormField label="Move under" class="flex-1">
-          <OptionalSelect v-model="moveTarget" :items="moveItems" none-label="(top level)" size="sm" class="w-full" @update:model-value="move" />
+        <UFormField :label="$t('knowledge.tree.moveUnder')" class="flex-1">
+          <OptionalSelect v-model="moveTarget" :items="moveItems" :none-label="$t('knowledge.tree.topLevel')" size="sm" class="w-full" @update:model-value="move" />
         </UFormField>
       </div>
     </div>
@@ -48,6 +48,7 @@ const props = defineProps<{ modelId: string }>()
 const emit = defineEmits<{ select: [nodeId: string], changed: [] }>()
 
 const { api } = useAgent()
+const { t } = useI18n()
 const nodes = ref<KnowledgeNode[]>([])
 const loading = ref(true)
 const adding = ref(false)
@@ -90,7 +91,7 @@ async function addNode() {
     newName.value = ''
     await load()
     emit('changed')
-  } catch (e: any) { error.value = e?.message || 'Could not add the path' } finally { adding.value = false }
+  } catch (e: any) { error.value = e?.message || t('knowledge.tree.couldNotAdd') } finally { adding.value = false }
 }
 
 function startRename(n: KnowledgeNode) { editingId.value = n.id; editName.value = n.name }
@@ -99,27 +100,27 @@ async function rename(n: KnowledgeNode) {
   editingId.value = ''
   if (!name || name === n.name) return
   try { await api(`/admin/knowledge/nodes/${n.id}`, { method: 'PATCH', body: { name } }); await load(); emit('changed') }
-  catch (e: any) { error.value = e?.message || 'Could not rename' }
+  catch (e: any) { error.value = e?.message || t('knowledge.tree.couldNotRename') }
 }
 
 async function move(target: string) {
   if (!selectedId.value) return
   try { await api(`/admin/knowledge/nodes/${selectedId.value}`, { method: 'PATCH', body: { parentId: target } }); await load(); emit('changed') }
-  catch (e: any) { error.value = e?.message || 'Could not move the path' }
+  catch (e: any) { error.value = e?.message || t('knowledge.tree.couldNotMove') }
 }
 
 async function remove(n: KnowledgeNode) {
   try {
     const impact = await api<{ deleted: boolean, impact?: { children: number, faqs: number } }>(`/admin/knowledge/nodes/${n.id}`, { method: 'DELETE' })
     if (!impact.deleted) {
-      const msg = `Delete “${n.name}”? Its ${impact.impact?.children || 0} sub-path(s) and ${impact.impact?.faqs || 0} FAQ(s) move up to the parent — nothing is deleted.`
+      const msg = t('knowledge.tree.deleteConfirm', { name: n.name, subPaths: t('knowledge.units.subPath', impact.impact?.children || 0), faqs: t('knowledge.units.faq', impact.impact?.faqs || 0) })
       if (!confirm(msg)) return
       await api(`/admin/knowledge/nodes/${n.id}?confirm=true`, { method: 'DELETE' })
     }
     if (selectedId.value === n.id) selectedId.value = ''
     await load()
     emit('changed')
-  } catch (e: any) { error.value = e?.message || 'Could not delete the path' }
+  } catch (e: any) { error.value = e?.message || t('knowledge.tree.couldNotDelete') }
 }
 
 defineExpose({ reload: load })

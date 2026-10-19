@@ -1,18 +1,17 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader title="Developer">
+    <PageHeader :title="$t('admin.developer.title')">
       <template #actions>
-        <UButton to="/_docs/scalar" target="_blank" icon="i-lucide-book-open" label="API reference" color="neutral" variant="outline" size="sm" />
+        <UButton to="/_docs/scalar" target="_blank" icon="i-lucide-book-open" :label="$t('admin.developer.apiReference')" color="neutral" variant="outline" size="sm" />
       </template>
     </PageHeader>
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div class="mx-auto flex max-w-5xl gap-12 px-6 py-10">
         <article class="min-w-0 flex-1 space-y-12">
           <header class="space-y-2">
-            <h1 class="text-2xl font-semibold tracking-tight text-highlighted">Connect your app to HelpBites</h1>
+            <h1 class="text-2xl font-semibold tracking-tight text-highlighted">{{ $t('admin.developer.heroTitle') }}</h1>
             <p class="text-[15px] leading-relaxed text-muted">
-              Each app you run is a project. Its users keep their own accounts — your server signs a short identity
-              token — and they chat from a drop-in widget or a UI you build on the API.
+              {{ $t('admin.developer.intro') }}
             </p>
           </header>
 
@@ -37,42 +36,35 @@
           <!-- Get started -->
           <section id="get-started" class="space-y-5 scroll-mt-8">
             <div>
-              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">Get started</h2>
-              <p class="text-sm text-muted">Three steps, about ten minutes.</p>
+              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">{{ $t('admin.developer.getStarted') }}</h2>
+              <p class="text-sm text-muted">{{ $t('admin.developer.getStartedHint') }}</p>
             </div>
 
             <ol class="space-y-6 text-sm">
               <li class="space-y-2">
-                <h3 class="font-medium"><span class="step">1</span> Create a project</h3>
+                <h3 class="font-medium"><span class="step">1</span> {{ $t('admin.developer.step1Title') }}</h3>
                 <p class="text-toned">
-                  <NuxtLink to="/projects" class="underline">Projects → New project</NuxtLink>. You get a public key
-                  <code class="inline-code">pk_…</code> (safe in browsers) and a secret <code class="inline-code">sk_…</code>
-                  (server only, signs identity tokens). Set the site URL, the origins allowed to host the widget, the name
-                  replies are signed with, and who gets notified when a user writes.
+                  <i18n-t keypath="admin.developer.step1Body" tag="span"><template #projects><NuxtLink to="/projects" class="underline">{{ $t('admin.developer.projectsLink') }}</NuxtLink></template><template #pk><code class="inline-code">pk_…</code></template><template #sk><code class="inline-code">sk_…</code></template></i18n-t>
                 </p>
               </li>
 
               <li class="space-y-2">
-                <h3 class="font-medium"><span class="step">2</span> Mint identity tokens on your server</h3>
+                <h3 class="font-medium"><span class="step">2</span> {{ $t('admin.developer.step2Title') }}</h3>
                 <p class="text-toned">
-                  One authenticated route that returns a short-lived HS256 JWT for the signed-in user. Any JWT library
-                  works (<code class="inline-code">jose</code>, <code class="inline-code">jsonwebtoken</code>, PyJWT…);
-                  the secret is the project secret. Node, no dependencies:
+                  <i18n-t keypath="admin.developer.step2Body" tag="span"><template #jose><code class="inline-code">jose</code></template><template #jsonwebtoken><code class="inline-code">jsonwebtoken</code></template></i18n-t>
                 </p>
                 <CodeBlock :code="mintSnippet" lang="js" />
                 <p class="text-xs text-muted">
-                  Never send the secret to a browser. Rotate it from the project page if it leaks — tokens minted with the
-                  old one stop verifying immediately.
+                  {{ $t('admin.developer.step2Note') }}
                 </p>
               </li>
 
               <li class="space-y-2">
-                <h3 class="font-medium"><span class="step">3</span> Show the chat</h3>
-                <p class="text-toned">Drop the widget on your site and hand it that token:</p>
+                <h3 class="font-medium"><span class="step">3</span> {{ $t('admin.developer.step3Title') }}</h3>
+                <p class="text-toned">{{ $t('admin.developer.step3Body') }}</p>
                 <CodeBlock :code="widgetSnippet" lang="html" />
                 <p class="text-xs text-muted">
-                  Only origins listed on the project can host the widget; anything else sees an error inside the frame and
-                  never gets a token.
+                  {{ $t('admin.developer.step3Note') }}
                 </p>
               </li>
             </ol>
@@ -81,8 +73,8 @@
           <!-- Token claims -->
           <section id="tokens" class="space-y-4 scroll-mt-8">
             <div>
-              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">Identity tokens</h2>
-              <p class="text-sm text-muted">HS256, signed with the project secret. An hour of life is plenty.</p>
+              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">{{ $t('admin.developer.tokens') }}</h2>
+              <p class="text-sm text-muted">{{ $t('admin.developer.tokensHint') }}</p>
             </div>
             <div class="grid grid-cols-[110px_1fr] gap-x-4 gap-y-2 text-sm border-y border-default py-3">
               <template v-for="c in claims" :key="c.claim">
@@ -95,60 +87,57 @@
           <!-- Widget API -->
           <section id="widget" class="space-y-4 scroll-mt-8">
             <div>
-              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">Widget</h2>
-              <p class="text-sm text-muted">Everything the loader understands.</p>
+              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">{{ $t('admin.developer.widget') }}</h2>
+              <p class="text-sm text-muted">{{ $t('admin.developer.widgetHint') }}</p>
             </div>
             <ul class="space-y-2 text-sm text-toned list-disc pl-5">
-              <li><code class="inline-code">getToken</code> is called when the chat opens and again whenever a token expires.</li>
-              <li><code class="inline-code">context</code> is attached to new conversations so you know what the user was looking at. Update it with <code class="inline-code">HelpBites.push(['setContext', {…}])</code>.</li>
-              <li><code class="inline-code">HelpBites.push(['open'])</code> / <code class="inline-code">(['close'])</code> control the panel.</li>
-              <li><code class="inline-code">data-mode="inline"</code> with <code class="inline-code">data-target="#selector"</code> drops the chat inside an element of your page — a message panel instead of a floating launcher. It fills its container, so give that element a height.</li>
-              <li><code class="inline-code">data-position="left"</code> and <code class="inline-code">data-accent="#hex"</code> on the script tag tweak the launcher.</li>
-              <li>A link with <code class="inline-code">?sb=&lt;conversationId&gt;</code> — what notification emails use — opens that conversation on load.</li>
+              <li><i18n-t keypath="admin.developer.widgetGetToken" tag="span"><template #getToken><code class="inline-code">getToken</code></template></i18n-t></li>
+              <li><i18n-t keypath="admin.developer.widgetContext" tag="span"><template #context><code class="inline-code">context</code></template><template #setContext><code class="inline-code">HelpBites.push(['setContext', {…}])</code></template></i18n-t></li>
+              <li><i18n-t keypath="admin.developer.widgetOpenClose" tag="span"><template #open><code class="inline-code">HelpBites.push(['open'])</code></template><template #close><code class="inline-code">(['close'])</code></template></i18n-t></li>
+              <li><i18n-t keypath="admin.developer.widgetMode" tag="span"><template #mode><code class="inline-code">data-mode="inline"</code></template><template #target><code class="inline-code">data-target="#selector"</code></template></i18n-t></li>
+              <li><i18n-t keypath="admin.developer.widgetPosition" tag="span"><template #position><code class="inline-code">data-position="left"</code></template><template #accent><code class="inline-code">data-accent="#hex"</code></template></i18n-t></li>
+              <li><i18n-t keypath="admin.developer.widgetSb" tag="span"><template #sb><code class="inline-code">?sb=&lt;conversationId&gt;</code></template></i18n-t></li>
             </ul>
           </section>
 
           <!-- Inline panel -->
           <section id="inline" class="space-y-4 scroll-mt-8">
             <div>
-              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">Inline panel</h2>
-              <p class="text-sm text-muted">Same chat, mounted in your layout — a support page or a section of your settings.</p>
+              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">{{ $t('admin.developer.inlinePanel') }}</h2>
+              <p class="text-sm text-muted">{{ $t('admin.developer.inlineHint') }}</p>
             </div>
             <CodeBlock :code="inlineSnippet" lang="html" />
             <p class="text-xs text-muted">
-              Wide enough (640px and up) and the conversation list sits beside the thread; narrower, it stacks like the
-              floating widget. There's no close button — the host page owns the panel.
+              {{ $t('admin.developer.inlineNote') }}
             </p>
           </section>
 
           <!-- Examples / own UI -->
           <section id="examples" class="space-y-5 scroll-mt-8">
             <div>
-              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">Examples</h2>
+              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">{{ $t('admin.developer.examples') }}</h2>
               <p class="text-sm text-muted">
-                Everything the widget does is on the API. Send <code class="inline-code">Authorization: Bearer &lt;identity token&gt;</code>.
+                <i18n-t keypath="admin.developer.examplesHint" tag="span"><template #auth><code class="inline-code">Authorization: Bearer &lt;identity token&gt;</code></template></i18n-t>
               </p>
             </div>
 
             <div class="space-y-2">
-              <h3 class="text-sm font-medium">Start a conversation</h3>
+              <h3 class="text-sm font-medium">{{ $t('admin.developer.startConversation') }}</h3>
               <CodeBlock :code="curlSnippet" lang="bash" />
             </div>
 
             <div class="space-y-2">
-              <h3 class="text-sm font-medium">Your own UI</h3>
+              <h3 class="text-sm font-medium">{{ $t('admin.developer.ownUi') }}</h3>
               <p class="text-sm text-toned">
-                Retries are safe: pass a <code class="inline-code">clientId</code> with each message and a repeated POST
-                returns the message that already landed.
+                <i18n-t keypath="admin.developer.ownUiBody" tag="span"><template #clientId><code class="inline-code">clientId</code></template></i18n-t>
               </p>
               <CodeBlock :code="fetchSnippet" lang="js" />
             </div>
 
             <div class="space-y-2">
-              <h3 class="text-sm font-medium">Live updates</h3>
+              <h3 class="text-sm font-medium">{{ $t('admin.developer.liveUpdates') }}</h3>
               <p class="text-sm text-toned">
-                <code class="inline-code">GET /v1/events</code> is server-sent events. Use <code class="inline-code">fetch</code>
-                plus a stream reader so the token stays in a header.
+                <i18n-t keypath="admin.developer.liveBody" tag="span"><template #events><code class="inline-code">GET /v1/events</code></template><template #fetch><code class="inline-code">fetch</code></template></i18n-t>
               </p>
               <CodeBlock :code="sseSnippet" lang="js" />
             </div>
@@ -157,10 +146,9 @@
           <!-- Endpoints -->
           <section id="endpoints" class="space-y-4 scroll-mt-8">
             <div>
-              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">Endpoints</h2>
+              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">{{ $t('admin.developer.endpoints') }}</h2>
               <p class="text-sm text-muted">
-                The full schema, with request and response shapes, lives in the
-                <a href="/_docs/scalar" target="_blank" rel="noopener" class="underline">API reference</a>.
+                <i18n-t keypath="admin.developer.endpointsBody" tag="span"><template #reference><a href="/_docs/scalar" target="_blank" rel="noopener" class="underline">{{ $t('admin.developer.apiReference') }}</a></template></i18n-t>
               </p>
             </div>
             <ul class="divide-y divide-default border-y border-default text-sm">
@@ -171,7 +159,7 @@
               </li>
             </ul>
             <p class="text-sm text-muted">
-              From your server, with the project secret (<code class="inline-code">sk_…</code>): contacts, segments and campaigns.
+              <i18n-t keypath="admin.developer.serverNote" tag="span"><template #sk><code class="inline-code">sk_…</code></template></i18n-t>
             </p>
             <ul class="divide-y divide-default border-y border-default text-sm">
               <li v-for="e in serverEndpoints" :key="e.method + e.path" class="flex items-baseline gap-3 py-2">
@@ -181,7 +169,7 @@
               </li>
             </ul>
             <UButton to="/_docs/scalar" target="_blank" trailing-icon="i-lucide-external-link" color="primary" size="sm">
-              Open the API reference
+              {{ $t('admin.developer.openApiRef') }}
             </UButton>
           </section>
         </article>
@@ -189,7 +177,7 @@
         <!-- On this page -->
         <aside class="hidden lg:block w-44 shrink-0">
           <nav class="sticky top-8 text-sm space-y-1.5">
-            <p class="mb-2 text-xs font-medium text-muted">On this page</p>
+            <p class="mb-2 text-xs font-medium text-muted">{{ $t('admin.developer.onThisPage') }}</p>
             <a v-for="s in sections" :key="s.id" :href="`#${s.id}`" class="block text-muted hover:text-highlighted">{{ s.label }}</a>
           </nav>
         </aside>
@@ -201,58 +189,59 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'agent' })
 
+const { t } = useI18n()
 const appUrl = useAppUrl()
 
-const links = [
-  { label: 'Get started', hint: 'Project, token, widget — in three steps', to: '#get-started', icon: 'i-lucide-rocket' },
-  { label: 'Admin API keys', hint: 'Automate the complete operator API', to: '/api-keys', icon: 'i-lucide-key-round' },
-  { label: 'API reference', hint: 'OpenAPI schema for every /v1 route', to: '/_docs/scalar', external: true, icon: 'i-lucide-code-xml' },
-  { label: 'Widget', hint: 'Loader options and JS commands', to: '#widget', icon: 'i-lucide-messages-square' },
-  { label: 'Inline panel', hint: 'Embed the chat in your own layout', to: '#inline', icon: 'i-lucide-panels-top-left' },
-  { label: 'Examples', hint: 'cURL, your own UI, live events', to: '#examples', icon: 'i-lucide-flask-conical' }
-]
+const links = computed(() => [
+  { label: t('admin.developer.getStarted'), hint: t('admin.developer.quickStartHint'), to: '#get-started', icon: 'i-lucide-rocket' },
+  { label: t('admin.developer.quickAdminKeys'), hint: t('admin.developer.quickAdminKeysHint'), to: '/api-keys', icon: 'i-lucide-key-round' },
+  { label: t('admin.developer.apiReference'), hint: t('admin.developer.quickApiRefHint'), to: '/_docs/scalar', external: true, icon: 'i-lucide-code-xml' },
+  { label: t('admin.developer.widget'), hint: t('admin.developer.quickWidgetHint'), to: '#widget', icon: 'i-lucide-messages-square' },
+  { label: t('admin.developer.inlinePanel'), hint: t('admin.developer.quickInlineHint'), to: '#inline', icon: 'i-lucide-panels-top-left' },
+  { label: t('admin.developer.examples'), hint: t('admin.developer.quickExamplesHint'), to: '#examples', icon: 'i-lucide-flask-conical' }
+])
 
-const sections = [
-  { id: 'get-started', label: 'Get started' },
-  { id: 'tokens', label: 'Identity tokens' },
-  { id: 'widget', label: 'Widget' },
-  { id: 'inline', label: 'Inline panel' },
-  { id: 'examples', label: 'Examples' },
-  { id: 'endpoints', label: 'Endpoints' }
-]
+const sections = computed(() => [
+  { id: 'get-started', label: t('admin.developer.getStarted') },
+  { id: 'tokens', label: t('admin.developer.tokens') },
+  { id: 'widget', label: t('admin.developer.widget') },
+  { id: 'inline', label: t('admin.developer.inlinePanel') },
+  { id: 'examples', label: t('admin.developer.examples') },
+  { id: 'endpoints', label: t('admin.developer.endpoints') }
+])
 
-const claims = [
-  { claim: 'iss', desc: 'The project public key' },
-  { claim: 'sub', desc: "Your user's id — stable and unique per project" },
-  { claim: 'name', desc: 'Optional display name' },
-  { claim: 'email', desc: 'Optional; enables email notifications for that user' },
-  { claim: 'iat / exp', desc: 'Issued-at and expiry' }
-]
+const claims = computed(() => [
+  { claim: 'iss', desc: t('admin.developer.claimIss') },
+  { claim: 'sub', desc: t('admin.developer.claimSub') },
+  { claim: 'name', desc: t('admin.developer.claimName') },
+  { claim: 'email', desc: t('admin.developer.claimEmail') },
+  { claim: 'iat / exp', desc: t('admin.developer.claimTimes') }
+])
 
-const endpoints = [
-  { method: 'GET', path: '/v1/conversations', desc: 'List the user’s conversations' },
-  { method: 'POST', path: '/v1/conversations', desc: 'Start one' },
-  { method: 'GET', path: '/v1/conversations/:id/messages', desc: 'Transcript; page with ?before=' },
-  { method: 'POST', path: '/v1/conversations/:id/messages', desc: 'Send a message' },
-  { method: 'POST', path: '/v1/conversations/:id/read', desc: 'Mark as read' },
-  { method: 'DELETE', path: '/v1/messages/:id', desc: 'Unsend' },
-  { method: 'GET', path: '/v1/unread', desc: 'Unread counts' },
-  { method: 'POST', path: '/v1/attachments', desc: 'Multipart `file`' },
-  { method: 'GET', path: '/v1/events', desc: 'Server-sent events' }
-]
+const endpoints = computed(() => [
+  { method: 'GET', path: '/v1/conversations', desc: t('admin.developer.epListConversations') },
+  { method: 'POST', path: '/v1/conversations', desc: t('admin.developer.epStartOne') },
+  { method: 'GET', path: '/v1/conversations/:id/messages', desc: t('admin.developer.epTranscript') },
+  { method: 'POST', path: '/v1/conversations/:id/messages', desc: t('admin.developer.epSendMessage') },
+  { method: 'POST', path: '/v1/conversations/:id/read', desc: t('admin.developer.epMarkRead') },
+  { method: 'DELETE', path: '/v1/messages/:id', desc: t('admin.developer.epUnsend') },
+  { method: 'GET', path: '/v1/unread', desc: t('admin.developer.epUnread') },
+  { method: 'POST', path: '/v1/attachments', desc: t('admin.developer.epAttachments') },
+  { method: 'GET', path: '/v1/events', desc: t('admin.developer.epServerEvents') }
+])
 
-const serverEndpoints = [
-  { method: 'POST', path: '/v1/contacts', desc: 'Create or update one, or up to 1000' },
-  { method: 'GET', path: '/v1/contacts', desc: 'List; ?segment=, ?updatedSince=, ?email=' },
-  { method: 'PATCH', path: '/v1/contacts/:id', desc: 'Attributes, tags, subscription' },
-  { method: 'DELETE', path: '/v1/contacts/:id', desc: 'Erase a person' },
-  { method: 'POST', path: '/v1/segments', desc: 'Save a filter' },
-  { method: 'POST', path: '/v1/track', desc: 'An event; starts sequences' },
-  { method: 'POST', path: '/v1/campaigns', desc: 'A broadcast; PATCH to send' },
-  { method: 'POST', path: '/v1/sequences', desc: 'An automated series' },
-  { method: 'POST', path: '/v1/subscribe', desc: 'Public sign-up (pk), double opt-in' },
-  { method: 'POST', path: '/v1/emails/send', desc: 'Transactional email' }
-]
+const serverEndpoints = computed(() => [
+  { method: 'POST', path: '/v1/contacts', desc: t('admin.developer.epContactsCreate') },
+  { method: 'GET', path: '/v1/contacts', desc: t('admin.developer.epContactsList') },
+  { method: 'PATCH', path: '/v1/contacts/:id', desc: t('admin.developer.epContactsPatch') },
+  { method: 'DELETE', path: '/v1/contacts/:id', desc: t('admin.developer.epContactsDelete') },
+  { method: 'POST', path: '/v1/segments', desc: t('admin.developer.epSegments') },
+  { method: 'POST', path: '/v1/track', desc: t('admin.developer.epTrack') },
+  { method: 'POST', path: '/v1/campaigns', desc: t('admin.developer.epCampaigns') },
+  { method: 'POST', path: '/v1/sequences', desc: t('admin.developer.epSequences') },
+  { method: 'POST', path: '/v1/subscribe', desc: t('admin.developer.epSubscribe') },
+  { method: 'POST', path: '/v1/emails/send', desc: t('admin.developer.epEmailsSend') }
+])
 
 const mintSnippet = `import { createHmac } from 'node:crypto'
 

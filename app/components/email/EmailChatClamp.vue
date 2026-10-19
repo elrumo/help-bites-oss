@@ -32,7 +32,7 @@ const tall = computed(() => !props.disabled && height.value > props.max + 32)
       :aria-expanded="open"
       @click="open = !open"
     >
-      {{ open ? 'Show less' : 'Show more' }}
+      {{ open ? $t('emailEditor.showLess') : $t('emailEditor.showMore') }}
       <UIcon name="i-lucide-chevron-down" class="size-3.5 transition-transform duration-300" :class="open && 'rotate-180'" />
     </button>
   </div>

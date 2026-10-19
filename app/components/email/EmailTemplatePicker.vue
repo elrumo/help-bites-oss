@@ -16,8 +16,6 @@ const props = withDefaults(defineProps<{
   description?: string
   showBlank?: boolean
 }>(), {
-  title: 'Choose an email template',
-  description: 'Start from a ready-made structure, then customize every block.',
   showBlank: true
 })
 
@@ -26,6 +24,10 @@ const emit = defineEmits<{
   (e: 'select', payload: { template: EmailTemplateDefinition, document: EmailDocument }): void
   (e: 'blank', document: EmailDocument): void
 }>()
+
+const { t } = useI18n()
+const modalTitle = computed(() => props.title ?? t('emailLibrary.picker.title'))
+const modalDescription = computed(() => props.description ?? t('emailLibrary.picker.description'))
 
 type TypeFilter = 'All' | EmailTemplateType
 type StyleFilter = 'All' | EmailTemplateStyle
@@ -62,8 +64,8 @@ function chooseBlank() {
 <template>
   <UModal
     :open="open"
-    :title="props.title"
-    :description="props.description"
+    :title="modalTitle"
+    :description="modalDescription"
     @update:open="(value: boolean) => emit('update:open', value)"
   >
     <template #body>
@@ -73,7 +75,7 @@ function chooseBlank() {
             <UButton
               v-for="type in typeFilters"
               :key="type"
-              :label="type"
+              :label="type === 'All' ? $t('emailLibrary.picker.all') : type"
               size="xs"
               :color="selectedType === type ? 'primary' : 'neutral'"
               :variant="selectedType === type ? 'soft' : 'outline'"
@@ -84,7 +86,7 @@ function chooseBlank() {
             <UButton
               v-for="style in styleFilters"
               :key="style"
-              :label="style"
+              :label="style === 'All' ? $t('emailLibrary.picker.all') : style"
               size="xs"
               :color="selectedStyle === style ? 'primary' : 'neutral'"
               :variant="selectedStyle === style ? 'soft' : 'outline'"
@@ -170,7 +172,7 @@ function chooseBlank() {
       <div class="flex w-full justify-between gap-2">
         <UButton
           v-if="showBlank"
-          label="Start blank"
+          :label="$t('emailLibrary.picker.startBlank')"
           icon="i-lucide-file"
           color="neutral"
           variant="ghost"
@@ -179,7 +181,7 @@ function chooseBlank() {
         />
         <span v-else />
         <UButton
-          label="Close"
+          :label="$t('emailLibrary.picker.close')"
           color="neutral"
           variant="ghost"
           @click="emit('update:open', false)"

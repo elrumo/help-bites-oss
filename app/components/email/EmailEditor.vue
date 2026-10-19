@@ -61,6 +61,7 @@ const props = defineProps<{
 }>()
 
 const toast = useToast()
+const { t } = useI18n()
 
 const document = ref<EmailDocument>(props.template.document!)
 const variables = ref<TemplateVariable[]>(props.template.variables)
@@ -68,10 +69,10 @@ const name = ref(props.template.name)
 const selectedId = ref<string | null>(null)
 const templateOpen = ref(false)
 const rightTab = ref<string | number>('design')
-const rightTabs = [
-  { label: 'Design', icon: 'i-lucide-sliders-horizontal', value: 'design' },
-  { label: 'Variables', icon: 'i-lucide-braces', value: 'variables' }
-]
+const rightTabs = computed(() => [
+  { label: t('emailEditor.design'), icon: 'i-lucide-sliders-horizontal', value: 'design' },
+  { label: t('emailEditor.variables'), icon: 'i-lucide-braces', value: 'variables' }
+])
 const aiOpen = ref(true)
 const layersOpen = ref(true)
 
@@ -145,7 +146,7 @@ const chatRef = ref<InstanceType<typeof EmailChat> | null>(null)
 
 function fixWithAi() {
   aiOpen.value = true
-  chatRef.value?.send(`Fix these problems found by the email checks (skip any that need information only I have, and tell me what I must do):\n${issues.value.map(i => `- ${i.fix}`).join('\n')}`)
+  chatRef.value?.send(t('emailEditor.quick.fixPrompt', { issues: issues.value.map(i => `- ${i.fix}`).join('\n') }))
 }
 
 // ---- preview ---------------------------------------------------------------
@@ -180,7 +181,7 @@ const saveNow = useDebounceFn(async () => {
     }
   } catch (error: any) {
     saveError.value = true
-    toast.add({ title: 'Autosave failed', description: error?.message, color: 'error' })
+    toast.add({ title: t('emailEditor.autosaveFailed'), description: error?.message, color: 'error' })
   } finally {
     saving.value = false
   }
@@ -231,9 +232,9 @@ const addItems = computed(() => [
   })),
   ...(props.agentToken
     ? [[
-        { type: 'label' as const, label: 'Components' },
+        { type: 'label' as const, label: t('emailEditor.components') },
         ...library.value.map(c => ({ label: c.name, description: c.description || undefined, icon: 'i-lucide-puzzle', onSelect: () => insert('component', componentInstance(c)) })),
-        { label: 'New component…', icon: 'i-lucide-plus', onSelect: () => openComponentDialog({}) }
+        { label: t('emailEditor.newComponentMore'), icon: 'i-lucide-plus', onSelect: () => openComponentDialog({}) }
       ]]
     : [])
 ])
@@ -294,12 +295,12 @@ function onComponentSaved(def: EmailComponentDef) {
   if (!res.ok) return
   document.value = res.doc
   selectedId.value = res.ids[0] ?? null
-  toast.add({ title: `Saved “${def.name}” to the library`, color: 'success' })
+  toast.add({ title: t('emailEditor.savedComponent', { name: def.name }), color: 'success' })
 }
 
 function askAiForComponent() {
   aiOpen.value = true
-  chatRef.value?.send('Save the selected block to the component library as a reusable component, with its copy as content fields and its colours and sizes as style fields, then use it here.')
+  chatRef.value?.send(t('emailEditor.quick.reusablePrompt'))
 }
 
 function applyTemplate(payload: { template: EmailTemplateDefinition, document: EmailDocument }) {
@@ -307,7 +308,7 @@ function applyTemplate(payload: { template: EmailTemplateDefinition, document: E
   if (props.canRename) name.value = payload.template.name
   selectedId.value = null
   templateOpen.value = false
-  toast.add({ title: `Applied “${payload.template.name}”`, color: 'success' })
+  toast.add({ title: t('emailEditor.appliedTemplate', { name: payload.template.name }), color: 'success' })
 }
 
 function applyBlank(next: EmailDocument) {
@@ -339,7 +340,7 @@ const sendKey = ref(props.template.key)
 const exportItems = computed(() => [exportItemsFor(
   () => ({ name: name.value, rendered: previewDocument.value, design: document.value, variables: variables.value }),
   props.agentToken ? () => { apiOpen.value = true } : undefined
-), ...(props.onSendTest ? [[{ label: 'Send test email', icon: 'i-lucide-send', onSelect: props.onSendTest }]] : [])])
+), ...(props.onSendTest ? [[{ label: t('emailEditor.sendTest'), icon: 'i-lucide-send', onSelect: props.onSendTest }]] : [])])
 const apiTemplate = computed<EmailTemplate>(() => ({ ...props.template, name: name.value, key: sendKey.value, document: document.value, variables: variables.value }))
 
 // ---- layout ------------------------------------------------------------------
@@ -390,36 +391,36 @@ function onSplitDrag(e: PointerEvent) {
   aiShare.value = clampShare(((e.clientY - box.top) / box.height) * 100)
 }
 
-useHead({ title: () => name.value || 'Email' })
+useHead({ title: () => name.value || t('sections.email') })
 </script>
 
 <template>
   <div class="flex h-full min-h-0 flex-col bg-(--pc-bg)">
     <header class="flex h-12 shrink-0 items-center gap-1 border-b border-default bg-default px-2.5">
-      <UButton v-if="backTo" :to="backTo" color="neutral" variant="ghost" size="xs" icon="i-lucide-arrow-left" aria-label="Back" />
+      <UButton v-if="backTo" :to="backTo" color="neutral" variant="ghost" size="xs" icon="i-lucide-arrow-left" :aria-label="$t('emailEditor.back')" />
       <slot name="badge" />
       <UInput
         v-model="name"
         variant="none"
-        placeholder="Untitled email"
+        :placeholder="$t('emailEditor.untitledEmail')"
         :disabled="!canRename"
         :ui="{ base: 'text-sm font-medium px-1' }"
         class="min-w-0 max-w-[16rem] flex-1"
-        aria-label="Template name"
+        :aria-label="$t('emailEditor.templateName')"
       />
       <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-default bg-elevated px-2 py-0.5 text-[11px] font-medium text-muted">
         <UIcon v-if="saving" name="i-lucide-loader-circle" class="size-3 animate-spin" />
         <span v-else class="size-1.5 rounded-full" :class="saveError ? 'bg-error' : 'bg-success'" />
-        <span class="hidden sm:inline">{{ saving ? 'Saving' : saveError ? 'Not saved' : 'Saved' }}</span>
+        <span class="hidden sm:inline">{{ saving ? $t('emailEditor.saving') : saveError ? $t('emailEditor.notSaved') : $t('common.saved') }}</span>
       </span>
       <div class="flex-1" />
-      <UButton icon="i-lucide-undo-2" color="neutral" variant="ghost" size="xs" aria-label="Undo" :disabled="!canUndo" @click="undo" />
-      <UButton icon="i-lucide-redo-2" color="neutral" variant="ghost" size="xs" aria-label="Redo" :disabled="!canRedo" @click="redo" />
+      <UButton icon="i-lucide-undo-2" color="neutral" variant="ghost" size="xs" :aria-label="$t('emailEditor.undo')" :disabled="!canUndo" @click="undo" />
+      <UButton icon="i-lucide-redo-2" color="neutral" variant="ghost" size="xs" :aria-label="$t('emailEditor.redo')" :disabled="!canRedo" @click="redo" />
       <div class="mx-1 h-4 w-px bg-(--ui-border)" />
       <UDropdownMenu :items="addItems">
-        <UButton icon="i-lucide-plus" label="Add" color="neutral" variant="ghost" size="xs" :ui="{ label: 'hidden sm:inline' }" />
+        <UButton icon="i-lucide-plus" :label="$t('emailEditor.add')" color="neutral" variant="ghost" size="xs" :ui="{ label: 'hidden sm:inline' }" />
       </UDropdownMenu>
-      <UButton icon="i-lucide-layout-template" color="neutral" variant="ghost" size="xs" aria-label="Start from a template" @click="templateOpen = true" />
+      <UButton icon="i-lucide-layout-template" color="neutral" variant="ghost" size="xs" :aria-label="$t('emailEditor.startFromTemplate')" @click="templateOpen = true" />
       <div class="hidden sm:flex items-center rounded-md border border-default p-0.5">
         <UButton
           v-for="d in previewDevices"
@@ -428,7 +429,7 @@ useHead({ title: () => name.value || 'Email' })
           size="xs"
           :color="previewDeviceId === d.id ? 'primary' : 'neutral'"
           :variant="previewDeviceId === d.id ? 'soft' : 'ghost'"
-          :aria-label="`${d.label} preview`"
+          :aria-label="$t(`emailEditor.devices.${d.id}`)"
           @click="previewDeviceId = d.id"
         />
       </div>
@@ -439,11 +440,11 @@ useHead({ title: () => name.value || 'Email' })
           :color="issues.some(i => i.level === 'error') ? 'error' : issues.length ? 'warning' : 'neutral'"
           variant="ghost"
           size="xs"
-          :aria-label="issues.length ? `${issues.length} checks failing` : 'All checks pass'"
+          :aria-label="issues.length ? $t('emailEditor.checksFailing', issues.length) : $t('emailEditor.allChecksPass')"
         />
         <template #content>
           <div class="w-80 p-2">
-            <p class="px-1.5 pb-1.5 text-xs font-medium text-muted">{{ issues.length ? 'Checks' : 'All checks pass' }}</p>
+            <p class="px-1.5 pb-1.5 text-xs font-medium text-muted">{{ issues.length ? $t('emailEditor.checks') : $t('emailEditor.allChecksPass') }}</p>
             <button
               v-for="(issue, i) in issues"
               :key="i"
@@ -454,14 +455,14 @@ useHead({ title: () => name.value || 'Email' })
               <UIcon :name="issue.level === 'error' ? 'i-lucide-circle-alert' : 'i-lucide-triangle-alert'" class="mt-0.5 size-4 shrink-0" :class="issue.level === 'error' ? 'text-error' : 'text-warning'" />
               <span class="min-w-0 flex-1">{{ issue.message }}</span>
             </button>
-            <UButton v-if="issues.length && agentToken" icon="i-lucide-sparkles" label="Fix with AI" size="xs" color="primary" variant="soft" block class="mt-1.5" @click="fixWithAi" />
+            <UButton v-if="issues.length && agentToken" icon="i-lucide-sparkles" :label="$t('emailEditor.fixWithAi')" size="xs" color="primary" variant="soft" block class="mt-1.5" @click="fixWithAi" />
           </div>
         </template>
       </UPopover>
       <slot name="actions" />
       <UColorModeButton color="neutral" variant="ghost" size="xs" />
       <UDropdownMenu :items="exportItems">
-        <UButton icon="i-lucide-code-xml" label="Export" color="neutral" variant="solid" size="xs" :ui="{ label: 'hidden sm:inline' }" />
+        <UButton icon="i-lucide-code-xml" :label="$t('emailEditor.export')" color="neutral" variant="solid" size="xs" :ui="{ label: 'hidden sm:inline' }" />
       </UDropdownMenu>
     </header>
 
@@ -488,7 +489,7 @@ useHead({ title: () => name.value || 'Email' })
               class="flex-1"
               :ui="sectionUi"
             >
-              <UButton label="AI designer" icon="i-lucide-chevron-right" v-bind="sectionTrigger" />
+              <UButton :label="$t('emailEditor.aiDesigner')" icon="i-lucide-chevron-right" v-bind="sectionTrigger" />
               <template #content>
                 <EmailChat
                   ref="chatRef"
@@ -521,7 +522,7 @@ useHead({ title: () => name.value || 'Email' })
             v-if="agentToken && aiOpen && layersOpen"
             role="separator"
             aria-orientation="horizontal"
-            aria-label="Resize the AI designer and Layers"
+            :aria-label="$t('emailEditor.resizeSplit')"
             :aria-valuenow="Math.round(aiShare)"
             aria-valuemin="0"
             aria-valuemax="100"
@@ -544,7 +545,7 @@ useHead({ title: () => name.value || 'Email' })
             :style="{ flex: `${layersGrow} 1 0px` }"
             :ui="sectionUi"
           >
-            <UButton :label="`Layers · ${document.blocks.length}`" icon="i-lucide-chevron-right" v-bind="sectionTrigger" />
+            <UButton :label="$t('emailEditor.layersCount', { n: document.blocks.length })" icon="i-lucide-chevron-right" v-bind="sectionTrigger" />
             <template #content>
               <EmailLayers
                 :blocks="document.blocks"
@@ -618,8 +619,8 @@ useHead({ title: () => name.value || 'Email' })
 
     <EmailTemplatePicker
       v-model:open="templateOpen"
-      title="Start from a template"
-      description="Replaces this design. Undo brings it back."
+      :title="$t('emailEditor.startFromTemplate')"
+      :description="$t('emailEditor.replacesDesign')"
       @select="applyTemplate"
       @blank="applyBlank"
     />

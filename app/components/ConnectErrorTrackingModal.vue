@@ -1,23 +1,23 @@
 <template>
-  <UModal v-model:open="open" title="Connect error tracking" :description="existing.length ? 'Add another GlitchTip or Bugsink project this project reports to. Its errors join the others, each tagged with its name.' : 'Pick the GlitchTip or Bugsink server this project reports to. HelpBites creates the project there and turns new errors into inbox conversations.'">
+  <UModal v-model:open="open" :title="$t('errors.connect.title')" :description="existing.length ? $t('errors.connect.addAnother') : $t('errors.connect.pickServer')">
     <template #body>
       <div v-if="link?.alertWebhookUrl" class="space-y-3">
-        <p class="text-sm">Connected to {{ link.providerName }}. One step left: Bugsink can't add alert destinations through its API, so add this webhook by hand.</p>
+        <p class="text-sm">{{ $t('errors.connect.connectedTo', { provider: link.providerName }) }}</p>
         <ol class="list-decimal space-y-1 pl-5 text-sm text-muted">
-          <li>In Bugsink, open <span class="text-default">Projects</span>, find {{ link.label }} (under <span class="text-default">Team Projects</span>, or <span class="text-default">Other Projects</span> if you aren't in its team) and click its alerts (megaphone) icon.</li>
-          <li>Click <span class="text-default">Add</span>, set Kind to <span class="text-default">Slack</span> (HelpBites reads Slack-format alerts) and paste this as the Webhook url. Leave Discord and Mattermost alone.</li>
+          <li>{{ $t('errors.connect.bugsinkStep1', { link: link.label }) }}</li>
+          <li>{{ $t('errors.connect.bugsinkStep2') }}</li>
         </ol>
         <CodeBlock :code="link.alertWebhookUrl" lang="bash" />
         <div class="flex justify-end gap-2 pt-2">
-          <UButton color="neutral" variant="soft" :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'" :label="copied ? 'Copied' : 'Copy URL'" @click="copy(link.alertWebhookUrl)" />
-          <UButton label="Done" @click="open = false" />
+          <UButton color="neutral" variant="soft" :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'" :label="copied ? $t('workspaceSettings.copied') : $t('errors.connect.copyUrl')" @click="copy(link.alertWebhookUrl)" />
+          <UButton :label="$t('workspaceSettings.done')" @click="open = false" />
         </div>
       </div>
       <!-- Not a <form>: the add-server form inside is one. -->
       <div v-else class="space-y-4">
-        <p v-if="loading" class="text-sm text-muted">Loading error tracking servers…</p>
+        <p v-if="loading" class="text-sm text-muted">{{ $t('errors.connect.loading') }}</p>
         <template v-else>
-          <div v-if="servers.length" class="grid gap-2" role="radiogroup" aria-label="Error tracking server">
+          <div v-if="servers.length" class="grid gap-2" role="radiogroup" :aria-label="$t('errors.connect.serverAria')">
             <button v-for="server in servers" :key="server.id" type="button" role="radio" :aria-checked="selected === server.id" class="flex items-start gap-3 rounded-lg border p-3 text-left transition-colors" :class="selected === server.id ? 'border-primary bg-primary/5' : 'border-default hover:bg-elevated'" @click="selected = server.id; adding = false">
               <UIcon :name="selected === server.id ? 'i-lucide-circle-dot' : 'i-lucide-circle'" class="mt-0.5 size-4 shrink-0" :class="selected === server.id ? 'text-primary' : 'text-dimmed'" />
               <span class="min-w-0 flex-1">
@@ -26,19 +26,19 @@
               </span>
             </button>
           </div>
-          <UFormField v-if="current && !adding" :label="`Project name in ${current.providerName}`" :description="existing.length ? `Already connected: ${existing.map(item => item.label).join(', ')}. A new name creates another project; an existing one in the team is reused.` : 'Created if it does not exist yet, or reused if it does.'">
+          <UFormField v-if="current && !adding" :label="$t('errors.connect.projectName', { provider: current.providerName })" :description="existing.length ? $t('errors.connect.alreadyConnected', { list: existing.map(item => item.label).join(', ') }) : $t('errors.connect.createdIfNeeded')">
             <UInput v-model="name" class="w-full" :placeholder="project?.name" />
           </UFormField>
-          <UFormField v-if="current?.provider === 'bugsink' && teams.length && !adding" label="Team" description="Pick a team you belong to so the project shows under Team Projects in Bugsink.">
+          <UFormField v-if="current?.provider === 'bugsink' && teams.length && !adding" :label="$t('errors.manage.team')" :description="$t('errors.connect.teamHelp')">
             <USelect v-model="team" :items="teams" class="w-full" />
           </UFormField>
           <SettingsErrorServerForm v-if="adding || !servers.length" :providers="providers" :cancellable="servers.length > 0" @saved="added" @cancel="adding = false" />
-          <UButton v-else color="neutral" variant="link" size="sm" class="px-0" icon="i-lucide-plus" label="Add another server" @click="adding = true" />
+          <UButton v-else color="neutral" variant="link" size="sm" class="px-0" icon="i-lucide-plus" :label="$t('errors.connect.addServer')" @click="adding = true" />
         </template>
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
         <div class="flex justify-end gap-2 pt-2">
-          <UButton color="neutral" variant="ghost" @click="open = false">Cancel</UButton>
-          <UButton :loading="busy" :disabled="!current || adding || (existing.length > 0 && !name.trim())" :label="current ? `Connect ${current.name}` : 'Connect'" @click="submit" />
+          <UButton color="neutral" variant="ghost" @click="open = false">{{ $t('common.cancel') }}</UButton>
+          <UButton :loading="busy" :disabled="!current || adding || (existing.length > 0 && !name.trim())" :label="current ? $t('errors.connect.connectName', { name: current.name }) : $t('workspaceSettings.connect')" @click="submit" />
         </div>
       </div>
     </template>
@@ -55,10 +55,11 @@ const props = defineProps<{ projectId: string }>()
 const emit = defineEmits<{ (event: 'connected', project: AdminProject): void }>()
 
 const { api, projects } = useAgent()
-const blurbs: Record<string, string> = {
-  glitchtip: 'Creates the project, DSN and an inbox alert automatically.',
-  bugsink: 'Creates the project and DSN; you paste one alert webhook into Bugsink.'
-}
+const { t } = useI18n()
+const blurbs = computed<Record<string, string>>(() => ({
+  glitchtip: t('errors.connect.blurbGlitchtip'),
+  bugsink: t('errors.connect.blurbBugsink')
+}))
 const servers = ref<ErrorServerView[]>([])
 const providers = ref<ErrorProviderView[]>([])
 const selected = ref('')
@@ -98,7 +99,7 @@ watch(open, async (value) => {
     const result = await api<{ servers: ErrorServerView[], providers: ErrorProviderView[] }>('/admin/errors/servers')
     servers.value = result.servers; providers.value = result.providers
     selected.value = servers.value[0]?.id || ''
-  } catch (cause: any) { error.value = cause.message || 'Could not load error tracking servers' } finally { loading.value = false }
+  } catch (cause: any) { error.value = cause.message || t('errors.connect.loadFailed') } finally { loading.value = false }
 }, { immediate: true })
 
 async function copy(text: string) {
@@ -112,6 +113,6 @@ async function submit() {
     emit('connected', result.project)
     if (result.link.alertWebhookUrl) link.value = result.link
     else open.value = false
-  } catch (cause: any) { error.value = cause.message || 'Could not connect error tracking' } finally { busy.value = false }
+  } catch (cause: any) { error.value = cause.message || t('errors.connect.connectFailed') } finally { busy.value = false }
 }
 </script>

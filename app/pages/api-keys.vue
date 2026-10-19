@@ -1,6 +1,6 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader title="API keys" />
+    <PageHeader :title="$t('admin.apiKeys')" />
     <div class="min-h-0 flex-1 overflow-y-auto">
       <SettingsApiKeys class="mx-auto max-w-2xl px-6 py-8" />
     </div>

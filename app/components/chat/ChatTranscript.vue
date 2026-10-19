@@ -7,14 +7,14 @@
     </div>
 
     <div v-else-if="!messages.length" class="h-full flex flex-col items-center justify-center text-center">
-      <slot name="empty"><p class="text-sm text-stone-500 dark:text-stone-400">{{ emptyText }}</p></slot>
+      <slot name="empty"><p class="text-sm text-stone-500 dark:text-stone-400">{{ emptyText ?? $t('chat.noMessagesYet') }}</p></slot>
     </div>
 
     <div v-else ref="contentRef" class="min-h-full flex flex-col">
       <div class="mt-auto" />
 
       <div v-if="hasEarlier" class="flex justify-center pb-2">
-        <UButton label="Load earlier messages" color="neutral" variant="ghost" size="xs" :loading="loadingEarlier" @click="emit('load-earlier')" />
+        <UButton :label="$t('chat.loadEarlier')" color="neutral" variant="ghost" size="xs" :loading="loadingEarlier" @click="emit('load-earlier')" />
       </div>
 
       <div
@@ -54,7 +54,7 @@
             <p v-if="message.kind === 'event'" class="my-2 px-2 text-[11px] font-medium text-stone-500 dark:text-stone-400">
               {{ eventLabel(message) }}
             </p>
-            <span v-else-if="message.visibility === 'internal'" class="mb-0.5 flex items-center gap-1 px-1 text-[11px] font-medium text-amber-700 dark:text-amber-300"><UIcon name="i-lucide-lock-keyhole" class="size-3" />Internal note</span>
+            <span v-else-if="message.visibility === 'internal'" class="mb-0.5 flex items-center gap-1 px-1 text-[11px] font-medium text-amber-700 dark:text-amber-300"><UIcon name="i-lucide-lock-keyhole" class="size-3" />{{ $t('chat.internalNote') }}</span>
             <!-- Context card: what this message is about in the host app. -->
             <a
               v-if="message.context"
@@ -95,7 +95,7 @@
                   :key="emoji"
                   type="button"
                   class="size-8 rounded-full text-[17px] leading-none flex items-center justify-center hover:bg-stone-100 dark:hover:bg-stone-700 active:scale-90 transition-transform"
-                  :aria-label="`React ${emoji}`"
+                  :aria-label="$t('chat.reactWith', { emoji })"
                   @click="emit('react', message, emoji)"
                 >{{ emoji }}</button>
               </div>
@@ -109,7 +109,7 @@
                 :class="[message.delivery === 'pending' ? 'opacity-60' : '', isNew(message) ? (run.sender === ownSender ? 'animate-bubble-out' : 'animate-bubble-in') : '']"
                 @click="openPreview(file.url)"
               >
-                <img :src="file.url" alt="Attachment" class="block max-w-full max-h-[320px] object-contain" loading="lazy">
+                <img :src="file.url" :alt="$t('chat.attachment')" class="block max-w-full max-h-[320px] object-contain" loading="lazy">
               </button>
 
               <div v-if="message.body" class="relative max-w-full">
@@ -133,7 +133,7 @@
                   </div>
                 </UContextMenu>
               </div>
-              <span v-else-if="message.attachments.length" :data-bubble-id="message.id" class="sr-only">Image</span>
+              <span v-else-if="message.attachments.length" :data-bubble-id="message.id" class="sr-only">{{ $t('chat.image') }}</span>
 
               <UButton
                 v-if="canReply(message)"
@@ -144,7 +144,7 @@
                 square
                 class="absolute top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover/bubble:opacity-100 focus-visible:opacity-100 transition-opacity [@media(hover:none)]:hidden"
                 :class="run.sender === ownSender ? '-left-8' : '-right-8'"
-                aria-label="Reply"
+                :aria-label="$t('chat.reply')"
                 @click="reply(message)"
               />
             </div>
@@ -168,15 +168,15 @@
             </div>
 
             <div v-if="message.delivery === 'failed'" class="flex items-center gap-2 mb-1.5 max-w-full">
-              <span class="text-[11px] text-error text-right">{{ message.deliveryError || 'Not delivered' }}</span>
-              <button type="button" class="text-[11px] font-semibold text-primary-600 hover:underline shrink-0" @click="emit('retry', message)">Retry</button>
-              <button type="button" class="text-[11px] text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 shrink-0" @click="emit('discard', message)">Delete</button>
+              <span class="text-[11px] text-error text-right">{{ message.deliveryError || $t('chat.notDelivered') }}</span>
+              <button type="button" class="text-[11px] font-semibold text-primary-600 hover:underline shrink-0" @click="emit('retry', message)">{{ $t('chat.retry') }}</button>
+              <button type="button" class="text-[11px] text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 shrink-0" @click="emit('discard', message)">{{ $t('chat.delete') }}</button>
             </div>
 
             <span
               v-if="index === run.messages.length - 1 && run.sender === ownSender && !message.delivery && readAt && readAt >= message.createdAt && message.id === lastOwnId"
               class="text-[11px] text-stone-500 dark:text-stone-400 mb-1 mr-1"
-            >Read</span>
+            >{{ $t('chat.read') }}</span>
 
             <button
               v-if="replyCount(message)"
@@ -185,7 +185,7 @@
               :aria-expanded="openThreadId === message.id"
               @click="toggleThread(message)"
             >
-              {{ replyCount(message) }} {{ replyCount(message) === 1 ? 'reply' : 'replies' }}
+              {{ $t('chat.replies', replyCount(message)) }}
               <UIcon name="i-lucide-chevron-right" class="size-3.5" />
             </button>
           </div>
@@ -197,7 +197,7 @@
   <!-- Image lightbox: Messages opens attachments full-bleed, not in a new tab. -->
   <UModal v-model:open="previewOpen" :ui="{ content: 'sm:max-w-3xl bg-stone-950 dark:bg-stone-950 border-stone-800 dark:border-stone-800' }">
     <template #body>
-      <img v-if="previewUrl" :src="previewUrl" alt="Attachment" class="mx-auto max-h-[80vh] w-auto max-w-full object-contain">
+      <img v-if="previewUrl" :src="previewUrl" :alt="$t('chat.attachment')"class="mx-auto max-h-[80vh] w-auto max-w-full object-contain">
     </template>
   </UModal>
 </template>
@@ -209,6 +209,8 @@ import type { ContextMenuItem } from '@nuxt/ui'
 import { buildThreads, eventLabel, groupMessagesForDisplay } from '#shared/conversations'
 import { messagePreview, MESSAGE_REACTION_EMOJIS, type Message } from '#shared/support'
 import { chatSeparatorParts } from './chatTime'
+
+const { t } = useI18n()
 
 const REACTION_EMOJIS = MESSAGE_REACTION_EMOJIS
 
@@ -245,7 +247,7 @@ function sourceTag(run: { messages: Message[] }, index: number): { text: string,
   const previous = run.messages[index - 1]
   const prevSameSource = previous && previous.sender === 'agent' && previous.kind !== 'event' && previous.visibility !== 'internal' && Boolean(previous.supportAgentId) === ai
   if (prevSameSource) return null
-  return { text: ai ? `${message.senderName || 'Assistant'} · AI` : (message.senderName || 'Support'), ai }
+  return { text: ai ? `${message.senderName || t('chat.assistant')} · AI` : (message.senderName || t('chat.support')), ai }
 }
 
 const props = withDefaults(defineProps<{
@@ -263,7 +265,7 @@ const props = withDefaults(defineProps<{
   /** Older messages exist on the server; shows "Load earlier messages" up top. */
   hasEarlier?: boolean
   loadingEarlier?: boolean
-}>(), { ownSender: 'user', ownActor: '', readAt: null, loading: false, emptyText: 'No messages yet.', assistantLogo: '', hasEarlier: false, loadingEarlier: false })
+}>(), { ownSender: 'user', ownActor: '', readAt: null, loading: false, assistantLogo: '', hasEarlier: false, loadingEarlier: false })
 
 const emit = defineEmits<{
   (event: 'retry' | 'discard' | 'unsend', message: Message): void
@@ -337,14 +339,14 @@ function quoteFor(message: Message): Message | null {
 function bubbleMenu(message: Message) {
   // Messages puts the tapback row first; on web it lives in the context menu too.
   const react: ContextMenuItem[] = REACTION_EMOJIS.map(emoji => ({
-    label: `React ${emoji}`,
+    label: t('chat.reactWith', { emoji }),
     onSelect: () => emit('react', message, emoji)
   }))
   const items: ContextMenuItem[] = [
-    { label: 'Copy', icon: 'i-lucide-clipboard', onSelect: () => void navigator.clipboard?.writeText(message.body).catch(() => undefined) }
+    { label: t('chat.copy'), icon: 'i-lucide-clipboard', onSelect: () => void navigator.clipboard?.writeText(message.body).catch(() => undefined) }
   ]
-  if (canReply(message)) items.push({ label: 'Reply', icon: 'i-lucide-reply', onSelect: () => reply(message) })
-  if (message.sender === props.ownSender && !message.delivery) items.push({ label: 'Unsend', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('unsend', message) })
+  if (canReply(message)) items.push({ label: t('chat.reply'), icon: 'i-lucide-reply', onSelect: () => reply(message) })
+  if (message.sender === props.ownSender && !message.delivery) items.push({ label: t('chat.unsend'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('unsend', message) })
   return canReact(message) ? [react, items] : [items]
 }
 

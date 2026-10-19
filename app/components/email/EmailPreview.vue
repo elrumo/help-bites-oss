@@ -191,7 +191,7 @@ watch(() => props.device, () => nextTick(updateScale), { deep: true })
         <iframe
           ref="frame"
           :srcdoc="srcDoc"
-          title="Email preview"
+          :title="$t('emailLibrary.preview.frameTitle')"
           sandbox="allow-scripts"
           class="border-0 bg-white"
           :style="iframeStyle"

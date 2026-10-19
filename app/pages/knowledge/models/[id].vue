@@ -1,38 +1,38 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="model?.projectId" :crumbs="model ? [{ label: 'Knowledge base', to: `/projects/${model.projectId}/knowledge` }] : []" :title="model?.name || 'Knowledge model'">
+    <PageHeader :project-id="model?.projectId" :crumbs="model ? [{ label: $t('sections.knowledge'), to: `/projects/${model.projectId}/knowledge` }] : []" :title="model?.name || $t('knowledge.model.fallbackTitle')">
       <template #title><StatusDot v-if="model" :status="model.status" class="ml-1" /></template>
       <template #actions>
-        <UButton icon="i-lucide-sparkles" label="Test" color="neutral" variant="ghost" size="sm" class="hidden sm:inline-flex" @click="openTester" />
-        <UButton icon="i-lucide-file-up" label="Import" color="neutral" variant="outline" size="sm" @click="showImport = true" />
-        <UButton icon="i-lucide-plus" label="New FAQ" size="sm" @click="openFaq('')" />
+        <UButton icon="i-lucide-sparkles" :label="$t('knowledge.model.test')" color="neutral" variant="ghost" size="sm" class="hidden sm:inline-flex" @click="openTester" />
+        <UButton icon="i-lucide-file-up" :label="$t('knowledge.model.import')" color="neutral" variant="outline" size="sm" @click="showImport = true" />
+        <UButton icon="i-lucide-plus" :label="$t('knowledge.newFaq')" size="sm" @click="openFaq('')" />
         <UDropdownMenu :items="modelMenu" :content="{ align: 'end' }">
-          <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" size="sm" square aria-label="More actions" />
+          <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" size="sm" square :aria-label="$t('knowledge.model.moreActions')" />
         </UDropdownMenu>
       </template>
     </PageHeader>
 
     <div class="flex shrink-0 flex-wrap items-center gap-2 border-b border-default px-4 py-2.5">
-      <UInput v-model="faqSearch" icon="i-lucide-search" placeholder="Search questions and answers" size="sm" class="min-w-48 flex-1 sm:max-w-72" @keyup.enter="reloadFaqs" />
-      <OptionalSelect v-model="faqStatus" :items="faqStatusItems" none-label="All statuses" size="sm" class="w-32" aria-label="Status" @update:model-value="reloadFaqs" />
-      <OptionalSelect v-model="faqNode" :items="nodeItems" none-label="All themes" size="sm" class="w-40" aria-label="Theme" @update:model-value="reloadFaqs" />
+      <UInput v-model="faqSearch" icon="i-lucide-search" :placeholder="$t('knowledge.model.searchPlaceholder')" size="sm" class="min-w-48 flex-1 sm:max-w-72" @keyup.enter="reloadFaqs" />
+      <OptionalSelect v-model="faqStatus" :items="faqStatusItems" :none-label="$t('knowledge.model.allStatuses')" size="sm" class="w-32" :aria-label="$t('knowledge.statusLabel')" @update:model-value="reloadFaqs" />
+      <OptionalSelect v-model="faqNode" :items="nodeItems" :none-label="$t('knowledge.model.allThemes')" size="sm" class="w-40" :aria-label="$t('knowledge.theme')" @update:model-value="reloadFaqs" />
       <div v-if="dashboard" class="ml-auto hidden flex-wrap items-center gap-x-4 gap-y-1 lg:flex">
-        <KnowledgeStat :n="dashboard.faqsTotal" label="FAQs" />
-        <KnowledgeStat :n="dashboard.faqsActive" label="active" />
-        <KnowledgeStat :n="dashboard.faqsDraft" label="draft" />
-        <KnowledgeStat :n="dashboard.faqsOutdated" label="outdated" :warn="dashboard.faqsOutdated > 0" />
-        <KnowledgeStat :n="dashboard.nodes" label="themes" />
-        <KnowledgeStat :n="dashboard.documents" label="documents" />
-        <KnowledgeStat :n="dashboard.agents" label="assistants" />
+        <KnowledgeStat :n="dashboard.faqsTotal" :label="$t('knowledge.stats.faqs')" />
+        <KnowledgeStat :n="dashboard.faqsActive" :label="$t('knowledge.stats.active')" />
+        <KnowledgeStat :n="dashboard.faqsDraft" :label="$t('knowledge.stats.draft')" />
+        <KnowledgeStat :n="dashboard.faqsOutdated" :label="$t('knowledge.stats.outdated')" :warn="dashboard.faqsOutdated > 0" />
+        <KnowledgeStat :n="dashboard.nodes" :label="$t('knowledge.stats.themes')" />
+        <KnowledgeStat :n="dashboard.documents" :label="$t('knowledge.stats.documents')" />
+        <KnowledgeStat :n="dashboard.agents" :label="$t('knowledge.stats.assistants')" />
       </div>
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto py-2">
       <p v-if="model?.description" class="px-6 pb-2 pt-1 text-[13px] text-muted">{{ model.description }}</p>
       <div v-if="faqsLoading && !faqs.length" class="space-y-1 px-4 py-2"><USkeleton v-for="i in 6" :key="i" class="h-9" /></div>
-      <EmptyState v-else-if="!faqs.length" icon="i-lucide-message-circle-question" title="No FAQs here" description="Write one, or import a support document and review the FAQs it produces. Right-click an FAQ to move it to another theme.">
-        <UButton icon="i-lucide-file-up" label="Import a document" color="neutral" variant="outline" @click="showImport = true" />
-        <UButton icon="i-lucide-plus" label="New FAQ" @click="openFaq('')" />
+      <EmptyState v-else-if="!faqs.length" icon="i-lucide-message-circle-question" :title="$t('knowledge.model.emptyTitle')" :description="$t('knowledge.model.emptyDescription')">
+        <UButton icon="i-lucide-file-up" :label="$t('knowledge.model.importDocument')" color="neutral" variant="outline" @click="showImport = true" />
+        <UButton icon="i-lucide-plus" :label="$t('knowledge.newFaq')" @click="openFaq('')" />
       </EmptyState>
       <div
         v-for="f in faqs"
@@ -41,35 +41,35 @@
         class="group mx-2 flex h-11 items-center gap-3 rounded-lg px-3 text-[13px] transition-colors hover:bg-elevated"
         :class="selectedFaqs.has(f.id) ? 'bg-primary-500/8' : ''"
       >
-        <UCheckbox :model-value="selectedFaqs.has(f.id)" :class="selectedFaqs.size ? '' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'" :aria-label="`Select ${f.question}`" @update:model-value="toggleSelect(f.id)" @click.stop />
+        <UCheckbox :model-value="selectedFaqs.has(f.id)" :class="selectedFaqs.size ? '' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'" :aria-label="$t('knowledge.model.selectFaq', { question: f.question })" @update:model-value="toggleSelect(f.id)" @click.stop />
         <UContextMenu :items="faqMenu(f)" class="min-w-0 flex-1">
           <button class="flex w-full min-w-0 items-baseline gap-2 text-left" @click="openFaq(f.id)">
             <span class="shrink-0 truncate font-medium text-highlighted sm:max-w-[60%]">{{ f.question }}</span>
-            <span class="hidden truncate text-muted sm:inline">{{ f.pathCache || 'No theme' }}</span>
+            <span class="hidden truncate text-muted sm:inline">{{ f.pathCache || $t('knowledge.model.noTheme') }}</span>
           </button>
         </UContextMenu>
-        <span class="hidden w-16 truncate text-xs text-dimmed sm:inline" :title="f.origin">{{ f.origin }}</span>
-        <span class="hidden w-10 items-center gap-1 text-xs text-dimmed md:inline-flex" :title="`${f.agents?.length || 0} assistants`"><UIcon name="i-lucide-sparkles" class="size-3" />{{ f.agents?.length || 0 }}</span>
+        <span class="hidden w-16 truncate text-xs text-dimmed sm:inline" :title="f.origin">{{ $t(`knowledge.origin.${f.origin}`) }}</span>
+        <span class="hidden w-10 items-center gap-1 text-xs text-dimmed md:inline-flex" :title="$t('knowledge.units.assistant', f.agents?.length || 0)"><UIcon name="i-lucide-sparkles" class="size-3" />{{ f.agents?.length || 0 }}</span>
         <StatusDot :status="f.status" class="w-20" />
         <span class="hidden w-16 text-right text-xs text-muted lg:inline">{{ f.updatedAt ? new Date(f.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '' }}</span>
       </div>
 
       <div v-if="faqTotal > faqLimit" class="flex items-center justify-between px-6 pt-3 text-xs text-muted">
-        <span class="tabular-nums">{{ faqSkip + 1 }}–{{ Math.min(faqSkip + faqLimit, faqTotal) }} of {{ faqTotal }}</span>
+        <span class="tabular-nums">{{ $t('knowledge.model.pageRange', { from: faqSkip + 1, to: Math.min(faqSkip + faqLimit, faqTotal), total: faqTotal }) }}</span>
         <div class="flex gap-1">
-          <UButton icon="i-lucide-chevron-left" size="xs" color="neutral" variant="outline" square aria-label="Previous page" :disabled="faqSkip === 0" @click="pageFaqs(-1)" />
-          <UButton icon="i-lucide-chevron-right" size="xs" color="neutral" variant="outline" square aria-label="Next page" :disabled="faqSkip + faqLimit >= faqTotal" @click="pageFaqs(1)" />
+          <UButton icon="i-lucide-chevron-left" size="xs" color="neutral" variant="outline" square :aria-label="$t('knowledge.model.previousPage')" :disabled="faqSkip === 0" @click="pageFaqs(-1)" />
+          <UButton icon="i-lucide-chevron-right" size="xs" color="neutral" variant="outline" square :aria-label="$t('knowledge.model.nextPage')" :disabled="faqSkip + faqLimit >= faqTotal" @click="pageFaqs(1)" />
         </div>
       </div>
     </div>
 
     <!-- Linear's selection bar: floats over the list while FAQs are selected. -->
     <div v-if="selectedFaqs.size" class="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-default bg-default py-1.5 pl-3 pr-1.5 text-[13px] shadow-2xl">
-      <span class="whitespace-nowrap font-medium tabular-nums text-highlighted">{{ selectedFaqs.size }} selected</span>
-      <USelect v-model="bulkStatus" :items="faqStatusItems" size="sm" class="w-32" placeholder="Set status" @update:model-value="bulkSetStatus" />
-      <USelect v-model="bulkNode" :items="nodeItems" size="sm" class="w-36" placeholder="Move to theme" @update:model-value="bulkMove" />
-      <UButton icon="i-lucide-trash-2" size="sm" color="error" variant="ghost" square aria-label="Delete selected" @click="bulkDelete" />
-      <UButton icon="i-lucide-x" size="sm" color="neutral" variant="ghost" square aria-label="Clear selection" @click="selectedFaqs.clear()" />
+      <span class="whitespace-nowrap font-medium tabular-nums text-highlighted">{{ $t('knowledge.selectedCount', { count: selectedFaqs.size }) }}</span>
+      <USelect v-model="bulkStatus" :items="faqStatusItems" size="sm" class="w-32" :placeholder="$t('knowledge.model.setStatus')" @update:model-value="bulkSetStatus" />
+      <USelect v-model="bulkNode" :items="nodeItems" size="sm" class="w-36" :placeholder="$t('knowledge.model.moveToTheme')" @update:model-value="bulkMove" />
+      <UButton icon="i-lucide-trash-2" size="sm" color="error" variant="ghost" square :aria-label="$t('knowledge.model.deleteSelected')" @click="bulkDelete" />
+      <UButton icon="i-lucide-x" size="sm" color="neutral" variant="ghost" square :aria-label="$t('knowledge.model.clearSelection')" @click="selectedFaqs.clear()" />
     </div>
 
     <!-- modals -->
@@ -77,18 +77,18 @@
     <KnowledgeFaqEditor v-model:open="showFaq" :model-id="id" :faq-id="editFaqId" :nodes="nodes" @saved="afterFaqSaved" />
 
     <!-- Themes (formerly the Tree tab) -->
-    <UModal v-model:open="showThemes" title="Themes" description="Organise FAQs into themes; select one to see its FAQs.">
+    <UModal v-model:open="showThemes" :title="$t('knowledge.model.themes')" :description="$t('knowledge.model.themesDescription')">
       <template #body>
         <div class="grid sm:grid-cols-2 gap-5">
           <KnowledgeTree ref="treeRef" :model-id="id" @changed="onStructureChanged" @select="onThemeSelect" />
           <div class="min-w-0">
-            <p v-if="!themeSelected" class="text-sm text-muted">Select a theme on the left to see and open its FAQs.</p>
+            <p v-if="!themeSelected" class="text-sm text-muted">{{ $t('knowledge.model.selectThemePrompt') }}</p>
             <template v-else>
               <div class="mb-2 flex items-center justify-between gap-2">
                 <p class="min-w-0 truncate text-sm font-medium">{{ themeSelectedLabel }}</p>
-                <UButton size="xs" variant="ghost" color="neutral" @click="filterByTheme">Show in list</UButton>
+                <UButton size="xs" variant="ghost" color="neutral" @click="filterByTheme">{{ $t('knowledge.model.showInList') }}</UButton>
               </div>
-              <p v-if="!themeFaqs.length" class="text-xs text-muted">No FAQs in this theme yet.</p>
+              <p v-if="!themeFaqs.length" class="text-xs text-muted">{{ $t('knowledge.model.noThemeFaqs') }}</p>
               <ul v-else class="max-h-72 divide-y divide-default overflow-y-auto border-y border-default">
                 <li v-for="f in themeFaqs" :key="f.id" class="py-1.5">
                   <button class="w-full truncate text-left text-sm hover:text-primary-600" @click="openFaq(f.id)">{{ f.question }}</button>
@@ -101,29 +101,29 @@
     </UModal>
 
     <!-- Documents (formerly the Documents tab) -->
-    <UModal v-model:open="showDocs" title="Source documents" description="Reprocess to re-import without duplicating; replace to upload a new version.">
+    <UModal v-model:open="showDocs" :title="$t('knowledge.model.sourceDocuments')" :description="$t('knowledge.model.documentsDescription')">
       <template #body>
         <div class="space-y-3">
           <div class="flex justify-end">
-            <UButton color="primary" size="xs" icon="i-lucide-file-up" @click="showImport = true">Import</UButton>
+            <UButton color="primary" size="xs" icon="i-lucide-file-up" @click="showImport = true">{{ $t('knowledge.model.import') }}</UButton>
           </div>
           <p v-if="!documents.length && !docsLoading" class="text-sm text-muted border border-dashed border-accented rounded-xl p-8 text-center">
-            No documents yet. Import a <code>SUPPORT_FAQ.md</code> to get started.
+            {{ $t('knowledge.model.noDocumentsBefore') }} <code>SUPPORT_FAQ.md</code> {{ $t('knowledge.model.noDocumentsAfter') }}
           </p>
           <ul v-else class="divide-y divide-default border-y border-default">
             <li v-for="d in documents" :key="d.id" class="flex items-center gap-3 py-3">
               <UIcon name="i-lucide-file-text" class="size-5 text-dimmed shrink-0" />
               <div class="min-w-0 flex-1">
                 <span class="block text-sm font-medium truncate">{{ d.originalFilename }} <span class="text-xs font-normal text-dimmed">v{{ d.version }}</span></span>
-                <span class="block text-xs text-muted">{{ d.faqCount }} FAQs · {{ new Date(d.createdAt || Date.now()).toLocaleDateString() }}</span>
+                <span class="block text-xs text-muted">{{ $t('knowledge.units.faq', d.faqCount) }} · {{ new Date(d.createdAt || Date.now()).toLocaleDateString() }}</span>
                 <span v-if="d.status === 'failed' && d.processingError" class="block text-xs text-error truncate">{{ d.processingError }}</span>
               </div>
               <StatusDot :status="d.status" />
               <div class="flex items-center gap-1">
-                <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-download" aria-label="Download" @click="download(d)" />
-                <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-refresh-cw" aria-label="Reprocess" :loading="busyDoc === d.id" @click="reprocess(d)" />
-                <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-upload" aria-label="Replace" @click="pickReplace(d)" />
-                <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2" aria-label="Delete" @click="removeDoc(d)" />
+                <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-download" :aria-label="$t('knowledge.model.download')" @click="download(d)" />
+                <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-refresh-cw" :aria-label="$t('knowledge.model.reprocess')" :loading="busyDoc === d.id" @click="reprocess(d)" />
+                <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-upload" :aria-label="$t('knowledge.model.replace')" @click="pickReplace(d)" />
+                <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-trash-2" :aria-label="$t('knowledge.delete')" @click="removeDoc(d)" />
               </div>
             </li>
           </ul>
@@ -133,25 +133,25 @@
     </UModal>
 
     <!-- Model settings + danger zone -->
-    <UModal v-model:open="showEdit" title="Model settings">
+    <UModal v-model:open="showEdit" :title="$t('knowledge.model.settings')">
       <template #body>
         <form class="space-y-4" @submit.prevent="saveEdit">
-          <UFormField label="Name"><UInput v-model="editForm.name" class="w-full" required /></UFormField>
-          <UFormField label="Description"><UTextarea v-model="editForm.description" class="w-full" :rows="3" /></UFormField>
+          <UFormField :label="$t('common.name')"><UInput v-model="editForm.name" class="w-full" required /></UFormField>
+          <UFormField :label="$t('knowledge.description')"><UTextarea v-model="editForm.description" class="w-full" :rows="3" /></UFormField>
           <div class="grid grid-cols-2 gap-4">
-            <UFormField label="Status"><USelect v-model="editForm.status" :items="modelStatusItems" class="w-full" /></UFormField>
-            <UFormField label="Default language"><UInput v-model="editForm.defaultLanguage" class="w-full" /></UFormField>
+            <UFormField :label="$t('knowledge.statusLabel')"><USelect v-model="editForm.status" :items="modelStatusItems" class="w-full" /></UFormField>
+            <UFormField :label="$t('knowledge.model.defaultLanguage')"><UInput v-model="editForm.defaultLanguage" class="w-full" /></UFormField>
           </div>
           <div class="flex justify-end gap-2">
-            <UButton color="neutral" variant="ghost" @click="showEdit = false">Cancel</UButton>
-            <UButton type="submit" color="primary" :loading="savingEdit">Save</UButton>
+            <UButton color="neutral" variant="ghost" @click="showEdit = false">{{ $t('common.cancel') }}</UButton>
+            <UButton type="submit" color="primary" :loading="savingEdit">{{ $t('knowledge.save') }}</UButton>
           </div>
         </form>
         <div class="mt-4 border-t border-default pt-3 space-y-2">
-          <p class="text-sm font-medium text-error">Danger zone</p>
+          <p class="text-sm font-medium text-error">{{ $t('knowledge.model.dangerZone') }}</p>
           <div class="flex gap-2">
-            <UButton size="sm" color="neutral" variant="soft" @click="archive">Archive model</UButton>
-            <UButton size="sm" color="error" variant="soft" @click="removeModel">Delete model</UButton>
+            <UButton size="sm" color="neutral" variant="soft" @click="archive">{{ $t('knowledge.model.archive') }}</UButton>
+            <UButton size="sm" color="error" variant="soft" @click="removeModel">{{ $t('knowledge.model.deleteModel') }}</UButton>
           </div>
         </div>
       </template>
@@ -161,18 +161,18 @@
     <div v-if="showTester" class="fixed bottom-4 right-4 z-50 flex max-h-[70vh] w-[min(24rem,calc(100vw-2rem))] flex-col rounded-2xl border border-default bg-default shadow-xl">
       <header class="flex items-center gap-2 border-b border-default px-3 py-2">
         <UIcon name="i-lucide-sparkles" class="size-4 text-primary-600" />
-        <span class="text-sm font-medium">Test with assistant</span>
-        <UButton class="ml-auto" size="xs" variant="ghost" color="neutral" icon="i-lucide-x" aria-label="Close tester" @click="showTester = false" />
+        <span class="text-sm font-medium">{{ $t('knowledge.model.testTitle') }}</span>
+        <UButton class="ml-auto" size="xs" variant="ghost" color="neutral" icon="i-lucide-x" :aria-label="$t('knowledge.model.closeTester')" @click="showTester = false" />
       </header>
       <div class="space-y-3 overflow-y-auto p-3">
-        <USelect v-model="testerAssistantId" :items="testerAssistantItems" placeholder="Pick an assistant" class="w-full" />
-        <p v-if="!testerAssistants.length" class="text-xs text-muted">This project has no assistants yet. Create one to test answers.</p>
+        <USelect v-model="testerAssistantId" :items="testerAssistantItems" :placeholder="$t('knowledge.model.pickAssistant')" class="w-full" />
+        <p v-if="!testerAssistants.length" class="text-xs text-muted">{{ $t('knowledge.model.noAssistants') }}</p>
         <div v-if="testerLoading || testerAnswer" class="rounded-lg bg-elevated p-2.5 text-sm">
-          <p v-if="testerLoading" class="text-muted">Thinking…</p>
+          <p v-if="testerLoading" class="text-muted">{{ $t('knowledge.model.thinking') }}</p>
           <MarkdownBlock v-else :text="testerAnswer" />
         </div>
         <div v-if="testerKnowledge.length" class="text-xs text-muted">
-          <p class="mb-1 font-medium">Grounded in {{ testerKnowledge.length }} FAQ(s):</p>
+          <p class="mb-1 font-medium">{{ $t('knowledge.model.groundedIn', testerKnowledge.length) }}</p>
           <ul class="space-y-0.5">
             <li v-for="k in testerKnowledge" :key="k.faqId" class="truncate">· {{ k.question }} <span class="text-dimmed">{{ (k.score * 100).toFixed(0) }}%</span></li>
           </ul>
@@ -180,8 +180,8 @@
         <p v-if="testerError" class="text-xs text-error">{{ testerError }}</p>
       </div>
       <form class="flex gap-2 border-t border-default p-2" @submit.prevent="runTester">
-        <UInput v-model="testerQuery" placeholder="Ask a question…" class="flex-1" :disabled="!testerAssistantId" />
-        <UButton type="submit" size="sm" color="primary" square :loading="testerLoading" :disabled="!testerAssistantId || !testerQuery.trim()" icon="i-lucide-send" aria-label="Ask" />
+        <UInput v-model="testerQuery" :placeholder="$t('knowledge.model.askPlaceholder')" class="flex-1" :disabled="!testerAssistantId" />
+        <UButton type="submit" size="sm" color="primary" square :loading="testerLoading" :disabled="!testerAssistantId || !testerQuery.trim()" icon="i-lucide-send" :aria-label="$t('knowledge.model.ask')" />
       </form>
     </div>
   </div>
@@ -200,6 +200,7 @@ definePageMeta({ middleware: 'agent' })
 const route = useRoute()
 const id = String(route.params.id)
 const { api, agentHeaders } = useAgent()
+const { t } = useI18n()
 
 type FaqRow = Faq & { agents: { id: string, name: string }[] }
 
@@ -209,8 +210,8 @@ const nodes = ref<KnowledgeNode[]>([])
 const treeRef = ref<{ reload: () => void } | null>(null)
 
 
-const modelStatusItems = KNOWLEDGE_MODEL_STATUSES.map(s => ({ label: s, value: s }))
-const faqStatusItems = FAQ_STATUSES.map(s => ({ label: s, value: s }))
+const modelStatusItems = computed(() => KNOWLEDGE_MODEL_STATUSES.map(s => ({ label: t(`knowledge.status.${s}`), value: s })))
+const faqStatusItems = computed(() => FAQ_STATUSES.map(s => ({ label: t(`knowledge.status.${s}`), value: s })))
 const nodeItems = computed(() => nodes.value.map(n => ({ label: n.pathCache, value: n.id })))
 
 // --- loaders ---
@@ -254,7 +255,7 @@ async function bulk(action: string, extra: Record<string, unknown> = {}) {
 }
 async function bulkSetStatus(status: string) { if (status) { await bulk('status', { status }); bulkStatus.value = '' } }
 async function bulkMove(nodeId: string) { await bulk('move', { nodeId }); bulkNode.value = '' }
-async function bulkDelete() { if (confirm(`Delete ${selectedFaqs.size} FAQ(s)? This cannot be undone.`)) await bulk('delete') }
+async function bulkDelete() { if (confirm(t('knowledge.model.bulkDeleteConfirm', selectedFaqs.size))) await bulk('delete') }
 
 // --- per-FAQ actions (right-click context menu) ---
 async function moveFaq(faqId: string, nodeId: string) {
@@ -266,21 +267,21 @@ async function setFaqStatus(faqId: string, status: string) {
   await Promise.all([loadFaqs(), loadDashboard()])
 }
 async function deleteFaq(f: FaqRow) {
-  if (!confirm(`Delete “${f.question}”? This cannot be undone.`)) return
+  if (!confirm(t('knowledge.model.deleteFaqConfirm', { question: f.question }))) return
   await api(`/admin/knowledge/faqs/${f.id}`, { method: 'DELETE' })
   await Promise.all([loadFaqs(), loadDashboard()])
 }
 function faqMenu(f: FaqRow): ContextMenuItem[][] {
   const themes: ContextMenuItem[] = [
-    { label: '(root)', onSelect: () => moveFaq(f.id, '') },
+    { label: t('knowledge.root'), onSelect: () => moveFaq(f.id, '') },
     ...nodes.value.map(n => ({ label: n.pathCache, onSelect: () => moveFaq(f.id, n.id) }))
   ]
   return [[
-    { label: 'Edit', icon: 'i-lucide-square-pen', onSelect: () => openFaq(f.id) },
-    { label: 'Move to theme', icon: 'i-lucide-circle-arrow-right', children: themes },
-    { label: 'Set status', icon: 'i-lucide-flag', children: FAQ_STATUSES.map(s => ({ label: s, onSelect: () => setFaqStatus(f.id, s) })) }
+    { label: t('knowledge.model.edit'), icon: 'i-lucide-square-pen', onSelect: () => openFaq(f.id) },
+    { label: t('knowledge.model.moveToTheme'), icon: 'i-lucide-circle-arrow-right', children: themes },
+    { label: t('knowledge.model.setStatus'), icon: 'i-lucide-flag', children: FAQ_STATUSES.map(s => ({ label: t(`knowledge.status.${s}`), onSelect: () => setFaqStatus(f.id, s) })) }
   ], [
-    { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => deleteFaq(f) }
+    { label: t('knowledge.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => deleteFaq(f) }
   ]]
 }
 
@@ -294,7 +295,7 @@ async function afterFaqSaved() { await Promise.all([loadFaqs(), loadDashboard(),
 const showThemes = ref(false)
 const themeSelected = ref('')
 const themeFaqs = ref<{ id: string, question: string }[]>([])
-const themeSelectedLabel = computed(() => nodes.value.find(n => n.id === themeSelected.value)?.pathCache || '(root)')
+const themeSelectedLabel = computed(() => nodes.value.find(n => n.id === themeSelected.value)?.pathCache || t('knowledge.root'))
 async function onThemeSelect(nodeId: string) {
   themeSelected.value = nodeId
   themeFaqs.value = []
@@ -326,7 +327,7 @@ async function download(d: KnowledgeDocument) {
 async function reprocess(d: KnowledgeDocument) {
   busyDoc.value = d.id
   try { await api(`/admin/knowledge/documents/${d.id}/reprocess`, { method: 'POST' }); await Promise.all([loadDocs(), loadFaqs(), loadDashboard()]) }
-  catch (e: any) { alert(e?.message || 'Could not reprocess') } finally { busyDoc.value = '' }
+  catch (e: any) { alert(e?.message || t('knowledge.model.couldNotReprocess')) } finally { busyDoc.value = '' }
 }
 function pickReplace(d: KnowledgeDocument) { replaceTarget.value = d; replaceInput.value?.click() }
 async function doReplace(e: Event) {
@@ -341,7 +342,7 @@ async function doReplace(e: Event) {
 async function removeDoc(d: KnowledgeDocument) {
   const impact = await api<{ deleted: boolean, impact?: { faqs: number, note: string } }>(`/admin/knowledge/documents/${d.id}`, { method: 'DELETE' })
   if (!impact.deleted) {
-    if (!confirm(`Delete “${d.originalFilename}”? ${impact.impact?.note || ''} (${impact.impact?.faqs || 0} FAQs)`)) return
+    if (!confirm(t('knowledge.model.deleteDocConfirm', { name: d.originalFilename, note: impact.impact?.note || '', faqs: t('knowledge.units.faq', impact.impact?.faqs || 0) }))) return
     await api(`/admin/knowledge/documents/${d.id}?confirm=true`, { method: 'DELETE' })
   }
   await Promise.all([loadDocs(), loadFaqs(), loadDashboard()])
@@ -379,7 +380,7 @@ async function runTester() {
     testerAnswer.value = res.answer
     testerKnowledge.value = res.knowledge
   } catch (e: any) {
-    testerError.value = e?.message || 'Could not generate an answer'
+    testerError.value = e?.message || t('knowledge.model.couldNotGenerate')
   } finally {
     testerLoading.value = false
   }
@@ -391,11 +392,11 @@ const savingEdit = ref(false)
 const editForm = reactive({ name: '', description: '', status: 'active', defaultLanguage: 'en' })
 // Less-used model actions live behind the header's ⋯, as in Linear.
 const modelMenu = computed(() => [[
-  { label: 'Themes', icon: 'i-lucide-folder-tree', onSelect: () => { showThemes.value = true } },
-  { label: 'Source documents', icon: 'i-lucide-file-text', onSelect: () => { void openDocs() } },
-  { label: 'Reindex', icon: 'i-lucide-refresh-cw', onSelect: () => { void reindex() } }
+  { label: t('knowledge.model.themes'), icon: 'i-lucide-folder-tree', onSelect: () => { showThemes.value = true } },
+  { label: t('knowledge.model.sourceDocuments'), icon: 'i-lucide-file-text', onSelect: () => { void openDocs() } },
+  { label: t('knowledge.model.reindex'), icon: 'i-lucide-refresh-cw', onSelect: () => { void reindex() } }
 ], [
-  { label: 'Model settings', icon: 'i-lucide-settings-2', onSelect: openEdit }
+  { label: t('knowledge.model.settings'), icon: 'i-lucide-settings-2', onSelect: openEdit }
 ]])
 
 function openEdit() {
@@ -412,7 +413,7 @@ async function removeModel() {
   const impact = await api<{ deleted: boolean, impact?: { faqs: number, nodes: number, documents: number, agents: number } }>(`/admin/knowledge/models/${id}`, { method: 'DELETE' })
   if (!impact.deleted) {
     const im = impact.impact!
-    if (!confirm(`Delete this model and everything under it? ${im.faqs} FAQs, ${im.nodes} themes, ${im.documents} documents, affecting ${im.agents} assistant(s). This cannot be undone.`)) return
+    if (!confirm(t('knowledge.model.deleteModelConfirm', { faqs: t('knowledge.units.faq', im.faqs), nodes: t('knowledge.units.theme', im.nodes), documents: t('knowledge.units.document', im.documents), agents: t('knowledge.units.assistant', im.agents) }))) return
     const projectId = model.value?.projectId
     await api(`/admin/knowledge/models/${id}?confirm=true`, { method: 'DELETE' })
     await navigateTo(projectId ? `/projects/${projectId}/knowledge` : '/projects')

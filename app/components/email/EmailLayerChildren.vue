@@ -13,8 +13,8 @@ const emit = defineEmits<{ (e: 'select', id: string): void }>()
 <template>
   <div v-if="block.type === 'section' || block.type === 'columns'" class="ms-4 space-y-px border-s border-default ps-1.5">
     <template v-for="(list, c) in block.type === 'columns' ? block.columns : [block.blocks]" :key="c">
-      <p v-if="block.type === 'columns'" class="px-2 pt-1 text-[11px] text-dimmed">Column {{ c + 1 }}</p>
-      <p v-else-if="!list.length" class="px-2 py-1 text-[11px] text-dimmed">Empty</p>
+      <p v-if="block.type === 'columns'" class="px-2 pt-1 text-[11px] text-dimmed">{{ $t('emailEditor.columnN', { n: c + 1 }) }}</p>
+      <p v-else-if="!list.length" class="px-2 py-1 text-[11px] text-dimmed">{{ $t('emailEditor.empty') }}</p>
       <template v-for="child in list" :key="child.id">
         <UButton
           :icon="EMAIL_BLOCK_META[child.type]?.icon"

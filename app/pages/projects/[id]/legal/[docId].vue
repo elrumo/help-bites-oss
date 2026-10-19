@@ -1,16 +1,16 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="id" :title="doc?.title || 'Document'" :crumbs="[{ label: 'Legal', to: `/projects/${id}/legal` }]">
+    <PageHeader :project-id="id" :title="doc?.title || $t('projectTools.legalDoc.document')" :crumbs="[{ label: $t('sections.legal'), to: `/projects/${id}/legal` }]">
       <template #actions>
-        <UButton v-if="doc?.status === 'published'" :to="publicUrl" target="_blank" icon="i-lucide-external-link" label="View page" size="sm" color="neutral" variant="ghost" />
-        <UButton v-if="dirty" label="Save" size="sm" :loading="busy === 'save'" @click="save" />
-        <UButton v-if="doc?.status === 'published'" label="Unpublish" size="sm" color="neutral" variant="ghost" :loading="busy === 'unpublish'" @click="act('unpublish', 'unpublish')" />
-        <UButton v-if="doc" :label="doc.status === 'published' ? 'Publish new version' : 'Publish'" size="sm" :color="dirty ? 'neutral' : 'primary'" :disabled="dirty" :loading="busy === 'publish'" @click="publish" />
+        <UButton v-if="doc?.status === 'published'" :to="publicUrl" target="_blank" icon="i-lucide-external-link" :label="$t('projectTools.legalDoc.viewPage')" size="sm" color="neutral" variant="ghost" />
+        <UButton v-if="dirty" :label="$t('projectTools.shared.save')" size="sm" :loading="busy === 'save'" @click="save" />
+        <UButton v-if="doc?.status === 'published'" :label="$t('projectTools.legalDoc.unpublish')" size="sm" color="neutral" variant="ghost" :loading="busy === 'unpublish'" @click="act('unpublish', 'unpublish')" />
+        <UButton v-if="doc" :label="doc.status === 'published' ? $t('projectTools.legalDoc.publishNewVersion') : $t('projectTools.shared.publish')" size="sm" :color="dirty ? 'neutral' : 'primary'" :disabled="dirty" :loading="busy === 'publish'" @click="publish" />
       </template>
     </PageHeader>
 
     <div v-if="loading" class="mx-auto w-full max-w-5xl space-y-3 px-6 py-8"><USkeleton v-for="n in 4" :key="n" class="h-24 w-full" /></div>
-    <p v-else-if="!doc" class="px-6 py-8 text-[13px] text-error">{{ error || 'Document not found' }}</p>
+    <p v-else-if="!doc" class="px-6 py-8 text-[13px] text-error">{{ error || $t('projectTools.legalDoc.notFound') }}</p>
 
     <div v-else class="min-h-0 flex-1 overflow-y-auto">
       <div class="mx-auto grid max-w-6xl gap-6 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -19,93 +19,93 @@
           <p v-if="error" class="text-[13px] text-error">{{ error }}</p>
           <div v-for="(s, i) in sections" :key="s.id" class="rounded-xl border border-default p-4">
             <div class="flex flex-wrap items-center gap-2">
-              <UInput v-model="s.heading" class="min-w-0 flex-1 basis-40 font-medium" :aria-label="`Heading of section ${i + 1}`" />
+              <UInput v-model="s.heading" class="min-w-0 flex-1 basis-40 font-medium" :aria-label="$t('projectTools.legalDoc.headingOfSection', { n: i + 1 })" />
               <UBadge :label="s.source" :color="s.source === 'human' ? 'primary' : s.source === 'ai' ? 'info' : 'neutral'" variant="soft" size="sm" />
-              <UButton :icon="s.locked ? 'i-lucide-lock' : 'i-lucide-lock-open'" size="sm" color="neutral" variant="ghost" square :aria-label="s.locked ? 'Unlock section' : 'Lock section'" @click="s.locked = !s.locked" />
-              <UButton icon="i-lucide-arrow-up" size="sm" color="neutral" variant="ghost" square :disabled="i === 0" aria-label="Move up" @click="move(i, -1)" />
-              <UButton icon="i-lucide-arrow-down" size="sm" color="neutral" variant="ghost" square :disabled="i === sections.length - 1" aria-label="Move down" @click="move(i, 1)" />
-              <UButton icon="i-lucide-trash-2" size="sm" color="neutral" variant="ghost" square aria-label="Remove section" @click="sections.splice(i, 1)" />
+              <UButton :icon="s.locked ? 'i-lucide-lock' : 'i-lucide-lock-open'" size="sm" color="neutral" variant="ghost" square :aria-label="s.locked ? $t('projectTools.legalDoc.unlockSection') : $t('projectTools.legalDoc.lockSection')" @click="s.locked = !s.locked" />
+              <UButton icon="i-lucide-arrow-up" size="sm" color="neutral" variant="ghost" square :disabled="i === 0" :aria-label="$t('projectTools.legalDoc.moveUp')" @click="move(i, -1)" />
+              <UButton icon="i-lucide-arrow-down" size="sm" color="neutral" variant="ghost" square :disabled="i === sections.length - 1" :aria-label="$t('projectTools.legalDoc.moveDown')" @click="move(i, 1)" />
+              <UButton icon="i-lucide-trash-2" size="sm" color="neutral" variant="ghost" square :aria-label="$t('projectTools.legalDoc.removeSection')" @click="sections.splice(i, 1)" />
             </div>
-            <UTextarea v-model="s.body" autoresize :rows="3" :maxrows="24" class="mt-3 w-full font-mono text-[13px]" :aria-label="`Text of section ${i + 1}`" />
+            <UTextarea v-model="s.body" autoresize :rows="3" :maxrows="24" class="mt-3 w-full font-mono text-[13px]" :aria-label="$t('projectTools.legalDoc.textOfSection', { n: i + 1 })" />
             <div class="mt-2 flex flex-wrap items-center gap-2">
-              <UButton v-if="!dirty" icon="i-lucide-sparkles" label="Rewrite with AI" size="xs" color="neutral" variant="soft" :disabled="s.locked" @click="rewriting = rewriting === s.id ? '' : s.id" />
-              <span v-else class="text-xs text-dimmed">Save to use AI on this section</span>
-              <span v-if="s.satisfies.length" class="text-xs text-dimmed">Answers {{ s.satisfies.length }} requirement{{ s.satisfies.length === 1 ? '' : 's' }}</span>
+              <UButton v-if="!dirty" icon="i-lucide-sparkles" :label="$t('projectTools.legalDoc.rewriteWithAi')" size="xs" color="neutral" variant="soft" :disabled="s.locked" @click="rewriting = rewriting === s.id ? '' : s.id" />
+              <span v-else class="text-xs text-dimmed">{{ $t('projectTools.legalDoc.saveToUseAi') }}</span>
+              <span v-if="s.satisfies.length" class="text-xs text-dimmed">{{ $t('projectTools.legalDoc.answers', s.satisfies.length) }}</span>
             </div>
             <form v-if="rewriting === s.id" class="mt-3 space-y-2" @submit.prevent="rewrite(s.id)">
-              <UInput v-model="instruction" placeholder="What should change? e.g. mention we keep logs for 30 days" class="w-full" autofocus />
+              <UInput v-model="instruction" :placeholder="$t('projectTools.legalDoc.instructionPlaceholder')" class="w-full" autofocus />
               <div v-if="proposal" class="rounded-lg border border-default bg-elevated p-3">
-                <p class="mb-1 text-xs font-medium text-muted">Proposal</p>
+                <p class="mb-1 text-xs font-medium text-muted">{{ $t('projectTools.legalDoc.proposal') }}</p>
                 <pre class="whitespace-pre-wrap font-mono text-[13px] text-default">{{ proposal }}</pre>
                 <div class="mt-3 flex gap-2">
-                  <UButton size="xs" label="Use this" :loading="busy === 'apply'" @click="applyProposal(s.id)" />
-                  <UButton size="xs" label="Discard" color="neutral" variant="ghost" @click="proposal = ''" />
+                  <UButton size="xs" :label="$t('projectTools.legalDoc.useThis')" :loading="busy === 'apply'" @click="applyProposal(s.id)" />
+                  <UButton size="xs" :label="$t('projectTools.legalDoc.discard')" color="neutral" variant="ghost" @click="proposal = ''" />
                 </div>
               </div>
-              <UButton v-else type="submit" size="xs" label="Propose a rewrite" :loading="busy === 'rewrite'" :disabled="!instruction.trim()" />
+              <UButton v-else type="submit" size="xs" :label="$t('projectTools.legalDoc.proposeRewrite')" :loading="busy === 'rewrite'" :disabled="!instruction.trim()" />
             </form>
           </div>
-          <UButton icon="i-lucide-plus" label="Add section" color="neutral" variant="soft" size="sm" @click="addSection" />
+          <UButton icon="i-lucide-plus" :label="$t('projectTools.legalDoc.addSection')" color="neutral" variant="soft" size="sm" @click="addSection" />
         </div>
 
         <!-- sidebar -->
         <aside class="space-y-5">
           <section class="rounded-xl border border-default p-4">
             <div class="flex items-center justify-between">
-              <h3 class="text-[13px] font-semibold text-highlighted">Summary (TL;DR)</h3>
+              <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.legalDoc.summary') }}</h3>
               <UBadge v-if="tldrSource" :label="tldrSource" :color="tldrSource === 'human' ? 'primary' : 'info'" variant="soft" size="sm" />
             </div>
-            <UTextarea v-model="tldr" :rows="4" placeholder="A short plain-language summary shown at the top of the page" class="mt-3 w-full" @update:model-value="tldrEdited = true" />
-            <UButton icon="i-lucide-sparkles" :label="tldrSource === 'human' ? 'Replace with AI summary' : 'Write with AI'" size="xs" color="neutral" variant="soft" class="mt-2" :disabled="dirty" :loading="busy === 'tldr'" @click="generateTldr" />
+            <UTextarea v-model="tldr" :rows="4" :placeholder="$t('projectTools.legalDoc.summaryPlaceholder')" class="mt-3 w-full" @update:model-value="tldrEdited = true" />
+            <UButton icon="i-lucide-sparkles" :label="tldrSource === 'human' ? $t('projectTools.legalDoc.replaceWithAi') : $t('projectTools.legalDoc.writeWithAi')" size="xs" color="neutral" variant="soft" class="mt-2" :disabled="dirty" :loading="busy === 'tldr'" @click="generateTldr" />
           </section>
 
           <section class="rounded-xl border border-default p-4">
-            <h3 class="text-[13px] font-semibold text-highlighted">Details</h3>
+            <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.legalDoc.details') }}</h3>
             <div class="mt-3 space-y-3">
-              <UFormField label="Title"><UInput v-model="title" class="w-full" /></UFormField>
-              <UFormField label="URL name"><UInput v-model="slug" class="w-full font-mono" /></UFormField>
-              <UFormField label="Effective date"><UInput v-model="effective" type="date" class="w-full" /></UFormField>
+              <UFormField :label="$t('projectTools.legalDoc.titleLabel')"><UInput v-model="title" class="w-full" /></UFormField>
+              <UFormField :label="$t('projectTools.legalDoc.urlName')"><UInput v-model="slug" class="w-full font-mono" /></UFormField>
+              <UFormField :label="$t('projectTools.legalDoc.effectiveDate')"><UInput v-model="effective" type="date" class="w-full" /></UFormField>
             </div>
             <div class="mt-3 flex flex-wrap gap-2">
-              <UButton icon="i-lucide-list-checks" label="Answers and recompose" size="xs" color="neutral" variant="soft" :disabled="dirty" @click="wizardOpen = true" />
+              <UButton icon="i-lucide-list-checks" :label="$t('projectTools.legalDoc.answersAndRecompose')" size="xs" color="neutral" variant="soft" :disabled="dirty" @click="wizardOpen = true" />
             </div>
           </section>
 
           <section class="rounded-xl border border-default p-4">
             <div class="flex items-center justify-between">
-              <h3 class="text-[13px] font-semibold text-highlighted">Rules check</h3>
-              <span v-if="coverage" class="text-xs text-muted">{{ coverage.covered.length }}/{{ coverage.total }} covered</span>
+              <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.legalDoc.rulesCheck') }}</h3>
+              <span v-if="coverage" class="text-xs text-muted">{{ $t('projectTools.legalDoc.covered', { covered: coverage.covered.length, total: coverage.total }) }}</span>
             </div>
-            <p v-if="coverage?.unreviewedPacks.length" class="mt-2 text-xs text-warning">The rulepacks used here have not been reviewed by a person yet. Have a lawyer check this document.</p>
+            <p v-if="coverage?.unreviewedPacks.length" class="mt-2 text-xs text-warning">{{ $t('projectTools.legalDoc.unreviewed') }}</p>
             <ul v-if="coverage?.gaps.length" class="mt-3 space-y-2">
               <li v-for="g in coverage.gaps" :key="g.id" class="text-[13px]">
                 <p class="text-highlighted">{{ g.summary }}</p>
                 <p class="text-xs text-dimmed">{{ g.citation }} · {{ g.severity }}</p>
               </li>
             </ul>
-            <p v-else-if="coverage" class="mt-2 text-[13px] text-muted">Every applicable requirement is answered by a section.</p>
-            <UButton icon="i-lucide-scan-search" label="Check the text with AI" size="xs" color="neutral" variant="soft" class="mt-3" :disabled="dirty" :loading="busy === 'check'" @click="checkWithAi" />
+            <p v-else-if="coverage" class="mt-2 text-[13px] text-muted">{{ $t('projectTools.legalDoc.allCovered') }}</p>
+            <UButton icon="i-lucide-scan-search" :label="$t('projectTools.legalDoc.checkWithAi')" size="xs" color="neutral" variant="soft" class="mt-3" :disabled="dirty" :loading="busy === 'check'" @click="checkWithAi" />
             <ul v-if="findings" class="mt-3 space-y-2">
               <li v-for="f in findings.filter(x => x.status !== 'ok')" :key="f.requirement" class="text-[13px]">
                 <UBadge :label="f.status" :color="f.status === 'unclear' ? 'warning' : 'error'" variant="soft" size="sm" />
                 <span class="ml-1 text-highlighted">{{ f.note }}</span>
               </li>
-              <li v-if="!findings.some(x => x.status !== 'ok')" class="text-[13px] text-muted">The model found nothing to flag.</li>
+              <li v-if="!findings.some(x => x.status !== 'ok')" class="text-[13px] text-muted">{{ $t('projectTools.legalDoc.nothingToFlag') }}</li>
             </ul>
           </section>
 
           <section v-if="versions.length" class="rounded-xl border border-default p-4">
-            <h3 class="text-[13px] font-semibold text-highlighted">Versions</h3>
+            <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.legalDoc.versions') }}</h3>
             <ul class="mt-3 space-y-2">
               <li v-for="v in versions" :key="v.version" class="flex items-center gap-2 text-[13px]">
                 <span class="font-medium text-highlighted">v{{ v.version }}</span>
                 <span class="min-w-0 flex-1 truncate text-muted">{{ v.note || new Date(v.publishedAt).toLocaleDateString() }}</span>
-                <UButton label="Restore" size="xs" color="neutral" variant="ghost" :disabled="dirty" @click="restore(v.version)" />
+                <UButton :label="$t('projectTools.legalDoc.restore')" size="xs" color="neutral" variant="ghost" :disabled="dirty" @click="restore(v.version)" />
               </li>
             </ul>
           </section>
 
-          <UButton icon="i-lucide-trash-2" label="Delete document" size="xs" color="error" variant="ghost" @click="remove" />
+          <UButton icon="i-lucide-trash-2" :label="$t('projectTools.legalDoc.deleteDocument')" size="xs" color="error" variant="ghost" @click="remove" />
         </aside>
       </div>
     </div>
@@ -124,6 +124,7 @@ type Coverage = { total: number, covered: any[], gaps: { id: string, summary: st
 
 const { api } = useAgent()
 const route = useRoute()
+const { t } = useI18n()
 const id = String(route.params.id)
 const docId = String(route.params.docId)
 
@@ -175,7 +176,7 @@ async function load() {
     adopt(result.document, result.coverage)
     await loadVersions()
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the document'
+    error.value = e?.message || t('projectTools.legalDoc.loadError')
   } finally {
     loading.value = false
   }
@@ -187,7 +188,7 @@ async function run<T>(name: string, fn: () => Promise<T>): Promise<T | undefined
   try {
     return await fn()
   } catch (e: any) {
-    error.value = e?.message || 'Something went wrong'
+    error.value = e?.message || t('projectTools.shared.somethingWrong')
   } finally {
     busy.value = ''
   }
@@ -209,7 +210,7 @@ async function save() {
 }
 
 async function publish() {
-  const note = doc.value?.status === 'published' ? (prompt('What changed? (optional)') ?? '') : ''
+  const note = doc.value?.status === 'published' ? (prompt(t('projectTools.legalDoc.whatChanged')) ?? '') : ''
   const result = await run('publish', () => call<{ document: Doc }>('/publish', 'POST', { note }))
   if (result) { adopt(result.document); await loadVersions() }
 }
@@ -220,14 +221,14 @@ async function act(name: string, path: string) {
 }
 
 async function restore(version: number) {
-  if (!confirm(`Replace the working text with version ${version}? You can then review and publish it.`)) return
+  if (!confirm(t('projectTools.legalDoc.restoreConfirm', { version }))) return
   const result = await run('restore', () => call<{ document: Doc, coverage: Coverage }>(`/versions/${version}/restore`))
   if (result) adopt(result.document, result.coverage)
 }
 
 async function generateTldr() {
   const force = tldrSource.value === 'human'
-  if (force && !confirm('Replace the summary you wrote with an AI-written one?')) return
+  if (force && !confirm(t('projectTools.legalDoc.replaceSummaryConfirm'))) return
   const result = await run('tldr', () => call<{ document: Doc }>('/tldr/generate', 'POST', { force }))
   if (result) adopt(result.document)
 }
@@ -259,11 +260,11 @@ function move(index: number, by: number) {
 }
 
 function addSection() {
-  sections.value.push({ id: `new_${Date.now()}`, heading: 'New section', body: '', source: 'human', locked: false, satisfies: [] })
+  sections.value.push({ id: `new_${Date.now()}`, heading: t('projectTools.legalDoc.newSection'), body: '', source: 'human', locked: false, satisfies: [] })
 }
 
 async function remove() {
-  if (!confirm('Delete this document and its versions? Its public page will stop working.')) return
+  if (!confirm(t('projectTools.legalDoc.deleteConfirm'))) return
   if (await run('delete', () => call('', 'DELETE'))) await navigateTo(`/projects/${id}/legal`)
 }
 

@@ -22,6 +22,7 @@ const { api } = useAgent()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { t } = useI18n()
 
 const contacts = ref<Contact[]>([])
 const segments = ref<ContactSegment[]>([])
@@ -39,8 +40,10 @@ const billing = ref('all')
 const minRevenue = ref('')
 const revenueOf = (c: Contact) => Number(c.attributes[STRIPE_ATTR.revenue]) || 0
 
-const subscriptionItems = [{ label: 'Anyone', value: 'all' }, ...Object.entries(SUBSCRIPTION_STATUS).map(([value, s]) => ({ label: s.label, value, icon: s.icon }))]
-const segmentItems = computed(() => [{ label: 'Everyone', value: 'all' }, ...segments.value.map(s => ({ label: s.name, value: s.id }))])
+const subscriptionLabel = (value: string) => t(`contacts.subscription.${value}.label`)
+const subscriptionItems = computed(() => [{ label: t('contacts.filter.anyone'), value: 'all' }, ...Object.entries(SUBSCRIPTION_STATUS).map(([value, s]) => ({ label: subscriptionLabel(value), value, icon: s.icon }))])
+const billingItems = computed(() => BILLING_FILTERS.map(f => ({ label: t(`contacts.billingFilter.${f.value}`), value: f.value })))
+const segmentItems = computed(() => [{ label: t('contacts.filter.everyone'), value: 'all' }, ...segments.value.map(s => ({ label: s.name, value: s.id }))])
 
 const query = computed(() => ({
   project: props.project.id,
@@ -68,7 +71,7 @@ async function load() {
     nextCursor.value = res.nextCursor
     scrollTo(0)
   } catch (e: any) {
-    error.value = e?.message || 'Could not load contacts'
+    error.value = e?.message || t('contacts.loadError')
   } finally {
     loading.value = false
   }
@@ -82,7 +85,7 @@ async function loadMore() {
     contacts.value.push(...res.contacts)
     nextCursor.value = res.nextCursor
   } catch (e: any) {
-    toast.add({ title: e?.message || 'Could not load more', color: 'error' })
+    toast.add({ title: e?.message || t('contacts.loadMoreError'), color: 'error' })
   } finally {
     loadingMore.value = false
   }
@@ -113,7 +116,7 @@ async function add() {
     await load()
     openId.value = res.contact.id
   } catch (e: any) {
-    toast.add({ title: e?.message || 'Could not add them', color: 'error' })
+    toast.add({ title: e?.message || t('contacts.addError'), color: 'error' })
   } finally {
     adding.value = false
   }
@@ -125,23 +128,23 @@ function changed(contact: Contact | null, id: string) {
   if (i >= 0) contacts.value[i] = contact
 }
 
-const displayName = (c: Contact) => c.name || c.email || c.externalId || 'Unnamed'
+const displayName = (c: Contact) => c.name || c.email || c.externalId || t('contacts.unnamed')
 </script>
 
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="project.id" title="Contacts">
+    <PageHeader :project-id="project.id" :title="$t('contacts.title')">
       <template #title><ContactsTabs current="people" /></template>
       <template #actions>
-        <UInput v-model="search" icon="i-lucide-search" placeholder="Name, email or id" size="sm" class="hidden w-48 sm:block" aria-label="Search contacts" />
-        <USelect v-model="segment" :items="segmentItems" value-key="value" size="sm" class="hidden w-36 md:flex" aria-label="Segment" />
-        <USelect v-model="subscription" :items="subscriptionItems" value-key="value" size="sm" class="hidden w-36 lg:flex" aria-label="Subscription" />
+        <UInput v-model="search" icon="i-lucide-search" :placeholder="$t('contacts.searchPlaceholder')" size="sm" class="hidden w-48 sm:block" :aria-label="$t('contacts.searchLabel')" />
+        <USelect v-model="segment" :items="segmentItems" value-key="value" size="sm" class="hidden w-36 md:flex" :aria-label="$t('contacts.filter.segment')" />
+        <USelect v-model="subscription" :items="subscriptionItems" value-key="value" size="sm" class="hidden w-36 lg:flex" :aria-label="$t('contacts.filter.subscription')" />
         <template v-if="stripe">
-          <USelect v-model="billing" :items="[...BILLING_FILTERS]" value-key="value" size="sm" class="hidden w-36 xl:flex" aria-label="Billing" />
-          <UInput v-model="minRevenue" type="number" min="0" placeholder="Spent over" size="sm" class="hidden w-28 xl:block" aria-label="Spent more than" />
+          <USelect v-model="billing" :items="billingItems" value-key="value" size="sm" class="hidden w-36 xl:flex" :aria-label="$t('contacts.filter.billing')" />
+          <UInput v-model="minRevenue" type="number" min="0" :placeholder="$t('contacts.filter.spentOver')" size="sm" class="hidden w-28 xl:block" :aria-label="$t('contacts.filter.spentMoreThan')" />
         </template>
-        <UButton icon="i-lucide-file-up" label="Import" size="sm" color="neutral" variant="outline" @click="importOpen = true" />
-        <UButton icon="i-lucide-plus" label="Add" size="sm" @click="addOpen = true" />
+        <UButton icon="i-lucide-file-up" :label="$t('contacts.import')" size="sm" color="neutral" variant="outline" @click="importOpen = true" />
+        <UButton icon="i-lucide-plus" :label="$t('contacts.add')" size="sm" @click="addOpen = true" />
       </template>
     </PageHeader>
 
@@ -151,10 +154,10 @@ const displayName = (c: Contact) => c.name || c.email || c.externalId || 'Unname
       <EmptyState
         v-else-if="!contacts.length"
         icon="i-lucide-users"
-        :title="filtered ? 'Nobody matches' : 'No contacts yet'"
-        :description="filtered ? 'Try another filter.' : 'Your app\'s users show up here as they use support or feedback. Import a CSV, sync your database under Sources, or add people through the API.'"
+        :title="filtered ? $t('contacts.empty.filteredTitle') : $t('contacts.empty.title')"
+        :description="filtered ? $t('contacts.empty.filteredDescription') : $t('contacts.empty.description')"
       />
-      <ul v-else v-bind="wrapperProps" aria-label="Contacts">
+      <ul v-else v-bind="wrapperProps" :aria-label="$t('contacts.listLabel')">
         <li v-for="{ data: c } in rows" :key="c.id" class="h-11">
           <button type="button" class="mx-2 flex h-11 w-[calc(100%-1rem)] items-center gap-3 rounded-lg px-3 text-left text-[13px] transition-colors hover:bg-elevated" @click="openId = c.id">
             <UAvatar :src="c.avatarUrl || undefined" :alt="displayName(c)" size="xs" />
@@ -163,11 +166,11 @@ const displayName = (c: Contact) => c.name || c.email || c.externalId || 'Unname
             <span class="hidden min-w-0 max-w-56 shrink items-center gap-1 overflow-hidden md:flex">
               <UBadge v-for="tag in c.tags.slice(0, 3)" :key="tag" :label="tag" color="neutral" variant="soft" size="sm" />
             </span>
-            <span v-if="stripe" class="hidden w-20 shrink-0 text-right text-xs tabular-nums text-muted xl:block" title="Revenue from Stripe">{{ revenueOf(c) ? formatMoney(revenueOf(c), stripe.currency) : '' }}</span>
-            <UTooltip :text="SUBSCRIPTION_STATUS[c.subscription].hint">
-              <UBadge :icon="SUBSCRIPTION_STATUS[c.subscription].icon" :label="SUBSCRIPTION_STATUS[c.subscription].label" :color="SUBSCRIPTION_STATUS[c.subscription].color" variant="subtle" size="sm" class="w-32 shrink-0 justify-start" />
+            <span v-if="stripe" class="hidden w-20 shrink-0 text-right text-xs tabular-nums text-muted xl:block" :title="$t('contacts.revenueTitle')">{{ revenueOf(c) ? formatMoney(revenueOf(c), stripe.currency) : '' }}</span>
+            <UTooltip :text="$t(`contacts.subscription.${c.subscription}.hint`)">
+              <UBadge :icon="SUBSCRIPTION_STATUS[c.subscription].icon" :label="subscriptionLabel(c.subscription)" :color="SUBSCRIPTION_STATUS[c.subscription].color" variant="subtle" size="sm" class="w-32 shrink-0 justify-start" />
             </UTooltip>
-            <span class="hidden w-20 shrink-0 text-right text-xs text-muted lg:block" :title="c.lastSeenAt ? 'Last seen' : 'Added'">{{ logTime(c.lastSeenAt || c.createdAt || '') }}</span>
+            <span class="hidden w-20 shrink-0 text-right text-xs text-muted lg:block" :title="c.lastSeenAt ? $t('contacts.lastSeen') : $t('contacts.added')">{{ logTime(c.lastSeenAt || c.createdAt || '') }}</span>
           </button>
         </li>
       </ul>
@@ -177,18 +180,18 @@ const displayName = (c: Contact) => c.name || c.email || c.externalId || 'Unname
     <ContactDrawer v-model:id="openId" :project="project" @changed="changed" />
     <CsvImportModal v-model:open="importOpen" :project="project" @imported="load" />
 
-    <UModal v-model:open="addOpen" title="Add a contact" description="Someone your app knows by email, by id, or both.">
+    <UModal v-model:open="addOpen" :title="$t('contacts.addModal.title')" :description="$t('contacts.addModal.description')">
       <template #body>
         <form class="space-y-4" @submit.prevent="add">
-          <UFormField label="Email"><UInput v-model="form.email" type="email" placeholder="ada@example.com" class="w-full" autofocus /></UFormField>
+          <UFormField :label="$t('contacts.form.email')"><UInput v-model="form.email" type="email" placeholder="ada@example.com" class="w-full" autofocus /></UFormField>
           <div class="grid gap-4 sm:grid-cols-2">
-            <UFormField label="Name"><UInput v-model="form.name" placeholder="Optional" class="w-full" /></UFormField>
-            <UFormField label="User id" hint="Your app's id"><UInput v-model="form.externalId" placeholder="Optional" class="w-full" /></UFormField>
+            <UFormField :label="$t('common.name')"><UInput v-model="form.name" :placeholder="$t('contacts.form.optional')" class="w-full" /></UFormField>
+            <UFormField :label="$t('contacts.form.userId')" :hint="$t('contacts.form.userIdHint')"><UInput v-model="form.externalId" :placeholder="$t('contacts.form.optional')" class="w-full" /></UFormField>
           </div>
-          <UCheckbox v-model="form.optedIn" label="They asked to get marketing email" description="Records your panel as the consent source." />
+          <UCheckbox v-model="form.optedIn" :label="$t('contacts.form.optedIn')" :description="$t('contacts.form.optedInDescription')" />
           <div class="flex justify-end gap-2 pt-2">
-            <UButton color="neutral" variant="ghost" @click="addOpen = false">Cancel</UButton>
-            <UButton type="submit" :loading="adding" :disabled="!form.email.trim() && !form.externalId.trim()">Add</UButton>
+            <UButton color="neutral" variant="ghost" @click="addOpen = false">{{ $t('common.cancel') }}</UButton>
+            <UButton type="submit" :loading="adding" :disabled="!form.email.trim() && !form.externalId.trim()">{{ $t('contacts.add') }}</UButton>
           </div>
         </form>
       </template>

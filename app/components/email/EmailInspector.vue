@@ -41,6 +41,8 @@ const emit = defineEmits<{
   (e: 'edit-component', block: ComponentBlock): void
 }>()
 
+const { t } = useI18n()
+
 const selected = computed<EmailBlock | null>(() =>
   props.selectedId ? findBlock(props.document.blocks, props.selectedId) : null
 )
@@ -48,18 +50,18 @@ const selected = computed<EmailBlock | null>(() =>
 /** Where the selection sits: its list (the email's, a section's or a column's) and parent. */
 const location = computed(() => (props.selectedId ? locateBlock(props.document.blocks, props.selectedId) : null))
 
-const alignItems = [
-  { label: 'Left', value: 'left', icon: 'i-lucide-align-left' },
-  { label: 'Center', value: 'center', icon: 'i-lucide-align-center' },
-  { label: 'Right', value: 'right', icon: 'i-lucide-align-right' }
-] satisfies Array<{ label: string, value: Align, icon: string }>
+const alignItems = computed(() => [
+  { label: t('emailEditor.alignLeft'), value: 'left', icon: 'i-lucide-align-left' },
+  { label: t('emailEditor.alignCenter'), value: 'center', icon: 'i-lucide-align-center' },
+  { label: t('emailEditor.alignRight'), value: 'right', icon: 'i-lucide-align-right' }
+] satisfies Array<{ label: string, value: Align, icon: string }>)
 
-const paddingItems = [
-  { side: 'top', label: 'Top' },
-  { side: 'right', label: 'Right' },
-  { side: 'bottom', label: 'Bottom' },
-  { side: 'left', label: 'Left' }
-] satisfies Array<{ side: PaddingSide, label: string }>
+const paddingItems = computed(() => [
+  { side: 'top', label: t('emailEditor.side.top') },
+  { side: 'right', label: t('emailEditor.side.right') },
+  { side: 'bottom', label: t('emailEditor.side.bottom') },
+  { side: 'left', label: t('emailEditor.side.left') }
+] satisfies Array<{ side: PaddingSide, label: string }>)
 
 function patch(field: string, value: unknown) {
   if (!props.selectedId) return
@@ -120,7 +122,7 @@ async function onImageFile(event: Event) {
     const url = await props.upload(file)
     emit('update:document', updateBlock(props.document, id, field ? { values: { [field]: url } } : { src: url }).doc)
   } catch (e: any) {
-    uploadError.value = e?.data?.statusMessage || e?.message || 'Could not upload the image'
+    uploadError.value = e?.data?.statusMessage || e?.message || t('emailEditor.uploadError')
   } finally {
     uploading.value = false
     input.value = ''
@@ -154,13 +156,13 @@ const actions = computed(() => {
   const at = location.value
   if (!at) return []
   return [
-    { label: 'Move up', icon: 'i-lucide-arrow-up', disabled: at.index === 0, onClick: () => moveSelected(-1) },
-    { label: 'Move down', icon: 'i-lucide-arrow-down', disabled: at.index === at.list.length - 1, onClick: () => moveSelected(1) },
-    { label: 'Duplicate', icon: 'i-lucide-copy', disabled: false, onClick: duplicateSelected },
+    { label: t('emailEditor.moveUp'), icon: 'i-lucide-arrow-up', disabled: at.index === 0, onClick: () => moveSelected(-1) },
+    { label: t('emailEditor.moveDown'), icon: 'i-lucide-arrow-down', disabled: at.index === at.list.length - 1, onClick: () => moveSelected(1) },
+    { label: t('emailEditor.duplicate'), icon: 'i-lucide-copy', disabled: false, onClick: duplicateSelected },
     ...(props.canSaveComponents && (at.block.type === 'html' || at.block.type === 'section')
-      ? [{ label: 'Save as component', icon: 'i-lucide-puzzle', disabled: false, onClick: () => emit('save-component', at.block) }]
+      ? [{ label: t('emailEditor.saveAsComponent'), icon: 'i-lucide-puzzle', disabled: false, onClick: () => emit('save-component', at.block) }]
       : []),
-    { label: 'Delete', icon: 'i-lucide-trash-2', disabled: false, onClick: removeSelected }
+    { label: t('emailEditor.delete'), icon: 'i-lucide-trash-2', disabled: false, onClick: removeSelected }
   ]
 })
 
@@ -182,7 +184,7 @@ function addChild(type: EmailBlockType, column: number) {
 }
 
 const shadowItems = (field: string) => [[
-  { label: 'None', onSelect: () => patch(field, undefined) },
+  { label: t('emailEditor.none'), onSelect: () => patch(field, undefined) },
   ...EMAIL_SHADOWS.map(s => ({ label: s.label, description: s.value, onSelect: () => patch(field, s.value) }))
 ]]
 
@@ -191,7 +193,7 @@ const component = computed(() => (selected.value?.type === 'component' ? selecte
 const libraryVersion = computed(() => props.library?.find(c => c.id === component.value?.componentId))
 const outdated = computed(() => !!component.value && componentOutdated(component.value, libraryVersion.value))
 const fieldGroups = computed(() => (['content', 'style'] as const)
-  .map(group => ({ group, label: group === 'content' ? 'Content' : 'Style', fields: (component.value?.fields || []).filter(f => f.group === group) }))
+  .map(group => ({ group, label: group === 'content' ? t('emailEditor.content') : t('emailEditor.style'), fields: (component.value?.fields || []).filter(f => f.group === group) }))
   .filter(g => g.fields.length))
 
 /** One field's value; the rest of this instance's values stay. */
@@ -217,15 +219,15 @@ function detach() {
 // ---- theme designer ---------------------------------------------------------
 const theme = computed<EmailTheme>(() => currentTheme(props.document))
 
-const themeTokens = [
-  { key: 'brand', label: 'Brand' },
-  { key: 'onBrand', label: 'On brand' },
-  { key: 'background', label: 'Page' },
-  { key: 'surface', label: 'Card' },
-  { key: 'heading', label: 'Headings' },
-  { key: 'text', label: 'Text' },
-  { key: 'muted', label: 'Muted' }
-] satisfies Array<{ key: keyof EmailTheme, label: string }>
+const themeTokens = computed(() => [
+  { key: 'brand', label: t('emailEditor.tokens.brand') },
+  { key: 'onBrand', label: t('emailEditor.tokens.onBrand') },
+  { key: 'background', label: t('emailEditor.tokens.background') },
+  { key: 'surface', label: t('emailEditor.tokens.surface') },
+  { key: 'heading', label: t('emailEditor.tokens.heading') },
+  { key: 'text', label: t('emailEditor.tokens.text') },
+  { key: 'muted', label: t('emailEditor.tokens.muted') }
+] satisfies Array<{ key: keyof EmailTheme, label: string }>)
 
 function patchTheme(patch: Partial<EmailTheme>) {
   emit('update:document', applyThemeToDocument(props.document, patch))
@@ -249,13 +251,13 @@ const hasIndividualPadding = computed(() => (
 const paddingSummary = computed(() => {
   if (!selected.value) return ''
   const { top, right, bottom, left } = getPaddingSides(selected.value.padding)
-  return `Top ${top}px, right ${right}px, bottom ${bottom}px, left ${left}px`
+  return t('emailEditor.paddingSummary', { top, right, bottom, left })
 })
 
 // Reka's select refuses an empty value; "inherit" stands for the email's own font.
 // A converted email's own stack (say, SF Pro Display) stays on the list.
 const headingFontItems = computed(() => {
-  const items = [{ label: 'Email font', value: 'inherit' }, ...FONT_STACKS.map(f => ({ label: f.label, value: f.value }))]
+  const items = [{ label: t('emailEditor.emailFont'), value: 'inherit' }, ...FONT_STACKS.map(f => ({ label: f.label, value: f.value }))]
   const own = selected.value?.type === 'heading' ? selected.value.fontFamily : undefined
   return own && !items.some(i => i.value === own) ? [...items, { label: own.split(',')[0]!.replace(/['"]/g, '').trim(), value: own }] : items
 })
@@ -272,13 +274,13 @@ watch(() => props.selectedId, () => {
     <!-- Block inspector -->
     <template v-if="selected">
       <div class="flex h-11 shrink-0 items-center gap-1 border-b border-default px-2">
-        <UTooltip text="Email settings">
+        <UTooltip :text="$t('emailEditor.emailSettings')">
           <UButton
             icon="i-lucide-arrow-left"
             color="neutral"
             variant="ghost"
             size="xs"
-            aria-label="Back to email settings"
+            :aria-label="$t('emailEditor.backToSettings')"
             @click="emit('select', null)"
           />
         </UTooltip>
@@ -288,7 +290,7 @@ watch(() => props.selectedId, () => {
         <UTooltip v-for="a in actions" :key="a.label" :text="a.label">
           <UButton
             :icon="a.icon"
-            :color="a.label === 'Delete' ? 'error' : 'neutral'"
+            :color="a.icon === 'i-lucide-trash-2' ? 'error' : 'neutral'"
             variant="ghost"
             size="xs"
             :aria-label="a.label"
@@ -306,12 +308,12 @@ watch(() => props.selectedId, () => {
           @click="emit('select', location.parent.id)"
         >
           <UIcon name="i-lucide-corner-left-up" class="size-3.5" />
-          In {{ location.parent.type === 'columns' ? `column ${location.column + 1}` : emailBlockLabel(location.parent).toLowerCase() }}: select it
+          {{ location.parent.type === 'columns' ? $t('emailEditor.inColumn', { n: location.column + 1 }) : $t('emailEditor.inBlock', { block: emailBlockLabel(location.parent).toLowerCase() }) }}
         </button>
 
         <!-- Heading -->
         <template v-if="selected.type === 'heading'">
-          <UFormField label="Text">
+          <UFormField :label="$t('emailEditor.text')">
             <UTextarea
               :model-value="selected.text"
               :rows="2"
@@ -321,7 +323,7 @@ watch(() => props.selectedId, () => {
             />
           </UFormField>
           <div class="grid grid-cols-2 gap-3">
-            <UFormField label="Level">
+            <UFormField :label="$t('emailEditor.level')">
               <USelect
                 :model-value="selected.level"
                 :items="[{ label: 'H1', value: 1 }, { label: 'H2', value: 2 }, { label: 'H3', value: 3 }]"
@@ -329,14 +331,14 @@ watch(() => props.selectedId, () => {
                 @update:model-value="patch('level', Number($event))"
               />
             </UFormField>
-            <UFormField label="Color">
+            <UFormField :label="$t('emailEditor.color')">
               <EmailColorField
                 :model-value="selected.color"
                 clearable
                 @update:model-value="patch('color', $event)"
               />
             </UFormField>
-            <UFormField label="Font size (px)">
+            <UFormField :label="$t('emailEditor.fontSizePx')">
               <UInputNumber
                 :model-value="selected.fontSize ?? [28, 22, 18][selected.level - 1]"
                 :min="8"
@@ -344,7 +346,7 @@ watch(() => props.selectedId, () => {
                 @update:model-value="patchNumber('fontSize', $event, selected.fontSize ?? 22)"
               />
             </UFormField>
-            <UFormField label="Letter spacing (px)">
+            <UFormField :label="$t('emailEditor.letterSpacing')">
               <UInputNumber
                 :model-value="selected.letterSpacing ?? 0"
                 :step="0.1"
@@ -353,7 +355,7 @@ watch(() => props.selectedId, () => {
               />
             </UFormField>
           </div>
-          <UFormField label="Font">
+          <UFormField :label="$t('emailEditor.font')">
             <USelect
               :model-value="selected.fontFamily || 'inherit'"
               :items="headingFontItems"
@@ -366,8 +368,8 @@ watch(() => props.selectedId, () => {
         <!-- Text -->
         <template v-else-if="selected.type === 'text'">
           <UFormField
-            label="Content"
-            help="Inline HTML: b, i, u, br, a and span; links and spans keep a color, weight and decoration in style=&quot;&quot;."
+            :label="$t('emailEditor.content')"
+            :help="$t('emailEditor.inlineHtmlHelp')"
           >
             <UTextarea
               :model-value="selected.html"
@@ -379,7 +381,7 @@ watch(() => props.selectedId, () => {
             />
           </UFormField>
           <div class="grid grid-cols-2 gap-3">
-            <UFormField label="Font size (px)">
+            <UFormField :label="$t('emailEditor.fontSizePx')">
               <UInputNumber
                 :model-value="selected.fontSize ?? 15"
                 :min="8"
@@ -387,7 +389,7 @@ watch(() => props.selectedId, () => {
                 @update:model-value="patchNumber('fontSize', $event, selected.fontSize ?? 15)"
               />
             </UFormField>
-            <UFormField label="Color">
+            <UFormField :label="$t('emailEditor.color')">
               <EmailColorField
                 :model-value="selected.color"
                 clearable
@@ -399,14 +401,14 @@ watch(() => props.selectedId, () => {
 
         <!-- Button -->
         <template v-else-if="selected.type === 'button'">
-          <UFormField label="Label">
+          <UFormField :label="$t('emailEditor.label')">
             <UInput
               :model-value="selected.label"
               class="w-full"
               @update:model-value="patch('label', $event)"
             />
           </UFormField>
-          <UFormField label="Link">
+          <UFormField :label="$t('emailEditor.link')">
             <UInput
               :model-value="selected.href"
               type="url"
@@ -417,13 +419,13 @@ watch(() => props.selectedId, () => {
             />
           </UFormField>
           <div class="grid grid-cols-2 gap-3">
-            <UFormField label="Fill">
+            <UFormField :label="$t('emailEditor.fill')">
               <EmailColorField
                 :model-value="selected.backgroundColor"
                 @update:model-value="patch('backgroundColor', $event)"
               />
             </UFormField>
-            <UFormField label="Label color">
+            <UFormField :label="$t('emailEditor.labelColor')">
               <EmailColorField
                 :model-value="selected.color"
                 @update:model-value="patch('color', $event)"
@@ -431,7 +433,7 @@ watch(() => props.selectedId, () => {
             </UFormField>
           </div>
           <div class="grid grid-cols-2 gap-3">
-            <UFormField label="Corner radius (px)">
+            <UFormField :label="$t('emailEditor.radiusPx')">
               <UInputNumber
                 :model-value="selected.radius ?? 6"
                 :min="0"
@@ -439,7 +441,7 @@ watch(() => props.selectedId, () => {
                 @update:model-value="patchNumber('radius', $event, selected.radius ?? 6)"
               />
             </UFormField>
-            <UFormField label="Font size (px)">
+            <UFormField :label="$t('emailEditor.fontSizePx')">
               <UInputNumber
                 :model-value="selected.fontSize ?? 15"
                 :min="8"
@@ -448,11 +450,11 @@ watch(() => props.selectedId, () => {
               />
             </UFormField>
           </div>
-          <UFormField label="Shadow" help="CSS box-shadow; Outlook leaves it out.">
+          <UFormField :label="$t('emailEditor.shadow')" :help="$t('emailEditor.shadowHelp')">
             <UFieldGroup class="w-full">
-              <UInput :model-value="selected.shadow ?? ''" placeholder="None" class="min-w-0 flex-1 font-mono text-xs" @update:model-value="patch('shadow', String($event).trim() || undefined)" />
+              <UInput :model-value="selected.shadow ?? ''" :placeholder="$t('emailEditor.none')" class="min-w-0 flex-1 font-mono text-xs" @update:model-value="patch('shadow', String($event).trim() || undefined)" />
               <UDropdownMenu :items="shadowItems('shadow')">
-                <UButton icon="i-lucide-chevron-down" color="neutral" variant="outline" aria-label="Shadow presets" />
+                <UButton icon="i-lucide-chevron-down" color="neutral" variant="outline" :aria-label="$t('emailEditor.shadowPresets')" />
               </UDropdownMenu>
             </UFieldGroup>
           </UFormField>
@@ -460,7 +462,7 @@ watch(() => props.selectedId, () => {
 
         <!-- Image -->
         <template v-else-if="selected.type === 'image'">
-          <UFormField label="Image URL" :help="upload ? 'Paste a hosted image URL, or upload one.' : 'Paste a hosted image URL.'">
+          <UFormField :label="$t('emailEditor.imageUrl')" :help="upload ? $t('emailEditor.imageUrlHelpUpload') : $t('emailEditor.imageUrlHelp')">
             <div class="flex gap-2">
               <UInput
                 :model-value="selected.src"
@@ -473,7 +475,7 @@ watch(() => props.selectedId, () => {
               <UButton
                 v-if="upload"
                 icon="i-lucide-upload"
-                label="Upload"
+                :label="$t('emailEditor.upload')"
                 color="neutral"
                 variant="soft"
                 :loading="uploading"
@@ -484,14 +486,14 @@ watch(() => props.selectedId, () => {
               {{ uploadError }}
             </p>
           </UFormField>
-          <UFormField label="Alt text" help="Read aloud by screen readers and shown when images are off.">
+          <UFormField :label="$t('emailEditor.altText')" :help="$t('emailEditor.altTextHelp')">
             <UInput
               :model-value="selected.alt"
               class="w-full"
               @update:model-value="patch('alt', $event)"
             />
           </UFormField>
-          <UFormField label="Link (optional)">
+          <UFormField :label="$t('emailEditor.linkOptional')">
             <UInput
               :model-value="selected.href ?? ''"
               type="url"
@@ -502,7 +504,7 @@ watch(() => props.selectedId, () => {
             />
           </UFormField>
           <div class="grid grid-cols-2 gap-3">
-            <UFormField label="Width (px)" help="0 fills the width.">
+            <UFormField :label="$t('emailEditor.widthPx')" :help="$t('emailEditor.widthHelp')">
               <UInputNumber
                 :model-value="selected.width ?? 0"
                 :min="0"
@@ -510,7 +512,7 @@ watch(() => props.selectedId, () => {
                 @update:model-value="patchNumber('width', $event, selected.width ?? 0)"
               />
             </UFormField>
-            <UFormField label="Height (px)" help="With no width: a badge.">
+            <UFormField :label="$t('emailEditor.heightPx')" :help="$t('emailEditor.heightHelp')">
               <UInputNumber
                 :model-value="selected.height ?? 0"
                 :min="0"
@@ -524,13 +526,13 @@ watch(() => props.selectedId, () => {
         <!-- Divider -->
         <template v-else-if="selected.type === 'divider'">
           <div class="grid grid-cols-2 gap-3">
-            <UFormField label="Color">
+            <UFormField :label="$t('emailEditor.color')">
               <EmailColorField
                 :model-value="selected.color ?? '#e4e4e7'"
                 @update:model-value="patch('color', $event)"
               />
             </UFormField>
-            <UFormField label="Thickness (px)">
+            <UFormField :label="$t('emailEditor.thicknessPx')">
               <UInputNumber
                 :model-value="selected.thickness ?? 1"
                 :min="1"
@@ -543,7 +545,7 @@ watch(() => props.selectedId, () => {
 
         <!-- Spacer -->
         <template v-else-if="selected.type === 'spacer'">
-          <UFormField label="Height (px)">
+          <UFormField :label="$t('emailEditor.heightPx')">
             <UInputNumber
               :model-value="selected.height"
               :min="0"
@@ -556,18 +558,18 @@ watch(() => props.selectedId, () => {
         <!-- Section -->
         <template v-else-if="selected.type === 'section'">
           <p class="text-xs text-muted">
-            Blocks on one surface: a card, a coloured band, a callout. Its background is set below; padding sits inside it.
+            {{ $t('emailEditor.sectionHelp') }}
           </p>
           <div class="grid grid-cols-2 gap-3">
-            <UFormField label="Gradient to">
+            <UFormField :label="$t('emailEditor.gradientTo')">
               <EmailColorField
                 :model-value="selected.gradientTo"
                 clearable
-                placeholder="None"
+                :placeholder="$t('emailEditor.none')"
                 @update:model-value="patch('gradientTo', $event)"
               />
             </UFormField>
-            <UFormField label="Angle (°)">
+            <UFormField :label="$t('emailEditor.angle')">
               <UInputNumber
                 :model-value="selected.gradientAngle ?? 180"
                 :disabled="!selected.gradientTo"
@@ -575,7 +577,7 @@ watch(() => props.selectedId, () => {
                 @update:model-value="patchNumber('gradientAngle', $event, selected.gradientAngle ?? 180)"
               />
             </UFormField>
-            <UFormField label="Corner radius (px)">
+            <UFormField :label="$t('emailEditor.radiusPx')">
               <UInputNumber
                 :model-value="selected.radius ?? 0"
                 :min="0"
@@ -584,11 +586,11 @@ watch(() => props.selectedId, () => {
               />
             </UFormField>
           </div>
-          <UFormField label="Shadow" help="CSS box-shadow; Outlook leaves it out.">
+          <UFormField :label="$t('emailEditor.shadow')" :help="$t('emailEditor.shadowHelp')">
             <UFieldGroup class="w-full">
-              <UInput :model-value="selected.shadow ?? ''" placeholder="None" class="min-w-0 flex-1 font-mono text-xs" @update:model-value="patch('shadow', String($event).trim() || undefined)" />
+              <UInput :model-value="selected.shadow ?? ''" :placeholder="$t('emailEditor.none')" class="min-w-0 flex-1 font-mono text-xs" @update:model-value="patch('shadow', String($event).trim() || undefined)" />
               <UDropdownMenu :items="shadowItems('shadow')">
-                <UButton icon="i-lucide-chevron-down" color="neutral" variant="outline" aria-label="Shadow presets" />
+                <UButton icon="i-lucide-chevron-down" color="neutral" variant="outline" :aria-label="$t('emailEditor.shadowPresets')" />
               </UDropdownMenu>
             </UFieldGroup>
           </UFormField>
@@ -596,7 +598,7 @@ watch(() => props.selectedId, () => {
 
         <!-- Columns -->
         <template v-else-if="selected.type === 'columns'">
-          <UFormField label="Gap (px)">
+          <UFormField :label="$t('emailEditor.gapPx')">
             <UInputNumber
               :model-value="selected.gap ?? 16"
               :min="0"
@@ -609,18 +611,18 @@ watch(() => props.selectedId, () => {
         <!-- Component -->
         <template v-else-if="component">
           <p class="text-xs text-muted">
-            A copy of “{{ component.name }}” from the component library. What you change here stays in this email.
+            {{ $t('emailEditor.componentCopy', { name: component.name }) }}
           </p>
           <UAlert
             v-if="outdated"
             icon="i-lucide-refresh-cw"
             color="primary"
             variant="soft"
-            title="The library has a newer version"
-            :actions="[{ label: 'Update', color: 'primary', variant: 'solid', size: 'xs', onClick: updateFromLibrary }]"
+            :title="$t('emailEditor.libraryNewer')"
+            :actions="[{ label: $t('emailEditor.update'), color: 'primary', variant: 'solid', size: 'xs', onClick: updateFromLibrary }]"
           />
           <p v-if="!component.fields.length" class="text-xs text-muted">
-            It has no fields. Edit the component to add some, or detach it to edit its HTML here.
+            {{ $t('emailEditor.noComponentFields') }}
           </p>
           <div v-for="g in fieldGroups" :key="g.group" class="space-y-3">
             <p class="text-xs font-medium text-highlighted">{{ g.label }}</p>
@@ -629,7 +631,7 @@ watch(() => props.selectedId, () => {
                 v-if="f.type === 'color'"
                 :model-value="componentValue(f, component.values) || undefined"
                 clearable
-                :placeholder="f.default || 'None'"
+                :placeholder="f.default || $t('emailEditor.none')"
                 @update:model-value="patchValue(f, $event)"
               />
               <UInputNumber
@@ -654,22 +656,22 @@ watch(() => props.selectedId, () => {
                   class="min-w-0 flex-1"
                   @update:model-value="patchValue(f, $event)"
                 />
-                <UButton v-if="f.type === 'image' && upload" icon="i-lucide-upload" color="neutral" variant="soft" :loading="uploading && uploadField === f.key" aria-label="Upload an image" @click="pickImage(f.key)" />
+                <UButton v-if="f.type === 'image' && upload" icon="i-lucide-upload" color="neutral" variant="soft" :loading="uploading && uploadField === f.key" :aria-label="$t('emailEditor.uploadImage')" @click="pickImage(f.key)" />
               </div>
             </UFormField>
           </div>
           <div class="flex flex-wrap gap-2">
-            <UButton v-if="canSaveComponents" icon="i-lucide-pencil" label="Edit component" size="xs" color="neutral" variant="outline" @click="emit('edit-component', component)" />
-            <UButton icon="i-lucide-rotate-ccw" label="Reset" size="xs" color="neutral" variant="ghost" @click="resetValues" />
-            <UButton icon="i-lucide-unlink" label="Detach to HTML" size="xs" color="neutral" variant="ghost" @click="detach" />
+            <UButton v-if="canSaveComponents" icon="i-lucide-pencil" :label="$t('emailEditor.editComponent')" size="xs" color="neutral" variant="outline" @click="emit('edit-component', component)" />
+            <UButton icon="i-lucide-rotate-ccw" :label="$t('emailEditor.reset')" size="xs" color="neutral" variant="ghost" @click="resetValues" />
+            <UButton icon="i-lucide-unlink" :label="$t('emailEditor.detach')" size="xs" color="neutral" variant="ghost" @click="detach" />
           </div>
         </template>
 
         <!-- HTML -->
         <template v-else-if="selected.type === 'html'">
           <UFormField
-            label="Raw HTML"
-            help="Keep it email-safe (tables + inline styles)."
+            :label="$t('emailEditor.rawHtml')"
+            :help="$t('emailEditor.rawHtmlHelp')"
           >
             <UTextarea
               :model-value="selected.html"
@@ -687,12 +689,12 @@ watch(() => props.selectedId, () => {
         <template v-if="selected.type === 'section' || selected.type === 'columns'">
           <div v-for="(list, c) in selected.type === 'columns' ? selected.columns : [selected.blocks]" :key="c" class="space-y-1">
             <div class="flex items-center justify-between">
-              <p class="text-xs font-medium text-highlighted">{{ selected.type === 'columns' ? `Column ${c + 1}` : 'Blocks' }}</p>
+              <p class="text-xs font-medium text-highlighted">{{ selected.type === 'columns' ? $t('emailEditor.columnN', { n: c + 1 }) : $t('emailEditor.blocks') }}</p>
               <UDropdownMenu :items="childItems(c)">
-                <UButton icon="i-lucide-plus" label="Add" size="xs" color="neutral" variant="ghost" />
+                <UButton icon="i-lucide-plus" :label="$t('emailEditor.add')" size="xs" color="neutral" variant="ghost" />
               </UDropdownMenu>
             </div>
-            <p v-if="!list.length" class="rounded-md border border-dashed border-default px-3 py-2 text-xs text-muted">Empty</p>
+            <p v-if="!list.length" class="rounded-md border border-dashed border-default px-3 py-2 text-xs text-muted">{{ $t('emailEditor.empty') }}</p>
             <UButton
               v-for="child in list"
               :key="child.id"
@@ -711,13 +713,13 @@ watch(() => props.selectedId, () => {
         <USeparator v-if="selected.type !== 'spacer'" />
 
         <!-- Shared: alignment + padding + background (where applicable) -->
-        <UFormField v-if="'align' in selected" label="Alignment">
+        <UFormField v-if="'align' in selected" :label="$t('emailEditor.alignment')">
           <UFieldGroup class="w-full">
             <UButton
               v-for="a in alignItems"
               :key="a.value"
               :icon="a.icon"
-              :aria-label="`Align ${a.label.toLowerCase()}`"
+              :aria-label="a.label"
               :color="(selected as { align: Align }).align === a.value ? 'primary' : 'neutral'"
               :variant="(selected as { align: Align }).align === a.value ? 'soft' : 'outline'"
               class="flex-1 justify-center"
@@ -727,13 +729,13 @@ watch(() => props.selectedId, () => {
         </UFormField>
 
         <template v-if="selected.type !== 'spacer'">
-          <UFormField label="Padding (px)">
+          <UFormField :label="$t('emailEditor.paddingPx')">
             <div class="space-y-2">
               <UFieldGroup class="w-full">
                 <UInputNumber
                   :model-value="getUniformPaddingValue(selected.padding) ?? undefined"
                   :min="0"
-                  :placeholder="hasIndividualPadding ? 'Mixed' : undefined"
+                  :placeholder="hasIndividualPadding ? $t('emailEditor.mixed') : undefined"
                   class="min-w-0 flex-1"
                   @update:model-value="patchPadding($event)"
                 />
@@ -743,7 +745,7 @@ watch(() => props.selectedId, () => {
                     icon="i-lucide-sliders-horizontal"
                     color="neutral"
                     variant="outline"
-                    aria-label="Edit individual padding"
+                    :aria-label="$t('emailEditor.editPadding')"
                   />
 
                   <template #content>
@@ -774,11 +776,11 @@ watch(() => props.selectedId, () => {
             </div>
           </UFormField>
 
-          <UFormField label="Background">
+          <UFormField :label="$t('emailEditor.background')">
             <EmailColorField
               :model-value="selected.background"
               clearable
-              placeholder="None"
+              :placeholder="$t('emailEditor.none')"
               @update:model-value="patch('background', $event)"
             />
           </UFormField>
@@ -793,10 +795,10 @@ watch(() => props.selectedId, () => {
           name="i-lucide-settings-2"
           class="size-4 text-primary"
         />
-        <span class="text-sm font-semibold text-highlighted">Email settings</span>
+        <span class="text-sm font-semibold text-highlighted">{{ $t('emailEditor.emailSettings') }}</span>
       </div>
       <div class="flex-1 space-y-4 overflow-y-auto p-4">
-        <UFormField label="Subject / title">
+        <UFormField :label="$t('emailEditor.subjectTitle')">
           <UInput
             :model-value="document.settings.title"
             class="w-full"
@@ -804,8 +806,8 @@ watch(() => props.selectedId, () => {
           />
         </UFormField>
         <UFormField
-          label="Preheader"
-          help="Hidden inbox preview text."
+          :label="$t('emailEditor.preheader')"
+          :help="$t('emailEditor.preheaderHelp')"
         >
           <UInput
             :model-value="document.settings.preheader"
@@ -814,20 +816,20 @@ watch(() => props.selectedId, () => {
           />
         </UFormField>
         <UFormField
-          label="Plain-text version"
-          help="Sent alongside the HTML for clients that show text. Leave blank to generate it from the design."
+          :label="$t('emailEditor.plainText')"
+          :help="$t('emailEditor.plainTextHelp')"
         >
           <UTextarea
             :model-value="document.settings.text || ''"
             :rows="3"
             autoresize
             :maxrows="12"
-            placeholder="Generated from the design"
+            :placeholder="$t('emailEditor.generatedFromDesign')"
             class="w-full font-mono text-xs"
             @update:model-value="patchSettings('text', $event)"
           />
         </UFormField>
-        <UFormField label="Content width (px)">
+        <UFormField :label="$t('emailEditor.contentWidth')">
           <UInputNumber
             :model-value="document.settings.contentWidth"
             :min="320"
@@ -844,10 +846,10 @@ watch(() => props.selectedId, () => {
           <div>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-palette" class="size-4 text-primary" />
-              <span class="text-sm font-semibold text-highlighted">Theme</span>
+              <span class="text-sm font-semibold text-highlighted">{{ $t('emailEditor.theme') }}</span>
             </div>
             <p class="mt-1 text-xs text-muted">
-              Restyles colors, font and corners across the whole email — the layout stays put. You can also just ask the AI ("make it feel like autumn").
+              {{ $t('emailEditor.themeHelp') }}
             </p>
           </div>
 
@@ -880,7 +882,7 @@ watch(() => props.selectedId, () => {
               />
             </UFormField>
           </div>
-          <UFormField label="Font">
+          <UFormField :label="$t('emailEditor.font')">
             <USelect
               :model-value="theme.fontFamily"
               :items="fontItems"
@@ -888,7 +890,7 @@ watch(() => props.selectedId, () => {
               @update:model-value="patchTheme({ fontFamily: String($event) })"
             />
           </UFormField>
-          <UFormField label="Button corner radius (px)">
+          <UFormField :label="$t('emailEditor.buttonRadius')">
             <UInputNumber
               :model-value="theme.radius"
               :min="0"
@@ -902,8 +904,8 @@ watch(() => props.selectedId, () => {
           icon="i-lucide-mouse-pointer-click"
           color="neutral"
           variant="soft"
-          title="Tip"
-          description="Click any block in the preview or under Layers to edit it here. Drag the handle to reorder."
+          :title="$t('emailEditor.tip')"
+          :description="$t('emailEditor.tipText')"
         />
       </div>
     </template>

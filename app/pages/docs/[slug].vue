@@ -2,7 +2,7 @@
   <div v-if="page" class="grid gap-10 py-10 md:py-14 xl:grid-cols-[minmax(0,1fr)_170px]">
     <article class="min-w-0">
       <p class="text-[13px] text-muted">
-        <NuxtLink to="/docs" class="transition-colors hover:text-highlighted">Docs</NuxtLink>
+        <NuxtLink to="/docs" class="transition-colors hover:text-highlighted">{{ $t('docs.home') }}</NuxtLink>
         <span class="mx-1.5 text-dimmed">/</span>{{ doc.group }}
       </p>
       <h1 class="mt-2 text-[clamp(1.9rem,4vw,2.5rem)] font-semibold leading-tight tracking-[-0.03em] text-highlighted">{{ doc.title }}</h1>
@@ -11,25 +11,25 @@
 
       <div class="mt-14 flex flex-wrap items-center justify-between gap-3 border-t border-default pt-5 text-[13px]">
         <a :href="docEditUrl(doc)" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-muted transition-colors hover:text-highlighted">
-          <UIcon name="i-lucide-pencil" class="size-3.5" />Edit this page on GitHub
+          <UIcon name="i-lucide-pencil" class="size-3.5" />{{ $t('docs.editOnGithub') }}
         </a>
       </div>
 
-      <nav v-if="previous || next" class="mt-6 grid gap-3 sm:grid-cols-2" aria-label="More guides">
+      <nav v-if="previous || next" class="mt-6 grid gap-3 sm:grid-cols-2" :aria-label="$t('docs.moreGuides')">
         <NuxtLink v-if="previous" :to="docPath(previous)" class="pager">
-          <span class="text-xs text-muted">Previous</span>
+          <span class="text-xs text-muted">{{ $t('docs.previous') }}</span>
           <span class="font-medium text-highlighted">{{ previous.title }}</span>
         </NuxtLink>
         <NuxtLink v-if="next" :to="docPath(next)" class="pager sm:col-start-2 sm:text-right">
-          <span class="text-xs text-muted">Next</span>
+          <span class="text-xs text-muted">{{ $t('docs.next') }}</span>
           <span class="font-medium text-highlighted">{{ next.title }}</span>
         </NuxtLink>
       </nav>
     </article>
 
     <aside v-if="page.headings.length" class="hidden xl:block">
-      <nav class="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pb-8 text-[13px]" aria-label="On this page">
-        <p class="mb-2 text-xs font-medium text-muted">On this page</p>
+      <nav class="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pb-8 text-[13px]" :aria-label="$t('docs.onThisPage')">
+        <p class="mb-2 text-xs font-medium text-muted">{{ $t('docs.onThisPage') }}</p>
         <ul class="border-l border-default">
           <li v-for="heading in page.headings" :key="heading.id">
             <a
@@ -51,10 +51,11 @@ import type { RenderedDoc } from '~~/server/utils/docsRender'
 definePageMeta({ layout: 'docs' })
 
 const route = useRoute()
+const { t } = useI18n()
 const doc = docBySlug(String(route.params.slug))
 // `fatal` makes a client-side navigation show the error page; on the server it
 // would also log a stack trace for every address a crawler guesses.
-const notFound = () => createError({ statusCode: 404, statusMessage: 'Page not found', fatal: import.meta.client })
+const notFound = () => createError({ statusCode: 404, statusMessage: t('docs.notFound'), fatal: import.meta.client })
 if (!doc) throw notFound()
 
 // Prerendered, so a visitor gets finished HTML and the data below arrives in
@@ -63,9 +64,9 @@ const { data: page } = await useFetch<RenderedDoc>(`/docs-data/${doc.slug}`, { k
 if (!page.value) throw notFound()
 
 useSeoMeta({
-  title: `${doc.title} — HelpBites docs`,
+  title: t('docs.pageTitle', { title: doc.title }),
   description: doc.description,
-  ogTitle: `${doc.title} — HelpBites docs`,
+  ogTitle: t('docs.pageTitle', { title: doc.title }),
   ogDescription: doc.description,
   ogType: 'article'
 })
@@ -98,8 +99,8 @@ async function onProseClick(event: MouseEvent) {
   if (!button || !code) return
   try {
     await navigator.clipboard.writeText(code.textContent ?? '')
-    button.textContent = 'Copied'
-    setTimeout(() => { button.textContent = 'Copy' }, 1500)
+    button.textContent = t('docs.copied')
+    setTimeout(() => { button.textContent = t('docs.copy') }, 1500)
   } catch {
     // No clipboard on a plain-http page: select the code so Ctrl/⌘-C finishes it.
     const selection = window.getSelection()

@@ -1,16 +1,16 @@
 <template>
-  <UModal v-model:open="open" :title="faqId ? 'Edit FAQ' : 'New FAQ'" :ui="{ content: 'max-w-2xl' }">
+  <UModal v-model:open="open" :title="faqId ? $t('knowledge.faq.editTitle') : $t('knowledge.newFaq')" :ui="{ content: 'max-w-2xl' }">
     <template #body>
-      <div v-if="loading" class="py-8 text-center text-sm text-muted">Loading…</div>
+      <div v-if="loading" class="py-8 text-center text-sm text-muted">{{ $t('knowledge.loading') }}</div>
       <form v-else class="space-y-4" @submit.prevent="save">
-        <UFormField label="Question">
+        <UFormField :label="$t('knowledge.faq.question')">
           <UInput v-model="form.question" class="w-full" required autofocus />
         </UFormField>
 
-        <UFormField label="Answer" hint="Markdown">
+        <UFormField :label="$t('knowledge.faq.answer')" hint="Markdown">
           <div class="flex gap-1 mb-1">
-            <UButton size="xs" :variant="tab === 'edit' ? 'soft' : 'ghost'" color="neutral" @click="tab = 'edit'">Write</UButton>
-            <UButton size="xs" :variant="tab === 'preview' ? 'soft' : 'ghost'" color="neutral" @click="tab = 'preview'">Preview</UButton>
+            <UButton size="xs" :variant="tab === 'edit' ? 'soft' : 'ghost'" color="neutral" @click="tab = 'edit'">{{ $t('knowledge.faq.write') }}</UButton>
+            <UButton size="xs" :variant="tab === 'preview' ? 'soft' : 'ghost'" color="neutral" @click="tab = 'preview'">{{ $t('knowledge.faq.preview') }}</UButton>
           </div>
           <UTextarea v-if="tab === 'edit'" v-model="form.answer" class="w-full font-mono" :rows="8" />
           <div v-else class="rounded-lg border border-default p-3 min-h-[8rem]">
@@ -19,37 +19,37 @@
         </UFormField>
 
         <div class="grid sm:grid-cols-2 gap-4">
-          <UFormField label="Path">
-            <OptionalSelect v-model="form.nodeId" :items="nodeItems" none-label="(model root)" class="w-full" />
+          <UFormField :label="$t('knowledge.faq.path')">
+            <OptionalSelect v-model="form.nodeId" :items="nodeItems" :none-label="$t('knowledge.modelRoot')" class="w-full" />
           </UFormField>
-          <UFormField label="Status">
+          <UFormField :label="$t('knowledge.statusLabel')">
             <USelect v-model="form.status" :items="statusItems" class="w-full" />
           </UFormField>
         </div>
 
-        <UFormField label="Alternate phrasings" hint="one per line — helps retrieval find this answer">
-          <UTextarea v-model="aliasesText" class="w-full" :rows="2" placeholder="How can I remove a bookmark?" />
+        <UFormField :label="$t('knowledge.faq.aliases')" :hint="$t('knowledge.faq.aliasesHint')">
+          <UTextarea v-model="aliasesText" class="w-full" :rows="2" :placeholder="$t('knowledge.faq.aliasPlaceholder')" />
         </UFormField>
 
-        <UFormField label="Tags" hint="comma separated">
+        <UFormField :label="$t('knowledge.faq.tags')" :hint="$t('knowledge.faq.tagsHint')">
           <UInput v-model="tagsText" class="w-full" />
         </UFormField>
 
         <div v-if="source" class="rounded-lg bg-elevated p-3 text-xs text-muted space-y-0.5">
-          <p class="font-medium text-toned">Source</p>
-          <p>File: {{ source.filename }} <span v-if="detached" class="text-warning">· edited (won't be overwritten on re-import)</span></p>
-          <p v-if="sourceSection">Section: {{ sourceSection }}</p>
-          <p>Version: {{ sourceVersion }} · Imported {{ importedDate }}</p>
+          <p class="font-medium text-toned">{{ $t('knowledge.faq.source') }}</p>
+          <p>{{ $t('knowledge.faq.file', { name: source.filename }) }} <span v-if="detached" class="text-warning">{{ $t('knowledge.faq.edited') }}</span></p>
+          <p v-if="sourceSection">{{ $t('knowledge.faq.section', { section: sourceSection }) }}</p>
+          <p>{{ $t('knowledge.faq.versionImported', { version: sourceVersion, date: importedDate }) }}</p>
         </div>
 
         <p v-if="agentCount" class="text-xs text-muted">
-          <UIcon name="i-lucide-sparkles" class="size-3 inline" /> {{ agentCount }} assistant{{ agentCount === 1 ? '' : 's' }} can use this FAQ.
+          <UIcon name="i-lucide-sparkles" class="size-3 inline" /> {{ $t('knowledge.faq.assistantsUse', agentCount) }}
         </p>
 
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
         <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="ghost" @click="open = false">Cancel</UButton>
-          <UButton type="submit" color="primary" :loading="saving">{{ faqId ? 'Save' : 'Create' }}</UButton>
+          <UButton color="neutral" variant="ghost" @click="open = false">{{ $t('common.cancel') }}</UButton>
+          <UButton type="submit" color="primary" :loading="saving">{{ faqId ? $t('knowledge.save') : $t('knowledge.create') }}</UButton>
         </div>
       </form>
     </template>
@@ -67,6 +67,7 @@ const emit = defineEmits<{ saved: [] }>()
 const open = defineModel<boolean>('open', { required: true })
 
 const { api } = useAgent()
+const { t } = useI18n()
 const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
@@ -81,7 +82,7 @@ const lastProcessedAt = ref<string | null>(null)
 const detached = ref(false)
 const agentCount = ref(0)
 
-const statusItems = FAQ_STATUSES.map(s => ({ label: s, value: s }))
+const statusItems = computed(() => FAQ_STATUSES.map(s => ({ label: t(`knowledge.status.${s}`), value: s })))
 const nodeItems = computed(() => props.nodes.map(n => ({ label: n.pathCache, value: n.id })))
 const importedDate = computed(() => lastProcessedAt.value ? new Date(lastProcessedAt.value).toLocaleDateString() : '—')
 
@@ -109,7 +110,7 @@ watch(open, async (isOpen) => {
     detached.value = res.faq.detached
     agentCount.value = res.agentIds.length
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the FAQ'
+    error.value = e?.message || t('knowledge.faq.couldNotLoad')
   } finally {
     loading.value = false
   }
@@ -133,7 +134,7 @@ async function save() {
     open.value = false
     emit('saved')
   } catch (e: any) {
-    error.value = e?.message || 'Could not save the FAQ'
+    error.value = e?.message || t('knowledge.faq.couldNotSave')
   } finally {
     saving.value = false
   }

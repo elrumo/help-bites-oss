@@ -1,53 +1,53 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="id" title="Dev">
+    <PageHeader :project-id="id" :title="$t('sections.dev')">
       <template #actions>
-        <UButton to="/developer" icon="i-lucide-book-open" label="Guide" color="neutral" variant="ghost" size="sm" class="hidden sm:inline-flex" />
-        <UButton to="/_docs/scalar" target="_blank" icon="i-lucide-code-xml" label="API reference" color="neutral" variant="outline" size="sm" />
+        <UButton to="/developer" icon="i-lucide-book-open" :label="$t('projectPages.dev.guide')" color="neutral" variant="ghost" size="sm" class="hidden sm:inline-flex" />
+        <UButton to="/_docs/scalar" target="_blank" icon="i-lucide-code-xml" :label="$t('projectPages.dev.apiReference')" color="neutral" variant="outline" size="sm" />
       </template>
     </PageHeader>
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div v-if="project" class="mx-auto max-w-4xl space-y-10 px-6 py-8">
         <header class="space-y-1">
-          <h1 class="text-xl font-semibold tracking-tight text-highlighted">Connect {{ project.name }}</h1>
-          <p class="text-[13px] text-muted">Keys, snippets and webhooks for your code. Name, branding and email sending are in <NuxtLink :to="`/projects/${id}/settings`" class="font-medium text-default underline-offset-2 hover:underline">project settings</NuxtLink>.</p>
+          <h1 class="text-xl font-semibold tracking-tight text-highlighted">{{ $t('projectPages.dev.connect', { name: project.name }) }}</h1>
+          <p class="text-[13px] text-muted">{{ $t('projectPages.dev.intro') }} <NuxtLink :to="`/projects/${id}/settings`" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('projectPages.dev.projectSettings') }}</NuxtLink>{{ $t('projectPages.dev.introEnd') }}</p>
         </header>
 
         <!-- Credentials -->
         <section class="space-y-3">
-          <h2 class="section-title">Credentials</h2>
+          <h2 class="section-title">{{ $t('projectPages.dev.credentials') }}</h2>
           <div class="divide-y divide-default overflow-hidden rounded-xl border border-default">
             <div class="cred">
-              <div><p class="cred-title">Public key</p><p class="cred-hint">Names the project. Safe in browsers.</p></div>
+              <div><p class="cred-title">{{ $t('projectPages.dev.publicKey') }}</p><p class="cred-hint">{{ $t('projectPages.dev.publicKeyHint') }}</p></div>
               <div class="cred-value">
                 <code class="cred-code">{{ project.publicKey }}</code>
-                <UTooltip :text="copied === 'pk' ? 'Copied' : 'Copy'"><UButton :icon="copied === 'pk' ? 'i-lucide-check' : 'i-lucide-copy'" color="neutral" variant="ghost" size="sm" square class="text-muted" aria-label="Copy public key" @click="copy(project.publicKey, 'pk')" /></UTooltip>
+                <UTooltip :text="copied === 'pk' ? $t('projectPages.dev.copied') : $t('projectPages.dev.copy')"><UButton :icon="copied === 'pk' ? 'i-lucide-check' : 'i-lucide-copy'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="$t('projectPages.dev.copyPublicKey')" @click="copy(project.publicKey, 'pk')" /></UTooltip>
               </div>
             </div>
             <div class="cred">
-              <div><p class="cred-title">Secret key</p><p class="cred-hint">Signs identity tokens and calls the server API. Never ship it to a browser.</p></div>
+              <div><p class="cred-title">{{ $t('projectPages.dev.secretKey') }}</p><p class="cred-hint">{{ $t('projectPages.dev.secretKeyHint') }}</p></div>
               <div class="cred-value">
                 <code class="cred-code" :class="secret ? '' : 'tracking-widest text-dimmed'">{{ secret || '••••••••••••••••••••••••' }}</code>
-                <UTooltip v-if="secret" :text="copied === 'sk' ? 'Copied' : 'Copy'"><UButton :icon="copied === 'sk' ? 'i-lucide-check' : 'i-lucide-copy'" color="neutral" variant="ghost" size="sm" square class="text-muted" aria-label="Copy secret" @click="copy(secret, 'sk')" /></UTooltip>
-                <UTooltip :text="secret ? 'Hide' : 'Reveal'"><UButton :icon="secret ? 'i-lucide-eye-off' : 'i-lucide-eye'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="secret ? 'Hide secret' : 'Reveal secret'" @click="secret ? (secret = '') : reveal()" /></UTooltip>
-                <UTooltip text="Rotate"><UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" size="sm" square class="text-muted" aria-label="Rotate secret" @click="rotate" /></UTooltip>
+                <UTooltip v-if="secret" :text="copied === 'sk' ? $t('projectPages.dev.copied') : $t('projectPages.dev.copy')"><UButton :icon="copied === 'sk' ? 'i-lucide-check' : 'i-lucide-copy'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="$t('projectPages.dev.copySecret')" @click="copy(secret, 'sk')" /></UTooltip>
+                <UTooltip :text="secret ? $t('projectPages.dev.hide') : $t('projectPages.dev.reveal')"><UButton :icon="secret ? 'i-lucide-eye-off' : 'i-lucide-eye'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="secret ? $t('projectPages.dev.hideSecret') : $t('projectPages.dev.revealSecret')" @click="secret ? (secret = '') : reveal()" /></UTooltip>
+                <UTooltip :text="$t('projectPages.dev.rotate')"><UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="$t('projectPages.dev.rotateSecret')" @click="rotate" /></UTooltip>
               </div>
             </div>
             <div class="cred">
-              <div><p class="cred-title">Base URL</p><p class="cred-hint">Where your site and server reach HelpBites.</p></div>
+              <div><p class="cred-title">{{ $t('projectPages.dev.baseUrl') }}</p><p class="cred-hint">{{ $t('projectPages.dev.baseUrlHint') }}</p></div>
               <div class="cred-value">
                 <code class="cred-code">{{ appUrl }}</code>
-                <UTooltip :text="copied === 'url' ? 'Copied' : 'Copy'"><UButton :icon="copied === 'url' ? 'i-lucide-check' : 'i-lucide-copy'" color="neutral" variant="ghost" size="sm" square class="text-muted" aria-label="Copy base URL" @click="copy(appUrl, 'url')" /></UTooltip>
+                <UTooltip :text="copied === 'url' ? $t('projectPages.dev.copied') : $t('projectPages.dev.copy')"><UButton :icon="copied === 'url' ? 'i-lucide-check' : 'i-lucide-copy'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="$t('projectPages.dev.copyBaseUrl')" @click="copy(appUrl, 'url')" /></UTooltip>
               </div>
             </div>
           </div>
-          <p v-if="justCreated" class="flex items-start gap-2 text-xs text-muted"><UIcon name="i-lucide-info" class="mt-0.5 size-3.5 shrink-0" />Your new project's secret is shown above. You can reveal it again here any time; rotating it invalidates tokens minted with the old one.</p>
+          <p v-if="justCreated" class="flex items-start gap-2 text-xs text-muted"><UIcon name="i-lucide-info" class="mt-0.5 size-3.5 shrink-0" />{{ $t('projectPages.dev.justCreated') }}</p>
         </section>
 
         <!-- Integrations: each tile is a tab for its guide below. -->
         <section id="integrations" class="scroll-mt-6 space-y-3">
-          <h2 class="section-title">Integrations</h2>
-          <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5" role="tablist" aria-label="Integrations">
+          <h2 class="section-title">{{ $t('projectPages.dev.integrations') }}</h2>
+          <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5" role="tablist" :aria-label="$t('projectPages.dev.integrations')">
             <button
               v-for="item in integrations"
               :id="`tab-${item.key}`"
@@ -69,65 +69,65 @@
             <!-- Chat widget -->
             <template v-if="tab === 'chat'">
               <div class="panel-head">
-                <p>Your server signs a short token for the signed-in user; the widget hands it to HelpBites.</p>
-                <UButton :to="`/projects/${id}/settings#widget`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" label="Widget settings" />
+                <p>{{ $t('projectPages.dev.chatIntro') }}</p>
+                <UButton :to="`/projects/${id}/settings#widget`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('projectPages.dev.widgetSettings')" />
               </div>
               <ol class="steps">
-                <li><p class="step-title">Mint a token on your server</p><p class="step-text">Any language works; this is Node with no dependencies.</p><CodeBlock :code="mintSnippet" lang="js" /></li>
-                <li><p class="step-title">Load the widget on your site</p><p class="step-text">Only the <a href="#security" class="underline">allowed origins</a> below may host it.</p><CodeBlock :code="widgetSnippet" lang="html" /></li>
-                <li><p class="step-title">Or build your own UI</p><p class="step-text">Call the <a href="/_docs/scalar" target="_blank" rel="noopener" class="underline">API</a> with <code class="inline-code">Authorization: Bearer &lt;token&gt;</code>. Pass <code class="inline-code">assistantId</code> when opening a conversation to route it to a specific assistant (copy the ID from the Assistants tab).</p></li>
+                <li><p class="step-title">{{ $t('projectPages.dev.mintTitle') }}</p><p class="step-text">{{ $t('projectPages.dev.mintText') }}</p><CodeBlock :code="mintSnippet" lang="js" /></li>
+                <li><p class="step-title">{{ $t('projectPages.dev.loadTitle') }}</p><p class="step-text">{{ $t('projectPages.dev.onlyThe') }} <a href="#security" class="underline">{{ $t('projectPages.dev.allowedOriginsLink') }}</a> {{ $t('projectPages.dev.belowMayHost') }}</p><CodeBlock :code="widgetSnippet" lang="html" /></li>
+                <li><p class="step-title">{{ $t('projectPages.dev.ownUiTitle') }}</p><p class="step-text">{{ $t('projectPages.dev.callThe') }} <a href="/_docs/scalar" target="_blank" rel="noopener" class="underline">API</a> {{ $t('projectPages.dev.withToken') }} <code class="inline-code">Authorization: Bearer &lt;token&gt;</code>{{ $t('projectPages.dev.passAssistant') }} <code class="inline-code">assistantId</code> {{ $t('projectPages.dev.assistantRoute') }}</p></li>
               </ol>
             </template>
 
             <!-- Feedback board -->
             <template v-else-if="tab === 'feedback'">
               <div class="panel-head">
-                <p>A public board where users post ideas, vote and comment. {{ project.feedback?.enabled ? 'It is on.' : 'Turn it on from the Feedback page.' }}</p>
-                <UButton :to="`/projects/${id}/feedback`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" label="Manage" />
+                <p>{{ $t('projectPages.dev.feedbackIntro') }} {{ project.feedback?.enabled ? $t('projectPages.dev.feedbackOn') : $t('projectPages.dev.feedbackOff') }}</p>
+                <UButton :to="`/projects/${id}/feedback`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('projectPages.dev.manage')" />
               </div>
               <ol class="steps">
-                <li><p class="step-title">Drop the board into any page</p><p class="step-text">Anyone can read it; pass the same token as the chat so signed-in users can post, vote and comment.</p><CodeBlock :code="feedbackSnippet" lang="html" /></li>
-                <li><p class="step-title">Or build your own UI</p><p class="step-text">Use <code class="inline-code">/v1/feedback</code> (<a href="/_docs/scalar" target="_blank" rel="noopener" class="underline">API</a>): read with <code class="inline-code">?pk={{ project.publicKey }}</code>, write with the identity token. Add <code class="inline-code">role: "admin"</code> to a token to let one of your staff moderate. Bring old feedback over with <code class="inline-code">POST /v1/feedback/import</code> and the secret.</p></li>
+                <li><p class="step-title">{{ $t('projectPages.dev.dropTitle') }}</p><p class="step-text">{{ $t('projectPages.dev.dropText') }}</p><CodeBlock :code="feedbackSnippet" lang="html" /></li>
+                <li><p class="step-title">{{ $t('projectPages.dev.ownUiTitle') }}</p><p class="step-text">{{ $t('projectPages.dev.useThe') }} <code class="inline-code">/v1/feedback</code> (<a href="/_docs/scalar" target="_blank" rel="noopener" class="underline">API</a>){{ $t('projectPages.dev.feedbackRead') }} <code class="inline-code">?pk={{ project.publicKey }}</code>{{ $t('projectPages.dev.feedbackWrite') }} <code class="inline-code">role: "admin"</code> {{ $t('projectPages.dev.feedbackModerate') }} <code class="inline-code">POST /v1/feedback/import</code> {{ $t('projectPages.dev.feedbackImport') }}</p></li>
               </ol>
             </template>
 
             <!-- Feature flags -->
             <template v-else-if="tab === 'flags'">
               <div class="panel-head">
-                <p>Read flags from your server with the secret and decide them against your own admin check.</p>
-                <UButton :to="`/projects/${id}/flags`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" label="Manage" />
+                <p>{{ $t('projectPages.dev.flagsIntro') }}</p>
+                <UButton :to="`/projects/${id}/flags`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('projectPages.dev.manage')" />
               </div>
-              <p class="step-text">Decide <code class="inline-code">admins</code> flags against your own admin check and each flag's <code class="inline-code">allow</code> list. Cache about 30 seconds, keep the last good answer through a blip, then use each flag's <code class="inline-code">fallback</code>; treat unknown flags as off. A browser can ask with <code class="inline-code">?pk=</code> or the identity token instead and gets <code class="inline-code">enabled</code> already worked out (<code class="inline-code">role: "admin"</code> counts as an admin).</p>
+              <p class="step-text">{{ $t('projectPages.dev.flagsDecide') }} <code class="inline-code">admins</code> {{ $t('projectPages.dev.flagsAgainst') }} <code class="inline-code">allow</code> {{ $t('projectPages.dev.flagsCache') }} <code class="inline-code">fallback</code>{{ $t('projectPages.dev.flagsUnknown') }} <code class="inline-code">?pk=</code> {{ $t('projectPages.dev.flagsOr') }} <code class="inline-code">enabled</code> {{ $t('projectPages.dev.flagsWorked') }}<code class="inline-code">role: "admin"</code> {{ $t('projectPages.dev.flagsCounts') }}</p>
               <CodeBlock :code="flagsSnippet" lang="js" />
             </template>
 
             <!-- Error tracking -->
             <template v-else-if="tab === 'errors'">
               <div class="panel-head">
-                <p v-if="project.errors?.connected">Reporting to {{ project.errorLinks.length > 1 ? project.errorLinks.map(item => item.label).join(', ') : project.errors.providerName }}. <UButton variant="link" size="sm" class="p-0" label="Manage servers" @click="settingsTab = 'error-tracking'" /> <UButton variant="link" size="sm" class="p-0" label="Connect another" @click="connectErrorsOpen = true" /></p>
-                <p v-else>Connect GlitchTip or Bugsink to give this project a Sentry-compatible DSN and send alerts to the inbox.</p>
-                <UButton :to="`/projects/${id}/errors`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" label="Errors" />
+                <p v-if="project.errors?.connected">{{ $t('projectPages.dev.reportingTo', { providers: project.errorLinks.length > 1 ? project.errorLinks.map(item => item.label).join(', ') : project.errors.providerName }) }} <UButton variant="link" size="sm" class="p-0" :label="$t('projectPages.dev.manageServers')" @click="settingsTab = 'error-tracking'" /> <UButton variant="link" size="sm" class="p-0" :label="$t('projectPages.dev.connectAnother')" @click="connectErrorsOpen = true" /></p>
+                <p v-else>{{ $t('projectPages.dev.connectErrorsIntro') }}</p>
+                <UButton :to="`/projects/${id}/errors`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('sections.errors')" />
               </div>
               <template v-if="project.errors?.connected">
-                <p v-for="item in project.errorLinks.filter(link => link.alertWebhookUrl)" :key="item.id" class="step-text">To get {{ project.errorLinks.length > 1 ? `${item.label}'s` : '' }} alerts in the inbox, open the project's alerts in Bugsink, click Add, set Kind to <span class="font-medium">Slack</span> and use this Webhook url: <code class="inline-code break-all">{{ item.alertWebhookUrl }}</code>.</p>
-                <p class="step-text">Use this DSN in browser and server SDKs{{ project.errorLinks.length > 1 ? ` (${project.errorLinks[0]?.label})` : '' }}. Set the same stable HelpBites identity id as the Sentry user id to show a customer’s errors in their conversation.</p>
+                <p v-for="item in project.errorLinks.filter(link => link.alertWebhookUrl)" :key="item.id" class="step-text">{{ $t(project.errorLinks.length > 1 ? 'projectPages.dev.alertsForNamed' : 'projectPages.dev.alertsFor', { label: item.label }) }} <span class="font-medium">Slack</span> {{ $t('projectPages.dev.alertsUrl') }} <code class="inline-code break-all">{{ item.alertWebhookUrl }}</code>{{ $t('projectPages.dev.period') }}</p>
+                <p class="step-text">{{ $t('projectPages.dev.dsnIntro', { sdk: project.errorLinks.length > 1 ? ` (${project.errorLinks[0]?.label})` : '' }) }}</p>
                 <CodeBlock :code="sentrySnippet" lang="js" />
-                <p v-for="item in project.errorLinks.slice(1)" :key="item.id" class="step-text">DSN for {{ item.label }}: <code class="inline-code break-all">{{ item.dsn }}</code></p>
+                <p v-for="item in project.errorLinks.slice(1)" :key="item.id" class="step-text">{{ $t('projectPages.dev.dsnFor', { label: item.label }) }} <code class="inline-code break-all">{{ item.dsn }}</code></p>
               </template>
-              <UButton v-else size="sm" icon="i-lucide-plug" label="Connect error tracking" @click="connectErrorsOpen = true" />
+              <UButton v-else size="sm" icon="i-lucide-plug" :label="$t('projectPages.dev.connectErrorTracking')" @click="connectErrorsOpen = true" />
               <ConnectErrorTrackingModal v-model:open="connectErrorsOpen" :project-id="id" @connected="onErrorsConnected" />
             </template>
 
             <!-- Email -->
             <template v-else-if="tab === 'email'">
               <div class="panel-head">
-                <p>Send from your server with the secret.</p>
+                <p>{{ $t('projectPages.dev.emailIntro') }}</p>
                 <div class="flex shrink-0 gap-1">
-                  <UButton :to="`/projects/${id}/email?view=templates`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" label="Templates" />
-                  <UButton :to="`/projects/${id}/email?view=log`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" label="Log" />
+                  <UButton :to="`/projects/${id}/email?view=templates`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('projectPages.dev.templates')" />
+                  <UButton :to="`/projects/${id}/email?view=log`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('projectPages.dev.log')" />
                 </div>
               </div>
-              <p class="step-text">Send one of this project's templates by its send key, your own HTML (in the body, or uploaded as an <code class="inline-code">html</code> file), or a plain message in the project's layout. Each recipient gets their own message and a row in the log; <code class="inline-code">GET /v1/email-logs</code> reads it back. The sender is set in <NuxtLink :to="`/projects/${id}/settings#email`" class="underline">project settings</NuxtLink>.</p>
+              <p class="step-text">{{ $t('projectPages.dev.emailSendPart') }} <code class="inline-code">html</code> {{ $t('projectPages.dev.emailFilePart') }} <code class="inline-code">GET /v1/email-logs</code> {{ $t('projectPages.dev.emailReadPart') }} <NuxtLink :to="`/projects/${id}/settings#email`" class="underline">{{ $t('projectPages.dev.projectSettings') }}</NuxtLink>{{ $t('projectPages.dev.period') }}</p>
               <CodeBlock :code="emailSnippet" lang="js" />
             </template>
           </div>
@@ -135,19 +135,19 @@
 
         <!-- Security and webhooks -->
         <form id="security" class="scroll-mt-6 space-y-3" @submit.prevent="saveSecurity">
-          <h2 class="section-title">Security and webhooks</h2>
+          <h2 class="section-title">{{ $t('projectPages.dev.securityWebhooks') }}</h2>
           <div class="space-y-4 rounded-xl border border-default p-5">
-            <UFormField label="Allowed origins" hint="One per line. Only these sites may host the widget.">
+            <UFormField :label="$t('projectPages.dev.allowedOrigins')" :hint="$t('projectPages.dev.allowedOriginsHint')">
               <UTextarea v-model="security.allowedOriginsText" :rows="2" autoresize class="w-full font-mono text-xs" placeholder="https://app.example.com" />
             </UFormField>
             <div class="grid gap-4 sm:grid-cols-2">
-              <UFormField label="Action webhook URL" hint="Receives signed operator actions"><UInput v-model="security.actionWebhookUrl" placeholder="https://api.example.com/helpbites/actions" class="w-full" /></UFormField>
-              <UFormField label="Action webhook secret" :hint="project.hasActionWebhookSecret ? 'Leave blank to keep the current secret.' : 'At least 16 characters.'"><UInput v-model="security.actionWebhookSecret" type="password" placeholder="••••••••••••••••" class="w-full" autocomplete="new-password" /></UFormField>
+              <UFormField :label="$t('projectPages.dev.actionWebhookUrl')" :hint="$t('projectPages.dev.actionWebhookUrlHint')"><UInput v-model="security.actionWebhookUrl" placeholder="https://api.example.com/helpbites/actions" class="w-full" /></UFormField>
+              <UFormField :label="$t('projectPages.dev.actionWebhookSecret')" :hint="project.hasActionWebhookSecret ? $t('projectPages.dev.secretKeep') : $t('projectPages.dev.secretLength')"><UInput v-model="security.actionWebhookSecret" type="password" placeholder="••••••••••••••••" class="w-full" autocomplete="new-password" /></UFormField>
             </div>
             <div class="flex items-center gap-3">
-              <UButton type="submit" size="sm" :loading="saving" :disabled="!securityDirty">Save</UButton>
+              <UButton type="submit" size="sm" :loading="saving" :disabled="!securityDirty">{{ $t('projectPages.dev.save') }}</UButton>
               <span v-if="saveError" class="text-[13px] text-error">{{ saveError }}</span>
-              <span v-else-if="saved && !securityDirty" class="text-[13px] text-muted">Saved</span>
+              <span v-else-if="saved && !securityDirty" class="text-[13px] text-muted">{{ $t('common.saved') }}</span>
             </div>
           </div>
         </form>
@@ -167,6 +167,7 @@ type Tab = 'chat' | 'feedback' | 'flags' | 'errors' | 'email'
 type Tone = 'ok' | 'warn' | 'off'
 
 const { api, loadProjects } = useAgent()
+const { t } = useI18n()
 const route = useRoute()
 const id = String(route.params.id)
 
@@ -194,11 +195,11 @@ const integrations = computed(() => {
   const origins = p.allowedOrigins.length
   const flags = p.flags?.length || 0
   return [
-    { key: 'chat' as const, label: 'Chat widget', icon: 'i-lucide-message-circle-more', tone: (origins ? 'ok' : 'warn') as Tone, status: origins ? `${origins} allowed origin${origins === 1 ? '' : 's'}` : 'No allowed origins' },
-    { key: 'feedback' as const, label: 'Feedback', icon: 'i-lucide-lightbulb', tone: (p.feedback?.enabled ? 'ok' : 'off') as Tone, status: p.feedback?.enabled ? 'Board on' : 'Off' },
-    { key: 'flags' as const, label: 'Flags', icon: 'i-lucide-toggle-right', tone: (flags ? 'ok' : 'off') as Tone, status: flags ? `${flags} flag${flags === 1 ? '' : 's'}` : 'None yet' },
-    { key: 'errors' as const, label: 'Errors', icon: 'i-lucide-bug', tone: (p.errors?.connected ? 'ok' : 'off') as Tone, status: p.errors?.connected ? p.errors.providerName : 'Not connected' },
-    { key: 'email' as const, label: 'Email API', icon: 'i-lucide-mail', tone: 'ok' as Tone, status: p.fromEmail || 'Default sender' }
+    { key: 'chat' as const, label: t('projectPages.dev.chatWidget'), icon: 'i-lucide-message-circle-more', tone: (origins ? 'ok' : 'warn') as Tone, status: origins ? t('projectPages.dev.originsCount', origins) : t('projectPages.dev.noOrigins') },
+    { key: 'feedback' as const, label: t('sections.feedback'), icon: 'i-lucide-lightbulb', tone: (p.feedback?.enabled ? 'ok' : 'off') as Tone, status: p.feedback?.enabled ? t('projectPages.dev.boardOn') : t('projectPages.dev.off') },
+    { key: 'flags' as const, label: t('sections.flags'), icon: 'i-lucide-toggle-right', tone: (flags ? 'ok' : 'off') as Tone, status: flags ? t('projectPages.dev.flagsCount', flags) : t('projectPages.dev.noneYet') },
+    { key: 'errors' as const, label: t('sections.errors'), icon: 'i-lucide-bug', tone: (p.errors?.connected ? 'ok' : 'off') as Tone, status: p.errors?.connected ? p.errors.providerName : t('projectPages.dev.notConnected') },
+    { key: 'email' as const, label: t('projectPages.dev.emailApi'), icon: 'i-lucide-mail', tone: 'ok' as Tone, status: p.fromEmail || t('projectPages.dev.defaultSender') }
   ]
 })
 
@@ -218,10 +219,10 @@ function fill(p: AdminProject) {
 onMounted(async () => {
   try {
     const found = (await loadProjects()).find(p => p.id === id)
-    if (!found) throw new Error('Project not found')
+    if (!found) throw new Error(t('projectPages.dev.projectNotFound'))
     fill(found)
   } catch (e: any) {
-    error.value = e?.message || 'Could not load the project'
+    error.value = e?.message || t('projectPages.dev.loadError')
   }
 })
 
@@ -230,7 +231,7 @@ async function reveal() {
 }
 
 async function rotate() {
-  if (!confirm('Rotate the secret? Tokens minted with the current one stop working right away.')) return
+  if (!confirm(t('projectPages.dev.rotateConfirm'))) return
   secret.value = (await api<{ secret: string }>(`/admin/projects/${id}/rotate-secret`, { method: 'POST' })).secret
 }
 
@@ -262,7 +263,7 @@ async function saveSecurity() {
     await loadProjects()
     saved.value = true
   } catch (e: any) {
-    saveError.value = e?.message || 'Could not save'
+    saveError.value = e?.message || t('projectPages.dev.saveError')
   } finally {
     saving.value = false
   }
