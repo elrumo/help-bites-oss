@@ -1,9 +1,9 @@
 <template>
-  <UModal v-model:open="open" title="Settings" description="Your account, the panel's look, the workspace, its team, AI provider, connections and API keys." :ui="{ content: 'sm:max-w-3xl overflow-hidden' }">
+  <UModal v-model:open="open" :title="$t('settings.title')" :description="$t('settings.description')" :ui="{ content: 'sm:max-w-3xl overflow-hidden' }">
     <template #content="{ close }">
       <div class="flex h-[min(640px,88vh)] flex-col sm:flex-row">
-        <nav class="flex shrink-0 gap-1 overflow-x-auto border-b border-default bg-muted p-2 sm:w-52 sm:flex-col sm:border-r sm:border-b-0 sm:p-3" aria-label="Settings">
-          <p class="hidden px-2 pt-1 pb-2 text-xs font-medium text-muted sm:block">Settings</p>
+        <nav class="flex shrink-0 gap-1 overflow-x-auto border-b border-default bg-muted p-2 sm:w-52 sm:flex-col sm:border-r sm:border-b-0 sm:p-3" :aria-label="$t('settings.title')">
+          <p class="hidden px-2 pt-1 pb-2 text-xs font-medium text-muted sm:block">{{ $t('settings.title') }}</p>
           <button
             v-for="item in tabs"
             :key="item.key"
@@ -20,7 +20,7 @@
         <section class="flex min-h-0 min-w-0 flex-1 flex-col">
           <header class="flex h-14 shrink-0 items-center gap-2 border-b border-default px-6">
             <h2 class="text-[15px] font-semibold text-highlighted">{{ current.label }}</h2>
-            <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="sm" square class="ml-auto text-muted" aria-label="Close settings" @click="close" />
+            <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="sm" square class="ml-auto text-muted" :aria-label="$t('settings.close')" @click="close" />
           </header>
 
           <div class="min-h-0 flex-1 overflow-y-auto px-6 py-6">
@@ -43,14 +43,14 @@
               <div class="flex items-center gap-3">
                 <UButton type="submit" :loading="savingProfile" :disabled="!profileDirty">Save profile</UButton>
                 <span v-if="profileSaved && !profileDirty" class="text-[13px] text-muted">Saved</span>
-                <UButton :label="demo ? 'Exit demo' : 'Sign out'" icon="i-lucide-log-out" color="neutral" variant="ghost" class="ml-auto" @click="logout()" />
+                <UButton :label="demo ? $t('nav.exitDemo') : $t('nav.signOut')" icon="i-lucide-log-out" color="neutral" variant="ghost" class="ml-auto" @click="logout()" />
               </div>
             </form>
 
             <!-- Appearance -->
             <div v-else-if="current.key === 'appearance'" class="space-y-3">
-              <p class="section-label">Theme</p>
-              <div class="grid grid-cols-3 gap-3" role="radiogroup" aria-label="Theme">
+              <p class="section-label">{{ $t('settings.theme') }}</p>
+              <div class="grid grid-cols-3 gap-3" role="radiogroup" :aria-label="$t('settings.theme')">
                 <button
                   v-for="theme in themes"
                   :key="theme.value"
@@ -71,7 +71,11 @@
                   <span class="mt-1.5 flex items-center gap-1.5 px-1 text-[13px] font-medium text-highlighted"><UIcon :name="theme.icon" class="size-3.5 text-muted" />{{ theme.label }}</span>
                 </button>
               </div>
-              <p class="text-xs text-muted">System follows your device. This only changes the panel; each project's widget sets its own colour in the project's settings.</p>
+              <p class="text-xs text-muted">{{ $t('settings.themeNote') }}</p>
+
+              <p class="section-label pt-3">{{ $t('settings.language') }}</p>
+              <USelect :model-value="locale" :items="localeItems" class="w-full sm:w-64" :aria-label="$t('settings.language')" @update:model-value="setLocale($event as any)" />
+              <p class="text-xs text-muted">{{ $t('settings.languageNote') }}</p>
             </div>
 
             <!-- Projects -->
@@ -120,20 +124,22 @@ const tab = useState('settings-tab', () => '')
 const newProjectOpen = useState('new-project-open', () => false)
 const { api, agent, projects, demo, context, logout } = useAgent()
 const colorMode = useColorMode()
+const { t, locale, locales, setLocale } = useI18n()
+const localeItems = computed(() => locales.value.map(l => ({ label: l.name || l.code, value: l.code })))
 // GitHub's install callback lands on /projects?github=…, which reopens the connections tab.
 if (useRoute().query.github) tab.value = 'connections'
 
 // Plan & usage only shows when the plan has limits, so never on a self-hosted install.
 const coreTabs = computed(() => [
-  { key: 'account', label: 'Account', icon: 'i-lucide-circle-user' },
-  { key: 'appearance', label: 'Appearance', icon: 'i-lucide-sun-moon' },
-  { key: 'workspace', label: 'Workspace', icon: 'i-lucide-building-2' },
-  ...(context.value?.plan && !context.value.plan.unlimited ? [{ key: 'usage', label: 'Plan & usage', icon: 'i-lucide-gauge' }] : []),
-  { key: 'projects', label: 'Projects', icon: 'i-lucide-boxes' },
-  { key: 'team', label: 'Team', icon: 'i-lucide-users-round' },
-  { key: 'ai', label: 'AI', icon: 'i-lucide-sparkles' },
-  { key: 'connections', label: 'Connections', icon: 'i-lucide-plug-zap' },
-  { key: 'api-keys', label: 'API keys', icon: 'i-lucide-key-round' }
+  { key: 'account', label: t('settings.tabs.account'), icon: 'i-lucide-circle-user' },
+  { key: 'appearance', label: t('settings.tabs.appearance'), icon: 'i-lucide-sun-moon' },
+  { key: 'workspace', label: t('settings.tabs.workspace'), icon: 'i-lucide-building-2' },
+  ...(context.value?.plan && !context.value.plan.unlimited ? [{ key: 'usage', label: t('settings.tabs.usage'), icon: 'i-lucide-gauge' }] : []),
+  { key: 'projects', label: t('settings.tabs.projects'), icon: 'i-lucide-boxes' },
+  { key: 'team', label: t('settings.tabs.team'), icon: 'i-lucide-users-round' },
+  { key: 'ai', label: t('settings.tabs.ai'), icon: 'i-lucide-sparkles' },
+  { key: 'connections', label: t('settings.tabs.connections'), icon: 'i-lucide-plug-zap' },
+  { key: 'api-keys', label: t('settings.tabs.apiKeys'), icon: 'i-lucide-key-round' }
 ])
 // Tabs the cloud edition registers (app/utils/editionUi.ts) follow the core ones.
 const { settingsTabs } = editionUi()
@@ -146,11 +152,11 @@ const open = computed({ get: () => !!tab.value, set: (value) => { tab.value = va
 
 // Thumbnails in each theme's own canvas, page and ink; System shows both, split.
 const looks = { light: 'bg-[#f4f4f5] text-[#161719] [--page:#fcfcfc]', dark: 'bg-[#08090a] text-[#f7f8f8] [--page:#17181a]' }
-const themes = [
-  { value: 'system', label: 'System', icon: 'i-lucide-monitor', looks: ['light', 'dark'] as const },
-  { value: 'light', label: 'Light', icon: 'i-lucide-sun', looks: ['light'] as const },
-  { value: 'dark', label: 'Dark', icon: 'i-lucide-moon', looks: ['dark'] as const }
-]
+const themes = computed(() => [
+  { value: 'system', label: t('nav.system'), icon: 'i-lucide-monitor', looks: ['light', 'dark'] as const },
+  { value: 'light', label: t('nav.light'), icon: 'i-lucide-sun', looks: ['light'] as const },
+  { value: 'dark', label: t('nav.dark'), icon: 'i-lucide-moon', looks: ['dark'] as const }
+])
 
 const profile = reactive({ name: '', email: '' })
 const profilePassword = ref('')

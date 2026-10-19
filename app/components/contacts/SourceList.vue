@@ -17,15 +17,13 @@ const toast = useToast()
 
 const sources = ref<ContactSourceDto[]>([])
 const kinds = ref<{ kind: string, label: string }[]>([])
-const ready = ref(true)
 const loading = ref(true)
 
 async function load() {
   try {
-    const res = await api<{ sources: ContactSourceDto[], kinds: { kind: string, label: string }[], ready: boolean }>('/admin/contact-sources', { query: { project: props.project.id } })
+    const res = await api<{ sources: ContactSourceDto[], kinds: { kind: string, label: string }[] }>('/admin/contact-sources', { query: { project: props.project.id } })
     sources.value = res.sources
     kinds.value = res.kinds
-    ready.value = res.ready
   } catch (e: any) {
     toast.add({ title: e?.message || 'Could not load sources', color: 'error' })
   } finally {
@@ -86,20 +84,11 @@ const what = (s: ContactSourceDto) => s.config.className || s.config.table || s.
     <PageHeader :project-id="project.id" title="Contacts">
       <template #title><ContactsTabs current="sources" /></template>
       <template #actions>
-        <UButton icon="i-lucide-plus" label="Connect a database" size="sm" :disabled="!ready" @click="openForm(null)" />
+        <UButton icon="i-lucide-plus" label="Connect a database" size="sm" @click="openForm(null)" />
       </template>
     </PageHeader>
 
     <div class="min-h-0 flex-1 overflow-y-auto">
-      <UAlert
-        v-if="!ready"
-        class="m-4"
-        icon="i-lucide-key-round"
-        color="warning"
-        variant="soft"
-        title="Set HELPBITES_SECRET first"
-        description="Database credentials are stored encrypted with it. Add HELPBITES_SECRET (32+ random characters, e.g. openssl rand -base64 48) to the server's environment and restart."
-      />
       <div v-if="loading" class="space-y-1 p-4"><USkeleton v-for="i in 3" :key="i" class="h-16" /></div>
       <EmptyState v-else-if="!sources.length" icon="i-lucide-database" title="No databases connected" description="Point HelpBites at your app's users — a Parse class, a Postgres or Supabase table, or a Firestore collection — and it keeps contacts in step. Read only: nothing is ever written back." />
       <ul v-else class="space-y-2 p-4" aria-label="Sources">

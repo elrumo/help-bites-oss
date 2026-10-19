@@ -1,0 +1,141 @@
+<script setup lang="ts">
+/** One error in a side panel: the latest event (stack trace, details, breadcrumbs, tags) and its saved AI write-up. */
+import type { ErrorDetail } from '#shared/errors'
+import type { SavedAnalysis } from '~~/server/utils/errorAi'
+
+const props = defineProps<{ projectId: string, saved?: SavedAnalysis }>()
+const issue = defineModel<any | null>('issue', { default: null })
+const emit = defineEmits<{ analyzed: [issue: any, analysis: SavedAnalysis] }>()
+const { api } = useAgent()
+
+const open = computed({ get: () => Boolean(issue.value), set: (v) => { if (!v) issue.value = null } })
+const loading = ref(false)
+const loadError = ref('')
+const detail = ref<ErrorDetail | null>(null)
+const tab = ref('stack')
+const showAll = ref(false)
+const aiError = ref('')
+const analysis = ref<SavedAnalysis | null>(null)
+const analysisOpen = ref(true)
+const cached = ref(false)
+const tabs = [{ label: 'Stacktrace', value: 'stack' }, { label: 'Event details', value: 'details' }, { label: 'Breadcrumbs', value: 'crumbs' }, { label: 'Tags', value: 'tags' }]
+const hasInApp = computed(() => Boolean(detail.value?.frames.some(frame => frame.inApp)))
+const when = (value: string | null | undefined) => (value ? new Date(value).toLocaleString() : '—')
+const keyInfo = computed<Array<[string, string]>>(() => {
+  const info = detail.value!.issue
+  const row = issue.value
+  return [['Issue', info.shortId || row.shortId || row.id], ['State', info.status], ['Events', String(info.count || row.count || 1)], ['First seen', when(info.firstSeen)], ['Last seen', when(info.lastSeen || row.lastSeen)]]
+})
+const query = () => ({ project: props.projectId, link: issue.value.linkId })
+const path = () => `/admin/errors/${encodeURIComponent(issue.value.id)}`
+
+watch(issue, async (row) => {
+  detail.value = null; loadError.value = ''; aiError.value = ''; tab.value = 'stack'; showAll.value = false
+  analysis.value = props.saved || null
+  cached.value = Boolean(props.saved)
+  if (!row) return
+  loading.value = true
+  try {
+    const loaded = await api<ErrorDetail>(path(), { query: query() })
+    if (issue.value === row) detail.value = loaded
+  } catch (cause: any) {
+    if (issue.value === row) loadError.value = cause.message || 'Could not load this error'
+  } finally { if (issue.value === row) loading.value = false }
+}, { immediate: true })
+
+const analyzing = ref(false)
+async function analyze(refresh: boolean) {
+  const row = issue.value
+  analyzing.value = true
+  aiError.value = ''
+  try {
+    const result = await api<SavedAnalysis & { cached: boolean }>(`${path()}/analyze`, { method: 'POST', body: { ...query(), refresh } })
+    analysis.value = result
+    cached.value = result.cached
+    analysisOpen.value = true
+    emit('analyzed', row, result)
+  } catch (cause: any) { aiError.value = cause.message || 'Could not analyze this error' } finally { analyzing.value = false }
+}
+
+const copying = ref(false)
+const copied = ref(false)
+async function copyPrompt() {
+  copying.value = true
+  aiError.value = ''
+  try {
+    const { prompt } = await api<{ prompt: string }>(`${path()}/analyze`, { method: 'POST', body: { ...query(), prompt: true } })
+    await navigator.clipboard.writeText(`Fix this production error. Find the cause in the code and make the smallest safe change.\n\n${prompt}`)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch (cause: any) { aiError.value = cause.message || 'Could not build the prompt' } finally { copying.value = false }
+}
+</script>
+
+<template>
+  <USlideover v-model:open="open" :title="issue?.title || 'Error'" :description="issue ? `${issue.culprit || 'Unknown location'} · ${issue.count || 1} events` : ''" :ui="{ content: 'max-w-2xl' }">
+    <template #body>
+      <div v-if="issue" class="space-y-4 text-[13px]">
+        <div class="flex items-center gap-2">
+          <UBadge v-if="issue.linkLabel" color="neutral" variant="subtle" size="sm" class="rounded-full">{{ issue.linkLabel }}</UBadge>
+          <UButton :to="issue.url" target="_blank" color="neutral" variant="ghost" size="xs" icon="i-lucide-arrow-up-right" :label="`Open in ${issue.providerName}`" class="ml-auto" />
+        </div>
+
+        <section class="space-y-3 rounded-lg border border-default bg-default p-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <UIcon name="i-lucide-sparkles" class="size-4 text-primary" />
+            <p class="mr-auto text-sm font-medium text-highlighted">Fix with AI</p>
+            <UButton color="primary" variant="soft" size="xs" icon="i-lucide-wand-sparkles" :label="analysis ? 'Analyze again' : 'Analyze and suggest a fix'" :loading="analyzing" @click="analyze(!!analysis)" />
+            <UButton color="neutral" variant="soft" size="xs" :icon="copied ? 'i-lucide-check' : 'i-lucide-clipboard'" label="Copy prompt for a coding agent" :loading="copying" @click="copyPrompt" />
+          </div>
+          <p v-if="aiError" class="text-sm text-error">{{ aiError }}</p>
+          <UCollapsible v-if="analysis" v-model:open="analysisOpen">
+            <UButton color="neutral" variant="ghost" size="xs" block class="justify-between" trailing-icon="i-lucide-chevron-down" :label="analysisOpen ? 'Hide analysis' : `Show analysis${analysis.at ? ` from ${when(analysis.at)}` : ''}`" />
+            <template #content>
+              <div class="space-y-3 pt-2">
+                <MarkdownBlock :text="analysis.text" />
+                <p class="text-xs text-muted">{{ analysis.files.length ? `Read ${analysis.files.join(', ')} from your GitHub repos (default branch).` : 'No source files from GitHub were found for this stack trace, so this is based on the event alone.' }}{{ cached ? ` Saved${analysis.at ? ` on ${when(analysis.at)}` : ''}.` : '' }}</p>
+              </div>
+            </template>
+          </UCollapsible>
+          <p v-else-if="!analyzing" class="text-xs text-muted">Reads the stack trace and, when GitHub repos are connected to the project, the source files it passes through.</p>
+        </section>
+
+        <div v-if="loading" class="space-y-2" aria-busy="true"><USkeleton class="h-4 w-1/2" /><USkeleton class="h-24 w-full" /></div>
+        <p v-else-if="loadError" class="text-sm text-error">{{ loadError }}</p>
+        <template v-else-if="detail">
+          <dl class="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
+            <div v-for="[label, value] in keyInfo" :key="label" class="min-w-0"><dt class="text-xs text-muted">{{ label }}</dt><dd class="truncate text-highlighted">{{ value }}</dd></div>
+          </dl>
+          <div>
+            <p class="text-sm font-medium text-highlighted">{{ detail.exception.type }}</p>
+            <p v-if="detail.exception.value" class="break-words text-sm text-muted">{{ detail.exception.value }}</p>
+          </div>
+          <UTabs v-model="tab" :items="tabs" :content="false" color="neutral" size="xs" class="w-full" />
+          <div v-if="tab === 'stack'" class="space-y-1.5">
+            <p v-if="!detail.frames.length" class="text-sm text-muted">This event has no stack trace.</p>
+            <template v-for="(frame, index) in detail.frames" :key="index">
+              <details v-if="showAll || frame.inApp || !hasInApp" :open="index === 0" class="rounded-lg border border-default bg-default">
+                <summary class="cursor-pointer break-all px-3 py-2 font-mono text-xs"><span :class="frame.inApp ? 'text-highlighted' : 'text-muted'">{{ frame.file }}</span><span v-if="frame.line" class="text-muted">:{{ frame.line }}</span> <span class="text-muted">in</span> {{ frame.function }}</summary>
+                <pre v-if="frame.context" class="overflow-x-auto border-t border-default px-3 py-2 font-mono text-xs"><template v-for="(line, n) in frame.before" :key="`b${n}`"><span class="text-muted">{{ line }}</span>{{ '\n' }}</template><span class="font-semibold text-error">{{ frame.context }}</span>{{ '\n' }}<template v-for="(line, n) in frame.after" :key="`a${n}`"><span class="text-muted">{{ line }}</span>{{ '\n' }}</template></pre>
+              </details>
+            </template>
+            <UButton v-if="hasInApp && detail.frames.some(frame => !frame.inApp)" color="neutral" variant="link" size="xs" :label="showAll ? 'Show only your code' : 'Show library frames too'" @click="showAll = !showAll" />
+          </div>
+          <dl v-else-if="tab === 'details'" class="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1.5">
+            <p v-if="!detail.details.length" class="col-span-2 text-muted">No extra details on this event.</p>
+            <template v-for="[label, value] in detail.details" :key="label"><dt class="text-muted">{{ label }}</dt><dd class="break-all">{{ value }}</dd></template>
+          </dl>
+          <ul v-else-if="tab === 'crumbs'" class="space-y-1">
+            <li v-if="!detail.breadcrumbs.length" class="text-muted">No breadcrumbs recorded.</li>
+            <li v-for="(crumb, index) in detail.breadcrumbs" :key="index" class="flex gap-3"><span class="w-24 shrink-0 truncate text-xs text-muted">{{ crumb.category || crumb.level }}</span><span class="min-w-0 break-all">{{ crumb.message }}</span></li>
+          </ul>
+          <dl v-else class="grid grid-cols-[10rem_1fr] gap-x-3 gap-y-1.5">
+            <p v-if="!detail.tags.length" class="col-span-2 text-muted">No tags on this event.</p>
+            <template v-for="[label, value] in detail.tags" :key="label"><dt class="text-muted">{{ label }}</dt><dd class="break-all">{{ value }}</dd></template>
+          </dl>
+          <p class="text-xs text-muted">Showing the latest event{{ detail.at ? `, ${new Date(detail.at).toLocaleString()}` : '' }}. Older events are in {{ issue.providerName }}.</p>
+        </template>
+      </div>
+    </template>
+  </USlideover>
+</template>

@@ -61,6 +61,17 @@ struct InboxScreen: View {
     .sheet(isPresented: Binding(get: { workspace.composeOpen }, set: { workspace.composeOpen = $0 })) {
       InboxNewConversationSheet().environment(workspace)
     }
+    // One confirmation for every way to delete: the list's menu, the header's menu.
+    .confirmationDialog(
+      "Delete this conversation?",
+      isPresented: Binding(get: { store.pendingDelete != nil }, set: { if !$0 { store.pendingDelete = nil } }),
+      titleVisibility: .visible,
+      presenting: store.pendingDelete
+    ) { conversation in
+      Button("Delete", role: .destructive) { Task { await store.delete(conversation) } }
+    } message: { _ in
+      Text("Every message in it is removed for good, for the customer too. Archive it to keep the history.")
+    }
   }
 }
 
@@ -113,6 +124,8 @@ private struct InboxQueueColumn: View {
       if rows.isEmpty {
         if store.loading && store.conversations.isEmpty {
           SkeletonRows(count: 6).frame(maxHeight: .infinity, alignment: .top)
+        } else if store.queue == .archived {
+          EmptyState(systemImage: "archivebox", title: "Nothing archived", message: "Archive a conversation to clear it from the queue. It comes back if the customer writes again.")
         } else {
           EmptyState(systemImage: "tray", title: "Nothing in this view", message: "New customer messages land here as they arrive.")
         }
@@ -123,6 +136,7 @@ private struct InboxQueueColumn: View {
   private func row(_ conversation: Conversation, store: InboxStore) -> some View {
     let unread = conversation.unreadByAgent > 0
     let done = store.isDone(conversation)
+    let archived = conversation.archivedAt != nil
     return Button { Task { await store.select(conversation.id) } } label: {
       InboxRow(conversation: conversation, user: store.endUsers[conversation.endUserId], project: workspace.project(conversation.projectId), done: done)
     }
@@ -135,6 +149,11 @@ private struct InboxQueueColumn: View {
       Button { Task { await store.toggleDone(conversation) } } label: {
         Label(done ? "Reopen" : "Mark as done", systemImage: done ? "arrow.uturn.backward" : "checkmark.circle")
       }
+      Divider()
+      Button { Task { await store.setArchived(conversation, !archived) } } label: {
+        Label(archived ? "Unarchive" : "Archive", systemImage: archived ? "tray.and.arrow.up" : "archivebox")
+      }
+      Button(role: .destructive) { store.pendingDelete = conversation } label: { Label("Delete", systemImage: "trash") }
     }
     .swipeActions(edge: .leading, allowsFullSwipe: true) {
       Button { Task { await store.markRead(conversation.id, read: unread) } } label: {
@@ -143,10 +162,18 @@ private struct InboxQueueColumn: View {
       .tint(Theme.info)
     }
     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-      Button { Task { await store.toggleDone(conversation) } } label: {
-        Label(done ? "Reopen" : "Done", systemImage: done ? "arrow.uturn.backward" : "checkmark")
+      if archived {
+        Button { Task { await store.setArchived(conversation, false) } } label: { Label("Unarchive", systemImage: "tray.and.arrow.up") }
+          .tint(Theme.accent)
+        Button(role: .destructive) { store.pendingDelete = conversation } label: { Label("Delete", systemImage: "trash") }
+      } else {
+        Button { Task { await store.toggleDone(conversation) } } label: {
+          Label(done ? "Reopen" : "Done", systemImage: done ? "arrow.uturn.backward" : "checkmark")
+        }
+        .tint(Theme.accent)
+        Button { Task { await store.setArchived(conversation, true) } } label: { Label("Archive", systemImage: "archivebox") }
+          .tint(Theme.textMuted)
       }
-      .tint(Theme.accent)
     }
   }
 }

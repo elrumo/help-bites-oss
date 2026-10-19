@@ -72,6 +72,7 @@ export function serializeConversation(row: ParseObject): Conversation {
     unreadByUser: Number(row.get('unreadByUser') || 0),
     userReadAt: iso(row.get('userReadAt')),
     agentReadAt: iso(row.get('agentReadAt')),
+    archivedAt: iso(row.get('archivedAt')),
     createdAt: iso(row.createdAt) || ''
   }
 }
@@ -321,6 +322,8 @@ export async function appendMessage({ conversation, sender, senderName, agent, s
   const serialized = serializeMessage(message)
   if (visibility === 'public') {
     const previous = serializeConversation(conversation)
+    // A customer writing back resurfaces an archived thread in the queue.
+    if (sender === 'user') conversation.unset('archivedAt')
     const type = await getConversationType(conversation.get('project'), previous.type)
     let reopenStatus = previous.status
     const current = statusDefinition(type, previous.status)
@@ -375,6 +378,40 @@ export async function markRead(conversation: ParseObject, side: 'user' | 'agent'
     conversation: serializeConversationEvent(conversation),
     audience: 'agent'
   })
+}
+
+/** Archive hides a conversation from the inbox queue without losing it; unarchiving brings it back. */
+export async function setArchived(conversation: ParseObject, archived: boolean): Promise<void> {
+  if (archived === Boolean(conversation.get('archivedAt'))) return
+  if (archived) conversation.set('archivedAt', new Date())
+  else conversation.unset('archivedAt')
+  await conversation.save(null, MASTER)
+  await publishEvent({
+    type: 'conversation.updated',
+    projectId: pointerId(conversation.get('project')),
+    endUserId: pointerId(conversation.get('endUser')),
+    conversationId: conversation.id || '',
+    conversation: serializeConversationEvent(conversation),
+    audience: 'agent'
+  })
+}
+
+/** Permanently remove a conversation and every message in it. */
+export async function deleteConversation(conversation: ParseObject): Promise<void> {
+  const snapshot = serializeConversationEvent(conversation)
+  const projectId = pointerId(conversation.get('project'))
+  const endUserId = pointerId(conversation.get('endUser'))
+  const id = conversation.id || ''
+  const Parse = useParse()
+  // A page at a time: a long thread must not stop at the first 500 messages.
+  for (;;) {
+    const page = await new Parse.Query('Message').equalTo('conversation', conversation).limit(500).find(MASTER)
+    if (page.length) await Parse.Object.destroyAll(page, MASTER)
+    if (page.length < 500) break
+  }
+  await conversation.destroy(MASTER)
+  await removeConversationFromSearch(id)
+  await publishEvent({ type: 'conversation.deleted', projectId, endUserId, conversationId: id, conversation: snapshot, audience: 'agent' })
 }
 
 export async function setStatus(conversation: ParseObject, status: string): Promise<void> {

@@ -519,7 +519,8 @@ const SCHEMAS = {
       unreadByAgent: { type: 'Number' },
       unreadByUser: { type: 'Number' },
       userReadAt: { type: 'Date' },
-      agentReadAt: { type: 'Date' }
+      agentReadAt: { type: 'Date' },
+      archivedAt: { type: 'Date' }
     },
     indexes: {
       project_status_last: { _p_project: 1, status: 1, lastMessageAt: -1 },
@@ -1189,6 +1190,20 @@ const SCHEMAS = {
     indexes: {
       project_email: { _p_project: 1, email: 1 },
       project_created: { _p_project: 1, _created_at: -1 }
+    }
+  },
+  // The AI write-up of one tracker issue (key `link:provider:issue`) or of the whole
+  // unresolved list (key `overview`); one row per project and key, rewritten on a re-run.
+  ErrorAnalysis: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      key: { type: 'String' },
+      text: { type: 'String' },
+      files: { type: 'Array' },
+      count: { type: 'Number' }
+    },
+    indexes: {
+      project_key: { _p_project: 1, key: 1 }
     }
   },
   Device: {

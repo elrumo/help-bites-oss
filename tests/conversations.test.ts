@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { buildThreads, groupMessagesForDisplay, replyTarget } from '../shared/conversations'
+import { buildThreads, conversationToText, groupMessagesForDisplay, replyTarget } from '../shared/conversations'
 import { MAX_PAGE_SIZE, PAGE_SIZE, endUserEvent, pageHasMore, pageSize, withoutTriage } from '../server/utils/conversations'
 import type { SupportEvent } from '../server/utils/events'
 import { normalizeContext, normalizeSubjectRef, messagePreview, validateFields } from '../shared/support'
@@ -102,5 +102,25 @@ describe('end-user view', () => {
     expect(out).toMatchObject({ type: 'conversation.updated', conversationId: 'c1' })
     for (const key of ['priority', 'assigneeId', 'assignedAt', 'tags']) expect(out.conversation).not.toHaveProperty(key)
     expect(event.conversation.tags).toEqual(['churn-risk'])
+  })
+})
+
+describe('conversationToText', () => {
+  const conversation = { subject: 'Cannot log in', status: 'open', type: 'support', priority: 'high', tags: ['auth'], context: null, createdAt: '2026-05-01T10:00:00.000Z' } as unknown as Conversation
+
+  test('writes a header and labelled messages in order, with notes and events marked', () => {
+    const text = conversationToText(conversation, [
+      msg('2', 'agent', '2026-05-01T10:05:00.000Z', { visibility: 'internal', kind: 'message', body: 'Looks like a bad token' }),
+      msg('1', 'user', '2026-05-01T10:00:00.000Z', { visibility: 'public', kind: 'message', attachments: [{ url: 'https://x.test/a.png', mime: 'image/png', size: 1 }] }),
+      msg('3', 'agent', '2026-05-01T10:06:00.000Z', { kind: 'event', event: { type: 'status.changed', to: 'done' } }),
+      msg('4', 'agent', '2026-05-01T10:07:00.000Z', { delivery: 'pending' })
+    ], { customer: 'Ada', project: 'Acme' })
+    expect(text).toContain('Support conversation: Cannot log in')
+    expect(text).toContain('Customer: Ada')
+    expect(text.indexOf('Customer (Ada)')).toBeLessThan(text.indexOf('Support agent'))
+    expect(text).toContain('[internal note, not visible to the customer]')
+    expect(text).toContain('Attachment: https://x.test/a.png (image/png)')
+    expect(text).toContain('(system) Status changed to done')
+    expect(text).not.toContain('body 4')
   })
 })

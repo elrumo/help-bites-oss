@@ -70,6 +70,8 @@ export interface ChatListItem {
   priority?: ConversationPriority
   /** Undefined where the concept does not exist (the end user's own inbox). */
   done?: boolean
+  /** Undefined where the team cannot archive or delete (the end user's own inbox). */
+  archived?: boolean
 }
 
 const props = withDefaults(defineProps<{
@@ -81,7 +83,7 @@ const props = withDefaults(defineProps<{
   searchable?: boolean
 }>(), { activeId: '', loading: false, emptyText: 'No conversations yet.', emptyPreview: 'No messages yet', searchable: true })
 
-const emit = defineEmits<{ (event: 'select' | 'toggle-read' | 'toggle-done', id: string): void }>()
+const emit = defineEmits<{ (event: 'select' | 'toggle-read' | 'toggle-done' | 'toggle-archive' | 'delete', id: string): void }>()
 
 const searchQuery = ref('')
 
@@ -94,7 +96,10 @@ function contextItems(item: ChatListItem) {
   return [[
     { label: item.unreadCount ? 'Mark as read' : 'Mark as unread', icon: item.unreadCount ? 'i-lucide-circle-check' : 'i-lucide-eye-off', onSelect: () => emit('toggle-read', item.id) },
     ...(item.done === undefined ? [] : [{ label: item.done ? 'Reopen' : 'Mark as done', icon: item.done ? 'i-lucide-reply' : 'i-lucide-check', onSelect: () => emit('toggle-done', item.id) }])
-  ]]
+  ], ...(item.archived === undefined ? [] : [[
+    { label: item.archived ? 'Unarchive' : 'Archive', icon: item.archived ? 'i-lucide-archive-restore' : 'i-lucide-archive', onSelect: () => emit('toggle-archive', item.id) },
+    { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => emit('delete', item.id) }
+  ]])]
 }
 
 const filteredItems = computed(() => {

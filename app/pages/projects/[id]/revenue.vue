@@ -21,8 +21,7 @@
             <UFormField label="Restricted API key" help="Stripe → Developers → API keys → Create restricted key. Give it read access to Charges, Customers, Subscriptions and Products.">
               <UInput v-model="apiKey" type="password" placeholder="rk_live_…" autocomplete="off" class="w-full" />
             </UFormField>
-            <p v-if="!ready" class="text-xs text-error">Set HELPBITES_SECRET on the server first: the key is stored sealed with it.</p>
-            <UButton type="submit" label="Connect Stripe" :loading="connecting" :disabled="!apiKey.trim() || !ready" />
+            <UButton type="submit" label="Connect Stripe" :loading="connecting" :disabled="!apiKey.trim()" />
           </form>
         </EmptyState>
 
@@ -111,7 +110,6 @@ const toast = useToast()
 const id = String(useRoute().params.id)
 
 const connection = ref<StripeConnection | null>(null)
-const ready = ref(true)
 const report = ref<RevenueReport | null>(null)
 const range = ref<RevenueRange>('30d')
 const loading = ref(true)
@@ -136,9 +134,8 @@ const menu = [[
 ]]
 
 async function loadConnection() {
-  const res = await api<{ connection: StripeConnection, ready: boolean }>('/admin/stripe', { query: { project: id } })
+  const res = await api<{ connection: StripeConnection }>('/admin/stripe', { query: { project: id } })
   connection.value = res.connection
-  ready.value = res.ready
 }
 async function loadReport() {
   if (!connection.value?.connected) return

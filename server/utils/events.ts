@@ -32,6 +32,7 @@ export type SupportEvent =
   | SupportEventBase & { type: 'message.updated', message: Message }
   | SupportEventBase & { type: 'message.deleted', messageId: string }
   | SupportEventBase & { type: 'conversation.updated' }
+  | SupportEventBase & { type: 'conversation.deleted' }
 
 export async function publishTo(targets: string[], event: unknown): Promise<void> {
   try {

@@ -1,6 +1,6 @@
 import { createError } from 'h3'
 import { MASTER, type ParseObject } from './parse'
-import { openSealedSecret, sealSecret } from './secrets'
+import { readCredential, storeCredential } from './secrets'
 
 // Telegram, send only. A bot token from @BotFather is sealed on the project (`telegram`) with the chat it posts to.
 // Error alerts (server/utils/errorAlerts.ts) are sent there as well as mailed. HelpBites never reads messages,
@@ -27,7 +27,7 @@ export function serializeTelegram(project: ParseObject): TelegramConnection {
 export async function connectTelegram(project: ParseObject, token: unknown, chat: unknown): Promise<TelegramConnection> {
   const key = typeof token === 'string' ? token.trim() : ''
   if (!/^\d{5,}:[\w-]{30,}$/.test(key)) throw createError({ statusCode: 400, statusMessage: 'Paste the bot token @BotFather gave you (123456:ABC…)' })
-  const sealed = sealSecret(key)
+  const sealed = storeCredential(key)
   const bot = await call(key, 'getMe')
   let chatId = typeof chat === 'string' ? chat.trim() : ''
   if (chatId && !/^(-?\d+|@\w+)$/.test(chatId)) throw createError({ statusCode: 400, statusMessage: 'The chat id is a number (or @channelname)' })
@@ -54,5 +54,5 @@ export async function disconnectTelegram(project: ParseObject): Promise<void> {
 export async function sendTelegram(project: ParseObject, text: string): Promise<void> {
   const row = stored(project)
   if (!row) return
-  await call(openSealedSecret(row.tokenSealed), 'sendMessage', { chat_id: row.chatId, text: text.slice(0, 4000), disable_web_page_preview: true })
+  await call(readCredential(row.tokenSealed), 'sendMessage', { chat_id: row.chatId, text: text.slice(0, 4000), disable_web_page_preview: true })
 }

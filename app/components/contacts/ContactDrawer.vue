@@ -45,7 +45,7 @@ async function load() {
     name.value = c.name
     tags.value = [...c.tags]
     attributes.value = Object.entries(c.attributes).map(([key, value]) => ({ key, value: String(value) }))
-    api<{ conversations: Conversation[] }>('/admin/conversations', { query: { project: props.project.id, endUser: c.id, limit: 20 } }).then(r => { conversations.value = r.conversations }).catch(() => {})
+    api<{ conversations: Conversation[] }>('/admin/conversations', { query: { project: props.project.id, endUser: c.id, archived: 'any', limit: 20 } }).then(r => { conversations.value = r.conversations }).catch(() => {})
     api<NonNullable<typeof billing.value>>('/admin/stripe/contact', { query: { project: props.project.id, contact: c.id } }).then((r) => { if (id.value === current && r.currency) billing.value = r }).catch(() => {})
     if (c.email) api<{ logs: EmailLogEntry[] }>('/admin/email-logs', { query: { project: props.project.id, to: c.email, limit: 20 } }).then(r => { emails.value = r.logs.filter(l => l.to === c.email) }).catch(() => {})
   } catch (e: any) {

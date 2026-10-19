@@ -6,45 +6,45 @@
           v-if="searchOpen"
           v-model="searchQuery"
           icon="i-lucide-search"
-          placeholder="Search conversations"
+          :placeholder="$t('inbox.searchPlaceholder')"
           variant="none"
           size="sm"
           autofocus
           class="min-w-0 flex-1"
           :ui="{ base: 'ps-6 pe-1', leading: 'ps-0' }"
-          aria-label="Search conversations"
+          :aria-label="$t('inbox.searchPlaceholder')"
           @update:model-value="scheduleLoad"
           @keydown.esc="closeSearch"
         />
-        <h1 v-else class="mr-auto text-[13px] font-medium text-highlighted">Inbox</h1>
-        <UTooltip :text="searchOpen ? 'Close search' : 'Search'">
-          <UButton :icon="searchOpen ? 'i-lucide-x' : 'i-lucide-search'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="searchOpen ? 'Close search' : 'Search conversations'" @click="searchOpen ? closeSearch() : (searchOpen = true)" />
+        <h1 v-else class="mr-auto text-[13px] font-medium text-highlighted">{{ $t('nav.inbox') }}</h1>
+        <UTooltip :text="searchOpen ? $t('inbox.closeSearch') : $t('common.search')">
+          <UButton :icon="searchOpen ? 'i-lucide-x' : 'i-lucide-search'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="searchOpen ? $t('inbox.closeSearch') : $t('inbox.searchPlaceholder')" @click="searchOpen ? closeSearch() : (searchOpen = true)" />
         </UTooltip>
         <UPopover :content="{ align: 'end' }">
           <UChip :show="filtersActive" size="sm" inset>
-            <UButton icon="i-lucide-list-filter" color="neutral" variant="ghost" size="sm" square class="text-muted" aria-label="Filter conversations" />
+            <UButton icon="i-lucide-list-filter" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="$t('inbox.filterConversations')" />
           </UChip>
           <template #content>
             <div class="grid w-72 grid-cols-2 gap-2 p-3">
-              <p class="section-label col-span-2">Filter</p>
-              <USelect v-model="projectFilter" :items="projectItems" size="sm" class="col-span-2" aria-label="Project" @update:model-value="loadList()" />
-              <USelect v-model="statusFilter" :items="statusFilterItems" size="sm" aria-label="Status" @update:model-value="loadList()" />
-              <USelect v-model="priorityFilter" :items="priorityFilterItems" size="sm" aria-label="Priority" @update:model-value="loadList()" />
-              <UInput v-model="typeFilter" placeholder="Ticket type" size="sm" class="col-span-2" aria-label="Ticket type" @update:model-value="scheduleLoad" />
-              <UButton v-if="filtersActive" label="Clear filters" color="neutral" variant="ghost" size="sm" class="col-span-2 justify-center" @click="clearFilters" />
+              <p class="section-label col-span-2">{{ $t('inbox.filter') }}</p>
+              <USelect v-model="projectFilter" :items="projectItems" size="sm" class="col-span-2" :aria-label="$t('inbox.project')" @update:model-value="loadList()" />
+              <USelect v-model="statusFilter" :items="statusFilterItems" size="sm" :aria-label="$t('inbox.status')" @update:model-value="loadList()" />
+              <USelect v-model="priorityFilter" :items="priorityFilterItems" size="sm" :aria-label="$t('inbox.priority')" @update:model-value="loadList()" />
+              <UInput v-model="typeFilter" :placeholder="$t('inbox.ticketType')" size="sm" class="col-span-2" :aria-label="$t('inbox.ticketType')" @update:model-value="scheduleLoad" />
+              <UButton v-if="filtersActive" :label="$t('inbox.clearFilters')" color="neutral" variant="ghost" size="sm" class="col-span-2 justify-center" @click="clearFilters" />
             </div>
           </template>
         </UPopover>
-        <UTooltip text="Refresh">
-          <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" size="sm" square class="text-muted" aria-label="Refresh queue" :loading="listLoading" @click="loadList()" />
+        <UTooltip :text="$t('inbox.refresh')">
+          <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="$t('inbox.refreshQueue')" :loading="listLoading" @click="loadList()" />
         </UTooltip>
-        <UTooltip text="New conversation" :kbds="['c']">
-          <UButton icon="i-lucide-square-pen" color="neutral" variant="ghost" size="sm" square class="text-muted" aria-label="New conversation" @click="showNewChat = true" />
+        <UTooltip :text="$t('nav.newConversation')" :kbds="['c']">
+          <UButton icon="i-lucide-square-pen" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="$t('nav.newConversation')" @click="showNewChat = true" />
         </UTooltip>
       </header>
 
-      <div class="flex shrink-0 gap-1 overflow-x-auto px-3 py-2.5 [scrollbar-width:none]" role="tablist" aria-label="Queue views">
-        <button v-for="item in viewItems" :key="item.key" type="button" role="tab" :aria-selected="view === item.key" class="chip h-6 px-2.5 text-xs" :class="view === item.key ? 'chip-active' : ''" @click="view = item.key">
+      <div class="flex shrink-0 gap-1 overflow-x-auto px-3 py-2.5 [scrollbar-width:none]" role="tablist" :aria-label="$t('inbox.queueViews')">
+        <button v-for="item in viewItems" :key="item.key" type="button" role="tab" :aria-selected="view === item.key" class="chip h-6 px-2.5 text-xs" :class="view === item.key ? 'chip-active' : ''" @click="setView(item.key)">
           {{ item.label }}<span class="tabular-nums text-dimmed">{{ item.count }}</span>
         </button>
       </div>
@@ -55,24 +55,27 @@
         :active-id="activeId"
         :loading="listLoading"
         :searchable="false"
-        empty-text="No conversations here. New customer messages will appear in this queue."
+        :empty-text="$t('inbox.emptyQueue')"
         @select="select"
         @toggle-read="toggleRead"
         @toggle-done="toggleDone"
+        @toggle-archive="toggleArchive"
+        @delete="remove"
       >
         <template #empty>
-          <EmptyState icon="i-lucide-inbox" title="Nothing in this view" description="New customer messages land here as they arrive." />
+          <EmptyState v-if="view === 'archived'" icon="i-lucide-archive" :title="$t('inbox.nothingArchived')" :description="$t('inbox.nothingArchivedDescription')" />
+          <EmptyState v-else icon="i-lucide-inbox" :title="$t('inbox.nothingInView')" :description="$t('inbox.nothingInViewDescription')" />
         </template>
       </ChatConversationList>
-      <button v-if="hasMore" type="button" class="h-10 shrink-0 border-t border-default text-[13px] font-medium text-muted transition-colors hover:bg-elevated hover:text-highlighted" @click="loadList(true)">Load older conversations</button>
+      <button v-if="hasMore" type="button" class="h-10 shrink-0 border-t border-default text-[13px] font-medium text-muted transition-colors hover:bg-elevated hover:text-highlighted" @click="loadList(true)">{{ $t('inbox.loadOlder') }}</button>
     </aside>
 
     <section class="flex min-w-0 flex-1 flex-col" :class="activeId ? 'flex' : 'hidden md:flex'">
-      <EmptyState v-if="!activeId" icon="i-lucide-messages-square" title="Pick a conversation" description="Its full history, the customer and the ticket open here." class="flex-1" />
+      <EmptyState v-if="!activeId" icon="i-lucide-messages-square" :title="$t('inbox.pickConversation')" :description="$t('inbox.pickConversationDescription')" class="flex-1" />
       <template v-else>
         <header class="flex h-12 shrink-0 items-center gap-2 border-b border-default px-2 sm:px-4">
-          <UButton icon="i-lucide-chevron-left" color="neutral" variant="ghost" size="sm" square class="md:hidden" aria-label="Back to inbox" @click="select('')" />
-          <nav class="flex min-w-0 flex-1 items-center gap-1.5 text-[13px] font-medium" aria-label="Breadcrumb">
+          <UButton icon="i-lucide-chevron-left" color="neutral" variant="ghost" size="sm" square class="md:hidden" :aria-label="$t('inbox.backToInbox')" @click="select('')" />
+          <nav class="flex min-w-0 flex-1 items-center gap-1.5 text-[13px] font-medium" :aria-label="$t('inbox.breadcrumb')">
             <template v-if="activeProject">
               <NuxtLink :to="`/projects/${activeProject.id}/overview`" class="hidden min-w-0 shrink items-center gap-2 text-muted transition-colors hover:text-highlighted sm:flex">
                 <ProjectDot tile :project-id="activeProject.id" :accent="activeProject.theme?.accent" :name="activeProject.name" :icon-url="activeProject.iconUrl" />
@@ -80,14 +83,23 @@
               </NuxtLink>
               <UIcon name="i-lucide-chevron-right" class="hidden size-3.5 shrink-0 text-dimmed sm:block" />
             </template>
-            <h2 class="truncate text-highlighted">{{ activeUser?.name || activeUser?.email || activeUser?.externalId || 'Conversation' }}</h2>
+            <h2 class="truncate text-highlighted">{{ activeUser?.name || activeUser?.email || activeUser?.externalId || $t('inbox.conversation') }}</h2>
             <span v-if="activeConversation?.subject || activeConversation?.context?.label" class="hidden truncate font-normal text-muted lg:inline">{{ activeConversation?.subject || activeConversation?.context?.label }}</span>
           </nav>
           <USelect v-if="activeConversation" :model-value="activeConversation.status" :items="statusItems" color="neutral" variant="outline" size="sm" class="w-auto xl:hidden" :ui="{ base: 'rounded-full' }" aria-label="Status" @update:model-value="setStatus(activeId, String($event))">
             <template #leading><StatusIcon :category="activeConversation.statusCategory" /></template>
           </USelect>
-          <UTooltip text="Details">
-            <UButton icon="i-lucide-panel-right" color="neutral" variant="ghost" size="sm" square class="text-muted xl:hidden" aria-label="Open conversation details" @click="showContext = true" />
+          <UTooltip v-if="activeConversation" :text="$t('inbox.copyConversation')">
+            <UButton :icon="copiedConversation ? 'i-lucide-check' : 'i-lucide-copy'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="$t('inbox.copyConversation')" :loading="copyingConversation" @click="copyConversation" />
+          </UTooltip>
+          <UTooltip v-if="activeConversation" :text="activeConversation.archivedAt ? $t('inbox.unarchive') : $t('inbox.archive')">
+            <UButton :icon="activeConversation.archivedAt ? 'i-lucide-archive-restore' : 'i-lucide-archive'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="activeConversation.archivedAt ? $t('inbox.unarchiveConversation') : $t('inbox.archiveConversation')" @click="toggleArchive(activeId)" />
+          </UTooltip>
+          <UTooltip v-if="activeConversation" :text="$t('inbox.delete')">
+            <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" size="sm" square class="text-muted hover:text-error" :aria-label="$t('inbox.deleteConversation')" @click="remove(activeId)" />
+          </UTooltip>
+          <UTooltip :text="$t('inbox.details')">
+            <UButton icon="i-lucide-panel-right" color="neutral" variant="ghost" size="sm" square class="text-muted xl:hidden" :aria-label="$t('inbox.openDetails')" @click="showContext = true" />
           </UTooltip>
         </header>
 
@@ -110,12 +122,12 @@
               @unsend="unsend"
               @react="react"
             >
-              <template #empty><EmptyState icon="i-lucide-message-square-dashed" title="No messages yet" description="Write the first one. It reaches the customer in the widget and by email." /></template>
+              <template #empty><EmptyState icon="i-lucide-message-square-dashed" :title="$t('inbox.noMessages')" :description="$t('inbox.noMessagesDescription')" /></template>
             </ChatTranscript>
 
             <ChatComposer
               v-model="draft"
-              :placeholder="internalNote ? 'Add an internal note…' : 'Reply to the customer…'"
+              :placeholder="internalNote ? $t('inbox.addInternalNote') : $t('inbox.replyPlaceholder')"
               :error="threadError"
               :replying-to="replyingTo"
               :allow-attachments="activeProject?.allowAttachments !== false"
@@ -126,14 +138,14 @@
               @upload-error="threadError = $event"
             >
               <template #above>
-                <div class="mb-2 flex items-center gap-1.5" role="tablist" aria-label="Message type">
-                  <button type="button" role="tab" :aria-selected="!internalNote" class="chip h-6 px-2.5 text-xs" :class="!internalNote ? 'chip-active' : ''" @click="internalNote = false"><UIcon name="i-lucide-reply" class="size-3.5" />Reply</button>
-                  <button type="button" role="tab" :aria-selected="internalNote" class="chip h-6 px-2.5 text-xs" :class="internalNote ? 'chip-active' : ''" @click="internalNote = true"><UIcon name="i-lucide-lock-keyhole" class="size-3.5" />Internal note</button>
+                <div class="mb-2 flex items-center gap-1.5" role="tablist" :aria-label="$t('inbox.messageType')">
+                  <button type="button" role="tab" :aria-selected="!internalNote" class="chip h-6 px-2.5 text-xs" :class="!internalNote ? 'chip-active' : ''" @click="internalNote = false"><UIcon name="i-lucide-reply" class="size-3.5" />{{ $t('inbox.reply') }}</button>
+                  <button type="button" role="tab" :aria-selected="internalNote" class="chip h-6 px-2.5 text-xs" :class="internalNote ? 'chip-active' : ''" @click="internalNote = true"><UIcon name="i-lucide-lock-keyhole" class="size-3.5" />{{ $t('inbox.internalNote') }}</button>
                 </div>
               </template>
               <template #below>
-                <label v-if="!internalNote" class="mt-2 flex items-center gap-2 px-1 text-xs text-muted"><USwitch v-model="notifyByEmail" size="xs" />Also email {{ activeUser?.email || 'this customer' }}</label>
-                <p v-else class="mt-2 px-1 text-xs text-muted"><UIcon name="i-lucide-lock-keyhole" class="mr-1 inline size-3 align-[-1px] text-warning" />Only your team sees internal notes.</p>
+                <label v-if="!internalNote" class="mt-2 flex items-center gap-2 px-1 text-xs text-muted"><USwitch v-model="notifyByEmail" size="xs" />{{ $t('inbox.alsoEmail', { email: activeUser?.email || $t('inbox.thisCustomer') }) }}</label>
+                <p v-else class="mt-2 px-1 text-xs text-muted"><UIcon name="i-lucide-lock-keyhole" class="mr-1 inline size-3 align-[-1px] text-warning" />{{ $t('inbox.internalNoteHint') }}</p>
               </template>
             </ChatComposer>
           </div>
@@ -153,7 +165,7 @@
       </template>
     </section>
 
-    <USlideover v-model:open="showContext" class="xl:hidden" title="Details" :ui="{ content: 'max-w-80', body: 'p-0 sm:p-0' }">
+    <USlideover v-model:open="showContext" class="xl:hidden" :title="$t('inbox.details')" :ui="{ content: 'max-w-80', body: 'p-0 sm:p-0' }">
       <template #body>
         <InboxConversationContext v-if="activeConversation && activeUser" class="h-full" :conversation="activeConversation" :user="activeUser" :project="activeProject" :type="activeType" :agents="humanAgents" :last-user-message="lastUserMessage" @triage="setTriage" @action="runAction" />
       </template>
@@ -165,7 +177,7 @@
 
 <script setup lang="ts">
 import type { Attachment, Conversation, ConversationAction, ConversationType, Message } from '#shared/support'
-import { replyTarget, sortByCreatedAt } from '#shared/conversations'
+import { conversationToText, replyTarget, sortByCreatedAt } from '#shared/conversations'
 import type { SupportEvent } from '~~/server/utils/events'
 import type { ChatListItem } from '~/components/chat/ChatConversationList.vue'
 import type { InboxEndUser } from '~/components/inbox/ConversationContext.vue'
@@ -173,7 +185,7 @@ import { newOutboxId, useChatOutbox, type OutboxEntry } from '~/composables/useC
 
 definePageMeta({ middleware: 'agent' })
 
-type QueueView = 'all' | 'unassigned' | 'mine' | 'open' | 'unread'
+type QueueView = 'all' | 'unassigned' | 'mine' | 'open' | 'unread' | 'archived'
 type QueueCounts = { status: Record<string, number>, type: Record<string, number>, assignee: Record<string, number> }
 type HumanAgent = { id: string, username: string, email: string, name: string }
 
@@ -181,6 +193,8 @@ const { api, token, agent, projects, loadProjects, agentHeaders } = useAgent()
 const route = useRoute()
 const router = useRouter()
 const outbox = useChatOutbox()
+const toast = useToast()
+const { t } = useI18n()
 const totalUnread = useState<number>('inbox-total-unread', () => 0)
 
 const conversations = ref<Conversation[]>([])
@@ -189,6 +203,7 @@ const listLoading = ref(false)
 const listError = ref('')
 const hasMore = ref(false)
 const queueCounts = ref<QueueCounts>({ status: {}, type: {}, assignee: {} })
+const archivedCount = ref(0)
 const view = ref<QueueView>('all')
 const projectFilter = ref('all')
 const statusFilter = ref('any')
@@ -204,15 +219,16 @@ const humanAgents = ref<HumanAgent[]>([])
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 const projectsById = computed(() => Object.fromEntries(projects.value.map(project => [project.id, project])))
-const projectItems = computed(() => [{ label: 'All projects', value: 'all' }, ...projects.value.map(project => ({ label: project.name, value: project.id }))])
-const statusFilterItems = [{ label: 'Any status', value: 'any' }, { label: 'Open', value: 'open' }, { label: 'Done', value: 'done' }]
-const priorityFilterItems = [{ label: 'Any priority', value: 'any' }, { label: 'Low', value: 'low' }, { label: 'Normal', value: 'normal' }, { label: 'High', value: 'high' }, { label: 'Urgent', value: 'urgent' }]
+const projectItems = computed(() => [{ label: t('inbox.allProjects'), value: 'all' }, ...projects.value.map(project => ({ label: project.name, value: project.id }))])
+const statusFilterItems = computed(() => [{ label: t('inbox.anyStatus'), value: 'any' }, { label: t('inbox.open'), value: 'open' }, { label: t('inbox.done'), value: 'done' }])
+const priorityFilterItems = computed(() => [{ label: t('inbox.anyPriority'), value: 'any' }, { label: t('inbox.low'), value: 'low' }, { label: t('inbox.normal'), value: 'normal' }, { label: t('inbox.high'), value: 'high' }, { label: t('inbox.urgent'), value: 'urgent' }])
 const viewItems = computed(() => [
-  { key: 'all' as const, label: 'All', count: conversations.value.length },
-  { key: 'unassigned' as const, label: 'Unassigned', count: queueCounts.value.assignee.unassigned || 0 },
-  { key: 'mine' as const, label: 'Mine', count: agent.value?.id ? queueCounts.value.assignee[agent.value.id] || 0 : 0 },
-  { key: 'open' as const, label: 'Open', count: queueCounts.value.status.open || 0 },
-  { key: 'unread' as const, label: 'Unread', count: totalUnread.value }
+  { key: 'all' as const, label: t('inbox.all'), count: conversations.value.length },
+  { key: 'unassigned' as const, label: t('inbox.unassigned'), count: queueCounts.value.assignee.unassigned || 0 },
+  { key: 'mine' as const, label: t('inbox.mine'), count: agent.value?.id ? queueCounts.value.assignee[agent.value.id] || 0 : 0 },
+  { key: 'open' as const, label: t('inbox.open'), count: queueCounts.value.status.open || 0 },
+  { key: 'unread' as const, label: t('inbox.unread'), count: totalUnread.value },
+  { key: 'archived' as const, label: t('inbox.archived'), count: archivedCount.value }
 ])
 
 function scheduleLoad() {
@@ -229,21 +245,29 @@ function clearFilters() {
   void loadList()
 }
 
+// Archived threads live on the server side of the query, not in the loaded page.
+async function setView(next: QueueView) {
+  const refetch = (view.value === 'archived') !== (next === 'archived')
+  view.value = next
+  if (refetch) await loadList()
+}
+
 async function loadList(more = false) {
   listLoading.value = true
   listError.value = ''
   try {
     const last = more ? conversations.value[conversations.value.length - 1] : null
-    const result = await api<{ conversations: Conversation[], endUsers: Record<string, InboxEndUser>, hasMore: boolean, totalUnread: number, counts: QueueCounts }>('/admin/conversations', {
-      query: { project: projectFilter.value === 'all' ? undefined : projectFilter.value, status: statusFilter.value === 'any' ? undefined : statusFilter.value, priority: priorityFilter.value === 'any' ? undefined : priorityFilter.value, type: typeFilter.value || undefined, q: searchQuery.value.trim() || undefined, before: last?.lastMessageAt || undefined }
+    const result = await api<{ conversations: Conversation[], endUsers: Record<string, InboxEndUser>, hasMore: boolean, totalUnread: number, counts: QueueCounts, archivedCount: number }>('/admin/conversations', {
+      query: { project: projectFilter.value === 'all' ? undefined : projectFilter.value, status: statusFilter.value === 'any' ? undefined : statusFilter.value, priority: priorityFilter.value === 'any' ? undefined : priorityFilter.value, type: typeFilter.value || undefined, q: searchQuery.value.trim() || undefined, archived: view.value === 'archived' ? 'true' : undefined, before: last?.lastMessageAt || undefined }
     })
     conversations.value = more ? [...conversations.value, ...result.conversations] : result.conversations
     endUsers.value = { ...endUsers.value, ...result.endUsers }
     hasMore.value = result.hasMore
     totalUnread.value = result.totalUnread
     queueCounts.value = result.counts
+    archivedCount.value = result.archivedCount || 0
   } catch (error: any) {
-    listError.value = error?.message || 'Could not load the inbox'
+    listError.value = error?.message || t('inbox.loadError')
   } finally { listLoading.value = false }
 }
 
@@ -257,7 +281,7 @@ const filteredConversations = computed(() => conversations.value.filter((convers
 const listItems = computed<ChatListItem[]>(() => filteredConversations.value.map((conversation) => {
   const user = endUsers.value[conversation.endUserId]
   const project = projectsById.value[conversation.projectId]
-  return { id: conversation.id, title: user?.name || user?.email || user?.externalId || 'Unknown customer', subtitle: conversation.subject || conversation.context?.label || '', preview: conversation.lastMessageFrom === 'agent' ? `You: ${conversation.lastMessagePreview}` : conversation.lastMessagePreview, timestamp: conversation.lastMessageAt, unreadCount: conversation.unreadByAgent, projectId: conversation.projectId, projectName: project?.name, projectAccent: project?.theme?.accent, projectIconUrl: project?.iconUrl, priority: conversation.priority, done:conversation.statusCategory === 'resolved' || conversation.statusCategory === 'closed' || conversation.status === 'done' }
+  return { id: conversation.id, title: user?.name || user?.email || user?.externalId || t('inbox.unknownCustomer'), subtitle: conversation.subject || conversation.context?.label || '', preview: conversation.lastMessageFrom === 'agent' ? t('inbox.youPreview', { text: conversation.lastMessagePreview }) : conversation.lastMessagePreview, timestamp: conversation.lastMessageAt, unreadCount: conversation.unreadByAgent, projectId: conversation.projectId, projectName: project?.name, projectAccent: project?.theme?.accent, projectIconUrl: project?.iconUrl, priority: conversation.priority, archived: Boolean(conversation.archivedAt), done: conversation.statusCategory === 'resolved' || conversation.statusCategory === 'closed' || conversation.status === 'done' }
 }))
 
 const activeId = ref('')
@@ -269,7 +293,9 @@ const hasEarlier = ref(false)
 const loadingEarlier = ref(false)
 const threadError = ref('')
 const threadId = ref('')
-const draft = ref('')
+// Unsent text is kept per conversation, so switching tickets doesn't lose or leak it.
+const drafts = ref<Record<string, string>>({})
+const draft = computed({ get: () => drafts.value[activeId.value] || '', set: (value: string) => { drafts.value[activeId.value] = value } })
 const notifyByEmail = ref(true)
 const internalNote = ref(false)
 const transcriptRef = ref<{ scrollToLatest: () => void } | null>(null)
@@ -277,7 +303,7 @@ const transcriptRef = ref<{ scrollToLatest: () => void } | null>(null)
 const activeConversation = computed(() => conversations.value.find(conversation => conversation.id === activeId.value) || null)
 const activeProject = computed(() => activeConversation.value ? projectsById.value[activeConversation.value.projectId] || null : null)
 const activeType = computed(() => typesByProject.value[activeConversation.value?.projectId || '']?.find(type => type.key === activeConversation.value?.type) || null)
-const statusItems = computed(() => (activeType.value?.statuses || [{ key: 'open', label: 'Open' }, { key: 'done', label: 'Done' }]).map(status => ({ label: status.label, value: status.key })))
+const statusItems = computed(() => (activeType.value?.statuses || [{ key: 'open', label: t('inbox.open') }, { key: 'done', label: t('inbox.done') }]).map(status => ({ label: status.label, value: status.key })))
 const failed = computed<Message[]>(() => outbox.forScope(activeId.value).map(entry => entryToMessage(entry, 'failed')))
 const visibleMessages = computed(() => [...messages.value, ...sending.value, ...failed.value].sort(sortByCreatedAt))
 // What a board item filed from the context panel starts with.
@@ -286,7 +312,7 @@ const replyingTo = computed(() => replyTarget(visibleMessages.value, threadId.va
 const ownActor = computed(() => (agent.value?.id ? `agent:${agent.value.id}` : 'agent'))
 
 function entryToMessage(entry: OutboxEntry, delivery: 'pending' | 'failed'): Message {
-  return { id: entry.id, conversationId: entry.conversationId, sender: 'agent', senderName: 'You', body: entry.body, attachments: entry.attachments, reactions: [], context: null, replyToId: entry.replyToId, clientId: entry.id, visibility: 'public', kind: 'message', createdAt: entry.createdAt, delivery, deliveryError: delivery === 'failed' ? entry.error : '' }
+  return { id: entry.id, conversationId: entry.conversationId, sender: 'agent', senderName: t('inbox.you'), body: entry.body, attachments: entry.attachments, reactions: [], context: null, replyToId: entry.replyToId, clientId: entry.id, visibility: 'public', kind: 'message', createdAt: entry.createdAt, delivery, deliveryError: delivery === 'failed' ? entry.error : '' }
 }
 
 async function select(id: string) {
@@ -298,13 +324,15 @@ async function select(id: string) {
     const [detail, list] = await Promise.all([api<{ conversation: Conversation, endUser: InboxEndUser }>(`/admin/conversations/${id}`), api<{ messages: Message[], hasMore: boolean }>(`/admin/conversations/${id}/messages`)])
     if (activeId.value !== id) return
     activeUser.value = detail.endUser
+    // A deep link to an archived thread opens the Archived view so its row exists.
+    if (detail.conversation.archivedAt && view.value !== 'archived') { view.value = 'archived'; await loadList() }
     upsertConversation(detail.conversation)
     await loadTypes(detail.conversation.projectId)
     messages.value = list.messages
     hasEarlier.value = list.hasMore
     notifyByEmail.value = Boolean(detail.endUser.email)
     if (detail.conversation.unreadByAgent > 0) void markRead(id, true)
-  } catch (error: any) { threadError.value = error?.message || 'Could not load the conversation' } finally { threadLoading.value = false }
+  } catch (error: any) { threadError.value = error?.message || t('inbox.conversationLoadError') } finally { threadLoading.value = false }
 }
 
 async function loadEarlier() {
@@ -318,14 +346,24 @@ async function loadEarlier() {
     const known = new Set(messages.value.map(message => message.id))
     messages.value = [...page.messages.filter(message => !known.has(message.id)), ...messages.value]
     hasEarlier.value = page.hasMore
-  } catch (error: any) { threadError.value = error?.message || 'Could not load earlier messages' } finally { loadingEarlier.value = false }
+  } catch (error: any) { threadError.value = error?.message || t('inbox.earlierLoadError') } finally { loadingEarlier.value = false }
 }
 
 async function loadTypes(projectId: string) {
   if (typesByProject.value[projectId]) return
   try { const { types } = await api<{ types: ConversationType[] }>(`/admin/projects/${projectId}/types`); typesByProject.value = { ...typesByProject.value, [projectId]: types } } catch { /* The built-in support type remains usable. */ }
 }
+function removeConversation(id: string) {
+  conversations.value = conversations.value.filter(item => item.id !== id)
+  if (activeId.value === id) void select('')
+}
 function upsertConversation(conversation: Conversation) {
+  // Archived rows belong to the Archived view only, and the queue never shows them.
+  if (Boolean(conversation.archivedAt) !== (view.value === 'archived')) {
+    const hadRow = conversations.value.some(item => item.id === conversation.id)
+    if (hadRow) removeConversation(conversation.id)
+    return
+  }
   const index = conversations.value.findIndex(item => item.id === conversation.id)
   if (index === -1) conversations.value = [conversation, ...conversations.value]
   else conversations.value.splice(index, 1, conversation)
@@ -354,15 +392,62 @@ async function toggleDone(id: string) {
   const doneKey = statuses.find(status => status.isTerminal)?.key || statuses.find(status => status.category === 'resolved' || status.category === 'closed')?.key || 'done'
   void setStatus(id, isDone ? openKey : doneKey)
 }
+const copyingConversation = ref(false)
+const copiedConversation = ref(false)
+// Copies the whole thread as plain text for an LLM, pulling in any pages that are not loaded yet.
+async function copyConversation() {
+  const conversation = activeConversation.value
+  if (!conversation || copyingConversation.value) return
+  copyingConversation.value = true
+  try {
+    let all = messages.value
+    let more = hasEarlier.value
+    while (more && all[0]) {
+      const page = await api<{ messages: Message[], hasMore: boolean }>(`/admin/conversations/${conversation.id}/messages`, { query: { before: all[0].createdAt } })
+      const known = new Set(all.map(message => message.id))
+      all = [...page.messages.filter(message => !known.has(message.id)), ...all]
+      more = page.hasMore && page.messages.length > 0
+    }
+    const user = activeUser.value
+    await navigator.clipboard.writeText(conversationToText(conversation, all, { customer: [user?.name, user?.email].filter(Boolean).join(' · ') || user?.externalId, project: activeProject.value?.name }))
+    copiedConversation.value = true
+    setTimeout(() => { copiedConversation.value = false }, 1500)
+    toast.add({ title: t('inbox.copied'), icon: 'i-lucide-copy' })
+  } catch (error: any) { toast.add({ title: t('inbox.copyError'), description: error?.message, color: 'error', icon: 'i-lucide-circle-alert' }) } finally { copyingConversation.value = false }
+}
+
+async function toggleArchive(id: string) {
+  const conversation = conversations.value.find(item => item.id === id)
+  if (!conversation) return
+  const archive = !conversation.archivedAt
+  try {
+    const { conversation: updated } = await api<{ conversation: Conversation }>(`/admin/conversations/${id}/archive`, { method: 'POST', body: { archived: archive } })
+    archivedCount.value = Math.max(0, archivedCount.value + (archive ? 1 : -1))
+    if (archive && conversation.unreadByAgent > 0) totalUnread.value = Math.max(0, totalUnread.value - conversation.unreadByAgent)
+    upsertConversation(updated)
+    toast.add({ title: archive ? t('inbox.archivedToast') : t('inbox.unarchivedToast'), icon: archive ? 'i-lucide-archive' : 'i-lucide-archive-restore' })
+  } catch (error: any) { threadError.value = listError.value = error?.message || t('inbox.archiveError') }
+}
+async function remove(id: string) {
+  const conversation = conversations.value.find(item => item.id === id)
+  if (!conversation || !confirm(t('inbox.deleteConfirm'))) return
+  try {
+    await api(`/admin/conversations/${id}`, { method: 'DELETE' })
+    if (conversation.archivedAt) archivedCount.value = Math.max(0, archivedCount.value - 1)
+    else if (conversation.unreadByAgent > 0) totalUnread.value = Math.max(0, totalUnread.value - conversation.unreadByAgent)
+    removeConversation(id)
+    toast.add({ title: t('inbox.deleted'), icon: 'i-lucide-trash-2' })
+  } catch (error: any) { threadError.value = listError.value = error?.message || t('inbox.deleteError') }
+}
 async function setStatus(id: string, status: string) {
   const conversation = conversations.value.find(item => item.id === id)
   if (!conversation || !status) return
   upsertConversation({ ...conversation, status })
-  try { const { conversation: updated } = await api<{ conversation: Conversation }>(`/admin/conversations/${id}/status`, { method: 'POST', body: { status } }); upsertConversation(updated) } catch (error: any) { threadError.value = error?.message || 'Could not update ticket'; void loadList() }
+  try { const { conversation: updated } = await api<{ conversation: Conversation }>(`/admin/conversations/${id}/status`, { method: 'POST', body: { status } }); upsertConversation(updated) } catch (error: any) { threadError.value = error?.message || t('inbox.updateError'); void loadList() }
 }
 async function setTriage(body: Record<string, unknown>) {
   if (!activeId.value) return
-  try { const { conversation } = await api<{ conversation: Conversation }>(`/admin/conversations/${activeId.value}`, { method: 'PATCH', body }); upsertConversation(conversation) } catch (error: any) { threadError.value = error?.message || 'Could not update ticket' }
+  try { const { conversation } = await api<{ conversation: Conversation }>(`/admin/conversations/${activeId.value}`, { method: 'PATCH', body }); upsertConversation(conversation) } catch (error: any) { threadError.value = error?.message || t('inbox.updateError') }
 }
 async function upload(file: File): Promise<Attachment> {
   const form = new FormData(); form.append('file', file); form.append('conversationId', activeId.value)
@@ -374,8 +459,8 @@ async function deliver(entry: OutboxEntry) {
     const result = await api<{ message: Message, conversation: Conversation, emailSent: boolean, emailError: string }>(`/admin/conversations/${entry.conversationId}/messages`, { method: 'POST', body: { body: entry.body, replyToId: entry.replyToId, attachments: entry.attachments, clientId: entry.id, notifyByEmail: notifyByEmail.value } })
     if (entry.conversationId === activeId.value && !messages.value.some(message => message.id === result.message.id)) messages.value = [...messages.value, result.message]
     upsertConversation(result.conversation)
-    if (notifyByEmail.value && !result.emailSent && result.emailError && result.emailError !== 'throttled') threadError.value = `Sent, but the email failed: ${result.emailError}`
-  } catch (error: any) { outbox.remember({ ...entry, error: error?.message || 'Could not send' }) } finally { sending.value = sending.value.filter(message => message.id !== entry.id) }
+    if (notifyByEmail.value && !result.emailSent && result.emailError && result.emailError !== 'throttled') threadError.value = t('inbox.sentEmailFailed', { error: result.emailError })
+  } catch (error: any) { outbox.remember({ ...entry, error: error?.message || t('inbox.sendError') }) } finally { sending.value = sending.value.filter(message => message.id !== entry.id) }
 }
 function send(body: string, attachments: Attachment[]) {
   if (!activeId.value) return
@@ -383,18 +468,18 @@ function send(body: string, attachments: Attachment[]) {
   if (internalNote.value) { void sendNote(body); return }
   void deliver({ id: newOutboxId(), scope: activeId.value, body, subject: '', conversationId: activeId.value, replyToId: threadId.value, attachments, context: null, createdAt: new Date().toISOString(), error: '' })
 }
-async function sendNote(body: string) { try { const { message } = await api<{ message: Message }>(`/admin/conversations/${activeId.value}/notes`, { method: 'POST', body: { body } }); messages.value = [...messages.value, message]; internalNote.value = false } catch (error: any) { threadError.value = error?.message || 'Could not add internal note' } }
+async function sendNote(body: string) { try { const { message } = await api<{ message: Message }>(`/admin/conversations/${activeId.value}/notes`, { method: 'POST', body: { body } }); messages.value = [...messages.value, message]; internalNote.value = false } catch (error: any) { threadError.value = error?.message || t('inbox.noteError') } }
 async function runAction(action: ConversationAction) {
   if (!activeId.value || (action.confirm && !confirm(action.confirm))) return
-  const note = action.requiresNote ? prompt('Internal note for this action:') : ''
+  const note = action.requiresNote ? prompt(t('inbox.actionNotePrompt')) : ''
   if (action.requiresNote && !note) return
-  try { const result = await api<{ conversation: Conversation, event: Message }>(`/admin/conversations/${activeId.value}/actions/${action.key}`, { method: 'POST', body: note ? { note } : {} }); upsertConversation(result.conversation); messages.value = [...messages.value, result.event] } catch (error: any) { threadError.value = error?.message || 'Could not run host action' }
+  try { const result = await api<{ conversation: Conversation, event: Message }>(`/admin/conversations/${activeId.value}/actions/${action.key}`, { method: 'POST', body: note ? { note } : {} }); upsertConversation(result.conversation); messages.value = [...messages.value, result.event] } catch (error: any) { threadError.value = error?.message || t('inbox.actionError') }
 }
 function retry(message: Message) { const entry = outbox.forScope(activeId.value).find(item => item.id === message.id); if (entry) void deliver(entry) }
 function discard(message: Message) { outbox.forget(message.id) }
 async function unsend(message: Message) {
-  if (!confirm('Delete this message? It disappears for the customer too.')) return
-  messages.value = messages.value.filter(item => item.id !== message.id); try { await api(`/admin/messages/${message.id}`, { method: 'DELETE' }) } catch (error: any) { threadError.value = error?.message || 'Could not unsend'; void select(activeId.value) }
+  if (!confirm(t('inbox.unsendConfirm'))) return
+  messages.value = messages.value.filter(item => item.id !== message.id); try { await api(`/admin/messages/${message.id}`, { method: 'DELETE' }) } catch (error: any) { threadError.value = error?.message || t('inbox.unsendError'); void select(activeId.value) }
 }
 function replaceMessage(updated: Message) {
   const index = messages.value.findIndex(item => item.id === updated.id)
@@ -403,11 +488,12 @@ function replaceMessage(updated: Message) {
 }
 async function react(message: Message, emoji: string) {
   if (message.delivery || !message.id) return
-  try { const { message: updated } = await api<{ message: Message }>(`/admin/messages/${message.id}/reactions`, { method: 'POST', body: { emoji } }); replaceMessage(updated) } catch (error: any) { threadError.value = error?.message || 'Could not react' }
+  try { const { message: updated } = await api<{ message: Message }>(`/admin/messages/${message.id}/reactions`, { method: 'POST', body: { emoji } }); replaceMessage(updated) } catch (error: any) { threadError.value = error?.message || t('inbox.reactError') }
 }
 async function onCreated(conversationId: string) { await loadList(); await select(conversationId) }
 
 useEventStream(computed(() => '/v1/admin/events'), token, (event: SupportEvent) => {
+  if (event.type === 'conversation.deleted') { removeConversation(event.conversationId); return }
   upsertConversation(event.conversation)
   if (event.type === 'message.created') {
     if (event.message.sender === 'user' && event.conversationId !== activeId.value) totalUnread.value += 1

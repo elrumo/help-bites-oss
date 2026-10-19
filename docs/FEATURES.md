@@ -30,10 +30,13 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 ## 2. Operator inbox
 
 - **One inbox for every project.** Projects are colour-coded, with one unread
-  count and filters for All, Mine, Unassigned, Open and Unread. Search by text.
+  count and filters for All, Mine, Unassigned, Open, Unread and Archived. Search by text.
 - **Triage.** Assign a teammate, set priority (low, normal, high, urgent), add
   tags, and mark a conversation open or done. A customer who writes into a done
   conversation reopens it.
+- **Archive and delete.** Archive a conversation to clear it from the queue; it
+  waits in the Archived view and returns if the customer writes again. Delete
+  removes it and every message for good.
 - **Replies.** Reply as the team with images. The customer also gets it by
   email, unless the reply turns that off.
 - **Internal notes.** Notes on the conversation timeline that the customer never

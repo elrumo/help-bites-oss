@@ -58,7 +58,7 @@ export function readLinkToken(purpose: string, token: string): string | null {
 }
 
 /**
- * A credential an operator typed in (an LLM key), as it is stored: sealed when
+ * A credential an operator typed in (an LLM key, a Stripe key, a bot token, a database URL), as it is stored: sealed when
  * the server has HELPBITES_SECRET, as written when it has not (a community
  * install that never set one keeps working; the cloud edition requires it).
  */

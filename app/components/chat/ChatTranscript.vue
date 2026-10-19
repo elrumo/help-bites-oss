@@ -206,7 +206,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { onKeyStroke, useResizeObserver } from '@vueuse/core'
 import type { ContextMenuItem } from '@nuxt/ui'
-import { buildThreads, groupMessagesForDisplay } from '#shared/conversations'
+import { buildThreads, eventLabel, groupMessagesForDisplay } from '#shared/conversations'
 import { messagePreview, MESSAGE_REACTION_EMOJIS, type Message } from '#shared/support'
 import { chatSeparatorParts } from './chatTime'
 
@@ -233,23 +233,6 @@ function hostOf(url: string): string {
   } catch {
     return ''
   }
-}
-
-function eventLabel(message: Message): string {
-  const event = message.event || {}
-  if (event.type === 'created') return 'Ticket created'
-  if (event.type === 'status.changed') return `Status changed to ${String(event.to || '')}`
-  if (event.type === 'assigned') return event.assignee ? `Assigned to ${String(event.assignee)}` : 'Assignment cleared'
-  if (event.type === 'action.performed') return `${String(event.actionKey || 'Host action')} · ${String(event.result || 'pending')}`
-  if (event.type === 'board.linked' || event.type === 'board.unlinked') {
-    const item = `${event.number ? `#${String(event.number)} ` : ''}${String(event.title || 'an item')}`
-    return event.type === 'board.linked' ? `Linked to board item ${item}` : `Unlinked from board item ${item}`
-  }
-  if (event.type === 'changelog.linked' || event.type === 'changelog.unlinked') {
-    const entry = `${event.number ? `#${String(event.number)} ` : ''}${String(event.title || 'an entry')}`
-    return event.type === 'changelog.linked' ? `Linked to changelog entry ${entry}` : `Unlinked from changelog entry ${entry}`
-  }
-  return 'Ticket updated'
 }
 
 // A support reply is AI when it carries a supportAgentId, otherwise a human
