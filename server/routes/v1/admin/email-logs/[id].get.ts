@@ -10,5 +10,19 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event)
-  return { log: serializeEmailLog(await scoped.emailLog(ctx, getRouterParam(event, 'id') || ''), { content: true }) }
+  const row = await scoped.emailLog(ctx, getRouterParam(event, 'id') || '')
+  const log = serializeEmailLog(row, { content: true })
+  // No saved copy: show the template as it renders with the values that were logged.
+  return { log, templatePreview: log.html || !log.template?.id ? null : await renderLoggedTemplate(ctx, log) }
 })
+
+/** Redacted and cut-short values are left out, so their placeholders stay visible rather than showing broken content. */
+async function renderLoggedTemplate(ctx: Awaited<ReturnType<typeof requireMember>>, log: ReturnType<typeof serializeEmailLog>): Promise<string | null> {
+  try {
+    const values = Object.fromEntries(log.variables.filter(v => v.value !== '[redacted]' && !v.value.endsWith('…')).map(v => [v.key, v.value]))
+    const project = log.projectId ? await loadProjectUnscoped(log.projectId) : null
+    return renderEmailTemplate(await scoped.emailTemplate(ctx, log.template!.id!), project, values).html
+  } catch {
+    return null // the template was deleted or no longer renders
+  }
+}

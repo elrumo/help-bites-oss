@@ -110,14 +110,19 @@ const openId = ref<string | null>(null)
 const detail = ref<EmailLogEntry | null>(null)
 const detailOpen = computed({ get: () => !!openId.value, set: (v) => { if (!v) openId.value = null } })
 const showText = ref(false)
+// With no saved copy, the template rendered with the logged values.
+const templateHtml = ref('')
 
 watch(openId, async (id) => {
   detail.value = null
+  templateHtml.value = ''
   showText.value = false
   if (!id) return
   detail.value = logs.value.find(l => l.id === id) || null
   try {
-    detail.value = (await api<{ log: EmailLogEntry }>(`/admin/email-logs/${id}`)).log
+    const res = await api<{ log: EmailLogEntry, templatePreview: string | null }>(`/admin/email-logs/${id}`)
+    detail.value = res.log
+    templateHtml.value = res.templatePreview || ''
   } catch (e: any) {
     toast.add({ title: e?.message || t('emailLibrary.log.openError'), color: 'error' })
   }
@@ -125,14 +130,20 @@ watch(openId, async (id) => {
 
 // ---- the sent message, full size -----------------------------------------------------
 const preview = ref<EmailLogEntry | null>(null)
+const previewFromTemplate = ref(false)
 const previewOpen = computed({ get: () => !!preview.value, set: (v) => { if (!v) preview.value = null } })
 
-async function openPreview(entry: EmailLogEntry) {
+async function openPreview(entry: EmailLogEntry, fallbackHtml = '') {
+  previewFromTemplate.value = false
   preview.value = entry
   if (entry.html) return
   try {
-    const { log } = await api<{ log: EmailLogEntry }>(`/admin/email-logs/${entry.id}`)
+    let { log, templatePreview } = fallbackHtml ? { log: entry, templatePreview: fallbackHtml } : await api<{ log: EmailLogEntry, templatePreview: string | null }>(`/admin/email-logs/${entry.id}`)
     if (preview.value?.id !== entry.id) return
+    if (!log.html && templatePreview) {
+      log = { ...log, html: templatePreview }
+      previewFromTemplate.value = true
+    }
     if (!log.html) throw new Error(t('emailLibrary.log.notKept'))
     preview.value = log
   } catch (e: any) {
@@ -241,7 +252,7 @@ const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).t
             <span class="w-14 shrink-0 text-right text-xs text-muted">{{ logTime(entry.createdAt) }}</span>
           </button>
           <span class="flex w-7 shrink-0 justify-end">
-            <UTooltip v-if="entry.hasContent" :text="$t('emailLibrary.log.previewEmail')">
+            <UTooltip v-if="entry.hasContent || entry.template?.id" :text="$t('emailLibrary.log.previewEmail')">
               <UButton icon="i-lucide-eye" size="xs" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('emailLibrary.log.previewEmail')" @click="openPreview(entry)" />
             </UTooltip>
           </span>
@@ -322,10 +333,15 @@ const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).t
               <h3 class="flex-1 text-xs font-semibold text-muted">{{ $t('emailLibrary.log.theMessage') }}</h3>
               <UButton v-if="detail.html" :label="showText ? $t('emailLibrary.log.htmlView') : $t('emailLibrary.log.plainText')" size="xs" color="neutral" variant="ghost" @click="showText = !showText" />
               <UButton v-if="detail.html" icon="i-lucide-maximize-2" :label="$t('emailLibrary.log.fullSize')" size="xs" color="neutral" variant="ghost" @click="openPreview(detail)" />
+              <UButton v-else-if="templateHtml" icon="i-lucide-eye" :label="$t('emailLibrary.log.viewEmail')" size="xs" color="neutral" variant="soft" @click="openPreview(detail, templateHtml)" />
             </div>
             <template v-if="detail.html">
               <pre v-if="showText" class="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-default bg-elevated p-3 text-xs">{{ detail.text }}</pre>
               <iframe v-else :srcdoc="detail.html" sandbox="" :title="$t('emailLibrary.log.sentEmail')" class="h-[28rem] w-full rounded-lg border border-default bg-white" />
+            </template>
+            <template v-else-if="templateHtml">
+              <p class="text-xs text-muted">{{ $t('emailLibrary.log.templatePreviewNote') }}</p>
+              <iframe :srcdoc="templateHtml" sandbox="" :title="$t('emailLibrary.log.sentEmail')" class="h-[28rem] w-full rounded-lg border border-default bg-white" />
             </template>
             <i18n-t v-else keypath="emailLibrary.log.noContent" tag="p" class="text-xs text-muted">
               <template #setting><span class="font-medium">{{ $t('emailLibrary.log.keepCopy') }}</span></template>
@@ -342,6 +358,7 @@ const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).t
 
     <UModal v-model:open="previewOpen" :title="preview?.subject || $t('nav.email')" :description="preview ? $t('emailLibrary.log.toLine', { to: preview.to, date: fullDate(preview.createdAt) }) : ''" :ui="{ content: 'max-w-4xl' }">
       <template #body>
+        <p v-if="previewFromTemplate" class="mb-3 text-xs text-muted">{{ $t('emailLibrary.log.templatePreviewNote') }}</p>
         <iframe v-if="preview?.html" :srcdoc="preview.html" sandbox="" :title="$t('emailLibrary.log.sentEmail')" class="h-[75vh] w-full rounded-lg border border-default bg-white" />
         <USkeleton v-else class="h-[75vh] w-full rounded-lg" />
       </template>
