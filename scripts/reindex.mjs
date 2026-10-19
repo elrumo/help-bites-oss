@@ -9,7 +9,8 @@
 import { assertEnv, parseFetch } from './parseRest.mjs'
 
 const HOST = String(process.env.MEILI_URL || '').replace(/\/+$/, '')
-const KEY = process.env.MEILI_MASTER_KEY
+// The scoped key from `bun run search:key`; the master key for older deployments.
+const KEY = process.env.MEILI_API_KEY || process.env.MEILI_MASTER_KEY
 
 async function meiliAdd(uid, docs) {
   if (!docs.length) return
