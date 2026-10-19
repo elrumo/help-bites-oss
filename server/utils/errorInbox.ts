@@ -1,5 +1,5 @@
 import { generateText } from 'ai'
-import { buildErrorPrompt, levelToPriority } from '#shared/errors'
+import { BUGSINK_TEST_ISSUE, buildErrorPrompt, levelToPriority } from '#shared/errors'
 import { errorConversationKey, errorProvider, latestErrorEvent, type ErrorProviderId } from './errorTracking'
 
 type Issue = { issueId: string, title: string, url: string, culprit: string, level?: string, count?: number, environment?: string, release?: string }
@@ -21,7 +21,7 @@ export async function ingestErrorAlert(project: ParseObject, providerId: ErrorPr
   const body = [issue.culprit, issue.level && `Level: ${issue.level}`, issue.count && `Count: ${issue.count}`, issue.environment && `Environment: ${issue.environment}`, issue.release && `Release: ${issue.release}`, issue.url].filter(Boolean).join('\n')
   const { message } = await appendMessage({ conversation, sender: 'user', senderName: 'Error tracker', input: { body: body || issue.title, replyToId: '', clientId: key, attachments: [], context: null } })
   void notifyAgentsOfUserMessage({ project, conversation, endUser, message })
-  void recommendFix(project, conversation, providerId, issue.issueId)
+  if (issue.issueId !== BUGSINK_TEST_ISSUE) void recommendFix(project, conversation, providerId, issue.issueId)
 }
 
 export async function recommendFix(project: ParseObject, conversation: ParseObject, providerId: ErrorProviderId, issueId: string): Promise<void> {
