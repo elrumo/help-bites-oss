@@ -5,7 +5,7 @@
  * subscription or segment, import a CSV, or open someone for the full
  * picture.
  */
-import { watchDebounced } from '@vueuse/core'
+import { useInfiniteScroll, useVirtualList, watchDebounced } from '@vueuse/core'
 import type { Contact, ContactSubscription } from '#shared/contacts'
 import type { ContactSegment } from '#shared/segments'
 import { BILLING_FILTERS, STRIPE_ATTR, formatMoney, type StripeConnection } from '#shared/stripe'
@@ -52,12 +52,21 @@ const query = computed(() => ({
 }))
 const filtered = computed(() => Boolean(query.value.q || query.value.subscription || query.value.segment || query.value.billing || query.value.minRevenue))
 
+// Only the rows in view are rendered; scrolling near the bottom fetches the next page.
+const ROW_HEIGHT = 44
+const { list: rows, containerProps, wrapperProps, scrollTo } = useVirtualList(contacts, { itemHeight: ROW_HEIGHT, overscan: 8 })
+useInfiniteScroll(containerProps.ref, () => loadMore(), {
+  distance: 300,
+  canLoadMore: () => Boolean(nextCursor.value) && !loading.value && !loadingMore.value
+})
+
 async function load() {
   error.value = ''
   try {
     const res = await api<{ contacts: Contact[], nextCursor: string | null }>('/contacts', { query: query.value })
     contacts.value = res.contacts
     nextCursor.value = res.nextCursor
+    scrollTo(0)
   } catch (e: any) {
     error.value = e?.message || 'Could not load contacts'
   } finally {
@@ -136,7 +145,7 @@ const displayName = (c: Contact) => c.name || c.email || c.externalId || 'Unname
       </template>
     </PageHeader>
 
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <div v-bind="containerProps" class="min-h-0 flex-1 overflow-y-auto">
       <div v-if="loading" class="space-y-1 p-4"><USkeleton v-for="i in 8" :key="i" class="h-11" /></div>
       <p v-else-if="error" class="p-6 text-[13px] text-error">{{ error }}</p>
       <EmptyState
@@ -145,8 +154,8 @@ const displayName = (c: Contact) => c.name || c.email || c.externalId || 'Unname
         :title="filtered ? 'Nobody matches' : 'No contacts yet'"
         :description="filtered ? 'Try another filter.' : 'Your app\'s users show up here as they use support or feedback. Import a CSV, sync your database under Sources, or add people through the API.'"
       />
-      <ul v-else class="py-2" aria-label="Contacts">
-        <li v-for="c in contacts" :key="c.id">
+      <ul v-else v-bind="wrapperProps" aria-label="Contacts">
+        <li v-for="{ data: c } in rows" :key="c.id" class="h-11">
           <button type="button" class="mx-2 flex h-11 w-[calc(100%-1rem)] items-center gap-3 rounded-lg px-3 text-left text-[13px] transition-colors hover:bg-elevated" @click="openId = c.id">
             <UAvatar :src="c.avatarUrl || undefined" :alt="displayName(c)" size="xs" />
             <span class="w-44 shrink-0 truncate font-medium text-highlighted">{{ displayName(c) }}</span>
@@ -162,9 +171,7 @@ const displayName = (c: Contact) => c.name || c.email || c.externalId || 'Unname
           </button>
         </li>
       </ul>
-      <div v-if="nextCursor && !loading" class="flex justify-center pb-6">
-        <UButton label="Load more" color="neutral" variant="outline" size="sm" :loading="loadingMore" @click="loadMore" />
-      </div>
+      <div v-if="loadingMore" class="flex justify-center py-4"><UIcon name="i-lucide-loader-circle" class="size-4 animate-spin text-muted" /></div>
     </div>
 
     <ContactDrawer v-model:id="openId" :project="project" @changed="changed" />
