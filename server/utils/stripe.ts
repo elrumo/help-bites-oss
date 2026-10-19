@@ -7,7 +7,7 @@ import {
 import { contactQuery, upsertContacts } from './contacts'
 import { MASTER, iso, useParse, type ParseObject } from './parse'
 import { runExclusive } from './redis'
-import { openSealedSecret, sealSecret } from './secrets'
+import { readCredential, storeCredential } from './secrets'
 import { workspaceIsActive } from './tenancy'
 import { projectWorkspaceId } from './usage'
 
@@ -86,7 +86,7 @@ export async function requireStripeAccount(project: ParseObject): Promise<ParseO
 export async function connectStripe(project: ParseObject, apiKey: unknown): Promise<ParseObject> {
   const key = typeof apiKey === 'string' ? apiKey.trim() : ''
   if (!/^(rk|sk)_(live|test)_[A-Za-z0-9]{10,}$/.test(key)) throw createError({ statusCode: 400, statusMessage: 'Paste a Stripe restricted key (rk_live_… or rk_test_…) with read access' })
-  const sealed = sealSecret(key)
+  const sealed = storeCredential(key)
   await stripeGet(key, '/charges', { limit: '1' })
   await stripeGet(key, '/subscriptions', { limit: '1', status: 'all' })
   // The account's name is nice to show; a key without access to it still works.
@@ -254,7 +254,7 @@ export async function runStripeSync(accountId: string, options: { reset?: boolea
     await row.save(null, MASTER)
 
     try {
-      const key = openSealedSecret(String(row.get('secretSealed') || ''))
+      const key = readCredential(String(row.get('secretSealed') || ''))
       let done = true
       const params: Record<string, string> = { 'expand[]': 'data.customer', ...(cursor.since ? { 'created[gte]': String(cursor.since) } : {}) }
       for await (const page of pages(key, '/charges', params, cursor.after)) {

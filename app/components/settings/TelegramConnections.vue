@@ -1,7 +1,6 @@
 <template>
   <div class="space-y-4">
     <p class="text-[13px] text-muted">Connect a Telegram bot to each project to get its error alerts as messages, alongside email. HelpBites only sends.</p>
-    <p v-if="!ready" class="text-[13px] text-error">Set HELPBITES_SECRET on the server first: bot tokens are stored sealed with it.</p>
     <div v-if="loading" class="space-y-2"><USkeleton v-for="i in 2" :key="i" class="h-12" /></div>
     <EmptyState v-else-if="!projects.length" icon="i-lucide-send" title="No projects yet" description="Telegram connects to a project." class="rounded-xl border border-dashed border-default" />
     <ul v-else class="space-y-2">
@@ -13,7 +12,7 @@
             <span class="block truncate text-xs text-muted">{{ state[p.id]?.connected ? `@${state[p.id]!.botName} → ${state[p.id]!.chatName}` : 'Not connected' }}</span>
           </span>
           <UTooltip v-if="state[p.id]?.connected" text="Disconnect"><UButton size="sm" color="neutral" variant="ghost" square icon="i-lucide-unplug" class="text-muted" aria-label="Disconnect Telegram" @click="disconnect(p.id, p.name)" /></UTooltip>
-          <UButton v-else-if="adding !== p.id" icon="i-lucide-plus" label="Connect" size="sm" color="neutral" variant="outline" :disabled="!ready" @click="adding = p.id; token = ''; chatId = ''" />
+          <UButton v-else-if="adding !== p.id" icon="i-lucide-plus" label="Connect" size="sm" color="neutral" variant="outline" @click="adding = p.id; token = ''; chatId = ''" />
         </div>
         <form v-if="adding === p.id" class="mt-2 space-y-2 border-t border-default pt-3" @submit.prevent="connect(p.id)">
           <UFormField label="Bot token" help="In Telegram, message @BotFather, send /newbot, and paste the token it gives you.">
@@ -38,7 +37,6 @@ import type { TelegramConnection } from '~~/server/utils/telegram'
 
 const { api, projects } = useAgent()
 const state = reactive<Record<string, TelegramConnection | undefined>>({})
-const ready = ref(true)
 const loading = ref(true)
 const adding = ref('')
 const token = ref('')
@@ -47,9 +45,8 @@ const saving = ref(false)
 const error = ref('')
 
 async function refresh(id: string) {
-  const res = await api<{ connection: TelegramConnection, ready: boolean }>('/admin/telegram', { query: { project: id } })
+  const res = await api<{ connection: TelegramConnection }>('/admin/telegram', { query: { project: id } })
   state[id] = res.connection
-  ready.value = res.ready
 }
 
 async function connect(id: string) {

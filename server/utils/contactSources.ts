@@ -3,7 +3,7 @@ import { mapSourceRow, validateMapping, type ContactFieldMapping, type ContactIn
 import { upsertContacts } from './contacts'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
 import { runExclusive } from './redis'
-import { openSealedSecret, sealSecret } from './secrets'
+import { readCredential, storeCredential } from './secrets'
 import { workspaceIsActive } from './tenancy'
 import { hasFeature, projectWorkspaceId } from './usage'
 import { firestoreDriver } from './sources/firestore'
@@ -135,11 +135,11 @@ export async function getProjectSource(project: ParseObject, id: string): Promis
 }
 
 export function sealSourceSecret(kind: SourceKind, value: unknown): string {
-  return sealSecret(JSON.stringify(sourceDriver(kind).readSecret(value)))
+  return storeCredential(JSON.stringify(sourceDriver(kind).readSecret(value)))
 }
 
 export function sourceSecret(row: ParseObject): unknown {
-  return JSON.parse(openSealedSecret(String(row.get('secretSealed') || '')))
+  return JSON.parse(readCredential(String(row.get('secretSealed') || '')))
 }
 
 /** Rows of a page as contacts, with the source's consent rule applied. */

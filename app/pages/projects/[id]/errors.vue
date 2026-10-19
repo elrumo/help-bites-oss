@@ -21,10 +21,15 @@
           </div>
           <UCard v-if="overview || overviewError">
             <p v-if="overviewError" class="text-sm text-error">{{ overviewError }}</p>
-            <template v-else>
-              <MarkdownBlock :text="overview!.text" />
-              <p class="mt-2 text-xs text-muted">Based on {{ overview!.count }} unresolved error{{ overview!.count === 1 ? '' : 's' }}: titles, locations and counts. Open an error to analyze its stack trace.</p>
-            </template>
+            <UCollapsible v-else v-model:open="overviewOpen">
+              <UButton color="neutral" variant="ghost" size="sm" block class="justify-between" icon="i-lucide-sparkles" trailing-icon="i-lucide-chevron-down" :label="`AI overview${overview!.at ? ` from ${new Date(overview!.at).toLocaleString()}` : ''}`" />
+              <template #content>
+                <div class="pt-3">
+                  <MarkdownBlock :text="overview!.text" />
+                  <p class="mt-2 text-xs text-muted">Based on {{ overview!.count }} unresolved error{{ overview!.count === 1 ? '' : 's' }}: titles, locations and counts. Open an error to analyze its stack trace.</p>
+                </div>
+              </template>
+            </UCollapsible>
           </UCard>
           <!-- <UCollapsible v-if="links.length">
             <UButton color="neutral" variant="soft" size="sm" block class="justify-between" icon="i-lucide-key-round" trailing-icon="i-lucide-chevron-down" :label="`DSN to send errors from your app${links.length > 1 ? ` (${links.length})` : ''}`" />
@@ -58,11 +63,12 @@
             </div>
           </div>
           <div v-else class="overflow-hidden rounded-xl border border-default divide-y divide-default">
-            <ErrorIssueCard v-for="issue in issues" :key="`${issue.linkId}:${issue.id}`" :issue="issue" :project-id="id" :show-link="links.length > 1" @status="update(issue, $event)" />
+            <ErrorIssueCard v-for="issue in issues" :key="`${issue.linkId}:${issue.id}`" :issue="issue" :show-link="links.length > 1" :analyzed="analysisKey(issue) in analyses" @open="selected = issue" @status="update(issue, $event)" />
             <p v-if="!issues.length" class="p-8 text-center text-sm text-muted">No errors found.</p>
           </div>
           <UButton v-if="next" color="neutral" variant="soft" label="Load more" @click="load(next)" />
         </template>
+        <ErrorDrawer v-model:issue="selected" :project-id="id" :saved="selected ? analyses[analysisKey(selected)] : undefined" @analyzed="(issue, result) => analyses[analysisKey(issue)] = result" />
         <ConnectErrorTrackingModal v-model:open="connectOpen" :project-id="id" @connected="onConnected" />
         <ErrorAlertsModal v-model:open="alertsOpen" :project-id="id" :links="links" />
         <ManageErrorProjectsModal v-model:open="manageOpen" :project-id="id" @changed="onManaged" />
@@ -72,6 +78,7 @@
 </template>
 
 <script setup lang="ts">
+import type { SavedAnalysis } from '~~/server/utils/errorAi'
 import type { AdminProject } from '~~/server/utils/projects'
 
 definePageMeta({ middleware: 'agent' })
@@ -91,12 +98,17 @@ const links = computed(() => project.value?.errorLinks || [])
 const alerts = computed(() => links.value.filter(item => item.alertWebhookUrl && (!linkFilter.value || item.id === linkFilter.value)))
 const error = ref('')
 const copied = ref('')
-const overview = ref<{ text: string, count: number } | null>(null)
+// Saved AI write-ups, keyed like the server does (`link:provider:issue`), plus `overview`.
+const analyses = ref<Record<string, SavedAnalysis>>({})
+const analysisKey = (issue: any) => `${issue.linkId}:${issue.provider}:${issue.id}`
+const selected = ref<any | null>(null)
+const overview = computed(() => analyses.value.overview || null)
+const overviewOpen = ref(true)
 const overviewError = ref('')
 const analyzing = ref(false)
 async function analyzeAll() {
   analyzing.value = true; overviewError.value = ''
-  try { overview.value = await api('/admin/errors/analyze', { method: 'POST', body: { project: id } }) } catch (cause: any) { overview.value = null; overviewError.value = cause.message || 'Could not analyze errors' } finally { analyzing.value = false }
+  try { analyses.value = { ...analyses.value, overview: await api('/admin/errors/analyze', { method: 'POST', body: { project: id } }) }; overviewOpen.value = true } catch (cause: any) { overviewError.value = cause.message || 'Could not analyze errors' } finally { analyzing.value = false }
 }
 async function copy(text: string, key: string) {
   try { await navigator.clipboard.writeText(text); copied.value = key; setTimeout(() => { if (copied.value === key) copied.value = '' }, 1500) } catch {}
@@ -129,5 +141,9 @@ async function onConnected(connected: AdminProject) {
   await load()
 }
 async function update(issue: any, value: string) { await api(`/admin/errors/${issue.id}`, { method: 'PUT', body: { project: id, status: value, link: issue.linkId } }); await load() }
-onMounted(async () => { if (!projects.value.length) await loadProjects(); await load() })
+onMounted(async () => {
+  if (!projects.value.length) await loadProjects()
+  api<Record<string, SavedAnalysis>>('/admin/errors/analyses', { query: { project: id } }).then((saved) => { analyses.value = saved }).catch(() => {})
+  await load()
+})
 </script>

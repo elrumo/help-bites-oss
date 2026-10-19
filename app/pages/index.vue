@@ -186,7 +186,6 @@
       <h2 class="mt-3 max-w-[20ch] text-[clamp(1.75rem,3.6vw,2.6rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-highlighted">Six tools\u2019 worth of work, in one panel.</h2>
       <ul class="mt-6 flex flex-wrap gap-2" aria-label="Jump to a section">
         <li v-for="s in showcase" :key="s.id"><a :href="`#${s.id}`" class="chip">{{ s.eyebrow }}</a></li>
-        <li><a href="#feedback" class="chip">Feedback</a></li>
         <li><a href="#more" class="chip">And more</a></li>
       </ul>
     </section>
@@ -204,35 +203,6 @@
       <figure class="shot" :class="i % 2 ? 'md:order-1' : ''">
         <img :src="s.img" :alt="s.alt" :class="s.crop" width="1440" height="900" loading="lazy" class="w-full rounded-xl object-cover object-top">
       </figure>
-    </section>
-
-    <!-- Feedback → roadmap → changelog, drawn rather than shot: the demo's board starts empty. -->
-    <section id="feedback" class="mx-auto grid max-w-6xl scroll-mt-14 grid-cols-1 items-center gap-10 px-5 py-20 md:grid-cols-[minmax(0,0.7fr)_minmax(0,1.5fr)] md:gap-12 md:px-8">
-      <div>
-        <p class="eyebrow">Feedback, roadmap, changelog</p>
-        <h3 class="mt-3 text-[clamp(1.5rem,3vw,2.15rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-highlighted">Users say what to build. You say what shipped.</h3>
-        <p class="mt-4 text-muted">A public board per project, a private kanban behind it, and a changelog that drafts itself from finished work.</p>
-        <ul class="mt-5 space-y-2.5 text-[14px] text-muted">
-          <li v-for="b in feedbackBullets" :key="b" class="flex gap-2.5"><UIcon name="i-lucide-check" class="mt-0.5 size-4 shrink-0 text-primary-500" />{{ b }}</li>
-        </ul>
-      </div>
-      <div class="shot" aria-hidden="true">
-        <div class="grid gap-px overflow-hidden rounded-xl bg-(--ui-border) text-[12.5px] md:grid-cols-3">
-          <div v-for="col in board" :key="col.title" class="bg-default p-3">
-            <p class="mb-2.5 flex items-center gap-1.5 font-medium text-highlighted"><span class="size-2 rounded-full" :style="{ background: col.color }" />{{ col.title }}<span class="ml-auto text-[11px] text-muted">{{ col.cards.length }}</span></p>
-            <div class="space-y-2">
-              <div v-for="c in col.cards" :key="c.t" class="rounded-lg border border-default bg-default p-2.5 shadow-xs">
-                <p class="leading-snug text-highlighted">{{ c.t }}</p>
-                <p class="mt-1.5 flex items-center gap-1 text-[11px] text-muted"><UIcon name="i-lucide-chevron-up" class="size-3" />{{ c.votes }}<span class="ml-2 rounded-full border border-default px-1.5">{{ c.tag }}</span></p>
-              </div>
-            </div>
-          </div>
-          <div class="bg-default p-3 md:col-span-3">
-            <p class="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted"><UIcon name="i-lucide-sparkles" class="size-3" />Drafted from shipped work · awaiting review</p>
-            <p class="text-highlighted"><span class="mr-2 rounded bg-primary-500/15 px-1.5 py-px text-[11px] font-medium text-primary-500">New</span>Export to Markdown is here — one zip per notebook, images included.</p>
-          </div>
-        </div>
-      </div>
     </section>
 
     <!-- ---------------------------------------------------------- and more -->
@@ -434,6 +404,18 @@ const showcase = [
     img: '/screens/errors.webp', alt: 'An error expanded to its stack trace, with a Fix with AI panel underneath.', crop: '', doc: '/docs/errors'
   },
   {
+    id: 'board', eyebrow: 'Feedback & roadmap', title: 'Users say what to build. You decide what ships.',
+    body: 'A public feedback board per project, and a private kanban behind it. Votes from linked posts add up on each card.',
+    bullets: ['Votes, comments, reactions and @mentions, with duplicates merged', 'Link cards to feedback posts and inbox conversations', 'Publish only the items you pick as a public roadmap', 'Moving a card updates its linked posts, and emails their followers'],
+    img: '/screens/board.webp', alt: 'The project board: backlog, planned, in progress and done columns with vote counts on each card.', crop: 'aspect-[16/6.5]', doc: '/docs/feedback'
+  },
+  {
+    id: 'changelog', eyebrow: 'Changelog', title: 'A changelog that writes its first draft.',
+    body: 'Entries are drafted by AI from your GitHub commits or finished work, and wait for your review. Nothing is public until you approve it.',
+    bullets: ['Group entries into versioned releases', 'A public page, JSON and RSS, plus digest emails for readers', 'Or write entries yourself, or from the command line'],
+    img: '/screens/changelog.webp', alt: 'The changelog panel with two AI drafts awaiting review and a published release.', crop: 'aspect-[16/6.5]', doc: '/docs/feedback'
+  },
+  {
     id: 'email', eyebrow: 'Email', title: 'Design once. Brand it per project.',
     body: 'A block designer that renders for Gmail, Apple Mail and Outlook, with an AI that turns pasted HTML into editable blocks.',
     bullets: ['One master design linked into every project, each with its own brand', 'Checks for missing alt text, low contrast and placeholder links', 'Send from your server with one API call, scheduled or per recipient', 'Reusable components, share links, test sends, import and export'],
@@ -451,19 +433,6 @@ const showcase = [
     bullets: ['Tag flags for frontend, backend or iOS', 'Your server reads the lot; a browser reads its own evaluated values'],
     img: '/screens/flags.webp', alt: 'Two feature flags with Off, Admins only and On switches.', crop: 'aspect-[16/5.5]', doc: '/docs/flags'
   }
-]
-
-const feedbackBullets = [
-  'Votes, comments, reactions and @mentions, with duplicates merged',
-  'A roadmap from your own board, publishing only the items you pick',
-  'Changelog entries drafted by AI from GitHub commits, reviewed before they go public',
-  'RSS and digest emails for readers; followers hear about status changes'
-]
-
-const board = [
-  { title: 'Planned', color: '#5e6ad2', cards: [{ t: 'Dark mode on receipts', votes: 41, tag: 'Idea' }, { t: 'Slack notifications', votes: 28, tag: 'Idea' }] },
-  { title: 'In progress', color: '#d9622b', cards: [{ t: 'Export to Markdown', votes: 63, tag: 'Idea' }, { t: 'Calendar off by a day', votes: 17, tag: 'Bug' }] },
-  { title: 'Done', color: '#0e9384', cards: [{ t: 'Workspace URL rename', votes: 22, tag: 'Idea' }] }
 ]
 
 const more = [

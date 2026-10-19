@@ -1191,6 +1191,20 @@ const SCHEMAS = {
       project_created: { _p_project: 1, _created_at: -1 }
     }
   },
+  // The AI write-up of one tracker issue (key `link:provider:issue`) or of the whole
+  // unresolved list (key `overview`); one row per project and key, rewritten on a re-run.
+  ErrorAnalysis: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      key: { type: 'String' },
+      text: { type: 'String' },
+      files: { type: 'Array' },
+      count: { type: 'Number' }
+    },
+    indexes: {
+      project_key: { _p_project: 1, key: 1 }
+    }
+  },
   Device: {
     fields: {
       agent: { type: 'Pointer', targetClass: '_User' },

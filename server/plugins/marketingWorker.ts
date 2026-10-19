@@ -9,18 +9,14 @@ const TICK_MS = 15_000
 const JOBS: [string, () => Promise<void>][] = [
   ['sources', async () => { for (const id of await dueSources(5)) await runSourceSync(id) }],
   ['stripe', async () => { for (const id of await dueStripeAccounts(3)) await runStripeSync(id) }],
-  ['campaigns', async () => { for (const id of await dueCampaigns(5)) await runCampaign(id) }],
-  ['sequences', () => runDueSequenceSteps()],
+  ['campaigns', async () => { if (hasRootSecret()) for (const id of await dueCampaigns(5)) await runCampaign(id) }],
+  ['sequences', async () => { if (hasRootSecret()) await runDueSequenceSteps() }],
   ['webhooks', () => deliverDueWebhooks()]
 ]
 
 export default defineNitroPlugin(() => {
   if (import.meta.prerender || !process.env.PARSE_URL || !process.env.REDIS_URL) return
   if (!runsWorkers()) return
-  if (!hasRootSecret()) {
-    console.warn('[worker] HELPBITES_SECRET is not set: database syncs, campaigns and sequences will not run')
-    return
-  }
   let busy = false
   async function tick() {
     if (busy) return

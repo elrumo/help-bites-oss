@@ -1,0 +1,51 @@
+{
+  "common": { "name": "名前", "cancel": "キャンセル", "sourceCode": "ソースコード", "search": "検索", "saved": "保存しました" },
+  "nav": {
+    "openNavigation": "ナビゲーションを開く", "main": "メイン", "inbox": "受信トレイ", "email": "メール", "projects": "プロジェクト",
+    "newProject": "新規プロジェクト", "addProject": "プロジェクトを追加", "workspace": "ワークスペース", "workspaces": "ワークスペース",
+    "newWorkspace": "新規ワークスペース…", "developer": "開発者", "settings": "設定", "newConversation": "新規会話",
+    "signedIn": "ログイン中", "theme": "テーマ", "system": "システム", "light": "ライト", "dark": "ダーク", "lightTheme": "ライトテーマ",
+    "darkTheme": "ダークテーマ", "switchToLight": "ライトテーマに切り替え", "switchToDark": "ダークテーマに切り替え", "signOut": "ログアウト", "exitDemo": "デモを終了"
+  },
+  "sections": {
+    "overview": "概要", "conversations": "会話", "contacts": "連絡先", "revenue": "売上", "knowledge": "ナレッジベース",
+    "assistants": "アシスタント", "types": "チケット", "feedback": "フィードバック", "board": "ボード", "changelog": "変更履歴", "legal": "法務",
+    "email": "メール", "campaigns": "キャンペーン", "flags": "フラグ", "errors": "エラー", "dev": "開発", "settings": "設定"
+  },
+  "layout": {
+    "demoBanner": "サンプルデータのデモです。ここでの操作は保存されません。",
+    "suspended": "このワークスペースは停止中です。データは安全で、「設定 → ワークスペース」からエクスポートできます。",
+    "deleting": "このワークスペースは削除中です。",
+    "palettePlaceholder": "ページやプロジェクトに移動…", "pages": "ページ", "emailTemplates": "メールテンプレート", "emailLog": "メールログ",
+    "account": "アカウント", "appearance": "外観", "planUsage": "プランと使用量", "team": "チーム", "ai": "AI", "apiKeys": "APIキー",
+    "newProjectTitle": "新規プロジェクト", "newProjectDescription": "アプリの名前を付けてください。そのほかの設定は後から変更できます。",
+    "siteUrl": "サイトURL", "siteUrlHint": "ウィジェットを設置する場所。メール内のリンクに使用されます", "createProject": "プロジェクトを作成",
+    "createProjectError": "プロジェクトを作成できませんでした", "newWorkspaceTitle": "新規ワークスペース",
+    "newWorkspaceDescription": "独自のプロジェクト、受信トレイ、チームを持つ別のスペースです。あなたがオーナーになります。",
+    "createWorkspace": "ワークスペースを作成", "createWorkspaceError": "ワークスペースを作成できませんでした"
+  },
+  "login": {
+    "resetTitle": "新しいパスワードを設定", "resetDescription": "アカウントの新しいパスワードを入力してください。", "newPassword": "新しいパスワード",
+    "passwordHint": "8文字以上", "revokeKeys": "APIキーも無効にする",
+    "revokeKeysDescription": "他の人がアカウントにアクセスした可能性がある場合に推奨します。その人が作成したキーはリセット後も有効なままです。",
+    "savePassword": "パスワードを保存", "setupTitle": "アカウントを作成",
+    "setupDescription": "新規インストールです。最初のアカウントが管理者になります。チームメンバーは後から追加できます。",
+    "email": "メールアドレス", "emailHint": "通知用", "username": "ユーザー名", "password": "パスワード", "setupToken": "セットアップトークン",
+    "setupTokenHint": "サーバー環境変数の SETUP_TOKEN", "createAccount": "アカウントを作成", "createAccountError": "アカウントを作成できませんでした。",
+    "forgotTitle": "パスワードをリセット", "forgotDescription": "アカウントのメールアドレスを入力してください。リセット用のリンクを送信します。",
+    "backToSignIn": "ログインに戻る", "sendResetLink": "リセットリンクを送信", "signInTitle": "HelpBites にログイン",
+    "signInDescription": "サポートの受信トレイと、接続したすべてのアプリ。", "emailOrUsername": "メールアドレスまたはユーザー名",
+    "forgotPassword": "パスワードをお忘れですか？", "signIn": "ログイン", "newTo": "HelpBites は初めてですか？", "signUp": "アカウントを作成",
+    "passwordUpdated": "パスワードを更新しました。新しいパスワードでログインしてください。",
+    "passwordUpdatedRevoked": "パスワードを更新し、{count} 件のAPIキーを無効にしました。新しいパスワードでログインしてください。",
+    "resetSent": "そのメールアドレスのアカウントがある場合は、リセットリンクを送信しました。", "genericError": "問題が発生しました。もう一度お試しください。",
+    "art": { "inbox": "受信トレイ", "emailTemplates": "メールテンプレート", "knowledge": "ナレッジベース", "assistants": "アシスタント", "feedback": "フィードバック" }
+  },
+  "settings": {
+    "title": "設定", "description": "アカウント、パネルの外観、ワークスペース、チーム、AIプロバイダー、接続、APIキー。",
+    "close": "設定を閉じる",
+    "tabs": { "account": "アカウント", "appearance": "外観", "workspace": "ワークスペース", "usage": "プランと使用量", "projects": "プロジェクト", "team": "チーム", "ai": "AI", "connections": "接続", "apiKeys": "APIキー" },
+    "theme": "テーマ", "themeNote": "「システム」はお使いのデバイスの設定に従います。変更されるのはパネルのみで、各プロジェクトのウィジェットの色はプロジェクト設定で決まります。",
+    "language": "言語", "languageNote": "既定ではシステムの言語を使用します。変更されるのはパネルのみです。"
+  }
+}

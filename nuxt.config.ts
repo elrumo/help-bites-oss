@@ -16,7 +16,23 @@ const baselineHeaders = { 'X-Frame-Options': 'SAMEORIGIN', 'Content-Security-Pol
 export default defineNuxtConfig({
   compatibilityDate: '2025-11-20',
   extends: edition === 'cloud' ? ['./ee'] : [],
-  modules: ['@nuxt/ui'],
+  modules: ['@nuxt/ui', '@nuxtjs/i18n'],
+  // No URL prefixes: the panel's routes stay as they are and the language is a
+  // preference. First visit follows the browser's language; the choice is then
+  // kept in a cookie (Settings → Appearance).
+  i18n: {
+    strategy: 'no_prefix',
+    defaultLocale: 'en',
+    locales: [
+      { code: 'en', language: 'en-US', name: 'English', file: 'en.json' },
+      { code: 'es', language: 'es-ES', name: 'Español', file: 'es.json' },
+      { code: 'ca', language: 'ca-ES', name: 'Català', file: 'ca.json' },
+      { code: 'zh', language: 'zh-CN', name: '中文', file: 'zh.json' },
+      { code: 'ja', language: 'ja-JP', name: '日本語', file: 'ja.json' },
+      { code: 'ko', language: 'ko-KR', name: '한국어', file: 'ko.json' }
+    ],
+    detectBrowserLanguage: { useCookie: true, cookieKey: 'hb_locale', fallbackLocale: 'en' }
+  },
   css: ['~/assets/css/main.css'],
   // Rendered on the server, but only where it buys something: the route rules
   // below keep the panel a client-side SPA and leave the landing page and the

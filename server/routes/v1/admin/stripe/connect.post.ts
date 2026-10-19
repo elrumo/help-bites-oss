@@ -2,9 +2,9 @@ defineRouteMeta({
   openAPI: {
     tags: ['Stripe'], operationId: 'connectStripe', security: [{ AgentSession: [] }, { AdminApiKey: [] }],
     summary: 'Connect Stripe',
-    description: 'Checks the key and starts the first sync. Use a restricted key (`rk_live_…`) with read access to Charges, Customers, Subscriptions and Products: HelpBites never writes to Stripe. The key is stored sealed with HELPBITES_SECRET.',
+    description: 'Checks the key and starts the first sync. Use a restricted key (`rk_live_…`) with read access to Charges, Customers, Subscriptions and Products: HelpBites never writes to Stripe. The key is stored sealed when the server has HELPBITES_SECRET.',
     requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['project', 'apiKey'], properties: { project: { type: 'string' }, apiKey: { type: 'string' } } } } } },
-    responses: { 200: { description: '`{ connection }`' }, 400: { description: 'Not a Stripe key.' }, 502: { description: 'Stripe refused the key or lacks read access.' }, 503: { description: 'HELPBITES_SECRET is not set.' } }
+    responses: { 200: { description: '`{ connection }`' }, 400: { description: 'Not a Stripe key.' }, 502: { description: 'Stripe refused the key or lacks read access.' } }
   }
 })
 

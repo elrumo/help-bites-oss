@@ -97,7 +97,8 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   EmailChatMessage: { scope: 'parent', parent: { field: 'template', className: 'EmailTemplate' } },
   // Mail a workspace sends without a project (a master's test) carries the workspace instead.
   EmailLog: { scope: 'project', orWorkspace: true },
-  EmailSuppression: { scope: 'project' }
+  EmailSuppression: { scope: 'project' },
+  ErrorAnalysis: { scope: 'project' }
 }
 
 const PAGE = 500
@@ -183,7 +184,7 @@ const EXPORT_LINK_SECONDS = 7 * 24 * 3600
 
 // Credentials, not data: an export ends up in someone's downloads folder.
 const SECRET_FIELDS: Record<string, string[]> = {
-  Project: ['secret', 'actionWebhookSecret', 'eventWebhookSecret', 'errors.webhookToken', 'errors.more.*.webhookToken', 'errorTrackers.*.token'],
+  Project: ['secret', 'telegram.tokenSealed', 'actionWebhookSecret', 'eventWebhookSecret', 'errors.webhookToken', 'errors.more.*.webhookToken', 'errorTrackers.*.token'],
   AdminApiKey: ['hash'],
   EndUserSession: ['hash'],
   EndUser: ['verifyCodeHash'],

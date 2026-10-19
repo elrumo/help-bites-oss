@@ -5,58 +5,58 @@
         <span class="mb-10 grid size-8 place-items-center rounded-lg bg-primary-500 text-white" aria-hidden="true"><UIcon name="i-lucide-message-circle-more" class="size-[18px]" /></span>
 
         <template v-if="resetToken">
-          <h1 class="text-xl font-semibold tracking-tight text-highlighted">Set a new password</h1>
-          <p class="mb-8 mt-1 text-[15px] text-muted">Choose a new password for your account.</p>
-          <UFormField label="New password" hint="At least 8 characters" class="mb-4" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="new-password" required minlength="8" size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
-          <UCheckbox v-model="revokeApiKeys" label="Also revoke my API keys" description="Recommended if someone else may have had your account: a key they made would outlive the reset." class="mb-6" />
+          <h1 class="text-xl font-semibold tracking-tight text-highlighted">{{ $t('login.resetTitle') }}</h1>
+          <p class="mb-8 mt-1 text-[15px] text-muted">{{ $t('login.resetDescription') }}</p>
+          <UFormField :label="$t('login.newPassword')" :hint="$t('login.passwordHint')" class="mb-4" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="new-password" required minlength="8" size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
+          <UCheckbox v-model="revokeApiKeys" :label="$t('login.revokeKeys')" :description="$t('login.revokeKeysDescription')" class="mb-6" />
           <p v-if="error" class="mb-4 text-[13px] text-error">{{ error }}</p>
-          <div class="flex justify-end"><UButton type="submit" size="lg" :loading="loading">Save password</UButton></div>
+          <div class="flex justify-end"><UButton type="submit" size="lg" :loading="loading">{{ $t('login.savePassword') }}</UButton></div>
         </template>
 
         <div v-else-if="needsSetup === null" class="space-y-3"><USkeleton class="h-7 w-40" /><USkeleton class="h-11" /><USkeleton class="h-11" /></div>
 
         <template v-else-if="needsSetup">
-          <h1 class="text-xl font-semibold tracking-tight text-highlighted">Create your account</h1>
-          <p class="mb-8 mt-1 text-[15px] text-muted">This is a fresh install. The first account becomes the operator; you can add teammates later.</p>
-          <UFormField label="Name" class="mb-4" :ui="labelUi"><UInput v-model="name" autocomplete="name" size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
-          <UFormField label="Email" hint="For notifications" class="mb-4" :ui="labelUi"><UInput v-model="email" type="email" autocomplete="email" size="lg" class="w-full" :ui="fieldUi" /></UFormField>
-          <UFormField label="Username" class="mb-4" :ui="labelUi"><UInput v-model="username" autocomplete="username" required size="lg" class="w-full" :ui="fieldUi" /></UFormField>
-          <UFormField label="Password" hint="At least 8 characters" :class="needsToken ? 'mb-4' : 'mb-6'" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="new-password" required minlength="8" size="lg" class="w-full" :ui="fieldUi" /></UFormField>
-          <UFormField v-if="needsToken" label="Setup token" hint="SETUP_TOKEN from the server's environment" class="mb-6" :ui="labelUi"><UInput v-model="setupToken" type="password" autocomplete="off" required size="lg" class="w-full" :ui="fieldUi" /></UFormField>
+          <h1 class="text-xl font-semibold tracking-tight text-highlighted">{{ $t('login.setupTitle') }}</h1>
+          <p class="mb-8 mt-1 text-[15px] text-muted">{{ $t('login.setupDescription') }}</p>
+          <UFormField :label="$t('common.name')" class="mb-4" :ui="labelUi"><UInput v-model="name" autocomplete="name" size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
+          <UFormField :label="$t('login.email')" :hint="$t('login.emailHint')" class="mb-4" :ui="labelUi"><UInput v-model="email" type="email" autocomplete="email" size="lg" class="w-full" :ui="fieldUi" /></UFormField>
+          <UFormField :label="$t('login.username')" class="mb-4" :ui="labelUi"><UInput v-model="username" autocomplete="username" required size="lg" class="w-full" :ui="fieldUi" /></UFormField>
+          <UFormField :label="$t('login.password')" :hint="$t('login.passwordHint')" :class="needsToken ? 'mb-4' : 'mb-6'" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="new-password" required minlength="8" size="lg" class="w-full" :ui="fieldUi" /></UFormField>
+          <UFormField v-if="needsToken" :label="$t('login.setupToken')" :hint="$t('login.setupTokenHint')" class="mb-6" :ui="labelUi"><UInput v-model="setupToken" type="password" autocomplete="off" required size="lg" class="w-full" :ui="fieldUi" /></UFormField>
           <p v-if="error" class="mb-4 text-[13px] text-error">{{ error }}</p>
-          <div class="flex justify-end"><UButton type="submit" size="lg" :loading="loading">Create account</UButton></div>
+          <div class="flex justify-end"><UButton type="submit" size="lg" :loading="loading">{{ $t('login.createAccount') }}</UButton></div>
         </template>
 
         <template v-else-if="mode === 'forgot'">
-          <h1 class="text-xl font-semibold tracking-tight text-highlighted">Reset your password</h1>
-          <p class="mb-8 mt-1 text-[15px] text-muted">Enter your account email and we'll send you a reset link.</p>
-          <UFormField label="Email" class="mb-6" :ui="labelUi"><UInput v-model="email" type="email" autocomplete="email" required size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
+          <h1 class="text-xl font-semibold tracking-tight text-highlighted">{{ $t('login.forgotTitle') }}</h1>
+          <p class="mb-8 mt-1 text-[15px] text-muted">{{ $t('login.forgotDescription') }}</p>
+          <UFormField :label="$t('login.email')" class="mb-6" :ui="labelUi"><UInput v-model="email" type="email" autocomplete="email" required size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
           <p v-if="notice" class="mb-4 text-[13px] text-success">{{ notice }}</p>
           <p v-if="error" class="mb-4 text-[13px] text-error">{{ error }}</p>
           <div class="flex items-center justify-end gap-2">
-            <UButton color="neutral" variant="ghost" size="lg" @click="toSignin">Back to sign in</UButton>
-            <UButton type="submit" size="lg" :loading="loading">Send reset link</UButton>
+            <UButton color="neutral" variant="ghost" size="lg" @click="toSignin">{{ $t('login.backToSignIn') }}</UButton>
+            <UButton type="submit" size="lg" :loading="loading">{{ $t('login.sendResetLink') }}</UButton>
           </div>
         </template>
 
         <template v-else>
-          <h1 class="text-xl font-semibold tracking-tight text-highlighted">Sign in to HelpBites</h1>
-          <p class="mb-8 mt-1 text-[15px] text-muted">Your support inbox and every app you've connected.</p>
+          <h1 class="text-xl font-semibold tracking-tight text-highlighted">{{ $t('login.signInTitle') }}</h1>
+          <p class="mb-8 mt-1 text-[15px] text-muted">{{ $t('login.signInDescription') }}</p>
           <p v-if="notice" class="mb-4 text-[13px] text-success">{{ notice }}</p>
-          <UFormField label="Email or username" class="mb-4" :ui="labelUi"><UInput v-model="username" autocomplete="username" required size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
-          <UFormField label="Password" class="mb-6" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="current-password" required size="lg" class="w-full" :ui="fieldUi" /></UFormField>
+          <UFormField :label="$t('login.emailOrUsername')" class="mb-4" :ui="labelUi"><UInput v-model="username" autocomplete="username" required size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
+          <UFormField :label="$t('login.password')" class="mb-6" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="current-password" required size="lg" class="w-full" :ui="fieldUi" /></UFormField>
           <p v-if="error" class="mb-4 text-[13px] text-error">{{ error }}</p>
           <div class="flex items-center justify-end gap-2">
-            <UButton color="neutral" variant="ghost" size="lg" @click="toForgot">Forgot password?</UButton>
-            <UButton type="submit" size="lg" :loading="loading">Sign in</UButton>
+            <UButton color="neutral" variant="ghost" size="lg" @click="toForgot">{{ $t('login.forgotPassword') }}</UButton>
+            <UButton type="submit" size="lg" :loading="loading">{{ $t('login.signIn') }}</UButton>
           </div>
           <p v-if="meta.signup === 'open'" class="mt-8 text-[13px] text-muted">
-            New to HelpBites? <NuxtLink to="/signup" class="font-medium text-default transition-colors hover:text-highlighted">Create an account</NuxtLink>
+            {{ $t('login.newTo') }} <NuxtLink to="/signup" class="font-medium text-default transition-colors hover:text-highlighted">{{ $t('login.signUp') }}</NuxtLink>
           </p>
         </template>
 
         <p class="mt-10 text-xs text-dimmed">
-          <a :href="meta.sourceCodeUrl" target="_blank" rel="noopener" class="transition-colors hover:text-muted">Source code</a>
+          <a :href="meta.sourceCodeUrl" target="_blank" rel="noopener" class="transition-colors hover:text-muted">{{ $t('common.sourceCode') }}</a>
         </p>
       </form>
     </div>
@@ -77,6 +77,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'bare' })
 
+const { t } = useI18n()
 const { login, token, agent } = useAgent()
 const meta = useMeta()
 const route = useRoute()
@@ -96,13 +97,13 @@ const loading = ref(false)
 // Linear's onboarding fields: taller, quieter labels.
 const fieldUi = { base: 'h-11' }
 const labelUi = { label: 'font-normal text-muted' }
-const art = [
-  { label: 'Inbox', icon: 'i-lucide-inbox' },
-  { label: 'Email templates', icon: 'i-lucide-mail' },
-  { label: 'Knowledge base', icon: 'i-lucide-book-open' },
-  { label: 'Assistants', icon: 'i-lucide-sparkles' },
-  { label: 'Feedback', icon: 'i-lucide-lightbulb' }
-]
+const art = computed(() => [
+  { label: t('login.art.inbox'), icon: 'i-lucide-inbox' },
+  { label: t('login.art.emailTemplates'), icon: 'i-lucide-mail' },
+  { label: t('login.art.knowledge'), icon: 'i-lucide-book-open' },
+  { label: t('login.art.assistants'), icon: 'i-lucide-sparkles' },
+  { label: t('login.art.feedback'), icon: 'i-lucide-lightbulb' }
+])
 
 const resetToken = computed(() => typeof route.query.reset === 'string' ? route.query.reset : '')
 
@@ -138,11 +139,11 @@ async function submit() {
       const result = await $fetch<{ revokedApiKeys?: number }>('/v1/admin/reset-password', { method: 'POST', body: { token: resetToken.value, password: password.value, revokeApiKeys: revokeApiKeys.value } })
       password.value = ''
       const revoked = result.revokedApiKeys || 0
-      notice.value = `Password updated${revoked ? ` and ${revoked} API key${revoked === 1 ? '' : 's'} revoked` : ''}. Sign in with your new password.`
+      notice.value = revoked ? t('login.passwordUpdatedRevoked', { count: revoked }) : t('login.passwordUpdated')
       await navigateTo('/login', { replace: true })
     } else if (mode.value === 'forgot') {
       await $fetch('/v1/admin/forgot-password', { method: 'POST', body: { email: email.value.trim() } })
-      notice.value = 'If that email has an account, a reset link is on its way.'
+      notice.value = t('login.resetSent')
     } else if (needsSetup.value) {
       const result = await $fetch<{ sessionToken: string, agent: any }>('/v1/admin/setup', { method: 'POST', body: { name: name.value, email: email.value, username: username.value.trim(), password: password.value, ...(needsToken.value ? { setupToken: setupToken.value } : {}) } })
       token.value = result.sessionToken
@@ -153,7 +154,7 @@ async function submit() {
       await navigateTo(typeof route.query.next === 'string' ? route.query.next : '/inbox', { replace: true })
     }
   } catch (e: any) {
-    error.value = e?.data?.statusMessage || e?.statusMessage || (needsSetup.value ? 'Could not create the account.' : 'Something went wrong. Try again.')
+    error.value = e?.data?.statusMessage || e?.statusMessage || (needsSetup.value ? t('login.createAccountError') : t('login.genericError'))
   } finally {
     loading.value = false
   }

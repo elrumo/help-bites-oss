@@ -1,0 +1,51 @@
+{
+  "common": { "name": "Nombre", "cancel": "Cancelar", "sourceCode": "Código fuente", "search": "Buscar", "saved": "Guardado" },
+  "nav": {
+    "openNavigation": "Abrir navegación", "main": "Principal", "inbox": "Bandeja de entrada", "email": "Correo", "projects": "Proyectos",
+    "newProject": "Nuevo proyecto", "addProject": "Añadir un proyecto", "workspace": "Espacio de trabajo", "workspaces": "Espacios de trabajo",
+    "newWorkspace": "Nuevo espacio de trabajo…", "developer": "Desarrollador", "settings": "Ajustes", "newConversation": "Nueva conversación",
+    "signedIn": "Sesión iniciada", "theme": "Tema", "system": "Sistema", "light": "Claro", "dark": "Oscuro", "lightTheme": "Tema claro",
+    "darkTheme": "Tema oscuro", "switchToLight": "Cambiar a tema claro", "switchToDark": "Cambiar a tema oscuro", "signOut": "Cerrar sesión", "exitDemo": "Salir de la demo"
+  },
+  "sections": {
+    "overview": "Resumen", "conversations": "Conversaciones", "contacts": "Contactos", "revenue": "Ingresos", "knowledge": "Base de conocimiento",
+    "assistants": "Asistentes", "types": "Tickets", "feedback": "Comentarios", "board": "Tablero", "changelog": "Novedades", "legal": "Legal",
+    "email": "Correo", "campaigns": "Campañas", "flags": "Flags", "errors": "Errores", "dev": "Dev", "settings": "Ajustes"
+  },
+  "layout": {
+    "demoBanner": "Demo con datos de ejemplo. Nada de lo que hagas aquí se guarda.",
+    "suspended": "Este espacio de trabajo está suspendido. Tus datos están a salvo; aún puedes exportarlos desde Ajustes → Espacio de trabajo.",
+    "deleting": "Este espacio de trabajo se está eliminando.",
+    "palettePlaceholder": "Ir a una página o proyecto…", "pages": "Páginas", "emailTemplates": "Plantillas de correo", "emailLog": "Registro de correo",
+    "account": "Cuenta", "appearance": "Apariencia", "planUsage": "Plan y uso", "team": "Equipo", "ai": "IA", "apiKeys": "Claves de API",
+    "newProjectTitle": "Nuevo proyecto", "newProjectDescription": "Ponle el nombre de la aplicación. El resto lo puedes configurar después.",
+    "siteUrl": "URL del sitio", "siteUrlHint": "Donde estará el widget; se usa en los enlaces de los correos", "createProject": "Crear proyecto",
+    "createProjectError": "No se pudo crear el proyecto", "newWorkspaceTitle": "Nuevo espacio de trabajo",
+    "newWorkspaceDescription": "Un espacio aparte con sus propios proyectos, bandeja de entrada y equipo. Serás su propietario.",
+    "createWorkspace": "Crear espacio de trabajo", "createWorkspaceError": "No se pudo crear el espacio de trabajo"
+  },
+  "login": {
+    "resetTitle": "Establece una nueva contraseña", "resetDescription": "Elige una nueva contraseña para tu cuenta.", "newPassword": "Nueva contraseña",
+    "passwordHint": "Al menos 8 caracteres", "revokeKeys": "Revocar también mis claves de API",
+    "revokeKeysDescription": "Recomendado si otra persona pudo tener acceso a tu cuenta: una clave creada por ella sobreviviría al restablecimiento.",
+    "savePassword": "Guardar contraseña", "setupTitle": "Crea tu cuenta",
+    "setupDescription": "Esta es una instalación nueva. La primera cuenta pasa a ser la del operador; podrás añadir compañeros más tarde.",
+    "email": "Correo electrónico", "emailHint": "Para notificaciones", "username": "Nombre de usuario", "password": "Contraseña", "setupToken": "Token de configuración",
+    "setupTokenHint": "SETUP_TOKEN del entorno del servidor", "createAccount": "Crear cuenta", "createAccountError": "No se pudo crear la cuenta.",
+    "forgotTitle": "Restablece tu contraseña", "forgotDescription": "Introduce el correo de tu cuenta y te enviaremos un enlace para restablecerla.",
+    "backToSignIn": "Volver a iniciar sesión", "sendResetLink": "Enviar enlace", "signInTitle": "Inicia sesión en HelpBites",
+    "signInDescription": "Tu bandeja de soporte y todas las aplicaciones que has conectado.", "emailOrUsername": "Correo o nombre de usuario",
+    "forgotPassword": "¿Olvidaste tu contraseña?", "signIn": "Iniciar sesión", "newTo": "¿Nuevo en HelpBites?", "signUp": "Crear una cuenta",
+    "passwordUpdated": "Contraseña actualizada. Inicia sesión con tu nueva contraseña.",
+    "passwordUpdatedRevoked": "Contraseña actualizada y {count} clave(s) de API revocada(s). Inicia sesión con tu nueva contraseña.",
+    "resetSent": "Si ese correo tiene una cuenta, el enlace de restablecimiento está en camino.", "genericError": "Algo salió mal. Inténtalo de nuevo.",
+    "art": { "inbox": "Bandeja de entrada", "emailTemplates": "Plantillas de correo", "knowledge": "Base de conocimiento", "assistants": "Asistentes", "feedback": "Comentarios" }
+  },
+  "settings": {
+    "title": "Ajustes", "description": "Tu cuenta, el aspecto del panel, el espacio de trabajo, su equipo, el proveedor de IA, las conexiones y las claves de API.",
+    "close": "Cerrar ajustes",
+    "tabs": { "account": "Cuenta", "appearance": "Apariencia", "workspace": "Espacio de trabajo", "usage": "Plan y uso", "projects": "Proyectos", "team": "Equipo", "ai": "IA", "connections": "Conexiones", "apiKeys": "Claves de API" },
+    "theme": "Tema", "themeNote": "Sistema sigue tu dispositivo. Solo cambia el panel; el widget de cada proyecto define su propio color en los ajustes del proyecto.",
+    "language": "Idioma", "languageNote": "Por defecto usa el idioma de tu sistema. Solo cambia el panel."
+  }
+}
