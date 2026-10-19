@@ -100,9 +100,10 @@ import UniformTypeIdentifiers
   }
 
   /// The share sheet and "Use via API" change the row itself, not the design.
-  func updateShare(mode: String?, token: String?) {
+  func updateShare(mode: String?, token: String?, expiresAt: Double?) {
     template?.shareMode = mode
     template?.shareToken = token
+    template?.shareExpiresAt = expiresAt
   }
 
   func updateKey(_ key: String) { template?.key = key }
