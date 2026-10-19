@@ -13,6 +13,7 @@
  * reloading on every keystroke.
  */
 import { renderEmailHtml } from '#shared/email/render'
+import { EMAIL_PREVIEW_RUNTIME } from '#shared/email/previewRuntime'
 import type { EmailDocument } from '#shared/email/blocks'
 
 interface PreviewDevice {
@@ -69,202 +70,37 @@ function updateScale() {
 const blockIds = () => props.document.blocks.map(b => b.id)
 
 /**
- * The iframe runtime. Every block's cell carries `data-block-id` (a preview
- * render only; exports stay clean), and a click selects the innermost one.
- * Top-level blocks are the rows of the content table, in document order: they
- * get the drag handle; blocks inside sections and columns move from the
- * inspector.
- *
- * Dragging uses pointer events (not HTML5 drag and drop): nothing moves until
- * the drop, a line marks the landing spot, and the edge of the frame scrolls.
- * When a render reorders the blocks, each one glides from its old place.
+ * The render with the authored HTML (HTML and component blocks) defanged: it
+ * runs in the frame next to the editor's runtime, so a script there could
+ * drive the editor. Preview only; sent emails go out as written.
  */
-const RUNTIME = `
-(function () {
-  var ids = __IDS__;
-  var selectedId = null;
-  var drag = null;
-  var line = null;
-
-  function send(msg) { msg.__email = true; parent.postMessage(msg, '*'); }
-
-  function rows() {
-    var t = document.querySelector('body > table > tbody > tr > td > table');
-    return t ? Array.prototype.slice.call(t.rows) : [];
-  }
-
-  function tag() {
-    rows().forEach(function (row) {
-      var cell = row.cells[0];
-      if (!cell || !cell.hasAttribute('data-block-id')) return;
-      var handle = document.createElement('button');
-      handle.type = 'button';
-      handle.className = 'email-drag-handle';
-      handle.setAttribute('aria-label', 'Drag to reorder');
-      for (var k = 0; k < 6; k++) handle.appendChild(document.createElement('span'));
-      cell.insertBefore(handle, cell.firstChild);
-    });
-  }
-
-  function apply(id, reveal) {
-    selectedId = id;
-    Array.prototype.forEach.call(document.querySelectorAll('td[data-block-id]'), function (cell) {
-      var on = cell.getAttribute('data-block-id') === id;
-      cell.toggleAttribute('data-selected', on);
-      if (on && reveal) cell.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    });
-  }
-
-  // Insertion point (0..rows) for a viewport y: before the first row whose middle is below it.
-  function slotAt(y) {
-    var rs = rows();
-    for (var i = 0; i < rs.length; i++) {
-      var r = rs[i].getBoundingClientRect();
-      if (y < r.top + r.height / 2) return i;
+function previewRender(): Document {
+  const doc = new DOMParser().parseFromString(renderEmailHtml(props.document, { ids: true }), 'text/html')
+  // DOMParser parses <noscript> with scripting off, the frame with it on; and
+  // the frame would bring a <template shadowrootmode> to life unchecked.
+  doc.querySelectorAll('script, noscript, template, iframe, frame, object, embed, base, meta[http-equiv="refresh" i]').forEach(el => el.remove())
+  doc.querySelectorAll('*').forEach((el) => {
+    for (const { name, value } of [...el.attributes]) {
+      // URL parsing drops tabs, newlines and leading controls: `java&#9;script:` runs too.
+      if (/^on/i.test(name) || /^javascript:/i.test(value.replace(/[\u0000-\u0020]/g, ''))) el.removeAttribute(name)
     }
-    return rs.length;
-  }
+  })
+  return doc
+}
 
-  function update() {
-    var rs = rows();
-    var at = slotAt(drag.y);
-    drag.to = at > drag.from ? at - 1 : at;
-    if (!line) {
-      line = document.createElement('div');
-      line.className = 'email-drop-line';
-    }
-    if (!line.isConnected) document.body.appendChild(line);
-    if (drag.to === drag.from || !rs.length) { line.style.display = 'none'; return; }
-    var box = rs[0].parentNode.getBoundingClientRect();
-    var y = at < rs.length ? rs[at].getBoundingClientRect().top : rs[rs.length - 1].getBoundingClientRect().bottom;
-    line.style.display = 'block';
-    line.style.top = y + 'px';
-    line.style.left = box.left + 'px';
-    line.style.width = box.width + 'px';
-  }
-
-  // Each top-level block's viewport top, by id.
-  function tops() {
-    var at = {};
-    rows().forEach(function (row) {
-      var cell = row.cells[0];
-      if (cell && cell.hasAttribute('data-block-id')) at[cell.getAttribute('data-block-id')] = cell.getBoundingClientRect().top;
-    });
-    return at;
-  }
-
-  // FLIP: slide each block from where it was (tops() before the swap) to where it is.
-  function glide(from) {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    rows().forEach(function (row) {
-      var cell = row.cells[0];
-      var top = cell && from[cell.getAttribute('data-block-id')];
-      var dy = top == null ? 0 : top - cell.getBoundingClientRect().top;
-      if (dy) cell.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2, 0, 0, 1)' });
-    });
-  }
-
-  function autoScroll() {
-    if (!drag || !drag.active) return;
-    var dy = drag.y < 48 ? -12 : drag.y > innerHeight - 48 ? 12 : 0;
-    if (dy) { scrollBy(0, dy); update(); }
-    requestAnimationFrame(autoScroll);
-  }
-
-  function end(commit) {
-    if (!drag) return;
-    var d = drag;
-    drag = null;
-    d.row.removeAttribute('data-dragging');
-    document.body.classList.remove('email-dragging');
-    if (line) line.style.display = 'none';
-    if (commit && d.active && d.to !== d.from) send({ type: 'move', id: d.id, to: d.to });
-  }
-
-  document.addEventListener('pointerdown', function (e) {
-    var handle = e.button === 0 && e.target.closest && e.target.closest('.email-drag-handle');
-    var cell = handle && handle.closest('td[data-block-id]');
-    var row = cell && cell.parentElement;
-    if (!row) return;
-    e.preventDefault(); // no text selection while dragging
-    handle.setPointerCapture(e.pointerId);
-    var id = cell.getAttribute('data-block-id');
-    drag = { id: id, row: row, from: ids.indexOf(id), to: ids.indexOf(id), startY: e.clientY, y: e.clientY, active: false };
-  });
-  document.addEventListener('pointermove', function (e) {
-    if (!drag) return;
-    drag.y = e.clientY;
-    if (!drag.active) {
-      if (Math.abs(drag.y - drag.startY) < 4) return;
-      drag.active = true;
-      drag.row.setAttribute('data-dragging', '');
-      document.body.classList.add('email-dragging');
-      requestAnimationFrame(autoScroll);
-    }
-    update();
-  });
-  document.addEventListener('pointerup', function () { end(true); });
-  document.addEventListener('pointercancel', function () { end(false); });
-
-  document.addEventListener('click', function (e) {
-    if (e.target.closest('a')) e.preventDefault();
-    var cell = e.target.closest('td[data-block-id]');
-    send({ type: 'select', id: cell ? cell.getAttribute('data-block-id') : null });
-  });
-
-  // Focus sits in here after a click or drag: hand the editor its shortcuts.
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && drag) { end(false); return; }
-    var k = e.key.toLowerCase();
-    if (((e.metaKey || e.ctrlKey) && (k === 'z' || k === 'y')) || k === 'delete' || k === 'backspace') {
-      e.preventDefault();
-      send({ type: 'key', key: e.key, shiftKey: e.shiftKey, metaKey: e.metaKey, ctrlKey: e.ctrlKey });
-    }
-  });
-
-  window.addEventListener('message', function (e) {
-    var d = e.data;
-    if (!d || !d.__email) return;
-    if (d.type === 'selected') apply(d.id, true);
-    if (d.type === 'render') {
-      end(false);
-      // Only a new order glides; typing just reflows.
-      var from = d.ids.join() !== ids.join() ? tops() : null;
-      var next = new DOMParser().parseFromString(d.html, 'text/html');
-      document.title = next.title;
-      document.body.setAttribute('style', next.body.getAttribute('style') || '');
-      document.body.innerHTML = next.body.innerHTML;
-      ids = d.ids;
-      tag();
-      apply(selectedId);
-      if (from) glide(from);
-    }
-  });
-
-  var style = document.createElement('style');
-  style.textContent = [
-    'td[data-block-id] { cursor: pointer; position: relative; }',
-    // Only the innermost block under the pointer: a card's children outline on their own.
-    'td[data-block-id]:hover:not(:has(td[data-block-id]:hover)) { outline: 1px dashed rgba(99, 102, 241, .7); outline-offset: -1px; }',
-    'td[data-block-id][data-selected] { outline: 2px solid #6366f1; outline-offset: -2px; }',
-    'tr[data-dragging] { opacity: .35; }',
-    '.email-drag-handle { all: unset; align-content: center; background: #fff; border: 1px solid rgba(24, 24, 27, .16); border-radius: 7px; box-shadow: 0 6px 18px rgba(24, 24, 27, .16); box-sizing: border-box; cursor: grab; display: flex; flex-wrap: wrap; gap: 2px; height: 26px; justify-content: center; left: 6px; opacity: 0; padding: 6px; position: absolute; top: 50%; touch-action: none; transform: translateY(-50%); transition: opacity 140ms ease; width: 26px; z-index: 20; }',
-    '.email-drag-handle span { background: #71717a; border-radius: 999px; height: 3px; width: 3px; }',
-    'td[data-block-id]:hover > .email-drag-handle, td[data-block-id][data-selected] > .email-drag-handle { opacity: 1; }',
-    'body.email-dragging, body.email-dragging * { cursor: grabbing !important; user-select: none; }',
-    'body.email-dragging td[data-block-id]:hover { outline: none; }',
-    'body.email-dragging td[data-block-id][data-selected] { outline: 2px solid #6366f1; }',
-    'body.email-dragging .email-drag-handle { opacity: 0; }',
-    '.email-drop-line { background: #6366f1; border-radius: 3px; box-shadow: 0 0 0 2px #fff; display: none; height: 3px; margin-top: -1.5px; pointer-events: none; position: fixed; z-index: 30; }'
-  ].join('\\n');
-  document.head.appendChild(style);
-  tag();
-  send({ type: 'ready' });
-})();`
+// Only the runtime in the current srcdoc knows its nonce, so a message without
+// it comes from something else, such as a page the frame was navigated to.
+let nonce = ''
 
 function buildSrcDoc(): string {
-  const runtime = RUNTIME.replace('__IDS__', JSON.stringify(blockIds()))
-  return renderEmailHtml(props.document, { ids: true }).replace('</body>', `<script>${runtime}</${''}script></body>`)
+  const doc = previewRender()
+  nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('')
+  const runtime = doc.createElement('script')
+  runtime.dataset.ids = JSON.stringify(blockIds())
+  runtime.dataset.nonce = nonce
+  runtime.textContent = EMAIL_PREVIEW_RUNTIME
+  doc.body.append(runtime)
+  return `<!doctype html>\n${doc.documentElement.outerHTML}`
 }
 
 // The iframe takes posted renders once its runtime says it is ready; until
@@ -274,7 +110,7 @@ let built = props.document
 const srcDoc = ref(buildSrcDoc())
 
 function postRender() {
-  post({ type: 'render', html: renderEmailHtml(props.document, { ids: true }), ids: blockIds() })
+  post({ type: 'render', html: previewRender().documentElement.outerHTML, ids: blockIds() })
 }
 
 function post(msg: Record<string, unknown>) {
@@ -288,9 +124,9 @@ function postSelected() {
 function onMessage(e: MessageEvent) {
   // only accept messages from our own preview iframe (its sandboxed origin is
   // opaque, so identify it by source window rather than origin)
-  if (e.source !== frame.value?.contentWindow) return
+  if (!frame.value?.contentWindow || e.source !== frame.value.contentWindow) return
   const d = e.data
-  if (!d || !d.__email) return
+  if (!d || !d.__email || d.nonce !== nonce) return
   if (d.type === 'select') emit('select', d.id ?? null)
   if (d.type === 'move' && typeof d.id === 'string' && typeof d.to === 'number') {
     emit('move', { id: d.id, to: d.to })
