@@ -41,8 +41,8 @@ Connecting creates the team, project, DSN, and alert webhook.
 
 ## Bugsink
 
-Bugsink 2.6 or newer is needed (its canonical API with issue actions and the
-Custom alert kind). Run Compose with the `bugsink` profile, set
+Bugsink 2.6 or newer is needed (its canonical API with issue actions). Alerts use
+its Slack kind. Run Compose with the `bugsink` profile, set
 `BUGSINK_SECRET_KEY` and `BUGSINK_URL` (the public URL; it becomes Bugsink's
 `BASE_URL` and appears in DSNs), then create the first user and a token:
 
@@ -57,11 +57,12 @@ A token from Bugsink's **Tokens** page works too if it has `teams:read`,
 tracking (API URL `http://sb-bugsink:8000` in Compose), or set `BUGSINK_URL` and
 `BUGSINK_TOKEN`.
 
-Connecting creates the team and project and stores the DSN. Bugsink's API
+Connecting creates the project and stores the DSN. For Bugsink the dialog lets you pick the team it's created under (default: `BUGSINK_TEAM`, else `HelpBites`, made if missing); Bugsink's API can't add members, so pick a team you belong to to see the project under Team Projects. Bugsink's API
 can't add alert destinations, so the dialog then shows a webhook URL: in
-Bugsink open **Projects**, click the alerts (megaphone) icon next to the
-project, click **Add**, set Kind to **Custom** and paste the URL as the
-Webhook url. The same URL stays on the Dev and Errors pages. If Bugsink and
+Bugsink open **Projects** and the **Other Projects** tab (the API creates the
+team and project without adding any user as a member, so they're not under
+My Projects), click the alerts (megaphone) icon next to the project, click **Add**, set Kind to **Slack** and paste the URL as the
+Webhook url (older Bugsink has no Custom kind; HelpBites reads the Slack payload and still accepts Custom). Bugsink's **Test** button then opens one "Bugsink test alert" conversation in the inbox, so you can see the webhook works. The same URL stays on the Dev and Errors pages. If Bugsink and
 HelpBites talk over a private network, set `ALERTS_WEBHOOK_DENY_NON_GLOBAL=false`
 on Bugsink.
 

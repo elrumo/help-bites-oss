@@ -25,6 +25,8 @@ export interface ErrorProvider {
   envPrefix: string
   defaultTeam: string
   issuesUrl(creds: TrackerCredentials, errors: ErrorConfig): string
+  /** Teams a new project can be created under, when the tracker has them to choose from. */
+  listTeams?(creds: TrackerCredentials): Promise<string[]>
   connect(creds: TrackerCredentials, project: ParseObject, existing: ErrorConfig, webhookUrl: string): Promise<ErrorConfig>
   listIssues(creds: TrackerCredentials, errors: ErrorConfig, input: IssueListInput): Promise<{ issues: Array<Record<string, any> & { id: string }>, next: string }>
   setIssueStatus(creds: TrackerCredentials, issueId: string, statusKey: string): Promise<void>
@@ -160,8 +162,17 @@ export function errorWebhookUrl(project: ParseObject, errors: ErrorConfig): stri
   return base && errors.webhookToken ? `${base}/v1/webhooks/${errors.provider || 'glitchtip'}/${project.id}?token=${errors.webhookToken}` : ''
 }
 
-/** Connects a project to one of its workspace's servers. Older clients name only a tracker: its first server is used. */
-export async function connectErrorTracking(project: ParseObject, target: { serverId?: string, providerId?: ErrorProviderId }): Promise<ErrorConfig> {
+/** Teams a project can be created under on a server, and the one used when none is picked. */
+export async function listErrorTeams(workspaceId: string, serverId: string) {
+  const server = [...await workspaceServers(workspaceId), ...envServers()].find(item => item.id === serverId)
+  if (!server) throw createError({ statusCode: 404, statusMessage: 'Error tracking server not found' })
+  const creds = serverCredentials(server)
+  const teams = await providers[server.provider].listTeams?.(creds) || []
+  return { default: creds.team, teams: teams.includes(creds.team) ? teams : [creds.team, ...teams] }
+}
+
+/** Connects a project to one of its workspace's servers. Older clients name only a tracker: its first server is used. `team` overrides the tracker's default team. */
+export async function connectErrorTracking(project: ParseObject, target: { serverId?: string, providerId?: ErrorProviderId, team?: string }): Promise<ErrorConfig> {
   const servers = [...await workspaceServers(pointerId(project.get('workspace'))), ...envServers()]
   const server = servers.find(item => target.serverId ? item.id === target.serverId : item.provider === target.providerId)
   if (!server) throw createError({ statusCode: target.serverId ? 404 : 501, statusMessage: target.serverId ? 'Error tracking server not found' : 'That tracker is not set up. Add a server first.' })
@@ -171,7 +182,7 @@ export async function connectErrorTracking(project: ParseObject, target: { serve
     if (providerOf(existing).id === provider.id && (!existing.serverId || existing.serverId === server.id)) return existing
     throw createError({ statusCode: 409, statusMessage: `This project is already connected to ${providerOf(existing).name}` })
   }
-  const creds = serverCredentials(server)
+  const creds = { ...serverCredentials(server), team: target.team?.trim().slice(0, 100) || serverCredentials(server).team }
   const draft: ErrorConfig = { provider: provider.id, serverId: server.id, webhookToken: existing.webhookToken || randomBytes(32).toString('hex') }
   const connected = await provider.connect(creds, project, existing, errorWebhookUrl(project, draft))
   const errors = { ...draft, ...connected, issuesUrl: provider.issuesUrl(creds, connected) }

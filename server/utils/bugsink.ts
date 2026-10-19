@@ -46,6 +46,10 @@ export const bugsink: ErrorProvider = {
 
   // Bugsink's API cannot add alert destinations, so the webhook is shown to the
   // operator to paste into the project's alert settings instead.
+  async listTeams(creds) {
+    return (await bs<Page<{ name: string }>>(creds, '/teams/')).results.map(row => row.name)
+  },
+
   async connect(creds, project) {
     const teamId = await ensureTeam(creds)
     const name = String(project.get('name') || `hb-${project.id}`)

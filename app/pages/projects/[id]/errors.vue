@@ -12,7 +12,7 @@
             <UInput v-model="search" icon="i-lucide-search" placeholder="Search errors" class="min-w-48 flex-1" @keyup.enter="load()" />
             <UButton color="neutral" variant="soft" icon="i-lucide-refresh-cw" aria-label="Refresh errors" @click="load()" />
           </div>
-          <UAlert v-if="project.errors.alertWebhookUrl" color="neutral" variant="subtle" icon="i-lucide-webhook" title="Send Bugsink alerts to the inbox" :description="`In Bugsink, open this project's alerts, click Add, set Kind to Custom and use this Webhook url: ${project.errors.alertWebhookUrl}`" />
+          <UAlert v-if="project.errors.alertWebhookUrl" color="neutral" variant="subtle" icon="i-lucide-webhook" title="Send Bugsink alerts to the inbox" :description="`In Bugsink, open this project's alerts, click Add, set Kind to Slack and use this Webhook url: ${project.errors.alertWebhookUrl}`" />
           <p v-if="error" class="text-sm text-error">{{ error }}</p>
           <div class="overflow-hidden rounded-xl border border-default divide-y divide-default">
             <div v-for="issue in issues" :key="issue.id" class="flex items-center gap-3 p-4">

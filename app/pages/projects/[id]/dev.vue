@@ -109,7 +109,7 @@
                 <UButton :to="`/projects/${id}/errors`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" label="Errors" />
               </div>
               <template v-if="project.errors?.connected">
-                <p v-if="project.errors.alertWebhookUrl" class="step-text">To get alerts in the inbox, open the project's alerts in Bugsink, click Add, set Kind to <span class="font-medium">Custom</span> and use this Webhook url: <code class="inline-code break-all">{{ project.errors.alertWebhookUrl }}</code>.</p>
+                <p v-if="project.errors.alertWebhookUrl" class="step-text">To get alerts in the inbox, open the project's alerts in Bugsink, click Add, set Kind to <span class="font-medium">Slack</span> and use this Webhook url: <code class="inline-code break-all">{{ project.errors.alertWebhookUrl }}</code>.</p>
                 <p class="step-text">Use this DSN in browser and server SDKs. Set the same stable HelpBites identity id as the Sentry user id to show a customer’s errors in their conversation.</p>
                 <CodeBlock :code="sentrySnippet" lang="js" />
               </template>

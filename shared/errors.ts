@@ -86,9 +86,21 @@ export function buildErrorPrompt(event: unknown): string {
   return text.length > 12_000 ? `${text.slice(0, 11_980)}\n…(truncated)` : text
 }
 
-/** Bugsink's custom webhook posts the canonical issue JSON plus a few convenience fields. */
+export const BUGSINK_TEST_ISSUE = 'test'
+
+/** Bugsink's alert destinations are Slack, Discord and Mattermost (newer versions add Custom). The Slack kind posts Block Kit:
+ * the issue title in a header block and a `<…/issues/issue/{id}/|view on Bugsink>` link. 
+ * Custom posts the canonical issue JSON plus a few convenience fields. */
 export function parseBugsinkWebhook(body: unknown): ErrorAlert[] {
-  const data = (body || {}) as Record<string, unknown>
+  const data = (body || {}) as Record<string, any>
+  if (Array.isArray(data.blocks)) {
+    const texts = data.blocks.map((block: any) => String(block?.text?.text || ''))
+    const link = texts.join('\n').match(/<(https?:\/\/[^|>\s]*\/issues\/issue\/([\w-]+)\/?[^|>\s]*)\|/)
+    const title = data.blocks.find((block: any) => block?.type === 'header')?.text?.text
+    // The test button posts a header "TEST issue" and no link: one `test` conversation, so it shows the wiring works.
+    if (!link) return /^test\b/i.test(String(title || '')) ? [{ issueId: BUGSINK_TEST_ISSUE, title: 'Bugsink test alert', url: '', culprit: 'Test message from Bugsink: alerts reach HelpBites.' }] : []
+    return [{ issueId: link[2]!, title: String(title || 'Error').slice(0, 500), url: link[1]!, culprit: '' }]
+  }
   const issueId = String(data.id || '')
   if (!issueId || !['NEW', 'REGRESSED', 'UNMUTED'].includes(String(data.alert_reason || ''))) return []
   return [{ issueId, title: String(data.title || data.calculated_type || 'Error').slice(0, 500), url: String(data.url || ''), culprit: String(data.transaction || '').slice(0, 500) }]
