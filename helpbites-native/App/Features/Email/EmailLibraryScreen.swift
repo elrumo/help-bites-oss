@@ -12,9 +12,13 @@ struct EmailLibraryScreen: View {
   @Environment(SessionStore.self) private var session
   @State private var tab: EmailTab
 
-  init(projectId: String?, initialTab: EmailTab = .templates) {
+  /// `logBatch` opens the Log on one send's recipients (a campaign links here with its `cm_` id).
+  private let logBatch: String
+
+  init(projectId: String?, initialTab: EmailTab = .templates, logBatch: String = "") {
     self.projectId = projectId
-    _tab = State(initialValue: initialTab)
+    self.logBatch = logBatch
+    _tab = State(initialValue: logBatch.isEmpty ? initialTab : .log)
   }
 
   @State private var templates: [EmailTemplateItem] = []
@@ -112,7 +116,7 @@ struct EmailLibraryScreen: View {
       switch tab {
       case .templates: templatesView
       case .components: EmailComponentLibrary(projectId: projectId)
-      case .log: EmailLogScreen(projectId: projectId)
+      case .log: EmailLogScreen(projectId: projectId, batch: logBatch)
       case .suppressed: EmailSuppressionsScreen(projectId: projectId)
       }
     }
@@ -191,10 +195,11 @@ struct EmailLibraryScreen: View {
       }
     }
     .sheet(item: $sharing) { row in
-      EmailShareSheet(template: row) { mode, token in
+      EmailShareSheet(template: row) { mode, token, expiresAt in
         guard let index = templates.firstIndex(where: { $0.id == row.id }) else { return }
         templates[index].shareMode = mode
         templates[index].shareToken = token
+        templates[index].shareExpiresAt = expiresAt
       }
     }
     .sheet(item: $testing) { EmailTestSheet(template: $0) }

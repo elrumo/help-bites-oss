@@ -20,16 +20,24 @@ struct EmailLogScreen: View {
   @State private var search = ""
   @State private var status = ""
   @State private var source = ""
-  @State private var batch = ""
+  @State private var template = ""
+  @State private var batch: String
   @State private var opened: EmailLogEntry?
+  @State private var previewing: EmailLogEntry?
+
+  /// `batch` lists one send's recipients (a campaign links here with its `cm_` id).
+  init(projectId: String?, batch: String = "") {
+    self.projectId = projectId
+    _batch = State(initialValue: batch)
+  }
 
   private struct Filters: Equatable {
-    var to = "", status = "", source = "", batch = ""
-    var isEmpty: Bool { to.isEmpty && status.isEmpty && source.isEmpty && batch.isEmpty }
+    var to = "", status = "", source = "", template = "", batch = ""
+    var isEmpty: Bool { to.isEmpty && status.isEmpty && source.isEmpty && template.isEmpty && batch.isEmpty }
   }
 
   private var filters: Filters {
-    Filters(to: search.trimmingCharacters(in: .whitespacesAndNewlines), status: status, source: source, batch: batch)
+    Filters(to: search.trimmingCharacters(in: .whitespacesAndNewlines), status: status, source: source, template: template, batch: batch)
   }
 
   var body: some View {
@@ -89,18 +97,31 @@ struct EmailLogScreen: View {
         search = ""
         status = ""
         source = ""
+        template = ""
         opened = nil
       }
     }
+    .sheet(item: $previewing) { EmailLogPreviewSheet(entry: $0) }
   }
 
   // MARK: Layout
 
   private var header: some View {
-    HStack(spacing: 8) {
+    VStack(alignment: .leading, spacing: 8) {
       SearchField(text: $search, prompt: "Address")
         .textInputAutocapitalization(.never)
         .keyboardType(.emailAddress)
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: 8) { filterMenus }
+      }
+    }
+    .padding(.horizontal, Metrics.gutter)
+    .padding(.vertical, 10)
+    .overlay(alignment: .bottom) { Rectangle().fill(Theme.border).frame(height: 0.5) }
+  }
+
+  @ViewBuilder private var filterMenus: some View {
+    Group {
       Menu {
         Picker("Status", selection: $status) {
           Text("Any status").tag("")
@@ -113,10 +134,22 @@ struct EmailLogScreen: View {
           ForEach(EmailStatusText.sources, id: \.key) { item in Text(item.label).tag(item.key) }
         }
       } label: { filterLabel(source.isEmpty ? "Source" : EmailStatusText.source(source), active: !source.isEmpty) }
+      if !templateKeys.isEmpty {
+        Menu {
+          Picker("Template", selection: $template) {
+            Text("Any template").tag("")
+            ForEach(templateKeys, id: \.self) { key in Text(key).tag(key) }
+          }
+        } label: { filterLabel(template.isEmpty ? "Template" : template, active: !template.isEmpty) }
+      }
     }
-    .padding(.horizontal, Metrics.gutter)
-    .padding(.vertical, 10)
-    .overlay(alignment: .bottom) { Rectangle().fill(Theme.border).frame(height: 0.5) }
+  }
+
+  /// The keys sent in the last 30 days, most used first; one picked from a link stays listed.
+  private var templateKeys: [String] {
+    var keys = (stats?.topTemplates ?? []).map(\.key)
+    if !template.isEmpty && !keys.contains(template) { keys.append(template) }
+    return keys
   }
 
   private func filterLabel(_ text: String, active: Bool) -> some View {
@@ -198,6 +231,21 @@ struct EmailLogScreen: View {
   }
 
   private func row(_ entry: EmailLogEntry) -> some View {
+    HStack(spacing: 4) {
+      rowButton(entry)
+      if entry.hasContent == true {
+        IconButton(systemImage: "eye", label: "Preview the email") { previewing = entry }
+      }
+    }
+    .contextMenu {
+      Button { opened = entry } label: { Label("Open", systemImage: "info.circle") }
+      if entry.hasContent == true { Button { previewing = entry } label: { Label("Preview the email", systemImage: "eye") } }
+      Button { Clipboard.copy(entry.recipient) } label: { Label("Copy address", systemImage: "doc.on.doc") }
+    }
+    .linearRow()
+  }
+
+  private func rowButton(_ entry: EmailLogEntry) -> some View {
     Button { opened = entry } label: {
       HStack(spacing: 10) {
         EmailStatusBadge(status: entry.statusKey).frame(width: 112, alignment: .leading)
@@ -238,7 +286,6 @@ struct EmailLogScreen: View {
     }
     .buttonStyle(.plain)
     .accessibilityHint(EmailStatusText.style(entry.statusKey).hint)
-    .linearRow()
   }
 
   private func projectName(_ id: String?) -> String {
@@ -255,6 +302,7 @@ struct EmailLogScreen: View {
     if !current.to.isEmpty { query["to"] = current.to }
     if !current.status.isEmpty { query["status"] = current.status }
     if !current.source.isEmpty { query["source"] = current.source }
+    if !current.template.isEmpty { query["template"] = current.template }
     if !current.batch.isEmpty { query["batch"] = current.batch }
     if let before { query["before"] = before }
     return query
@@ -320,6 +368,7 @@ struct EmailLogDetailSheet: View {
   @State private var error = ""
   @State private var copied = false
   @State private var editing: EmailEditorTarget?
+  @State private var fullSize = false
 
   init(entry: EmailLogEntry, showsProject: Bool, onShowBatch: @escaping @MainActor (String) -> Void) {
     self.showsProject = showsProject
@@ -377,6 +426,7 @@ struct EmailLogDetailSheet: View {
         Button("Stop emailing", role: .destructive) { Task { await suppress() } }
       }
       .fullScreenCover(item: $editing) { EmailEditorScreen(target: $0) }
+      .sheet(isPresented: $fullSize) { EmailLogPreviewSheet(entry: detail) }
       .task { await loadDetail() }
     }
   }
@@ -547,6 +597,7 @@ struct EmailLogDetailSheet: View {
         SectionLabel("The message")
         if let html = detail.html, !html.isEmpty {
           Button(showText ? "HTML" : "Plain text") { showText.toggle() }.buttonStyle(.lnGhost)
+          Button { fullSize = true } label: { Label("Full size", systemImage: "arrow.up.left.and.arrow.down.right") }.buttonStyle(.lnGhost)
         }
       }
       if let html = detail.html, !html.isEmpty {
@@ -622,5 +673,45 @@ struct EmailLogDetailSheet: View {
       let _: EmailSuppressionAddResult = try await session.send("/v1/admin/email-suppressions", body: EmailSuppressionInput(project: projectId, emails: [detail.recipient], reason: "manual", detail: "Added from the email log"))
       notice = "\(detail.recipient) won't get this project's email"
     } catch { self.error = error.localizedDescription }
+  }
+}
+
+
+// MARK: - The sent message, full size
+
+/// The message as it went out (EmailLogView.vue's preview modal). A list row
+/// has no body, so it's fetched on open; a project that doesn't keep content has none.
+struct EmailLogPreviewSheet: View {
+  @Environment(SessionStore.self) private var session
+  @Environment(\.dismiss) private var dismiss
+  @State private var entry: EmailLogEntry
+  @State private var error = ""
+
+  init(entry: EmailLogEntry) { _entry = State(initialValue: entry) }
+
+  var body: some View {
+    NavigationStack {
+      Group {
+        if let html = entry.html, !html.isEmpty {
+          SandboxedWebView(html: html).background(Color.white)
+        } else if !error.isEmpty {
+          EmptyState(systemImage: "envelope", title: "Could not load the message", message: error).frame(maxHeight: .infinity)
+        } else {
+          ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+      }
+      .panelScreen(entry.subject?.isEmpty == false ? entry.subject! : "Email")
+      .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+      .task {
+        guard entry.html?.isEmpty != false else { return }
+        do {
+          let response: EmailLogResponse = try await session.get("/v1/admin/email-logs/\(entry.id)")
+          if response.log.html?.isEmpty == false { entry = response.log } else { error = "This message wasn't kept." }
+        } catch { self.error = error.localizedDescription }
+      }
+    }
+    #if os(macOS)
+    .frame(minWidth: 640, minHeight: 640)
+    #endif
   }
 }

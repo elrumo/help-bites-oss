@@ -163,15 +163,18 @@ struct EmailAddMasterSheet: View {
   }
 }
 
-/// Share settings for a template (the popover on pages/emails/[id].vue).
+/// Share settings for a template (the popover on pages/emails/[id].vue): who
+/// can open the link, how long it lasts, and the last edit made through it.
 struct EmailShareSheet: View {
   let template: EmailTemplateItem
-  /// The new mode (nil when off) and token, for the list.
-  var onChange: (String?, String?) -> Void
+  /// The new mode (nil when off), token and expiry (epoch ms), for the list.
+  var onChange: (String?, String?, Double?) -> Void
   @Environment(SessionStore.self) private var session
   @Environment(\.dismiss) private var dismiss
   @State private var mode: String
   @State private var token: String?
+  @State private var expiresAt: Double?
+  @State private var days: Int?
   @State private var busy = false
   @State private var copied = false
   @State private var error = ""
@@ -181,17 +184,38 @@ struct EmailShareSheet: View {
     ("view", "Anyone with the link can view", "A rendered preview, no sign-in."),
     ("edit", "Anyone with the link can edit", "Changes sync live. Share with care.")
   ]
+  private static let dayOptions = [1, 7, 30, 90]
+  /// Mail the server sends itself (shareEditRefusal in server/utils/emails.ts).
+  private static let systemKeys: Set<String> = ["confirm-subscription", "changelog-confirm", "changelog"]
 
-  init(template: EmailTemplateItem, onChange: @escaping (String?, String?) -> Void) {
+  init(template: EmailTemplateItem, onChange: @escaping (String?, String?, Double?) -> Void) {
     self.template = template
     self.onChange = onChange
     _mode = State(initialValue: template.shareMode ?? "off")
     _token = State(initialValue: template.shareToken)
+    _expiresAt = State(initialValue: template.shareExpiresAt)
+  }
+
+  /// Why this template can only be shared view-only (shareEditRefusal).
+  private var editRefusal: String? {
+    if template.isLinked { return "A linked master can only be shared view-only; edit the master instead." }
+    if template.projectId == nil { return "A master can only be shared view-only: an edit would change it for every project that uses it." }
+    if Self.systemKeys.contains(template.key) { return "“\(template.key)” is mail the server sends itself, so it can only be shared view-only." }
+    return nil
   }
 
   private var link: String? {
     guard let token, mode != "off" else { return nil }
     return "\(session.endpoint)/share/emails/\(token)"
+  }
+
+  /// A link shared before links expired has no date; the server treats it as expired.
+  private var expired: Bool { expiresAt.map { $0 <= Date().timeIntervalSince1970 * 1000 } ?? true }
+
+  private var expiryText: String {
+    guard let expiresAt else { return "Expired: renew to use it again" }
+    let date = Date(timeIntervalSince1970: expiresAt / 1000).formatted(date: .abbreviated, time: .shortened)
+    return "\(expired ? "Expired" : "Expires") \(date)"
   }
 
   var body: some View {
@@ -202,7 +226,7 @@ struct EmailShareSheet: View {
           Card {
             ForEach(Array(Self.modes.enumerated()), id: \.offset) { index, option in
               CardRow(divider: index < Self.modes.count - 1) {
-                Button { Task { await set(option.value) } } label: {
+                Button { Task { await apply(option.value, days: nil) } } label: {
                   HStack(alignment: .top, spacing: 10) {
                     Image(systemName: mode == option.value ? "largecircle.fill.circle" : "circle")
                       .font(.system(size: 16))
@@ -216,14 +240,12 @@ struct EmailShareSheet: View {
                   .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .disabled(busy || (option.value == "edit" && template.isLinked))
+                .disabled(busy || (option.value == "edit" && editRefusal != nil))
                 .accessibilityAddTraits(mode == option.value ? .isSelected : [])
               }
             }
           }
-          if template.isLinked {
-            Text("A linked master can only be shared view-only; edit the master instead.").font(.lnCaption).foregroundStyle(Theme.textMuted)
-          }
+          if let editRefusal { Text(editRefusal).font(.lnCaption).foregroundStyle(Theme.textMuted) }
           if let link {
             HStack(spacing: 8) {
               Text(link)
@@ -247,6 +269,27 @@ struct EmailShareSheet: View {
                 .accessibilityLabel("Share link")
               }
             }
+            HStack(spacing: 8) {
+              Text(expiryText).font(.lnCaption).foregroundStyle(expired ? Theme.error : Theme.textMuted)
+              Spacer(minLength: 0)
+              if expired { Button("Renew") { Task { await apply(mode, days: days) } }.buttonStyle(.lnSecondaryCompact).disabled(busy) }
+              Menu {
+                ForEach(Self.dayOptions, id: \.self) { option in
+                  Button(option == 1 ? "1 day" : "\(option) days") { Task { await apply(mode, days: option) } }
+                }
+              } label: {
+                Label(days.map { $0 == 1 ? "1 day" : "\($0) days" } ?? "Set expiry", systemImage: "clock")
+                  .font(.lnMetaMedium)
+                  .foregroundStyle(Theme.textMuted)
+              }
+              .disabled(busy)
+              .accessibilityLabel("Link lifetime")
+            }
+          }
+          if let edit = template.lastSharedEdit, let at = edit.at {
+            Text("Last edited through a link \(EmailStatusText.fullDate(at)) from \(edit.ip?.isEmpty == false ? edit.ip! : "an unknown address")")
+              .font(.lnCaption)
+              .foregroundStyle(Theme.textMuted)
           }
           ErrorText(message: error)
         }
@@ -258,17 +301,21 @@ struct EmailShareSheet: View {
     .presentationDetents([.medium, .large])
   }
 
-  private func set(_ next: String) async {
-    guard next != mode else { return }
+  /// POST …/share: every view or edit call restarts the link's expiry (the server's default unless `days`).
+  private func apply(_ next: String, days chosen: Int?) async {
+    guard next != mode || chosen != nil || (next != "off" && expired) else { return }
+    struct Input: Encodable, Sendable { let mode: String; let expiresInDays: Int? }
     busy = true
     error = ""
     defer { busy = false }
     do {
-      let response: EmailShareResponse = try await session.send("/v1/admin/emails/\(template.id)/share", body: ["mode": JSONValue.string(next)])
+      let response: EmailShareResponse = try await session.send("/v1/admin/emails/\(template.id)/share", body: Input(mode: next, expiresInDays: chosen))
       mode = response.mode
       token = response.token
+      expiresAt = response.expiresAt
+      days = chosen
       copied = false
-      onChange(response.mode == "off" ? nil : response.mode, response.token)
+      onChange(response.mode == "off" ? nil : response.mode, response.token, response.expiresAt)
     } catch { self.error = error.localizedDescription }
   }
 }

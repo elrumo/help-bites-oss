@@ -30,10 +30,16 @@ struct EmailTemplateItem: Decodable, Identifiable, Equatable, Sendable {
   var variableValues: [String: String]
   var shareMode: String?
   var shareToken: String?
+  /// When the share link stops working (epoch ms); nil when it has no date, which the server treats as expired.
+  var shareExpiresAt: Double?
+  /// The last time someone edited through the link.
+  var lastSharedEdit: SharedEdit?
   let updatedAt: Double
   var master: EmailMasterSummary?
   /// The editor session that saved last; an editor ignores live updates of its own saves.
   var lastActorId: String?
+
+  struct SharedEdit: Decodable, Equatable, Sendable { let at: String?; let ip: String? }
 
   var isLinked: Bool { masterId != nil }
   /// A project's link goes by its master's name.
@@ -64,7 +70,7 @@ struct EmailTemplateList: Decodable, Sendable { let templates: [EmailTemplateIte
 struct EmailFolderList: Decodable, Sendable { let folders: [EmailFolderItem] }
 struct EmailTemplateResponse: Decodable, Sendable { let template: EmailTemplateItem }
 struct EmailFolderResponse: Decodable, Sendable { let folder: EmailFolderItem }
-struct EmailShareResponse: Decodable, Sendable { let mode: String; let token: String? }
+struct EmailShareResponse: Decodable, Sendable { let mode: String; let token: String?; let expiresAt: Double? }
 struct EmailBrandList: Decodable, Sendable { let projects: [EmailBrand] }
 
 /// What the full-screen email editor opens.
@@ -239,7 +245,11 @@ struct EmailLogStats: Decodable, Equatable, Sendable {
   let total: Int?
   let byStatus: [String: Int]?
   let bySource: [String: Int]?
+  /// The most-sent send keys of the window, for the log's template filter.
+  let topTemplates: [TopTemplate]?
   let truncated: Bool?
+
+  struct TopTemplate: Decodable, Equatable, Sendable { let key: String; let name: String?; let count: Int? }
 }
 
 // MARK: - Suppressions

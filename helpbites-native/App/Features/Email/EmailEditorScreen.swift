@@ -380,7 +380,7 @@ private struct EmailEditorRoot: View {
     case .test(let item):
       EmailTestSheet(template: item)
     case .share(let item):
-      EmailShareSheet(template: item) { mode, token in store.updateShare(mode: mode, token: token) }
+      EmailShareSheet(template: item) { mode, token, expiresAt in store.updateShare(mode: mode, token: token, expiresAt: expiresAt) }
     case .api(let item):
       EmailAPISheet(template: item) { key in store.updateKey(key) }
     case .file(let url):
