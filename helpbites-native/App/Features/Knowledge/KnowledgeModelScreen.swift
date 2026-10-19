@@ -21,6 +21,8 @@ struct KnowledgeModelScreen: View {
   @State private var selection: Set<String> = []
   @State private var confirmBulkDelete = false
   @State private var pendingDelete: KnowledgeFAQItem?
+  @State private var tagging = false
+  @State private var tagText = ""
 
   @State private var sheet: Sheet?
   @State private var reindexing = false
@@ -85,6 +87,14 @@ struct KnowledgeModelScreen: View {
       case .tester: KnowledgeTesterSheet(projectId: model.projectId)
       }
     }
+    .alert("Add tags to \(selection.count) FAQ\(selection.count == 1 ? "" : "s")", isPresented: $tagging) {
+      TextField("Comma separated", text: $tagText)
+      Button("Add") {
+        let tags = tagText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        if !tags.isEmpty { Task { await bulk("tag", tags: tags) } }
+      }
+      Button("Cancel", role: .cancel) {}
+    }
     .confirmationDialog("Delete \(selection.count) FAQ\(selection.count == 1 ? "" : "s")?", isPresented: $confirmBulkDelete, titleVisibility: .visible) {
       Button("Delete", role: .destructive) { Task { await bulk("delete") } }
     } message: { Text("This cannot be undone.") }
@@ -108,13 +118,14 @@ struct KnowledgeModelScreen: View {
       } else {
         Button { sheet = .tester } label: { Label("Test", systemImage: "sparkles") }
         Button { sheet = .importer } label: { Label("Import", systemImage: "arrow.up.doc") }
-        Button { sheet = .faq("") } label: { Label("New FAQ", systemImage: "plus") }
+        Button { sheet = .faq("") } label: { Label("New FAQ", systemImage: "plus") }.keyboardShortcut("n")
         Menu {
           Section {
             Button { sheet = .themes } label: { Label("Themes", systemImage: "folder") }
             Button { sheet = .documents } label: { Label("Source documents", systemImage: "doc.text") }
             Button { Task { await reindex() } } label: { Label("Reindex", systemImage: "arrow.clockwise") }
             Button { selecting = true } label: { Label("Select FAQs", systemImage: "checkmark.circle") }
+            Button { Task { await duplicate() } } label: { Label("Duplicate model", systemImage: "plus.square.on.square") }
           }
           Button { sheet = .settings } label: { Label("Model settings", systemImage: "slider.horizontal.3") }
         } label: {
@@ -167,6 +178,8 @@ struct KnowledgeModelScreen: View {
               KnowledgeStat(n: dashboard.nodes, label: "themes")
               KnowledgeStat(n: dashboard.documents, label: "documents")
               KnowledgeStat(n: dashboard.agents, label: "assistants")
+              if let failed = dashboard.failedDocuments, failed > 0 { KnowledgeStat(n: failed, label: "failed documents", warn: true) }
+              if let stale = dashboard.needsReindex, stale > 0 { KnowledgeStat(n: stale, label: "need reindex", warn: true) }
             }
           }
           ErrorText(message: error)
@@ -266,6 +279,7 @@ struct KnowledgeModelScreen: View {
       Text("\(selection.count) selected").font(.lnMetaMedium).monospacedDigit().foregroundStyle(Theme.textHighlighted).padding(.horizontal, 6)
       Menu { statusChoices { status in Task { await bulk("status", status: status) } } } label: { barLabel("Set status", "flag", labelled) }
       Menu { themeChoices { id in Task { await bulk("move", nodeId: id) } } } label: { barLabel("Move to theme", "folder", labelled) }
+      Button { tagText = ""; tagging = true } label: { barLabel("Add tags", "tag", labelled) }.buttonStyle(.plain)
       Button { confirmBulkDelete = true } label: { barLabel("Delete", "trash", false, tint: Theme.error) }.buttonStyle(.plain)
       Button { selection = []; selecting = false } label: { barLabel("Clear selection", "xmark", false) }.buttonStyle(.plain)
     }
@@ -352,13 +366,23 @@ struct KnowledgeModelScreen: View {
     } catch { self.error = error.localizedDescription }
   }
 
-  private func bulk(_ action: String, status: String? = nil, nodeId: String? = nil) async {
-    struct Input: Encodable, Sendable { let ids: [String]; let action: String; let status, nodeId: String? }
+  private func bulk(_ action: String, status: String? = nil, nodeId: String? = nil, tags: [String]? = nil) async {
+    struct Input: Encodable, Sendable { let ids: [String]; let action: String; let status, nodeId: String?; let tags: [String]? }
     do {
-      let _: JSONValue = try await session.send("/v1/admin/knowledge/faqs/bulk", body: Input(ids: Array(selection), action: action, status: status, nodeId: nodeId))
+      let _: JSONValue = try await session.send("/v1/admin/knowledge/faqs/bulk", body: Input(ids: Array(selection), action: action, status: status, nodeId: nodeId, tags: tags))
       selection = []
       selecting = false
       refresh()
+    } catch { self.error = error.localizedDescription }
+  }
+
+  /// The API copies the model (FAQs, themes, documents); the list shows the copy.
+  private func duplicate() async {
+    reindexing = true
+    defer { reindexing = false }
+    do {
+      let _: JSONValue = try await session.send("/v1/admin/knowledge/models/\(model.id)/duplicate")
+      dismiss()
     } catch { self.error = error.localizedDescription }
   }
 

@@ -42,6 +42,8 @@ struct KnowledgeFAQDetail: Decodable, Sendable {
 
 struct KnowledgeDashboard: Decodable, Sendable {
   let faqsTotal, faqsActive, faqsDraft, faqsOutdated, nodes, documents, agents: Int
+  // Served but not shown by the web; worth a glance after an import or reindex.
+  let failedDocuments, needsReindex: Int?
 }
 
 struct KnowledgeDocumentItem: Decodable, Sendable, Identifiable {
