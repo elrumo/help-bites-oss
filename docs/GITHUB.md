@@ -2,7 +2,7 @@
 
 A workspace connects its GitHub accounts and organisations once; each project
 then picks the repos it uses. AI error notes and legal documents can read those
-repos. HelpBites only ever reads them: the app asks for read-only access.
+repos (the legal wizard's *Suggest from my repos* reads the file list and dependency manifests; see [LEGAL.md](LEGAL.md)). HelpBites only ever reads them: the app asks for read-only access.
 
 **In the panel**
 

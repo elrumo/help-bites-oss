@@ -58,6 +58,39 @@ Document types: `privacy`, `terms`, `cookies`, `refund`. Fetch the questions for
 a type with `GET /v1/admin/legal/wizard/:type?project=ID`, and preview a result
 without saving with `POST /v1/admin/legal/wizard/:type/compose`.
 
+## Suggest answers from your GitHub repos
+
+If the project has GitHub repos (see [GITHUB.md](GITHUB.md)), the wizard shows
+**Suggest from my repos**. HelpBites reads each repo's file list and a few
+dependency manifests (`package.json`, `requirements.txt`, `pyproject.toml`,
+`Gemfile`, `go.mod`, `Cargo.toml`, `composer.json`, `pubspec.yaml`, `Podfile`,
+`build.gradle`, `pom.xml`; up to 8 per repo, at most two folders deep), never
+anything else and never with write access. Known SDKs map to answers: Stripe,
+RevenueCat, in-app purchases, Firebase, Google Analytics, PostHog, Mixpanel,
+Sentry, AdMob and other ad networks, OpenAI and Anthropic map to the matching
+service, data kind, cookie type or yes/no question; the file tree and mobile or
+web frameworks suggest the platforms. Services with no entry in the service
+list (Clerk, PayPal, Supabase, …) are added to "Other services".
+
+This needs no AI. Each suggestion lists what it was found in, nothing is applied
+until you press **Use these answers**, and you can edit every answer afterwards.
+It is a hint from dependency names: a library in a repo does not prove what your
+app collects, so check each answer.
+
+`POST /v1/admin/legal/wizard/:type/suggest` with `{ "project": "ID" }` does the
+same over the API and returns `{ answers, evidence, repos, ai }`; nothing is
+saved. Answers are cleaned like any others: only questions that document asks,
+only real options.
+
+**Optional AI.** For the privacy policy you can also tick *Also ask AI about
+other services* (`"ai": true`). The model is shown the dependency names the
+table did not recognise (names only, never code or file contents), under the
+same grounding as the other AI features, and may name third-party services among
+them. Each one it names must cite a dependency that really is in your manifests
+(others are dropped), and its name and purpose are reduced to plain text before
+they are suggested as "Other services". It uses the workspace's AI provider and
+answers `501` without one.
+
 ## Sections, provenance and the summary
 
 A document is an ordered list of sections `{ id, heading, body, source, locked }`.
@@ -142,6 +175,7 @@ the body) and an operator session or admin API key. The full schema is at
 | `POST` `/documents/:id/tldr/generate` | AI summary |
 | `GET` `/documents/:id/versions`, `POST` `…/:n/restore` | History |
 | `GET` `/wizard/:type`, `POST` `/wizard/:type/compose` | The questions; a preview |
+| `POST` `/wizard/:type/suggest` | Suggest answers from the project's GitHub repos |
 | `POST` `/analyse` | Check pasted text |
 | `GET` `/rulepacks`, `/clauses` | The catalogue |
 

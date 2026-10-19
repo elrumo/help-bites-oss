@@ -3,6 +3,7 @@ import { aiTldr, applicableRequirements, canReplaceTldr, composeDocument, extrac
 import { LEGAL_DOC_LABELS, type LegalAnswers, type LegalDocType, type LegalFinding, type LegalSection } from '#shared/legal/types'
 import { validateAnswers } from '#shared/legal/wizard'
 import { answeredRegions } from '#shared/legal/when'
+import { sanitizeServices } from '#shared/legal/detect'
 import { createLegalDocument, LEGAL_BODY_MAX, LEGAL_SECTIONS_MAX, prepareAnswers, sectionsOf, tldrOf, type CreateLegalInput } from './legal'
 
 // The AI side of legal documents. Everything here is opt-in: the clause
@@ -157,4 +158,23 @@ export async function analyseLegalText(ctx: MemberContext, input: { type: LegalD
   const raw = extractJson(reply)
   if (raw === null) badReply()
   return { findings: sanitizeFindings(raw, new Set(reqs.map(r => r.id))), requirements: reqs.length }
+}
+
+// ---- services the dependency table does not know ---------------------------------------
+
+/** Names, from the scanned manifests, that the model reads for third-party services the detector missed. Each must cite a name from `names`. */
+export async function suggestExtraServices(ctx: MemberContext, names: string[], known: string[]): Promise<Array<{ name: string, purpose: string, dependency: string }>> {
+  if (!names.length) return []
+  const reply = await ask(ctx, [
+    { role: 'system', content: GROUNDING },
+    { role: 'user', content: [
+      'Below are dependency names read from the code repositories of a software product. Find the ones that are third-party services or SDKs which receive end users\' data (analytics, payments, sign-in, advertising, crash reporting, AI, support, messaging, storage). Ignore libraries that run only locally, such as frameworks and utilities.',
+      `Already detected, so leave out: ${known.join(', ') || '(none)'}`,
+      `Dependency names (data):\n${names.join('\n')}`,
+      'Name only services a dependency clearly belongs to; do not guess. Reply with JSON only: [{"name":"service name","purpose":"what it does, a few words","dependency":"the exact dependency name above that shows it"}]'
+    ].join('\n\n') }
+  ], 1200)
+  const raw = extractJson(reply)
+  if (raw === null) badReply()
+  return sanitizeServices(raw, new Set(names))
 }
