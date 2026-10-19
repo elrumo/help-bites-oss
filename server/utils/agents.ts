@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto'
 import { createError } from 'h3'
 
 // Agents are plain Parse users; the class CLP is master-only, so this is the
@@ -6,6 +7,13 @@ import { createError } from 'h3'
 export async function countAgents(): Promise<number> {
   const Parse = useParse()
   return new Parse.Query(Parse.User).count(MASTER)
+}
+
+/** No SETUP_TOKEN means an open first run, as before; one set must be matched exactly. */
+export function setupTokenMatches(given: unknown, expected = process.env.SETUP_TOKEN || ''): boolean {
+  if (!expected) return true
+  const digest = (value: string) => createHash('sha256').update(value).digest()
+  return timingSafeEqual(digest(String(given ?? '')), digest(expected))
 }
 
 export async function createAgent(input: { username?: unknown, password?: unknown, email?: unknown, name?: unknown }): Promise<{ id: string }> {
@@ -82,6 +90,37 @@ export async function sendAgentResetEmail(agent: ParseObject): Promise<void> {
     text,
     sender: projectEmailSender(null, { fromName: 'help-bites' }),
     log: { source: 'system', kind: 'message', templateName: 'Operator password reset', batchId: newEmailBatchId(), actor: SYSTEM_EMAIL_ACTOR }
+  }])
+  if (result?.status === 'failed') throw new Error(result.error)
+}
+
+/** Check an agent's password without starting a session; failures count toward Parse's lockout like sign-ins. */
+export async function verifyAgentPassword(username: string, password: string): Promise<boolean> {
+  if (!username || !password) return false
+  const res = await fetch(`${process.env.PARSE_URL}/verifyPassword`, {
+    method: 'POST',
+    headers: { 'X-Parse-Application-Id': process.env.PARSE_ID || '', 'X-Parse-Master-Key': process.env.PARSE_MASTER_KEY || '', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  })
+  return res.ok
+}
+
+/** Tell the old address its account moved: if it was not them, reset links now go elsewhere. */
+export async function sendAgentEmailChangedNotice(agent: ParseObject, previousEmail: string): Promise<void> {
+  const name = String(agent.get('name') || agent.get('username') || '').trim()
+  const now = String(agent.get('email') || '').trim()
+  const change = now ? `changed to ${now}` : 'removed'
+  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi,'
+  const html = `<p>${greeting}</p><p>The email on your help-bites account was ${escapeHtml(change)}. Password reset links go there from now on.</p><p>If this wasn't you, ask the owner of your workspace to restore your access straight away.</p>`
+  const text = `${name ? `Hi ${name},` : 'Hi,'}\n\nThe email on your help-bites account was ${change}. Password reset links go there from now on.\n\nIf this wasn't you, ask the owner of your workspace to restore your access straight away.`
+  const [result] = await deliverEmails([{
+    project: null,
+    to: { email: previousEmail, name },
+    subject: 'Your help-bites email was changed',
+    html,
+    text,
+    sender: projectEmailSender(null, { fromName: 'help-bites' }),
+    log: { source: 'system', kind: 'message', templateName: 'Operator email changed', batchId: newEmailBatchId(), actor: SYSTEM_EMAIL_ACTOR }
   }])
   if (result?.status === 'failed') throw new Error(result.error)
 }

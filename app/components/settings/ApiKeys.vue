@@ -17,6 +17,7 @@
           { label: 'Only specific projects', value: 'projects', description: 'Just what happens inside the projects you pick. No access to the main account.' }
         ]"
       />
+      <UFormField label="Expires" class="max-w-56"><USelect v-model="expiry" :items="expiryItems" class="w-full" aria-label="Key expiry" /></UFormField>
       <UCheckboxGroup v-if="scope === 'projects'" v-model="pickedProjects" :items="projects.map(project => ({ label: project.name, value: project.id }))" aria-label="Projects the key can access" />
     </form>
     <p v-if="error" class="text-[13px] text-error">{{ error }}</p>
@@ -50,6 +51,7 @@
             <code class="block font-mono text-xs text-muted">{{ key.prefix }}…</code>
           </span>
           <span class="hidden truncate text-xs text-muted sm:block">{{ scopeLabel(key) }}</span>
+          <span class="hidden text-xs text-muted sm:block">{{ expiryLabel(key) }}</span>
           <span class="hidden text-xs text-muted sm:block">Created {{ new Date(key.createdAt || '').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }}</span>
           <UTooltip text="Rename"><UButton size="sm" color="neutral" variant="ghost" square icon="i-lucide-pencil" class="text-muted" aria-label="Rename" @click="edit(key)" /></UTooltip>
           <UTooltip text="Revoke"><UButton size="sm" color="neutral" variant="ghost" square icon="i-lucide-trash-2" class="text-muted" aria-label="Revoke" @click="revoke(key)" /></UTooltip>
@@ -60,10 +62,17 @@
 </template>
 
 <script setup lang="ts">
-type ApiKey = { id: string, name: string, prefix: string, createdAt: string | null, projectIds: string[] | null }
+type ApiKey = { id: string, name: string, prefix: string, createdAt: string | null, expiresAt: string | null, lastUsedAt: string | null, projectIds: string[] | null }
 const { api, projects, loadProjects } = useAgent()
 const scope = ref<'all' | 'projects'>('all')
 const pickedProjects = ref<string[]>([])
+const expiry = ref('90')
+const expiryItems = [
+  { label: 'In 30 days', value: '30' },
+  { label: 'In 90 days', value: '90' },
+  { label: 'In a year', value: '365' },
+  { label: 'Never', value: 'never' }
+]
 const keys = ref<ApiKey[]>([])
 const newName = ref('')
 const createdKey = ref('')
@@ -78,7 +87,7 @@ async function create() {
   creating.value = true
   error.value = ''
   try {
-    const result = await api<{ apiKey: ApiKey, key: string }>('/admin/api-keys', { method: 'POST', body: { name: newName.value, projectIds: scope.value === 'projects' ? pickedProjects.value : undefined } })
+    const result = await api<{ apiKey: ApiKey, key: string }>('/admin/api-keys', { method: 'POST', body: { name: newName.value, projectIds: scope.value === 'projects' ? pickedProjects.value : undefined, expiresInDays: expiry.value === 'never' ? null : Number(expiry.value) } })
     keys.value.unshift(result.apiKey)
     newName.value = ''
     scope.value = 'all'
@@ -90,6 +99,12 @@ async function create() {
   } finally {
     creating.value = false
   }
+}
+
+function expiryLabel(key: ApiKey) {
+  const date = (value: string) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  const expires = key.expiresAt ? (new Date(key.expiresAt).getTime() <= Date.now() ? `Expired ${date(key.expiresAt)}` : `Expires ${date(key.expiresAt)}`) : 'Never expires'
+  return key.lastUsedAt ? `${expires} · used ${date(key.lastUsedAt)}` : expires
 }
 
 function scopeLabel(key: ApiKey) {

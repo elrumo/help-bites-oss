@@ -218,6 +218,9 @@ const SCHEMAS = {
       name: { type: 'String' },
       hash: { type: 'String' },
       prefix: { type: 'String' },
+      // Absent = never expires.
+      expiresAt: { type: 'Date' },
+      lastUsedAt: { type: 'Date' },
       // The only projects it may act in; absent = every project and the workspace itself.
       projectIds: { type: 'Array' }
     },

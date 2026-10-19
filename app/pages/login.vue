@@ -7,7 +7,8 @@
         <template v-if="resetToken">
           <h1 class="text-xl font-semibold tracking-tight text-highlighted">Set a new password</h1>
           <p class="mb-8 mt-1 text-[15px] text-muted">Choose a new password for your account.</p>
-          <UFormField label="New password" hint="At least 8 characters" class="mb-6" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="new-password" required minlength="8" size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
+          <UFormField label="New password" hint="At least 8 characters" class="mb-4" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="new-password" required minlength="8" size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
+          <UCheckbox v-model="revokeApiKeys" label="Also revoke my API keys" description="Recommended if someone else may have had your account: a key they made would outlive the reset." class="mb-6" />
           <p v-if="error" class="mb-4 text-[13px] text-error">{{ error }}</p>
           <div class="flex justify-end"><UButton type="submit" size="lg" :loading="loading">Save password</UButton></div>
         </template>
@@ -20,7 +21,8 @@
           <UFormField label="Name" class="mb-4" :ui="labelUi"><UInput v-model="name" autocomplete="name" size="lg" class="w-full" :ui="fieldUi" autofocus /></UFormField>
           <UFormField label="Email" hint="For notifications" class="mb-4" :ui="labelUi"><UInput v-model="email" type="email" autocomplete="email" size="lg" class="w-full" :ui="fieldUi" /></UFormField>
           <UFormField label="Username" class="mb-4" :ui="labelUi"><UInput v-model="username" autocomplete="username" required size="lg" class="w-full" :ui="fieldUi" /></UFormField>
-          <UFormField label="Password" hint="At least 8 characters" class="mb-6" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="new-password" required minlength="8" size="lg" class="w-full" :ui="fieldUi" /></UFormField>
+          <UFormField label="Password" hint="At least 8 characters" :class="needsToken ? 'mb-4' : 'mb-6'" :ui="labelUi"><UInput v-model="password" type="password" autocomplete="new-password" required minlength="8" size="lg" class="w-full" :ui="fieldUi" /></UFormField>
+          <UFormField v-if="needsToken" label="Setup token" hint="SETUP_TOKEN from the server's environment" class="mb-6" :ui="labelUi"><UInput v-model="setupToken" type="password" autocomplete="off" required size="lg" class="w-full" :ui="fieldUi" /></UFormField>
           <p v-if="error" class="mb-4 text-[13px] text-error">{{ error }}</p>
           <div class="flex justify-end"><UButton type="submit" size="lg" :loading="loading">Create account</UButton></div>
         </template>
@@ -79,6 +81,9 @@ const { login, token, agent } = useAgent()
 const meta = useMeta()
 const route = useRoute()
 const needsSetup = ref<boolean | null>(null)
+const needsToken = ref(false)
+const setupToken = ref('')
+const revokeApiKeys = ref(true)
 const mode = ref<'signin' | 'forgot'>('signin')
 const name = ref('')
 const email = ref('')
@@ -105,7 +110,9 @@ if (token.value && !resetToken.value) await navigateTo('/inbox', { replace: true
 
 onMounted(async () => {
   try {
-    needsSetup.value = (await $fetch<{ needsSetup: boolean }>('/v1/admin/setup')).needsSetup
+    const setup = await $fetch<{ needsSetup: boolean, needsToken?: boolean }>('/v1/admin/setup')
+    needsSetup.value = setup.needsSetup
+    needsToken.value = !!setup.needsToken
   } catch {
     needsSetup.value = false
   }
@@ -128,15 +135,16 @@ async function submit() {
   error.value = ''
   try {
     if (resetToken.value) {
-      await $fetch('/v1/admin/reset-password', { method: 'POST', body: { token: resetToken.value, password: password.value } })
+      const result = await $fetch<{ revokedApiKeys?: number }>('/v1/admin/reset-password', { method: 'POST', body: { token: resetToken.value, password: password.value, revokeApiKeys: revokeApiKeys.value } })
       password.value = ''
-      notice.value = 'Password updated. Sign in with your new password.'
+      const revoked = result.revokedApiKeys || 0
+      notice.value = `Password updated${revoked ? ` and ${revoked} API key${revoked === 1 ? '' : 's'} revoked` : ''}. Sign in with your new password.`
       await navigateTo('/login', { replace: true })
     } else if (mode.value === 'forgot') {
       await $fetch('/v1/admin/forgot-password', { method: 'POST', body: { email: email.value.trim() } })
       notice.value = 'If that email has an account, a reset link is on its way.'
     } else if (needsSetup.value) {
-      const result = await $fetch<{ sessionToken: string, agent: any }>('/v1/admin/setup', { method: 'POST', body: { name: name.value, email: email.value, username: username.value.trim(), password: password.value } })
+      const result = await $fetch<{ sessionToken: string, agent: any }>('/v1/admin/setup', { method: 'POST', body: { name: name.value, email: email.value, username: username.value.trim(), password: password.value, ...(needsToken.value ? { setupToken: setupToken.value } : {}) } })
       token.value = result.sessionToken
       agent.value = result.agent
       await navigateTo(typeof route.query.next === 'string' ? route.query.next : '/inbox', { replace: true })

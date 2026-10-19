@@ -337,6 +337,7 @@ without it; **Optional** means a feature stays off until you set it.
 |---|---|---|---|
 | `APP_URL` | **Yes** (prod) | `http://localhost:3100` | Public origin of this deployment. Used by `widget.js`, email CTAs, and the API examples in the panel. Set to your real HTTPS domain. |
 | `ADMIN_URL` | Optional | falls back to `APP_URL` | Only set if the operator panel lives on a different host than `APP_URL`. Used in operator email links (e.g. password reset, new-message CTAs). |
+| `SETUP_TOKEN` | Recommended | _(empty: open)_ | While no operator exists, the first sign-up must enter this value, so whoever reaches a fresh deploy first can't claim it. Any long random string; unused once the first operator exists. `scripts/install.sh help.example.com` generates one. |
 | `TRUST_PROXY_HOPS` | Optional | `1` | How many reverse proxies stand in front of the app. Per-IP rate limits read the client from `X-Forwarded-For` counting this many entries from the right, since the left-most entry is whatever the client sent. `1` fits Dokploy's Traefik; set `2` behind e.g. Cloudflare → Traefik. |
 | `NITRO_PORT` | No | `3000` (set by compose) | Port the app listens on inside the container. Leave it. |
 | `APP_ROLE` | Optional | `all` | `all` runs everything in one process. The hosted overlay splits `web`, `worker` (schedulers, the job queue, pushes: whatever must run once) and `embedder` (the local model, served at `/v1/internal/embeddings`). |
@@ -694,10 +695,15 @@ group. Push stays disabled until these are present.
 ## First run
 
 1. **Create the first operator.** Open `APP_URL` — a fresh install shows a
-   sign-up form. That first sign-up becomes the first operator, so do it
-   straight after deploying: until then anyone who finds the URL can claim the
-   instance. (Add teammates later from the Team page, or
-   `docker compose exec app bun scripts/add-agent.mjs`.)
+   sign-up form. That first sign-up becomes the first operator, so set
+   `SETUP_TOKEN` (the form then asks for it) or finish it straight after
+   deploying: until then anyone who finds the URL can claim the instance. (Add
+   teammates later from the Team page, or
+   `docker compose exec app bun scripts/add-agent.mjs`.) Admin API keys act as
+   their owner, expire after 90 days unless you choose otherwise, and are
+   revoked with a password reset. Changing an account's email asks for the
+   password and tells the old address, and Parse locks an account for 15
+   minutes after ten wrong passwords.
 2. **Create a project.** Panel → Projects → New project. You get a public key
    (`pk_…`) and a secret (`sk_…`). Set the site URL, allowed widget origins, the
    reply name, and notification emails.

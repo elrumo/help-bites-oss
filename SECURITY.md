@@ -17,6 +17,6 @@ Security fixes go into the latest release. Upgrade with `docker compose pull && 
 
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#security-checklist) has a checklist. The essentials:
 - never give `sb-parse` a public domain: it holds the master key;
-- finish the first-operator setup right after you deploy, since whoever opens it first becomes the owner;
+- set `SETUP_TOKEN` (or finish the first-operator setup right after you deploy), since whoever opens it first becomes the owner;
 - keep real values in `.env` for `PARSE_MASTER_KEY` and `MEILI_MASTER_KEY` (`scripts/install.sh` generates them);
   production refuses to start with the `change-me` placeholders.

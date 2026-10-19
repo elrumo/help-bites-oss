@@ -36,6 +36,7 @@
               <div class="grid gap-4 sm:grid-cols-2">
                 <UFormField label="Name" hint="Shown to teammates"><UInput v-model="profile.name" class="w-full" maxlength="120" /></UFormField>
                 <UFormField label="Email" hint="For password resets"><UInput v-model="profile.email" type="email" class="w-full" /></UFormField>
+                <UFormField v-if="emailChanging" label="Current password" hint="Needed to change your email"><UInput v-model="profilePassword" type="password" autocomplete="current-password" class="w-full" /></UFormField>
                 <UFormField label="Username"><UInput :model-value="agent?.username" disabled class="w-full" /></UFormField>
               </div>
               <p v-if="profileError" class="text-[13px] text-error">{{ profileError }}</p>
@@ -140,6 +141,8 @@ const themes = [
 ]
 
 const profile = reactive({ name: '', email: '' })
+const profilePassword = ref('')
+const emailChanging = computed(() => profile.email !== (agent.value?.email || ''))
 const savingProfile = ref(false)
 const profileSaved = ref(false)
 const profileError = ref('')
@@ -156,8 +159,9 @@ async function saveProfile() {
   savingProfile.value = true
   profileError.value = ''
   try {
-    const result = await api<{ agent: NonNullable<typeof agent.value> }>('/admin/me', { method: 'PATCH', body: { ...profile } })
+    const result = await api<{ agent: NonNullable<typeof agent.value> }>('/admin/me', { method: 'PATCH', body: { ...profile, ...(emailChanging.value ? { currentPassword: profilePassword.value } : {}) } })
     agent.value = result.agent
+    profilePassword.value = ''
     profileSaved.value = true
   } catch (e: any) {
     profileError.value = e?.message || 'Could not save your profile'

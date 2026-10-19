@@ -56,6 +56,10 @@ services:
       # Attachments go straight to S3 from the app; Parse never stores files.
       PARSE_SERVER_FILE_UPLOAD_OPTIONS: '{"enableForPublic":false,"enableForAnonymousUser":false,"enableForAuthenticatedUser":false}'
       PARSE_SERVER_SESSION_LENGTH: "2592000"
+      # Ten wrong passwords lock an account for 15 minutes. The app signs
+      # operators in (and checks the password for an email change) through
+      # Parse, so this caps guessing however the requests are spread out.
+      PARSE_SERVER_ACCOUNT_LOCKOUT: '{"duration":15,"threshold":10}'
       # Lets the schema script declare indexes on Mongo's own key names
       # (`_p_conversation`, `_created_at`); Parse otherwise rejects `_created_at`
       # and would pass `createdAt` through to Mongo unmapped.
