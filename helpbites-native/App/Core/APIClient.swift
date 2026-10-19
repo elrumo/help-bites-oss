@@ -17,11 +17,15 @@ enum APIError: LocalizedError {
 actor APIClient {
   private let baseURL: URL
   private let session: URLSession
+  /// The workspace this client acts in (`X-Workspace`); empty means the agent's default.
+  private var workspaceId = ""
 
   init(baseURL: String) {
     self.baseURL = URL(string: baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))) ?? URL(string: "http://localhost:3100")!
     self.session = .shared
   }
+
+  func setWorkspace(_ id: String) { workspaceId = id }
 
   func get<Value: Decodable & Sendable>(_ path: String, token: String? = nil, query: [URLQueryItem] = []) async throws -> Value {
     try await request(path, method: "GET", token: token, query: query, body: Optional<Empty>.none)
@@ -117,6 +121,7 @@ actor APIClient {
     var request = URLRequest(url: url); request.httpMethod = method
     request.setValue("application/json", forHTTPHeaderField: "Accept")
     if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+    if !workspaceId.isEmpty { request.setValue(workspaceId, forHTTPHeaderField: "X-Workspace") }
     return request
   }
 

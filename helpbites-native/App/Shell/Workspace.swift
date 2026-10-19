@@ -16,6 +16,18 @@ enum AppRoute: Hashable {
   case developer
   case team
   case account
+  /// Your profile: name, email, password.
+  case profile
+  /// The workspace: name, export, delete.
+  case workspace
+  /// Plan and usage against the plan's limits.
+  case usage
+  /// The workspace's AI provider and keys.
+  case ai
+  /// Stripe, Telegram, GitHub and error-tracking servers.
+  case connections
+  /// One legal document (project id, document id).
+  case legalDocument(String, String)
 }
 
 /// The tab bar's tabs (iPhone), which become the sidebar on iPad and Mac. The
@@ -27,23 +39,27 @@ enum AppTab: Hashable {
 
 /// A project's sections, nested under it in the sidebar like a Linear team's.
 enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
-  case overview, conversations, contacts, knowledge, assistants, tickets, feedback, board, email, campaigns, flags, errors, dev
+  case overview, conversations, contacts, revenue, knowledge, assistants, tickets, feedback, board, changelog, legal, email, campaigns, flags, errors, dev, settings
   var id: String { rawValue }
   var label: String {
     switch self {
     case .overview: "Overview"
     case .conversations: "Conversations"
     case .contacts: "Contacts"
+    case .revenue: "Revenue"
     case .knowledge: "Knowledge base"
     case .assistants: "Assistants"
     case .tickets: "Tickets"
     case .feedback: "Feedback"
     case .board: "Board"
+    case .changelog: "Changelog"
+    case .legal: "Legal"
     case .email: "Email"
     case .campaigns: "Campaigns"
     case .flags: "Flags"
     case .errors: "Errors"
     case .dev: "Dev"
+    case .settings: "Settings"
     }
   }
   var systemImage: String {
@@ -58,6 +74,10 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .board: "rectangle.split.3x1"
     case .email: "envelope"
     case .campaigns: "megaphone"
+    case .revenue: "dollarsign.circle"
+    case .changelog: "scroll"
+    case .legal: "scale.3d"
+    case .settings: "gearshape"
     case .flags: "switch.2"
     case .errors: "ladybug"
     case .dev: "chevron.left.forwardslash.chevron.right"
@@ -120,7 +140,8 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
       tab = .projects
       projectsPath = [.project(id, nil)] + (section.map { [.project(id, $0)] } ?? [])
     case .account: tab = .settings; settingsPath = []
-    case .apiKeys, .developer, .team: tab = .settings; settingsPath = [route]
+    case .apiKeys, .developer, .team, .profile, .workspace, .usage, .ai, .connections: tab = .settings; settingsPath = [route]
+    case .legalDocument(let id, _): go(.project(id, .legal)); if sidebar { /* the section's own stack pushes the document */ } else { projectsPath.append(route) }
     }
   }
 }

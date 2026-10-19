@@ -7,14 +7,27 @@ enum SessionPhase { case loading, signedOut, signedIn }
   var api: APIClient
   private(set) var phase: SessionPhase = .loading
   private(set) var agent: Agent?
+  /// The workspace this app acts in, your role there, every workspace you belong to, and the plan.
+  private(set) var context: MeResponse?
   private(set) var token = ""
   private(set) var endpoint: String
   var needsSetup = false
   var error = ""
   /// A password-reset link opened into the app, picked up by the sign-in screen.
   var pendingResetLink = ""
+  private var workspaceId = ""
+
+  var workspace: WorkspaceSummary? { context?.workspace }
+  var workspaces: [WorkspaceSummary] { context?.workspaces ?? [] }
+  /// Your role in this workspace: owner, admin or agent. Owners and admins manage the team, AI and connections.
+  var role: String { context?.role ?? "agent" }
+  var canManage: Bool { role == "owner" || role == "admin" }
+  var plan: PlanSummary? { context?.plan }
+  /// Whether the workspace's plan includes a feature (absent keys are included).
+  func hasFeature(_ key: String) -> Bool { context?.features?[key] ?? true }
 
   init() {
+    workspaceId = UserDefaults.standard.string(forKey: "helpbites.workspace") ?? ""
     let configured = Bundle.main.object(forInfoDictionaryKey: "APP_BASE_URL") as? String ?? "https://help.example.com"
     let saved = UserDefaults.standard.string(forKey: "helpbites.apiBaseURL") ?? configured
     endpoint = saved
@@ -24,11 +37,43 @@ enum SessionPhase { case loading, signedOut, signedIn }
   func bootstrap() async {
     token = KeychainStore.load() ?? ""
     guard !token.isEmpty else { await checkSetup(); return }
+    await api.setWorkspace(workspaceId)
     do {
       let me: MeResponse = try await api.get("/v1/admin/me", token: token)
-      agent = me.agent; phase = .signedIn; await registerPushDevice()
+      apply(me); phase = .signedIn; await registerPushDevice()
     } catch { await recover(error) }
   }
+
+  /// Takes the server's view of who you are and where you are working. A stale remembered
+  /// workspace falls back to your default on the server, so adopt whatever it names.
+  private func apply(_ me: MeResponse) {
+    agent = me.agent
+    context = me
+    if let id = me.workspace?.id, id != workspaceId {
+      workspaceId = id
+      UserDefaults.standard.set(id, forKey: "helpbites.workspace")
+      Task { await api.setWorkspace(id) }
+    }
+  }
+
+  /// Re-reads `/me` (after a rename, a new workspace, a role change).
+  func refreshContext() async {
+    if let me: MeResponse = try? await get("/v1/admin/me") { apply(me) }
+  }
+
+  /// Work in another workspace: everything on screen belongs to the old one, so the app starts over.
+  func switchWorkspace(_ id: String) async {
+    guard !id.isEmpty, id != workspaceId else { return }
+    workspaceId = id
+    UserDefaults.standard.set(id, forKey: "helpbites.workspace")
+    await api.setWorkspace(id)
+    struct Input: Encodable, Sendable { let defaultWorkspaceId: String }
+    let _: EmptyBody? = try? await send("/v1/admin/me", method: "PATCH", body: Input(defaultWorkspaceId: id))
+    await refreshContext()
+    generation += 1
+  }
+  /// Bumped on a workspace switch; the shell keys its screens on it to rebuild them.
+  private(set) var generation = 0
 
   func checkSetup() async {
     do { let setup: SetupStatus = try await api.get("/v1/admin/setup"); needsSetup = setup.needsSetup }
@@ -57,7 +102,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
     else { self.error = error.localizedDescription }
   }
 
-  func clear() { KeychainStore.remove(); token = ""; agent = nil; phase = .signedOut }
+  func clear() { KeychainStore.remove(); token = ""; agent = nil; context = nil; phase = .signedOut }
 
   func setEndpoint(_ value: String) async {
     let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
@@ -69,6 +114,8 @@ enum SessionPhase { case loading, signedOut, signedIn }
     UserDefaults.standard.set(normalized, forKey: "helpbites.apiBaseURL")
     endpoint = normalized
     api = APIClient(baseURL: normalized)
+    workspaceId = ""
+    UserDefaults.standard.removeObject(forKey: "helpbites.workspace")
     clear()
     await checkSetup()
   }
@@ -117,6 +164,8 @@ enum SessionPhase { case loading, signedOut, signedIn }
     do {
       let result: LoginResponse = try await api.send(path, method: "POST", body: body)
       token = result.sessionToken; agent = result.agent; KeychainStore.save(token); needsSetup = false; phase = .signedIn
+      await api.setWorkspace(workspaceId)
+      await refreshContext()
       await registerPushDevice()
     } catch { self.error = error.localizedDescription }
   }

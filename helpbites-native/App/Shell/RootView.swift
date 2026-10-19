@@ -12,7 +12,7 @@ struct RootView: View {
       case .signedOut:
         AuthView()
       case .signedIn:
-        AppShell(session: session)
+        AppShell(session: session).id(session.generation)
       }
     }
     .environment(session)

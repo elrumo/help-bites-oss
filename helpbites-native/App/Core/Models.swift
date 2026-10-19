@@ -74,7 +74,25 @@ struct InboxCounts: Codable, Sendable { let status, type, assignee: [String: Int
 struct InboxResponse: Codable, Sendable { let conversations: [Conversation]; let endUsers: [String: EndUser]; let hasMore: Bool; let totalUnread: Int; let counts: InboxCounts?; let unreadByProject: [String: Int]? }
 struct MessagePage: Codable, Sendable { let messages: [Message]; let hasMore: Bool }
 struct LoginResponse: Codable, Sendable { let sessionToken: String; let agent: Agent }
-struct MeResponse: Codable, Sendable { let agent: Agent }
+/// A workspace as the server lists it (`serializeWorkspace`); `role` is yours in it.
+struct WorkspaceSummary: Codable, Identifiable, Equatable, Hashable, Sendable {
+  let id, name: String
+  var status: String?
+  var role: String?
+  var createdAt: String?
+}
+struct PlanSummary: Codable, Equatable, Sendable { let id, name: String; let unlimited: Bool }
+/// `GET /v1/admin/me`: who you are, the workspace this app acts in, and what its plan allows.
+struct MeResponse: Codable, Sendable {
+  let agent: Agent
+  var workspace: WorkspaceSummary?
+  var role: String?
+  var workspaces: [WorkspaceSummary]?
+  var edition: String?
+  var plan: PlanSummary?
+  /// Plan feature flags by key (`teammatePasswords`, …); absent keys mean "included".
+  var features: [String: Bool]?
+}
 struct SetupStatus: Codable, Sendable { let needsSetup: Bool }
 
 struct SupportEvent: Codable, Sendable {

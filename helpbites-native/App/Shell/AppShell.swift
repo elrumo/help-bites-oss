@@ -100,6 +100,10 @@ struct RouteView: View {
     case .project(let id, let section?):
       switch section {
       case .overview: ProjectOverviewScreen(projectId: id)
+      case .revenue: RevenueScreen(projectId: id)
+      case .changelog: ChangelogScreen(projectId: id)
+      case .legal: LegalScreen(projectId: id)
+      case .settings: ProjectSettingsScreen(projectId: id)
       case .conversations: ProjectConversationsScreen(projectId: id)
       case .contacts: ContactsScreen(projectId: id)
       case .knowledge: KnowledgeScreen(projectId: id)
@@ -117,6 +121,12 @@ struct RouteView: View {
     case .developer: DeveloperScreen()
     case .team: TeamScreen()
     case .account: SettingsScreen()
+    case .profile: ProfileScreen()
+    case .workspace: WorkspaceScreen()
+    case .usage: UsageScreen()
+    case .ai: AIScreen()
+    case .connections: ConnectionsScreen()
+    case .legalDocument(let projectId, let documentId): LegalDocumentScreen(projectId: projectId, documentId: documentId)
     }
   }
 }

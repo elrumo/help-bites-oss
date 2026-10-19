@@ -7,21 +7,57 @@ struct SettingsScreen: View {
   @AppStorage("hb-theme") private var theme: ThemePreference = .system
   @State private var endpoint = ""
   @State private var confirmSignOut = false
+  @State private var newWorkspaceOpen = false
 
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 28) {
-        HStack(spacing: 12) {
-          Avatar(name: displayName, size: 40)
-          VStack(alignment: .leading, spacing: 2) {
-            Text(displayName).font(.lnHeading).foregroundStyle(Theme.textHighlighted)
-            Text(session.agent?.email.isEmpty == false ? session.agent!.email : "@\(session.agent?.username ?? "")").font(.lnMeta).foregroundStyle(Theme.textMuted)
+        NavigationLink(value: AppRoute.profile) {
+          HStack(spacing: 12) {
+            Avatar(name: displayName, size: 40)
+            VStack(alignment: .leading, spacing: 2) {
+              Text(displayName).font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+              Text(session.agent?.email.isEmpty == false ? session.agent!.email : "@\(session.agent?.username ?? "")").font(.lnMeta).foregroundStyle(Theme.textMuted)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
           }
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+
+        VStack(alignment: .leading, spacing: 8) {
+          SectionLabel("Workspace")
+          Menu {
+            ForEach(session.workspaces) { workspace in
+              Button { Task { await session.switchWorkspace(workspace.id) } } label: {
+                if workspace.id == session.workspace?.id { Label(workspace.name, systemImage: "checkmark") } else { Text(workspace.name) }
+              }
+            }
+            Divider()
+            Button { newWorkspaceOpen = true } label: { Label("New workspace…", systemImage: "plus") }
+          } label: {
+            HStack(spacing: 10) {
+              Image(systemName: "building.2").font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
+              Text(session.workspace?.name ?? "Workspace").font(.lnRow).foregroundStyle(Theme.text)
+              Spacer(minLength: 0)
+              Image(systemName: "chevron.up.chevron.down").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+            }
+            .padding(.horizontal, 14)
+            .frame(minHeight: Metrics.rowHeight)
+            .background(Theme.panel, in: RoundedRectangle(cornerRadius: Metrics.radiusLarge))
+            .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
+          }
+          .buttonStyle(.plain)
         }
 
         Card {
-          link(.apiKeys, "API keys", "key")
+          link(.workspace, "Workspace settings", "building.2")
+          if session.plan?.unlimited == false { link(.usage, "Plan & usage", "gauge") }
           link(.team, "Team", "person.2")
+          link(.ai, "AI", "sparkles")
+          link(.connections, "Connections", "powerplug")
+          link(.apiKeys, "API keys", "key")
           link(.developer, "Developer", "chevron.left.forwardslash.chevron.right", divider: false)
         }
 
@@ -60,6 +96,7 @@ struct SettingsScreen: View {
     }
     .panelScreen("Settings")
     .onAppear { endpoint = session.endpoint }
+    .sheet(isPresented: $newWorkspaceOpen) { NewWorkspaceSheet() }
   }
 
   private func link(_ route: AppRoute, _ title: String, _ systemImage: String, divider: Bool = true) -> some View {
