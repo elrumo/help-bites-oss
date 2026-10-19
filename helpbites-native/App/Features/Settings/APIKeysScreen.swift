@@ -4,7 +4,11 @@ import SwiftUI
 /// on creation, renamed or revoked one at a time.
 struct APIKeysScreen: View {
   @Environment(SessionStore.self) private var session
+  @Environment(Workspace.self) private var workspace
   @Environment(\.horizontalSizeClass) private var sizeClass
+  @State private var scope = Scope.all
+  @State private var picked: Set<String> = []
+  @State private var expiry = 90
   @State private var keys: [APIKey] = []
   @State private var loading = true
   @State private var newName = ""
@@ -16,7 +20,26 @@ struct APIKeysScreen: View {
   @State private var editingName = ""
   @State private var revoking: APIKey?
 
-  private struct APIKey: Decodable, Identifiable, Sendable { let id, name, prefix: String; let createdAt: String? }
+  private enum Scope { case all, projects }
+  private struct APIKey: Decodable, Identifiable, Sendable {
+    let id, name, prefix: String
+    let createdAt, expiresAt, lastUsedAt: String?
+    /// nil: every project and the workspace itself.
+    let projectIds: [String]?
+  }
+  /// `expiresInDays: null` is a key that never expires, so nil has to be written, not left out.
+  private struct NewKey: Encodable, Sendable {
+    let name: String
+    let projectIds: [String]?
+    let expiresInDays: Int?
+    private enum Keys: String, CodingKey { case name, projectIds, expiresInDays }
+    func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: Keys.self)
+      try container.encode(name, forKey: .name)
+      try container.encodeIfPresent(projectIds, forKey: .projectIds)
+      if let expiresInDays { try container.encode(expiresInDays, forKey: .expiresInDays) } else { try container.encodeNil(forKey: .expiresInDays) }
+    }
+  }
   private struct CreatedKey: Identifiable { let id = UUID(); let key: String }
 
   var body: some View {
@@ -24,7 +47,7 @@ struct APIKeysScreen: View {
       VStack(alignment: .leading, spacing: 24) {
         VStack(alignment: .leading, spacing: 4) {
           Text("Admin API keys").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
-          Text((try? AttributedString(markdown: "A key can do everything this panel does, through `/v1/admin`. Keep keys on your servers.")) ?? "")
+          Text((try? AttributedString(markdown: "A key acts as you, in this workspace only: it can do what you can here, through `/v1/admin`. Keep keys on your servers.")) ?? "")
             .font(.lnMeta)
             .foregroundStyle(Theme.textMuted)
         }
@@ -41,7 +64,22 @@ struct APIKeysScreen: View {
               if creating { ProgressView() } else { Label("Create key", systemImage: "plus") }
             }
             .buttonStyle(.lnPrimaryCompact)
-            .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty || creating)
+            .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty || creating || (scope == .projects && picked.isEmpty))
+          }
+          LabeledField(label: "Access") {
+            MenuPicker(selection: $scope, options: [PickerOption(value: .all, label: "All projects and the main account"), PickerOption(value: .projects, label: "Only specific projects")], title: "Access")
+          }
+          if scope == .projects {
+            VStack(alignment: .leading, spacing: 6) {
+              ForEach(workspace.projects) { project in
+                Toggle(project.name, isOn: Binding(get: { picked.contains(project.id) }, set: { if $0 { picked.insert(project.id) } else { picked.remove(project.id) } }))
+                  .font(.lnCallout).toggleStyle(.switch)
+              }
+              Text("Just what happens inside the projects you pick. No access to the main account.").font(.lnCaption).foregroundStyle(Theme.textMuted)
+            }
+          }
+          LabeledField(label: "Expires") {
+            MenuPicker(selection: $expiry, options: [PickerOption(value: 30, label: "In 30 days"), PickerOption(value: 90, label: "In 90 days"), PickerOption(value: 365, label: "In a year"), PickerOption(value: 0, label: "Never")], title: "Expires")
           }
           ErrorText(message: error)
         }
@@ -64,7 +102,10 @@ struct APIKeysScreen: View {
       .frame(maxWidth: .infinity)
     }
     .panelScreen("API keys")
-    .task { await load() }
+    .task {
+      if workspace.projects.isEmpty { await workspace.loadProjects() }
+      await load()
+    }
     .confirmationDialog("Revoke \(revoking?.name ?? "")? This cannot be undone.", isPresented: Binding(get: { revoking != nil }, set: { if !$0 { revoking = nil } }), titleVisibility: .visible, presenting: revoking) { key in
       Button("Revoke", role: .destructive) { Task { await revoke(key) } }
     }
@@ -109,6 +150,7 @@ struct APIKeysScreen: View {
         VStack(alignment: .leading, spacing: 2) {
           Text(key.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
           Text("\(key.prefix)…").font(.lnMono).foregroundStyle(Theme.textMuted)
+          Text([scopeLabel(key), expiryLabel(key)].joined(separator: " · ")).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(2)
         }
         Spacer(minLength: 8)
         if sizeClass == .regular, let createdAt = key.createdAt {
@@ -121,6 +163,19 @@ struct APIKeysScreen: View {
         IconButton(systemImage: "trash", label: "Revoke") { revoking = key }
       }
     }
+  }
+
+  private func scopeLabel(_ key: APIKey) -> String {
+    guard let ids = key.projectIds else { return "All projects" }
+    let names = ids.compactMap { workspace.project($0)?.name }
+    return names.isEmpty ? "\(ids.count) project\(ids.count == 1 ? "" : "s")" : names.joined(separator: ", ")
+  }
+
+  private func expiryLabel(_ key: APIKey) -> String {
+    var text = "Never expires"
+    if let raw = key.expiresAt, let date = DateText.date(raw) { text = date <= Date() ? "Expired \(DateText.day(raw))" : "Expires \(DateText.day(raw))" }
+    if let used = key.lastUsedAt { text += " · used \(DateText.day(used))" }
+    return text
   }
 
   private func load() async {
@@ -141,9 +196,12 @@ struct APIKeysScreen: View {
     error = ""
     defer { creating = false }
     do {
-      let response: Response = try await session.send("/v1/admin/api-keys", body: ["name": newName])
+      let ids = scope == .projects ? workspace.projects.map(\.id).filter(picked.contains) : nil
+      let response: Response = try await session.send("/v1/admin/api-keys", body: NewKey(name: newName.trimmingCharacters(in: .whitespaces), projectIds: ids, expiresInDays: expiry == 0 ? nil : expiry))
       keys.insert(response.apiKey, at: 0)
       newName = ""
+      scope = .all
+      picked = []
       copied = false
       created = CreatedKey(key: response.key)
     } catch { self.error = error.localizedDescription }
