@@ -253,7 +253,7 @@ certificates by itself. Without a domain it prepares a trial on `http://localhos
 By hand:
 
 ```bash
-git clone https://github.com/elrumo/help-bites-oss.git && cd help-bites
+git clone https://github.com/elrumo/help-bites-oss.git && cd help-bites-oss
 cp .env.example .env
 $EDITOR .env      # replace every change-me value (see Environment reference)
 ```
