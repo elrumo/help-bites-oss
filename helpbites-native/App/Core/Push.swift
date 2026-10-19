@@ -14,6 +14,22 @@ import AppKit
   static let shared = PushRegistration()
   var token = ""
   var pendingConversationID = ""
+  private var enabled = false
+  /// Asks for notification permission and registers with APNs: once, after sign-in, not on launch.
+  func enable() {
+    guard !enabled else { return }
+    enabled = true
+    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+      guard granted else { return }
+      DispatchQueue.main.async {
+        #if os(iOS)
+        UIApplication.shared.registerForRemoteNotifications()
+        #else
+        NSApplication.shared.registerForRemoteNotifications()
+        #endif
+      }
+    }
+  }
   var environment: String {
     #if DEBUG
     "sandbox"
@@ -27,9 +43,6 @@ import AppKit
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
   func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
     UNUserNotificationCenter.current().delegate = self
-    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-      if granted { DispatchQueue.main.async { application.registerForRemoteNotifications() } }
-    }
     return true
   }
   func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -43,9 +56,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
   func applicationDidFinishLaunching(_ notification: Notification) {
     UNUserNotificationCenter.current().delegate = self
-    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-      if granted { DispatchQueue.main.async { NSApplication.shared.registerForRemoteNotifications() } }
-    }
   }
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
   func application(_ application: NSApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

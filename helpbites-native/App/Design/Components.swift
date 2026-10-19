@@ -434,7 +434,7 @@ struct ImagePreview: View {
   var body: some View {
     ZStack {
       Color.black.ignoresSafeArea()
-      AsyncImage(url: url) { image in
+      CachedAsyncImage(url: url) { image in
         image.resizable().scaledToFit()
           .scaleEffect(steady * pinch)
           .gesture(MagnifyGesture().updating($pinch) { value, state, _ in state = value.magnification }.onEnded { value in steady = min(max(steady * value.magnification, 1), 5) })

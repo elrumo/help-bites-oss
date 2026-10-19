@@ -7,6 +7,7 @@ import SwiftUI
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
   #endif
   @State private var session = SessionStore()
+  init() { URLCache.shared = URLCache(memoryCapacity: 16 << 20, diskCapacity: 128 << 20) }
   var body: some Scene {
     WindowGroup { RootView(session: session).task { await session.bootstrap() } }
       .commands { AppCommands() }

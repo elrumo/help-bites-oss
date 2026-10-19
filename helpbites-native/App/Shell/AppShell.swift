@@ -13,7 +13,10 @@ struct AppShell: View {
     _workspace = State(initialValue: Workspace(session: session))
   }
 
-  var body: some View {
+  @ViewBuilder private var shell: some View {
+    #if os(macOS)
+    MacShell()
+    #else
     TabView(selection: $workspace.tab) {
       Tab("Inbox", systemImage: "tray", value: AppTab.inbox) {
         NavigationStack { InboxScreen() }
@@ -39,6 +42,11 @@ struct AppShell: View {
     }
     .tabViewStyle(.sidebarAdaptable)
     .tint(Theme.accent)
+    #endif
+  }
+
+  var body: some View {
+    shell
     .environment(workspace)
     .focusedSceneValue(\.workspace, workspace)
     .sheet(isPresented: $workspace.paletteOpen) { CommandPalette().environment(workspace) }
@@ -49,8 +57,9 @@ struct AppShell: View {
       if !workspace.sidebar, case .section(let id, let section) = workspace.tab { workspace.go(.project(id, section)) }
     }
     .task {
-      await workspace.loadProjects()
-      await workspace.inbox.start()
+      async let projects: Void = workspace.loadProjects()
+      async let inbox: Void = workspace.inbox.start()
+      _ = await (projects, inbox)
     }
     .onChange(of: scenePhase) { _, phase in
       if phase == .active { Task { await workspace.inbox.start() } } else { workspace.inbox.stop() }

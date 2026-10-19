@@ -112,7 +112,7 @@ struct ProjectTile: View {
   var body: some View {
     Group {
       if let url = ProjectIcon.url(icon) {
-        AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { initial }
+        CachedAsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { initial }
           .frame(width: size, height: size)
           .clipShape(RoundedRectangle(cornerRadius: size * 0.28))
       } else {
@@ -143,7 +143,7 @@ struct ProjectDot: View {
   var body: some View {
     Group {
       if let url = ProjectIcon.url(icon) {
-        AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { dot }
+        CachedAsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { dot }
           .frame(width: size * 1.5, height: size * 1.5)
           .clipShape(RoundedRectangle(cornerRadius: size * 0.4))
       } else {

@@ -95,6 +95,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
   var projectsPath: [AppRoute] = []
   var templatesPath: [AppRoute] = []
   var settingsPath: [AppRoute] = []
+  /// The Mac window's sidebar selection and the pages pushed onto its detail.
+  var macSelection: AppRoute = .inbox
+  var macPath: [AppRoute] = []
   /// iPad at full width and Mac show the sidebar, where a project's section is a tab of its own.
   var sidebar = false
   /// Opens the new-conversation sheet (sidebar compose, or ⌘N).
@@ -108,6 +111,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
   init(session: SessionStore) {
     self.session = session
     self.inbox = InboxStore(session: session)
+    projects = SnapshotCache.load([Project].self, "projects") ?? []
   }
 
   func project(_ id: String) -> Project? { projects.first { $0.id == id } }
@@ -117,6 +121,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     do {
       let response: Response = try await session.get("/v1/admin/projects")
       projects = response.projects
+      SnapshotCache.save(response.projects, "projects")
     } catch {}
   }
 
@@ -129,6 +134,10 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
   /// Jump anywhere (palette, menu bar, links between screens): pick the tab and
   /// lay out its stack, so Back always leads to the parent page.
   func go(_ route: AppRoute) {
+    #if os(macOS)
+    macGo(route)
+    return
+    #else
     switch route {
     case .inbox: tab = .inbox
     case .emailTemplates: tab = .templates; templatesPath = []
@@ -142,6 +151,22 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .account: tab = .settings; settingsPath = []
     case .apiKeys, .developer, .team, .profile, .workspace, .usage, .ai, .connections: tab = .settings; settingsPath = [route]
     case .legalDocument(let id, _): go(.project(id, .legal)); if sidebar { /* the section's own stack pushes the document */ } else { projectsPath.append(route) }
+    }
+    #endif
+  }
+
+  /// The Mac sidebar: the route's root page is the selection, anything deeper is pushed on its stack.
+  func macGo(_ route: AppRoute) {
+    switch route {
+    case .apiKeys, .developer, .team, .profile, .workspace, .usage, .ai, .connections:
+      macSelection = route == .developer ? .developer : .account
+      macPath = route == .developer ? [] : [route]
+    case .legalDocument(let id, _):
+      macSelection = .project(id, .legal)
+      macPath = [route]
+    default:
+      macSelection = route
+      macPath = []
     }
   }
 }

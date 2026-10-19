@@ -8,6 +8,18 @@ settings:
   base:
     SWIFT_VERSION: '6.0'
     SWIFT_STRICT_CONCURRENCY: complete
+  configs:
+    Release:
+      # Fast launch and a small binary: optimise the whole module at once, strip dead code
+      # and unused symbols, and let the linker see across files.
+      SWIFT_COMPILATION_MODE: wholemodule
+      SWIFT_OPTIMIZATION_LEVEL: -O
+      DEAD_CODE_STRIPPING: YES
+      STRIP_INSTALLED_PRODUCT: YES
+      STRIP_SWIFT_SYMBOLS: YES
+      LLVM_LTO: YES_THIN
+      ENABLE_TESTABILITY: NO
+      VALIDATE_PRODUCT: YES
 targets:
   HelpBitesNative:
     type: application

@@ -5,6 +5,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
 
 @MainActor @Observable final class SessionStore {
   var api: APIClient
+  /// `.signedIn` from the first frame when a session and its last `/me` are on disk; `bootstrap()` then confirms it.
   private(set) var phase: SessionPhase = .loading
   private(set) var agent: Agent?
   /// The workspace this app acts in, your role there, every workspace you belong to, and the plan.
@@ -32,16 +33,27 @@ enum SessionPhase { case loading, signedOut, signedIn }
     let saved = UserDefaults.standard.string(forKey: "helpbites.apiBaseURL") ?? configured
     endpoint = saved
     api = APIClient(baseURL: saved)
+    // Paint the signed-in shell straight away from what we knew last time; bootstrap() revalidates.
+    token = KeychainStore.load() ?? ""
+    if !token.isEmpty, let cached = SnapshotCache.load(MeResponse.self, "me") {
+      agent = cached.agent
+      context = cached
+      phase = .signedIn
+    }
   }
 
   func bootstrap() async {
-    token = KeychainStore.load() ?? ""
     guard !token.isEmpty else { await checkSetup(); return }
     await api.setWorkspace(workspaceId)
+    let optimistic = phase == .signedIn
     do {
       let me: MeResponse = try await api.get("/v1/admin/me", token: token)
       apply(me); phase = .signedIn; await registerPushDevice()
-    } catch { await recover(error) }
+    } catch {
+      // Offline with a remembered session: stay in, the screens show their own errors.
+      if optimistic, case APIError.transport = error { return }
+      await recover(error)
+    }
   }
 
   /// Takes the server's view of who you are and where you are working. A stale remembered
@@ -49,6 +61,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
   private func apply(_ me: MeResponse) {
     agent = me.agent
     context = me
+    SnapshotCache.save(me, "me")
     if let id = me.workspace?.id, id != workspaceId {
       workspaceId = id
       UserDefaults.standard.set(id, forKey: "helpbites.workspace")
@@ -102,7 +115,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
     else { self.error = error.localizedDescription }
   }
 
-  func clear() { KeychainStore.remove(); token = ""; agent = nil; context = nil; phase = .signedOut }
+  func clear() { KeychainStore.remove(); SnapshotCache.clear(); token = ""; agent = nil; context = nil; phase = .signedOut }
 
   func setEndpoint(_ value: String) async {
     let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
@@ -172,6 +185,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
 
   func registerPushDevice() async {
     let push = PushRegistration.shared
+    push.enable()
     guard !push.token.isEmpty else { return }
     let platform = Platform.deviceName
     do { let _: EmptyBody = try await api.send("/v1/admin/devices", method: "POST", token: token, body: DeviceInput(token: push.token, platform: platform, env: push.environment)) }
@@ -194,7 +208,11 @@ enum KeychainStore {
   }
   static func save(_ token: String) {
     remove()
-    let query: [CFString: Any] = [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: account, kSecValueData: Data(token.utf8), kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly]
+    var query: [CFString: Any] = [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: account, kSecValueData: Data(token.utf8)]
+    // iOS keeps it off backups and available once unlocked; the Mac's file keychain has no such attribute without a signed team.
+    #if os(iOS)
+    query[kSecAttrAccessible] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+    #endif
     SecItemAdd(query as CFDictionary, nil)
   }
   static func remove() {

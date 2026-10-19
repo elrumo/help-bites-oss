@@ -22,7 +22,12 @@ actor APIClient {
 
   init(baseURL: String) {
     self.baseURL = URL(string: baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))) ?? URL(string: "http://localhost:3100")!
-    self.session = .shared
+    let configuration = URLSessionConfiguration.default
+    configuration.timeoutIntervalForRequest = 30
+    configuration.httpMaximumConnectionsPerHost = 8
+    configuration.waitsForConnectivity = false
+    configuration.httpShouldUsePipelining = true
+    self.session = URLSession(configuration: configuration)
   }
 
   func setWorkspace(_ id: String) { workspaceId = id }
