@@ -196,6 +196,8 @@ const SCHEMAS = {
       errors: { type: 'Object' },
       // Error alert rules { rules, emails } (shared/errorAlerts.ts).
       errorAlerts: { type: 'Object' },
+      // Telegram bot for alerts: { tokenSealed, chatId, botName, chatName } (server/utils/telegram.ts).
+      telegram: { type: 'Object' },
       // GitHub repos the project uses: [{ installationId, id, fullName, defaultBranch }] (server/utils/github.ts).
       repos: { type: 'Array' },
       // The ids of `repos`, so a GitHub push webhook can find the projects that use a repo.

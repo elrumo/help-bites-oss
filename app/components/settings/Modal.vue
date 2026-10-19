@@ -101,6 +101,7 @@
             <div v-else-if="current.key === 'connections'" class="space-y-8">
               <section class="space-y-3"><h3 class="flex items-center gap-2 text-[13px] font-semibold text-highlighted"><UIcon name="i-lucide-github" class="size-4" />GitHub</h3><SettingsGithubConnection /></section>
               <section class="space-y-3"><h3 class="flex items-center gap-2 text-[13px] font-semibold text-highlighted"><UIcon name="i-lucide-circle-dollar-sign" class="size-4" />Stripe</h3><SettingsStripeConnections @navigate="open = false" /></section>
+              <section class="space-y-3"><h3 class="flex items-center gap-2 text-[13px] font-semibold text-highlighted"><UIcon name="i-lucide-send" class="size-4" />Telegram</h3><SettingsTelegramConnections /></section>
               <section class="space-y-3"><h3 class="flex items-center gap-2 text-[13px] font-semibold text-highlighted"><UIcon name="i-lucide-bug" class="size-4" />Error tracking</h3><SettingsErrorServers /></section>
             </div>
             <SettingsApiKeys v-else-if="current.key === 'api-keys'" />

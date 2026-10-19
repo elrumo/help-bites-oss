@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model:open="open" title="Error alerts" description="Email the team when an error crosses a line. Checked every minute, and as soon as the tracker's alert webhook calls.">
+  <UModal v-model:open="open" title="Error alerts" description="Email the team (and post to Telegram, when connected in Settings → Connections) when an error crosses a line. Checked every minute, and as soon as the tracker's alert webhook calls.">
     <template #body>
       <div class="space-y-4">
         <USkeleton v-if="loading" class="h-24 w-full" />

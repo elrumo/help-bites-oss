@@ -62,6 +62,8 @@ export async function runErrorAlerts(project: ParseObject): Promise<FiredAlert[]
   await redis.ltrim(recentKey(projectId), 0, 49)
   await redis.expire(recentKey(projectId), STATE_TTL)
   const to = config.emails.length ? config.emails : parseRecipientList(project.get('notifyEmails'))
-  if (to.length) void notifyErrorAlerts(project, to, fired.map(({ rule, alert }) => `${alert.title}${alert.link ? ` (${alert.link})` : ''}\nWhen ${describeRule(rule)}: ${alert.count} events so far\n${alert.url}`)).catch(error => console.warn('[error-alerts] mail failed:', (error as Error).message))
+  const lines = fired.map(({ rule, alert }) => `${alert.title}${alert.link ? ` (${alert.link})` : ''}\nWhen ${describeRule(rule)}: ${alert.count} events so far\n${alert.url}`)
+  if (to.length) void notifyErrorAlerts(project, to, lines).catch(error => console.warn('[error-alerts] mail failed:', (error as Error).message))
+  void sendTelegram(project, `🚨 ${String(project.get('name') || 'Errors')}\n\n${lines.join('\n\n')}`).catch(error => console.warn('[error-alerts] telegram failed:', (error as Error).message))
   return alerts
 }
