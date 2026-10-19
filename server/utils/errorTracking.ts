@@ -7,9 +7,9 @@ import { glitchtip } from './glitchtip'
 export type ErrorProviderId = 'glitchtip' | 'bugsink'
 /** Stored on the Project as `errors`, which is its first tracker project; further ones are in `more`. Rows from before Bugsink
  * support have no `provider` and are GlitchTip; rows from before in-app settings have no `issuesUrl` and build it from the env.
- * `label` is the project's name in the tracker, shown as a pill; `linkId` is set on `more` entries (the first one is `main`). */
-export type ErrorConfig = { provider?: ErrorProviderId, slug?: string, projectId?: string, dsn?: string, alertId?: string, webhookToken?: string, issuesUrl?: string, serverId?: string, label?: string, linkId?: string, more?: ErrorConfig[] }
-export type ErrorLinkView = { id: string, label: string, provider: ErrorProviderId, providerName: string, dsn: string, url: string, alertWebhookUrl: string }
+ * `name` is the project's name in the tracker (what connecting again matches on), `label` what the pill shows (starts as the name), `team` where it was created; `linkId` is set on `more` entries (the first one is `main`). */
+export type ErrorConfig = { provider?: ErrorProviderId, slug?: string, projectId?: string, dsn?: string, alertId?: string, webhookToken?: string, issuesUrl?: string, serverId?: string, name?: string, label?: string, team?: string, linkId?: string, more?: ErrorConfig[] }
+export type ErrorLinkView = { id: string, label: string, name: string, team: string, serverId: string, provider: ErrorProviderId, providerName: string, dsn: string, url: string, alertWebhookUrl: string }
 export const MAIN_LINK = 'main'
 export type IssueListInput = { status?: string, userId?: string, search?: string, cursor?: string, limit?: number }
 /** What a provider talks to: requests go to `api`, people open `url`. */
@@ -65,15 +65,15 @@ export function errorLinksOf(project: ParseObject): ErrorConfig[] {
   return [...(main.dsn ? [{ ...main, linkId: MAIN_LINK, label: main.label || name }] : []), ...more.filter(link => link.dsn).map(link => ({ ...link, label: link.label || name }))]
 }
 
-/** One link by id; without (or with an unknown) id, the first. */
+/** One link by id; without an id (conversations from before links), the first. An id that is gone finds nothing. */
 export function errorLinkOf(project: ParseObject, linkId = ''): ErrorConfig | undefined {
   const links = errorLinksOf(project)
-  return links.find(link => link.linkId === linkId) || links[0]
+  return linkId ? links.find(link => link.linkId === linkId) : links[0]
 }
 
 export function errorLinkView(project: ParseObject, link: ErrorConfig): ErrorLinkView {
   const provider = providerOf(link)
-  return { id: link.linkId || MAIN_LINK, label: link.label || '', provider: provider.id, providerName: provider.name, dsn: String(link.dsn || ''), url: issuesUrlOf(link), alertWebhookUrl: provider.manualAlerts ? errorWebhookUrl(project, link) : '' }
+  return { id: link.linkId || MAIN_LINK, label: link.label || '', name: link.name || link.label || '', team: link.team || '', serverId: link.serverId || '', provider: provider.id, providerName: provider.name, dsn: String(link.dsn || ''), url: issuesUrlOf(link), alertWebhookUrl: provider.manualAlerts ? errorWebhookUrl(project, link) : '' }
 }
 
 const isComplete = (provider: ErrorProvider, settings?: TrackerSettings) => Boolean(pickTrackerSettings(provider.required, [['project', settings]]))
@@ -198,12 +198,12 @@ export async function connectErrorTracking(project: ParseObject, target: { serve
   const provider = providers[server.provider]
   const name = target.name?.trim().slice(0, 100) || String(project.get('name') || `hb-${project.id}`)
   const links = errorLinksOf(project)
-  const same = links.find(link => providerOf(link).id === provider.id && (!link.serverId || link.serverId === server.id) && link.label === name)
+  const same = links.find(link => providerOf(link).id === provider.id && (!link.serverId || link.serverId === server.id) && (link.name || link.label) === name)
   if (same) return same
   const creds = { ...serverCredentials(server), team: target.team?.trim().slice(0, 100) || serverCredentials(server).team }
   const draft: ErrorConfig = { provider: provider.id, serverId: server.id, webhookToken: randomBytes(32).toString('hex') }
   const connected = await provider.connect(creds, project, {}, errorWebhookUrl(project, draft), name)
-  const link: ErrorConfig = { ...draft, ...connected, label: name, issuesUrl: provider.issuesUrl(creds, connected) }
+  const link: ErrorConfig = { ...draft, ...connected, name, label: name, team: creds.team, issuesUrl: provider.issuesUrl(creds, connected) }
   const main = errorConfigOf(project)
   if (!links.length) project.set('errors', { ...link, more: main.more || [] })
   else project.set('errors', { ...main, more: [...(main.more || []), { ...link, linkId: randomBytes(4).toString('hex') }] })
@@ -211,12 +211,35 @@ export async function connectErrorTracking(project: ParseObject, target: { serve
   return errorLinksOf(project).find(item => item.webhookToken === link.webhookToken)!
 }
 
+const clean = ({ linkId, ...link }: ErrorConfig): ErrorConfig => link
+
+/** Changes what a link's pill says; the tracker project keeps its name. */
+export async function updateErrorLink(project: ParseObject, linkId: string, input: { label?: unknown }): Promise<ErrorConfig> {
+  const label = String(input.label ?? '').trim().slice(0, 100)
+  if (!label) throw createError({ statusCode: 400, statusMessage: 'Enter a name' })
+  const main = errorConfigOf(project)
+  const found = linkId === MAIN_LINK ? main.dsn : (main.more || []).some(link => link.linkId === linkId)
+  if (!found) throw createError({ statusCode: 404, statusMessage: 'Tracker project not found' })
+  project.set('errors', linkId === MAIN_LINK ? { ...main, label } : { ...main, more: (main.more || []).map(link => link.linkId === linkId ? { ...link, label } : link) })
+  await project.save(null, MASTER)
+  return errorLinkOf(project, linkId)!
+}
+
+/** Stops reporting to one tracker project (it is left alone in the tracker; its conversations stay). Removing the first promotes the next. */
+export async function removeErrorLink(project: ParseObject, linkId: string): Promise<void> {
+  const links = errorLinksOf(project)
+  const rest = links.filter(link => link.linkId !== linkId)
+  if (rest.length === links.length) throw createError({ statusCode: 404, statusMessage: 'Tracker project not found' })
+  const [first, ...more] = rest
+  project.set('errors', first ? { ...clean(first), more } : {})
+  await project.save(null, MASTER)
+}
+
 export type ErrorIssue = Record<string, any> & { id: string, provider: ErrorProviderId, providerName: string, linkId: string, linkLabel: string }
 
 /** One link's issues, or with no `linkId` every link's first page merged newest first. ponytail: no cursor across links, so "all" shows each one's first page; pick a link to page further. */
 export async function listIssues(project: ParseObject, input: IssueListInput, linkId = ''): Promise<{ issues: ErrorIssue[], next: string }> {
-  const one = linkId ? errorLinkOf(project, linkId) : undefined
-  const links = one ? [one] : errorLinksOf(project)
+  const links = linkId ? [errorLinkOf(project, linkId)].filter((link): link is ErrorConfig => Boolean(link)) : errorLinksOf(project)
   const pages = await Promise.all(links.map(async (link) => {
     const provider = providerOf(link)
     const page = await provider.listIssues(await trackerCredentials(provider, project, link), link, input)

@@ -12,13 +12,28 @@
             <UInput v-model="search" icon="i-lucide-search" placeholder="Search errors" class="min-w-48 flex-1" @keyup.enter="load()" />
             <UButton color="neutral" variant="soft" icon="i-lucide-refresh-cw" aria-label="Refresh errors" @click="load()" />
             <UButton color="neutral" variant="soft" icon="i-lucide-plus" label="Connect another" @click="connectOpen = true" />
+            <UButton color="neutral" variant="soft" icon="i-lucide-settings-2" label="Manage" aria-label="Manage tracker projects" @click="manageOpen = true" />
           </div>
           <div v-if="links.length > 1" class="flex flex-wrap gap-2" role="group" aria-label="Filter by tracker project">
             <UButton v-for="pill in [{ id: '', label: 'All' }, ...links]" :key="pill.id" size="xs" :color="linkFilter === pill.id ? 'primary' : 'neutral'" :variant="linkFilter === pill.id ? 'solid' : 'soft'" class="rounded-full" :aria-pressed="linkFilter === pill.id" :label="pill.label" @click="linkFilter = pill.id; load()" />
           </div>
-          <UAlert v-for="item in alerts" :key="item.id" color="neutral" variant="subtle" icon="i-lucide-webhook" :title="`Send Bugsink alerts to the inbox${links.length > 1 ? ` (${item.label})` : ''}`" :description="`In Bugsink, open this project's alerts, click Add, set Kind to Slack and use this Webhook url: ${item.alertWebhookUrl}`" />
+          <UCollapsible v-if="alerts.length">
+            <UButton color="neutral" variant="soft" size="sm" block class="justify-between" icon="i-lucide-webhook" trailing-icon="i-lucide-chevron-down" :label="`Send Bugsink alerts to the inbox${alerts.length > 1 ? ` (${alerts.length})` : ''}`" />
+            <template #content>
+              <div class="flex max-h-96 flex-col gap-3 overflow-y-auto pt-3">
+                <UAlert v-for="item in alerts" :key="item.id" color="neutral" variant="subtle" icon="i-lucide-webhook" :title="links.length > 1 ? item.label : 'Alert webhook'" :description="`In Bugsink, open this project's alerts, click Add, set Kind to Slack and use this Webhook url: ${item.alertWebhookUrl}`" />
+              </div>
+            </template>
+          </UCollapsible>
           <p v-if="error" class="text-sm text-error">{{ error }}</p>
-          <div class="overflow-hidden rounded-xl border border-default divide-y divide-default">
+          <div v-if="loading" class="overflow-hidden rounded-xl border border-default divide-y divide-default" aria-busy="true" aria-label="Loading errors">
+            <div v-for="n in 3" :key="n" class="flex items-center gap-3 p-4">
+              <USkeleton class="size-4 shrink-0 rounded" />
+              <div class="min-w-0 flex-1 space-y-2"><USkeleton class="h-4 w-2/3" /><USkeleton class="h-3 w-1/3" /></div>
+              <USkeleton class="h-6 w-20 shrink-0 rounded-full" />
+            </div>
+          </div>
+          <div v-else class="overflow-hidden rounded-xl border border-default divide-y divide-default">
             <div v-for="issue in issues" :key="issue.id" class="flex items-center gap-3 p-4">
               <UIcon name="i-lucide-bug" :class="issue.level === 'error' || issue.level === 'fatal' ? 'text-error' : 'text-warning'" class="size-4 shrink-0" />
               <div class="min-w-0 flex-1"><p class="truncate text-sm font-medium text-highlighted">{{ issue.title }}</p><p class="truncate text-xs text-muted">{{ issue.culprit || 'Unknown location' }} · {{ issue.count || 1 }} events</p></div>
@@ -32,6 +47,7 @@
           <UButton v-if="next" color="neutral" variant="soft" label="Load more" @click="load(next)" />
         </template>
         <ConnectErrorTrackingModal v-model:open="connectOpen" :project-id="id" @connected="onConnected" />
+        <ManageErrorProjectsModal v-model:open="manageOpen" :project-id="id" @changed="onManaged" />
       </div>
     </main>
   </div>
@@ -49,20 +65,34 @@ const status = ref('unresolved')
 const search = ref('')
 const next = ref('')
 const connectOpen = ref(false)
+const manageOpen = ref(false)
+const loading = ref(true)
 const linkFilter = ref('')
 const links = computed(() => project.value?.errorLinks || [])
 const alerts = computed(() => links.value.filter(item => item.alertWebhookUrl && (!linkFilter.value || item.id === linkFilter.value)))
 const error = ref('')
 const statusItems = [{ label: 'Unresolved', value: 'unresolved' }, { label: 'Resolved', value: 'resolved' }, { label: 'Ignored', value: 'ignored' }]
 
+// Answers can arrive out of order when pills are clicked quickly; only the latest one counts.
+let latest = 0
 async function load(cursor = '') {
-  if (!project.value?.errors?.connected) return
+  if (!project.value?.errors?.connected) { loading.value = false; return }
+  const mine = ++latest
   error.value = ''
+  if (!cursor) loading.value = true
   try {
     const result = await api<{ issues: any[], next: string }>('/admin/errors', { query: { project: id, status: status.value, q: search.value, cursor, link: linkFilter.value } })
+    if (mine !== latest) return
     issues.value = cursor ? [...issues.value, ...result.issues] : result.issues
     next.value = result.next
-  } catch (cause: any) { error.value = cause.message || 'Could not load errors' }
+  } catch (cause: any) {
+    if (mine === latest) { error.value = cause.message || 'Could not load errors'; if (!cursor) issues.value = [] }
+  } finally { if (mine === latest) loading.value = false }
+}
+async function onManaged(changed: AdminProject) {
+  if (linkFilter.value && !changed.errorLinks.some(item => item.id === linkFilter.value)) linkFilter.value = ''
+  if (!changed.errors.connected) return
+  await load()
 }
 async function onConnected(connected: AdminProject) {
   projects.value = projects.value.map(item => item.id === id ? connected : item)

@@ -85,6 +85,8 @@ pick a pill to page further), and `GET /v1/admin/errors?link=` takes the id from
 `project.errorLinks`. Status changes and AI notes go back to the tracker project
 an alert came from.
 
+**Manage** (Errors page) lists each tracker project with its tracker, project name, team, DSN and alert webhook. You can change the name its pill shows or remove it; removing only stops HelpBites reporting there (the tracker project and past conversations stay), and the tracker, name and team are fixed, so to change them remove it and connect again. The alert webhook instructions sit in a collapsible on the same page.
+
 Bugsink can't search issues by Sentry user id, so a customer's recent errors
 don't show in their conversation sidebar. Status and text filters on the Errors
 page apply to each page of 250 issues.

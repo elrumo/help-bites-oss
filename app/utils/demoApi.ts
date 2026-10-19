@@ -79,7 +79,7 @@ function project(id: string, name: string, siteUrl: string, accent: string, flag
     inboxPath: '/inbox', fromName: `${name} Support`, notifyEmails: [`support@${new URL(siteUrl).host}`],
     fromEmail: '', replyTo: '', mailDomain: '', emailLogContent: false,
     actionWebhookUrl: '', hasActionWebhookSecret: false, flags,
-    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, errorLinks: id === 'acme' ? [{ id: 'main', label: 'Acme', provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }] : [], createdAt: ago(60 * 24 * 90)
+    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, errorLinks: id === 'acme' ? [{ id: 'main', label: 'Acme', name: 'Acme', team: 'helpbites', serverId: '', provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }] : [], createdAt: ago(60 * 24 * 90)
   }
 }
 
@@ -381,11 +381,24 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const bugsink = errorServers.find(server => server.id === body.server)?.provider === 'bugsink'
     const label = body.name || p.name
     const link = bugsink
-      ? { id: `l${p.errorLinks.length + 1}`, label, provider: 'bugsink' as const, providerName: 'Bugsink', dsn: 'https://public@example.bugsink.com/42', url: 'https://example.bugsink.com/issues/42/', alertWebhookUrl: `https://help.example.com/v1/webhooks/bugsink/${p.id}?token=demo${p.errorLinks.length}` }
-      : { id: `l${p.errorLinks.length + 1}`, label, provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }
+      ? { id: `l${p.errorLinks.length + 1}`, label, name: label, team: 'HelpBites', serverId: body.server, provider: 'bugsink' as const, providerName: 'Bugsink', dsn: 'https://public@example.bugsink.com/42', url: 'https://example.bugsink.com/issues/42/', alertWebhookUrl: `https://help.example.com/v1/webhooks/bugsink/${p.id}?token=demo${p.errorLinks.length}` }
+      : { id: `l${p.errorLinks.length + 1}`, label, name: label, team: 'helpbites', serverId: body.server, provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }
     if (!p.errorLinks.some(item => item.label === label)) p.errorLinks.push(link)
     if (!p.errors.connected) p.errors = { connected: true, provider: link.provider, providerName: link.providerName, dsn: link.dsn, url: link.url, alertWebhookUrl: link.alertWebhookUrl }
     return { project: p, link }
+  }],
+  ['PUT', /^\/admin\/errors\/links\/([^/]+)$/, ({ params, body }) => {
+    const p = find(projects, body.project, 'Project')
+    const link = p.errorLinks.find(item => item.id === params[0]) || fail(404, 'Tracker project not found')
+    link.label = String(body.label || '').trim() || fail(400, 'Enter a name')
+    return { project: p, link }
+  }],
+  ['DELETE', /^\/admin\/errors\/links\/([^/]+)$/, ({ params, query }) => {
+    const p = find(projects, query.project, 'Project')
+    p.errorLinks = p.errorLinks.filter(item => item.id !== params[0])
+    const first = p.errorLinks[0]
+    p.errors = first ? { connected: true, provider: first.provider, providerName: first.providerName, dsn: first.dsn, url: first.url, alertWebhookUrl: first.alertWebhookUrl } : { connected: false, provider: '', providerName: '', dsn: '', url: '', alertWebhookUrl: '' }
+    return { project: p }
   }],
   ['GET', /^\/admin\/errors$/, ({ query }) => ({ issues: errorIssues.filter(issue => !query.status || issue.status === query.status).map(issue => ({ ...issue, linkId: 'main', linkLabel: 'Acme', provider: 'glitchtip', providerName: 'GlitchTip' })), next: '' })],
   ['PUT', /^\/admin\/errors\/([^/]+)$/, ({ params, body }) => {
