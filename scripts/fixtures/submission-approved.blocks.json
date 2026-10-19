@@ -1,0 +1,162 @@
+{
+  "settings": {
+    "title": "Your submission has been approved",
+    "preheader": "It's live on Acme.com. View your profile or share it on X.",
+    "backgroundColor": "#eef2f7",
+    "contentBackground": "#eef2f7",
+    "contentWidth": 640,
+    "fontFamily": "'SF Pro Text', 'SF Pro Display', Arial, sans-serif",
+    "textColor": "#14233c"
+  },
+  "blocks": [
+    {
+      "id": "pill",
+      "type": "button",
+      "label": "Acme.com",
+      "href": "https://acme.dev/?utm_source=email",
+      "align": "center",
+      "backgroundColor": "#ffffff",
+      "color": "#000000",
+      "radius": 999,
+      "fontSize": 13,
+      "shadow": "0 2px 4px rgba(0, 0, 0, 0.1)",
+      "padding": { "top": 0, "right": 0, "bottom": 16, "left": 0 }
+    },
+    {
+      "id": "card",
+      "type": "section",
+      "background": "#ffffff",
+      "radius": 24,
+      "shadow": "0 10px 30px rgba(20, 35, 60, 0.08)",
+      "padding": 0,
+      "blocks": [
+        {
+          "id": "hero",
+          "type": "section",
+          "background": "#bfe9fd",
+          "gradientTo": "#5e92f2",
+          "gradientAngle": 183,
+          "padding": { "top": 20, "right": 28, "bottom": 20, "left": 28 },
+          "blocks": [
+            {
+              "id": "logo",
+              "type": "image",
+              "src": "https://acme.dev/images/logos/acme-logo-256px.png",
+              "alt": "Acme",
+              "href": "https://acme.dev/?utm_source=email",
+              "align": "center",
+              "width": 62,
+              "padding": { "top": 0, "right": 0, "bottom": 16, "left": 0 }
+            },
+            {
+              "id": "title",
+              "type": "heading",
+              "text": "Your submission has been approved",
+              "level": 1,
+              "fontSize": 34,
+              "fontFamily": "'SF Pro Display', Arial, sans-serif",
+              "letterSpacing": -0.68,
+              "align": "center",
+              "color": "#002541",
+              "padding": { "top": 0, "right": 0, "bottom": 12, "left": 0 }
+            },
+            {
+              "id": "profile",
+              "type": "button",
+              "label": "View your profile",
+              "href": "https://acme.dev/#/u/{{userName}}/?utm_campaign=icon-submission&utm_source=email&utm_medium=button",
+              "align": "center",
+              "backgroundColor": "#111e35c0",
+              "color": "#ffffff",
+              "radius": 20,
+              "shadow": "0 4px 10px rgba(0, 0, 0, 0.2)",
+              "padding": { "top": 20, "right": 0, "bottom": 0, "left": 0 }
+            },
+            {
+              "id": "share",
+              "type": "button",
+              "label": "Share on X",
+              "href": "https://x.com/intent/tweet?tweet?in_reply_to=1376281356641128451&text=My+icon+submission+to+%40acme+has+just+been+approved%21+Check+it+out+at+Acme.com/u/{{userName}}",
+              "align": "center",
+              "backgroundColor": "transparent",
+              "color": "#ffffff",
+              "radius": 20,
+              "fontSize": 14,
+              "padding": { "top": 4, "right": 0, "bottom": 0, "left": 0 }
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "type": "section",
+          "padding": { "top": 36, "right": 40, "bottom": 20, "left": 40 },
+          "blocks": [
+            {
+              "id": "greeting",
+              "type": "text",
+              "html": "Hi {{userFirstName}},<br><br>Your submission to <a href=\"https://acme.dev\" style=\"color: #383838; text-decoration: none; font-weight: 600;\">Acme.com</a> has been approved.",
+              "align": "left",
+              "fontSize": 17,
+              "color": "#14233c",
+              "padding": 0
+            },
+            {
+              "id": "support",
+              "type": "text",
+              "html": "If you enjoy the site you can <a href=\"https://buymeacoffee.com/elrumo\" style=\"color: #2563eb; text-decoration: none; font-weight: 600;\">buy me a coffee</a> or sponsor me on <a href=\"https://github.com/sponsors/elrumo\" style=\"color: #2563eb; text-decoration: none; font-weight: 600;\">GitHub</a> to show your support to the project.",
+              "align": "left",
+              "fontSize": 16,
+              "color": "#334155",
+              "padding": { "top": 24, "right": 0, "bottom": 0, "left": 0 }
+            },
+            {
+              "id": "coffee",
+              "type": "image",
+              "src": "https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png",
+              "alt": "Buy Me A Coffee",
+              "href": "https://buymeacoffee.com/elrumo",
+              "align": "left",
+              "width": 143,
+              "padding": { "top": 27, "right": 0, "bottom": 0, "left": 0 }
+            },
+            {
+              "id": "socials",
+              "type": "text",
+              "html": "You can also find me on <a href=\"https://x.com/elrumo\" style=\"color: #383838; text-decoration: none; font-weight: 600;\">X</a>, <a href=\"https://github.com/elrumo\" style=\"color: #383838; text-decoration: none; font-weight: 600;\">GitHub</a> and <a href=\"https://www.threads.net/@elrumo\" style=\"color: #383838; text-decoration: none; font-weight: 600;\">Threads</a>.",
+              "align": "left",
+              "fontSize": 16,
+              "color": "#334155",
+              "padding": { "top": 27, "right": 0, "bottom": 0, "left": 0 }
+            },
+            {
+              "id": "rule",
+              "type": "divider",
+              "color": "#e9eef5",
+              "thickness": 1,
+              "padding": { "top": 30, "right": 0, "bottom": 0, "left": 0 }
+            },
+            {
+              "id": "signoff",
+              "type": "text",
+              "html": "Thank you so much again,<br><a href=\"https://acme.dev\" style=\"color: #2563eb; text-decoration: none; font-weight: 600;\">The Acme team</a>",
+              "align": "left",
+              "fontSize": 17,
+              "color": "#14233c",
+              "padding": { "top": 24, "right": 0, "bottom": 0, "left": 0 }
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "type": "text",
+          "html": "Acme.com",
+          "align": "center",
+          "fontSize": 12,
+          "color": "#94a3b8",
+          "padding": { "top": 0, "right": 40, "bottom": 34, "left": 40 }
+        }
+      ]
+    },
+    { "id": "after", "type": "spacer", "height": 12 }
+  ]
+}

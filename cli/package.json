@@ -1,0 +1,11 @@
+{
+  "name": "helpbites",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Turn a repo's git changes into HelpBites changelog entries",
+  "bin": {
+    "helpbites": "./helpbites.mjs"
+  }
+}

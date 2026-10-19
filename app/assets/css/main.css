@@ -1,0 +1,240 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme {
+  /* Linear's face, everywhere: the panel, the widgets and the landing page. */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "IBM Plex Mono", monospace;
+  /* Linear sets UI at 13px; `text-base` is the 14px step for fields. */
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+}
+
+/* The whole app is dressed like Linear: cool greys, one indigo accent (a
+   widget swaps in its project's), tight radii. These sit on <html> itself, so
+   the theme's own variables (radii, NuxtUI's neutral scale) recompute. */
+:root {
+  --ui-radius: 0.25rem;
+
+  /* Linear's greys stand in for stone, so hard-coded stone classes and
+     NuxtUI's neutral scale (stone, in app.config) both follow. */
+  --color-stone-50: #f7f8f8;
+  --color-stone-100: #f0f0f2;
+  --color-stone-200: #e4e5e8;
+  --color-stone-300: #d0d2d7;
+  --color-stone-400: #8a8f98;
+  --color-stone-500: #6b6f78;
+  --color-stone-600: #50545c;
+  --color-stone-700: #383a40;
+  --color-stone-800: #232428;
+  --color-stone-900: #161719;
+  --color-stone-950: #0c0d0e;
+
+  --ui-color-primary-50: #f0f1fc;
+  --ui-color-primary-100: #e2e4f8;
+  --ui-color-primary-200: #c9cdf2;
+  --ui-color-primary-300: #a7aeea;
+  --ui-color-primary-400: #8690e0;
+  --ui-color-primary-500: #5e6ad2;
+  --ui-color-primary-600: #4f5ac0;
+  --ui-color-primary-700: #434ca1;
+  --ui-color-primary-800: #393f80;
+  --ui-color-primary-900: #2f3466;
+  --ui-color-primary-950: #1d203d;
+
+  /* muted is the canvas a panel sits on; elevated is hover, accented is
+     selected. */
+  --ui-bg: #fcfcfc;
+  --ui-bg-muted: #f4f4f5;
+  --ui-bg-elevated: #f3f3f5;
+  --ui-bg-accented: #ebebee;
+  --ui-bg-inverted: #161719;
+  --ui-border: #e6e6e9;
+  --ui-border-muted: #eeeef0;
+  --ui-border-accented: #d6d7dc;
+  --ui-border-inverted: #161719;
+  --ui-text-dimmed: #9a9ea6;
+  --ui-text-muted: #6b6f78;
+  --ui-text-toned: #50545c;
+  --ui-text: #2b2d31;
+  --ui-text-highlighted: #161719;
+  --ui-text-inverted: #fff;
+
+  /* The other side of a chat: a quiet grey, not Messages' bubble grey. */
+  --chat-them: var(--ui-bg-accented);
+  --chat-them-text: var(--ui-text-highlighted);
+}
+
+:root.dark {
+  --ui-bg: #0f1011;
+  --ui-bg-muted: #08090a;
+  --ui-bg-elevated: #17181a;
+  --ui-bg-accented: #202124;
+  --ui-bg-inverted: #f7f8f8;
+  --ui-border: #222327;
+  --ui-border-muted: #1a1b1e;
+  --ui-border-accented: #2e2f34;
+  --ui-border-inverted: #f7f8f8;
+  --ui-text-dimmed: #62666d;
+  --ui-text-muted: #8a8f98;
+  --ui-text-toned: #b8bdc6;
+  --ui-text: #dcdfe4;
+  --ui-text-highlighted: #f7f8f8;
+  --ui-text-inverted: #0f1011;
+}
+
+/* Phones keep 16px fields, or iOS zooms in on focus. */
+@media (max-width: 767px) {
+  :root { --text-base: 1rem; }
+}
+
+html, body, #__nuxt { height: 100%; }
+body { font-family: var(--font-sans); font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+@layer base {
+  * { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--ui-text-dimmed) 40%, transparent) transparent; }
+
+  /* Visible focus everywhere; NuxtUI handles its own controls. In the base
+     layer so their focus utilities can win. */
+  :focus-visible { outline: 2px solid var(--ui-primary); outline-offset: 2px; }
+}
+
+@layer components {
+  /* Linear's view pills: "Active · Backlog · All issues", and filter chips. */
+  .chip { @apply inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-default px-3 text-[13px] font-medium whitespace-nowrap text-muted transition-colors hover:bg-elevated hover:text-highlighted; }
+  .chip-active { @apply border-accented bg-elevated text-highlighted; }
+  /* A list group's header row: "Todo 4". */
+  .group-row { @apply mx-2 mt-2 flex h-9 items-center gap-2 rounded-lg bg-elevated px-3 text-[13px] font-medium text-highlighted; }
+  /* Small grey caption above a block of settings: Linear's sentence-case labels. */
+  .section-label { @apply text-xs font-medium text-muted; }
+}
+
+/* ---------------------------------------------------------------- bubbles */
+
+/* Their side is a quiet grey; mine stays on the accent (`bg-primary-600`),
+   which each project sets in its widget. */
+.bubble-them { background-color: var(--chat-them); color: var(--chat-them-text); }
+
+/* ------------------------------------------------------------- animations */
+
+/* Messages' own pop: the bubble grows out of its bottom corner with a little
+   overshoot — sent from the right corner, received from the left. */
+@keyframes bubble-in {
+  0% { opacity: 0; transform: translateY(26px) scale(0.32); }
+  55% { opacity: 1; transform: translateY(-4px) scale(1.05); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes dot-bounce {
+  0%, 60%, 100% { opacity: .35; transform: translateY(0) scale(.85); }
+  30% { opacity: 1; transform: translateY(-3px) scale(1); }
+}
+
+.animate-bubble-in { animation: bubble-in .44s cubic-bezier(.17, .89, .32, 1.12) backwards; transform-origin: bottom left; }
+.animate-bubble-out { animation: bubble-in .44s cubic-bezier(.17, .89, .32, 1.12) backwards; transform-origin: bottom right; }
+.animate-row-in { animation: row-in .28s ease-out backwards; }
+.animate-dot { animation: dot-bounce 1.3s ease-in-out infinite; }
+
+/* The email AI designer, calmer than Messages: a message rises into place
+   from its own corner, and a finished step's icon pops in. */
+@keyframes chat-rise {
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+}
+
+@keyframes chat-pop {
+  0% { opacity: 0; transform: scale(.5); }
+  60% { opacity: 1; transform: scale(1.12); }
+  100% { opacity: 1; transform: none; }
+}
+
+.animate-chat-sent { animation: chat-rise .36s cubic-bezier(.2, .9, .3, 1) backwards; transform-origin: bottom right; }
+.animate-chat-reply { animation: chat-rise .42s cubic-bezier(.2, .9, .3, 1) backwards; transform-origin: top left; }
+.animate-chat-pop { animation: chat-pop .4s cubic-bezier(.2, .9, .3, 1.2) backwards; }
+
+/* The tapback bar floats over a hovered bubble and springs in like Messages. */
+@keyframes reaction-bar-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+.animate-reaction-bar { animation: reaction-bar-in .18s cubic-bezier(.17, .89, .32, 1.28) backwards; }
+
+/* A vote landing: the chevron hops up and settles. */
+@keyframes vote-pop {
+  0% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-5px) scale(1.25); }
+  100% { transform: none; }
+}
+.animate-vote-pop { animation: vote-pop .42s cubic-bezier(.17, .89, .32, 1.28); }
+
+/* iOS-style push/pop between the widget's views. */
+.push-enter-active, .push-leave-active,
+.pop-enter-active, .pop-leave-active {
+  transition: transform .3s cubic-bezier(.32, .72, 0, 1), opacity .22s ease;
+}
+.push-enter-from { transform: translateX(22%); opacity: 0; }
+.push-leave-to { transform: translateX(-14%); opacity: 0; }
+.pop-enter-from { transform: translateX(-14%); opacity: 0; }
+.pop-leave-to { transform: translateX(22%); opacity: 0; }
+
+/* Notices and list items that just need to appear (routes switch instantly). */
+.fade-enter-active, .fade-leave-active { transition: opacity .18s ease, transform .18s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(4px); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ---------------------------------------------------- syntax highlighting */
+
+/* Token colours only; @speed-highlight's own themes also restyle the block,
+   which CodeBlock.vue already does. GitHub's light/dark palettes. */
+.shj-syn-cmnt { font-style: italic; color: #6e7781; }
+.shj-syn-deleted, .shj-syn-err, .shj-syn-kwd { color: #cf222e; }
+.shj-syn-class { color: #953800; }
+.shj-syn-type, .shj-syn-oper, .shj-syn-num, .shj-syn-section, .shj-syn-var, .shj-syn-bool { color: #0550ae; }
+.shj-syn-str, .shj-syn-insert { color: #0a3069; }
+.shj-syn-func { color: #8250df; }
+
+.dark .shj-syn-cmnt { color: #8b949e; }
+.dark .shj-syn-deleted, .dark .shj-syn-err, .dark .shj-syn-kwd { color: #ff7b72; }
+.dark .shj-syn-class { color: #ffa657; }
+.dark .shj-syn-type, .dark .shj-syn-oper, .dark .shj-syn-num, .dark .shj-syn-section, .dark .shj-syn-var, .dark .shj-syn-bool { color: #79c0ff; }
+.dark .shj-syn-str, .dark .shj-syn-insert { color: #a5d6ff; }
+.dark .shj-syn-func { color: #d2a8ff; }
+
+/* ---------------------------------------------------------- email editor */
+
+/* The email editor came from email-hub, which styled itself with --pc-*
+   tokens; map them onto NuxtUI's so it follows this panel's theme. */
+:root {
+  --pc-bg: var(--ui-bg-muted);
+  --pc-window: var(--ui-bg);
+  --pc-window-solid: var(--ui-bg);
+  --pc-sidebar: var(--ui-bg);
+  --pc-border: var(--ui-border);
+  --pc-border-strong: var(--ui-border-accented);
+  --pc-text: var(--ui-text-highlighted);
+  --pc-text-dim: var(--ui-text-muted);
+  --pc-text-muted: var(--ui-text-dimmed);
+  --pc-hover: var(--ui-bg-elevated);
+  --pc-surface: var(--ui-bg-elevated);
+  --pc-dot: var(--ui-border-accented);
+  --pc-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+  --pc-shadow-sm: 0 1px 1px rgb(0 0 0 / 0.04);
+}
+.pc-hairline { border-color: var(--pc-border); }
+.pc-dim { color: var(--pc-text-dim); }
+.pc-sidebar-material { background: var(--pc-sidebar); }
+.pc-card { background: var(--pc-window-solid); border: 1px solid var(--pc-border); border-radius: 10px; }
+.pc-dots {
+  background-color: var(--pc-bg);
+  background-image: radial-gradient(var(--pc-dot) 1px, transparent 1px);
+  background-size: 16px 16px;
+  background-position: -8px -8px;
+}
+.pc-scroll { scrollbar-width: thin; scrollbar-color: rgb(140 140 150 / 0.3) transparent; }

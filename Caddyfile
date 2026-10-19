@@ -1,0 +1,15 @@
+# Used by the optional `proxy` profile (docker-compose.yml). Caddy gets and
+# renews the certificate for HELPBITES_DOMAIN by itself; ports 80 and 443 must
+# reach this server. `flush_interval -1` keeps the live-update stream (SSE)
+# from being buffered.
+{$HELPBITES_DOMAIN:localhost} {
+	encode zstd gzip
+	reverse_proxy app:3000 {
+		flush_interval -1
+	}
+}
+
+# Public URL of the bundled bucket (S3_PUBLIC_URL), so browsers can load uploads.
+files.{$HELPBITES_DOMAIN:localhost} {
+	reverse_proxy sb-rustfs:9000
+}

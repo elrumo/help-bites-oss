@@ -1,0 +1,9 @@
+# Publishes the app and the bundled bucket on localhost, for a trial on one
+# machine. scripts/install.sh (no domain) selects this file through COMPOSE_FILE.
+services:
+  app:
+    ports:
+      - "3100:3000"
+  sb-rustfs:
+    ports:
+      - "9000:9000"

@@ -1,0 +1,44 @@
+name: HelpBitesNative
+options:
+  bundleIdPrefix: com.helpbites
+  deploymentTarget:
+    iOS: '18.0'
+settings:
+  base:
+    SWIFT_VERSION: '6.0'
+    SWIFT_STRICT_CONCURRENCY: complete
+targets:
+  HelpBitesNative:
+    type: application
+    platform: iOS
+    sources: [App]
+    configFiles:
+      Debug: Config/Debug.xcconfig
+      Release: Config/Release.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.helpbites.operator
+        DEVELOPMENT_TEAM: ""  # your Apple team ID
+        # The Mac app: Mac Catalyst at Mac scale, so the web's 13–14pt type stays 1:1.
+        SUPPORTS_MACCATALYST: YES
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        TARGETED_DEVICE_FAMILY: '1,2,6'
+        INFOPLIST_KEY_CFBundleDisplayName: HelpBites
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/HelpBitesNative.entitlements
+    entitlements:
+      path: App/HelpBitesNative.entitlements
+      properties:
+        aps-environment: development
+
+# Declared here so `xcodegen generate` regenerates the shared scheme instead of
+# deleting it. Run is Release with no debugger, as in the hand-made scheme.
+schemes:
+  HelpBitesNative:
+    build:
+      targets:
+        HelpBitesNative: all
+    run:
+      config: Release
+      debugEnabled: false

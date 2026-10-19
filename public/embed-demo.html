@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Widget demo — a pretend host site</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 48px 24px; max-width: 880px; color: #222; }
+    code { background: #f2f2f2; padding: 1px 5px; border-radius: 4px; }
+    #support { display: none; height: 560px; border: 1px solid #e5e5e5; border-radius: 15px; margin-top: 24px; }
+  </style>
+</head>
+<body>
+  <h1>A pretend host site</h1>
+  <p>This page stands in for webbites or Acme. It loads <code>widget.js</code> and hands it an identity token taken from this page's URL (<code>?pk=…&token=…</code>), which is what a real host would fetch from its own backend.</p>
+  <p>Mint one with <code>bun scripts/dev-token.mjs &lt;projectId&gt; &lt;userId&gt;</code>.</p>
+  <p id="status"></p>
+  <p>Add <code>&amp;mode=inline</code> to this page's URL to render the panel below instead of the floating launcher.</p>
+  <div id="support"></div>
+  <script>
+    const params = new URLSearchParams(location.search)
+    const pk = params.get('pk'), token = params.get('token')
+    document.getElementById('status').textContent = pk && token ? 'Widget loaded for project ' + pk : 'Missing ?pk= and ?token= in the URL.'
+    if (pk && token) {
+      const inline = params.get('mode') === 'inline'
+      const s = document.createElement('script')
+      s.src = '/widget.js'
+      s.dataset.project = pk
+      if (inline) { s.dataset.mode = 'inline'; s.dataset.target = '#support'; document.getElementById('support').style.display = 'block' }
+      s.defer = true
+      document.head.appendChild(s)
+      window.HelpBites = [['init', {
+        getToken: () => Promise.resolve(token),
+        context: { type: 'page', id: 'demo', label: 'Widget demo page', url: location.href }
+      }]]
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # tests/usage.test.ts runs the plan counters' Lua against a real Redis.
+    # A service container, not apt: installing packages at test time can hang.
+    services:
+      redis:
+        image: valkey/valkey:8-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "valkey-cli ping" --health-interval 2s --health-timeout 2s --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test
+        env:
+          REDIS_TEST_URL: redis://localhost:6379/15
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun scripts/check-edition-build.mjs community

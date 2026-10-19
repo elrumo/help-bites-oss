@@ -1,0 +1,497 @@
+# Feedback boards
+
+A public board per project where your users post ideas and bugs, vote on what
+matters, comment, and follow progress through a roadmap and a changelog.
+HelpBites knows nothing about your app: statuses, post types, platforms and
+tags are configured per project, and identity is the same host-signed token the chat
+uses.
+
+- **Plug and play** — one script tag renders the whole board (board, roadmap,
+  changelog, post pages, composer) inside your page.
+- **Your own UI** — everything the embed does is on `/v1/feedback`.
+- **Operators** — Project → Feedback in the panel: list or kanban, edit and
+  moderate posts, reply as the team, configure the board.
+- **Project board & roadmap** — Project → Board: Linear-style items linked to
+  posts and conversations; the ones you pick make the public roadmap (see
+  [Board & roadmap](#board--roadmap)).
+
+## 1. Turn it on
+
+Panel → your project → **Feedback** → *Turn on the board*. Then open
+**Settings** to shape it:
+
+| Setting | What it does |
+|---|---|
+| Statuses | Your own keys and labels. Each has a **category**: `open`, `planned`, `active`, `done` or `closed`. Categories carry the meaning: open/planned/active show by default, planned/active/done make the roadmap, and done/closed close voting. A done post can feed a [changelog entry](#changelog), but is not one itself. A bell marks statuses that email the post's followers when it moves there. |
+| Post types | Keys, labels and an icon — an Iconify name (`lucide:bug`, `octicon:rocket-16`) or an emoji. |
+| Platforms | Optional (`web`, `ios`, …), one per post. Empty hides the picker. |
+| Tags | Optional labels with a colour (`editor`, `api`, …); a post carries up to 4. Empty hides the picker. |
+| Post URL | Where a post lives on your site. `{id}`, `{number}` and `{slug}` are replaced: `https://app.example.com/feedback/{number}-{slug}`. Used by emails and RSS. |
+| Options | Comments, authors editing their own posts, showing author names publicly, email notifications, roadmap and changelog views. |
+
+The same settings are the `feedback` object on `PATCH /v1/admin/projects/:id`
+(partial: send only what changes).
+
+## 2a. Plug and play
+
+```html
+<div id="feedback"></div>
+<script src="https://YOUR-SUPPORT-HOST/feedback.js" data-project="pk_…" data-target="#feedback" defer></script>
+<script>
+  window.HelpBitesFeedback = window.HelpBitesFeedback || []
+  HelpBitesFeedback.push(['init', {
+    // The chat's token endpoint works as is. Resolve to null when nobody is signed in.
+    getToken: () => fetch('/api/support/token').then(r => r.ok ? r.json() : null).then(r => r && r.token),
+    // Called when a signed-out visitor tries to post, vote or comment.
+    onSignIn: () => openLoginModal()
+  }])
+</script>
+```
+
+- **Inline** (with `data-target`): the board is part of your page and the frame
+  grows with its content. **Floating** (no target): a *Feedback* button opens it
+  in a panel.
+- **Reading is open to everyone** with the public key. Writing needs a token;
+  without one the board shows a sign-in prompt and calls your `onSignIn`.
+- After your user signs in or out: `HelpBitesFeedback.push(['refresh'])`.
+- Other calls: `['open']`, `['close']`, `['openPost', id]`,
+  `['setView', 'board' | 'roadmap' | 'changelog']`.
+- Options (in `init` or as `data-*` on the script tag): `target`, `view`,
+  `only` (`roadmap`: the roadmap alone, see below), `layout` (the roadmap's:
+  `columns` · `timeline` · `list`; default the board's), `theme` (`system` ·
+  `light` · `dark`; default follows a `dark`/`light` class on your `<html>`),
+  `platform` (preselected for new posts), `position` (`right` · `left`),
+  `label`, `accent`, `deepLinkParam` (default `feedback`), `syncUrl`.
+- Deep links: `?feedback=<postId>` on your page opens that post. Inline boards
+  keep that parameter in your URL as people open posts, so links are shareable.
+- The colours, logo and name come from the project settings.
+
+Only the project's **allowed origins** can hand the board a token; any other
+site still gets a read-only board.
+
+**The changelog on its own page**: `https://YOUR-SUPPORT-HOST/changelog/pk_…`
+(optional `?theme=light|dark|system`) shows just the Changelog view, read-only,
+like `/roadmap/pk_…`. It needs the board live with its *Changelog* option on.
+*Public changelog* in Project → Changelog (and Feedback) copies the link. The same
+entries are at `GET /v1/projects/pk_…/changelog.rss` and `GET /v1/changelog?pk=pk_…`;
+see [Changelog](#changelog).
+
+## 2b. Your own UI
+
+Every route is in the OpenAPI spec (`/_docs/scalar`, tag *Feedback*).
+
+| | |
+|---|---|
+| `GET /v1/feedback/config` | Statuses, types, platforms, options, project name/theme, the viewer |
+| `GET /v1/feedback` | Posts. Filters: `view` (`board`, `roadmap`, `changelog` — posts marked `showOnChangelog`; **deprecated**, read `GET /v1/changelog`), `status`, `category`, `type`, `platform`, `tag`, `featured`, `mine`, `subscribed`, `q`; `sort` (`top`, `new`, `activity`, `completed`); `limit` ≤ 500, `offset` |
+| `POST /v1/feedback` | New post: `{ title, body, type, platform, tags }` |
+| `GET /v1/feedback/:id` | One post with its comments, plus `linked` (the `#N` posts it and its comments mention) and `backrefs` (posts mentioning it). `:id` may be the id, the number (`12` or `12-any-slug`) or the `externalId` it was imported with — in every per-post route |
+| `PATCH /v1/feedback/:id` | Edit |
+| `DELETE /v1/feedback/:id` | Delete |
+| `POST /v1/feedback/:id/vote` | `{ "voted": true }` / `{ "voted": false }` (safe to retry), or `{}` to toggle |
+| `POST /v1/feedback/:id/reactions` | `{ key }` toggles a reaction (`+1`, `-1`, `laugh`, `hooray`, `confused`, `heart`, `rocket`, `eyes`); add `reacted` to set it |
+| `PUT /v1/feedback/:id/subscription` | `{ subscribed?, muted?, read? }`: follow, unfollow, mute, mark read |
+| `GET /v1/feedback/:id/participants?q=` | Who `@` can complete in the thread |
+| `POST /v1/feedback/:id/merge` | Admins: `{ into, status? }` merges a duplicate; `{ into: null }` unlinks |
+| `GET`/`POST /v1/feedback/:id/comments` | Comments: `{ body, parentId?, replyToId?, visibility? }` |
+| `PATCH`/`DELETE /v1/feedback/:id/comments/:commentId` | Edit (`body`; admins also `visibility`) or delete a comment |
+| `POST /v1/feedback/:id/comments/:commentId/reactions` | React to a comment |
+| `GET`/`PUT /v1/feedback/preferences` | `{ emails }`: the user's feedback email switch |
+| `GET /v1/feedback/events` | Server-sent events for the board |
+| `GET /v1/changelog` | The public changelog: published entries under their published releases (`?pk=`) |
+| `GET /v1/projects/:pk/changelog.rss` | The changelog as RSS |
+
+**Who is asking** decides what they can do:
+
+| Caller | How | Can |
+|---|---|---|
+| Visitor | `?pk=pk_…` (or `X-Project-Key`) | Read the public board |
+| User | `Authorization: Bearer <identity token>` | Post, vote, comment; edit and delete their own |
+| Your staff | An identity token with `"role": "admin"` in its claims | Everything a user can, plus statuses, hiding, featuring, locking, pins, merges, team notes, changelog fields, any post or comment. Their comments are marked as the team. |
+| Operator | Panel session or `ak_` admin key, plus `?project=<id>` | The same as staff |
+
+`role: "admin"` is your decision, made where you mint the token — it is signed
+with the project secret, so a browser cannot add it:
+
+```js
+const body = b64({ iss: PUBLIC_KEY, sub: user.id, name: user.name, email: user.email, username: user.handle, avatar: user.avatarUrl, ...(user.isStaff ? { role: 'admin' } : {}), iat: now, exp: now + 3600 })
+```
+
+`username` is the handle people `@mention` (never put an email address there:
+handles are public); `avatar` is an http(s) image URL. Both are optional.
+
+Things to know:
+
+- Each post carries viewer fields — `hasVoted`, `isMine`, `canEdit`,
+  `canDelete`, `canComment`, `canVote`, `subscribed`, `muted`, `unread` (and
+  `reacted` per reaction) — so a UI never has to work out permissions itself.
+- **Numbers.** Every post gets the board's next `number` (`#12`) and a `slug`
+  from its title; `/feedback/12-dark-mode` style URLs resolve by number, so a
+  renamed post keeps its links. `#12` in a post or comment is recorded as a
+  reference (`refs`), which is how `backrefs` are found.
+- **Locked** posts take votes, comments and reactions from admins only.
+- **Comments** thread one level deep (`parentId`; `replyToId` names the comment
+  answered). Admins can write `internal` notes and `hidden`-moderate comments:
+  both reach admins only, never count in `commentCount` and never notify. An
+  admin can pin one public top-level comment (`pinnedCommentId` on the post).
+  Authors edit their comments while the board allows user edits (`editedAt`).
+- **Merging** (`/merge`) moves the duplicate's votes onto the target (each voter
+  once), copies its followers, links it as `duplicateOf` and locks it in a
+  closed status. Unlinking does not move votes back.
+- `adminNote` is a private note on the post, returned to admins only.
+- **Bodies are untrusted.** `body`, `changelogBody` and comments are stored as
+  sent (Markdown or HTML). Sanitize before rendering (DOMPurify or similar).
+- Author names are hidden from the public unless the board shows them;
+  admins also get `author.email` and `author.externalId`.
+- Hidden posts are invisible to everyone but admins — their authors included —
+  and only come back with `includeHidden=1`.
+- Authors start with their own vote. Moving a post into a done status for the
+  first time stamps `completedAt` (the changelog date); admins can set it.
+- **Live events** (`feedback.post.created|updated|deleted`,
+  `feedback.comment.created|updated|deleted`) carry posts and comments without
+  viewer fields: merge them over your copy. Team notes and hidden comments only
+  reach admins; a comment hidden after the fact arrives as `comment.deleted`.
+  With `?pk=` the stream works with a plain `EventSource`.
+
+## Board & roadmap
+
+Each project can also have a **board**: Linear-style items on a kanban, for
+the work behind the feedback and the support conversations. The same items
+drive the **public roadmap**. Projects without a board keep the post-based
+roadmap (planned, in-progress and done posts).
+
+### In the panel
+
+Project → **Board** → *Turn on the board*.
+
+- **Items** have a title, an internal Markdown description, a status, a
+  priority, an assignee, labels, a target date and a `#number`. Drag a card
+  across columns to change its status, or within one to reorder it; the order
+  is kept. `?item=<id>` opens an item, so links to it can be shared.
+- **Links.** An item links up to 50 feedback posts and 50 conversations. In the
+  item, *Link post* takes a post's `#N`. In the inbox, a conversation's
+  **Board** section files a new item from it (prefilled with its subject and
+  the customer's last message) or adds it to an existing one; the link shows on
+  the conversation's timeline as an internal event the customer never sees.
+  The feedback post editor has the same **Board** section.
+- **Votes.** An item's count is the sum of its linked posts' votes, hidden posts
+  left out. People vote on the posts, from the board or from the roadmap.
+- **Settings** — statuses (with the same categories as the feedback board),
+  labels, the roadmap's layout and options, and **Sync linked feedback**: when
+  an item moves to another status category, each linked post moves to the
+  feedback board's first status of that category, exactly as if an admin had
+  moved it — so followers get the usual status emails. Off by default.
+
+The settings are the `board` object on `PATCH /v1/admin/projects/:id` (partial:
+`roadmap` merges key by key; `statuses` and `labels` replace their lists).
+
+### What goes public
+
+The roadmap is published through the feedback board's public pages and API, so
+the feedback board must be on, with its Roadmap view.
+
+- Items are **private by default**. Turn on *On public roadmap* per item.
+- A public item shows **once its status is planned, in progress or done** (by
+  category). Backlog and canceled items, and those statuses' names, never go
+  out.
+- The roadmap shows only the item's **public description** — never the
+  internal one, not even as a fallback — its title, status, completion date and
+  the linked posts that are not hidden (with their votes).
+- **Labels and target dates are opt-in** (*Show labels*, *Show dates*); the
+  timeline layout always sends dates. Numbers, priorities, assignees, ranks and
+  conversations never leave the panel.
+
+### Showing it
+
+- **Its own page**: `https://YOUR-SUPPORT-HOST/roadmap/pk_…`, with optional
+  `?layout=columns|timeline|list` and `?theme=light|dark|system`. The *Public
+  roadmap* button on the board copies the link.
+- **In your site**, inline or floating, with the feedback loader:
+
+  ```html
+  <div id="roadmap"></div>
+  <script src="https://YOUR-SUPPORT-HOST/feedback.js" data-project="pk_…" data-view="roadmap" data-only="roadmap" data-label="Roadmap" data-target="#roadmap" defer></script>
+  ```
+
+  Leave out `data-target` for a floating *Roadmap* button. Hand it a token the
+  same way as the board (`init` with `getToken`) so signed-in users can vote.
+  The full board embed shows the board-driven roadmap in its Roadmap tab too.
+- **Layouts**: `columns` (one per status), `timeline` (by target quarter, undated
+  last) and `list` (compact rows under status headings). Clicking an item with
+  one linked post opens that post (and its vote button); several posts list
+  under the card. Vote totals update live.
+
+### The API
+
+- `GET /v1/feedback/roadmap` — `?pk=`, an identity token (adds `hasVoted` per
+  post) or an operator with `?project=`. Returns `{ options, statuses, labels?,
+  items }`; 404 unless the feedback board offers a roadmap and the project board
+  is on. `GET /v1/feedback/config` says which roadmap applies:
+  `roadmapSource: "board" | "posts"`.
+- `GET|POST /v1/admin/board-items?project=<id>` (list, or create with optional
+  `feedbackPostIds` / `conversationIds`), `PATCH|DELETE
+  /v1/admin/board-items/:id`, and `POST /v1/admin/board-items/:id/links` with
+  `{ kind: "feedback" | "conversation", id, linked }`. These take an operator
+  session or an `ak_…` admin key, so release scripts and other tools can file
+  and move items. The list filters by `&conversation=` or `&feedbackPost=`.
+  Moving a card is a `PATCH` with `status` and a `rank` between its new
+  neighbours (lower ranks come first).
+
+**Known limit:** a person who voted on two posts linked to the same item counts
+twice in that item's total — the sum is per post, not per person.
+
+## Changelog
+
+What shipped, in your own words. The changelog is its own kind of item, not a
+view of feedback posts: an **entry** (title, Markdown text, a type — *New*,
+*Improved*, *Fixed*, *Removed* or *Breaking*) optionally belongs to a **release**
+(a version, with a title and summary). Project → **Changelog** is where you write
+them; the public side reads the same data.
+
+**Nothing is public by default.** An entry is public only when it is
+*published* **and** its release, if it has one, is published too. Publishing a
+release publishes the draft entries in it (dated with the release); an entry you
+unpublish afterwards stays unpublished. A release with nothing published in it
+does not show.
+
+### Made from
+
+An entry can link the **feedback posts**, **board items**, and **conversations**
+(tickets and error issues) it answers — up to 50 of each. The panel shows each
+link's status, so you can see what is done before you publish. Links are the
+only connection: **nothing is copied from a source when you link it**, and the
+public changelog never mentions them.
+
+*New entry* from a source (the Changelog section of a post, board item or
+conversation) starts you off with text that is already public:
+
+| Source | What the new entry starts with |
+|---|---|
+| Feedback post | its changelog title and text, else its title and text; a type from the post's (`bug` → Fixed, `feature` → New, else Improved) |
+| Board item | its title and **public** description (never the internal one) |
+| Ticket or error issue | nothing but a type (errors → Fixed). Never the subject, messages or stack trace |
+
+With **auto-draft** on (Project → Changelog → Settings), a feedback post or board
+item reaching a done status drafts an entry for it, unless an entry already links
+it. Drafts are never published for you. Tickets and errors are always manual.
+
+### Public
+
+| | |
+|---|---|
+| Page | `https://YOUR-SUPPORT-HOST/changelog/pk_…` |
+| JSON | `GET /v1/changelog?pk=pk_…`: `{ releases: [{ version, title, summary, publishedAt, entries }], entries }` — `entries` are the published ones that belong to no release |
+| Flat list | `GET /v1/changelog?pk=pk_…&flat=1`, or any of `limit` (≤100), `skip`, `tag`, `area`, `version` (a release's), `since`: `{ entries, total, hasMore }`, newest first, each entry carrying its release's `version` |
+| One entry | `GET /v1/changelog/:ref?pk=pk_…` by slug, `#N` number or id |
+| RSS | `GET /v1/projects/pk_…/changelog.rss`, one item per published entry |
+| In your page | the board embed's *Changelog* tab, or `['setView', 'changelog']` |
+
+All of them need the changelog to be public: the board live with its *Changelog*
+option on, or `changelog.enabled` (Project → Changelog → Settings, or
+`PATCH /v1/admin/projects/:id {"changelog":{"enabled":true}}`), which serves the
+changelog without a feedback board. A public entry carries `slug`, `summary`,
+`bodyHtml` (the text rendered and **sanitised once, when it was saved**: put it
+in your page as it is), `excerpt`, `area`, `pinned`, `iconGlyph`, `accentColor`,
+`imageUrl`, `links` and `commentCount` besides its title and tag; never what it
+was made from, its commits or its review. `body` is still the source (Markdown, or
+HTML when `bodyFormat` is `html`). Anonymous responses may be cached for a minute;
+anything sent with a token is `no-store`.
+
+### API (writers)
+
+Who may change the changelog (`?project=<id>` names the project for an operator; the secret and an admin token act on their own):
+
+- an operator: an admin session or `ak_` key;
+- your server: the project secret (`sk_…`), whose entries are marked `source: "internal"` and authored `automated`;
+- your staff in their browser: an identity token with `"role": "admin"` (the entry is theirs).
+
+Every route is in the OpenAPI spec, tag *Changelog*.
+
+| | |
+|---|---|
+| `GET`/`POST /v1/admin/changelog/entries` | List (filters: `status` — `draft`, `published` or `archived`; none lists all but the archived — `release` — an id or `none`, `feedbackPost`, `boardItem`, `conversation`) or create `{ title, summary, body, bodyFormat, tag, area, slug, status, releaseId \| releaseVersion, publishedAt, pinned, iconGlyph, accentColor, imageUrl, links, commitShas, feedbackPostIds, boardItemIds, conversationIds }` |
+| `PATCH`/`DELETE /v1/admin/changelog/entries/:id` | Edit (the id, the slug, or the `#N` number) or delete. Set `status: "archived"` to retire an entry instead: never public, but it keeps its slug and its commits |
+| `POST /v1/admin/changelog/entries/:id/review` | `{ action: "approve" \| "reject", notes }` on a draft: approve publishes it, reject keeps it a draft marked `rejected`. Records who and when |
+| `POST /v1/admin/changelog/entries/batch` | Up to 50 entries; one that cites a commit an entry (an archived one too) already cites is **skipped** |
+| `POST /v1/admin/changelog/entries/import` | Secret or operator only. Up to 100 entries with your own `externalId`: created, or updated when it exists. Keeps the `slug` and `publishedAt` it is given and the review trail; never drafts, links or tells anyone |
+| `POST /v1/admin/changelog/entries/merge` | `{ refs: [2–10 entries], entry }`: creates the merged entry, which also cites the sources' commits, and archives the sources. Writing the merged text is yours |
+| `POST /v1/admin/changelog/entries/:id/links` | `{ kind: "feedback" \| "board" \| "conversation", id, linked }` |
+| `GET`/`POST /v1/admin/changelog/releases` | List or create `{ version, title, summary }` |
+| `PATCH`/`DELETE /v1/admin/changelog/releases/:id` | Edit, or delete (its entries stay, with no release) |
+| `POST /v1/admin/changelog/releases/:id/publish` | Publish the release and its draft entries |
+
+A release script is two calls: create the release, then post each entry with
+`releaseId`, then publish the release. If you think in versions rather than release
+objects, send `releaseVersion` instead: the release of that version is found, or
+created already published. `slug` is the entry's URL key (from the title unless you
+send one, suffixed `-2`, `-3`… when taken, and never one the API or `changelog.reservedSlugs`
+owns); it does not move when the title is edited. `changelog.areas`, when it lists any,
+limits `area` to those.
+
+### Comments
+
+Readers can comment on a published entry when the project turns them on
+(`changelog.comments`, off by default). A comment is written by a **signed-in
+user**: an identity token, never the project secret, because a comment has an
+author (the token's `sub`, shown as `authorId`; the name and avatar come from the
+user's current profile). Markdown only, up to 4,000 characters, rendered once with
+a strict allowlist: raw HTML is escaped, and there are no images, headings or tables,
+at most 6 links (all marked `nofollow ugc`). Five comments per ten minutes per user,
+and the same text twice in a row on one entry is a 409.
+
+| | |
+|---|---|
+| `GET /v1/changelog/:ref/comments` | A thread, oldest first, `?limit` ≤ 100 and `?skip`: `{ comments, total, hasMore }`. Public with `?pk=`; a token adds `viewerIsAuthor`; an admin token or operator also sees `hidden` ones |
+| `POST /v1/changelog/:ref/comments` | `{ body }` → `201 { comment, commentCount }`. Only on a public entry |
+| `PATCH /v1/changelog/comments/:id` | `{ body }` is the author editing their own words (a moderator cannot rewrite them; the comment then shows as edited); `{ status: "hidden" \| "visible" }` is moderation, for an admin token or operator |
+| `DELETE /v1/changelog/comments/:id` | The author, an admin token or an operator. The words go and the comment stops being returned; the row stays |
+| `POST /v1/admin/changelog/comments/import` | Secret or operator only. Up to 100 comments `{ externalId, entry, body, status, authorId, authorName, authorAvatar, authorIsStaff, postedAt, editedAt }`: created or updated by `externalId`, keeping author, date and status; no rate limit, no notification |
+
+An entry's `commentCount` is recomputed from its visible comments on every
+change, never incremented. `changelog.commentNotify` (up to 5 addresses) is told
+about each new comment that is not the team's own, when the project can send mail.
+Erasing an end user (`DELETE /v1/end-users/:externalId`) deletes their changelog
+comments too.
+
+### Notifications
+
+With `changelog.notify` on, people can ask to be emailed about the changelog: an
+**instant** mail once a burst of publishes has gone quiet, or a **weekly** digest on
+Monday morning. It is off by default, and also needs the server to have
+`CHANGELOG_LINK_SECRET` (and `ENABLE_CHANGELOG_NOTIFY=true` for the scheduler).
+
+- **Signed in**: send their identity token (it carries an email). They are subscribed
+  at once at `instant` or `weekly`, or `off` unsubscribes them. `GET /v1/changelog/subscription`
+  says their cadence (`null` when none).
+- **Anonymous**: `?pk=` and an `email`. Double opt-in: the address gets a confirm link
+  (your `changelog-confirm` email template) and nothing is active until it is clicked.
+  The answer is always `{ ok: true }`, whether or not the address is already subscribed;
+  a repeat inside a day sends no second mail; ten requests an hour per IP and thirty
+  confirm mails an hour per project.
+- **Your pages** take the links. `changelog.confirmUrl` and `changelog.unsubscribeUrl`
+  (default `{siteUrl}/changelog/confirm?token={token}` and `…/unsubscribe?token={token}`) are
+  where the mails point. Those pages `POST` the token (from a click or button, never on load:
+  mail scanners prefetch links) to `/v1/changelog/subscribe/confirm` and
+  `/v1/changelog/subscribe/unsubscribe`. Every digest also carries an RFC 8058 `List-Unsubscribe`
+  header pointing at the unsubscribe route on this server, which a mail provider POSTs with no
+  page and no script. Confirm links expire after seven days; unsubscribe links never do.
+
+| | |
+|---|---|
+| `POST /v1/changelog/subscribe` | `{ frequency: "instant" \| "weekly" \| "off", email }` (see above) |
+| `GET /v1/changelog/subscription` | The signed-in user's `{ frequency }` |
+| `POST /v1/changelog/subscribe/confirm` | `{ token }` → `{ frequency }` |
+| `POST /v1/changelog/subscribe/unsubscribe` | `{ token }` or `?token=` → `{ ok: true }` |
+| `GET /v1/admin/changelog/subscriptions/summary` | Counts: active `instant`, `weekly`, `pending`, `unsubscribed` |
+| `POST /v1/admin/changelog/subscriptions/import` | Secret or operator only: `subscriptions` (up to 500) and past `runs`; created, or updated by `externalId`/email. Someone who unsubscribed here is never reactivated by an import, so a stale copy can be re-run safely; nobody is emailed |
+| `POST /v1/admin/changelog/notify/run` | `{ job: "instant" \| "weekly", dryRun, now }`: run a beat by hand, or only report what it would do |
+
+**What goes out and when.** A publish (an entry created published, a draft approved or
+moved to published, a release published) stamps the entry; imports never do. The instant
+sweep mails the stamped entries once the newest has waited `digest.quietMinutes` (30) or the
+oldest `digest.maxWaitMinutes` (60), as one email; entries published more than a week ago are
+history, not news. The weekly digest covers the previous Monday-to-Monday week in
+`digest.timezone`, from `digest.weeklyHour` on Monday, once (a ledger row stops a second send).
+An entry in a draft release waits for the release. Delivery is at-most-once: a run that crashes
+mid-send is abandoned without resending, because a lost note beats the same note twice. Two
+templates carry the design, in your project's email templates: `changelog` (variables
+`subjectLine`, `preheader`, `firstName`, `intro`, `entriesHtml`, `changelogUrl`, `footerNote`,
+`unsubscribeUrl`, `oneClickUnsubscribeUrl`) and `changelog-confirm` (`cadence`, `confirmUrl`). The
+words (`changelog.siteName`, `changelog.copy`) are yours to change; the defaults are neutral
+("We just shipped…"). Erasing an end user deletes their subscriptions too.
+
+### Moving a changelog over
+
+Before entries existed the changelog was posts with `showOnChangelog` (and
+`changelogTitle`, `changelogBody`, `shippedIn`). Those fields still exist and
+`GET /v1/feedback?view=changelog` still answers, but nothing public reads them
+any more. Copy them into entries once, after deploying:
+
+```bash
+bun scripts/backfill-changelog.mjs           # dry run
+bun scripts/backfill-changelog.mjs --apply   # write
+```
+
+Every done, visible, marked post becomes a published entry linked to it, dated
+with the post's `completedAt`; posts sharing a `shippedIn` get a published
+release of that version. It is idempotent and does not change the posts. Until
+you run it, a changelog that lived on posts shows nothing.
+
+## Notifications
+
+With email notifications on (and Mailgun configured) HelpBites emails a post's
+**followers**. Its author follows it on posting, commenters on commenting, and
+anyone `@mentioned` on being mentioned; anyone can follow, unfollow or mute
+through `/subscription`.
+
+- Followers, when it moves into a status with the bell on;
+- followers, when someone posts a public comment;
+- people `@mentioned` in a comment (only the thread's own participants can be
+  mentioned) get a mention email instead of the comment email.
+
+Never the person who acted, never for team notes or hidden posts. Only people
+whose identity token carried an `email` can be emailed, and
+`PUT /v1/feedback/preferences { "emails": false }` turns all of it off for one
+user. One person hears about one post at most every ten minutes per kind.
+
+## Moving an existing board over
+
+`POST /v1/feedback/import` with the **project secret**, up to 100 posts a call:
+
+```js
+await fetch(`${HOST}/v1/feedback/import`, {
+  method: 'POST',
+  headers: { authorization: `Bearer ${process.env.HELP_BITES_SECRET}`, 'content-type': 'application/json' },
+  body: JSON.stringify({ posts: [{
+    externalId: 'legacy:8Jd2kQ',          // upsert key: re-running converges
+    number: 12,                            // keep old #12 links (optional)
+    title: 'Export as CSV', body: '<p>…</p>', type: 'feature', platform: 'web', tags: ['export'], status: 'planned',
+    author: { externalId: 'user_42', name: 'Ada', email: 'ada@example.com', username: 'ada', avatarUrl: 'https://…', emailOptOut: false },
+    createdAt: '2024-03-01T10:00:00Z', editedAt: null, completedAt: null,
+    hidden: false, featured: false, locked: false, showOnChangelog: false, shippedIn: '', adminNote: '',
+    votes: ['user_42', 'user_7'],          // exactly these voters
+    reactions: { '+1': ['user_7'] },       // exactly these reactions
+    subscriptions: [{ externalId: 'user_42' }, { externalId: 'user_7', muted: true }], // exactly these followers
+    pinnedCommentExternalId: 'c1',
+    duplicateOfExternalId: null,           // the post this one duplicates; import it first
+    comments: [
+      { externalId: 'c1', body: 'Yes please', author: { externalId: 'user_7' }, isTeam: false, createdAt: '2024-03-02T09:00:00Z' },
+      { externalId: 'c2', body: 'Agreed', author: { externalId: 'user_9' }, parentExternalId: 'c1', replyToExternalId: 'c1', reactions: { heart: ['user_7'] } },
+      { externalId: 'c3', body: 'Check the export queue first', isTeam: true, visibility: 'internal' }
+    ]
+  }] })
+})
+```
+
+Authors and voters are your own user ids — the `sub` your tokens will carry —
+so people keep their posts and votes when they next sign in. Without
+`subscriptions` a post's author and public commenters follow it. Posts without
+a `number` take the next free one, and the board's counter moves past every
+imported number. Imports never send notifications.
+
+The board must already define every `status`, `type`, `platform` and tag key the
+posts use (set them first with `PATCH /v1/admin/projects/:id`); an unknown key
+fails that post. Check `GET /v1/feedback/config?pk=` before a large import. Release scripts publish changelog entries with
+`POST /v1/admin/changelog/entries` (see [Changelog](#changelog)), not by importing posts.
+
+## Account deletion
+
+Email-only users (see `docs/CONNECTING.md`) erase themselves with `DELETE /v1/anonymous/me`. For users your server signs in:
+
+`DELETE /v1/end-users/:externalId` with the project secret removes everything
+that user left in the project: their posts (with the votes, comments and
+followers on them), their comments, votes, reactions and follows elsewhere,
+their support conversations, and the end-user record. Call it from your own account-deletion flow.
+
+## Upgrading a board from before numbers and follows
+
+Boards created before post numbers and follows existed need one backfill after
+the deploy (after `bun run schema:apply`):
+
+```sh
+bun scripts/backfill-feedback.mjs          # dry run
+bun scripts/backfill-feedback.mjs --apply  # number old posts, add follows
+```
+
+It numbers unnumbered posts oldest first and makes each post's author and
+commenters follow it, so emails keep reaching the people they did before.

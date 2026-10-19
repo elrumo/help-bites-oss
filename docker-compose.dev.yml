@@ -1,0 +1,35 @@
+# Local overrides: publish ports on localhost so `bun run dev` and the Parse
+# dashboard can reach the stack. Never used by Dokploy.
+services:
+  sb-parse:
+    ports:
+      - "1337:1337"
+    environment:
+      # `bun run dev` reaches Parse through the published port, from outside the stack's subnet.
+      PARSE_SERVER_MASTER_KEY_IPS: "0.0.0.0/0,::/0"
+  sb-redis:
+    ports:
+      - "6379:6379"
+  app:
+    ports:
+      - "3100:3000"
+  parse-dashboard:
+    ports:
+      - "4040:4040"
+  sb-rustfs:
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+  sb-meili:
+    ports:
+      - "7700:7700"
+  sb-glitchtip:
+    ports:
+      - "8000:8000"
+    environment:
+      GLITCHTIP_ALLOW_PRIVATE_IPS: "true"
+  sb-bugsink:
+    ports:
+      - "8001:8000"
+    environment:
+      ALERTS_WEBHOOK_DENY_NON_GLOBAL: "false"

@@ -1,0 +1,306 @@
+# Production (Dokploy, "Docker Compose" app): `docker compose up -d` brings up
+# sb-mongo, sb-parse, sb-redis and the app. No service publishes a host port;
+# attach domains from Dokploy's Domains tab by service name + container port:
+#   app → 3000 (the panel, the API, the widget)
+# Or run `--profile proxy` for a bundled Caddy that serves HELPBITES_DOMAIN over HTTPS.
+#   Never sb-parse: it takes the master key from any address (see
+#   PARSE_SERVER_MASTER_KEY_IPS below), so a domain on it is a public master-key endpoint.
+#   sb-meili → 7700 only if an external Meilisearch UI must reach it; then set a
+#   strong MEILI_MASTER_KEY (the app's search works without a domain).
+#
+# Internal services carry an `sb-` prefix on purpose: Dokploy joins every
+# service that has a domain to its shared network, where other projects run
+# services called `parse`, `redis` or `mongo`, and Docker DNS would resolve a
+# bare name to any of them.
+#   parse-dashboard → 4040 only with `--profile dev`.
+# Optional bundled object storage: sb-rustfs (an S3-compatible bucket) → 9000
+# (S3 API) / 9001 (console). It's in the `dev` profile (local use) and the
+# `rustfs` profile (production self-hosting); off by default in production. The
+# app uses an external S3-compatible store (S3_* env) unless you enable this and
+# point S3_* at sb-rustfs. See .env.example.
+# Local dev: `docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile dev up`
+# publishes the usual localhost ports; run the app itself with `bun run dev`.
+services:
+  sb-mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sb-parse:
+    image: parseplatform/parse-server:9.10.0
+    restart: unless-stopped
+    depends_on:
+      sb-mongo:
+        condition: service_healthy
+    expose:
+      - "1337"
+    environment:
+      PARSE_SERVER_APPLICATION_ID: ${PARSE_ID}
+      PARSE_SERVER_MASTER_KEY: ${PARSE_MASTER_KEY}
+      PARSE_SERVER_DATABASE_URI: ${PARSE_SERVER_DATABASE_URI:-mongodb://sb-mongo:27017/helpbites}
+      PARSE_SERVER_MOUNT_PATH: /parse
+      PARSE_SERVER_URL: http://sb-parse:1337/parse
+      # The app talks to Parse over the compose network; without this Parse 7+
+      # refuses the master key from any non-loopback address. Only this
+      # stack's own (pinned) network may use it.
+      PARSE_SERVER_MASTER_KEY_IPS: "127.0.0.1,::1,${SB_INTERNAL_SUBNET:-10.213.0.0/24}"
+      PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION: "false"
+      PARSE_SERVER_ENABLE_ANONYMOUS_USERS: "false"
+      PARSE_SERVER_ALLOW_EXPIRED_AUTH_DATA_TOKEN: "false"
+      # Attachments go straight to S3 from the app; Parse never stores files.
+      PARSE_SERVER_FILE_UPLOAD_OPTIONS: '{"enableForPublic":false,"enableForAnonymousUser":false,"enableForAuthenticatedUser":false}'
+      PARSE_SERVER_SESSION_LENGTH: "2592000"
+      # Lets the schema script declare indexes on Mongo's own key names
+      # (`_p_conversation`, `_created_at`); Parse otherwise rejects `_created_at`
+      # and would pass `createdAt` through to Mongo unmapped.
+      PARSE_SERVER_DATABASE_OPTIONS: '{"disableIndexFieldValidation":true}'
+    healthcheck:
+      # Node's own fetch, on 127.0.0.1: the image has no guaranteed wget, and
+      # `localhost` may resolve to ::1 where Parse listens on IPv4 only.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:1337/parse/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sb-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  sb-meili:
+    image: getmeili/meilisearch:v1.53.2
+    restart: unless-stopped
+    expose:
+      - "7700"
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-}
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_ENV: production
+    volumes:
+      - meili-data:/meili_data
+
+  app:
+    # The published community image. To build from this checkout instead, add
+    # `-f docker-compose.build.yml` (see docs/DEPLOYMENT.md).
+    image: ${HELPBITES_IMAGE:-elrumo/helpbites}:${HELPBITES_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      sb-parse:
+        condition: service_healthy
+      sb-redis:
+        condition: service_healthy
+      sb-meili:
+        condition: service_started
+    expose:
+      - "3000"
+    env_file: .env
+    environment:
+      PARSE_URL: http://sb-parse:1337/parse
+      REDIS_URL: redis://sb-redis:6379
+      MEILI_URL: http://sb-meili:7700
+      GLITCHTIP_API_URL: ${GLITCHTIP_API_URL:-http://sb-glitchtip:8000}
+      BUGSINK_API_URL: ${BUGSINK_API_URL:-http://sb-bugsink:8000}
+      # transformers.js caches the embedding model here (persisted across boots).
+      TRANSFORMERS_CACHE: /models
+      NITRO_PORT: "3000"
+    volumes:
+      - model-cache:/models
+    healthcheck:
+      # /v1/health/live checks nothing but the process; /v1/health checks the
+      # backing services too and is the one to monitor.
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3000/v1/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # Optional reverse proxy with automatic HTTPS (--profile proxy): set
+  # HELPBITES_DOMAIN in .env to a domain that points at this server. Skip it if
+  # you already run Traefik, nginx or Caddy; see docs/DEPLOYMENT.md.
+  sb-caddy:
+    image: caddy:2-alpine
+    profiles: ["proxy"]
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      HELPBITES_DOMAIN: ${HELPBITES_DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  # Optional Sentry-compatible error tracker. It deliberately owns its own
+  # Postgres and does not share sb-redis (GlitchTip may FLUSHDB).
+  sb-glitchtip-db:
+    image: postgres:18
+    profiles: ["glitchtip", "dev"]
+    restart: unless-stopped
+    command: ["postgres", "-c", "max_locks_per_transaction=512"]
+    environment:
+      POSTGRES_DB: glitchtip
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: ${GLITCHTIP_DB_PASSWORD}
+    volumes:
+      - glitchtip-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glitchtip -d glitchtip"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sb-glitchtip:
+    image: glitchtip/glitchtip:6
+    profiles: ["glitchtip", "dev"]
+    restart: unless-stopped
+    depends_on:
+      sb-glitchtip-db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    environment:
+      SERVER_ROLE: all_in_one
+      VALKEY_URL: ""
+      DATABASE_URL: postgresql://glitchtip:${GLITCHTIP_DB_PASSWORD}@sb-glitchtip-db:5432/glitchtip
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_URL}
+      ENABLE_USER_REGISTRATION: "false"
+      GLITCHTIP_RETENTION_DAYS: ${GLITCHTIP_RETENTION_DAYS:-90}
+    volumes:
+      - glitchtip-uploads:/code/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000', timeout=5)\""]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+
+  # Optional lightweight Sentry-compatible tracker (SQLite, one container).
+  sb-bugsink:
+    image: bugsink/bugsink:2
+    profiles: ["bugsink", "dev"]
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      SECRET_KEY: ${BUGSINK_SECRET_KEY}
+      BASE_URL: ${BUGSINK_URL}
+      PORT: "8000"
+    volumes:
+      - bugsink-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import requests; requests.get(\"http://localhost:8000/health/ready\").raise_for_status()'"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+
+  # ---- bundled object storage (--profile rustfs, or --profile dev locally) ----
+  # An S3-compatible bucket for local dev and for deployments that don't bring an
+  # external one. Off by default in production. Enable with `--profile rustfs`
+  # (or `--profile dev` locally) and point the app's S3_* at it (S3_ENDPOINT=
+  # sb-rustfs, S3_PORT=9000, S3_USE_SSL=false — see .env.example).
+  # RustFS runs as uid 10001 and enforces a 4-path disk layout, so the init
+  # container pre-owns four named volumes before it starts (fresh named volumes
+  # come up root-owned). This mirrors RustFS's own single-node reference compose.
+  sb-rustfs-init:
+    image: alpine
+    profiles: ["rustfs", "dev"]
+    restart: "no"
+    volumes:
+      - rustfs-data-0:/data/rustfs0
+      - rustfs-data-1:/data/rustfs1
+      - rustfs-data-2:/data/rustfs2
+      - rustfs-data-3:/data/rustfs3
+    command: ["sh", "-c", "chown -R 10001:10001 /data/rustfs0 /data/rustfs1 /data/rustfs2 /data/rustfs3"]
+
+  sb-rustfs:
+    image: rustfs/rustfs:latest
+    profiles: ["rustfs", "dev"]
+    restart: unless-stopped
+    depends_on:
+      sb-rustfs-init:
+        condition: service_completed_successfully
+    security_opt:
+      - "no-new-privileges:true"
+    expose:
+      - "9000"   # S3 API — attach a domain here for S3_PUBLIC_URL
+      - "9001"   # Console (optional)
+    environment:
+      RUSTFS_VOLUMES: /data/rustfs{0...3}
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_CONSOLE_ENABLE: "true"
+      # One source of truth: RustFS and the app share these credentials.
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-rustfsadmin}
+      RUSTFS_OBS_LOGGER_LEVEL: info
+    volumes:
+      - rustfs-data-0:/data/rustfs0
+      - rustfs-data-1:/data/rustfs1
+      - rustfs-data-2:/data/rustfs2
+      - rustfs-data-3:/data/rustfs3
+    healthcheck:
+      # curl ships in the rustfs image; /health is unauthenticated.
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ---- dev only ----
+  parse-dashboard:
+    image: parseplatform/parse-dashboard:latest
+    profiles: ["dev"]
+    depends_on:
+      - sb-parse
+    expose:
+      - "4040"
+    environment:
+      PARSE_DASHBOARD_ALLOW_INSECURE_HTTP: "1"
+      PARSE_DASHBOARD_CONFIG: >-
+        {"apps":[{"serverURL":"http://localhost:1337/parse","appId":"${PARSE_ID}","masterKey":"${PARSE_MASTER_KEY}","appName":"help-bites"}],"users":[{"user":"admin","pass":"admin"}]}
+
+# A fixed subnet, so Parse can trust exactly this network with the master key.
+# Pick another with SB_INTERNAL_SUBNET if it overlaps a network on the host.
+# An existing deployment has to recreate the network once (down, then up).
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${SB_INTERNAL_SUBNET:-10.213.0.0/24}
+
+# Named volumes survive redeploys; a git-sourced Dokploy deploy re-clones the
+# code directory, so nothing persistent may live under it.
+volumes:
+  mongo-data:
+  redis-data:
+  meili-data:
+  model-cache:
+  caddy-data:
+  caddy-config:
+  glitchtip-pg:
+  glitchtip-uploads:
+  bugsink-data:
+  # Only created when the `rustfs` or `dev` profile is enabled.
+  rustfs-data-0:
+  rustfs-data-1:
+  rustfs-data-2:
+  rustfs-data-3:

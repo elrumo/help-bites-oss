@@ -1,0 +1,250 @@
+// End-to-end proof that one workspace can never see or touch another's data.
+//
+// Workspace A (the operator in AGENT_USER) makes one of everything. Workspace B
+// is created by A, and gets its own operator by invitation. That operator then
+// tries every route with A's ids, lists, searches and listens on the live
+// stream. Every by-id attempt must fail (404, or 403 where a role or key is
+// refused), no list or search may mention A's rows, B's stream must stay quiet
+// while A's inbox is busy, and A's rows must all still be there afterwards.
+//
+//   AGENT_USER=… AGENT_PASS=… bun scripts/smoke-isolation.mjs   # BASE defaults to the dev server
+
+import { createHmac } from 'node:crypto'
+
+const BASE = (process.env.BASE || 'http://localhost:3100').replace(/\/+$/, '')
+const AGENT_USER = process.env.AGENT_USER || ''
+const AGENT_PASS = process.env.AGENT_PASS || ''
+if (!AGENT_USER || !AGENT_PASS) {
+  console.error('Set AGENT_USER and AGENT_PASS to an operator account on the stack under test.')
+  process.exit(2)
+}
+const MARK = `iso${Date.now().toString(36)}`
+// B's own rows carry a different tag, so finding MARK in B's lists always means a leak.
+const TAG_B = `mal${Date.now().toString(36)}`
+let failures = 0
+
+function mint(secret, claims, ttl = 3600) {
+  const b64 = v => Buffer.from(JSON.stringify(v)).toString('base64url')
+  const now = Math.floor(Date.now() / 1000)
+  const head = b64({ alg: 'HS256', typ: 'JWT' })
+  const body = b64({ iat: now, exp: now + ttl, ...claims })
+  return `${head}.${body}.${createHmac('sha256', secret).update(`${head}.${body}`).digest('base64url')}`
+}
+
+async function call(path, { token, workspace, method = 'GET', body } = {}) {
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(workspace ? { 'X-Workspace': workspace } : {}) },
+    body: body ? JSON.stringify(body) : undefined
+  })
+  const text = await res.text()
+  let json = {}
+  try { json = JSON.parse(text) } catch {}
+  return { status: res.status, json, text }
+}
+
+async function api(path, options = {}) {
+  const res = await call(path, options)
+  if (res.status >= 300) throw new Error(`${options.method || 'GET'} ${path} → ${res.status} ${res.json.statusMessage || res.text.slice(0, 200)}`)
+  return res.json
+}
+
+function check(cond, label) {
+  if (cond) console.log(`ok  ${label}`)
+  else {
+    failures++
+    console.log(`FAIL ${label}`)
+  }
+}
+
+/** Run a creation that may not apply on this stack (no Mailgun, no secret…). */
+async function maybe(label, fn) {
+  try {
+    return await fn()
+  } catch (error) {
+    console.log(`skip ${label}: ${error.message}`)
+    return null
+  }
+}
+
+// ---- workspace A: the victim ---------------------------------------------------
+
+const login = await api('/v1/admin/login', { method: 'POST', body: { login: AGENT_USER, password: AGENT_PASS } })
+const tokenA = login.sessionToken
+const me = await api('/v1/admin/me', { token: tokenA })
+const WA = me.workspace.id
+const A = { token: tokenA, workspace: WA }
+console.log(`workspace A ${WA}, marker ${MARK}`)
+
+const { project, secret } = await api('/v1/admin/projects', { ...A, method: 'POST', body: { name: `${MARK} A`, siteUrl: 'https://a.example.test', allowedOrigins: ['https://a.example.test'] } })
+const userToken = mint(secret, { iss: project.publicKey, sub: `${MARK}-user`, name: `${MARK} Customer`, email: `${MARK}@a.example.test` })
+const started = await api('/v1/conversations', { token: userToken, method: 'POST', body: { subject: `${MARK} subject`, body: `${MARK} hello`, clientId: `${MARK}-1` } })
+const conversationId = started.conversation.id
+const messageId = started.message.id
+const contact = await maybe('contact', () => api('/v1/contacts', { ...A, method: 'POST', body: { project: project.id, email: `${MARK}-c@a.example.test`, name: `${MARK} Contact` } }))
+const segment = await maybe('segment', () => api('/v1/segments', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} segment`, filter: { all: [] } } }))
+const master = await api('/v1/admin/emails', { ...A, method: 'POST', body: { name: `${MARK} master` } })
+const projectTemplate = await api('/v1/admin/emails', { ...A, method: 'POST', body: { name: `${MARK} template`, project: project.id } })
+const folder = await api('/v1/admin/email-folders', { ...A, method: 'POST', body: { name: `${MARK} folder` } })
+const component = await maybe('component', () => api('/v1/admin/email-components', { ...A, method: 'POST', body: { name: `${MARK} component`, html: '<p>{{@text}}</p>' } }))
+const suppression = await maybe('suppression', () => api('/v1/admin/email-suppressions', { ...A, method: 'POST', body: { project: project.id, emails: [`${MARK}-s@a.example.test`], reason: 'manual' } }))
+const { model } = await api('/v1/admin/knowledge/models', { ...A, method: 'POST', body: { projectId: project.id, name: `${MARK} model` } })
+const node = await maybe('node', () => api('/v1/admin/knowledge/nodes', { ...A, method: 'POST', body: { modelId: model.id, name: `${MARK} node` } }))
+const faq = await maybe('faq', () => api('/v1/admin/knowledge/faqs', { ...A, method: 'POST', body: { modelId: model.id, question: `${MARK} question?`, answer: 'An answer', ...(node?.node ? { nodeId: node.node.id } : {}) } }))
+const { agent: assistant } = await api('/v1/admin/support-agents', { ...A, method: 'POST', body: { name: `${MARK} assistant`, projectId: project.id } })
+const { item } = await api(`/v1/admin/board-items?project=${project.id}`, { ...A, method: 'POST', body: { title: `${MARK} item` } })
+const { release } = await api(`/v1/admin/changelog/releases?project=${project.id}`, { ...A, method: 'POST', body: { version: `9.${Date.now() % 1000}` } })
+const { entry } = await api(`/v1/admin/changelog/entries?project=${project.id}`, { ...A, method: 'POST', body: { title: `${MARK} entry` } })
+await api(`/v1/admin/projects/${project.id}`, { ...A, method: 'PATCH', body: { feedback: { enabled: true } } })
+const { post } = await api('/v1/feedback', { token: userToken, method: 'POST', body: { title: `${MARK} idea` } })
+const keyA = await api('/v1/admin/api-keys', { ...A, method: 'POST', body: { name: `${MARK} key` } })
+
+// ---- workspace B: the attacker -------------------------------------------------
+
+const { workspace: wb } = await api('/v1/admin/workspaces', { token: tokenA, method: 'POST', body: { name: `${TAG_B} B` } })
+const WB = wb.id
+const invite = await api('/v1/admin/invitations', { token: tokenA, workspace: WB, method: 'POST', body: { email: `${TAG_B}@b.example.test`, role: 'admin' } })
+const inviteToken = invite.url.split('/invite/')[1]
+const joined = await api(`/v1/invitations/${inviteToken}/accept`, { method: 'POST', body: { name: 'Mallory', password: `${TAG_B}-pass-123` } })
+const tokenB = joined.sessionToken
+const B = { token: tokenB, workspace: WB }
+const meB = await api('/v1/admin/me', { token: tokenB })
+check(meB.workspace.id === WB && meB.workspaces.length === 1, 'B\'s operator belongs to B only')
+const keyB = (await api('/v1/admin/api-keys', { ...B, method: 'POST', body: { name: 'b key' } })).key
+const { project: projectB } = await api('/v1/admin/projects', { ...B, method: 'POST', body: { name: `${TAG_B} project` } })
+const contactB = await maybe('contact in B', () => api('/v1/contacts', { ...B, method: 'POST', body: { project: projectB.id, email: `${TAG_B}-c@b.example.test`, name: `${TAG_B} Contact` } }))
+const { agent: assistantB } = await api('/v1/admin/support-agents', { ...B, method: 'POST', body: { name: 'b assistant' } })
+
+const refused = s => s === 404 || s === 403
+
+async function attempt(label, path, options = {}) {
+  for (const who of [{ name: 'session', auth: B }, { name: 'api key', auth: { token: keyB } }]) {
+    const res = await call(path, { ...who.auth, ...options })
+    check(refused(res.status) && !res.text.includes(MARK), `${label} (${who.name}) → ${res.status}`)
+  }
+}
+
+// By-id: everything of A's, by every verb B could try.
+await attempt('read A\'s conversation', `/v1/admin/conversations/${conversationId}`)
+await attempt('edit A\'s conversation', `/v1/admin/conversations/${conversationId}`, { method: 'PATCH', body: { priority: 'high' } })
+await attempt('read A\'s messages', `/v1/admin/conversations/${conversationId}/messages`)
+await attempt('reply in A\'s conversation', `/v1/admin/conversations/${conversationId}/messages`, { method: 'POST', body: { body: 'pwned', notifyByEmail: false } })
+await attempt('note on A\'s conversation', `/v1/admin/conversations/${conversationId}/notes`, { method: 'POST', body: { body: 'pwned' } })
+await attempt('mark A\'s conversation read', `/v1/admin/conversations/${conversationId}/read`, { method: 'POST' })
+await attempt('close A\'s conversation', `/v1/admin/conversations/${conversationId}/status`, { method: 'POST', body: { status: 'done' } })
+await attempt('delete A\'s message', `/v1/admin/messages/${messageId}`, { method: 'DELETE' })
+await attempt('react to A\'s message', `/v1/admin/messages/${messageId}/reactions`, { method: 'POST', body: { emoji: '👍' } })
+await attempt('rename A\'s project', `/v1/admin/projects/${project.id}`, { method: 'PATCH', body: { name: 'pwned' } })
+await attempt('read A\'s project secret', `/v1/admin/projects/${project.id}/secret`)
+await attempt('rotate A\'s project secret', `/v1/admin/projects/${project.id}/rotate-secret`, { method: 'POST' })
+await attempt('read A\'s project overview', `/v1/admin/projects/${project.id}/overview`)
+await attempt('read A\'s conversation types', `/v1/admin/projects/${project.id}/types`)
+for (const [label, id] of [['A\'s master template', master.template.id], ['A\'s project template', projectTemplate.template.id]]) {
+  await attempt(`read ${label}`, `/v1/admin/emails/${id}`)
+  await attempt(`edit ${label}`, `/v1/admin/emails/${id}`, { method: 'PATCH', body: { name: 'pwned' } })
+  await attempt(`duplicate ${label}`, `/v1/admin/emails/${id}/duplicate`, { method: 'POST' })
+  await attempt(`share ${label}`, `/v1/admin/emails/${id}/share`, { method: 'POST', body: { mode: 'edit' } })
+  await attempt(`read ${label}'s AI chats`, `/v1/admin/emails/${id}/chats`)
+  await attempt(`render ${label} through the API`, `/v1/emails/${id}`)
+  await attempt(`delete ${label}`, `/v1/admin/emails/${id}`, { method: 'DELETE' })
+}
+await attempt('link A\'s master into B', '/v1/admin/emails', { method: 'POST', body: { project: projectB.id, master: master.template.id } })
+await attempt('rename A\'s folder', `/v1/admin/email-folders/${folder.folder.id}`, { method: 'PATCH', body: { name: 'pwned' } })
+await attempt('delete A\'s folder', `/v1/admin/email-folders/${folder.folder.id}`, { method: 'DELETE' })
+if (component) {
+  await attempt('edit A\'s component', `/v1/admin/email-components/${component.component.id}`, { method: 'PATCH', body: { name: 'pwned' } })
+  await attempt('delete A\'s component', `/v1/admin/email-components/${component.component.id}`, { method: 'DELETE' })
+}
+if (suppression?.added?.[0]) await attempt('lift A\'s suppression', `/v1/admin/email-suppressions/${suppression.added[0].id}`, { method: 'DELETE' })
+await attempt('read A\'s knowledge model', `/v1/admin/knowledge/models/${model.id}`)
+await attempt('edit A\'s knowledge model', `/v1/admin/knowledge/models/${model.id}`, { method: 'PATCH', body: { name: 'pwned' } })
+await attempt('read A\'s model dashboard', `/v1/admin/knowledge/models/${model.id}/dashboard`)
+await attempt('duplicate A\'s model', `/v1/admin/knowledge/models/${model.id}/duplicate`, { method: 'POST' })
+await attempt('list A\'s nodes', `/v1/admin/knowledge/nodes?modelId=${model.id}`)
+await attempt('list A\'s FAQs', `/v1/admin/knowledge/faqs?modelId=${model.id}`)
+await attempt('list A\'s documents', `/v1/admin/knowledge/documents?modelId=${model.id}`)
+await attempt('add a node to A\'s model', '/v1/admin/knowledge/nodes', { method: 'POST', body: { modelId: model.id, name: 'pwned' } })
+if (node?.node) {
+  await attempt('edit A\'s node', `/v1/admin/knowledge/nodes/${node.node.id}`, { method: 'PATCH', body: { name: 'pwned' } })
+  await attempt('delete A\'s node', `/v1/admin/knowledge/nodes/${node.node.id}`, { method: 'DELETE' })
+}
+if (faq?.faq) {
+  await attempt('read A\'s FAQ', `/v1/admin/knowledge/faqs/${faq.faq.id}`)
+  await attempt('edit A\'s FAQ', `/v1/admin/knowledge/faqs/${faq.faq.id}`, { method: 'PATCH', body: { answer: 'pwned' } })
+  await attempt('delete A\'s FAQ', `/v1/admin/knowledge/faqs/${faq.faq.id}`, { method: 'DELETE' })
+}
+await attempt('read A\'s assistant', `/v1/admin/support-agents/${assistant.id}`)
+await attempt('edit A\'s assistant', `/v1/admin/support-agents/${assistant.id}`, { method: 'PATCH', body: { name: 'pwned' } })
+await attempt('read A\'s assistant knowledge', `/v1/admin/support-agents/${assistant.id}/knowledge`)
+await attempt('read A\'s assistant assignments', `/v1/admin/support-agents/${assistant.id}/assignments`)
+await attempt('give B\'s assistant A\'s model', `/v1/admin/support-agents/${assistantB.id}/assignments`, { method: 'POST', body: { scope: 'model', modelId: model.id } })
+await attempt('move B\'s assistant into A\'s project', `/v1/admin/support-agents/${assistantB.id}`, { method: 'PATCH', body: { projectId: project.id } })
+await attempt('delete A\'s assistant', `/v1/admin/support-agents/${assistant.id}`, { method: 'DELETE' })
+await attempt('edit A\'s board item', `/v1/admin/board-items/${item.id}`, { method: 'PATCH', body: { title: 'pwned' } })
+await attempt('list A\'s board', `/v1/admin/board-items?project=${project.id}`)
+await attempt('delete A\'s board item', `/v1/admin/board-items/${item.id}`, { method: 'DELETE' })
+await attempt('list A\'s changelog', `/v1/admin/changelog/entries?project=${project.id}`)
+await attempt('edit A\'s changelog entry', `/v1/admin/changelog/entries/${entry.id}`, { method: 'PATCH', body: { title: 'pwned' } })
+await attempt('publish A\'s release', `/v1/admin/changelog/releases/${release.id}/publish`, { method: 'POST' })
+await attempt('read A\'s feedback board', `/v1/feedback?project=${project.id}`)
+await attempt('edit A\'s feedback post', `/v1/feedback/${post.id}`, { method: 'PATCH', body: { status: 'done' } })
+await attempt('list A\'s contacts', `/v1/contacts?project=${project.id}`)
+if (contact?.contact) await attempt('read A\'s contact', `/v1/contacts/${contact.contact.id}?project=${project.id}`)
+await attempt('list A\'s segments', `/v1/segments?project=${project.id}`)
+if (segment?.segment) await attempt('edit A\'s segment', `/v1/segments/${segment.segment.id}`, { method: 'PATCH', body: { project: project.id, name: 'pwned' } })
+await attempt('list A\'s sequences', `/v1/sequences?project=${project.id}`)
+await attempt('list A\'s campaigns', `/v1/campaigns?project=${project.id}`)
+await attempt('read A\'s email log', `/v1/email-logs?project=${project.id}`)
+await attempt('read A\'s suppressions', `/v1/email-suppressions?project=${project.id}`)
+await attempt('send as A\'s project', '/v1/emails/send', { method: 'POST', body: { project: project.id, to: 'x@b.example.test', subject: 'pwned', text: 'x' } })
+await attempt('list A\'s contact sources', `/v1/admin/contact-sources?project=${project.id}`)
+await attempt('list A\'s error issues', `/v1/admin/errors?project=${project.id}`)
+await attempt('watch A\'s project live', `/v1/admin/events?project=${project.id}`)
+await attempt('revoke A\'s API key', `/v1/admin/api-keys/${keyA.apiKey.id}`, { method: 'DELETE' })
+await attempt('demote A\'s owner', `/v1/admin/agents/${me.agent.id}`, { method: 'PATCH', body: { role: 'agent' } })
+
+// Crossing over with a header or a key never works either.
+check(refused((await call('/v1/admin/projects', { token: tokenB, workspace: WA })).status), 'B\'s operator naming A\'s workspace is refused')
+check((await call('/v1/admin/projects', { token: keyA.key, workspace: WB })).status === 403, 'A\'s API key naming B\'s workspace is refused')
+// A project secret always acts for its own project: naming B's is ignored, never obeyed.
+const viaSecret = await call(`/v1/contacts?project=${projectB.id}`, { token: secret })
+check((refused(viaSecret.status) || viaSecret.status < 300) && !viaSecret.text.includes(TAG_B) && !viaSecret.text.includes(projectB.id), 'A\'s project secret cannot reach B\'s project')
+
+// Lists and search: nothing of A's, anywhere.
+for (const path of ['/v1/admin/projects', '/v1/admin/conversations', `/v1/admin/end-users?q=${MARK}`, '/v1/admin/emails', '/v1/admin/email-folders', '/v1/admin/email-components', '/v1/admin/email-logs', '/v1/admin/email-suppressions', '/v1/admin/knowledge/models', '/v1/admin/support-agents', '/v1/admin/agents', '/v1/admin/api-keys', '/v1/admin/invitations', `/v1/admin/search?q=${MARK}`, '/v1/admin/errors/providers']) {
+  const res = await call(path, B)
+  check(res.status < 300 && !res.text.includes(MARK) && !res.text.includes(project.id), `B's ${path} shows nothing of A's`)
+}
+
+// The live stream: B hears nothing while A's inbox is busy.
+const streamB = await fetch(`${BASE}/v1/admin/events`, { headers: { Authorization: `Bearer ${tokenB}`, 'X-Workspace': WB } })
+const reader = streamB.body.getReader()
+let heard = ''
+const listening = (async () => {
+  const decoder = new TextDecoder()
+  for (;;) {
+    const { value, done } = await reader.read().catch(() => ({ done: true }))
+    if (done) return
+    heard += decoder.decode(value)
+  }
+})()
+await new Promise(resolve => setTimeout(resolve, 300))
+await api(`/v1/conversations/${conversationId}/messages`, { token: userToken, method: 'POST', body: { body: `${MARK} are you there?` } })
+await api(`/v1/admin/conversations/${conversationId}/messages`, { ...A, method: 'POST', body: { body: `${MARK} yes`, notifyByEmail: false } })
+await new Promise(resolve => setTimeout(resolve, 1500))
+await reader.cancel().catch(() => {})
+await listening
+check(!heard.includes(MARK) && !heard.includes(conversationId), 'B\'s live stream heard none of A\'s events')
+
+// And A's rows are all still there, unchanged.
+check((await call(`/v1/admin/conversations/${conversationId}`, A)).json.conversation?.status !== 'done', 'A\'s conversation is untouched')
+check((await call(`/v1/admin/projects/${project.id}/secret`, A)).json.secret === secret, 'A\'s project secret is unchanged')
+check((await call(`/v1/admin/emails/${master.template.id}`, A)).json.template?.name === `${MARK} master`, 'A\'s master template is untouched')
+check((await call(`/v1/admin/support-agents/${assistant.id}`, A)).status === 200, 'A\'s assistant still exists')
+check((await call(`/v1/admin/knowledge/models/${model.id}`, A)).json.model?.name === `${MARK} model`, 'A\'s knowledge model is untouched')
+
+if (failures) {
+  console.log(`\n${failures} isolation check(s) FAILED`)
+  process.exit(1)
+}
+console.log('\nisolation smoke passed')

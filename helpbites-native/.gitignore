@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+
+# Xcode — build products & user state (keep .xcodeproj/.pbxproj tracked)
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# Swift Package Manager (Package.resolved stays tracked for an app)
+.build/
+.swiftpm/
+Packages/
+
+# Signing & push secrets — NEVER commit these
+*.p8
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+Secrets.xcconfig
+.env

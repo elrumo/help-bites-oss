@@ -1,0 +1,58 @@
+{
+  "name": "help-bites",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elrumo/help-bites"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 3100",
+    "build": "nuxt build",
+    "preview": "bun .output/server/index.mjs",
+    "postinstall": "nuxt prepare",
+    "test": "bun test tests",
+    "schema": "bun scripts/ensure-schema.mjs",
+    "schema:apply": "bun scripts/ensure-schema.mjs --apply",
+    "migrate:workspaces": "bun scripts/migrate-workspaces.mjs --apply",
+    "search:setup": "bun scripts/ensure-search.mjs",
+    "reindex": "bun scripts/reindex.mjs",
+    "seed:knowledge": "bun scripts/seed-knowledge.mjs",
+    "add-agent": "bun scripts/add-agent.mjs",
+    "set-agent": "bun scripts/set-agent.mjs",
+    "list-agents": "bun scripts/list-agents.mjs",
+    "smoke": "bun scripts/smoke.mjs",
+    "smoke:isolation": "bun scripts/smoke-isolation.mjs",
+    "backfill:contacts": "bun scripts/backfill-contacts.mjs"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "3.0.67",
+    "@ai-sdk/vue": "3.0.193",
+    "@huggingface/transformers": "^3.7.0",
+    "@iconify-json/heroicons": "^1.2.3",
+    "@iconify-json/lucide": "^1.2.101",
+    "@nuxt/ui": "^4.9.0",
+    "@sentry/bun": "^11.4.0",
+    "@sentry/vue": "^11.4.0",
+    "@speed-highlight/core": "^1.2.24",
+    "@vueuse/core": "^13",
+    "ai": "6.0.193",
+    "dompurify": "^3.4.15",
+    "fuse.js": "^7.1.0",
+    "ioredis": "^5.8.2",
+    "markdown-it": "^15.0.2",
+    "marked": "^18.0.13",
+    "meilisearch": "^0.62.0",
+    "minio": "^8.0.6",
+    "nuxt": "^4.4.2",
+    "parse": "^8",
+    "sanitize-html": "^2.18.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "@types/markdown-it": "^14.2.0",
+    "@types/sanitize-html": "^2.16.2",
+    "typescript": "^5.9.3"
+  }
+}

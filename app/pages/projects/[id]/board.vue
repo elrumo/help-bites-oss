@@ -1,0 +1,645 @@
+<template>
+  <div class="flex-1 min-h-0 flex flex-col">
+    <PageHeader :project-id="id" title="Board">
+      <template #title>
+        <span v-if="board?.enabled" class="ml-1 hidden text-xs font-normal tabular-nums text-muted sm:inline">{{ items.length }} {{ items.length === 1 ? 'item' : 'items' }}, {{ publicCount }} on the roadmap</span>
+        <span v-else-if="board" class="ml-1 text-xs font-normal text-warning">Board is off</span>
+      </template>
+      <template v-if="board && (board.enabled || showSettings)" #actions>
+        <UButton icon="i-lucide-map" label="Public roadmap" color="neutral" variant="ghost" size="sm" @click="copyRoadmapUrl" />
+        <UButton v-if="roadmapReady" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="roadmapUrl" target="_blank" aria-label="Open the public roadmap" />
+        <UButton icon="i-lucide-settings-2" label="Settings" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
+        <UButton icon="i-lucide-plus" label="New item" size="sm" @click="openNew" />
+      </template>
+    </PageHeader>
+
+    <!-- Not set up yet -->
+    <div v-if="board && !board.enabled && !showSettings" class="flex-1 overflow-y-auto">
+      <EmptyState icon="i-lucide-square-kanban" :title="`A board for ${project?.name || 'this project'}`" description="Plan the work behind your feedback and support: items on a kanban, linked to the posts and conversations they answer. Pick which ones go on a public roadmap.">
+        <UButton label="Customize first" color="neutral" variant="outline" @click="showSettings = true" />
+        <UButton label="Turn on the board" :loading="savingBoard" @click="saveBoard({ enabled: true })" />
+      </EmptyState>
+      <p v-if="boardError" class="text-center text-[13px] text-error">{{ boardError }}</p>
+    </div>
+
+    <template v-else-if="board">
+      <!-- Toolbar: filters on the left, search on the right -->
+      <div class="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-default px-4 py-2.5">
+        <button type="button" class="chip h-6 px-2.5 text-xs" :class="roadmapOnly ? 'chip-active' : 'border-transparent text-dimmed'" :aria-pressed="roadmapOnly" @click="roadmapOnly = !roadmapOnly">
+          <UIcon name="i-lucide-globe" class="size-3" />On roadmap<span class="tabular-nums opacity-70">{{ publicCount }}</span>
+        </button>
+        <USelectMenu v-if="board.labels.length" v-model="labelFilter" :items="labelItems" value-key="value" multiple size="sm" class="w-40" placeholder="Labels" aria-label="Labels" />
+        <USelect v-model="assigneeFilter" :items="assigneeFilterItems" size="sm" class="w-36" aria-label="Assignee" />
+        <USelect v-model="priorityFilter" :items="priorityFilterItems" size="sm" class="w-32" aria-label="Priority" />
+        <UButton v-if="filtering" label="Clear" size="xs" color="neutral" variant="link" @click="clearFilters" />
+        <div class="ml-auto">
+          <UInput v-model="search" icon="i-lucide-search" placeholder="Search or #12" size="sm" class="w-44 sm:w-56" aria-label="Search items" />
+        </div>
+      </div>
+      <div v-if="actionError" class="flex items-center gap-2 border-b border-default bg-error/10 px-4 py-1.5 text-[13px] text-error">
+        <span class="min-w-0 flex-1">{{ actionError }}</span>
+        <UButton icon="i-lucide-x" size="xs" color="error" variant="ghost" square aria-label="Dismiss" @click="actionError = ''" />
+      </div>
+
+      <div v-if="loading" class="flex gap-3 p-4"><USkeleton v-for="i in 4" :key="i" class="h-64 w-72 shrink-0 rounded-xl" /></div>
+      <p v-else-if="error" class="p-8 text-[13px] text-error">{{ error }}</p>
+
+      <!-- Kanban: drag a card across columns to change its status, within one to reorder -->
+      <div v-else class="flex-1 min-h-0 overflow-x-auto">
+        <div class="flex h-full gap-3 p-4 md:px-6">
+          <section
+            v-for="status in board.statuses"
+            :key="status.key"
+            class="flex w-72 shrink-0 flex-col rounded-xl bg-elevated/60 transition-shadow"
+            :class="dragging && dragOver === status.key ? 'ring-2 ring-primary/60' : ''"
+            @dragover.prevent="enterColumn(status.key)"
+            @drop.prevent="dropOn(status.key)"
+          >
+            <header class="flex items-center justify-between px-3 pt-3 pb-2">
+              <FeedbackStatusBadge :status="status" />
+              <span class="text-xs tabular-nums text-muted">{{ (visibleByColumn[status.key] || []).length }}</span>
+            </header>
+            <div class="flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto px-2 pb-2">
+              <div v-for="(item, index) in visibleByColumn[status.key] || []" :key="item.id" class="relative">
+                <div v-if="dragging && dragOver === status.key && dropBefore === item.id" class="pointer-events-none absolute inset-x-1 -top-[5px] h-0.5 rounded-full bg-primary" aria-hidden="true" />
+                <button
+                  type="button"
+                  draggable="true"
+                  class="w-full cursor-grab rounded-lg border border-default bg-default p-3 text-left shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-[border-color,opacity] hover:border-accented active:cursor-grabbing"
+                  :class="dragging === item.id ? 'opacity-40' : ''"
+                  @dragstart="startDrag($event, item)"
+                  @dragend="endDrag"
+                  @dragover.prevent.stop="overCard($event, status.key, index)"
+                  @click="openItem(item.id)"
+                >
+                  <span class="flex items-center gap-1.5 text-[11px] text-muted">
+                    <span v-if="item.number" class="tabular-nums">#{{ item.number }}</span>
+                    <PriorityIcon v-if="item.priority" :priority="item.priority" />
+                    <span class="ml-auto flex items-center gap-1.5">
+                      <UIcon v-if="item.public" name="i-lucide-globe" class="size-3.5 text-primary" aria-label="On the public roadmap" />
+                      <span v-if="assigneeOf(item)" class="grid size-5 place-items-center rounded-full bg-accented text-[9px] font-semibold text-toned" :title="assigneeOf(item)!.name || assigneeOf(item)!.username">{{ initialsOf(assigneeOf(item)!.name || assigneeOf(item)!.username) }}</span>
+                    </span>
+                  </span>
+                  <span class="mt-1 block text-[13px] font-medium leading-snug line-clamp-3">{{ item.title }}</span>
+                  <span v-if="item.labels.length" class="mt-2 flex flex-wrap gap-1">
+                    <span v-for="label in item.labels" :key="label" class="inline-flex items-center gap-1 rounded-full border border-default px-1.5 py-px text-[10px] text-toned">
+                      <span class="size-1.5 rounded-full" :class="toneDot(labelOf(label)?.color)" />{{ labelOf(label)?.label || label }}
+                    </span>
+                  </span>
+                  <span v-if="item.posts.length || item.conversations.length || item.targetDate" class="mt-2 flex items-center gap-2.5 text-[11px] text-muted">
+                    <span v-if="item.posts.length" class="inline-flex items-center gap-0.5 font-semibold tabular-nums" title="Votes on the linked posts"><UIcon name="i-lucide-chevron-up" class="size-3" />{{ item.voteCount }}</span>
+                    <span v-if="item.posts.length" class="inline-flex items-center gap-0.5 tabular-nums" title="Linked posts"><UIcon name="i-lucide-lightbulb" class="size-3" />{{ item.posts.length }}</span>
+                    <span v-if="item.conversations.length" class="inline-flex items-center gap-0.5 tabular-nums" title="Linked conversations"><UIcon name="i-lucide-message-square" class="size-3" />{{ item.conversations.length }}</span>
+                    <span v-if="item.targetDate" class="ml-auto inline-flex items-center gap-0.5" title="Target date"><UIcon name="i-lucide-calendar" class="size-3" />{{ dayLabel(item.targetDate) }}</span>
+                  </span>
+                </button>
+              </div>
+              <!-- The rest of the column: dropping here appends -->
+              <div class="relative min-h-10 flex-1" @dragover.prevent.stop="dragOver = status.key; dropBefore = ''">
+                <div v-if="dragging && dragOver === status.key && dropBefore === ''" class="pointer-events-none absolute inset-x-1 -top-[5px] h-0.5 rounded-full bg-primary" aria-hidden="true" />
+                <p v-if="!(visibleByColumn[status.key] || []).length && !dragging" class="px-1 py-3 text-center text-xs text-dimmed">{{ filtering ? 'Nothing matches' : 'No items' }}</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </template>
+
+    <div v-else-if="error" class="p-8 text-sm text-error">{{ error }}</div>
+    <div v-else class="p-8 text-sm text-muted">Loading…</div>
+
+    <!-- Item editor -->
+    <USlideover v-model:open="editorOpen" :title="current ? (current.number ? `Item #${current.number}` : 'Item') : 'New item'" :description="current ? `Created ${timeAgo(current.createdAt)}` : 'Private until you put it on the roadmap'" :ui="{ content: 'sm:max-w-2xl' }">
+      <template #body>
+        <div v-if="board" class="space-y-6">
+          <div class="space-y-2">
+            <UInput v-model="draft.title" placeholder="Title" variant="none" size="xl" class="w-full" :ui="{ base: 'px-0 text-lg font-semibold' }" :maxlength="200" aria-label="Title" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')" />
+            <UTextarea v-model="draft.description" placeholder="Add a description… (Markdown, internal)" variant="none" :rows="3" autoresize :maxrows="18" class="w-full" :ui="{ base: 'px-0' }" aria-label="Description" @blur="saveText('description')" />
+          </div>
+
+          <!-- Linear's property rows: quiet until hovered -->
+          <section class="grid gap-x-4 sm:grid-cols-2">
+            <USelect v-model="draft.status" :items="statusItems" variant="ghost" size="sm" class="w-full" :ui="property" aria-label="Status" @update:model-value="patch({ status: draft.status })">
+              <template #leading><span class="size-2.5 rounded-full" :class="toneDot(statusOf(draft.status)?.color)" /></template>
+            </USelect>
+            <USelect v-model="draft.priority" :items="priorityItems" variant="ghost" size="sm" class="w-full" :ui="property" aria-label="Priority" @update:model-value="patch({ priority: draft.priority === 'none' ? '' : draft.priority })">
+              <template #leading><PriorityIcon v-if="draft.priority !== 'none'" :priority="draft.priority as ConversationPriority" /><UIcon v-else name="i-lucide-minus" class="size-3.5 text-dimmed" /></template>
+            </USelect>
+            <USelect v-model="draft.assigneeId" :items="assigneeItems" variant="ghost" size="sm" class="w-full" :ui="property" aria-label="Assignee" @update:model-value="patch({ assigneeId: draft.assigneeId === 'unassigned' ? '' : draft.assigneeId })">
+              <template #leading>
+                <span v-if="draftAssignee" class="grid size-4 place-items-center rounded-full bg-accented text-[8px] font-semibold text-toned">{{ initialsOf(draftAssignee.name || draftAssignee.username) }}</span>
+                <UIcon v-else name="i-lucide-circle-user-round" class="size-4 text-dimmed" />
+              </template>
+            </USelect>
+            <label class="group relative flex h-8 items-center rounded-md ps-8 pe-2 text-[13px] text-default hover:bg-elevated">
+              <UIcon name="i-lucide-calendar" class="absolute left-2.5 size-3.5 text-dimmed" />
+              <input v-model="draft.targetDate" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.targetDate ? '' : 'text-dimmed'" aria-label="Target date" @change="patch({ targetDate: draft.targetDate || null })">
+            </label>
+            <USelectMenu v-if="board.labels.length" v-model="draft.labels" :items="labelItems" value-key="value" multiple variant="ghost" size="sm" class="w-full sm:col-span-2" :ui="property" placeholder="Add labels" aria-label="Labels" @update:model-value="patch({ labels: draft.labels })">
+              <template #leading><UIcon name="i-lucide-tag" class="size-3.5 text-dimmed" /></template>
+            </USelectMenu>
+          </section>
+
+          <section class="space-y-3 rounded-xl border border-default p-3">
+            <USwitch v-model="draft.public" label="On public roadmap" description="Shows once planned, in progress or done — with only the text below." @update:model-value="patch({ public: draft.public })" />
+            <template v-if="draft.public">
+              <UFormField label="Public description" hint="Markdown. The roadmap never shows the internal description.">
+                <UTextarea v-model="draft.publicDescription" :rows="2" autoresize :maxrows="10" class="w-full" placeholder="What this means for users" @blur="saveText('publicDescription')" />
+              </UFormField>
+              <p v-if="!roadmapReady" class="text-xs text-warning">The roadmap is published through the feedback board: turn it on, with its Roadmap view, under Feedback → Settings.</p>
+              <p v-else-if="!roadmapStatus" class="text-xs text-muted">Not on the roadmap yet: {{ statusOf(draft.status)?.label || 'this status' }} stays private.</p>
+            </template>
+          </section>
+
+          <template v-if="current">
+            <section class="space-y-2">
+              <h3 class="flex items-center gap-2 text-sm font-semibold">Feedback <span class="font-normal text-muted">{{ current.posts.length }}</span><span v-if="current.posts.length" class="ml-auto inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-muted"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ current.voteCount }} votes</span></h3>
+              <ul v-if="current.posts.length" class="divide-y divide-default rounded-lg border border-default">
+                <li v-for="post in current.posts" :key="post.id" class="group flex items-center gap-2.5 px-2.5 py-2 text-[13px]">
+                  <span class="inline-flex w-8 shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums text-muted"><UIcon name="i-lucide-chevron-up" class="size-3" />{{ post.voteCount }}</span>
+                  <span class="min-w-0 flex-1 truncate"><span v-if="post.number" class="mr-1 tabular-nums text-muted">#{{ post.number }}</span>{{ post.title }}</span>
+                  <span v-if="post.hidden" class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-1.5 text-[11px] text-warning" title="Hidden posts never show on the roadmap and do not count"><UIcon name="i-lucide-eye-off" class="size-3" />Hidden</span>
+                  <FeedbackStatusBadge :status="feedbackStatusFor(project?.feedback, post.status)" />
+                  <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" :aria-label="`Unlink #${post.number ?? ''}`" @click="setLink('feedback', post.id, false)" />
+                </li>
+              </ul>
+              <form class="flex gap-2" @submit.prevent="addPost">
+                <UInput v-model="postRef" size="sm" class="w-36" placeholder="#12" aria-label="Post number" />
+                <UButton type="submit" label="Link post" size="sm" color="neutral" variant="soft" :disabled="!postRef.trim()" :loading="linking" />
+              </form>
+            </section>
+
+            <section class="space-y-2">
+              <h3 class="text-sm font-semibold">Conversations <span class="font-normal text-muted">{{ current.conversations.length }}</span></h3>
+              <ul v-if="current.conversations.length" class="divide-y divide-default rounded-lg border border-default">
+                <li v-for="conversation in current.conversations" :key="conversation.id" class="group flex items-center gap-2 px-2.5 text-[13px]">
+                  <NuxtLink :to="`/inbox?c=${conversation.id}`" class="flex min-w-0 flex-1 items-center gap-2 py-2 hover:underline">
+                    <UIcon name="i-lucide-message-square" class="size-3.5 shrink-0 text-muted" />
+                    <span class="min-w-0 truncate">{{ conversation.subject || 'Conversation' }}</span>
+                    <span v-if="conversation.endUserName" class="shrink-0 text-muted">· {{ conversation.endUserName }}</span>
+                    <span class="ml-auto shrink-0 rounded-full bg-elevated px-1.5 text-[11px] text-toned">{{ conversation.status }}</span>
+                  </NuxtLink>
+                  <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" aria-label="Unlink conversation" @click="setLink('conversation', conversation.id, false)" />
+                </li>
+              </ul>
+              <p v-else class="text-xs text-muted">Link conversations from the inbox: open one and use the Board section.</p>
+            </section>
+
+            <section class="space-y-2">
+              <h3 class="text-sm font-semibold">Changelog</h3>
+              <ChangelogLinks :project-id="id" kind="board" :target-id="current.id" :source="{ title: current.title, publicDescription: current.publicDescription }" />
+            </section>
+          </template>
+
+          <p v-if="editorError" class="text-sm text-error">{{ editorError }}</p>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex w-full items-center gap-2">
+          <UButton v-if="current" :label="confirmDelete ? 'Click again to delete' : 'Delete'" icon="i-lucide-trash-2" :color="confirmDelete ? 'error' : 'neutral'" :variant="confirmDelete ? 'solid' : 'ghost'" @click="deleteItem" />
+          <span v-if="current" class="ml-auto text-xs text-muted">{{ savingItem ? 'Saving…' : 'Changes save as you go' }}</span>
+          <template v-else>
+            <UButton class="ml-auto" label="Cancel" color="neutral" variant="ghost" @click="editorOpen = false" />
+            <UButton label="Create item" color="primary" :loading="savingItem" :disabled="!draft.title.trim()" @click="createItem" />
+          </template>
+        </div>
+      </template>
+    </USlideover>
+
+    <!-- Board settings -->
+    <USlideover v-model:open="showSettings" title="Board settings" description="The board, its statuses and labels, and the public roadmap." :ui="{ content: 'sm:max-w-3xl' }">
+      <template #body>
+        <div v-if="board" class="space-y-8">
+          <section class="space-y-4">
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-semibold">Board</h3>
+              <span class="text-xs text-muted">{{ savingBoard ? 'Saving…' : boardSaved ? 'Saved' : 'Saves as you change it' }}</span>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <USwitch :model-value="board.enabled" label="Board is on" description="Items, links from the inbox and feedback, and the roadmap." @update:model-value="saveBoard({ enabled: $event })" />
+              <USwitch :model-value="board.syncFeedback" label="Sync linked feedback" description="When an item moves to another status category, its linked posts follow — and their followers get the usual emails." @update:model-value="saveBoard({ syncFeedback: $event })" />
+            </div>
+            <div class="grid gap-3 sm:grid-cols-3">
+              <UFormField label="Roadmap layout">
+                <USelect :model-value="board.roadmap.layout" :items="layoutItems" class="w-full" @update:model-value="saveBoard({ roadmap: { layout: $event } })" />
+              </UFormField>
+              <USwitch :model-value="board.roadmap.showLabels" label="Show labels" description="On roadmap cards" class="sm:pt-5" @update:model-value="saveBoard({ roadmap: { showLabels: $event } })" />
+              <USwitch :model-value="board.roadmap.showDates" label="Show dates" description="Target dates; the timeline always does" class="sm:pt-5" @update:model-value="saveBoard({ roadmap: { showDates: $event } })" />
+            </div>
+            <p v-if="boardError" class="text-sm text-error">{{ boardError }}</p>
+          </section>
+          <FeedbackBoardSettings v-if="listsConfig" board-only :config="listsConfig" :saving="savingLists" :saved="listsSaved" :error="listsError" @save="saveLists" />
+        </div>
+      </template>
+    </USlideover>
+  </div>
+</template>
+
+<script setup lang="ts">
+import Fuse from 'fuse.js'
+import { DEFAULT_FEEDBACK_CONFIG, defaultFeedbackStatus, feedbackStatusCategory, type FeedbackBoardConfig, type FeedbackColor } from '#shared/feedback'
+import { BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, rankBetween, type BoardConfig, type BoardItem, type BoardItemPriority, type BoardRoadmapLayout } from '#shared/board'
+import type { ConversationPriority } from '#shared/support'
+import type { AdminProject } from '~~/server/utils/projects'
+
+// A project's board: Linear-style items on a kanban, linked to the feedback
+// posts and conversations they answer, and the source of the public roadmap.
+// Operators only; every change is a PATCH that the screen shows first and
+// rolls back if the server refuses.
+
+definePageMeta({ middleware: 'agent' })
+
+type HumanAgent = { id: string, username: string, email: string, name: string }
+
+const route = useRoute()
+const router = useRouter()
+const id = String(route.params.id)
+const { api, projects, loadProjects } = useAgent()
+const toast = useToast()
+const appUrl = useAppUrl()
+
+const project = computed<AdminProject | null>(() => projects.value.find(p => p.id === id) || null)
+const board = computed<BoardConfig | null>(() => project.value?.board || null)
+const items = ref<BoardItem[]>([])
+const agents = ref<HumanAgent[]>([])
+const loading = ref(true)
+const error = ref('')
+const actionError = ref('')
+
+// ---- display helpers ----
+const TONES: Record<string, string> = { neutral: 'bg-stone-400', primary: 'bg-primary-500', info: 'bg-sky-500', success: 'bg-emerald-500', warning: 'bg-amber-500', error: 'bg-rose-500' }
+const toneDot = (color?: FeedbackColor) => TONES[color || 'neutral'] || TONES.neutral
+const statusOf = (key: string) => board.value?.statuses.find(s => s.key === key)
+const labelOf = (key: string) => board.value?.labels.find(l => l.key === key)
+const initialsOf = (name: string) => (name || '?').trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase()
+const assigneeOf = (item: BoardItem) => agents.value.find(agent => agent.id === item.assigneeId) || null
+/** Target dates are calendar days at UTC midnight. */
+const dayLabel = (value: string) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })
+
+// A property row: the value reads as plain text until you hover it.
+const property = { base: 'h-8 w-full rounded-md ps-8 text-[13px] text-default', trailing: 'opacity-0 transition-opacity group-hover:opacity-100' }
+const PRIORITY_LABELS: Record<ConversationPriority, string> = { low: 'Low', normal: 'Normal', high: 'High', urgent: 'Urgent' }
+const priorityItems = [{ label: 'No priority', value: 'none' }, ...(['urgent', 'high', 'normal', 'low'] as const).map(value => ({ label: PRIORITY_LABELS[value], value }))]
+const LAYOUT_LABELS: Record<BoardRoadmapLayout, string> = { columns: 'Columns by status', timeline: 'Timeline by quarter', list: 'Compact list' }
+const layoutItems = BOARD_ROADMAP_LAYOUTS.map(value => ({ label: LAYOUT_LABELS[value], value }))
+const statusItems = computed(() => (board.value?.statuses || []).map(s => ({ label: s.label, value: s.key })))
+const labelItems = computed(() => (board.value?.labels || []).map(l => ({ label: l.label, value: l.key })))
+const assigneeItems = computed(() => [{ label: 'Unassigned', value: 'unassigned' }, ...agents.value.map(agent => ({ label: agent.name || agent.username, value: agent.id }))])
+const assigneeFilterItems = computed(() => [{ label: 'Anyone', value: '__all__' }, ...assigneeItems.value])
+const priorityFilterItems = [{ label: 'Any priority', value: '__all__' }, ...priorityItems]
+
+// ---- the roadmap link ----
+const roadmapUrl = computed(() => (project.value ? `${appUrl.value}/roadmap/${project.value.publicKey}` : ''))
+/** The roadmap is published through the feedback board's public pages and API. */
+const roadmapReady = computed(() => Boolean(project.value?.feedback.enabled && project.value.feedback.roadmap && board.value?.enabled))
+const publicCount = computed(() => items.value.filter(item => item.public).length)
+
+async function copyRoadmapUrl() {
+  if (!roadmapReady.value) {
+    toast.add({ title: 'Turn on the feedback board first', description: 'The roadmap is published through the feedback board: turn it on, with its Roadmap view, under Feedback → Settings.', icon: 'i-lucide-info', color: 'warning' })
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(roadmapUrl.value)
+    toast.add({ title: 'Roadmap link copied', description: roadmapUrl.value, icon: 'i-lucide-clipboard-check', color: 'success' })
+  } catch {
+    toast.add({ title: 'Your public roadmap', description: roadmapUrl.value, icon: 'i-lucide-map' })
+  }
+}
+
+// ---- filters ----
+const search = ref('')
+const labelFilter = ref<string[]>([])
+const assigneeFilter = ref('__all__')
+const priorityFilter = ref('__all__')
+const roadmapOnly = ref(false)
+const filtering = computed(() => Boolean(search.value.trim() || labelFilter.value.length || assigneeFilter.value !== '__all__' || priorityFilter.value !== '__all__' || roadmapOnly.value))
+function clearFilters() {
+  search.value = ''
+  labelFilter.value = []
+  assigneeFilter.value = '__all__'
+  priorityFilter.value = '__all__'
+  roadmapOnly.value = false
+}
+
+// ---- columns ----
+const defaultStatus = computed(() => (board.value ? defaultFeedbackStatus(board.value).key : ''))
+/** A status the board no longer knows sits in the default column. */
+const columnOf = (item: BoardItem) => (statusOf(item.status) ? item.status : defaultStatus.value)
+const sorted = computed(() => [...items.value].sort((a, b) => a.rank - b.rank || (a.number ?? 0) - (b.number ?? 0)))
+
+function group(list: BoardItem[]): Record<string, BoardItem[]> {
+  return list.reduce<Record<string, BoardItem[]>>((acc, item) => { (acc[columnOf(item)] ||= []).push(item); return acc }, {})
+}
+const columns = computed(() => group(sorted.value))
+const visibleByColumn = computed(() => {
+  let list = sorted.value.filter(item =>
+    (!roadmapOnly.value || item.public)
+    && (!labelFilter.value.length || item.labels.some(label => labelFilter.value.includes(label)))
+    && (assigneeFilter.value === '__all__' || (assigneeFilter.value === 'unassigned' ? !item.assigneeId : item.assigneeId === assigneeFilter.value))
+    && (priorityFilter.value === '__all__' || (priorityFilter.value === 'none' ? !item.priority : item.priority === priorityFilter.value)))
+  const text = search.value.trim()
+  const number = /^#?(\d+)$/.exec(text)
+  if (number) list = list.filter(item => item.number === Number(number[1]))
+  else if (text) {
+    const hits = new Set(new Fuse(list, { keys: [{ name: 'title', weight: 2 }, 'description', 'publicDescription'], threshold: 0.38, ignoreLocation: true }).search(text).map(r => r.item.id))
+    list = list.filter(item => hits.has(item.id))
+  }
+  return group(list)
+})
+
+function replaceItem(item: BoardItem) {
+  const index = items.value.findIndex(i => i.id === item.id)
+  if (index === -1) items.value = [...items.value, item]
+  else items.value = [...items.value.slice(0, index), item, ...items.value.slice(index + 1)]
+}
+
+async function loadItems() {
+  items.value = (await api<{ items: BoardItem[] }>('/admin/board-items', { query: { project: id } })).items
+}
+
+// ---- drag and drop ----
+const dragging = ref('')
+const dragOver = ref('')
+/** The card the drop lands before; '' is the end of the column. */
+const dropBefore = ref('')
+
+function startDrag(event: DragEvent, item: BoardItem) {
+  dragging.value = item.id
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', item.id)
+  }
+}
+
+function endDrag() {
+  dragging.value = ''
+  dragOver.value = ''
+  dropBefore.value = ''
+}
+
+function enterColumn(key: string) {
+  if (dragOver.value === key) return
+  dragOver.value = key
+  dropBefore.value = ''
+}
+
+/** Over a card: its top half drops before it, its bottom half before the next one. */
+function overCard(event: DragEvent, key: string, index: number) {
+  const list = visibleByColumn.value[key] || []
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  const after = event.clientY > rect.top + rect.height / 2
+  dragOver.value = key
+  dropBefore.value = after ? (list[index + 1]?.id || '') : list[index]!.id
+}
+
+async function dropOn(status: string) {
+  const item = items.value.find(i => i.id === dragging.value)
+  const before = dropBefore.value
+  endDrag()
+  if (!item || !board.value) return
+  // Neighbours come from the whole column, so a filtered view still lands exactly where it showed.
+  const column = columns.value[status] || []
+  const rest = column.filter(i => i.id !== item.id)
+  // "Before the dragged card itself" means where it already is: before its next neighbour.
+  const anchor = before === item.id ? column[column.findIndex(i => i.id === item.id) + 1]?.id || '' : before
+  let index = anchor ? rest.findIndex(i => i.id === anchor) : rest.length
+  if (index < 0) index = rest.length
+  const prev = rest[index - 1]
+  const next = rest[index]
+  if (columnOf(item) === status) {
+    const at = column.findIndex(i => i.id === item.id)
+    if (column[at - 1]?.id === prev?.id && column[at + 1]?.id === next?.id) return
+  }
+  const rank = rankBetween(prev?.rank, next?.rank)
+  const snapshot = item
+  replaceItem({ ...item, status, rank, statusCategory: feedbackStatusCategory(board.value, status) })
+  try {
+    replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${item.id}`, { method: 'PATCH', body: { status, rank } })).item)
+  } catch (e: any) {
+    replaceItem(snapshot)
+    actionError.value = e?.message || 'Could not move the item'
+  }
+}
+
+// ---- editor ----
+const editorOpen = ref(false)
+const editingId = ref('')
+const current = computed(() => (editingId.value ? items.value.find(i => i.id === editingId.value) || null : null))
+const draft = reactive({ title: '', description: '', publicDescription: '', status: '', priority: 'none' as BoardItemPriority | 'none', assigneeId: 'unassigned', labels: [] as string[], targetDate: '', public: false })
+const draftAssignee = computed(() => agents.value.find(agent => agent.id === draft.assigneeId) || null)
+const roadmapStatus = computed(() => ROADMAP_CATEGORIES.includes(statusOf(draft.status)?.category || 'open'))
+const editorError = ref('')
+const savingItem = ref(false)
+const confirmDelete = ref(false)
+const postRef = ref('')
+const linking = ref(false)
+
+function fill(item: BoardItem | null) {
+  Object.assign(draft, {
+    title: item?.title || '',
+    description: item?.description || '',
+    publicDescription: item?.publicDescription || '',
+    status: item?.status || defaultStatus.value,
+    priority: item?.priority || 'none',
+    assigneeId: item?.assigneeId || 'unassigned',
+    labels: [...(item?.labels || [])],
+    targetDate: item?.targetDate ? item.targetDate.slice(0, 10) : '',
+    public: item?.public || false
+  })
+  editorError.value = ''
+  confirmDelete.value = false
+  postRef.value = ''
+}
+
+function openItem(itemId: string) {
+  void router.replace({ query: { ...route.query, item: itemId } })
+}
+
+function openNew() {
+  editingId.value = ''
+  fill(null)
+  editorOpen.value = true
+}
+
+// `?item=<id>` is the editor's address: cards, the inbox and feedback posts link to it.
+watch(() => [route.query.item, loading.value, items.value.length] as const, ([wanted]) => {
+  const itemId = typeof wanted === 'string' ? wanted : ''
+  if (!itemId) {
+    if (editingId.value && editorOpen.value) editorOpen.value = false
+    return
+  }
+  if (loading.value || (editingId.value === itemId && editorOpen.value)) return
+  const item = items.value.find(i => i.id === itemId)
+  if (!item) return
+  editingId.value = itemId
+  fill(item)
+  editorOpen.value = true
+}, { immediate: true })
+
+watch(editorOpen, (open) => {
+  if (open) return
+  editingId.value = ''
+  if (route.query.item) void router.replace({ query: { ...route.query, item: undefined } })
+})
+
+/** Existing items save field by field, the way Linear's do. */
+async function patch(body: Record<string, unknown>) {
+  if (!current.value) return
+  savingItem.value = true
+  editorError.value = ''
+  try {
+    replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${current.value.id}`, { method: 'PATCH', body })).item)
+  } catch (e: any) {
+    editorError.value = e?.message || 'Could not save'
+  } finally {
+    savingItem.value = false
+  }
+}
+
+function saveText(key: 'title' | 'description' | 'publicDescription') {
+  if (!current.value) return
+  const value = draft[key].trim()
+  if (key === 'title' && !value) { draft.title = current.value.title; return }
+  if (value !== current.value[key]) void patch({ [key]: value })
+}
+
+async function createItem() {
+  if (!draft.title.trim()) return
+  savingItem.value = true
+  editorError.value = ''
+  try {
+    const { item } = await api<{ item: BoardItem }>('/admin/board-items', {
+      method: 'POST',
+      query: { project: id },
+      body: {
+        title: draft.title,
+        description: draft.description,
+        publicDescription: draft.publicDescription,
+        status: draft.status,
+        priority: draft.priority === 'none' ? '' : draft.priority,
+        assigneeId: draft.assigneeId === 'unassigned' ? '' : draft.assigneeId,
+        labels: draft.labels,
+        targetDate: draft.targetDate || null,
+        public: draft.public
+      }
+    })
+    replaceItem(item)
+    editingId.value = item.id
+    void router.replace({ query: { ...route.query, item: item.id } })
+  } catch (e: any) {
+    editorError.value = e?.message || 'Could not create the item'
+  } finally {
+    savingItem.value = false
+  }
+}
+
+async function deleteItem() {
+  if (!current.value) return
+  if (!confirmDelete.value) {
+    confirmDelete.value = true
+    setTimeout(() => { confirmDelete.value = false }, 3500)
+    return
+  }
+  const itemId = current.value.id
+  try {
+    await api(`/admin/board-items/${itemId}`, { method: 'DELETE' })
+    items.value = items.value.filter(i => i.id !== itemId)
+    editorOpen.value = false
+  } catch (e: any) {
+    editorError.value = e?.message || 'Could not delete'
+  }
+}
+
+async function setLink(kind: 'feedback' | 'conversation', targetId: string, linked: boolean) {
+  if (!current.value) return
+  linking.value = true
+  editorError.value = ''
+  try {
+    replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${current.value.id}/links`, { method: 'POST', body: { kind, id: targetId, linked } })).item)
+    return true
+  } catch (e: any) {
+    editorError.value = e?.message || 'Could not change the link'
+    return false
+  } finally {
+    linking.value = false
+  }
+}
+
+async function addPost() {
+  const value = postRef.value.trim()
+  if (value && await setLink('feedback', value, true)) postRef.value = ''
+}
+
+// ---- settings ----
+const showSettings = ref(false)
+const savingBoard = ref(false)
+const boardSaved = ref(false)
+const boardError = ref('')
+const savingLists = ref(false)
+const listsSaved = ref(false)
+const listsError = ref('')
+
+function storeProject(next: AdminProject) {
+  projects.value = projects.value.map(p => (p.id === next.id ? next : p))
+}
+
+async function saveBoard(next: Record<string, unknown>) {
+  savingBoard.value = true
+  boardSaved.value = false
+  boardError.value = ''
+  try {
+    storeProject((await api<{ project: AdminProject }>(`/admin/projects/${id}`, { method: 'PATCH', body: { board: next } })).project)
+    boardSaved.value = true
+  } catch (e: any) {
+    boardError.value = e?.message || 'Could not save'
+  } finally {
+    savingBoard.value = false
+  }
+}
+
+// The status and label editor is the feedback board's, with labels as its tags.
+// Rebuilt only when those lists change, so a toggle above never resets a draft below.
+const listsConfig = ref<FeedbackBoardConfig | null>(null)
+watch(() => (board.value ? JSON.stringify([board.value.statuses, board.value.labels]) : ''), () => {
+  listsConfig.value = board.value ? { ...DEFAULT_FEEDBACK_CONFIG, statuses: board.value.statuses, tags: board.value.labels } : null
+}, { immediate: true })
+
+async function saveLists(config: FeedbackBoardConfig) {
+  savingLists.value = true
+  listsSaved.value = false
+  listsError.value = ''
+  try {
+    storeProject((await api<{ project: AdminProject }>(`/admin/projects/${id}`, { method: 'PATCH', body: { board: { statuses: config.statuses, labels: config.tags } } })).project)
+    listsSaved.value = true
+  } catch (e: any) {
+    listsError.value = e?.message || 'Could not save'
+  } finally {
+    savingLists.value = false
+  }
+}
+
+// ---- load ----
+// No live sync between operators yet: coming back to the tab refetches.
+function onFocus() {
+  if (!dragging.value && !savingItem.value && !loading.value) loadItems().catch(() => {})
+}
+
+onMounted(async () => {
+  window.addEventListener('focus', onFocus)
+  try {
+    if (!project.value) await loadProjects()
+    if (!project.value) throw new Error('Project not found')
+    await Promise.all([
+      loadItems(),
+      api<{ agents: HumanAgent[] }>('/admin/agents').then((result) => { agents.value = result.agents }).catch(() => {})
+    ])
+  } catch (e: any) {
+    error.value = e?.message || 'Could not load the board'
+  } finally {
+    loading.value = false
+  }
+})
+
+onBeforeUnmount(() => window.removeEventListener('focus', onFocus))
+</script>

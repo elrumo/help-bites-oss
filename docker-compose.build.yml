@@ -1,0 +1,8 @@
+# Build the app image from this checkout instead of pulling the published one:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+services:
+  app:
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-}
