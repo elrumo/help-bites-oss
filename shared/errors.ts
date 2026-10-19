@@ -89,7 +89,7 @@ export function buildErrorPrompt(event: unknown): string {
 export const BUGSINK_TEST_ISSUE = 'test'
 
 /** Bugsink's alert destinations are Slack, Discord and Mattermost (newer versions add Custom). The Slack kind posts Block Kit:
- * the issue title in a header block and a `<…/issues/issue/{id}/|view on Bugsink>` link. 
+ * the issue title in a header block and a `<…/issues/issue/{id}/|view on Bugsink>` link.
  * Custom posts the canonical issue JSON plus a few convenience fields. */
 export function parseBugsinkWebhook(body: unknown): ErrorAlert[] {
   const data = (body || {}) as Record<string, any>
