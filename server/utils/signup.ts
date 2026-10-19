@@ -58,7 +58,7 @@ export function readConfirmToken(token: string, now = Date.now()): { projectId: 
   return { projectId, contactId }
 }
 
-async function sendConfirmation(project: ParseObject, contact: ParseObject): Promise<void> {
+export async function sendConfirmation(project: ParseObject, contact: ParseObject): Promise<void> {
   const email = String(contact.get('email') || '')
   // A form can be pointed at someone else's address: at most a few confirmation mails per address a day.
   try {
