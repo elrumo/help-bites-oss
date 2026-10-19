@@ -39,7 +39,7 @@
     "@sentry/bun": "^11.4.0",
     "@sentry/vue": "^11.4.0",
     "@speed-highlight/core": "^1.2.24",
-    "@vueuse/core": "^13",
+    "@vueuse/core": "^15.0.0",
     "ai": "6.0.193",
     "dompurify": "^3.4.15",
     "fuse.js": "^7.1.0",

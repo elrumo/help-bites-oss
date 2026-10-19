@@ -18,6 +18,21 @@
           <div v-if="links.length > 1" class="flex flex-wrap gap-2" role="group" aria-label="Filter by tracker project">
             <UButton v-for="pill in [{ id: '', label: 'All' }, ...links]" :key="pill.id" size="xs" :color="linkFilter === pill.id ? 'primary' : 'neutral'" :variant="linkFilter === pill.id ? 'solid' : 'soft'" class="rounded-full" :aria-pressed="linkFilter === pill.id" :label="pill.label" @click="linkFilter = pill.id; load()" />
           </div>
+          <UCollapsible v-if="links.length">
+            <UButton color="neutral" variant="soft" size="sm" block class="justify-between" icon="i-lucide-key-round" trailing-icon="i-lucide-chevron-down" :label="`DSN to send errors from your app${links.length > 1 ? ` (${links.length})` : ''}`" />
+            <template #content>
+              <div class="flex flex-col gap-3 pt-3">
+                <div v-for="item in links" :key="item.id" class="space-y-1">
+                  <p v-if="links.length > 1" class="text-xs font-medium text-muted">{{ item.label }}</p>
+                  <div class="flex items-start gap-1">
+                    <code class="inline-code min-w-0 flex-1 break-all">{{ item.dsn }}</code>
+                    <UButton color="neutral" variant="ghost" size="xs" :icon="copied === item.id ? 'i-lucide-check' : 'i-lucide-copy'" aria-label="Copy DSN" @click="copy(item.dsn, item.id)" />
+                  </div>
+                </div>
+                <p class="text-xs text-muted">Pass it to any Sentry SDK as <code class="inline-code">dsn</code>.</p>
+              </div>
+            </template>
+          </UCollapsible>
           <UCollapsible v-if="alerts.length">
             <UButton color="neutral" variant="soft" size="sm" block class="justify-between" icon="i-lucide-webhook" trailing-icon="i-lucide-chevron-down" :label="`Check alert rules the moment Bugsink reports an error${alerts.length > 1 ? ` (${alerts.length})` : ''}`" />
             <template #content>
@@ -67,6 +82,10 @@ const linkFilter = ref('')
 const links = computed(() => project.value?.errorLinks || [])
 const alerts = computed(() => links.value.filter(item => item.alertWebhookUrl && (!linkFilter.value || item.id === linkFilter.value)))
 const error = ref('')
+const copied = ref('')
+async function copy(text: string, key: string) {
+  try { await navigator.clipboard.writeText(text); copied.value = key; setTimeout(() => { if (copied.value === key) copied.value = '' }, 1500) } catch {}
+}
 const statusItems = [{ label: 'Unresolved', value: 'unresolved' }, { label: 'Resolved', value: 'resolved' }, { label: 'Ignored', value: 'ignored' }]
 
 // Answers can arrive out of order when pills are clicked quickly; only the latest one counts.
