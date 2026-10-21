@@ -285,7 +285,7 @@ export function validateMapping(value: unknown): { mapping: ContactFieldMapping,
 
 /** Every source column the mapping reads, so a sync fetches only those (never a password hash). */
 export function mappedColumns(mapping: ContactFieldMapping): string[] {
-  const paths = [mapping.externalId, mapping.email, mapping.name, mapping.tags, mapping.subscribed, ...Object.values(mapping.attributes || {})]
+  const paths = [mapping.externalId, mapping.email, mapping.name, mapping.language, mapping.tags, mapping.subscribed, ...Object.values(mapping.attributes || {})]
   return [...new Set(paths.filter((p): p is string => Boolean(p)).map(p => p.split('.')[0]!))]
 }
 
@@ -334,6 +334,7 @@ export function guessMapping(columns: string[]): ContactFieldMapping {
     email: find(/^(e?mail|emailaddress)$/) || find(/mail/),
     externalId: find(/^(id|userid|externalid|uid|objectid)$/),
     name: find(/^(name|fullname|displayname)$/),
+    language: find(/^(language|lang|locale|preferredlanguage)$/),
     tags: find(/^tags?$/),
     subscribed: find(/^(subscribed|optin|marketing|newsletter|consent)$/)
   }
