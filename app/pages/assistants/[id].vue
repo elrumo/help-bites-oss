@@ -211,7 +211,8 @@ async function duplicate() {
 async function remove() {
   if (!confirm(t('assistants.deleteConfirm', { name: form.name }))) return
   await api(`/admin/support-agents/${id}`, { method: 'DELETE' })
-  await navigateTo(projectId.value ? `/projects/${projectId.value}/assistants` : '/assistants')
+  // There is no /assistants list: an assistant with no project goes back to the workspace's agents.
+  await navigateTo(projectId.value ? `/projects/${projectId.value}/assistants` : '/agents')
 }
 
 // --- assignments ---

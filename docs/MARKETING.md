@@ -69,6 +69,9 @@ plugin ticking every 15 seconds; it stays off until `HELPBITES_SECRET` is set.
   twice.
 - **Mailgun down or throttling** (429/5xx): the campaign stops, keeps its
   place, and tries again five minutes later.
+- **No mailer at all** (no Mailgun key or sending domain): scheduling or
+  sending is refused with a 503 that says what to set, and a campaign already
+  sending pauses with that reason in `lastError`. Resume it once mail is set up.
 - **Pause / resume / cancel** while sending; numbers update live and for days
   after (opens and clicks arrive through the Mailgun webhook). Each log row
   counts once at its furthest status, so *opened* includes those who clicked.

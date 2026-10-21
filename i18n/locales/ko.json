@@ -18,6 +18,8 @@
     "workspace": "워크스페이스",
     "workspaces": "워크스페이스",
     "newWorkspace": "새 워크스페이스…",
+    "knowledge": "지식",
+    "team": "팀과 어시스턴트",
     "developer": "개발자",
     "settings": "설정",
     "newConversation": "새 대화",
@@ -181,7 +183,7 @@
     "languageNote": "기본값은 시스템 언어입니다. 패널만 바뀝니다."
   },
   "inbox": {
-    "searchPlaceholder": "대화 검색",
+    "searchPlaceholder": "이름, 이메일 또는 사용자 ID로 검색",
     "closeSearch": "검색 닫기",
     "filterConversations": "대화 필터",
     "filter": "필터",
@@ -1798,7 +1800,7 @@
     "boardSettings": "보드 설정",
     "boardSettingsDescription": "상태, 게시물 유형, 플랫폼은 직접 정의할 수 있습니다.",
     "changelogFirstTitle": "먼저 변경 내역을 켜세요",
-    "changelogFirstDescription": "변경 내역은 피드백 보드를 통해 게시됩니다. 설정에서 보드와 변경 내역 보기를 켜세요.",
+    "changelogFirstDescription": "프로젝트 → 변경 내역 → 설정에서 '공개 변경 내역'을 켜세요. 피드백 보드는 필요하지 않습니다.",
     "changelogLinkCopied": "변경 내역 링크를 복사했습니다",
     "yourChangelog": "공개 변경 내역",
     "saveError": "저장할 수 없습니다",
@@ -2183,7 +2185,7 @@
         "body": "팀 이름으로 답장하고, 고객에게는 보이지 않는 메모를 남기세요. 대화를 떠나지 않고도 상대가 누구인지, 무엇이 문제인지 볼 수 있습니다.",
         "b1": "색으로 구분된 프로젝트, 하나로 합쳐진 읽지 않은 수, 실시간 업데이트",
         "b2": "담당자 지정, 우선순위 설정, 라벨링, 종료를 할 수 있으며 티켓 유형마다 사용자 정의 필드를 둘 수 있습니다",
-        "b3": "최근 오류와 연결된 피드백이 채팅 옆에 나타납니다",
+        "b3": "최근 오류와 연결된 보드 항목이 채팅 옆에 나타납니다",
         "b4": "상대가 자리에 없으면 답장은 이메일로도 전달됩니다",
         "alt": "HelpBites 받은편지함: 대화 목록, 내부 메모가 있는 대화 스레드, 고객 패널."
       },
@@ -2332,7 +2334,7 @@
         },
         "notes": {
           "term": "메모, 문맥, 오류",
-          "desc": "고객에게는 보이지 않는 내부 메모. 고객의 최근 오류와 연결된 피드백이 대화 옆에 나타납니다."
+          "desc": "고객에게는 보이지 않는 내부 메모. 고객의 최근 오류와 연결된 보드 항목이 대화 옆에 나타납니다."
         },
         "away": {
           "term": "자리를 비웠을 때는 이메일로",
@@ -2594,7 +2596,7 @@
     "ready": "준비됨 — {model} ({endpoint} 경유).",
     "defaultEndpoint": "기본 엔드포인트",
     "customEndpoint": "사용자 지정 엔드포인트",
-    "notConfigured": "LLM 엔드포인트가 설정되지 않았습니다. 답변 제안을 위한 검색은 계속 작동하지만, 자동 답장은 실행되지 않습니다.",
+    "notConfigured": "LLM 엔드포인트가 설정되지 않았습니다. 검색 테스트는 계속 작동하지만, 자동 답장은 실행되지 않습니다.",
     "fallback": "확실하지 않을 때의 대응",
     "fallbackHint": "일치하는 지식이 없을 때 할 일",
     "fallbackHuman": "상담원에게 넘기기",
@@ -2961,6 +2963,7 @@
       "projectNotFound": "프로젝트를 찾을 수 없습니다",
       "originsCount": "허용된 출처 {count}개",
       "noOrigins": "허용된 출처 없음",
+      "widgetNotSeen": "아직 사이트에서 로드되지 않음",
       "boardOn": "보드 켜짐",
       "off": "꺼짐",
       "flagsCount": "플래그 {count}개",
@@ -3071,7 +3074,7 @@
     "assistants": {
       "newAssistant": "새 어시스턴트",
       "emptyTitle": "아직 어시스턴트가 없습니다",
-      "emptyDescription": "어시스턴트는 제공한 지식을 바탕으로 프로젝트 사용자에게 답하거나 팀을 위한 답변을 제안합니다.",
+      "emptyDescription": "어시스턴트는 제공한 지식을 바탕으로 프로젝트 사용자에게 답하고, 나머지는 팀에 넘깁니다.",
       "autoReply": "자동 응답",
       "nameHint": "대상 사용자에 맞춰 이름을 붙이세요. 예: “결제”",
       "createAssistant": "어시스턴트 만들기",

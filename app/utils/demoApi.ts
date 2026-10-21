@@ -86,7 +86,7 @@ function project(id: string, name: string, siteUrl: string, accent: string, flag
     inboxPath: '/inbox', fromName: `${name} Support`, notifyEmails: [`support@${new URL(siteUrl).host}`],
     fromEmail: '', replyTo: '', mailDomain: '', emailLogContent: false,
     actionWebhookUrl: '', hasActionWebhookSecret: false, flags,
-    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, errorLinks: id === 'acme' ? [{ id: 'main', label: 'Acme', name: 'Acme', team: 'helpbites', serverId: '', provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }] : [], createdAt: ago(60 * 24 * 90)
+    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, widgetSeenAt: ago(30), errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, errorLinks: id === 'acme' ? [{ id: 'main', label: 'Acme', name: 'Acme', team: 'helpbites', serverId: '', provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }] : [], createdAt: ago(60 * 24 * 90)
   }
 }
 
@@ -635,20 +635,33 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const q = (query.q || '').toLowerCase()
     const scoped = conversations.filter(c => !query.project || c.projectId === query.project)
     const live = scoped.filter(c => !c.archivedAt)
-    const rows = scoped
-      .filter(c => query.archived === 'any' || (query.archived === 'true' ? c.archivedAt : !c.archivedAt))
+    // As the server: every filter but the view, then each view (and its count) from those rows.
+    const filtered = scoped
       .filter(c => (!query.status || c.status === query.status) && (!query.priority || c.priority === query.priority) && (!query.type || c.type === query.type) && (!query.endUser || c.endUserId === query.endUser))
       .filter(c => !q || Object.values(userOf(c)).some(v => v.toLowerCase().includes(q)))
+    const views = {
+      all: (c: Conversation) => !c.archivedAt,
+      unassigned: (c: Conversation) => !c.archivedAt && !c.assigneeId,
+      mine: (c: Conversation) => !c.archivedAt && c.assigneeId === ME.id,
+      open: (c: Conversation) => !c.archivedAt && c.statusCategory === 'open',
+      unread: (c: Conversation) => !c.archivedAt && c.unreadByAgent > 0,
+      archived: (c: Conversation) => Boolean(c.archivedAt)
+    }
+    const view = (query.view && query.view in views ? query.view : query.archived === 'true' ? 'archived' : 'all') as keyof typeof views
+    const rows = filtered
+      .filter(c => query.archived === 'any' && view === 'all' ? true : views[view](c))
       .sort((a, b) => String(b.lastMessageAt).localeCompare(String(a.lastMessageAt)))
     const counts = { status: {} as Record<string, number>, type: {} as Record<string, number>, assignee: {} as Record<string, number> }
     for (const c of live) for (const [bucket, key] of [['status', c.status], ['type', c.type], ['assignee', c.assigneeId || 'unassigned']] as const) counts[bucket][key] = (counts[bucket][key] || 0) + 1
+    const viewCounts = Object.fromEntries(Object.entries(views).map(([key, match]) => [key, filtered.filter(match).length]))
     return {
       conversations: rows,
       endUsers: Object.fromEntries(rows.map(c => [c.endUserId, serializeUser(userOf(c))])),
       hasMore: false,
       totalUnread: conversations.filter(c => !c.archivedAt).reduce((sum, c) => sum + c.unreadByAgent, 0),
       counts,
-      archivedCount: scoped.length - live.length
+      viewCounts,
+      archivedCount: viewCounts.archived
     }
   }],
   ['POST', /^\/admin\/conversations$/, ({ body }) => {

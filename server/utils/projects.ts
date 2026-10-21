@@ -75,6 +75,8 @@ export type AdminProject = PublicProject & {
   /** Signed event webhooks (contact.subscription_changed, email.suppressed). */
   eventWebhookUrl: string
   hasEventWebhookSecret: boolean
+  /** When the chat widget last loaded inside a host page (to the hour); null until it ever has. */
+  widgetSeenAt: string | null
   createdAt: string | null
 }
 
@@ -279,6 +281,14 @@ export function serializePublicProject(project: ParseObject): PublicProject {
   }
 }
 
+/** The chat widget loaded inside a host page. One write an hour at most: this runs on every page view. */
+export async function markWidgetSeen(project: ParseObject): Promise<void> {
+  const seen = project.get('widgetSeenAt') as Date | undefined
+  if (seen && Date.now() - seen.getTime() < 60 * 60 * 1000) return
+  project.set('widgetSeenAt', new Date())
+  await project.save(null, MASTER)
+}
+
 export function serializeAdminProject(project: ParseObject): AdminProject {
   const errors = errorConfigOf(project)
   const tracker = providerOf(errors)
@@ -306,6 +316,7 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
     marketing: normalizeMarketingConfig(project.get('marketing')),
     eventWebhookUrl: String(project.get('eventWebhookUrl') || ''),
     hasEventWebhookSecret: Boolean(project.get('eventWebhookSecret')),
+    widgetSeenAt: iso(project.get('widgetSeenAt')),
     createdAt: iso(project.createdAt)
   }
 }

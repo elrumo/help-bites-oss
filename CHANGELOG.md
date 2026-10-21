@@ -5,6 +5,26 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- Changelog subscription emails link to hosted confirm and unsubscribe pages on this server
+  (`/u/changelog/confirm/<token>`, `/u/changelog/unsubscribe/<token>`; they need `APP_URL`) instead of
+  `{siteUrl}/changelog/confirm` and `…/unsubscribe` on the project's own site, which most projects never built.
+  Saved configs holding those old defaults now read as hosted; a project with its own pages sets
+  `changelog.confirmUrl` / `unsubscribeUrl` as before.
+- Erasing a person (`DELETE /v1/end-users/:externalId`, `/v1/contacts/:id`, `/v1/anonymous/me`) now also deletes
+  the changelog subscriptions made with just their address. Erasures run before this release may have left some
+  behind: erase those people again to remove them.
+- A campaign with no mailer configured is refused when scheduled, sent or resumed, and one already sending pauses
+  with the reason, instead of retrying every five minutes for ever.
+- AI hand-off: when a routing rule says "human", or no knowledge matches (well enough) and the assistant's fallback
+  is "Hand to a human", the assistant no longer answers. The conversation gets the `needs-human` label and an
+  internal note, and the assistant stays out of it until the label is removed.
+- The public roadmap keeps listing feedback posts until the project board has a public item in a roadmap status;
+  switching the board on no longer empties it.
+- New field `Project.widgetSeenAt` (needs `schema:apply`; the container does it on boot): the chat widget's setup
+  turns green only once the widget has loaded on a site.
+- `GET /v1/admin/conversations` takes `view` (`unassigned`, `mine`, `open`, `unread`, `archived`) and returns
+  `viewCounts`, each view counted under the list's own filters; the inbox views no longer filter only the loaded page.
+- `GET /v1/feedback/config` returns `changelogPublic`.
 - Lead forms: waitlist, "notify me" and interest forms under **Project → Forms** (web and native), embedded with
   `public/forms.js`, as a plain HTML form, on a hosted page at `/f/<public key>/<key>`, in SwiftUI, or through
   `GET`/`POST /v1/forms/{pk}/{key}`; managed at `/v1/admin/lead-forms`. Leads become contacts in a segment made for

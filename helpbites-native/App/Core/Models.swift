@@ -73,7 +73,8 @@ struct Message: Codable, Identifiable, Equatable, Sendable {
 
 struct ConversationDetail: Codable, Sendable { let conversation: Conversation; let endUser: EndUser; let project: Project }
 struct InboxCounts: Codable, Sendable { let status, type, assignee: [String: Int] }
-struct InboxResponse: Codable, Sendable { let conversations: [Conversation]; let endUsers: [String: EndUser]; let hasMore: Bool; let totalUnread: Int; let counts: InboxCounts?; let unreadByProject: [String: Int]?; let archivedCount: Int? }
+/// `viewCounts`: each view's count under the list's own filters, keyed by `InboxQueue` raw value; nil from an older server.
+struct InboxResponse: Codable, Sendable { let conversations: [Conversation]; let endUsers: [String: EndUser]; let hasMore: Bool; let totalUnread: Int; let counts: InboxCounts?; let viewCounts: [String: Int]?; let unreadByProject: [String: Int]?; let archivedCount: Int? }
 struct MessagePage: Codable, Sendable { let messages: [Message]; let hasMore: Bool }
 struct LoginResponse: Codable, Sendable { let sessionToken: String; let agent: Agent }
 /// A workspace as the server lists it (`serializeWorkspace`); `role` is yours in it.

@@ -22,6 +22,8 @@ struct FeedbackScreen: View {
   let projectId: String
   let session: SessionStore
   var config: FeedbackBoardConfig?
+  /// The public changelog's own switch (`changelog.enabled`), from the config response.
+  var changelogPublic = false
   var projectName = ""
   var posts: [FeedbackPost] = []
   var loading = true
@@ -78,6 +80,7 @@ struct FeedbackScreen: View {
     do {
       let result: ConfigResponse = try await session.get("/v1/feedback/config", query: ["project": projectId])
       config = result.config
+      changelogPublic = result.changelogPublic ?? false
       projectName = result.project?.name ?? ""
       // The default filter: everything still being considered or worked on.
       if statusFilter.isEmpty { statusFilter = result.config.statuses.filter { ["open", "planned", "active"].contains($0.category) }.map(\.key) }
@@ -288,6 +291,8 @@ struct FeedbackScreen: View {
     struct ProjectName: Decodable, Sendable { let name: String }
     let config: FeedbackBoardConfig
     let project: ProjectName?
+    /// Whether the public changelog is on; nil from an older server.
+    let changelogPublic: Bool?
   }
   private struct PostsResponse: Decodable, Sendable { let posts: [FeedbackPost] }
   private struct PostResponse: Decodable, Sendable { let post: FeedbackPost }
@@ -381,16 +386,16 @@ private struct FeedbackBoardView: View {
     }
   }
 
-  /// The public changelog (/changelog/<public key>): copy its link or open it. It is published
-  /// through the board, so it only exists once the board's Changelog view is on.
+  /// The public changelog (/changelog/<public key>): copy its link or open it. It has its own
+  /// switch (Changelog → Settings) and does not need the feedback board.
   @ViewBuilder private var changelogMenu: some View {
     let key = workspace.project(store.projectId)?.publicKey ?? ""
     let base = store.session.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
     let url = URL(string: "\(base)/changelog/\(key)")
-    let ready = store.config?.changelog == true && url != nil && !key.isEmpty
+    let ready = store.changelogPublic && url != nil && !key.isEmpty
     Menu {
       Button {
-        if ready { Clipboard.copy(url?.absoluteString) } else { store.alert = "Turn on the changelog first. It is published through the feedback board: turn the board on, with its Changelog view, under Settings." }
+        if ready { Clipboard.copy(url?.absoluteString) } else { store.alert = "Turn on the changelog first: switch on “Public changelog” in Project → Changelog → Settings. It does not need the feedback board." }
       } label: { Label("Copy changelog link", systemImage: "link") }
       if ready, let url { Link(destination: url) { Label("Open public changelog", systemImage: "arrow.up.right.square") } }
     } label: { Label("Public changelog", systemImage: "sparkles") }

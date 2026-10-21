@@ -80,8 +80,12 @@ export type ChangelogConfig = {
   notify: boolean
   /** The product's name in subjects ("This week on {site}"); the project's own name when empty. */
   siteName: string
-  /** The changelog page, the page that confirms a subscription, the page that unsubscribes (`{token}`): on the project's own site. */
+  /** The changelog page on the project's own site. */
   pageUrl: string
+  /**
+   * The pages that confirm a subscription and that unsubscribe (`{token}` is filled in). '' (the
+   * default) uses the hosted pages on this server; set them only to send people to your own.
+   */
   confirmUrl: string
   unsubscribeUrl: string
   digest: ChangelogDigestConfig
@@ -159,14 +163,20 @@ export const DEFAULT_CHANGELOG_CONFIG: ChangelogConfig = {
   notify: false,
   siteName: '',
   pageUrl: '{siteUrl}/changelog',
-  confirmUrl: '{siteUrl}/changelog/confirm?token={token}',
-  unsubscribeUrl: '{siteUrl}/changelog/unsubscribe?token={token}',
+  confirmUrl: '',
+  unsubscribeUrl: '',
   digest: DEFAULT_CHANGELOG_DIGEST,
   commitAi: { onPush: false, autoPublish: false },
   copy: {}
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/**
+ * The link pages' old defaults, on the project's own site, where most projects
+ * never built them. Saved configs still carry them; they read as '' (hosted).
+ */
+const LEGACY_LINK_URLS = new Set(['{siteUrl}/changelog/confirm?token={token}', '{siteUrl}/changelog/unsubscribe?token={token}'])
 
 const KEY = /^[a-z0-9][a-z0-9-]*$/
 
@@ -209,7 +219,9 @@ export function validateChangelogConfig(value: unknown, base: ChangelogConfig = 
   for (const [key, needs] of [['pageUrl', ''], ['confirmUrl', '{token}'], ['unsubscribeUrl', '{token}']] as const) {
     if (raw[key] === undefined) continue
     const url = typeof raw[key] === 'string' ? (raw[key] as string).trim() : ''
-    if (!url || url.length > 300 || (needs && !url.includes(needs)) || !/^(https?:\/\/|\{siteUrl\})/.test(url)) errors.push(`${key} must be an http(s) URL (or start with {siteUrl})${needs ? ` containing ${needs}` : ''}`)
+    // The link pages may be cleared: '' sends people to the hosted ones.
+    if (needs && (!url || LEGACY_LINK_URLS.has(url))) { config[key as 'confirmUrl' | 'unsubscribeUrl'] = ''; continue }
+    if (!url || url.length > 300 || (needs && !url.includes(needs)) || !/^(https?:\/\/|\{siteUrl\})/.test(url)) errors.push(`${key} must be an http(s) URL (or start with {siteUrl})${needs ? ` containing ${needs}, or '' for the hosted page` : ''}`)
     else config[key] = url
   }
   if (raw.digest !== undefined) {

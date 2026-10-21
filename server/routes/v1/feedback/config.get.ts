@@ -4,16 +4,16 @@ defineRouteMeta({
     summary: 'Board configuration',
     description: 'Statuses (with their categories and colours), post types, platforms and board options — everything a custom UI needs to render filters and forms — plus the project’s name and theme, the viewer, and where the roadmap comes from. `?pk=` or a token, like the list.',
     parameters: [{ name: 'pk', in: 'query', schema: { type: 'string' } }, { name: 'project', in: 'query', schema: { type: 'string' }, description: 'Project id (operators only)' }],
-    responses: { 200: { description: 'Board configuration.', content: { 'application/json': { schema: { type: 'object', properties: { config: { '$ref': '#/components/schemas/FeedbackBoardConfig' }, project: { type: 'object', properties: { name: { type: 'string' }, publicKey: { type: 'string' }, theme: { type: 'object' }, brandLogoUrl: { type: 'string' }, poweredBy: { type: 'object', nullable: true, properties: { url: { type: 'string', format: 'uri' } }, description: 'The "Powered by HelpBites" link to show, or null when the plan removes the branding.' } } }, viewer: { '$ref': '#/components/schemas/FeedbackViewer' }, roadmapSource: { type: 'string', enum: ['board', 'posts'], description: '`board` when the project board drives the roadmap (read it from GET /v1/feedback/roadmap); `posts` when the roadmap lists posts (`GET /v1/feedback?view=roadmap`)' } } } } } }, 404: { description: 'Unknown project, or the board is not enabled.' } }
+    responses: { 200: { description: 'Board configuration.', content: { 'application/json': { schema: { type: 'object', properties: { config: { '$ref': '#/components/schemas/FeedbackBoardConfig' }, project: { type: 'object', properties: { name: { type: 'string' }, publicKey: { type: 'string' }, theme: { type: 'object' }, brandLogoUrl: { type: 'string' }, poweredBy: { type: 'object', nullable: true, properties: { url: { type: 'string', format: 'uri' } }, description: 'The "Powered by HelpBites" link to show, or null when the plan removes the branding.' } } }, viewer: { '$ref': '#/components/schemas/FeedbackViewer' }, changelogPublic: { type: 'boolean', description: 'Whether the project\'s public changelog is on (`changelog.enabled`): its page `/changelog/{pk}` and `GET /v1/changelog` answer only then.' }, roadmapSource: { type: 'string', enum: ['board', 'posts'], description: '`board` when the project board drives the roadmap (it is on and has at least one public item in a planned, active or done status; read it from GET /v1/feedback/roadmap); `posts` when the roadmap lists posts (`GET /v1/feedback?view=roadmap`)' } } } } } }, 404: { description: 'Unknown project, or the board is not enabled.' } }
   }
 })
 
 export default defineEventHandler(async (event) => {
   const ctx = await resolveFeedbackContext(event)
   const project = serializePublicProject(ctx.project)
-  // A project board, when on, is what the Roadmap view shows; otherwise it lists posts.
-  const roadmapSource = getBoardConfig(ctx.project).enabled ? 'board' : 'posts'
+  // A project board with public items is what the Roadmap view shows; otherwise it lists posts.
+  const roadmapSource = await roadmapSourceOf(ctx.project)
   // Readers get the Changelog tab only when the option and the project's public changelog are both on; operators see the stored option.
   const config = ctx.actor.kind === 'agent' ? ctx.config : { ...ctx.config, changelog: ctx.config.changelog && changelogIsPublic(ctx.project) }
-  return { config, roadmapSource, project: { name: project.name, publicKey: project.publicKey, theme: project.theme, brandLogoUrl: project.brandLogoUrl, allowedOrigins: project.allowedOrigins, poweredBy: await poweredByFor(ctx.project) }, viewer: feedbackViewer(ctx.actor) }
+  return { config, roadmapSource, changelogPublic: changelogIsPublic(ctx.project), project: { name: project.name, publicKey: project.publicKey, theme: project.theme, brandLogoUrl: project.brandLogoUrl, allowedOrigins: project.allowedOrigins, poweredBy: await poweredByFor(ctx.project) }, viewer: feedbackViewer(ctx.actor) }
 })

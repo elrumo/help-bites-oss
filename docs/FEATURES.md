@@ -72,7 +72,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   its own currency. It updates as messages arrive. Web and native.
   [OVERVIEW.md](OVERVIEW.md)
 - **One inbox for every project.** Projects are colour-coded, with one unread
-  count and filters for All, Mine, Unassigned, Open, Unread and Archived. Search by text.
+  count and filters for All, Mine, Unassigned, Open, Unread and Archived. Search by
+  the customer's name, email or user ID.
 - **Triage.** Assign a teammate, set priority (low, normal, high, urgent), add
   tags, and mark a conversation open or done. A customer who writes into a done
   conversation reopens it.
@@ -86,8 +87,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Write first.** Start a conversation with a user, for example after a failed
   payment.
 - **Unsend and react.** Delete a message, or add a reaction.
-- **Customer context.** The user's record, their recent errors, and any board
-  items or feedback posts linked to the conversation.
+- **Customer context.** The user's record, their recent errors, and the board
+  items and changelog entries linked to the conversation.
 - **Email alerts.** Each project emails the addresses you choose when someone
   writes. Users who gave an address get replies by email, with a link back into
   the thread.
@@ -129,10 +130,14 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Per-project assistants.** A system prompt, a model, your own LLM endpoint,
   temperature, and a fallback behaviour. The API key is write-only.
 - **Off by default.** Auto-reply is a switch on each assistant. When it is on,
-  the assistant answers only from the knowledge it was given, and says so when it
-  does not know.
+  the assistant answers only from the knowledge it was given.
 - **Routing rules.** For each conversation type or keyword, decide AI or a human.
   Set a default action and a minimum confidence.
+- **Hand-off.** When a rule says "a human", or no knowledge matches well enough
+  and the fallback is "Hand to a human", the assistant does not answer: it labels
+  the conversation `needs-human`, leaves an internal note saying why, and stays
+  out of that conversation until a teammate removes the label. "Stay silent" just
+  does not answer.
 - **You decide what it sees.** Assign knowledge to an assistant by model, by
   path, or by single FAQ, with exclusions.
 - **Test before you turn it on.** Test retrieval in the panel, or test answers
@@ -172,7 +177,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   its linked posts to the matching feedback status.
 - **Public roadmap.** Items stay private until you publish them. A published item
   appears once it is planned, active or done, and shows only its public
-  description. Layouts: columns, timeline or list. It has its own page at
+  description. Until the board has a published item, the roadmap keeps listing
+  feedback posts, so switching the board on never empties it. Layouts: columns, timeline or list. It has its own page at
   `/roadmap/pk_…` and can be embedded.
 
 **Changelog** [FEEDBACK.md](FEEDBACK.md#changelog)
@@ -298,8 +304,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   paying customers for a period, charts the last twelve months of net revenue with
   MRR at the end of each month (hover, focus or touch a month for its numbers), and
   lists plans, top customers and recent payments. Read-only. Web and native.
-- **Erasure.** Deleting a person removes their conversations, feedback and email
-  history.
+- **Erasure.** Deleting a person removes their conversations, feedback, email
+  history and changelog subscriptions, including ones made by address alone.
 
 **Lead forms** [FORMS.md](FORMS.md)
 
@@ -464,8 +470,9 @@ repository. See [EDITIONS.md](EDITIONS.md).
 
 ## 14. Not built yet, and known limits
 
-- **Native app.** No workspace picker yet, so it works in the user's default workspace. In the hosted edition it
-  shows the plan, usage and locks, but subscribing and managing the subscription happen in the web panel.
+- **Native app.** English only: it has no translations yet, while the web panel
+  has five more languages. In the hosted edition it shows the plan, usage and locks,
+  but subscribing and managing the subscription happen in the web panel.
 - **Push.** Off until APNs credentials are set on the server.
 - **Contact sync.** Rows deleted upstream are not noticed yet. Erase them through
   the API. [CONTACTS.md](CONTACTS.md)
@@ -492,4 +499,4 @@ repository. See [EDITIONS.md](EDITIONS.md).
 - **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
   email, campaigns, legal documents, flags or knowledge base editing, and it issues no refresh tokens, so an
   OAuth-connected assistant signs in again after a year. [MCP.md](MCP.md)
-- **Language.** The panel is translated into Spanish, Catalan, Chinese, Japanese and Korean; the widgets are English only.
+- **Language.** The web panel is translated into Spanish, Catalan, Chinese, Japanese and Korean; the native app and the widgets are English only.

@@ -148,6 +148,17 @@ describe('notification config', () => {
     expect(fillChangelogTokenUrl('{siteUrl}/changelog/confirm?token={token}', 'https://x.test/', 'a.b c')).toBe('https://x.test/changelog/confirm?token=a.b%20c')
   })
 
+  test('the link pages default to the hosted ones, and the old site defaults read as hosted', () => {
+    expect(DEFAULT_CHANGELOG_CONFIG.confirmUrl).toBe('')
+    expect(DEFAULT_CHANGELOG_CONFIG.unsubscribeUrl).toBe('')
+    const saved = validateChangelogConfig({ confirmUrl: '{siteUrl}/changelog/confirm?token={token}', unsubscribeUrl: '{siteUrl}/changelog/unsubscribe?token={token}' })
+    expect(saved.errors).toEqual([])
+    expect([saved.config.confirmUrl, saved.config.unsubscribeUrl]).toEqual(['', ''])
+    const own = validateChangelogConfig({ confirmUrl: 'https://x.test/c?t={token}' })
+    expect(own.config.confirmUrl).toBe('https://x.test/c?t={token}')
+    expect(validateChangelogConfig({ confirmUrl: '' }, own.config).config.confirmUrl).toBe('')
+  })
+
   test('the email words are overridable by key, the rest stay default', () => {
     const { config, errors } = validateChangelogConfig({ copy: { weeklyIntroOne: 'Here is what I shipped:' } })
     expect(errors).toEqual([])

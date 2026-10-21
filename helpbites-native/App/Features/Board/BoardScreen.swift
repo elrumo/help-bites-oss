@@ -647,7 +647,7 @@ private struct BoardOptionsSection: View {
           Text(store.savingBoard ? "Saving…" : "Saves as you change it").font(.lnCaption).foregroundStyle(Theme.textMuted)
         }
         Card {
-          CardRow { FeedbackToggleRow(title: "Board is on", detail: "Items, links from the inbox and feedback, and the roadmap.", isOn: toggle(config.enabled, key: "enabled")) }
+          CardRow { FeedbackToggleRow(title: "Board is on", detail: "Items, links from the inbox and feedback, and the roadmap. The public roadmap keeps listing feedback posts until an item is on it.", isOn: toggle(config.enabled, key: "enabled")) }
           CardRow { FeedbackToggleRow(title: "Sync linked feedback", detail: "When an item moves to another status category, its linked posts follow — and their followers get the usual emails.", isOn: toggle(config.syncFeedback, key: "syncFeedback")) }
           CardRow {
             LabeledField(label: "Roadmap layout") {

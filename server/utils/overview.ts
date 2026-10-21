@@ -51,7 +51,8 @@ export async function projectOverview(project: ParseObject): Promise<ProjectOver
   const origins = p.allowedOrigins.length
   const mail = isMailerConfigured({ fromEmail: p.fromEmail, domain: p.mailDomain })
   const health: ProjectOverview['health'] = [
-    { key: 'chat', label: 'Chat widget', state: origins ? 'ok' : 'warn', detail: origins ? `${origins} allowed origin${origins === 1 ? '' : 's'}` : 'No allowed origins', section: 'dev' },
+    // Green only once the widget has loaded on a host page: allowing an origin is not installing it.
+    { key: 'chat', label: 'Chat widget', state: origins && p.widgetSeenAt ? 'ok' : 'warn', detail: !origins ? 'No allowed origins' : p.widgetSeenAt ? `${origins} allowed origin${origins === 1 ? '' : 's'}` : 'Not loaded on your site yet', section: 'dev' },
     { key: 'email', label: 'Email sending', state: mail ? 'ok' : 'warn', detail: mail ? p.fromEmail || 'Default sender' : 'Not configured', section: 'settings' },
     { key: 'notify', label: 'Team notifications', state: p.notifyEmails.length ? 'ok' : 'off', detail: p.notifyEmails.length ? p.notifyEmails.join(', ') : 'Nobody is emailed', section: 'settings' },
     { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', detail: p.feedback.enabled ? 'On' : 'Off', section: 'feedback' },
