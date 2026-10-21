@@ -240,13 +240,13 @@ const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).t
         <li v-for="entry in logs" :key="entry.id" class="mx-2 flex items-center rounded-lg pr-2 transition-colors hover:bg-elevated">
           <button type="button" class="flex h-11 min-w-0 flex-1 items-center gap-3 rounded-lg px-3 text-left text-[13px]" @click="openId = entry.id">
             <UTooltip :text="EMAIL_STATUS[entry.status].hint">
-              <UBadge :icon="EMAIL_STATUS[entry.status].icon" :label="EMAIL_STATUS[entry.status].label" :color="EMAIL_STATUS[entry.status].color" variant="subtle" size="sm" class="w-28 shrink-0 justify-start" />
+              <UBadge :icon="EMAIL_STATUS[entry.status].icon" :label="EMAIL_STATUS[entry.status].label" :color="EMAIL_STATUS[entry.status].color" variant="subtle" size="sm" class="w-fit shrink-0 justify-start" />
             </UTooltip>
             <span class="w-48 shrink-0 truncate font-medium text-highlighted" :title="entry.to">{{ entry.to }}</span>
             <span class="min-w-0 flex-1 truncate text-muted">{{ entry.subject }}</span>
             <code v-if="entry.template?.key" class="hidden max-w-36 shrink-0 truncate rounded bg-elevated px-1.5 py-0.5 font-mono text-[11px] text-toned md:block">{{ entry.template.key }}</code>
             <span v-else-if="entry.template?.name" class="hidden max-w-44 shrink-0 truncate text-xs text-dimmed md:block">{{ entry.template.name }}</span>
-            <span v-if="!project" class="hidden w-28 shrink-0 truncate text-xs text-muted lg:block">{{ projectName(entry.projectId) }}</span>
+            <span v-if="!project" class="hidden w-fit shrink-0 truncate text-xs text-muted lg:block">{{ projectName(entry.projectId) }}</span>
             <span class="hidden w-20 shrink-0 text-xs text-muted xl:block">{{ EMAIL_SOURCE_LABELS[entry.source] || entry.source }}</span>
             <UIcon v-if="entry.testMode" name="i-lucide-flask-conical" class="size-3.5 shrink-0 text-dimmed" :aria-label="$t('emailLibrary.log.testMode')" />
             <span class="w-14 shrink-0 text-right text-xs text-muted">{{ logTime(entry.createdAt) }}</span>
