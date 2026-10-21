@@ -2563,7 +2563,7 @@
       "changelog": {
         "eyebrow": "Changelog",
         "title": "A changelog that writes its first draft.",
-        "body": "Entries are drafted by AI from your GitHub commits or finished work, and wait for your review. Nothing is public until you approve it.",
+        "body": "Entries are drafted by AI from your GitHub commits or finished work, and wait for your review. Nothing is public until you approve it. When one ships, the people who asked for it hear about it.",
         "b1": "Group entries into versioned releases",
         "b2": "A public page, JSON and RSS, plus digest emails for readers",
         "b3": "Or write entries yourself, or from the command line",
@@ -2710,7 +2710,7 @@
         },
         "roadmap": {
           "term": "A roadmap from your own board",
-          "desc": "Plan internal work on a kanban, link it to posts and conversations, and publish only the items you pick."
+          "desc": "Plan internal work on a kanban, link it to posts and conversations, and publish only the items you pick. File an error on it in one click, and see the GitHub commits and pull requests that finished each item."
         },
         "changelog": {
           "term": "A changelog from what shipped",
@@ -2774,7 +2774,7 @@
         "hint": "Roles, error tracking and flags that sit next to support.",
         "errors": {
           "term": "Error tracking",
-          "desc": "Connect GlitchTip or Bugsink. Browse errors with their stack traces, get alert emails or Telegram messages when one spikes, and fix them with AI that reads your GitHub repos."
+          "desc": "Connect GlitchTip or Bugsink. Browse errors with their stack traces, get alert emails or Telegram messages when one spikes, file one on your board, and fix them with AI that reads your GitHub repos."
         },
         "legal": {
           "term": "Hosted legal pages",

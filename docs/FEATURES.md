@@ -45,6 +45,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Your look.** Accent, background, text, corner radius and font per flow;
   the web script also takes CSS variables and `::part()` styles, and calls you
   back on each step, completion and skip.
+- **Who finished it.** Hand the script (`data-token`) or one POST the person's
+  identity token and HelpBites remembers whether they finished or skipped. Segments
+  can ask for **Finished onboarding**, and `onboarding.completed` is an event that
+  can start a sequence. A Swift snippet does the same.
 - **A live preview** in the panel, drawn by the same script your site loads.
 
 **Languages and AI translation** [LANGUAGES.md](LANGUAGES.md)
@@ -56,6 +60,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   missing through the workspace's AI (or the server's gateway) and keeps what you
   edited. Placeholders, links and HTML survive, or the string stays in the
   original language.
+- **Contacts have a language.** Set by the identity token's `locale`, the API, the
+  panel, a CSV or sync column, or a lead form's visitor. Campaigns, sequence steps
+  and a lead form's welcome email send each person the translation of the template
+  closest to their language, and the template's own otherwise.
 - **Apps pick the language.** `?locale=` on the onboarding and email reads,
   `locale` on the send API (per recipient too), `data-locale` on the web script
   and a `locale:` parameter on the Swift snippet. A language that is missing gets
@@ -175,6 +183,13 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   Votes add up across the linked posts.
 - **Sync to feedback.** Optionally, moving an item into a status category moves
   its linked posts to the matching feedback status.
+- **Filed from an error.** An error on the Errors page can be filed as an item in
+  one click (once per issue); the item keeps a link back to the tracker.
+  [ERRORS.md](ERRORS.md)
+- **Commits and pull requests.** With the GitHub App's webhook on, a commit pushed
+  to the default branch or a pull request merged into it that says `#12` shows on
+  that item (or feedback post), and `fixes #12` moves the item to done.
+  [GITHUB.md](GITHUB.md)
 - **Public roadmap.** Items stay private until you publish them. A published item
   appears once it is planned, active or done, and shows only its public
   description. Until the board has a published item, the roadmap keeps listing
@@ -190,6 +205,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Drafts from shipped work.** With auto-draft on, a done post or board item
   drafts an entry for you. Entries keep links to their sources in the panel, and
   the public changelog never shows those links.
+- **Tell the people it answers.** When an entry goes public, everyone following a
+  post it links (or a post of a board item it links) gets one "Shipped" email, once.
+  The editor also offers **Reply to N linked conversations**: an editable message
+  sent as the team to the conversations the entry answers, only when you press send.
 - **Public changelog.** A page at `/changelog/pk_…`, plus JSON, a filtered flat
   list, and RSS.
 - **Reader comments.** Opt-in. Only signed-in users can comment. Comments are
@@ -305,7 +324,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 **Contacts** [CONTACTS.md](CONTACTS.md)
 
 - **One record per person.** Identified by your user id or by email, with
-  attributes, tags, a subscription status, and a consent record.
+  attributes, tags, a subscription status, a consent record, and the language to
+  write to them in. Web and native.
 - **How each person was added.** Every contact shows **Added via**: an app user, a
   lead form (and which), the newsletter sign-up, a CSV import, a database sync,
   Stripe, the API, by hand or a feedback import. The people list and segments filter
@@ -316,7 +336,17 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   and Firestore. Incremental when the table has an updated-at column. Runs every
   15 minutes to daily, or on demand.
 - **Segments.** A rule builder (match all or any, on attributes, tags, dates,
-  subscription, how people were added and which lead form) with a live count.
+  subscription, language, how people were added and which lead form) with a live
+  count. Built-in fields answer from other records: has an open conversation,
+  voted on a post, has errors (best effort, from the newest 50 open issues of the
+  connected tracker), finished onboarding, and Stripe plan.
+- **One timeline per person.** `GET /v1/contacts/:id/activity` merges their
+  conversations, feedback posts, comments and votes, emails, sequences, payments and
+  onboarding, newest first and paged. The contact page shows it with icons,
+  relative times and links, web and native.
+- **Onto a sequence.** From a contact's page, or for a whole segment (up to 5,000
+  per call) from the segment list or the people list; the answer says who was left
+  out and why. Web and native.
 - **Stripe billing.** With Stripe connected, a person's page looks them up in Stripe
   live (by their linked customer, else their email) and shows when they became a
   customer, their country, credit or balance owed and an overdue flag, next to their
@@ -324,7 +354,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Revenue.** A project's Revenue tab totals net revenue, MRR, subscribers and
   paying customers for a period, charts the last twelve months of net revenue with
   MRR at the end of each month (hover, focus or touch a month for its numbers), and
-  lists plans, top customers and recent payments. Read-only. Web and native.
+  lists plans, top customers and recent payments. A customer who is also a contact
+  opens their page from the report. Read-only. Web and native.
 - **Erasure.** Deleting a person removes their conversations, feedback, email
   history and changelog subscriptions, including ones made by address alone.
 
@@ -347,7 +378,11 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Broadcast campaigns.** Send a template to a segment or topic. Test, schedule
   or send now, then pause, resume or cancel. Opens and clicks update live.
 - **Sequences.** Timed drip emails, started by a subscription, an event from your
-  app, or manual enrollment.
+  app, or by hand for one person or a whole segment.
+- **In each reader's language.** A campaign, a sequence step or a lead form's welcome
+  email goes out in the translation of its template closest to the contact's
+  language; the template's own language is the fallback. Every translation must keep
+  the unsubscribe link and postal address.
 - **Sign-up forms.** A hosted page or a plain HTML form, with double opt-in, a
   honeypot field and rate limits.
 - **Preferences page.** Topics, unsubscribe from all, and resubscribe.
@@ -372,6 +407,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   coding agent (the analysis needs an LLM endpoint).
 - **Customer errors.** A customer's recent errors show alongside their
   conversation.
+- **File on board.** Turn an error into a board item (titled from the issue, with
+  its tracker link), once per issue, linked to the error's conversation.
 
 **Feature flags** [FLAGS.md](FLAGS.md)
 
@@ -501,18 +538,27 @@ repository. See [EDITIONS.md](EDITIONS.md).
   counts twice in that item's total. [FEEDBACK.md](FEEDBACK.md)
 - **Bugsink.** Its issues cannot be searched by customer, so a customer's errors do
   not appear in their conversation. [ERRORS.md](ERRORS.md)
-- **Onboarding.** HelpBites keeps no completion statistics; your app learns who
-  finished or skipped from the web script's callbacks or the Swift `onFinish`.
-  [ONBOARDING.md](ONBOARDING.md)
+- **GitHub links.** The Pull requests permission and event are new: a GitHub App
+  registered before them must add both (and each installation accept them) before
+  merged pull requests link; pushes link without it. Only merged pull requests and
+  pushes to the default branch count, a closing keyword moves board items only, and
+  links are rebuilt from new pushes rather than carried by an export.
+  [GITHUB.md](GITHUB.md)
+- **Shipped mail.** The email to a changelog entry's followers is the feedback
+  board's plain message mail, with no per-project wording yet. [FEEDBACK.md](FEEDBACK.md)
+- **Onboarding.** HelpBites keeps only the latest outcome (finished or skipped) per
+  person and flow, for apps that send the identity token: no funnel statistics or
+  per-step drop-off yet. [ONBOARDING.md](ONBOARDING.md)
 - **Brand kit.** No download-everything archive yet; files download one by one.
   [BRAND.md](BRAND.md)
 - **Pages and CMS.** Web-only for now: no native screens. No custom domains for
   hosted pages, no scripts in components, no per-field translations, scheduled
   publishing, version history or generated TypeScript types yet. [PAGES.md](PAGES.md)
-- **Translations.** Onboarding, legal documents and template emails have them;
-  campaigns, sequences, the mail HelpBites sends itself, the chat, feedback and
-  changelog embeds and CMS pages do not yet, and a contact has no language of its
-  own. [LANGUAGES.md](LANGUAGES.md)
+- **Translations.** Onboarding, legal documents, template emails, campaigns,
+  sequences and lead-form welcome emails have them; blog newsletters, the mail
+  HelpBites sends itself, the chat, feedback and changelog embeds and CMS pages do
+  not yet, and the send API does not read a contact's language (pass `locale`).
+  [LANGUAGES.md](LANGUAGES.md)
 - **Lead forms.** No CAPTCHA (a honeypot and rate limits only), no file uploads, no
   translations and no A/B tests yet. Answers are saved on the contact, not kept as
   separate submissions, and a form never overwrites an answer a contact already
