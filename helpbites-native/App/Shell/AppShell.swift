@@ -115,6 +115,7 @@ struct RouteView: View {
       switch section {
       case .overview: ProjectOverviewScreen(projectId: id)
       case .revenue: RevenueScreen(projectId: id)
+      case .pricing: PricingScreen(projectId: id)
       case .changelog: ChangelogScreen(projectId: id)
       case .onboarding: OnboardingScreen(projectId: id)
       case .legal: LegalScreen(projectId: id)
@@ -146,6 +147,7 @@ struct RouteView: View {
     case .legalDocument(let projectId, let documentId): LegalDocumentScreen(projectId: projectId, documentId: documentId)
     case .onboardingFlow(let projectId, let flowId): OnboardingFlowScreen(projectId: projectId, flowId: flowId)
     case .leadForm(let projectId, let formId): LeadFormScreen(projectId: projectId, formId: formId)
+    case .pricingTable(let projectId, let tableId): PricingTableScreen(projectId: projectId, tableId: tableId)
     }
   }
 }

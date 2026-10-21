@@ -31,10 +31,26 @@ struct OnboardingStep: Codable, Identifiable, Equatable, Sendable {
   var imageAlt = ""
   /// '' uses the client's own: Continue, and Get started on the last step.
   var buttonLabel = ""
+  /// The key of a pricing table of the project to show under the text (a paywall at the end of the tour); '' for none.
+  var pricingTable = ""
 
   /// A fresh step with an id the server keeps (`/^[\w-]{1,40}$/`).
   static func blank() -> OnboardingStep {
     OnboardingStep(id: "st_" + UUID().uuidString.prefix(13).lowercased())
+  }
+}
+
+extension OnboardingStep {
+  // Copies saved before pricing tables (offline files, the snapshot cache) have no `pricingTable`.
+  init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    id = try c.decode(String.self, forKey: .id)
+    title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+    body = try c.decodeIfPresent(String.self, forKey: .body) ?? ""
+    imageUrl = try c.decodeIfPresent(String.self, forKey: .imageUrl) ?? ""
+    imageAlt = try c.decodeIfPresent(String.self, forKey: .imageAlt) ?? ""
+    buttonLabel = try c.decodeIfPresent(String.self, forKey: .buttonLabel) ?? ""
+    pricingTable = try c.decodeIfPresent(String.self, forKey: .pricingTable) ?? ""
   }
 }
 
