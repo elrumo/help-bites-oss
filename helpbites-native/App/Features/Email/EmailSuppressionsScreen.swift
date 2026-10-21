@@ -2,8 +2,8 @@ import SwiftUI
 
 /// Addresses a project no longer mails (EmailSuppressions.vue): hard bounces
 /// and spam reports from Mailgun's webhook, unsubscribes, and addresses added
-/// here or through the API. Removing one mails it again. Shown as the
-/// Suppressed tab of `EmailLibraryScreen`.
+/// here or through the API. Removing one mails it again. Shown by `EmailLibraryScreen`: behind
+/// the Log of a project's Email, as the Suppressed tab of the shared templates' page.
 struct EmailSuppressionsScreen: View {
   let projectId: String?
   @Environment(SessionStore.self) private var session

@@ -58,10 +58,33 @@ test('the demo answers lead forms, their leads and where each contact came from'
 test('the demo answers a project overview, the page a project lands on', async () => {
   const overview = await demoApi<any>('/admin/projects/acme/overview')
   expect(overview.stats.length).toBeGreaterThan(0)
-  expect(overview.health.length).toBeGreaterThan(0)
+  expect(overview.health).toBeUndefined()
+  expect(overview.setup.total).toBeGreaterThan(0)
+  expect(overview.setup.done).toBe(overview.setup.items.filter((item: any) => item.state === 'done').length)
   expect(overview.activity.length).toBeGreaterThan(0)
   expect(overview.activity.every((item: any) => item.conversationId)).toBe(true)
   expect(overview.attention.every((item: any) => item.count > 0)).toBe(true)
+})
+
+test('the demo answers the setup checklist, the email setup, the unread badge and what needs attention', async () => {
+  const setup = await demoApi<any>('/admin/projects/acme/setup')
+  expect(setup).toEqual((await demoApi<any>('/admin/projects/acme/overview')).setup)
+  expect(setup.items.find((item: any) => item.key === 'widget').state).toBe('done')
+  expect(setup.items.find((item: any) => item.key === 'stripe').state).toBe('done')
+  // Fieldnotes has no error tracker yet, and the checklist says so.
+  expect((await demoApi<any>('/admin/projects/fieldnotes/setup')).items.find((item: any) => item.key === 'errors').state).toBe('todo')
+
+  const email = await demoApi<any>('/admin/projects/acme/email-setup')
+  expect(email).toMatchObject({ sending: true, bulk: true })
+
+  const { unreadMessages } = await demoApi<any>('/admin/unread')
+  const attention = await demoApi<any>('/admin/attention')
+  expect(unreadMessages).toBeGreaterThan(0)
+  expect(attention.unreadMessages).toBe(unreadMessages)
+  expect(attention.total).toBe(attention.items.reduce((sum: number, item: any) => sum + item.count, 0))
+  expect(attention.items.every((item: any) => item.projectId && item.count > 0)).toBe(true)
+  // The bounced address in the demo's log is something to look at.
+  expect(attention.items.some((item: any) => item.kind === 'bounces')).toBe(true)
 })
 
 test('the demo answers the workspace overview, the page the panel opens on', async () => {

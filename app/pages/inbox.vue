@@ -511,12 +511,14 @@ useEventStream(computed(() => '/v1/admin/events'), token, (event: SupportEvent) 
   if (event.type === 'conversation.deleted') { removeConversation(event.conversationId); return }
   upsertConversation(event.conversation)
   if (event.type === 'message.created') {
-    if (event.message.sender === 'user' && event.conversationId !== activeId.value) totalUnread.value += 1
     if (event.conversationId === activeId.value) { if (!messages.value.some(message => message.id === event.message.id)) messages.value = [...messages.value, event.message]; if (event.message.sender === 'user') void markRead(activeId.value, true) }
   } else if (event.type === 'message.updated' && event.conversationId === activeId.value) {
     replaceMessage(event.message)
   } else if (event.type === 'message.deleted' && event.conversationId === activeId.value) messages.value = messages.value.filter(message => message.id !== event.messageId)
 }, () => { void loadList(); if (activeId.value) void select(activeId.value) })
+
+// Another page (the ⌘K search, a link in an overview) points this one at a thread while it is open.
+watch(() => route.query.c, (id) => { if (typeof id === 'string' && id && id !== activeId.value) void select(id) })
 
 onMounted(async () => {
   outbox.hydrate()

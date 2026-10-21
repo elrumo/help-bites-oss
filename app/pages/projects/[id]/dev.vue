@@ -127,7 +127,7 @@
                   <UButton :to="`/projects/${id}/email?view=log`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('projectPages.dev.log')" />
                 </div>
               </div>
-              <p class="step-text">{{ $t('projectPages.dev.emailSendPart') }} <code class="inline-code">html</code> {{ $t('projectPages.dev.emailFilePart') }} <code class="inline-code">GET /v1/email-logs</code> {{ $t('projectPages.dev.emailReadPart') }} <NuxtLink :to="`/projects/${id}/settings#email`" class="underline">{{ $t('projectPages.dev.projectSettings') }}</NuxtLink>{{ $t('projectPages.dev.period') }}</p>
+              <p class="step-text">{{ $t('projectPages.dev.emailSendPart') }} <code class="inline-code">html</code> {{ $t('projectPages.dev.emailFilePart') }} <code class="inline-code">GET /v1/email-logs</code> {{ $t('projectPages.dev.emailReadPart') }} <NuxtLink :to="`/projects/${id}/email?view=settings`" class="underline">{{ $t('projectPages.settings.senderMovedLink') }}</NuxtLink>{{ $t('projectPages.dev.period') }}</p>
               <CodeBlock :code="emailSnippet" lang="js" />
             </template>
           </div>

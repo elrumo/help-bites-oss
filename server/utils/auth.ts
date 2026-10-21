@@ -151,6 +151,8 @@ export async function verifyEndUserToken(event: H3Event, token: string): Promise
   }
 
   await rateLimit(`sb:rl:project:${project.id}`, LIMITS.requestsPerProject.limit, LIMITS.requestsPerProject.window)
+  // The setup checklist's "identity seen": a real host signed this one. Never holds up the request.
+  void markIdentitySeen(project).catch(() => {})
   return { project, claims: result.claims }
 }
 

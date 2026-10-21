@@ -27,7 +27,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   conversation directly.
 - **Build your own UI.** Every widget action is on the documented `/v1` API,
   in the OpenAPI docs at `/_docs/scalar`.
-- **Feedback board embed.** One script (`feedback.js`) renders the board,
+- **Feedback embed.** One script (`feedback.js`) renders the feedback page,
   roadmap, changelog, post pages and composer. [FEEDBACK.md](FEEDBACK.md)
 
 **Onboarding** [ONBOARDING.md](ONBOARDING.md)
@@ -108,6 +108,24 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   messages and revenue by project. Revenue is for admins and owners, each project in
   its own currency. It updates as messages arrive. Web and native.
   [OVERVIEW.md](OVERVIEW.md)
+- **One list of what needs attention.** Changelog drafts waiting for approval,
+  contact and Stripe syncs that failed, emails that bounced or failed, error alerts
+  that fired, a paused sender, and each project's open error reports, documents
+  that would not process and feedback to triage: one list for the workspace, the
+  same rows inside each project. A count sits beside Overview in the sidebar and the
+  inbox's unread badge stays live on every page, not only the inbox. Web and
+  native. [OVERVIEW.md](OVERVIEW.md)
+- **⌘K searches what is written.** Besides jumping to a page or project, the web
+  palette finds conversations and knowledge answers through `/v1/admin/search`
+  (the native palette already did).
+- **A setup checklist per project.** Widget seen on your site, a signed identity
+  token seen, someone notified, a sender mail can go out from, an assistant that is
+  live, Stripe synced, GitHub linked, errors connected, judged from what HelpBites
+  has actually seen, not boxes ticked. Web and native. [OVERVIEW.md](OVERVIEW.md)
+- **A sidebar that groups and hides.** A project's sections sit under Support,
+  Product, Grow, Site and Build, and a project can hide the ones it does not use
+  (Project → Settings → Sidebar), in the sidebar and the palette; nothing is
+  deleted. Web and native. [OVERVIEW.md](OVERVIEW.md)
 - **One inbox for every project.** Projects are colour-coded, with one unread
   count and filters for All, Mine, Unassigned, Open, Unread and Archived. Search by
   the customer's name, email or user ID.
@@ -124,7 +142,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Write first.** Start a conversation with a user, for example after a failed
   payment.
 - **Unsend and react.** Delete a message, or add a reaction.
-- **Customer context.** The user's record, their recent errors, and the board
+- **Customer context.** The user's record, their recent errors, and the planning
   items and changelog entries linked to the conversation.
 - **Email alerts.** Each project emails the addresses you choose when someone
   writes. Users who gave an address get replies by email, with a link back into
@@ -143,6 +161,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Actions call back to your app.** An operator runs an action such as
   "delete". It can require an internal note. HelpBites then POSTs a payload
   signed with HMAC-SHA256 to your webhook. [CONNECTING.md](CONNECTING.md)
+- **A warning when an action has nowhere to go.** The type editor, and the actions
+  in the inbox, say so while the project has no action webhook URL and secret
+  (they would fail), and link to Install & API where it is set.
 
 ## 4. Knowledge base and AI assistants
 
@@ -177,17 +198,25 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   does not answer.
 - **You decide what it sees.** Assign knowledge to an assistant by model, by
   path, or by single FAQ, with exclusions.
-- **Test before you turn it on.** Test retrieval in the panel, or test answers
-  over the API.
+- **Readiness at a glance.** The assistant's page opens with what it still needs
+  before it answers customers by itself: an AI provider, knowledge to read, an
+  active status and auto-reply on. The project's setup checklist uses the same
+  checks.
+- **Test answer, with the reason.** Ask a question the way a customer would and see
+  what it would do: answer (with the reply it would send), hand it to the team or
+  stay silent, and why: which routing rule decided, or that nothing matched, or
+  that the best match scored under the confidence bar, with the knowledge it found.
+  It makes the same decision as a real message. Over the API too:
+  `POST /v1/admin/support-agents/:id/test-answer`.
 - **Workspace AI settings.** Bring your own LLM endpoint, with a connection test.
 - **AI elsewhere.** The email designer (section 6), a cause-and-fix note on new
   errors (section 8), and the changelog CLI (section 11).
 
 ## 5. Feedback, roadmap, changelog, blog, brand kit and pages
 
-**Feedback board** [FEEDBACK.md](FEEDBACK.md)
+**Feedback** [FEEDBACK.md](FEEDBACK.md)
 
-- **Public board per project.** Users post ideas and bugs. Post types, platforms,
+- **Public feedback page per project.** Users post ideas and bugs. Post types, platforms,
   tags and statuses are yours to define.
 - **Statuses with meaning.** Each status belongs to a category (open, planned,
   active, done or closed). The category drives voting and the roadmap.
@@ -198,14 +227,14 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Follow and get emailed.** Authors and commenters follow automatically.
   Followers hear about status changes, public comments and mentions. Anyone can
   mute or unfollow.
-- **Panel views.** A list or a kanban. Edit posts and reply as the team.
+- **Panel views.** A list or columns. Edit posts and reply as the team.
   Configure statuses, types, tags and options in Settings.
-- **Import an existing board.** Up to 100 posts per call, keeping votes, comments
+- **Import an existing feedback page.** Up to 100 posts per call, keeping votes, comments
   and numbers.
 
-**Project board and roadmap** [FEEDBACK.md](FEEDBACK.md#board--roadmap)
+**Planning and the public roadmap** [FEEDBACK.md](FEEDBACK.md#planning--roadmap)
 
-- **Internal board.** Linear-style items on a kanban: title, Markdown description,
+- **Planning.** Linear-style items on a kanban: title, Markdown description,
   status, priority, assignee, labels, target date and `#number`. Drag to move or
   reorder.
 - **Links.** Connect an item to up to 50 feedback posts and 50 conversations.
@@ -214,8 +243,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   its linked posts to the matching feedback status.
 - **Public roadmap.** Items stay private until you publish them. A published item
   appears once it is planned, active or done, and shows only its public
-  description. Until the board has a published item, the roadmap keeps listing
-  feedback posts, so switching the board on never empties it. Layouts: columns, timeline or list. It has its own page at
+  description. Until Planning has a published item, the roadmap keeps listing
+  feedback posts, so switching Planning on never empties it. Layouts: columns, timeline or list. It has its own page at
   `/roadmap/pk_…` and can be embedded.
 
 **Changelog** [FEEDBACK.md](FEEDBACK.md#changelog)
@@ -224,7 +253,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   Breaking, and group into versioned releases.
 - **Review before publishing.** Approve or reject a draft. Nothing is public until
   it is published. Archive or merge entries.
-- **Drafts from shipped work.** With auto-draft on, a done post or board item
+- **Drafts from shipped work.** With auto-draft on, a done post or planning item
   drafts an entry for you. Entries keep links to their sources in the panel, and
   the public changelog never shows those links.
 - **Public changelog.** A page at `/changelog/pk_…`, plus JSON, a filtered flat
@@ -327,8 +356,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   contrast, placeholder links, and tags that mail clients strip.
 - **AI designer.** Turns pasted HTML into editable blocks, or edits on request.
   Each turn can be undone.
-- **Shared masters.** One master design can be linked into many projects. Each
-  project fills in its own brand and values. Detach to take a private copy.
+- **Shared templates.** One shared template (called a master before) can be linked
+  into many projects. Each project fills in its own brand and values. Detach to take
+  a private copy.
 - **Components library.** Reusable blocks with editable fields, shared across
   projects or kept to one.
 - **Share, test, import, export.** Share a view or edit link, send test emails,
@@ -345,8 +375,16 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   test mode.
 - **Render and fetch.** Preview a send without sending it, or fetch a template
   rendered for your own mail provider.
-- **Per-project sender.** Its own from name and address, sending domain, and
-  reply-to.
+- **One email section per project.** Templates, Campaigns, Sequences, Log and
+  Settings in a single place, with the component library behind Templates and the
+  suppressed addresses behind the Log.
+- **One sender form.** Email → Settings holds the project's own from name and
+  address, sending domain and reply-to, with a switch to give campaigns and
+  sequences an address of their own, next to the newsletter's settings.
+- **A strip that says what is missing.** Across the top of every email tab: the
+  mailer key on the server, a sender, Mailgun's delivery webhook, and (for campaigns
+  and sequences) a postal address and a sender that is not paused. Also at
+  `GET /v1/admin/projects/:id/email-setup`.
 - **Delivery log.** One entry per recipient, with a timeline kept current by
   Mailgun's delivery webhook. Stats by status, source and template. Log retention
   is configurable, and secret-looking values are redacted.
@@ -403,7 +441,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   welcome email from any template (sent once), a sequence to start, and where to
   send people next.
 
-**Campaigns and sequences** [MARKETING.md](MARKETING.md)
+**Campaigns and sequences** [MARKETING.md](MARKETING.md) (tabs of a project's Email section)
 
 - **Broadcast campaigns.** Send a template to a segment or topic. Test, schedule
   or send now, then pause, resume or cancel. Opens and clicks update live.
@@ -466,8 +504,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   light, dark or system theme, and sign out.
 - **Admin API keys.** Create, rename and revoke `ak_…` keys for scripts and tools.
 - **Projects.** Create a project, then set its site URL, allowed widget origins,
-  reply name, notification addresses, accent colour and logo. See and rotate its
-  secret. An overview page summarises it. [CONNECTING.md](CONNECTING.md)
+  reply name, notification addresses, accent colour and logo, and choose which
+  sections show in its sidebar. See and rotate its secret. An overview page
+  summarises it, with its setup checklist and what needs attention. [CONNECTING.md](CONNECTING.md)
 
 ## 10. Native apps (iPhone, iPad, Mac)
 
@@ -480,13 +519,17 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Inbox.** Conversations, replies with images, status, deleting a message, and
   starting a new conversation.
 - **Most of the panel.** Projects and their settings, team, API keys, the developer
-  page, contacts, knowledge, assistants, tickets, feedback, board, changelog, legal,
+  page, contacts, knowledge, assistants, ticket types, feedback, planning, changelog, legal,
   onboarding (with a live preview), pricing tables (with a live preview, results,
   A/B tests and AI suggestions), the brand kit, the email editor with its AI
   designer, email log and suppressions, campaigns, flags, and errors.
 - **Push notifications.** A new customer message can notify the device. This needs
   Apple push (APNs) credentials on the server.
-- **Keyboard shortcuts** on iPad and Mac, and a ⌘K palette.
+- **Keyboard shortcuts** on iPad and Mac, and a ⌘K palette that also searches
+  conversations and knowledge.
+- **The same navigation and prerequisites.** Sections grouped and hideable per
+  project, the setup checklist and needs-attention list, the assistant readiness
+  strip with test answer, the email setup strip and the one Email section.
 
 ## 11. Developer platform
 
@@ -496,7 +539,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   [CONNECTING.md](CONNECTING.md)
 - **AI assistants (MCP).** An MCP server at `/mcp` lets Claude, ChatGPT, Cursor or
   any MCP client work in a workspace as the operator who connected it: read and reply
-  in the inbox, add notes, triage the feedback board, move board items, write and
+  in the inbox, add notes, triage feedback, move planning items, write and
   publish changelog entries, browse errors, and edit, publish, A/B test and get AI
   suggestions for pricing tables. Sign in with the browser (OAuth with
   PKCE and dynamic registration, for claude.ai and ChatGPT) or paste an admin API
@@ -505,7 +548,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   keys**, where the panel and the native app show the address to copy.
   [MCP.md](MCP.md)
 - **Realtime streams.** Server-sent events for end users, operators, the feedback
-  board, and shared email previews.
+  page, and shared email previews.
 - **Webhooks.** A signed action webhook for ticket actions, a signed event webhook
   for contacts, Mailgun's delivery webhook, and the GlitchTip and Bugsink alert
   webhooks.
@@ -560,7 +603,7 @@ repository. See [EDITIONS.md](EDITIONS.md).
 - **Push.** Off until APNs credentials are set on the server.
 - **Contact sync.** Rows deleted upstream are not noticed yet. Erase them through
   the API. [CONTACTS.md](CONTACTS.md)
-- **Feedback votes.** Someone who voted on two posts linked to one board item
+- **Feedback votes.** Someone who voted on two posts linked to one planning item
   counts twice in that item's total. [FEEDBACK.md](FEEDBACK.md)
 - **Bugsink.** Its issues cannot be searched by customer, so a customer's errors do
   not appear in their conversation. [ERRORS.md](ERRORS.md)
@@ -593,4 +636,10 @@ repository. See [EDITIONS.md](EDITIONS.md).
 - **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
   email, campaigns, legal documents, flags or knowledge base editing, and it issues no refresh tokens, so an
   OAuth-connected assistant signs in again after a year. [MCP.md](MCP.md)
+- **Needs attention.** The list is read every minute and when the web panel's tab comes
+  back; only the inbox badge follows messages as they arrive. [OVERVIEW.md](OVERVIEW.md)
+- **Native navigation.** A link into one tab of a section (Email → Settings from a setup
+  row or the project settings, Email → Log from an attention row) opens the section on
+  its first tab, and the iPad sidebar lists a project's sections in the grouped order
+  without group headings.
 - **Language.** The web panel is translated into Spanish, Catalan, Chinese, Japanese and Korean; the native app and the widgets are English only.

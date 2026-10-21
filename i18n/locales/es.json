@@ -33,7 +33,16 @@
     "switchToLight": "Cambiar a tema claro",
     "switchToDark": "Cambiar a tema oscuro",
     "signOut": "Cerrar sesión",
-    "exitDemo": "Salir de la demo"
+    "exitDemo": "Salir de la demo",
+    "groups": {
+      "support": "Soporte",
+      "product": "Producto",
+      "grow": "Crecimiento",
+      "site": "Sitio",
+      "build": "Desarrollo"
+    },
+    "unreadMessages": "{count} mensaje no leído | {count} mensajes no leídos",
+    "needsAttention": "{count} cosa requiere atención | {count} cosas requieren atención"
   },
   "sections": {
     "overview": "Resumen",
@@ -42,19 +51,18 @@
     "revenue": "Ingresos",
     "knowledge": "Base de conocimiento",
     "assistants": "Asistentes",
-    "types": "Tickets",
+    "types": "Tipos de ticket",
     "feedback": "Comentarios",
-    "board": "Tablero",
+    "board": "Planificación",
     "changelog": "Novedades",
     "onboarding": "Onboarding",
     "legal": "Legal",
     "brand": "Marca",
     "pages": "Páginas",
     "email": "Correo",
-    "campaigns": "Campañas",
     "flags": "Flags",
     "errors": "Errores",
-    "dev": "Dev",
+    "dev": "Instalación y API",
     "settings": "Ajustes",
     "blog": "Blog",
     "forms": "Formularios",
@@ -97,15 +105,16 @@
     "connectStripe": "Conectar Stripe",
     "waitingTitle": "Esperando la primera sincronización",
     "waitingDescription": "Los pagos aparecerán aquí en cuanto se lea el primer tramo.",
-    "totalsIn": "Los totales están en {currency}. No incluidos: {others}."
+    "totalsIn": "Los totales están en {currency}. No incluidos: {others}.",
+    "needsAttention": "Requiere atención"
   },
   "layout": {
     "demoBanner": "Demo con datos de ejemplo. Nada de lo que hagas aquí se guarda.",
     "suspended": "Este espacio de trabajo está suspendido. Tus datos están a salvo; aún puedes exportarlos desde Ajustes → Espacio de trabajo.",
     "deleting": "Este espacio de trabajo se está eliminando.",
-    "palettePlaceholder": "Ir a una página o proyecto…",
+    "palettePlaceholder": "Ir a una página o buscar conversaciones y respuestas…",
     "pages": "Páginas",
-    "emailTemplates": "Plantillas de correo",
+    "emailTemplates": "Plantillas compartidas",
     "emailLog": "Registro de correo",
     "account": "Cuenta",
     "appearance": "Apariencia",
@@ -122,7 +131,9 @@
     "newWorkspaceTitle": "Nuevo espacio de trabajo",
     "newWorkspaceDescription": "Un espacio aparte con sus propios proyectos, bandeja de entrada y equipo. Serás su propietario.",
     "createWorkspace": "Crear espacio de trabajo",
-    "createWorkspaceError": "No se pudo crear el espacio de trabajo"
+    "createWorkspaceError": "No se pudo crear el espacio de trabajo",
+    "searchConversations": "Conversaciones",
+    "searchKnowledge": "Conocimiento"
   },
   "login": {
     "resetTitle": "Establece una nueva contraseña",
@@ -275,20 +286,22 @@
     "typeFields": "Campos de {type}",
     "about": "Acerca de",
     "recentErrors": "Errores recientes",
-    "actions": "Acciones"
+    "actions": "Acciones",
+    "actionsNoWebhook": "Este proyecto no tiene webhook de acciones, así que fallarán.",
+    "actionsNoWebhookFix": "Configurarlo"
   },
   "board": {
     "itemCount": "{count} elemento | {count} elementos",
     "onRoadmap": "{count} en la hoja de ruta",
-    "boardOff": "El tablero está desactivado",
+    "boardOff": "La planificación está desactivada",
     "publicRoadmap": "Hoja de ruta pública",
     "openRoadmap": "Abrir la hoja de ruta pública",
     "newItem": "Nuevo elemento",
-    "boardFor": "Un tablero para {name}",
+    "boardFor": "Planificación para {name}",
     "thisProject": "este proyecto",
     "setupDescription": "Planifica el trabajo detrás de tus comentarios y tu soporte: elementos en un kanban, vinculados a las publicaciones y conversaciones que responden. Elige cuáles aparecen en una hoja de ruta pública.",
     "customizeFirst": "Personalizar primero",
-    "turnOn": "Activar el tablero",
+    "turnOn": "Activar la planificación",
     "roadmapChip": "En la hoja de ruta",
     "labels": "Etiquetas",
     "assignee": "Asignado",
@@ -319,7 +332,7 @@
     "publicDescription": "Descripción pública",
     "publicDescriptionHint": "Markdown. La hoja de ruta nunca muestra la descripción interna.",
     "publicDescriptionPlaceholder": "Qué significa esto para los usuarios",
-    "roadmapNeedsFeedback": "La hoja de ruta se publica a través del tablero de comentarios: actívalo, con su vista de hoja de ruta, en Comentarios → Ajustes.",
+    "roadmapNeedsFeedback": "La hoja de ruta pública se publica a través de los comentarios públicos: actívalos, con su vista de hoja de ruta, en Comentarios → Ajustes.",
     "notOnRoadmap": "Aún no está en la hoja de ruta: {status} permanece privado.",
     "thisStatus": "este estado",
     "feedback": "Comentarios",
@@ -332,16 +345,16 @@
     "conversations": "Conversaciones",
     "conversation": "Conversación",
     "unlinkConversation": "Desvincular conversación",
-    "linkFromInbox": "Vincula conversaciones desde la bandeja de entrada: abre una y usa la sección Tablero.",
+    "linkFromInbox": "Vincula conversaciones desde la bandeja de entrada: abre una y usa la sección Planificación.",
     "clickAgainDelete": "Vuelve a hacer clic para eliminar",
     "delete": "Eliminar",
     "saving": "Guardando…",
     "changesSave": "Los cambios se guardan automáticamente",
     "createItem": "Crear elemento",
-    "settingsTitle": "Ajustes del tablero",
-    "settingsDescription": "El tablero, sus estados y etiquetas, y la hoja de ruta pública.",
+    "settingsTitle": "Ajustes de planificación",
+    "settingsDescription": "Los elementos de planificación, sus estados y etiquetas, y la hoja de ruta pública.",
     "savesAsChange": "Se guarda al cambiarlo",
-    "boardOn": "El tablero está activado",
+    "boardOn": "La planificación está activada",
     "boardOnDescription": "Elementos, vínculos desde la bandeja de entrada y comentarios, y la hoja de ruta.",
     "syncFeedback": "Sincronizar comentarios vinculados",
     "syncFeedbackDescription": "Cuando un elemento pasa a otra categoría de estado, sus publicaciones vinculadas lo siguen, y sus seguidores reciben los correos habituales.",
@@ -361,10 +374,10 @@
     "urgent": "Urgente",
     "unassigned": "Sin asignar",
     "anyone": "Cualquiera",
-    "turnOnFeedbackTitle": "Activa primero el tablero de comentarios",
+    "turnOnFeedbackTitle": "Activa primero los comentarios",
     "roadmapLinkCopied": "Enlace de la hoja de ruta copiado",
     "yourRoadmap": "Tu hoja de ruta pública",
-    "loadError": "No se pudo cargar el tablero",
+    "loadError": "No se pudo cargar la planificación",
     "moveError": "No se pudo mover el elemento",
     "saveError": "No se pudo guardar",
     "createError": "No se pudo crear el elemento",
@@ -374,7 +387,7 @@
     "linkItemError": "No se pudo vincular el elemento",
     "unlinkItemError": "No se pudo desvincular el elemento",
     "untitled": "Sin título",
-    "setUpBoard": "Configurar el tablero del proyecto",
+    "setUpBoard": "Configurar la planificación",
     "addToExisting": "Añadir a uno existente…",
     "unlinkItem": "Desvincular #{number} {title}"
   },
@@ -387,9 +400,9 @@
     "newRelease": "Nuevo lanzamiento",
     "newEntry": "Nueva entrada",
     "offBefore": "El changelog público está desactivado. Activa",
-    "offAfter": "en Ajustes para servir su página, JSON y RSS; no necesita el tablero de comentarios.",
+    "offAfter": "en Ajustes para servir su página, JSON y RSS; no depende de Comentarios.",
     "nothingYet": "Todavía no hay nada",
-    "emptyDescription": "Escribe lo que se ha lanzado, con tus propias palabras, y agrúpalo en lanzamientos. Las entradas permanecen privadas hasta que las publiques; vincula las publicaciones, elementos del tablero, tickets y errores de los que proceden para ver qué está hecho.",
+    "emptyDescription": "Escribe lo que se ha lanzado, con tus propias palabras, y agrúpalo en lanzamientos. Las entradas permanecen privadas hasta que las publiques; vincula las publicaciones, elementos de planificación, tickets y errores de los que proceden para ver qué está hecho.",
     "aiWaiting": "{count} borrador escrito por IA está esperando tu revisión. | {count} borradores escritos por IA están esperando tu revisión.",
     "nothingPublic": "Nada es público hasta que lo apruebes.",
     "selected": "{count} seleccionadas",
@@ -452,7 +465,7 @@
     "settingsTitle": "Ajustes de novedades",
     "settingsDescription": "Cómo empiezan las entradas.",
     "autoDraft": "Crear borradores automáticamente",
-    "autoDraftDescription": "Una publicación de comentarios o un elemento del tablero que llega a estado hecho recibe una entrada en borrador, salvo que ya esté vinculado a una. Los borradores nunca se publican por ti. Los tickets y errores siempre se añaden a mano.",
+    "autoDraftDescription": "Una publicación de comentarios o un elemento de planificación que llega a estado hecho recibe una entrada en borrador, salvo que ya esté vinculado a una. Los borradores nunca se publican por ti. Los tickets y errores siempre se añaden a mano.",
     "commitAi": "Escribir entradas a partir de nuevos commits",
     "commitAiDescription": "Un push a la rama predeterminada de un repositorio conectado hace que la IA redacte entradas a partir de sus nuevos commits (solo se leen los mensajes). Esperan tu revisión. Requiere repositorios de GitHub en Ajustes y el webhook de la aplicación (ver docs/GITHUB.md).",
     "autoPublish": "Publicarlas sin revisión",
@@ -461,10 +474,10 @@
     "commentsDescription": "Los lectores que han iniciado sesión pueden comentar las entradas publicadas. Tu sitio envía su token de identidad; los administradores pueden ocultar o eliminar cualquier comentario.",
     "emailSubscribers": "Suscriptores por correo",
     "emailSubscribersDescription": "Los lectores pueden pedir un correo cuando algo se lanza (en el momento o cada lunes). Necesita CHANGELOG_LINK_SECRET o HELPBITES_SECRET (cualquiera de 32+ caracteres) en el servidor, y ENABLE_CHANGELOG_NOTIFY=true para que el planificador envíe.",
-    "publicChangelogDescription": "Sirve la página de novedades, el embed, JSON y RSS a todo el mundo. Es independiente del tablero de comentarios, cuya pestaña Novedades también necesita esto activado.",
+    "publicChangelogDescription": "Sirve la página de novedades, el embed, JSON y RSS a todo el mundo. Es independiente de Comentarios, cuya pestaña Novedades también necesita esto activado.",
     "savesAsChange": "Se guarda al cambiarlo",
     "followsFeedback": "Salvo que lo actives, si las novedades son públicas, su página y su feed RSS siguen la",
-    "followsFeedbackEnd": " opción de la pestaña del tablero.",
+    "followsFeedbackEnd": " de Comentarios.",
     "changelogOption": "opción Novedades",
     "writeFromCommits": "Escribir desde commits",
     "writeFromCommitsDescription": "La IA lee tus mensajes de commit y redacta entradas. No se publica nada.",
@@ -493,7 +506,7 @@
     "save": "Guardar",
     "createRelease": "Crear lanzamiento",
     "turnOnFirst": "Activa primero el changelog público",
-    "turnOnFirstDescription": "Activa «Changelog público» en los ajustes de novedades. No necesita el tablero de comentarios.",
+    "turnOnFirstDescription": "Activa «Changelog público» en los ajustes de novedades. No depende de Comentarios.",
     "linkCopied": "Enlace del changelog copiado",
     "yourPublic": "Tu changelog público",
     "loadError": "No se pudo cargar el changelog",
@@ -517,7 +530,7 @@
     "publishReleaseError": "No se pudo publicar el lanzamiento",
     "releaseDeleteError": "No se pudo eliminar el lanzamiento",
     "feedbackPost": "Publicación de comentarios",
-    "boardItem": "Elemento del tablero",
+    "boardItem": "Elemento de planificación",
     "conversation": "Conversación",
     "tagNew": "Nuevo",
     "tagImproved": "Mejorado",
@@ -622,7 +635,7 @@
     "schedule": "Programar",
     "unpublish": "Despublicar",
     "deletePost": "Eliminar entrada",
-    "confirmDelete": "¿Eliminar esta entrada con sus comentarios y reacciones? El boletín con el que se envió se queda en Campañas.",
+    "confirmDelete": "¿Eliminar esta entrada con sus comentarios y reacciones? El boletín con el que se envió se queda en Correo → Campañas.",
     "deleteError": "No se pudo eliminar la entrada",
     "unsaved": "Sin guardar",
     "unsavedLive": "Sin guardar: pulsa Actualizar para cambiar la entrada publicada",
@@ -1192,7 +1205,6 @@
     }
   },
   "campaigns": {
-    "title": "Campañas",
     "new": "Nueva campaña",
     "save": "Guardar",
     "listLabel": "Campañas",
@@ -1212,10 +1224,8 @@
       "canceled": "Cancelada"
     },
     "tabs": {
-      "label": "Secciones de campaña",
       "campaigns": "Campañas",
-      "sequences": "Secuencias",
-      "settings": "Ajustes"
+      "sequences": "Secuencias"
     },
     "sequences": {
       "new": "Nueva secuencia",
@@ -1291,8 +1301,6 @@
       "redirectHint": "Opcional; si no, una página de agradecimiento de HelpBites",
       "hostedPage": "Página de registro alojada",
       "siteForm": "O un formulario en tu sitio",
-      "sender": "Remitente",
-      "senderIntro": "Opcional. Un dominio separado mantiene la reputación de los boletines aparte del correo de soporte y de cuenta. Debe ser un dominio de envío de la misma cuenta de Mailgun.",
       "fromName": "Nombre del remitente",
       "fromAddress": "Dirección del remitente",
       "mailDomain": "Dominio de Mailgun",
@@ -1307,7 +1315,7 @@
     }
   },
   "emailEditor": {
-    "masters": "Maestros",
+    "masters": "Plantillas compartidas",
     "templates": "Plantillas",
     "components": "Componentes",
     "log": "Registro",
@@ -1328,7 +1336,7 @@
     "newComponent": "Nuevo componente",
     "newComponentMore": "Nuevo componente…",
     "projectComponentsNote": "Los componentes de este proyecto y los compartidos.",
-    "sharedComponentsNote": "Compartidos con todos los proyectos y los maestros.",
+    "sharedComponentsNote": "Compartidos con todos los proyectos y las plantillas compartidas.",
     "componentsHelp": "Insértalos desde Añadir en el editor; el diseñador de IA los usa y guarda los nuevos. Cada correo conserva su propia copia.",
     "nothingMatches": "Nada coincide",
     "noComponents": "Aún no hay componentes",
@@ -1505,7 +1513,7 @@
     "newChat": "Nuevo chat",
     "greeting": "¿Qué debería hacer este correo?",
     "describeIt": "Descríbelo o empieza con una de estas opciones.",
-    "masterHint": "Como maestro, usa el logotipo, el nombre y el color de cada proyecto, así que escríbelo una vez para todos.",
+    "masterHint": "Como plantilla compartida, usa el logotipo, el nombre y el color de cada proyecto, así que escríbela una vez para todos.",
     "clickBlockHint": "Haz clic en cualquier bloque para señalarlo.",
     "copyReply": "Copiar respuesta",
     "copy": "Copiar",
@@ -1584,15 +1592,16 @@
     "aiDesigner": "Diseñador de IA",
     "resizeSplit": "Cambiar el tamaño del diseñador de IA y de las capas",
     "replacesDesign": "Reemplaza este diseño. Deshacer lo recupera.",
-    "brandHeader": "Cabecera de marca"
+    "brandHeader": "Cabecera de marca",
+    "settings": "Ajustes"
   },
   "emailLibrary": {
     "api": {
       "apiDocs": "documentación de la API",
       "copyUrl": "Copiar URL",
       "defaultsTo": "por defecto “{value}”",
-      "descriptionMaster": "Las maestras se leen por ID con una clave de API de administrador. Los proyectos que enlazan esta maestra la obtienen y la envían con su propia clave.",
-      "descriptionProject": "Desde tu servidor, con el secreto de este proyecto (Proyecto → Dev). Nunca desde el navegador.",
+      "descriptionMaster": "Las plantillas compartidas se leen por ID con una clave de API de administrador. Los proyectos que enlazan esta plantilla la obtienen y la envían con su propia clave.",
+      "descriptionProject": "Desde tu servidor, con el secreto de este proyecto (Proyecto → Instalación y API). Nunca desde el navegador.",
       "fetchNote": "Las variables son parámetros de consulta. Sin {format} recibes JSON: {json}, listo para cualquier proveedor de correo.",
       "fetchTitle": "Obtenerlo renderizado",
       "fullReference": "Referencia completa: {link}.",
@@ -1617,7 +1626,7 @@
       "duplicate": "Duplicar",
       "edit": "Editar",
       "loadMore": "Cargar más",
-      "master": "Maestra",
+      "master": "Plantilla compartida",
       "open": "Abrir",
       "project": "Proyecto",
       "remove": "Quitar",
@@ -1628,17 +1637,17 @@
       "openError": "No se pudo abrir esta plantilla"
     },
     "library": {
-      "addMaster": "Añadir maestra",
-      "addMasterDescription": "El proyecto usa el diseño de la maestra con su propia marca y valores. Los cambios en la maestra también le llegan.",
-      "addMasterTitle": "Añadir una maestra",
+      "addMaster": "Añadir plantilla compartida",
+      "addMasterDescription": "El proyecto usa el diseño de la plantilla compartida con su propia marca y valores. Los cambios en la plantilla compartida también le llegan.",
+      "addMasterTitle": "Añadir una plantilla compartida",
       "all": "Todas",
-      "copiedToMasters": "“{name}” copiada a las maestras",
-      "copyToMasters": "Copiar a maestras",
+      "copiedToMasters": "“{name}” copiada a las plantillas compartidas",
+      "copyToMasters": "Copiar a plantillas compartidas",
       "createOne": "Crea una",
       "deleteConfirm": "¿Eliminar “{name}”? Esta acción no se puede deshacer.",
       "deleteFolderConfirm": "¿Eliminar “{name}”? Lo que contiene subirá un nivel.",
-      "emptyMasterDescription": "Una maestra se diseña una vez y la reutiliza cada proyecto, cada uno con su propio logotipo, colores y textos.",
-      "emptyProjectDescription": "Empieza desde cero o añade una maestra para que este proyecto comparta su diseño.",
+      "emptyMasterDescription": "Una plantilla compartida se diseña una vez y la reutiliza cada proyecto, cada uno con su propio logotipo, colores y textos.",
+      "emptyProjectDescription": "Empieza desde cero o añade una plantilla compartida para que este proyecto comparta su diseño.",
       "export": "Exportar",
       "exportAll": "Exportar todo como JSON",
       "folder": "Carpeta",
@@ -1654,25 +1663,25 @@
       "importPlanErrors": ", {failed} con errores:\n{errors}",
       "importedToast": "{created} creadas, {updated} actualizadas",
       "inUse": "En uso",
-      "linkedDescription": "Maestra enlazada: su diseño, la marca y los valores de este proyecto.",
-      "masterSubtitle": "Maestras: diséñalas una vez y enlázalas a cualquier proyecto. Cada proyecto completa su marca y sus valores.",
+      "linkedDescription": "Plantilla compartida enlazada: su diseño, la marca y los valores de este proyecto.",
+      "masterSubtitle": "Plantillas compartidas: diséñalas una vez y enlázalas a cualquier proyecto. Cada proyecto completa su marca y sus valores.",
       "moveTo": "Mover a",
       "newFolder": "Nueva carpeta",
-      "newMaster": "Nueva maestra",
+      "newMaster": "Nueva plantilla compartida",
       "newTemplate": "Nueva plantilla",
-      "noMastersYet": "Aún no hay maestras. {link} primero.",
+      "noMastersYet": "Aún no hay plantillas compartidas. {link} primero.",
       "noMatch": "Ninguna plantilla coincide",
       "noMatchDescription": "Prueba con otro nombre.",
       "noTemplatesInFile": "Ninguna plantilla en ese archivo",
       "noTemplatesInFolder": "No hay plantillas en esta carpeta.",
       "noTemplatesYet": "Aún no hay plantillas aquí",
       "notUsed": "Sin usar todavía",
-      "openMaster": "Abrir maestra",
+      "openMaster": "Abrir plantilla compartida",
       "openTemplate": "Abrir {name}",
       "pickerDescription": "Empieza con una estructura lista y personalízala.",
-      "projectSubtitle": "Las plantillas de este proyecto y las maestras que usa, con su propia marca y valores.",
+      "projectSubtitle": "Las plantillas de este proyecto y las plantillas compartidas que usa, con su propia marca y valores.",
       "removeFromProject": "Quitar del proyecto",
-      "removeMasterConfirm": "¿Quitar “{name}” de este proyecto? La maestra se conserva.",
+      "removeMasterConfirm": "¿Quitar “{name}” de este proyecto? La plantilla compartida se conserva.",
       "renameFolder": "Renombrar carpeta",
       "sendTest": "Enviar prueba…",
       "templateActions": "Acciones de la plantilla",
@@ -1681,16 +1690,16 @@
     },
     "linked": {
       "brand": "Marca",
-      "brandAccent": "Los botones del color de marca de la maestra usan el color de acento del proyecto.",
-      "brandAvailable": "Esta maestra aún no usa los marcadores de marca del proyecto. Disponibles: {tokens}.",
+      "brandAccent": "Los botones del color de marca de la plantilla compartida usan el color de acento del proyecto.",
+      "brandAvailable": "Esta plantilla compartida aún no usa los marcadores de marca del proyecto. Disponibles: {tokens}.",
       "brandUsed": "Se rellena desde este proyecto: {tokens}.",
       "detach": "Desvincular",
-      "detachConfirm": "¿Desvincular de la maestra? Este proyecto tendrá su propia copia editable, y los cambios posteriores en la maestra ya no le llegarán.",
-      "editMaster": "Editar maestra",
+      "detachConfirm": "¿Desvincular de la plantilla compartida? Este proyecto tendrá su propia copia editable, y los cambios posteriores en la plantilla compartida ya no le llegarán.",
+      "editMaster": "Editar plantilla compartida",
       "empty": "Vacío",
       "logo": "Logotipo",
-      "noVariables": "La maestra no tiene variables propias.",
-      "removeConfirm": "¿Quitar esta maestra del proyecto? La maestra en sí se conserva.",
+      "noVariables": "La plantilla compartida no tiene variables propias.",
+      "removeConfirm": "¿Quitar esta plantilla compartida del proyecto? La plantilla en sí se conserva.",
       "saveError": "No se pudo guardar",
       "sendIt": "Enviarlo",
       "sendKeyDescription": "Lo que tu servidor pasa como template a POST /v1/emails/send.",
@@ -1731,7 +1740,7 @@
       "messageError": "No se pudo cargar el mensaje",
       "messageId": "ID del mensaje",
       "metadata": "Metadatos",
-      "noContent": "Este proyecto no guarda el contenido de los mensajes. Activa {setting} en Proyecto → Dev → Envío de correo para ver aquí los mensajes futuros.",
+      "noContent": "Este proyecto no guarda el contenido de los mensajes. Activa {setting} en Proyecto → Correo → Ajustes para ver aquí los mensajes futuros.",
       "noMatch": "No hay coincidencias",
       "noMatchDescription": "Prueba con otro filtro.",
       "notConfiguredDescription": "Define MAILGUN_API_KEY, MAILGUN_DOMAIN y MAILGUN_FROM_EMAIL en el servidor; hasta entonces, los envíos fallan con 503.",
@@ -1853,7 +1862,7 @@
     },
     "test": {
       "brandSender": "Marca y remitente",
-      "brandSenderHelp": "Una maestra no tiene proyecto propio; toma prestados el logotipo, los colores y la dirección de remitente de uno.",
+      "brandSenderHelp": "Una plantilla compartida no tiene proyecto propio; toma prestados el logotipo, los colores y la dirección de remitente de uno.",
       "description": "{name}, con “[Test]” en el asunto. Aparece en el registro de correo.",
       "error": "No se pudo enviar la prueba",
       "noneLabel": "Ninguno: solo valores de ejemplo",
@@ -1924,7 +1933,7 @@
       "sort": "Ordenar",
       "sortTop": "Más votados",
       "sortNew": "Recientes",
-      "views": "Vistas del tablero",
+      "views": "Vistas",
       "mine": "Mías",
       "nothingMatches": "No hay coincidencias",
       "noPostsYet": "Aún no hay publicaciones",
@@ -1949,8 +1958,8 @@
       "saved": "Guardado.",
       "postedThanks": "Publicado. ¡Gracias!",
       "missingKey": "Falta la clave del proyecto. Revisa el atributo data-project del script de comentarios.",
-      "noBoard": "Este proyecto todavía no tiene tablero de comentarios.",
-      "loadFailed": "No se pudo cargar el tablero de comentarios.",
+      "noBoard": "Este proyecto todavía no tiene página de comentarios.",
+      "loadFailed": "No se pudo cargar la página de comentarios.",
       "manage": "Gestionar",
       "status": "Estado",
       "featured": "Destacado",
@@ -2013,7 +2022,7 @@
     "commentCount": "{count} comentario | {count} comentarios",
     "requestCount": "{count} petición | {count} peticiones",
     "votesClosedAria": "{count} voto, votación cerrada | {count} votos, votación cerrada",
-    "boardOff": "El tablero está desactivado",
+    "boardOff": "Los comentarios están desactivados",
     "publicChangelog": "Novedades públicas",
     "openChangelog": "Abrir las novedades públicas",
     "newPost": "Nueva publicación",
@@ -2021,22 +2030,22 @@
     "postHeading": "Publicación",
     "postNumber": "Publicación #{number}",
     "postedAsTeam": "Publicado como el equipo",
-    "setupTitle": "Un tablero público de comentarios para {name}",
+    "setupTitle": "Comentarios públicos para {name}",
     "thisProject": "este proyecto",
-    "setupDescription": "Los usuarios publican ideas y errores, votan lo que más importa y siguen el progreso con una hoja de ruta y novedades. Inserta el tablero listo con una etiqueta script, o crea tu propia interfaz con la API.",
+    "setupDescription": "Los usuarios publican ideas y errores, votan lo que más importa y siguen el progreso con una hoja de ruta y novedades. Inserta la página lista con una etiqueta script, o crea tu propia interfaz con la API.",
     "customizeFirst": "Personalizar primero",
-    "turnOn": "Activar el tablero",
+    "turnOn": "Activar los comentarios",
     "hidden": "Oculto",
     "type": "Tipo",
     "allTypes": "Todos los tipos",
     "layout": "Diseño",
     "listView": "Lista",
-    "boardView": "Tablero",
+    "boardView": "Columnas",
     "loading": "Cargando…",
     "noMatches": "Ningún resultado coincide con estos filtros",
     "noMatchesHint": "Vuelve a activar un estado o borra la búsqueda.",
     "noPosts": "Aún no hay publicaciones",
-    "noPostsHint": "Comparte el tablero o empieza con una publicación tuya.",
+    "noPostsHint": "Comparte la página de comentarios o empieza con una publicación tuya.",
     "posted": "Publicado {time}",
     "by": "por",
     "teamAuthor": "{name} (equipo)",
@@ -2087,10 +2096,10 @@
     "delete": "Eliminar",
     "openOnSite": "Abrir en el sitio",
     "save": "Guardar",
-    "boardSettings": "Ajustes del tablero",
+    "boardSettings": "Ajustes de comentarios",
     "boardSettingsDescription": "Tú defines los estados, los tipos de publicación y las plataformas.",
     "changelogFirstTitle": "Activa primero las novedades",
-    "changelogFirstDescription": "Activa «Novedades públicas» en Proyecto → Novedades → Ajustes. No necesita el tablero de comentarios.",
+    "changelogFirstDescription": "Activa «Novedades públicas» en Proyecto → Novedades → Ajustes. No depende de Comentarios.",
     "changelogLinkCopied": "Enlace de novedades copiado",
     "yourChangelog": "Tus novedades públicas",
     "saveError": "No se pudo guardar",
@@ -2102,9 +2111,9 @@
     "commentChangeError": "No se pudo cambiar el comentario",
     "pinError": "No se pudo fijar el comentario",
     "commentDeleteError": "No se pudo eliminar el comentario",
-    "loadBoardError": "No se pudo cargar el tablero",
+    "loadBoardError": "No se pudieron cargar los comentarios",
     "deleteCommentConfirm": "¿Eliminar este comentario?",
-    "boardLive": "El tablero está activo",
+    "boardLive": "Los comentarios están activos",
     "boardLiveDescription": "Los visitantes pueden leerlo con la clave pública del proyecto; los usuarios con sesión iniciada pueden publicar, votar y comentar.",
     "titleHint": "Por defecto, “{'{'}project{'}'} feedback”",
     "titlePlaceholder": "Peticiones de funciones e informes de errores",
@@ -2122,10 +2131,10 @@
     "emailNotificationsDescription": "Cambios de estado y nuevos comentarios a los seguidores de una publicación, y menciones a quien se menciona.",
     "roadmapView": "Vista de hoja de ruta",
     "roadmapViewDescription": "Columnas de planificado, en curso y hecho en el embed.",
-    "changelogDescription": "Una pestaña de Novedades en el tablero. Requiere tener Novedades públicas activado en Proyecto → Novedades → Ajustes.",
+    "changelogDescription": "Una pestaña de Novedades en la página de comentarios. Requiere tener Novedades públicas activado en Proyecto → Novedades → Ajustes.",
     "statuses": "Estados",
     "statusesHelpBoard": "La categoría define el significado de un estado: los elementos públicos en un estado planificado, activo o hecho aparecen en la hoja de ruta; el resto sigue privado.",
-    "statusesHelpFeedback": "La categoría define el significado de un estado en todas partes: abierto, planificado y activo se muestran en el tablero por defecto; hecho alimenta las novedades y cierra la votación.",
+    "statusesHelpFeedback": "La categoría define el significado de un estado en todas partes: abierto, planificado y activo se muestran en la página de comentarios por defecto; hecho alimenta las novedades y cierra la votación.",
     "label": "Nombre",
     "statusLabel": "Nombre del estado",
     "statusKey": "Clave del estado",
@@ -2178,8 +2187,8 @@
     "removeTag": "Eliminar etiqueta",
     "addLabel": "Añadir etiqueta",
     "addTag": "Añadir etiqueta",
-    "saveBoardSettings": "Guardar ajustes del tablero",
-    "hiddenFromBoard": "Oculto en el tablero público",
+    "saveBoardSettings": "Guardar ajustes de comentarios",
+    "hiddenFromBoard": "Oculto en la página pública de comentarios",
     "you": "Tú",
     "roadmapEmpty": "Todavía no hay nada en la hoja de ruta",
     "roadmapEmptyHint": "Aquí aparecen los trabajos planificados, en curso y entregados.",
@@ -2475,7 +2484,7 @@
         "body": "Responde como equipo, deja notas que el cliente nunca verá y consulta quién es y qué le falló sin salir del hilo.",
         "b1": "Proyectos con código de colores, un solo contador de no leídos y actualizaciones en vivo",
         "b2": "Asigna, prioriza, etiqueta y cierra, con campos personalizados por tipo de ticket",
-        "b3": "Sus errores recientes y los elementos del tablero vinculados aparecen junto al chat",
+        "b3": "Sus errores recientes y los elementos de planificación vinculados aparecen junto al chat",
         "b4": "Las respuestas también se envían por correo cuando no están conectados",
         "alt": "La bandeja de HelpBites: una lista de conversaciones, un hilo con una nota interna y el panel del cliente."
       },
@@ -2491,12 +2500,12 @@
       "board": {
         "eyebrow": "Comentarios y hoja de ruta",
         "title": "Los usuarios dicen qué construir. Tú decides qué se publica.",
-        "body": "Un tablero de comentarios público por proyecto y, detrás, un kanban privado. Los votos de las publicaciones vinculadas se suman en cada tarjeta.",
+        "body": "Una página pública de comentarios por proyecto y, detrás, un kanban de planificación privado. Los votos de las publicaciones vinculadas se suman en cada tarjeta.",
         "b1": "Votos, comentarios, reacciones y {'@'}menciones, con los duplicados fusionados",
         "b2": "Vincula tarjetas con publicaciones de comentarios y conversaciones de la bandeja",
         "b3": "Publica como hoja de ruta pública solo los elementos que elijas",
         "b4": "Mover una tarjeta actualiza sus publicaciones vinculadas y envía correos a sus seguidores",
-        "alt": "El tablero del proyecto: columnas de pendientes, planificadas, en curso y hechas, con el número de votos en cada tarjeta."
+        "alt": "Planificación: columnas de pendientes, planificadas, en curso y hechas, con el número de votos en cada tarjeta."
       },
       "changelog": {
         "eyebrow": "Novedades",
@@ -2510,7 +2519,7 @@
       "email": {
         "title": "Diseña una vez. Personalízalo por proyecto.",
         "body": "Un diseñador por bloques que se ve bien en Gmail, Apple Mail y Outlook, con una IA que convierte el HTML pegado en bloques editables.",
-        "b1": "Un diseño maestro vinculado a cada proyecto, cada uno con su propia marca",
+        "b1": "Una plantilla compartida vinculada a cada proyecto, cada uno con su propia marca",
         "b2": "Comprueba texto alternativo que falta, contraste bajo y enlaces de marcador",
         "b3": "Envía desde tu servidor con una sola llamada a la API, programado o por destinatario",
         "b4": "Componentes reutilizables, enlaces para compartir, envíos de prueba, importación y exportación",
@@ -2624,11 +2633,11 @@
         },
         "overview": {
           "term": "Todas tus apps de un vistazo",
-          "desc": "El panel se abre con una vista general: una tarjeta por app con sus conversaciones no leídas y abiertas y sus ingresos, los últimos mensajes no leídos y los ingresos por app."
+          "desc": "El panel se abre con una vista general: una tarjeta por app con sus conversaciones no leídas y abiertas y sus ingresos, una sola lista de lo que requiere atención (borradores por aprobar, sincronizaciones fallidas, rebotes, alertas activadas), los últimos mensajes no leídos y los ingresos por app. Cada app tiene una lista de puesta en marcha que solo se pone en verde cuando las cosas se conectan de verdad."
         },
         "notes": {
           "term": "Notas, contexto y errores",
-          "desc": "Notas internas que tu cliente nunca ve. Sus errores recientes y los elementos del tablero vinculados aparecen junto a la conversación."
+          "desc": "Notas internas que tu cliente nunca ve. Sus errores recientes y los elementos de planificación vinculados aparecen junto a la conversación."
         },
         "away": {
           "term": "Correo cuando no estás",
@@ -2647,11 +2656,11 @@
         "title": "Comentarios, hoja de ruta, novedades y blog",
         "hint": "Los usuarios te dicen qué construir. Tú les dices qué se ha publicado.",
         "board": {
-          "term": "Un tablero público",
+          "term": "Una página pública de comentarios",
           "desc": "Los usuarios publican ideas y errores, votan, comentan y reaccionan. Tú defines los tipos, las etiquetas y los estados, y fusionas los duplicados."
         },
         "roadmap": {
-          "term": "Una hoja de ruta a partir de tu propio tablero",
+          "term": "Una hoja de ruta a partir de tu propia planificación",
           "desc": "Planifica el trabajo interno en un kanban, enlázalo con publicaciones y conversaciones, y publica solo los elementos que elijas."
         },
         "changelog": {
@@ -2676,7 +2685,7 @@
         },
         "assistants": {
           "term": "Los asistentes responden con ello",
-          "desc": "Cada uno tiene sus propias instrucciones, la IA que elijas entre OpenAI, Anthropic, Gemini y otras (o cualquier endpoint compatible), y reglas de enrutamiento que envían una conversación a la IA o a una persona."
+          "desc": "Cada uno tiene sus propias instrucciones, la IA que elijas entre OpenAI, Anthropic, Gemini y otras (o cualquier endpoint compatible), y reglas de enrutamiento que envían una conversación a la IA o a una persona. Prueba antes una pregunta y comprueba por qué responde o la pasa a una persona."
         },
         "scope": {
           "term": "Tú eliges qué ve",
@@ -2932,11 +2941,6 @@
     "path": "Ruta",
     "faq": "FAQ",
     "add": "Añadir",
-    "testRetrieval": "Probar la recuperación",
-    "testHint": "Mira exactamente qué conocimiento recibiría este asistente para una pregunta: la misma recuperación que usa el entorno de soporte.",
-    "testPlaceholder": "¿Cómo elimino mi cuenta?",
-    "retrieve": "Recuperar",
-    "noMatch": "No coincidió ningún conocimiento: revisa las asignaciones de arriba y que las FAQ estén activas.",
     "couldNotSave": "No se pudo guardar",
     "couldNotAddAccess": "No se pudo añadir el acceso",
     "deleteConfirm": "¿Eliminar «{name}»? Sus asignaciones de conocimiento también se eliminarán.",
@@ -2948,6 +2952,58 @@
       "active": "Activo",
       "disabled": "Desactivado",
       "draft": "Borrador"
+    },
+    "readiness": {
+      "title": "Preparación",
+      "live": "Responde a los clientes por su cuenta",
+      "notLive": "Aún no responde a los clientes por su cuenta",
+      "llm": {
+        "ok": "Hay un proveedor de IA configurado.",
+        "todo": "Ningún proveedor de IA.",
+        "fix": "Ajustes → IA"
+      },
+      "knowledge": {
+        "ok": "Puede leer {count} respuesta | Puede leer {count} respuestas",
+        "todo": "No hay conocimiento que leer: no hay nada asignado, o lo asignado no tiene respuestas activas.",
+        "fix": "Asignar conocimiento"
+      },
+      "active": {
+        "ok": "El estado es activo.",
+        "todo": "El estado no es activo.",
+        "fix": "Ponerlo en activo"
+      },
+      "autoReply": {
+        "ok": "La respuesta automática está activada.",
+        "todo": "La respuesta automática está desactivada, así que solo responde cuando se le pregunta aquí.",
+        "fix": "Activarla"
+      }
+    },
+    "test": {
+      "title": "Probar respuesta",
+      "hint": "Pregunta lo que preguntaría un cliente. Esto ejecuta la misma decisión que un mensaje real: primero tus reglas de enrutamiento, luego el conocimiento que puede leer y su confianza mínima. No se envía nada y no se añade nada a la bandeja de entrada.",
+      "placeholder": "¿Cómo elimino mi cuenta?",
+      "supportType": "Soporte",
+      "run": "Probar respuesta",
+      "error": "No se pudo ejecutar la prueba",
+      "notLive": "Aún no responde a los clientes por su cuenta; consulta Preparación arriba.",
+      "outcome": {
+        "answer": "Respondería",
+        "handoff": "Lo pasaría al equipo",
+        "silent": "Permanecería en silencio"
+      },
+      "reason": {
+        "rule": "La regla {rule} envía al equipo los mensajes como este{conditions}.",
+        "default": "Ninguna regla coincidió, y el valor predeterminado para los mensajes que no coinciden con ninguna regla es el equipo.",
+        "noKnowledge": "Nada de lo que puede leer coincidió con la pregunta.",
+        "lowConfidence": "La mejor coincidencia obtuvo {best}, por debajo de su confianza mínima de {bar}.",
+        "confident": "La mejor coincidencia obtuvo {best}, suficiente para responder."
+      },
+      "ruleLetThrough": "La regla {rule}{conditions} lo dejó pasar.",
+      "ruleType": "tipo de ticket {type}",
+      "ruleKeywords": "palabras clave {keywords}",
+      "wouldSend": "Enviaría, con {model}:",
+      "noProvider": "Respondería, pero no hay ningún proveedor de IA que redacte la respuesta.",
+      "found": "Conocimiento que encontró"
     }
   },
   "admin": {
@@ -3088,41 +3144,15 @@
       "atAGlance": "De un vistazo",
       "needsAttention": "Requiere atención",
       "allClear": "Todo en orden. Ahora mismo no necesitas hacer nada.",
-      "status": "Estado",
       "latestActivity": "Actividad reciente",
       "nothingYet": "Todavía no hay nada",
-      "activityEmpty": "Las conversaciones, los comentarios y los elementos terminados del tablero aparecerán aquí.",
+      "activityEmpty": "Las conversaciones, los comentarios y los elementos de planificación terminados aparecerán aquí.",
       "loadError": "No se pudo cargar la vista general",
       "stats": {
         "open": "Conversaciones abiertas",
         "new": "Nuevas esta semana",
         "emails": "Correos enviados · 7 d",
         "feedback": "Comentarios · 7 d"
-      },
-      "health": {
-        "chat": "Widget de chat",
-        "email": "Envío de correo",
-        "notify": "Avisos al equipo",
-        "feedback": "Tablero de comentarios",
-        "errors": "Seguimiento de errores"
-      },
-      "healthDetail": {
-        "noOrigins": "Ningún origen permitido",
-        "notLoaded": "Aún no se ha cargado en tu sitio",
-        "origins": "{count} origen permitido | {count} orígenes permitidos",
-        "defaultSender": "Remitente predeterminado",
-        "notConfigured": "Sin configurar",
-        "nobodyEmailed": "No se avisa a nadie",
-        "on": "Activado",
-        "off": "Desactivado",
-        "notConnected": "Sin conectar"
-      },
-      "attention": {
-        "unread": "Conversaciones sin leer",
-        "errors": "Informes de error abiertos",
-        "emails": "Correos fallidos · 7 d",
-        "documents": "Documentos de conocimiento que no se pudieron procesar",
-        "feedback": "Comentarios por clasificar"
       },
       "activityTitle": {
         "newFeedback": "Nuevo comentario: {title}",
@@ -3170,18 +3200,8 @@
       "letUsersChooseDescription": "Solo se aplica cuando el proyecto tiene más de un tipo de ticket.",
       "offerOther": "Ofrecer la opción «Otro»",
       "offerOtherDescription": "Crea un ticket de soporte simple.",
-      "emailHint": "De dónde sale el correo de este proyecto (la API de envío, las notificaciones y las actualizaciones de comentarios) y quién se entera de los nuevos chats.",
-      "replyAs": "Responder como",
-      "replyAsHint": "Firma tus respuestas y sus correos",
       "notifyWhenWrites": "Avisar cuando un usuario escriba",
       "notifyHint": "Separados por comas, hasta 5",
-      "fromAddress": "Dirección de remitente",
-      "sendingDomain": "Dominio de envío",
-      "replyTo": "Responder a",
-      "replyToPlaceholder": "Las respuestas van a la dirección de remitente",
-      "keepLog": "Guardar una copia de cada correo en el registro",
-      "keepLogDescription": "Muestra el propio mensaje en el registro. Puede incluir enlaces de inicio de sesión y de restablecimiento.",
-      "emailDefaultsNote": "Los campos vacíos usan los valores predeterminados del servidor, que se muestran en gris. El dominio de envío debe estar en la misma cuenta de Mailgun que la clave API del servidor, y la dirección de remitente debe estar en ese dominio.",
       "collaborators": "Colaboradores",
       "collaboratorsHint": "Las personas que responden a los chats de {name}.",
       "thisProject": "este proyecto",
@@ -3202,7 +3222,13 @@
       "loadError": "No se pudo cargar el proyecto",
       "leaveConfirm": "¿Salir sin guardar los cambios?",
       "data": "Datos",
-      "dataHint": "Llevar este proyecto a otro HelpBites."
+      "dataHint": "Llevar este proyecto a otro HelpBites.",
+      "notifications": "Notificaciones",
+      "notificationsHint": "Quién recibe aviso de los chats nuevos.",
+      "sidebar": "Barra lateral",
+      "sidebarHint": "Desmarca lo que este proyecto no use para quitarlo de la barra lateral y de la lista de ⌘K. No se borra nada, y sus páginas siguen abriéndose desde un enlace. Resumen y Ajustes siempre están ahí.",
+      "senderMoved": "El remitente y el resto de los ajustes de correo del proyecto están en",
+      "senderMovedLink": "Correo → Ajustes"
     },
     "dev": {
       "guide": "Guía",
@@ -3246,11 +3272,11 @@
       "withToken": "con",
       "passAssistant": ". Pasa",
       "assistantRoute": "al abrir una conversación para enviarla a un asistente concreto (copia el ID de la pestaña Asistentes).",
-      "feedbackIntro": "Un tablero público donde los usuarios publican ideas, votan y comentan.",
+      "feedbackIntro": "Una página pública de comentarios donde los usuarios publican ideas, votan y comentan.",
       "feedbackOn": "Está activado.",
       "feedbackOff": "Actívalo desde la página de Comentarios.",
       "manage": "Gestionar",
-      "dropTitle": "Añade el tablero a cualquier página",
+      "dropTitle": "Añade comentarios a cualquier página",
       "dropText": "Cualquiera puede leerlo; pasa el mismo token que el chat para que los usuarios con sesión iniciada puedan publicar, votar y comentar.",
       "useThe": "Usa la",
       "feedbackRead": ": lectura con",
@@ -3297,7 +3323,7 @@
       "originsCount": "{count} origen permitido | {count} orígenes permitidos",
       "noOrigins": "Ningún origen permitido",
       "widgetNotSeen": "Aún no se ha cargado en tu sitio",
-      "boardOn": "Tablero activado",
+      "boardOn": "Comentarios activados",
       "off": "Desactivado",
       "flagsCount": "{count} flag | {count} flags",
       "noneYet": "Ninguno todavía",
@@ -3402,7 +3428,10 @@
       "saveError": "No se pudo guardar el tipo. Revisa el JSON.",
       "deleteError": "No se pudo eliminar el tipo",
       "loadError": "No se pudieron cargar los tipos",
-      "openStatus": "Abierto"
+      "openStatus": "Abierto",
+      "noWebhookTitle": "Estas acciones no tienen adónde ir",
+      "noWebhookDescription": "Una acción se firma y se envía al webhook de acciones del proyecto. Este proyecto aún no tiene URL ni secreto de webhook, así que ejecutar una acción fallará.",
+      "noWebhookFix": "Configurar el webhook"
     },
     "assistants": {
       "newAssistant": "Nuevo asistente",
@@ -4780,7 +4809,7 @@
       "button": "Texto del botón",
       "imageAlt": "Descripción de la imagen",
       "component": "Componente: {field}",
-      "linked": "Una plantilla enlazada envía las traducciones de su plantilla maestra. Traduce el diseño maestro.",
+      "linked": "Una plantilla enlazada envía las traducciones de su plantilla compartida. Traduce el diseño de la plantilla compartida.",
       "sendHint": "Elige un idioma para editarlo. Envía en un idioma con \"locale\" en la API de envío, o fija el idioma de cada destinatario."
     }
   },
@@ -4802,5 +4831,109 @@
     "backToPanel": "Volver a HelpBites",
     "failed": "No se pudo aprobar la conexión",
     "redirecting": "Volviendo a {client}…"
+  },
+  "emailSettings": {
+    "fromNameHint": "Firma tus respuestas y sus correos",
+    "replyTo": "Responder a",
+    "replyToPlaceholder": "Las respuestas van a la dirección de remitente",
+    "fromAddress": "Dirección de remitente",
+    "sendingDomain": "Dominio de envío",
+    "keepLog": "Guardar una copia de cada correo en el registro",
+    "keepLogDescription": "Muestra el propio mensaje en el registro. Puede incluir enlaces de inicio de sesión y de restablecimiento.",
+    "defaultsNote": "Los campos vacíos usan los valores predeterminados del servidor, que se muestran en gris. El dominio de envío debe estar en la misma cuenta de Mailgun que la clave API del servidor, y la dirección de remitente debe estar en ese dominio.",
+    "sender": "Remitente",
+    "senderIntro": "Quién envía el correo de este proyecto: la API de envío, las notificaciones, las actualizaciones de comentarios y también las campañas y secuencias, salvo que tengan una dirección propia más abajo.",
+    "fromName": "Nombre del remitente",
+    "separate": "Enviar campañas y secuencias desde otra dirección",
+    "separateDescription": "Un dominio aparte mantiene la reputación de los boletines separada de la del correo de soporte y de cuenta. Debe ser un dominio de envío de la misma cuenta de Mailgun."
+  },
+  "emailSetup": {
+    "blocked": "El correo aún no puede salir",
+    "nudge": "El correo funciona; hay algo que conviene corregir",
+    "openSettings": "Abrir ajustes",
+    "mailer": {
+      "title": "Servidor de correo.",
+      "todo": "Este servidor no tiene clave de API de Mailgun, así que no puede enviar ningún correo. Define MAILGUN_API_KEY."
+    },
+    "sender": {
+      "title": "Remitente.",
+      "todo": "Ni este proyecto ni el servidor tienen una dirección de remitente y un dominio de envío. Defínelos en Correo → Ajustes."
+    },
+    "webhook": {
+      "title": "Eventos de entrega.",
+      "warn": "El webhook de Mailgun no está configurado, así que el registro nunca se entera de las entregas, aperturas ni rebotes y las direcciones rebotadas no se suprimen."
+    },
+    "postalAddress": {
+      "title": "Dirección postal.",
+      "todo": "Toda campaña debe incluir una. Añádela en Correo → Ajustes."
+    },
+    "paused": {
+      "title": "El correo masivo está en pausa.",
+      "todo": "{reason}."
+    }
+  },
+  "setup": {
+    "title": "Puesta en marcha",
+    "progress": "{done} de {total} completados",
+    "optional": "Opcional",
+    "widget": {
+      "title": "Widget de chat en tu sitio",
+      "seen": "Última carga en tu sitio {value}.",
+      "noOrigins": "Permite la dirección de tu sitio y luego añade la etiqueta script.",
+      "waiting": "Esperando a que el widget se cargue en tu sitio."
+    },
+    "identity": {
+      "title": "Usuarios identificados",
+      "seen": "Tu backend firmó un token de identidad {value}.",
+      "missing": "Aún no hay ningún token de identidad firmado: tu backend firma uno por usuario para que las conversaciones sean suyas.",
+      "anonymous": "Nadie ha iniciado sesión con un token todavía. El inicio de sesión solo con correo está activado, así que puede que esté bien."
+    },
+    "notified": {
+      "title": "Alguien recibe aviso de los chats nuevos",
+      "email": "Enviado por correo a {value} dirección | Enviado por correo a {value} direcciones",
+      "push": "Notificación push a {value} dispositivo | Notificación push a {value} dispositivos",
+      "noMailer": "Hay direcciones configuradas, pero este servidor aún no puede enviar correo.",
+      "nobody": "Nadie recibe correo ni notificación push cuando un cliente escribe."
+    },
+    "sender": {
+      "title": "Remitente del correo",
+      "ready": "El correo sale desde {value}.",
+      "missing": "Falta el remitente o el servidor de correo: el correo no puede salir.",
+      "default": "El correo sale desde la dirección predeterminada del servidor."
+    },
+    "assistant": {
+      "title": "Asistente de IA listo",
+      "live": "{value} responde a los clientes por su cuenta.",
+      "notLive": "{value} aún no responde: necesita un proveedor, conocimiento, estar activo y tener la respuesta automática activada.",
+      "none": "Aún no hay ningún asistente. Las personas responden todo hasta que añadas uno."
+    },
+    "stripe": {
+      "title": "Stripe",
+      "synced": "Conectado y sincronizado.",
+      "waiting": "Conectado; esperando la primera sincronización.",
+      "error": "La última sincronización falló: {value}",
+      "none": "No conectado: no hay ingresos en el Resumen."
+    },
+    "github": {
+      "title": "GitHub",
+      "linked": "{value} repositorio vinculado | {value} repositorios vinculados",
+      "none": "Ningún repositorio vinculado: no hay borradores a partir de commits."
+    },
+    "errors": {
+      "title": "Seguimiento de errores",
+      "connected": "Informando a {value}.",
+      "none": "No conectado: los errores nunca llegan a la bandeja de entrada."
+    }
+  },
+  "attention": {
+    "unread": "{count} conversación no leída | {count} conversaciones no leídas",
+    "drafts": "{count} borrador de novedades pendiente de aprobación | {count} borradores de novedades pendientes de aprobación",
+    "sync": "La sincronización de {value} está fallando",
+    "bounces": "{count} correo rebotado o fallido esta semana | {count} correos rebotados o fallidos esta semana",
+    "alerts": "{count} alerta de error activada hoy | {count} alertas de error activadas hoy",
+    "paused": "Las campañas y secuencias están en pausa",
+    "errors": "{count} informe de error abierto | {count} informes de error abiertos",
+    "documents": "{count} documento de conocimiento no se pudo procesar | {count} documentos de conocimiento no se pudieron procesar",
+    "triage": "{count} publicación de comentarios por clasificar | {count} publicaciones de comentarios por clasificar"
   }
 }

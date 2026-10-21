@@ -1,23 +1,30 @@
-# Feedback boards
+# Feedback, planning and roadmap
 
-A public board per project where your users post ideas and bugs, vote on what
+A public feedback page per project where your users post ideas and bugs, vote on what
 matters, comment, and follow progress through a roadmap and a changelog.
 HelpBites knows nothing about your app: statuses, post types, platforms and
 tags are configured per project, and identity is the same host-signed token the chat
 uses.
 
-- **Plug and play** — one script tag renders the whole board (board, roadmap,
-  changelog, post pages, composer) inside your page.
+- **Plug and play** — one script tag renders the whole feedback page (posts,
+  roadmap, changelog, post pages, composer) inside your page.
 - **Your own UI** — everything the embed does is on `/v1/feedback`.
 - **Operators** — Project → Feedback in the panel: list or kanban, edit and
-  moderate posts, reply as the team, configure the board.
-- **Project board & roadmap** — Project → Board: Linear-style items linked to
+  moderate posts, reply as the team, configure the page.
+- **Planning & roadmap** — Project → Planning: Linear-style items linked to
   posts and conversations; the ones you pick make the public roadmap (see
-  [Board & roadmap](#board--roadmap)).
+  [Planning & roadmap](#planning--roadmap)).
+
+Three things used to share the word *board*. They are called **Feedback** (the
+public page where users post and vote), **Planning** (your private kanban of
+work items) and the **Roadmap** (the public view of the Planning items you
+publish). The API and the embed keep their names: `view=board` is the feedback
+page's column layout (*Columns* in the panel), and `board` and `board-items` are
+Planning.
 
 ## 1. Turn it on
 
-Panel → your project → **Feedback** → *Turn on the board*. Then open
+Panel → your project → **Feedback** → *Turn on feedback*. Then open
 **Settings** to shape it:
 
 | Setting | What it does |
@@ -155,16 +162,16 @@ Things to know:
   reach admins; a comment hidden after the fact arrives as `comment.deleted`.
   With `?pk=` the stream works with a plain `EventSource`.
 
-## Board & roadmap
+## Planning & roadmap
 
-Each project can also have a **board**: Linear-style items on a kanban, for
+Each project can also use **Planning**: Linear-style items on a kanban, for
 the work behind the feedback and the support conversations. The same items
-drive the **public roadmap**. Projects without a board keep the post-based
+drive the **public roadmap**. Projects without Planning keep the post-based
 roadmap (planned, in-progress and done posts).
 
 ### In the panel
 
-Project → **Board** → *Turn on the board*.
+Project → **Planning** → *Turn on planning*.
 
 - **Items** have a title, an internal Markdown description, a status, a
   priority, an assignee, labels, a target date and a `#number`. Drag a card
@@ -172,16 +179,16 @@ Project → **Board** → *Turn on the board*.
   is kept. `?item=<id>` opens an item, so links to it can be shared.
 - **Links.** An item links up to 50 feedback posts and 50 conversations. In the
   item, *Link post* takes a post's `#N`. In the inbox, a conversation's
-  **Board** section files a new item from it (prefilled with its subject and
+  **Planning** section files a new item from it (prefilled with its subject and
   the customer's last message) or adds it to an existing one; the link shows on
   the conversation's timeline as an internal event the customer never sees.
-  The feedback post editor has the same **Board** section.
+  The feedback post editor has the same **Planning** section.
 - **Votes.** An item's count is the sum of its linked posts' votes, hidden posts
-  left out. People vote on the posts, from the board or from the roadmap.
-- **Settings** — statuses (with the same categories as the feedback board),
+  left out. People vote on the posts, from the feedback page or from the roadmap.
+- **Settings** — statuses (with the same categories as Feedback),
   labels, the roadmap's layout and options, and **Sync linked feedback**: when
   an item moves to another status category, each linked post moves to the
-  feedback board's first status of that category, exactly as if an admin had
+  Feedback's first status of that category, exactly as if an admin had
   moved it — so followers get the usual status emails. Off by default.
 
 The settings are the `board` object on `PATCH /v1/admin/projects/:id` (partial:
@@ -189,12 +196,12 @@ The settings are the `board` object on `PATCH /v1/admin/projects/:id` (partial:
 
 ### What goes public
 
-The roadmap is published through the feedback board's public pages and API, so
-the feedback board must be on, with its Roadmap view.
+The roadmap is published through the feedback page's public pages and API, so
+Feedback must be on, with its Roadmap view.
 
-Switching the project board on does not empty the roadmap: it keeps listing
-feedback posts until at least one board item is public in a planned, active or
-done status. From then on the board's public items are the roadmap.
+Switching Planning on does not empty the roadmap: it keeps listing
+feedback posts until at least one planning item is public in a planned, active or
+done status. From then on Planning's public items are the roadmap.
 
 - Items are **private by default**. Turn on *On public roadmap* per item.
 - A public item shows **once its status is planned, in progress or done** (by

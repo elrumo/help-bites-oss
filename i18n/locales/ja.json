@@ -33,7 +33,16 @@
     "switchToLight": "ライトテーマに切り替え",
     "switchToDark": "ダークテーマに切り替え",
     "signOut": "ログアウト",
-    "exitDemo": "デモを終了"
+    "exitDemo": "デモを終了",
+    "groups": {
+      "support": "サポート",
+      "product": "製品",
+      "grow": "グロース",
+      "site": "サイト",
+      "build": "開発"
+    },
+    "unreadMessages": "未読メッセージ {count} 件",
+    "needsAttention": "対応が必要な項目 {count} 件"
   },
   "sections": {
     "overview": "概要",
@@ -42,19 +51,18 @@
     "revenue": "売上",
     "knowledge": "ナレッジベース",
     "assistants": "アシスタント",
-    "types": "チケット",
+    "types": "チケットの種類",
     "feedback": "フィードバック",
-    "board": "ボード",
+    "board": "プランニング",
     "changelog": "変更履歴",
     "onboarding": "オンボーディング",
     "legal": "法務",
     "brand": "ブランド",
     "pages": "ページ",
     "email": "メール",
-    "campaigns": "キャンペーン",
     "flags": "フラグ",
     "errors": "エラー",
-    "dev": "開発",
+    "dev": "インストールと API",
     "settings": "設定",
     "blog": "ブログ",
     "forms": "フォーム",
@@ -97,15 +105,16 @@
     "connectStripe": "Stripe に接続",
     "waitingTitle": "最初の同期を待っています",
     "waitingDescription": "最初の範囲の読み取りが終わると、支払いがここに表示されます。",
-    "totalsIn": "合計は {currency} です。含まれないもの: {others}。"
+    "totalsIn": "合計は {currency} です。含まれないもの: {others}。",
+    "needsAttention": "要対応"
   },
   "layout": {
     "demoBanner": "サンプルデータのデモです。ここでの操作は保存されません。",
     "suspended": "このワークスペースは停止中です。データは安全で、「設定 → ワークスペース」からエクスポートできます。",
     "deleting": "このワークスペースは削除中です。",
-    "palettePlaceholder": "ページやプロジェクトに移動…",
+    "palettePlaceholder": "ページに移動、または会話と回答を検索…",
     "pages": "ページ",
-    "emailTemplates": "メールテンプレート",
+    "emailTemplates": "共有テンプレート",
     "emailLog": "メールログ",
     "account": "アカウント",
     "appearance": "外観",
@@ -122,7 +131,9 @@
     "newWorkspaceTitle": "新規ワークスペース",
     "newWorkspaceDescription": "独自のプロジェクト、受信トレイ、チームを持つ別のスペースです。あなたがオーナーになります。",
     "createWorkspace": "ワークスペースを作成",
-    "createWorkspaceError": "ワークスペースを作成できませんでした"
+    "createWorkspaceError": "ワークスペースを作成できませんでした",
+    "searchConversations": "会話",
+    "searchKnowledge": "ナレッジ"
   },
   "login": {
     "resetTitle": "新しいパスワードを設定",
@@ -275,20 +286,22 @@
     "typeFields": "{type} のフィールド",
     "about": "概要",
     "recentErrors": "最近のエラー",
-    "actions": "アクション"
+    "actions": "アクション",
+    "actionsNoWebhook": "このプロジェクトにはアクション用 webhook がないため、これらは失敗します。",
+    "actionsNoWebhookFix": "設定する"
   },
   "board": {
     "itemCount": "{count} 件",
     "onRoadmap": "ロードマップに{count}件",
-    "boardOff": "ボードはオフです",
+    "boardOff": "プランニングはオフです",
     "publicRoadmap": "公開ロードマップ",
     "openRoadmap": "公開ロードマップを開く",
     "newItem": "新規アイテム",
-    "boardFor": "{name}のボード",
+    "boardFor": "{name} のプランニング",
     "thisProject": "このプロジェクト",
     "setupDescription": "フィードバックやサポートの背後にある作業を計画します。カンバン上のアイテムは、対応する投稿や会話にリンクされます。公開ロードマップに載せるものを選んでください。",
     "customizeFirst": "先にカスタマイズ",
-    "turnOn": "ボードをオンにする",
+    "turnOn": "プランニングをオンにする",
     "roadmapChip": "ロードマップ掲載",
     "labels": "ラベル",
     "assignee": "担当者",
@@ -319,7 +332,7 @@
     "publicDescription": "公開説明",
     "publicDescriptionHint": "Markdown。ロードマップに社内用の説明が表示されることはありません。",
     "publicDescriptionPlaceholder": "ユーザーにとっての意味",
-    "roadmapNeedsFeedback": "ロードマップはフィードバックボードを通じて公開されます。「フィードバック → 設定」で、ロードマップビューとともにオンにしてください。",
+    "roadmapNeedsFeedback": "公開ロードマップは公開フィードバックを通じて公開されます。「フィードバック → 設定」で、ロードマップビューとともにオンにしてください。",
     "notOnRoadmap": "まだロードマップにはありません：{status} は非公開のままです。",
     "thisStatus": "このステータス",
     "feedback": "フィードバック",
@@ -332,16 +345,16 @@
     "conversations": "会話",
     "conversation": "会話",
     "unlinkConversation": "会話のリンクを解除",
-    "linkFromInbox": "受信トレイから会話をリンクします。会話を開き、「ボード」セクションを使ってください。",
+    "linkFromInbox": "受信トレイから会話をリンクします。会話を開き、「プランニング」セクションを使ってください。",
     "clickAgainDelete": "もう一度クリックして削除",
     "delete": "削除",
     "saving": "保存中…",
     "changesSave": "変更は自動的に保存されます",
     "createItem": "アイテムを作成",
-    "settingsTitle": "ボードの設定",
-    "settingsDescription": "ボード、そのステータスとラベル、公開ロードマップ。",
+    "settingsTitle": "プランニングの設定",
+    "settingsDescription": "プランニングのアイテム、そのステータスとラベル、公開ロードマップ。",
     "savesAsChange": "変更すると自動保存されます",
-    "boardOn": "ボードはオンです",
+    "boardOn": "プランニングはオンです",
     "boardOnDescription": "アイテム、受信トレイとフィードバックからのリンク、ロードマップ。",
     "syncFeedback": "関連するフィードバックを同期",
     "syncFeedbackDescription": "アイテムが別のステータスカテゴリに移動すると、リンクされた投稿も追従し、フォロワーには通常のメールが届きます。",
@@ -361,10 +374,10 @@
     "urgent": "緊急",
     "unassigned": "未割り当て",
     "anyone": "全員",
-    "turnOnFeedbackTitle": "先にフィードバックボードをオンにしてください",
+    "turnOnFeedbackTitle": "先にフィードバックをオンにしてください",
     "roadmapLinkCopied": "ロードマップのリンクをコピーしました",
     "yourRoadmap": "公開ロードマップ",
-    "loadError": "ボードを読み込めませんでした",
+    "loadError": "プランニングを読み込めませんでした",
     "moveError": "アイテムを移動できませんでした",
     "saveError": "保存できませんでした",
     "createError": "アイテムを作成できませんでした",
@@ -374,7 +387,7 @@
     "linkItemError": "アイテムをリンクできませんでした",
     "unlinkItemError": "アイテムのリンクを解除できませんでした",
     "untitled": "無題",
-    "setUpBoard": "プロジェクトのボードを設定",
+    "setUpBoard": "プランニングを設定",
     "addToExisting": "既存のアイテムに追加…",
     "unlinkItem": "#{number} {title} のリンクを解除"
   },
@@ -387,9 +400,9 @@
     "newRelease": "新規リリース",
     "newEntry": "新規エントリー",
     "offBefore": "公開の変更履歴はオフです。設定で",
-    "offAfter": "を有効にすると、ページ・JSON・RSSが配信されます。フィードバックボードは不要です。",
+    "offAfter": "を有効にすると、ページ・JSON・RSSが配信されます。フィードバックは不要です。",
     "nothingYet": "まだ何もありません",
-    "emptyDescription": "リリースしたことを自分の言葉で書き、リリースにまとめます。公開するまでエントリーは非公開です。元になった投稿、ボードのアイテム、チケット、エラーをリンクすると、完了状況を確認できます。",
+    "emptyDescription": "リリースしたことを自分の言葉で書き、リリースにまとめます。公開するまでエントリーは非公開です。元になった投稿、プランニングのアイテム、チケット、エラーをリンクすると、完了状況を確認できます。",
     "aiWaiting": "AI が書いた下書き {count} 件がレビュー待ちです。",
     "nothingPublic": "承認するまで公開されません。",
     "selected": "{count}件選択中",
@@ -452,7 +465,7 @@
     "settingsTitle": "変更履歴の設定",
     "settingsDescription": "エントリーの作成方法。",
     "autoDraft": "エントリーの下書きを自動作成",
-    "autoDraftDescription": "フィードバックの投稿やボードのアイテムが完了になると、まだリンクされたエントリーがなければ下書きが作成されます。下書きが自動で公開されることはありません。チケットとエラーは手動で追加します。",
+    "autoDraftDescription": "フィードバックの投稿やプランニングのアイテムが完了になると、まだリンクされたエントリーがなければ下書きが作成されます。下書きが自動で公開されることはありません。チケットとエラーは手動で追加します。",
     "commitAi": "新しいコミットからエントリーを作成",
     "commitAiDescription": "接続済みリポジトリのデフォルトブランチへのプッシュで、新しいコミットから AI がエントリーの下書きを作成します（メッセージのみ読み取り）。レビューを待ちます。設定でGitHubリポジトリを接続し、アプリのWebhookが必要です（docs/GITHUB.md参照）。",
     "autoPublish": "レビューなしで公開",
@@ -461,9 +474,9 @@
     "commentsDescription": "ログインした読者は公開済みのエントリーにコメントできます。サイトが本人確認トークンを送信し、管理者はどのコメントも非表示または削除できます。",
     "emailSubscribers": "メール購読者",
     "emailSubscribersDescription": "読者は新しいリリース時にメールを希望できます（即時、または毎週月曜）。サーバーに CHANGELOG_LINK_SECRET か HELPBITES_SECRET（いずれも32文字以上）が必要で、スケジューラーが送信するには ENABLE_CHANGELOG_NOTIFY=true を設定してください。",
-    "publicChangelogDescription": "更新履歴のページ、埋め込み、JSON、RSSを全員に公開します。フィードバックボードとは独立していますが、ボードの「変更履歴」タブにもこの設定が必要です。",
+    "publicChangelogDescription": "更新履歴のページ、埋め込み、JSON、RSSを全員に公開します。フィードバックとは独立していますが、フィードバックの「変更履歴」タブにもこの設定が必要です。",
     "savesAsChange": "変更すると自動保存されます",
-    "followsFeedback": "これを有効にしない限り、変更履歴が公開されるかどうか、およびそのページとRSSフィードは、フィードバックボードの",
+    "followsFeedback": "これを有効にしない限り、変更履歴が公開されるかどうか、およびそのページとRSSフィードは、フィードバックの",
     "followsFeedbackEnd": "に従います。",
     "changelogOption": "変更履歴オプション",
     "writeFromCommits": "コミットから作成",
@@ -493,7 +506,7 @@
     "save": "保存",
     "createRelease": "リリースを作成",
     "turnOnFirst": "先に公開の変更履歴をオンにしてください",
-    "turnOnFirstDescription": "変更履歴の設定で「公開の変更履歴」をオンにしてください。フィードバックボードは不要です。",
+    "turnOnFirstDescription": "変更履歴の設定で「公開の変更履歴」をオンにしてください。フィードバックは不要です。",
     "linkCopied": "変更履歴のリンクをコピーしました",
     "yourPublic": "公開の変更履歴",
     "loadError": "変更履歴を読み込めませんでした",
@@ -517,7 +530,7 @@
     "publishReleaseError": "リリースを公開できませんでした",
     "releaseDeleteError": "リリースを削除できませんでした",
     "feedbackPost": "フィードバック投稿",
-    "boardItem": "ボードのアイテム",
+    "boardItem": "プランニングのアイテム",
     "conversation": "会話",
     "tagNew": "新着",
     "tagImproved": "改善",
@@ -622,7 +635,7 @@
     "schedule": "予約",
     "unpublish": "公開を停止",
     "deletePost": "投稿を削除",
-    "confirmDelete": "この投稿をコメントやリアクションごと削除しますか？送信済みのニュースレターは「キャンペーン」に残ります。",
+    "confirmDelete": "この投稿をコメントやリアクションごと削除しますか？送信済みのニュースレターは「メール → キャンペーン」に残ります。",
     "deleteError": "投稿を削除できませんでした",
     "unsaved": "未保存",
     "unsavedLive": "未保存：「更新」を押すと公開中の投稿に反映されます",
@@ -1192,7 +1205,6 @@
     }
   },
   "campaigns": {
-    "title": "キャンペーン",
     "new": "新しいキャンペーン",
     "save": "保存",
     "listLabel": "キャンペーン",
@@ -1212,10 +1224,8 @@
       "canceled": "キャンセル済み"
     },
     "tabs": {
-      "label": "キャンペーンのセクション",
       "campaigns": "キャンペーン",
-      "sequences": "シーケンス",
-      "settings": "設定"
+      "sequences": "シーケンス"
     },
     "sequences": {
       "new": "新しいシーケンス",
@@ -1291,8 +1301,6 @@
       "redirectHint": "任意。未設定の場合は HelpBites のサンクスページ",
       "hostedPage": "ホストされた登録ページ",
       "siteForm": "またはサイトのフォーム",
-      "sender": "送信者",
-      "senderIntro": "任意。ニュースレター用に別のドメインを使うと、サポートやアカウントのメールと評価を分けられます。同じ Mailgun アカウントの送信ドメインである必要があります。",
       "fromName": "送信者名",
       "fromAddress": "送信元アドレス",
       "mailDomain": "Mailgun ドメイン",
@@ -1307,7 +1315,7 @@
     }
   },
   "emailEditor": {
-    "masters": "マスター",
+    "masters": "共有テンプレート",
     "templates": "テンプレート",
     "components": "コンポーネント",
     "log": "ログ",
@@ -1328,7 +1336,7 @@
     "newComponent": "新規コンポーネント",
     "newComponentMore": "新規コンポーネント…",
     "projectComponentsNote": "このプロジェクトのコンポーネントと共有コンポーネントです。",
-    "sharedComponentsNote": "すべてのプロジェクトとマスターで共有されます。",
+    "sharedComponentsNote": "すべてのプロジェクトと共有テンプレートで共有されます。",
     "componentsHelp": "エディターの「追加」から挿入できます。AI デザイナーも利用・保存します。各メールは独自のコピーを保持します。",
     "nothingMatches": "一致するものがありません",
     "noComponents": "まだコンポーネントがありません",
@@ -1505,7 +1513,7 @@
     "newChat": "新しいチャット",
     "greeting": "このメールは何をすべきですか？",
     "describeIt": "説明するか、以下から始めてください。",
-    "masterHint": "マスターとして、各プロジェクトのロゴ・名前・アクセントカラーを使用するため、一度書けば全プロジェクトで使えます。",
+    "masterHint": "共有テンプレートとして、各プロジェクトのロゴ・名前・アクセントカラーを使用するため、一度書けば全プロジェクトで使えます。",
     "clickBlockHint": "ブロックをクリックすると指定できます。",
     "copyReply": "返信をコピー",
     "copy": "コピー",
@@ -1584,15 +1592,16 @@
     "aiDesigner": "AI デザイナー",
     "resizeSplit": "AI デザイナーとレイヤーのサイズを変更",
     "replacesDesign": "このデザインを置き換えます。元に戻すと復元されます。",
-    "brandHeader": "ブランドヘッダー"
+    "brandHeader": "ブランドヘッダー",
+    "settings": "設定"
   },
   "emailLibrary": {
     "api": {
       "apiDocs": "API ドキュメント",
       "copyUrl": "URL をコピー",
       "defaultsTo": "既定値は「{value}」",
-      "descriptionMaster": "マスターは管理者用 API キーで ID を指定して読み取ります。このマスターをリンクしたプロジェクトは、自身のキーで取得・送信します。",
-      "descriptionProject": "サーバーから、このプロジェクトのシークレット（プロジェクト → 開発）を使って呼び出してください。ブラウザからは使用しないでください。",
+      "descriptionMaster": "共有テンプレートは管理者用 API キーで ID を指定して読み取ります。このテンプレートをリンクしたプロジェクトは、自身のキーで取得・送信します。",
+      "descriptionProject": "サーバーから、このプロジェクトのシークレット（プロジェクト → インストールと API）を使って呼び出してください。ブラウザからは使用しないでください。",
       "fetchNote": "変数はクエリパラメータです。{format} を付けない場合は JSON が返ります：{json}。どのメール配信サービスにもそのまま渡せます。",
       "fetchTitle": "レンダリング済みを取得",
       "fullReference": "完全なリファレンス：{link}。",
@@ -1617,7 +1626,7 @@
       "duplicate": "複製",
       "edit": "編集",
       "loadMore": "さらに読み込む",
-      "master": "マスター",
+      "master": "共有テンプレート",
       "open": "開く",
       "project": "プロジェクト",
       "remove": "取り除く",
@@ -1628,17 +1637,17 @@
       "openError": "このテンプレートを開けませんでした"
     },
     "library": {
-      "addMaster": "マスターを追加",
-      "addMasterDescription": "プロジェクトはマスターのデザインを、自身のブランドと値を使って利用します。マスターへの編集も反映されます。",
-      "addMasterTitle": "マスターを追加",
+      "addMaster": "共有テンプレートを追加",
+      "addMasterDescription": "プロジェクトは共有テンプレートのデザインを、自身のブランドと値を使って利用します。共有テンプレートへの編集も反映されます。",
+      "addMasterTitle": "共有テンプレートを追加",
       "all": "すべて",
-      "copiedToMasters": "「{name}」をマスターにコピーしました",
-      "copyToMasters": "マスターにコピー",
+      "copiedToMasters": "「{name}」を共有テンプレートにコピーしました",
+      "copyToMasters": "共有テンプレートにコピー",
       "createOne": "作成してください",
       "deleteConfirm": "「{name}」を削除しますか？この操作は取り消せません。",
       "deleteFolderConfirm": "「{name}」を削除しますか？中のアイテムは一つ上の階層に移動します。",
-      "emptyMasterDescription": "マスターは一度デザインすれば、すべてのプロジェクトで再利用できます。ロゴ、配色、文面はプロジェクトごとに設定できます。",
-      "emptyProjectDescription": "ゼロから作成するか、マスターを追加してこのプロジェクトのデザインを共有します。",
+      "emptyMasterDescription": "共有テンプレートは一度デザインすれば、すべてのプロジェクトで再利用できます。ロゴ、配色、文面はプロジェクトごとに設定できます。",
+      "emptyProjectDescription": "ゼロから作成するか、共有テンプレートを追加してこのプロジェクトのデザインを共有します。",
       "export": "エクスポート",
       "exportAll": "すべてを JSON でエクスポート",
       "folder": "フォルダー",
@@ -1654,25 +1663,25 @@
       "importPlanErrors": "、エラーが {failed} 件:\n{errors}",
       "importedToast": "{created} 件を作成、{updated} 件を更新",
       "inUse": "使用中",
-      "linkedDescription": "リンクされたマスター：そのデザインと、このプロジェクトのブランド・値。",
-      "masterSubtitle": "マスター：一度デザインすれば、どのプロジェクトにもリンクできます。各プロジェクトがブランドと値を設定します。",
+      "linkedDescription": "リンクされた共有テンプレート：そのデザインと、このプロジェクトのブランド・値。",
+      "masterSubtitle": "共有テンプレート：一度デザインすれば、どのプロジェクトにもリンクできます。各プロジェクトがブランドと値を設定します。",
       "moveTo": "移動先",
       "newFolder": "新しいフォルダー",
-      "newMaster": "新しいマスター",
+      "newMaster": "新しい共有テンプレート",
       "newTemplate": "新しいテンプレート",
-      "noMastersYet": "マスターはまだありません。先に{link}。",
+      "noMastersYet": "共有テンプレートはまだありません。先に{link}。",
       "noMatch": "一致するテンプレートはありません",
       "noMatchDescription": "別の名前で試してください。",
       "noTemplatesInFile": "そのファイルにテンプレートはありません",
       "noTemplatesInFolder": "このフォルダーにはテンプレートがありません。",
       "noTemplatesYet": "ここにはまだテンプレートがありません",
       "notUsed": "まだ使われていません",
-      "openMaster": "マスターを開く",
+      "openMaster": "共有テンプレートを開く",
       "openTemplate": "{name} を開く",
       "pickerDescription": "用意された構成から始めて、自分好みにカスタマイズしましょう。",
-      "projectSubtitle": "このプロジェクトのテンプレートと、このプロジェクト独自のブランド・値で使うマスター。",
+      "projectSubtitle": "このプロジェクトのテンプレートと、このプロジェクト独自のブランド・値で使う共有テンプレート。",
       "removeFromProject": "プロジェクトから外す",
-      "removeMasterConfirm": "「{name}」をこのプロジェクトから外しますか？マスターはそのまま残ります。",
+      "removeMasterConfirm": "「{name}」をこのプロジェクトから外しますか？共有テンプレートはそのまま残ります。",
       "renameFolder": "フォルダー名を変更",
       "sendTest": "テストを送信…",
       "templateActions": "テンプレートの操作",
@@ -1681,16 +1690,16 @@
     },
     "linked": {
       "brand": "ブランド",
-      "brandAccent": "マスターのブランドカラーのボタンは、プロジェクトのアクセントカラーになります。",
-      "brandAvailable": "このマスターはまだプロジェクトのブランド用プレースホルダーを使用していません。利用可能: {tokens}。",
+      "brandAccent": "共有テンプレートのブランドカラーのボタンは、プロジェクトのアクセントカラーになります。",
+      "brandAvailable": "この共有テンプレートはまだプロジェクトのブランド用プレースホルダーを使用していません。利用可能: {tokens}。",
       "brandUsed": "このプロジェクトから自動入力: {tokens}。",
       "detach": "リンク解除",
-      "detachConfirm": "マスターとのリンクを解除しますか？このプロジェクトは編集可能な独自のコピーを持ち、以後マスターへの変更は反映されなくなります。",
-      "editMaster": "マスターを編集",
+      "detachConfirm": "共有テンプレートとのリンクを解除しますか？このプロジェクトは編集可能な独自のコピーを持ち、以後共有テンプレートへの変更は反映されなくなります。",
+      "editMaster": "共有テンプレートを編集",
       "empty": "空",
       "logo": "ロゴ",
-      "noVariables": "マスター独自の変数はありません。",
-      "removeConfirm": "このマスターをプロジェクトから外しますか？マスター自体は残ります。",
+      "noVariables": "共有テンプレート独自の変数はありません。",
+      "removeConfirm": "この共有テンプレートをプロジェクトから外しますか？テンプレート自体は残ります。",
       "saveError": "保存できませんでした",
       "sendIt": "送信",
       "sendKeyDescription": "サーバーが POST /v1/emails/send に template として渡す値です。",
@@ -1731,7 +1740,7 @@
       "messageError": "メッセージを読み込めませんでした",
       "messageId": "メッセージ ID",
       "metadata": "メタデータ",
-      "noContent": "このプロジェクトはメール本文を保存していません。今後のメールをここで確認するには、プロジェクト → 開発 → メール送信で {setting} を有効にしてください。",
+      "noContent": "このプロジェクトはメール本文を保存していません。今後のメールをここで確認するには、プロジェクト → メール → 設定で {setting} を有効にしてください。",
       "noMatch": "一致する項目はありません",
       "noMatchDescription": "別のフィルターを試してください。",
       "notConfiguredDescription": "サーバーで MAILGUN_API_KEY、MAILGUN_DOMAIN、MAILGUN_FROM_EMAIL を設定してください。それまでは送信が 503 で失敗します。",
@@ -1853,7 +1862,7 @@
     },
     "test": {
       "brandSender": "ブランドと送信元",
-      "brandSenderHelp": "マスターには独自のプロジェクトがないため、いずれかのプロジェクトのロゴ・配色・送信元アドレスを借ります。",
+      "brandSenderHelp": "共有テンプレートには独自のプロジェクトがないため、いずれかのプロジェクトのロゴ・配色・送信元アドレスを借ります。",
       "description": "{name}。件名に「[Test]」が付きます。メールログに表示されます。",
       "error": "テストを送信できませんでした",
       "noneLabel": "なし: サンプル値のみ",
@@ -1924,7 +1933,7 @@
       "sort": "並べ替え",
       "sortTop": "人気順",
       "sortNew": "新着",
-      "views": "ボードの表示",
+      "views": "表示",
       "mine": "自分の投稿",
       "nothingMatches": "一致する投稿はありません",
       "noPostsYet": "まだ投稿がありません",
@@ -1949,8 +1958,8 @@
       "saved": "保存しました。",
       "postedThanks": "投稿しました。ありがとうございます！",
       "missingKey": "プロジェクトキーがありません。フィードバックのスクリプトの data-project 属性を確認してください。",
-      "noBoard": "このプロジェクトにはまだフィードバックボードがありません。",
-      "loadFailed": "フィードバックボードを読み込めませんでした。",
+      "noBoard": "このプロジェクトにはまだフィードバックページがありません。",
+      "loadFailed": "フィードバックページを読み込めませんでした。",
       "manage": "管理",
       "status": "ステータス",
       "featured": "注目",
@@ -2013,7 +2022,7 @@
     "commentCount": "コメント {count}件",
     "requestCount": "{count} 件のリクエスト",
     "votesClosedAria": "{count} 票、投票は締め切られています",
-    "boardOff": "ボードはオフです",
+    "boardOff": "フィードバックはオフです",
     "publicChangelog": "公開の変更履歴",
     "openChangelog": "公開の変更履歴を開く",
     "newPost": "新規投稿",
@@ -2021,22 +2030,22 @@
     "postHeading": "投稿",
     "postNumber": "投稿 #{number}",
     "postedAsTeam": "チームとして投稿",
-    "setupTitle": "{name} の公開フィードバックボード",
+    "setupTitle": "{name} の公開フィードバック",
     "thisProject": "このプロジェクト",
-    "setupDescription": "ユーザーはアイデアや不具合を投稿し、重要なものに投票し、ロードマップと変更履歴で進捗を追えます。script タグを 1 つ追加すれば完成済みのボードを埋め込めます。API を使って独自の UI を作ることもできます。",
+    "setupDescription": "ユーザーはアイデアや不具合を投稿し、重要なものに投票し、ロードマップと変更履歴で進捗を追えます。script タグを 1 つ追加すれば完成済みのページを埋め込めます。API を使って独自の UI を作ることもできます。",
     "customizeFirst": "先にカスタマイズ",
-    "turnOn": "ボードをオンにする",
+    "turnOn": "フィードバックをオンにする",
     "hidden": "非表示",
     "type": "種類",
     "allTypes": "すべての種類",
     "layout": "レイアウト",
     "listView": "リスト",
-    "boardView": "ボード",
+    "boardView": "カラム",
     "loading": "読み込み中…",
     "noMatches": "これらのフィルターに一致するものはありません",
     "noMatchesHint": "ステータスをオンに戻すか、検索をクリアしてください。",
     "noPosts": "まだ投稿がありません",
-    "noPostsHint": "ボードを共有するか、自分の投稿から始めてください。",
+    "noPostsHint": "フィードバックページを共有するか、自分の投稿から始めてください。",
     "posted": "{time}に投稿",
     "by": "投稿者",
     "teamAuthor": "{name}（チーム）",
@@ -2087,10 +2096,10 @@
     "delete": "削除",
     "openOnSite": "サイトで開く",
     "save": "保存",
-    "boardSettings": "ボードの設定",
+    "boardSettings": "フィードバックの設定",
     "boardSettingsDescription": "ステータス、投稿の種類、プラットフォームはご自身で定義できます。",
     "changelogFirstTitle": "先に変更履歴をオンにしてください",
-    "changelogFirstDescription": "プロジェクト → 変更履歴 → 設定 で「公開の変更履歴」をオンにしてください。フィードバックボードは不要です。",
+    "changelogFirstDescription": "プロジェクト → 変更履歴 → 設定 で「公開の変更履歴」をオンにしてください。フィードバックは不要です。",
     "changelogLinkCopied": "変更履歴のリンクをコピーしました",
     "yourChangelog": "公開の変更履歴",
     "saveError": "保存できませんでした",
@@ -2102,9 +2111,9 @@
     "commentChangeError": "コメントを変更できませんでした",
     "pinError": "コメントを固定できませんでした",
     "commentDeleteError": "コメントを削除できませんでした",
-    "loadBoardError": "ボードを読み込めませんでした",
+    "loadBoardError": "フィードバックを読み込めませんでした",
     "deleteCommentConfirm": "このコメントを削除しますか？",
-    "boardLive": "ボードを公開中",
+    "boardLive": "フィードバックを公開中",
     "boardLiveDescription": "訪問者はプロジェクトの公開キーで閲覧できます。ログイン済みのユーザーは投稿、投票、コメントができます。",
     "titleHint": "初期値は「{'{'}project{'}'} feedback」",
     "titlePlaceholder": "機能リクエストとバグ報告",
@@ -2122,10 +2131,10 @@
     "emailNotificationsDescription": "ステータスの変更と新しいコメントは投稿のフォロワーへ、メンションは言及された人へ送信されます。",
     "roadmapView": "ロードマップビュー",
     "roadmapViewDescription": "埋め込みに「予定」「進行中」「完了」の列を表示します。",
-    "changelogDescription": "ボード内の「変更履歴」タブ。プロジェクト → 変更履歴 → 設定 で公開の変更履歴をオンにする必要があります。",
+    "changelogDescription": "フィードバックページ内の「変更履歴」タブ。プロジェクト → 変更履歴 → 設定 で公開の変更履歴をオンにする必要があります。",
     "statuses": "ステータス",
     "statusesHelpBoard": "カテゴリはステータスの意味を決めます。計画済み・進行中・完了のステータスにある公開アイテムはロードマップに表示され、それ以外は非公開のままです。",
-    "statusesHelpFeedback": "カテゴリはすべての場所でのステータスの意味を決めます。オープン・予定・進行中はデフォルトでボードに表示され、完了は変更履歴に反映されて投票が締め切られます。",
+    "statusesHelpFeedback": "カテゴリはすべての場所でのステータスの意味を決めます。オープン・予定・進行中はデフォルトでフィードバックページに表示され、完了は変更履歴に反映されて投票が締め切られます。",
     "label": "名前",
     "statusLabel": "ステータス名",
     "statusKey": "ステータスのキー",
@@ -2178,8 +2187,8 @@
     "removeTag": "タグを削除",
     "addLabel": "ラベルを追加",
     "addTag": "タグを追加",
-    "saveBoardSettings": "ボードの設定を保存",
-    "hiddenFromBoard": "公開ボードから非表示",
+    "saveBoardSettings": "フィードバックの設定を保存",
+    "hiddenFromBoard": "公開フィードバックページから非表示",
     "you": "あなた",
     "roadmapEmpty": "ロードマップにはまだ何もありません",
     "roadmapEmptyHint": "計画済み、進行中、リリース済みの作業がここに表示されます。",
@@ -2475,7 +2484,7 @@
         "body": "チームとして返信し、顧客には見えないメモを残せます。スレッドを離れずに、相手が誰で何が問題になっているかを確認できます。",
         "b1": "色分けされたプロジェクト、未読数はひとつ、リアルタイム更新",
         "b2": "担当の割り当て、優先度設定、ラベル付け、クローズができ、チケットの種類ごとにカスタムフィールドを設定できます",
-        "b3": "最近のエラーや関連するボードのアイテムがチャットの横に表示されます",
+        "b3": "最近のエラーや関連するプランニングのアイテムがチャットの横に表示されます",
         "b4": "相手が不在のときは、返信がメールでも届きます",
         "alt": "HelpBites の受信トレイ：会話リスト、内部メモのあるスレッド、顧客パネル。"
       },
@@ -2491,12 +2500,12 @@
       "board": {
         "eyebrow": "フィードバックとロードマップ",
         "title": "何を作るかはユーザーが提案し、何を出すかはあなたが決めます。",
-        "body": "プロジェクトごとに公開のフィードバックボードがあり、その裏側に非公開のカンバンがあります。リンクされた投稿の票は、それぞれのカードに集計されます。",
+        "body": "プロジェクトごとに公開のフィードバックページがあり、その裏側に非公開のプランニング用カンバンがあります。リンクされた投稿の票は、それぞれのカードに集計されます。",
         "b1": "投票、コメント、リアクション、{'@'}メンション。重複はまとめられます",
         "b2": "カードをフィードバック投稿や受信トレイの会話にリンクできます",
         "b3": "選んだ項目だけを公開ロードマップとして公開できます",
         "b4": "カードを移動すると、リンクされた投稿が更新され、フォロワーにメールが届きます",
-        "alt": "プロジェクトボード：バックログ、計画済み、進行中、完了の各列があり、各カードに投票数が表示されています。"
+        "alt": "プランニング：バックログ、計画済み、進行中、完了の各列があり、各カードに投票数が表示されています。"
       },
       "changelog": {
         "eyebrow": "変更履歴",
@@ -2510,7 +2519,7 @@
       "email": {
         "title": "一度デザインして、プロジェクトごとにブランドを設定。",
         "body": "Gmail、Apple Mail、Outlookで表示が整うブロックエディターです。貼り付けたHTMLをAIが編集可能なブロックに変換します。",
-        "b1": "マスターデザインをすべてのプロジェクトにリンクし、それぞれに独自のブランドを設定",
+        "b1": "共有テンプレート 1 つをすべてのプロジェクトにリンクし、それぞれに独自のブランドを設定",
         "b2": "代替テキストの欠落、低コントラスト、プレースホルダーのリンクをチェック",
         "b3": "APIを1回呼び出すだけで、サーバーから予約送信や受信者ごとの送信ができます",
         "b4": "再利用できるコンポーネント、共有リンク、テスト送信、インポートとエクスポート",
@@ -2624,11 +2633,11 @@
         },
         "overview": {
           "term": "すべてのアプリをひと目で",
-          "desc": "パネルを開くと概要が表示されます。アプリごとのカードに未読・対応中の会話と収益、最新の未読メッセージ、アプリ別の収益。"
+          "desc": "パネルを開くと概要が表示されます。アプリごとのカードに未読・対応中の会話と収益、対応が必要なものをまとめた 1 つの一覧（承認待ちの下書き、失敗した同期、バウンス、トリガーされたアラート）、最新の未読メッセージ、アプリ別の収益。各アプリにはセットアップのチェックリストがあり、実際に接続できたときだけ緑になります。"
         },
         "notes": {
           "term": "メモ、文脈、エラー",
-          "desc": "顧客には見えない内部メモ。最近のエラーや関連するボードのアイテムが会話の横に表示されます。"
+          "desc": "顧客には見えない内部メモ。最近のエラーや関連するプランニングのアイテムが会話の横に表示されます。"
         },
         "away": {
           "term": "不在のときはメールで",
@@ -2647,11 +2656,11 @@
         "title": "フィードバック、ロードマップ、変更履歴、ブログ",
         "hint": "何を作るかはユーザーが教えてくれ、何を出したかはあなたが伝えます。",
         "board": {
-          "term": "公開ボード",
+          "term": "公開フィードバックページ",
           "desc": "ユーザーはアイデアやバグを投稿し、投票、コメント、リアクションができます。種類、タグ、ステータスはあなたが設定し、重複はまとめられます。"
         },
         "roadmap": {
-          "term": "自分のボードから作るロードマップ",
+          "term": "自分のプランニングから作るロードマップ",
           "desc": "社内作業をカンバンで計画し、投稿や会話にリンクして、選んだ項目だけを公開します。"
         },
         "changelog": {
@@ -2676,7 +2685,7 @@
         },
         "assistants": {
           "term": "アシスタントはそれをもとに回答",
-          "desc": "それぞれが独自の指示を持ち、OpenAI、Anthropic、Geminiなど（または互換エンドポイント）から選べます。ルールによって会話をAIに回すか、担当者に回すかを決められます。"
+          "desc": "それぞれが独自の指示を持ち、OpenAI、Anthropic、Geminiなど（または互換エンドポイント）から選べます。ルールによって会話をAIに回すか、担当者に回すかを決められます。先に質問をテストして、回答する理由や引き継ぐ理由を確認できます。"
         },
         "scope": {
           "term": "どこまで見せるかはあなたが決める",
@@ -2932,11 +2941,6 @@
     "path": "パス",
     "faq": "FAQ",
     "add": "追加",
-    "testRetrieval": "検索をテスト",
-    "testHint": "ある質問に対してこのアシスタントに渡される知識を正確に確認できます。サポートのランタイムと同じ検索を使用します。",
-    "testPlaceholder": "アカウントを削除するにはどうすればいいですか？",
-    "retrieve": "検索",
-    "noMatch": "一致するナレッジがありません。上の割り当てと、FAQ が有効かどうかを確認してください。",
     "couldNotSave": "保存できませんでした",
     "couldNotAddAccess": "アクセスを追加できませんでした",
     "deleteConfirm": "「{name}」を削除しますか？そのナレッジの割り当ても削除されます。",
@@ -2948,6 +2952,58 @@
       "active": "有効",
       "disabled": "無効",
       "draft": "下書き"
+    },
+    "readiness": {
+      "title": "準備状況",
+      "live": "顧客に自動で回答しています",
+      "notLive": "まだ顧客に自動で回答していません",
+      "llm": {
+        "ok": "AI プロバイダーが設定されています。",
+        "todo": "AI プロバイダーがありません。",
+        "fix": "設定 → AI"
+      },
+      "knowledge": {
+        "ok": "{count} 件の回答を参照できます",
+        "todo": "読み取れるナレッジがありません。何も割り当てられていないか、割り当て済みのものに有効な回答がありません。",
+        "fix": "ナレッジを割り当てる"
+      },
+      "active": {
+        "ok": "ステータスは有効です。",
+        "todo": "ステータスが有効ではありません。",
+        "fix": "有効にする"
+      },
+      "autoReply": {
+        "ok": "自動返信はオンです。",
+        "todo": "自動返信がオフのため、ここで質問されたときだけ回答します。",
+        "fix": "オンにする"
+      }
+    },
+    "test": {
+      "title": "回答をテスト",
+      "hint": "顧客が尋ねそうな質問を入力してください。実際のメッセージと同じ判断が実行されます。まずルーティングルール、次に読み取れるナレッジと最低信頼度の順です。何も送信されず、受信トレイにも追加されません。",
+      "placeholder": "アカウントを削除するにはどうすればいいですか？",
+      "supportType": "サポート",
+      "run": "回答をテスト",
+      "error": "テストを実行できませんでした",
+      "notLive": "まだ顧客に自動で回答していません。上の「準備状況」を確認してください。",
+      "outcome": {
+        "answer": "回答する",
+        "handoff": "チームに引き継ぐ",
+        "silent": "返信しない"
+      },
+      "reason": {
+        "rule": "ルール {rule}{conditions} は、このようなメッセージをチームに送ります。",
+        "default": "どのルールにも一致せず、ルールに一致しないメッセージの既定の宛先はチームです。",
+        "noKnowledge": "読み取れるものの中に、質問に一致するものはありませんでした。",
+        "lowConfidence": "最も一致したものの点数は {best} で、最低信頼度 {bar} を下回っています。",
+        "confident": "最も一致したものの点数は {best} で、回答には十分です。"
+      },
+      "ruleLetThrough": "ルール {rule}{conditions} は通過させました。",
+      "ruleType": "チケットの種類 {type}",
+      "ruleKeywords": "キーワード {keywords}",
+      "wouldSend": "{model} から送信される内容：",
+      "noProvider": "回答する判断ですが、返信を作成する AI プロバイダーがありません。",
+      "found": "見つかったナレッジ"
     }
   },
   "admin": {
@@ -3088,41 +3144,15 @@
       "atAGlance": "概要",
       "needsAttention": "要対応",
       "allClear": "問題はありません。今すぐ対応が必要なものはありません。",
-      "status": "ステータス",
       "latestActivity": "最新のアクティビティ",
       "nothingYet": "まだ何もありません",
-      "activityEmpty": "会話、フィードバック、ボードで完了した項目がここに表示されます。",
+      "activityEmpty": "会話、フィードバック、プランニングで完了した項目がここに表示されます。",
       "loadError": "概要を読み込めませんでした",
       "stats": {
         "open": "未解決の会話",
         "new": "今週の新規",
         "emails": "送信メール · 7日",
         "feedback": "フィードバック · 7日"
-      },
-      "health": {
-        "chat": "チャットウィジェット",
-        "email": "メール送信",
-        "notify": "チームへの通知",
-        "feedback": "フィードバックボード",
-        "errors": "エラー追跡"
-      },
-      "healthDetail": {
-        "noOrigins": "許可されたオリジンがありません",
-        "notLoaded": "まだサイトで読み込まれていません",
-        "origins": "許可されたオリジン {count} 件",
-        "defaultSender": "デフォルトの送信者",
-        "notConfigured": "未設定",
-        "nobodyEmailed": "誰にも通知されません",
-        "on": "オン",
-        "off": "オフ",
-        "notConnected": "未接続"
-      },
-      "attention": {
-        "unread": "未読の会話",
-        "errors": "未解決のエラーレポート",
-        "emails": "失敗したメール · 7日",
-        "documents": "処理に失敗したナレッジ文書",
-        "feedback": "振り分け待ちのフィードバック"
       },
       "activityTitle": {
         "newFeedback": "新しいフィードバック: {title}",
@@ -3170,18 +3200,8 @@
       "letUsersChooseDescription": "プロジェクトに複数のチケット種別がある場合にのみ有効になります。",
       "offerOther": "「その他」オプションを表示",
       "offerOtherDescription": "通常のサポートチケットを作成します。",
-      "emailHint": "このプロジェクトのメールの送信元（送信 API、通知、フィードバックの更新）と、新しいチャットの通知先です。",
-      "replyAs": "返信者名",
-      "replyAsHint": "返信とメールの署名に使われます",
       "notifyWhenWrites": "ユーザーがメッセージを送ったときに通知",
       "notifyHint": "カンマ区切り、最大 5 件",
-      "fromAddress": "送信元アドレス",
-      "sendingDomain": "送信ドメイン",
-      "replyTo": "返信先",
-      "replyToPlaceholder": "返信は送信元アドレスに届きます",
-      "keepLog": "各メールのコピーをログに保存する",
-      "keepLogDescription": "ログにメッセージ本文を表示します。サインインやパスワード再設定のリンクが含まれる場合があります。",
-      "emailDefaultsNote": "空欄はサーバーの既定値が使われ、グレーで表示されます。送信ドメインはサーバーの API キーと同じ Mailgun アカウントにある必要があり、送信元アドレスもそのドメインに属している必要があります。",
       "collaborators": "共同作業者",
       "collaboratorsHint": "{name} のチャットに返信するメンバーです。",
       "thisProject": "このプロジェクト",
@@ -3202,7 +3222,13 @@
       "loadError": "プロジェクトを読み込めませんでした",
       "leaveConfirm": "変更を保存せずに離れますか？",
       "data": "データ",
-      "dataHint": "このプロジェクトを別の HelpBites へ移行します。"
+      "dataHint": "このプロジェクトを別の HelpBites へ移行します。",
+      "notifications": "通知",
+      "notificationsHint": "新しいチャットの通知を受け取る人。",
+      "sidebar": "サイドバー",
+      "sidebarHint": "このプロジェクトで使わないものはチェックを外すと、サイドバーと ⌘K の一覧から外れます。何も削除されず、各ページはリンクから開けます。概要と設定は常に表示されます。",
+      "senderMoved": "送信者とプロジェクトのその他のメール設定は、次の場所にあります：",
+      "senderMovedLink": "メール → 設定"
     },
     "dev": {
       "guide": "ガイド",
@@ -3246,11 +3272,11 @@
       "withToken": "を使って呼び出し、ヘッダーに",
       "passAssistant": "を設定します。会話を開くときに",
       "assistantRoute": "を渡すと、特定のアシスタントに振り分けられます（アシスタントタブから ID をコピーしてください）。",
-      "feedbackIntro": "ユーザーがアイデアを投稿し、投票やコメントができる公開ボードです。",
+      "feedbackIntro": "ユーザーがアイデアを投稿し、投票やコメントができる公開フィードバックページです。",
       "feedbackOn": "現在オンです。",
       "feedbackOff": "フィードバックページでオンにしてください。",
       "manage": "管理",
-      "dropTitle": "任意のページにボードを配置",
+      "dropTitle": "任意のページにフィードバックを配置",
       "dropText": "誰でも閲覧できます。チャットと同じトークンを渡すと、サインイン済みのユーザーが投稿、投票、コメントできます。",
       "useThe": "",
       "feedbackRead": "：読み取りは",
@@ -3297,7 +3323,7 @@
       "originsCount": "許可されたオリジン {count} 件",
       "noOrigins": "許可されたオリジンはありません",
       "widgetNotSeen": "まだサイトで読み込まれていません",
-      "boardOn": "ボードはオン",
+      "boardOn": "フィードバックはオン",
       "off": "オフ",
       "flagsCount": "{count} 件のフラグ",
       "noneYet": "まだありません",
@@ -3402,7 +3428,10 @@
       "saveError": "タイプを保存できませんでした。JSON を確認してください。",
       "deleteError": "タイプを削除できませんでした",
       "loadError": "タイプを読み込めませんでした",
-      "openStatus": "オープン"
+      "openStatus": "オープン",
+      "noWebhookTitle": "これらのアクションの送信先がありません",
+      "noWebhookDescription": "アクションは署名され、プロジェクトのアクション用 webhook に送信されます。このプロジェクトにはまだ webhook の URL とシークレットがないため、アクションを実行すると失敗します。",
+      "noWebhookFix": "webhook を設定する"
     },
     "assistants": {
       "newAssistant": "新しいアシスタント",
@@ -4780,7 +4809,7 @@
       "button": "ボタンのラベル",
       "imageAlt": "画像の説明",
       "component": "コンポーネント: {field}",
-      "linked": "リンクされたテンプレートは、元のテンプレートの翻訳を送信します。元のデザインを翻訳してください。",
+      "linked": "リンクされたテンプレートは、共有テンプレートの翻訳を送信します。共有テンプレートのデザインを翻訳してください。",
       "sendHint": "編集する言語を選んでください。送信 API の \"locale\" で言語を指定するか、宛先ごとに言語を設定できます。"
     }
   },
@@ -4802,5 +4831,109 @@
     "backToPanel": "HelpBites に戻る",
     "failed": "接続を承認できませんでした",
     "redirecting": "{client} に戻っています…"
+  },
+  "emailSettings": {
+    "fromNameHint": "返信とメールの署名に使われます",
+    "replyTo": "返信先",
+    "replyToPlaceholder": "返信は送信元アドレスに届きます",
+    "fromAddress": "送信元アドレス",
+    "sendingDomain": "送信ドメイン",
+    "keepLog": "各メールのコピーをログに保存する",
+    "keepLogDescription": "ログにメッセージ本文を表示します。サインインやパスワード再設定のリンクが含まれる場合があります。",
+    "defaultsNote": "空欄はサーバーの既定値が使われ、グレーで表示されます。送信ドメインはサーバーの API キーと同じ Mailgun アカウントにある必要があり、送信元アドレスもそのドメインに属している必要があります。",
+    "sender": "送信者",
+    "senderIntro": "このプロジェクトのメールの送信元です。送信 API、通知、フィードバックの更新のほか、下で専用のアドレスを設定していなければキャンペーンやシーケンスにも使われます。",
+    "fromName": "送信者名",
+    "separate": "キャンペーンとシーケンスを別のアドレスから送信する",
+    "separateDescription": "別のドメインを使うと、ニュースレターの評判をサポートメールやアカウントメールから切り離せます。同じ Mailgun アカウントの送信ドメインである必要があります。"
+  },
+  "emailSetup": {
+    "blocked": "メールをまだ送信できません",
+    "nudge": "メールは動作しています。直しておくとよい点が 1 つあります",
+    "openSettings": "設定を開く",
+    "mailer": {
+      "title": "メールサーバー。",
+      "todo": "このサーバーには Mailgun の API キーがないため、メールを一切送信できません。MAILGUN_API_KEY を設定してください。"
+    },
+    "sender": {
+      "title": "送信者。",
+      "todo": "このプロジェクトにもサーバーにも、送信元アドレスと送信ドメインがありません。メール → 設定 で設定してください。"
+    },
+    "webhook": {
+      "title": "配信イベント。",
+      "warn": "Mailgun の Webhook が設定されていないため、ログに配信・開封・不達が反映されず、バウンスしたアドレスも除外されません。"
+    },
+    "postalAddress": {
+      "title": "住所。",
+      "todo": "すべてのキャンペーンに住所が必要です。メール → 設定 で追加してください。"
+    },
+    "paused": {
+      "title": "一括メールは一時停止中です。",
+      "todo": "{reason}。"
+    }
+  },
+  "setup": {
+    "title": "セットアップ",
+    "progress": "{total} 件中 {done} 件完了",
+    "optional": "任意",
+    "widget": {
+      "title": "サイト上のチャットウィジェット",
+      "seen": "サイトで最後に読み込まれたのは {value} です。",
+      "noOrigins": "サイトのアドレスを許可してから、script タグを追加してください。",
+      "waiting": "サイトでウィジェットが読み込まれるのを待っています。"
+    },
+    "identity": {
+      "title": "ユーザーの識別",
+      "seen": "バックエンドが ID トークンに署名したのは {value} です。",
+      "missing": "署名済みの ID トークンはまだありません。バックエンドがユーザーごとに 1 つ署名することで、会話がそのユーザーのものになります。",
+      "anonymous": "トークンでサインインしたユーザーはまだいません。メールアドレスのみのサインインがオンのため、問題ない可能性があります。"
+    },
+    "notified": {
+      "title": "新しいチャットを誰かに通知",
+      "email": "{value} 件のアドレスにメールで通知",
+      "push": "{value} 台のデバイスにプッシュ通知",
+      "noMailer": "アドレスは設定済みですが、このサーバーはまだメールを送信できません。",
+      "nobody": "顧客がメッセージを送っても、メールもプッシュ通知も誰にも届きません。"
+    },
+    "sender": {
+      "title": "メールの送信者",
+      "ready": "メールは {value} から送信されます。",
+      "missing": "送信者またはメールサーバーが未設定です。メールを送信できません。",
+      "default": "メールはサーバーの既定のアドレスから送信されます。"
+    },
+    "assistant": {
+      "title": "AI アシスタントの準備完了",
+      "live": "{value} が顧客に自動で回答しています。",
+      "notLive": "{value} はまだ回答していません。プロバイダー、ナレッジ、有効なステータス、自動返信のオンが必要です。",
+      "none": "アシスタントはまだありません。追加するまで、すべて担当者が回答します。"
+    },
+    "stripe": {
+      "title": "Stripe",
+      "synced": "接続済みで同期されています。",
+      "waiting": "接続済みです。最初の同期を待っています。",
+      "error": "前回の同期に失敗しました：{value}",
+      "none": "未接続：概要に売上が表示されません。"
+    },
+    "github": {
+      "title": "GitHub",
+      "linked": "{value} 件のリポジトリをリンク済み",
+      "none": "リポジトリがリンクされていません：コミットから下書きは作成されません。"
+    },
+    "errors": {
+      "title": "エラー追跡",
+      "connected": "{value} に報告しています。",
+      "none": "未接続：エラーは受信トレイに届きません。"
+    }
+  },
+  "attention": {
+    "unread": "未読の会話 {count} 件",
+    "drafts": "承認待ちの変更履歴の下書き {count} 件",
+    "sync": "{value} の同期が失敗しています",
+    "bounces": "今週バウンスまたは失敗したメール {count} 件",
+    "alerts": "本日トリガーされたエラーアラート {count} 件",
+    "paused": "キャンペーンとシーケンスは一時停止中です",
+    "errors": "未解決のエラーレポート {count} 件",
+    "documents": "処理に失敗したナレッジドキュメント {count} 件",
+    "triage": "整理待ちのフィードバック投稿 {count} 件"
   }
 }

@@ -8,7 +8,8 @@ import { watchDebounced } from '@vueuse/core'
 import type { Campaign } from '#shared/marketing'
 import type { ContactSegment } from '#shared/segments'
 import type { EmailTemplate } from '~~/server/utils/emails'
-import CampaignsTabs from '~/components/campaigns/CampaignsTabs.vue'
+import EmailSetupStrip from '~/components/email/EmailSetupStrip.vue'
+import EmailTabs from '~/components/email/EmailTabs.vue'
 import { CAMPAIGN_STATUS, percent } from '~/utils/campaignStatus'
 
 definePageMeta({ middleware: 'agent' })
@@ -127,7 +128,7 @@ async function remove() {
   if (!window.confirm(t('projectTools.campaign.deleteConfirm'))) return
   try {
     await api(`/campaigns/${id.value}`, { method: 'DELETE', query: { project: projectId.value } })
-    await navigateTo(`/projects/${projectId.value}/campaigns`)
+    await navigateTo(`/projects/${projectId.value}/email?view=campaigns`)
   } catch (e: any) {
     toast.add({ title: e?.message || t('projectTools.campaign.deleteError'), color: 'error' })
   }
@@ -153,8 +154,8 @@ const tiles = computed(() => stat.value
 
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="projectId" :title="campaign?.name || $t('projectTools.campaign.fallbackTitle')" :crumbs="[{ label: $t('sections.campaigns'), to: `/projects/${projectId}/campaigns` }]">
-      <template #title><CampaignsTabs current="campaigns" /></template>
+    <PageHeader :project-id="projectId" :title="campaign?.name || $t('projectTools.campaign.fallbackTitle')" :crumbs="[{ label: $t('campaigns.tabs.campaigns'), to: `/projects/${projectId}/email?view=campaigns` }]">
+      <template #title><EmailTabs current="campaigns" /></template>
       <template v-if="campaign" #actions>
         <UBadge :icon="CAMPAIGN_STATUS[campaign.status].icon" :label="CAMPAIGN_STATUS[campaign.status].label" :color="CAMPAIGN_STATUS[campaign.status].color" variant="subtle" />
         <UButton v-if="editable || campaign.status === 'paused'" icon="i-lucide-flask-conical" :label="$t('projectTools.campaign.test')" size="sm" color="neutral" variant="outline" :disabled="!form.template && !campaign.blogPostId" @click="openTest" />
@@ -170,6 +171,7 @@ const tiles = computed(() => stat.value
         </UDropdownMenu>
       </template>
     </PageHeader>
+    <EmailSetupStrip :project-id="projectId" scope="bulk" />
 
     <div v-if="!campaign" class="space-y-2 p-6"><USkeleton v-for="i in 5" :key="i" class="h-10" /></div>
     <div v-else class="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,26rem)_1fr] lg:overflow-hidden">

@@ -86,10 +86,13 @@ struct MarketingConfig: Codable, Equatable, Sendable {
   }
 }
 
-/// The slice of a project the marketing screens need, from `GET /admin/projects`.
+/// The slice of a project the marketing screens and Email → Settings need, from `GET /admin/projects`.
 struct MarketingProject: Decodable, Identifiable, Sendable {
   let id, publicKey, name: String
-  let fromName: String?
+  /// The project's own sender (nil from an older server): every message goes out from it unless
+  /// campaigns have one of their own in `marketing`.
+  let fromName, fromEmail, replyTo, mailDomain: String?
+  let emailLogContent: Bool?
   let marketing: MarketingConfig?
   let eventWebhookUrl: String?
   let hasEventWebhookSecret: Bool?

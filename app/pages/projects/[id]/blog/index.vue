@@ -125,7 +125,7 @@
           </UFormField>
 
           <USeparator :label="$t('blog.newsletter')" />
-          <p class="text-xs text-muted">{{ $t('blog.newsletterDescription') }} <NuxtLink :to="`/projects/${id}/campaigns`" class="underline underline-offset-2">{{ $t('sections.campaigns') }}</NuxtLink>{{ $t('blog.newsletterDescriptionEnd') }}</p>
+          <p class="text-xs text-muted">{{ $t('blog.newsletterDescription') }} <NuxtLink :to="`/projects/${id}/email?view=campaigns`" class="underline underline-offset-2">{{ $t('nav.email') }} → {{ $t('campaigns.tabs.campaigns') }}</NuxtLink>{{ $t('blog.newsletterDescriptionEnd') }}</p>
           <USwitch :model-value="settings.subscribeForm" :disabled="!canManage" :label="$t('blog.subscribeForm')" :description="$t('blog.subscribeFormDescription')" @update:model-value="saveSettings({ subscribeForm: $event })" />
           <UFormField :label="$t('blog.newsletterTopic')" :description="$t('blog.newsletterTopicHint')">
             <USelect :model-value="settings.newsletterTopic || NONE" :items="topicItems" :disabled="!canManage" class="w-full" @update:model-value="saveSettings({ newsletterTopic: $event === NONE ? '' : String($event) })" />

@@ -5,6 +5,37 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- Easier to understand, across the panel and the native app:
+  - A project's sidebar sections are grouped as Support, Product, Grow, Site and Build, and a project can hide the ones it
+    does not use (**Project → Settings → Sidebar**, or `hiddenSections` on `PATCH /v1/admin/projects/:id`). Nothing is
+    deleted; pages and API keep working. New fields `Project.hiddenSections` and `Project.identitySeenAt` (need
+    `schema:apply`; the container does it on boot). `identitySeenAt` is stamped, at most hourly, when a signed identity
+    token is accepted.
+  - Renamed: Tickets is **Ticket types**, Dev is **Install & API**, email Masters are **Shared templates** (the API
+    still says `master`), and the three things called "board" are **Feedback** (the public page), **Planning** (the
+    private kanban, formerly Board) and the **Roadmap**. The feedback page's "Board" layout is **Columns**. API and
+    embed names (`board`, `view=board`, `/v1/admin/board-items`) are unchanged.
+  - Email is one section per project: **Templates, Campaigns, Sequences, Log, Settings**. Campaigns is no longer in the
+    sidebar (`/projects/:id/campaigns` redirects to `/projects/:id/email?view=campaigns`), and the sender is one form under
+    Email → Settings: the from name, address, domain, reply-to and "keep a copy" fields moved there from Project →
+    Settings, where only "Notify when a user writes" stays. Campaigns and sequences use that sender unless the switch
+    for their own address is on. Same `PATCH /v1/admin/projects/:id` fields as before.
+  - ⌘K on the web also searches conversations and knowledge through `GET /v1/admin/search` (needs Meilisearch, as the
+    native app's did).
+  - `GET /v1/admin/projects/:id/setup`: a per-project setup checklist judged from what HelpBites has seen. The project
+    overview returns it as `setup` and **no longer returns `health`**; its `attention` rows are now
+    `{ key, kind, projectId, count, value, detail, section, at }` instead of `{ key, label, count, section }`.
+  - `GET /v1/admin/attention`: one needs-attention list for the workspace (changelog drafts awaiting approval, failed
+    contact and Stripe syncs, bounced or failed email, fired error alerts, a paused sender, open error reports, failed
+    knowledge documents, feedback to triage), cached 15 seconds. `GET /v1/admin/unread` is the live inbox badge count. The
+    panel keeps both live on every page, not only the inbox. See `docs/OVERVIEW.md`.
+  - `GET /v1/admin/projects/:id/email-setup` says what a project's email still needs (mailer key, sender, delivery
+    webhook, postal address, a paused sender); the Email tabs show it as a strip.
+  - `GET /v1/admin/support-agents/:id` returns `readiness`, and `POST /v1/admin/support-agents/:id/test-answer` runs the
+    real decision on a message (routing rules, then knowledge and the confidence bar) and says why. The internal note an
+    assistant leaves when it hands over because no rule matched and its default is "hand to a human" now says so
+    instead of claiming a rule did.
+  - The ticket type editor and the inbox warn when a type has actions but the project has no action webhook URL and secret.
 - Pricing tables: plan cards, rows, a paywall, a comparison table or a spotlight plan under **Project → Pricing** (web
   and native), embedded with `public/pricing.js`, on a hosted page at `/pricing/<public key>/<key>`, in SwiftUI, in an
   onboarding step, or read from `GET /v1/pricing/{pk}/{key}`; managed at `/v1/admin/pricing-tables`. See

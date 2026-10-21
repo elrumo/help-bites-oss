@@ -57,3 +57,74 @@ struct WorkspaceRevenue: Decodable, Sendable {
   /// Projects that have synced, the most revenue first.
   let projects: [ProjectRevenue]
 }
+
+// shared/attention.ts and server/utils/attention.ts: the things that wait on someone,
+// across the workspace (`GET /v1/admin/attention`) or inside one project (its overview).
+
+/// A vue-i18n "singular | plural" string held as its two forms (en.json uses them for counts).
+struct PluralText: Sendable {
+  let one, many: String
+  init(_ one: String, _ many: String? = nil) {
+    self.one = one
+    self.many = many ?? one
+  }
+
+  /// vue-i18n's two-form pick: exactly 1 is the singular, anything else (0 too) the plural.
+  /// Each `{name}` is then filled from `values`.
+  func text(_ number: Int, _ values: [String: String] = [:]) -> String {
+    var result = number == 1 ? one : many
+    for (name, value) in values { result = result.replacingOccurrences(of: "{\(name)}", with: value) }
+    return result
+  }
+}
+
+/// One thing that waits on you. `kind` is unread, drafts, sync, bounces, alerts, paused, errors, documents
+/// or triage; `section` is the web section path that deals with it (`email?view=log`); `projectId`
+/// is empty for the workspace itself (`paused`).
+struct AttentionItem: Decodable, Identifiable, Sendable {
+  let key, kind, projectId, value, detail, section: String
+  let count: Int
+  let at: String?
+  var id: String { key }
+
+  /// The row's words (`attention.<kind>` in en.json).
+  var text: String {
+    let words: PluralText
+    switch kind {
+    case "unread": words = PluralText("{count} unread conversation", "{count} unread conversations")
+    case "drafts": words = PluralText("{count} changelog draft waiting for approval", "{count} changelog drafts waiting for approval")
+    case "sync": words = PluralText("{value} sync is failing")
+    case "bounces": words = PluralText("{count} email bounced or failed this week", "{count} emails bounced or failed this week")
+    case "alerts": words = PluralText("{count} error alert fired today", "{count} error alerts fired today")
+    case "paused": words = PluralText("Campaigns and sequences are paused")
+    case "errors": words = PluralText("{count} open error report", "{count} open error reports")
+    case "documents": words = PluralText("{count} knowledge document failed to process", "{count} knowledge documents failed to process")
+    case "triage": words = PluralText("{count} feedback post to triage", "{count} feedback posts to triage")
+    default: words = PluralText(kind)
+    }
+    return words.text(count, ["count": String(count), "value": value])
+  }
+
+  /// The web's row icons, as SF Symbols.
+  var systemImage: String {
+    switch kind {
+    case "unread": "tray"
+    case "drafts": "square.and.pencil"
+    case "sync": "arrow.triangle.2.circlepath"
+    case "bounces": "envelope.badge"
+    case "alerts": "bell.badge"
+    case "paused": "pause.circle"
+    case "errors": "ladybug"
+    case "documents": "doc.text"
+    case "triage": "lightbulb"
+    default: "exclamationmark.circle"
+    }
+  }
+}
+
+/// `GET /v1/admin/attention`. `total` (the sum of the counts) is the badge on Overview; `unreadMessages` is the inbox's.
+struct WorkspaceAttention: Decodable, Sendable {
+  let unreadMessages, total: Int
+  let items: [AttentionItem]
+  static let empty = WorkspaceAttention(unreadMessages: 0, total: 0, items: [])
+}

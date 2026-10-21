@@ -2,24 +2,24 @@ import SwiftUI
 
 /// A project's sections: the web sidebar's nested items as a page, the step
 /// between Projects and a section where there's no sidebar to list them (iPhone).
+/// Grouped under the sidebar's headings, without the sections the project hid.
 struct ProjectScreen: View {
   let projectId: String
   @Environment(Workspace.self) private var workspace
 
   var body: some View {
     let project = workspace.project(projectId)
+    let layout = workspace.layout(projectId)
     List {
-      ForEach(ProjectSection.allCases) { section in
-        NavigationLink(value: AppRoute.project(projectId, section)) {
-          Label {
-            Text(section.label).font(.lnRow).foregroundStyle(Theme.text)
-          } icon: {
-            Image(systemName: section.systemImage).font(.system(size: 14)).foregroundStyle(Theme.textMuted)
-          }
-          .frame(minHeight: Metrics.rowHeight)
+      row(.overview)
+      ForEach(layout.groups) { entry in
+        Section {
+          ForEach(entry.sections) { section in row(section) }
+        } header: {
+          Text(entry.group.label).font(.lnCaptionMedium).foregroundStyle(Theme.textMuted).textCase(nil)
         }
-        .linearRow()
       }
+      row(.settings)
     }
     .linearList()
     .panelScreen(project?.name ?? "Project")
@@ -34,18 +34,28 @@ struct ProjectScreen: View {
       }
     }
   }
+
+  private func row(_ section: ProjectSection) -> some View {
+    NavigationLink(value: AppRoute.project(projectId, section)) {
+      Label {
+        Text(section.label).font(.lnRow).foregroundStyle(Theme.text)
+      } icon: {
+        Image(systemName: section.systemImage).font(.system(size: 14)).foregroundStyle(Theme.textMuted)
+      }
+      .frame(minHeight: Metrics.rowHeight)
+    }
+    .linearRow()
+  }
 }
 
 /// `GET /v1/admin/projects/:id/overview`. `section` is the web's section path,
 /// sometimes with a query (`email?view=log`).
 struct ProjectOverview: Decodable, Sendable {
   struct Stat: Decodable, Identifiable, Sendable { let key, label: String; let value: Int; let section: String; var id: String { key } }
-  struct Health: Decodable, Identifiable, Sendable { let key, label, state, detail, section: String; var id: String { key } }
-  struct Attention: Decodable, Identifiable, Sendable { let key, label: String; let count: Int; let section: String; var id: String { key } }
   struct Activity: Decodable, Identifiable, Sendable { let id, title, detail, at, section: String; let conversationId: String? }
   let stats: [Stat]
-  let health: [Health]
-  let attention: [Attention]
+  let setup: ProjectSetup
+  let attention: [AttentionItem]
   let activity: [Activity]
 }
 
@@ -85,48 +95,22 @@ struct ProjectOverviewScreen: View {
             if overview.attention.isEmpty {
               Label("All clear. Nothing needs you right now.", systemImage: "checkmark.circle").font(.lnMeta).foregroundStyle(Theme.textMuted)
             } else {
-              Card {
-                ForEach(overview.attention) { item in
-                  CardRow(divider: item.id != overview.attention.last?.id) {
-                    Button { open(item.section) } label: {
-                      HStack(spacing: 10) {
-                        Image(systemName: "exclamationmark.circle").foregroundStyle(Theme.warning)
-                        Text(item.label).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-                        Spacer(minLength: 8)
-                        Text("\(item.count)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
-                      }
-                      .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                  }
-                }
-              }
+              AttentionList(items: overview.attention)
             }
           }
 
           VStack(alignment: .leading, spacing: 8) {
-            SectionLabel("Status")
-            Card {
-              ForEach(overview.health) { row in
-                CardRow(divider: row.id != overview.health.last?.id) {
-                  Button { open(row.section) } label: {
-                    HStack(spacing: 10) {
-                      Text(row.label).font(.lnRow).foregroundStyle(Theme.textHighlighted)
-                      Spacer(minLength: 8)
-                      Tag(text: row.detail, tint: row.state == "ok" ? Theme.success : row.state == "warn" ? Theme.warning : nil)
-                    }
-                    .contentShape(Rectangle())
-                  }
-                  .buttonStyle(.plain)
-                }
-              }
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+              Text("Setup").font(.lnCaptionMedium).foregroundStyle(Theme.textMuted)
+              Text("\(overview.setup.done) of \(overview.setup.total) done").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textDimmed)
             }
+            SetupChecklist(projectId: projectId, setup: overview.setup)
           }
 
           VStack(alignment: .leading, spacing: 8) {
             SectionLabel("Latest activity")
             if overview.activity.isEmpty {
-              EmptyState(systemImage: "clock", title: "Nothing yet", message: "Conversations, feedback and finished board items will show up here.")
+              EmptyState(systemImage: "clock", title: "Nothing yet", message: "Conversations, feedback and finished planning items will show up here.")
             } else {
               Card {
                 ForEach(overview.activity) { item in
@@ -167,9 +151,9 @@ struct ProjectOverviewScreen: View {
     .task { await load() }
   }
 
-  /// `?view=` is dropped; an unknown section opens Dev.
+  /// `?view=` and `#anchor` are dropped; an unknown section opens Install & API.
   private func section(_ path: String) -> ProjectSection {
-    ProjectSection(rawValue: String(path.split(separator: "?").first ?? "")) ?? .dev
+    ProjectSection.fromWeb(path) ?? .dev
   }
 
   private func open(_ path: String) { workspace.go(.project(projectId, section(path))) }
@@ -187,6 +171,57 @@ struct ProjectOverviewScreen: View {
       error = ""
     } catch {
       if !Task.isCancelled { self.error = error.localizedDescription }
+    }
+  }
+}
+
+/// A project's setup, row by row (web: SetupChecklist.vue): an icon for where it stands, what it is, a
+/// line on why, and a tap to the page that fixes it. Optional rows still to do say so.
+struct SetupChecklist: View {
+  let projectId: String
+  let setup: ProjectSetup
+  @Environment(Workspace.self) private var workspace
+
+  var body: some View {
+    Card {
+      ForEach(setup.items) { item in
+        CardRow(divider: item.id != setup.items.last?.id) {
+          Button { workspace.go(.project(projectId, ProjectSection.fromWeb(item.section) ?? .dev)) } label: { row(item) }.buttonStyle(.plain)
+        }
+      }
+    }
+  }
+
+  private func row(_ item: SetupItem) -> some View {
+    HStack(spacing: 10) {
+      Image(systemName: icon(item.state)).font(.system(size: 14)).foregroundStyle(tint(item.state)).frame(width: 18)
+      VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 8) {
+          Text(item.title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+          if item.isOptional && item.state != "done" { Text("Optional").font(.lnCaption).foregroundStyle(Theme.textDimmed) }
+        }
+        Text(item.text).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(2).multilineTextAlignment(.leading)
+      }
+      Spacer(minLength: 8)
+      Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+    }
+    .contentShape(Rectangle())
+  }
+
+  /// done: a green check, todo: a grey circle, attention: a warning triangle.
+  private func icon(_ state: String) -> String {
+    switch state {
+    case "done": "checkmark.circle"
+    case "attention": "exclamationmark.triangle"
+    default: "circle"
+    }
+  }
+
+  private func tint(_ state: String) -> Color {
+    switch state {
+    case "done": Theme.success
+    case "attention": Theme.warning
+    default: Theme.textDimmed
     }
   }
 }

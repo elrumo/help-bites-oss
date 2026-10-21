@@ -7,7 +7,8 @@
 import type { Sequence, SequenceStep, SequenceTrigger } from '#shared/marketing'
 import type { AdminProject } from '~~/server/utils/projects'
 import type { EmailTemplate } from '~~/server/utils/emails'
-import CampaignsTabs from '~/components/campaigns/CampaignsTabs.vue'
+import EmailSetupStrip from '~/components/email/EmailSetupStrip.vue'
+import EmailTabs from '~/components/email/EmailTabs.vue'
 
 const props = defineProps<{ project: AdminProject }>()
 
@@ -107,10 +108,11 @@ const STATUS_COLOR = { draft: 'neutral', active: 'success', paused: 'warning' } 
 
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="project.id" :title="$t('campaigns.title')">
-      <template #title><CampaignsTabs current="sequences" /></template>
+    <PageHeader :project-id="project.id" :title="$t('nav.email')">
+      <template #title><EmailTabs current="sequences" /></template>
       <template #actions><UButton icon="i-lucide-plus" :label="$t('campaigns.sequences.new')" size="sm" @click="edit(null)" /></template>
     </PageHeader>
+    <EmailSetupStrip :project-id="project.id" scope="bulk" />
     <PlanLock feature="sequences" />
 
     <div class="min-h-0 flex-1 overflow-y-auto">

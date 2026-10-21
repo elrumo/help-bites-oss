@@ -21,6 +21,9 @@ import type { EmailFolder, EmailTemplate } from '~~/server/utils/emails'
 import type { EmailLogEntry, EmailLogStatus, EmailSuppression } from '~~/server/utils/emailLogs'
 import type { AdminProject } from '~~/server/utils/projects'
 import type { ProjectOverview } from '~~/server/utils/overview'
+import { attentionTotal, sortAttention, type AttentionItem, type WorkspaceAttention } from '#shared/attention'
+import { buildEmailSetup, type EmailSetup } from '#shared/emailSetup'
+import { buildSetup, type ProjectSetup } from '#shared/setup'
 import { OVERVIEW_UNREAD_LIMIT, revenueChange, type WorkspaceOverview, type WorkspaceRevenue } from '#shared/overview'
 import { REVENUE_RANGES, STRIPE_ATTR, type RevenueRange, type RevenueReport, type StripeConnection, type StripePaymentDto } from '#shared/stripe'
 
@@ -89,7 +92,7 @@ function project(id: string, name: string, siteUrl: string, accent: string, flag
     inboxPath: '/inbox', fromName: `${name} Support`, notifyEmails: [`support@${new URL(siteUrl).host}`],
     fromEmail: '', replyTo: '', mailDomain: '', emailLogContent: false,
     actionWebhookUrl: '', hasActionWebhookSecret: false, flags,
-    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, widgetSeenAt: ago(30), errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, errorLinks: id === 'acme' ? [{ id: 'main', label: 'Acme', name: 'Acme', team: 'helpbites', serverId: '', provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }] : [], createdAt: ago(60 * 24 * 90)
+    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, widgetSeenAt: ago(30), identitySeenAt: id === 'acme' ? ago(30) : null, hiddenSections: [], errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, errorLinks: id === 'acme' ? [{ id: 'main', label: 'Acme', name: 'Acme', team: 'helpbites', serverId: '', provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }] : [], createdAt: ago(60 * 24 * 90)
   }
 }
 
@@ -425,6 +428,32 @@ function applyProject(p: AdminProject, body: Record<string, any>) {
   if (actionWebhookSecret) p.hasActionWebhookSecret = true
 }
 
+
+// What the setup checklist and the attention list say, from the demo's own rows.
+function demoSetup(p: AdminProject): ProjectSetup {
+  const stripe = DEMO_REVENUE[p.id]
+  return buildSetup({
+    hiddenSections: p.hiddenSections, allowedOrigins: p.allowedOrigins.length, widgetSeenAt: p.widgetSeenAt, identitySeenAt: p.identitySeenAt, allowAnonymousUsers: p.allowAnonymousUsers,
+    notifyEmails: p.notifyEmails.length, mailerReady: true, pushDevices: 0, fromEmail: p.fromEmail,
+    assistants: { total: 0, live: 0, first: '' }, stripe: { connected: Boolean(stripe), synced: Boolean(stripe), error: '' }, repos: 0, errorTracker: { connected: p.errors.connected, name: p.errors.providerName }
+  })
+}
+
+function demoEmailSetup(p: AdminProject): EmailSetup {
+  return buildEmailSetup({ apiKey: true, domain: p.mailDomain || 'mail.acme.app', fromEmail: p.fromEmail || 'hello@mail.acme.app', webhook: true, postalAddress: p.marketing.postalAddress, pausedReason: '' })
+}
+
+function demoAttention(p: AdminProject): AttentionItem[] {
+  const item = (kind: AttentionItem['kind'], count: number, section: string, at: string | null, extra: Partial<AttentionItem> = {}): AttentionItem[] => count ? [{ key: `${kind}:${p.id}`, kind, projectId: p.id, count, value: '', detail: '', section, at, ...extra }] : []
+  const drafts = changelogEntries.filter(entry => entry.projectId === p.id && entry.status === 'draft' && entry.reviewStatus === 'pending')
+  const failed = emailLogs.filter(e => e.projectId === p.id && ['failed', 'bounced', 'complained', 'suppressed'].includes(e.status))
+  return [
+    ...item('drafts', drafts.length, 'changelog', drafts[0]?.createdAt || null, { value: drafts[0]?.title || '' }),
+    ...item('bounces', failed.length, 'email?view=log', failed[0]?.createdAt || null)
+  ]
+}
+const demoUnread = () => conversations.filter(c => !c.archivedAt).reduce((sum, c) => sum + c.unreadByAgent, 0)
+
 // ---- routes -------------------------------------------------------------------
 
 // Acme's feedback board, project board and changelog. They tell one story: the
@@ -554,31 +583,34 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const p = find(projects, params[0], 'Project')
     const scoped = conversations.filter(c => c.projectId === p.id)
     const mail = emailLogs.filter(e => e.projectId === p.id)
-    const failed = mail.filter(e => ['failed', 'bounced', 'complained', 'suppressed'].includes(e.status)).length
     const unread = scoped.filter(c => c.unreadByAgent > 0).length
-    const origins = p.allowedOrigins.length
     return {
       stats: [
         { key: 'open', label: 'Open conversations', value: scoped.filter(c => c.statusCategory === 'open' || c.statusCategory === 'pending').length, section: 'conversations' },
         { key: 'new', label: 'New this week', value: scoped.length, section: 'conversations' },
         { key: 'emails', label: 'Emails sent · 7d', value: mail.length, section: 'email?view=log' }
       ],
-      health: [
-        // The demo's users have all written in, so an allowed origin is a working widget.
-        origins
-          ? { key: 'chat', label: 'Chat widget', state: 'ok', detail: `${origins} allowed origin${origins === 1 ? '' : 's'}`, detailKey: 'origins', params: { count: origins }, section: 'dev' }
-          : { key: 'chat', label: 'Chat widget', state: 'warn', detail: 'No allowed origins', detailKey: 'noOrigins', section: 'dev' },
-        { key: 'email', label: 'Email sending', state: 'ok', ...(p.fromEmail ? { detail: p.fromEmail } : { detail: 'Default sender', detailKey: 'defaultSender' }), section: 'settings' },
-        { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', ...(p.feedback.enabled ? { detail: 'On', detailKey: 'on' } : { detail: 'Off', detailKey: 'off' }), section: 'feedback' },
-        { key: 'errors', label: 'Error tracking', state: p.errors.connected ? 'ok' : 'off', ...(p.errors.connected ? { detail: p.errors.providerName } : { detail: 'Not connected', detailKey: 'notConnected' }), section: 'errors' }
-      ],
+      setup: demoSetup(p),
       attention: [
-        { key: 'unread', label: 'Unread conversations', count: unread, section: 'conversations' },
-        { key: 'emails', label: 'Failed emails · 7d', count: failed, section: 'email?view=log' }
-      ].filter(item => item.count > 0),
+        ...(unread ? [{ key: `unread:${p.id}`, kind: 'unread' as const, projectId: p.id, count: unread, value: '', detail: '', section: 'conversations', at: null }] : []),
+        ...sortAttention(demoAttention(p))
+      ],
       activity: scoped.filter(c => c.lastMessageAt).sort((a, b) => String(b.lastMessageAt).localeCompare(String(a.lastMessageAt))).slice(0, 10)
         .map(c => ({ id: `c:${c.id}`, title: userOf(c).name || userOf(c).email || 'Conversation', detail: c.lastMessagePreview, at: String(c.lastMessageAt), section: 'conversations', conversationId: c.id }))
     }
+  }],
+  ['GET', /^\/admin\/projects\/([^/]+)\/setup$/, ({ params }): ProjectSetup => demoSetup(find(projects, params[0], 'Project'))],
+  ['GET', /^\/admin\/projects\/([^/]+)\/email-setup$/, ({ params }): EmailSetup => demoEmailSetup(find(projects, params[0], 'Project'))],
+  ['GET', /^\/admin\/unread$/, () => ({ unreadMessages: demoUnread() })],
+  ['GET', /^\/admin\/attention$/, (): WorkspaceAttention => {
+    const items = sortAttention(projects.flatMap(demoAttention))
+    return { unreadMessages: demoUnread(), total: attentionTotal(items), items }
+  }],
+  // The same shape as the server's search, over the demo's conversations (there is no knowledge to search here).
+  ['GET', /^\/admin\/search$/, ({ query }) => {
+    const needle = String(query.q || '').trim().toLowerCase()
+    const rows = needle ? conversations.filter(c => `${c.subject} ${c.lastMessagePreview} ${userOf(c).name} ${userOf(c).email}`.toLowerCase().includes(needle)).slice(0, 20) : []
+    return { conversations: rows, endUsers: Object.fromEntries(rows.map(c => [c.endUserId, serializeUser(userOf(c))])), faqs: [] }
   }],
   ['GET', /^\/admin\/overview$/, ({ query }): WorkspaceOverview => {
     const open = (c: Conversation) => c.statusCategory === 'open' || c.statusCategory === 'pending'
