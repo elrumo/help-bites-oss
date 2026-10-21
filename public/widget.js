@@ -14,6 +14,10 @@
  * Renders a launcher button and an iframe of the chat. The identity token is
  * fetched from your `getToken` and posted into the iframe; it never lives in
  * a URL. Calls: HelpBites.push(['open']), (['close']), (['setContext', {...}]).
+ *
+ * When the project turns on the chat's Home tab, "Getting started" starts an
+ * onboarding flow in your page: with onboarding.js already on it, that one runs
+ * (HelpBitesOnboarding); otherwise this adds it, for that flow only.
  */
 (function () {
   var script = document.currentScript || (function () { var s = document.getElementsByTagName('script'); return s[s.length - 1] })()
@@ -164,7 +168,25 @@
     if (d.type === 'token-needed') sendToken()
     if (d.type === 'unread') setBadge(d.count || 0)
     if (d.type === 'close') toggle(false)
+    if (d.type === 'onboarding' && typeof d.flow === 'string' && /^[a-z0-9][a-z0-9-]{0,39}$/.test(d.flow)) startOnboarding(d.flow)
   })
+
+  // The Home tab's "Getting started": hand the flow to onboarding.js and get the panel out of its way.
+  function startOnboarding(flow) {
+    var queue = window.HelpBitesOnboarding = window.HelpBitesOnboarding || []
+    queue.push(['init', { flow: flow }])
+    queue.push(['open'])
+    if (Array.isArray(queue) && !document.querySelector('script[src*="/onboarding.js"]')) {
+      var tag = document.createElement('script')
+      tag.src = origin + '/onboarding.js'
+      tag.async = true
+      tag.setAttribute('data-project', projectKey)
+      tag.setAttribute('data-flow', flow)
+      tag.setAttribute('data-show', 'manual')
+      document.head.appendChild(tag)
+    }
+    toggle(false)
+  }
 
   function openFromUrl() {
     var match = /[?&]sb=([^&#]+)/.exec(location.search)

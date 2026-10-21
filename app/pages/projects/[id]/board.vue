@@ -196,11 +196,7 @@
               </ul>
             </section>
 
-            <section class="space-y-2">
-              <h3 class="text-sm font-semibold">{{ $t('github.linkedWork') }}</h3>
-              <GithubRefs :project-id="id" kind="board" :target-id="current.id" />
-              <p class="text-xs text-muted">{{ $t('github.hint') }}</p>
-            </section>
+            <GithubRefs :project-id="id" kind="board" :target-id="current.id" :heading="$t('github.linkedWork')" />
 
             <section class="space-y-2">
               <h3 class="text-sm font-semibold">{{ $t('sections.changelog') }}</h3>

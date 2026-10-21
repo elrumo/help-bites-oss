@@ -11,6 +11,8 @@ struct SegmentsList: View {
   @State private var error = ""
   @State private var editing: SegmentEditorTarget?
   @State private var deleting: ContactSegment?
+  /// The segment whose members are being put on a sequence.
+  @State private var sequenceFor: ContactSegment?
 
   var body: some View {
     List {
@@ -39,8 +41,12 @@ struct SegmentsList: View {
         }
         .buttonStyle(.plain)
         .linearRow()
-        .contextMenu { Button("Delete", role: .destructive) { deleting = segment } }
+        .contextMenu {
+          Button { sequenceFor = segment } label: { Label("Add everyone to a sequence", systemImage: "text.badge.plus") }
+          Button("Delete", role: .destructive) { deleting = segment }
+        }
         .swipeActions { Button("Delete", role: .destructive) { deleting = segment } }
+        .swipeActions(edge: .leading) { Button { sequenceFor = segment } label: { Label("Add to sequence", systemImage: "text.badge.plus") }.tint(Theme.accent) }
       }
     }
     .linearList()
@@ -50,6 +56,7 @@ struct SegmentsList: View {
     .sheet(item: $editing) { target in
       SegmentEditor(projectId: projectId, segment: target.segment) { Task { await load() } }
     }
+    .sheet(item: $sequenceFor) { segment in AddToSequenceSheet(projectId: projectId, segment: segment) }
     .confirmationDialog("Delete “\(deleting?.name ?? "")”?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible, presenting: deleting) { segment in
       Button("Delete segment", role: .destructive) { Task { await remove(segment) } }
     } message: { _ in Text("Campaigns that target it will send to all subscribers until you pick another.") }

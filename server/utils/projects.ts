@@ -47,6 +47,8 @@ export type PublicProject = {
   types?: PublicConversationType[]
   /** The project's feedback board; `enabled: false` when it has none. */
   feedback: FeedbackBoardConfig
+  /** The chat embed shows a Home tab (read from GET /v1/hub/{pk}); the hub settings turn it on. */
+  widgetHome: boolean
   /** The "Powered by HelpBites" link, null when the plan removes it. Set by the public routes, since it needs the workspace's plan. */
   poweredBy?: PoweredBy | null
 }
@@ -338,7 +340,8 @@ export function serializePublicProject(project: ParseObject): PublicProject {
     assistantLogoUrl: String(project.get('assistantLogoUrl') || ''),
     letUsersChooseType: project.get('letUsersChooseType') === true,
     allowOtherType: project.get('allowOtherType') === true,
-    feedback: normalizeFeedbackConfig(project.get('feedback'))
+    feedback: normalizeFeedbackConfig(project.get('feedback')),
+    widgetHome: normalizeHubConfig(project.get('hub')).widgetHome.enabled
   }
 }
 

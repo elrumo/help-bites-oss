@@ -175,6 +175,9 @@
           <ChangelogLinks :project-id="id" kind="feedback" :target-id="current.id" :source="{ title: current.title, body: current.body, type: current.type, changelogTitle: current.changelogTitle, changelogBody: current.changelogBody }" />
         </section>
 
+        <!-- Commits and pull requests that mention this post as #N -->
+        <GithubRefs v-if="current" class="mt-8 border-t border-muted pt-5" :project-id="id" kind="feedback" :target-id="current.id" :heading="$t('github.linkedWork')" />
+
         <!-- Comments -->
         <section v-if="current" class="mt-8 border-t border-muted pt-5">
           <h3 class="text-sm font-semibold">{{ $t('feedback.comments') }} <span class="font-normal text-muted">{{ comments.length }}</span></h3>
