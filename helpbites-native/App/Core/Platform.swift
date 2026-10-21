@@ -13,7 +13,7 @@ typealias PlatformColor = NSColor
 // The seams between iOS/iPadOS and macOS. Everything else is shared SwiftUI;
 // anything that touches UIKit or AppKit goes through here.
 
-enum Platform {
+@MainActor enum Platform {
   static var isMac: Bool {
     #if os(macOS)
     true
@@ -96,7 +96,7 @@ extension Image {
 }
 
 /// A hairline: one device pixel.
-enum Hairline {
+@MainActor enum Hairline {
   static var width: CGFloat {
     #if os(macOS)
     1 / (NSScreen.main?.backingScaleFactor ?? 2)
