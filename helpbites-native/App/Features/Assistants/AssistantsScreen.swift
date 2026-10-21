@@ -37,7 +37,7 @@ struct AssistantsScreen: View {
     if loading && assistants.isEmpty {
       SkeletonRows(count: 3).frame(maxHeight: .infinity, alignment: .top)
     } else if assistants.isEmpty && error.isEmpty {
-      EmptyState(systemImage: "sparkles", title: "No assistants yet", message: "An assistant answers this project's users from the knowledge you give it, or suggests replies for your team.") {
+      EmptyState(systemImage: "sparkles", title: "No assistants yet", message: "An assistant answers this project's users from the knowledge you give it, and hands the rest to your team.") {
         Button { creating = true } label: { Label("New assistant", systemImage: "plus") }.buttonStyle(.lnPrimaryCompact)
       }
       .frame(maxHeight: .infinity, alignment: .top)
@@ -84,7 +84,8 @@ private struct AssistantRow: View {
       Text(assistant.description.isEmpty ? assistant.model : assistant.description)
         .font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
         .frame(maxWidth: .infinity, alignment: .leading)
-      if assistant.autoReply {
+      // Only an active assistant answers: a draft with the switch on says nothing yet.
+      if assistant.autoReply && assistant.status == "active" {
         // The web drops the word on narrow screens and keeps the glyph.
         if sizeClass == .compact {
           Image(systemName: "bolt").font(.system(size: 12)).foregroundStyle(Theme.textMuted).accessibilityLabel("Auto-reply")

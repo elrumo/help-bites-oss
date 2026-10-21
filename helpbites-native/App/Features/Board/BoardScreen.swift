@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A project's board (pages/projects/[id]/board.vue): Linear-style items on a
+/// A project's planning board (pages/projects/[id]/board.vue): Linear-style items on a
 /// kanban, linked to the feedback posts and conversations they answer, and the
 /// source of the public roadmap. Drag a card across columns to change its status,
 /// or onto another card to put it there.
@@ -15,7 +15,7 @@ struct BoardScreen: View {
 
 // MARK: - Store
 
-/// The board's settings and items, the view filters, and every write. The item
+/// The planning board's settings and items, the view filters, and every write. The item
 /// editor uses one too when it opens from the inbox or a feedback post.
 @MainActor @Observable final class BoardStore {
   let projectId: String
@@ -23,9 +23,9 @@ struct BoardScreen: View {
   var config: BoardConfig?
   var projectName = ""
   var publicKey = ""
-  /// The roadmap is published through the feedback board: on, with its Roadmap view.
+  /// The roadmap is published through public feedback: on, with its Roadmap view.
   var feedbackRoadmap = false
-  /// The feedback board's statuses, for a linked post's badge.
+  /// The feedback page's statuses, for a linked post's badge.
   var feedbackStatuses: [FeedbackStatusDefinition] = []
   var items: [BoardItem] = []
   var agents: [Agent] = []
@@ -109,7 +109,7 @@ struct BoardScreen: View {
     defer { loading = false }
     do {
       let project = try await ProjectsAdminProject.load(projectId, session: session)
-      guard project.board != nil else { throw APIError.server("This server has no project boards yet. Update HelpBites to use them.") }
+      guard project.board != nil else { throw APIError.server("This server has no project planning yet. Update HelpBites to use it.") }
       apply(project)
       try await loadItems()
       if agents.isEmpty, let team: AgentsResponse = try? await session.get("/v1/admin/agents") { agents = team.agents }
@@ -156,7 +156,7 @@ struct BoardScreen: View {
   func saveLists(_ next: FeedbackBoardConfig) async throws -> FeedbackBoardConfig {
     let project = try await ProjectsAdminProject.save(projectId, ListsPatch(board: ListsPatch.Lists(statuses: next.statuses, labels: next.tags)), workspace: workspace)
     apply(project)
-    guard let board = project.board else { throw APIError.server("The board could not be saved.") }
+    guard let board = project.board else { throw APIError.server("Planning could not be saved.") }
     return board.settingsForm
   }
 
@@ -271,15 +271,15 @@ private struct BoardView: View {
 
   var body: some View {
     content
-      .panelScreen("Board")
+      .panelScreen("Planning")
       .toolbar { toolbar }
       .sheet(item: $editor) { route in BoardItemEditor(store: store, itemId: route.itemId) }
       .sheet(isPresented: $showSettings) { BoardSettingsSheet(store: store) }
       .feedbackErrorAlert($store.alert)
-      .alert("Turn on the feedback board first", isPresented: $roadmapHelp) {
+      .alert("Turn on feedback first", isPresented: $roadmapHelp) {
         Button("OK", role: .cancel) {}
       } message: {
-        Text("The roadmap is published through the feedback board: turn it on, with its Roadmap view, under Feedback → Settings.")
+        Text("The public roadmap is published through public feedback: turn it on, with its Roadmap view, under Feedback → Settings.")
       }
       .task { await store.load() }
       // No live sync between operators yet: coming back to the app refetches.
@@ -300,7 +300,7 @@ private struct BoardView: View {
         notEnabled
       }
     } else if !store.error.isEmpty {
-      EmptyState(systemImage: "exclamationmark.triangle", title: "Could not load the board", message: store.error) {
+      EmptyState(systemImage: "exclamationmark.triangle", title: "Could not load planning", message: store.error) {
         Button("Try again") { Task { await store.load() } }.buttonStyle(.lnSecondary)
       }
       .frame(maxHeight: .infinity)
@@ -312,13 +312,13 @@ private struct BoardView: View {
   @ToolbarContentBuilder private var toolbar: some ToolbarContent {
     ToolbarItem(placement: .principal) {
       VStack(spacing: 1) {
-        ProjectBreadcrumb(projectId: store.projectId, title: "Board")
+        ProjectBreadcrumb(projectId: store.projectId, title: "Planning")
         if let config = store.config {
           if config.enabled {
             Text("\(store.items.count) \(store.items.count == 1 ? "item" : "items"), \(store.publicCount) on the roadmap")
               .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
           } else {
-            Text("Board is off").font(.lnCaption).foregroundStyle(Theme.warning)
+            Text("Planning is off").font(.lnCaption).foregroundStyle(Theme.warning)
           }
         }
       }
@@ -347,16 +347,16 @@ private struct BoardView: View {
     }
   }
 
-  // Not set up yet: what the board is, and the two ways in.
+  // Not set up yet: what planning is, and the two ways in.
   private var notEnabled: some View {
     ScrollView {
       EmptyState(
         systemImage: "rectangle.split.3x1",
-        title: "A board for \(store.projectName.isEmpty ? "this project" : store.projectName)",
+        title: "Planning for \(store.projectName.isEmpty ? "this project" : store.projectName)",
         message: "Plan the work behind your feedback and support: items on a kanban, linked to the posts and conversations they answer. Pick which ones go on a public roadmap."
       ) {
         Button("Customize first") { showSettings = true }.buttonStyle(.lnSecondary)
-        Button("Turn on the board") { Task { await store.saveBoard(["enabled": .bool(true)]) } }.buttonStyle(.lnPrimary).disabled(store.savingBoard)
+        Button("Turn on planning") { Task { await store.saveBoard(["enabled": .bool(true)]) } }.buttonStyle(.lnPrimary).disabled(store.savingBoard)
       }
     }
   }
@@ -611,8 +611,8 @@ struct BoardCompactLabelStyle: LabelStyle {
 
 // MARK: - Settings
 
-/// The board's own options, saved as they change, above the statuses and labels
-/// (the feedback board's settings form in its board-only mode).
+/// Planning's own options, saved as they change, above the statuses and labels
+/// (the feedback settings form in its board-only mode).
 private struct BoardSettingsSheet: View {
   let store: BoardStore
 
@@ -621,7 +621,7 @@ private struct BoardSettingsSheet: View {
       FeedbackBoardSettingsSheet(
         config: config.settingsForm,
         boardOnly: true,
-        intro: "The board, its statuses and labels, and the public roadmap.",
+        intro: "Planning items, their statuses and labels, and the public roadmap.",
         save: { next in try await store.saveLists(next) }
       ) {
         BoardOptionsSection(store: store)
@@ -643,11 +643,11 @@ private struct BoardOptionsSection: View {
     if let config = store.config {
       VStack(alignment: .leading, spacing: 10) {
         HStack(spacing: 8) {
-          Text("Board").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+          Text("Planning").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
           Text(store.savingBoard ? "Saving…" : "Saves as you change it").font(.lnCaption).foregroundStyle(Theme.textMuted)
         }
         Card {
-          CardRow { FeedbackToggleRow(title: "Board is on", detail: "Items, links from the inbox and feedback, and the roadmap.", isOn: toggle(config.enabled, key: "enabled")) }
+          CardRow { FeedbackToggleRow(title: "Planning is on", detail: "Items, links from the inbox and feedback, and the roadmap. The public roadmap keeps listing feedback posts until an item is on it.", isOn: toggle(config.enabled, key: "enabled")) }
           CardRow { FeedbackToggleRow(title: "Sync linked feedback", detail: "When an item moves to another status category, its linked posts follow — and their followers get the usual emails.", isOn: toggle(config.syncFeedback, key: "syncFeedback")) }
           CardRow {
             LabeledField(label: "Roadmap layout") {

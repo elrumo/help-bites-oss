@@ -33,6 +33,7 @@
         @click="fileInput?.click()"
       />
       <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple class="hidden" @change="onFiles">
+      <slot name="tools" />
 
       <UTextarea
         v-model="draft"

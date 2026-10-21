@@ -1,27 +1,29 @@
 import SwiftUI
 
-/// Broadcasts, automated sequences and the newsletter settings
-/// (web: projects/[id]/campaigns).
+/// The Campaigns, Sequences and Settings tabs of a project's Email (web: CampaignList, SequenceList and
+/// EmailSettings, each a `?view=` of projects/[id]/email). `EmailLibraryScreen` draws the tab bar and
+/// the setup strip; this is what sits under them, with the plan-lock notice of the tab's plan feature.
 struct CampaignsScreen: View {
   let projectId: String
-  @State private var tab = "campaigns"
+  var tab: EmailTab = .campaigns
+  /// Called after Settings saves, so the setup strip above reads the project's email setup again.
+  var onSettingsSaved: () -> Void = {}
+  @Environment(SessionStore.self) private var session
+
+  /// What the open tab needs from the plan. Settings shows its own notice, beside the event webhook.
+  private var feature: String? { tab == .sequences ? "sequences" : tab == .campaigns ? "campaigns" : nil }
 
   var body: some View {
     VStack(spacing: 0) {
-      Picker("Section", selection: $tab) {
-        Text("Campaigns").tag("campaigns")
-        Text("Sequences").tag("sequences")
-        Text("Settings").tag("settings")
+      if let feature, session.isLocked(feature) {
+        PlanLockNotice(feature: feature).padding(.horizontal, Metrics.gutter).padding(.vertical, 8)
       }
-      .pickerStyle(.segmented)
-      .padding(.horizontal, Metrics.gutter).padding(.vertical, 8)
       switch tab {
-      case "sequences": SequencesList(projectId: projectId)
-      case "settings": MarketingSettingsView(projectId: projectId)
+      case .sequences: SequencesList(projectId: projectId)
+      case .settings: ProjectEmailSettingsView(projectId: projectId, onSaved: onSettingsSaved)
       default: CampaignsList(projectId: projectId)
       }
     }
-    .projectScreen(projectId, "Campaigns")
   }
 }
 

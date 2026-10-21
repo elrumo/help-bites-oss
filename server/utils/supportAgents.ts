@@ -1,5 +1,5 @@
 import { createError } from 'h3'
-import { SUPPORT_AGENT_STATUSES, AGENT_FALLBACKS, AGENT_RULE_ACTIONS, KNOWLEDGE_NAME_MAX_LENGTH, normalizeAgentRules, slugifyKnowledge, type SupportAgentStatus, type AgentFallback, type AgentRule, type AgentRuleAction } from '#shared/knowledge'
+import { SUPPORT_AGENT_STATUSES, AGENT_FALLBACKS, AGENT_RULE_ACTIONS, ASSISTANT_FAQ_LOOKUP, KNOWLEDGE_NAME_MAX_LENGTH, assistantReadiness, normalizeAgentRules, slugifyKnowledge, type AssistantReadiness, type SupportAgentStatus, type AgentFallback, type AgentRule, type AgentRuleAction } from '#shared/knowledge'
 import { safeHttpUrl } from '#shared/support'
 
 // A SupportAgent is an AI support configuration (system prompt, model, provider
@@ -93,6 +93,16 @@ export function readAgentRules(agent: ParseObject): AgentRule[] {
 
 export function readDefaultAction(agent: ParseObject): AgentRuleAction {
   return agent.get('defaultAction') === 'human' ? 'human' : 'auto'
+}
+
+/** How far an assistant is from answering customers by itself: the checks behind the strip on its page and the setup checklist. */
+export async function readAssistant(workspace: ParseObject, agent: ParseObject): Promise<AssistantReadiness> {
+  const [route, faqs] = await Promise.all([
+    resolveAi(workspace, { assistant: agent }),
+    // Rows it may read, up to a lookup's worth: enough to say "some" or "none", and a count worth showing.
+    queryAccessibleFaqs(agent.id || '', { limit: ASSISTANT_FAQ_LOOKUP })
+  ])
+  return assistantReadiness({ status: String(agent.get('status') || 'draft'), autoReply: agent.get('autoReply') === true, llm: Boolean(route), faqs: faqs.length })
 }
 
 export function serializeSupportAgent(agent: ParseObject): SupportAgent {

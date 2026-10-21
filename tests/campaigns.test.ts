@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import Parse from 'parse/node'
 import { campaignStatsFrom, canMoveCampaign, validateMarketingConfig } from '../shared/marketing'
 import { EMAIL_TEMPLATES } from '../shared/email/templates'
-import { blankValues, campaignAudience, complianceProblems, contactVariables, pickDueCampaigns, readUnsubscribePayload, unsubscribeLinks } from '../server/utils/campaigns'
+import { blankValues, campaignAudience, campaignMailerReady, complianceProblems, contactVariables, pickDueCampaigns, readUnsubscribePayload, unsubscribeLinks } from '../server/utils/campaigns'
 import { isMarketingSource } from '../server/utils/emailLogs'
 import { readLinkToken } from '../server/utils/secrets'
 import { renderPreferencesPage } from '../server/utils/preferences'
@@ -28,6 +28,23 @@ describe('campaign rules', () => {
     expect(complianceProblems(fake({}), newsletter)).toHaveLength(1)
     const bare = { ...newsletter, blocks: newsletter.blocks.filter(b => b.id !== 'digest_footer') }
     expect(complianceProblems(withAddress, bare).length).toBe(2)
+  })
+
+  test('no mailer, no campaign: there is nothing a retry could send through', () => {
+    const saved = { key: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN, from: process.env.MAILGUN_FROM_EMAIL }
+    delete process.env.MAILGUN_API_KEY
+    process.env.MAILGUN_DOMAIN = 'mg.x.test'
+    process.env.MAILGUN_FROM_EMAIL = 'hi@x.test'
+    try {
+      expect(campaignMailerReady(fake({}))).toBe(false)
+      process.env.MAILGUN_API_KEY = 'key'
+      expect(campaignMailerReady(fake({}))).toBe(true)
+    } finally {
+      for (const [name, value] of [['MAILGUN_API_KEY', saved.key], ['MAILGUN_DOMAIN', saved.domain], ['MAILGUN_FROM_EMAIL', saved.from]] as const) {
+        if (value === undefined) delete process.env[name]
+        else process.env[name] = value
+      }
+    }
   })
 
   test('status moves', () => {
@@ -61,8 +78,8 @@ describe('due campaigns', () => {
 
 describe('personalisation', () => {
   test('a contact fills contact.*, their attributes and firstName; nothing is left as {{...}}', () => {
-    const contact = fake({ name: 'Ada Lovelace', email: 'ada@x.io', externalId: 'u1', attributes: { plan: 'pro', seats: 3 } })
-    expect(contactVariables(contact)).toEqual({ firstName: 'Ada', 'contact.name': 'Ada Lovelace', 'contact.firstName': 'Ada', 'contact.email': 'ada@x.io', 'contact.externalId': 'u1', plan: 'pro', 'contact.plan': 'pro', seats: '3', 'contact.seats': '3' })
+    const contact = fake({ name: 'Ada Lovelace', email: 'ada@x.io', externalId: 'u1', language: 'es', attributes: { plan: 'pro', seats: 3 } })
+    expect(contactVariables(contact)).toEqual({ firstName: 'Ada', 'contact.name': 'Ada Lovelace', 'contact.firstName': 'Ada', 'contact.email': 'ada@x.io', 'contact.language': 'es', 'contact.externalId': 'u1', plan: 'pro', 'contact.plan': 'pro', seats: '3', 'contact.seats': '3' })
     const doc = { settings: { title: 'Hi {{firstName}}' }, blocks: [{ id: 'a', type: 'text', html: '{{contact.plan}} {{project.name}} {{unsubscribeUrl}}' }] } as any
     expect(blankValues(doc, '{{ season }} news')).toEqual({ firstName: '', 'contact.plan': '', unsubscribeUrl: '', season: '' })
   })

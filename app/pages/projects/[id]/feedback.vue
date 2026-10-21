@@ -175,6 +175,9 @@
           <ChangelogLinks :project-id="id" kind="feedback" :target-id="current.id" :source="{ title: current.title, body: current.body, type: current.type, changelogTitle: current.changelogTitle, changelogBody: current.changelogBody }" />
         </section>
 
+        <!-- Commits and pull requests that mention this post as #N -->
+        <GithubRefs v-if="current" class="mt-8 border-t border-muted pt-5" :project-id="id" kind="feedback" :target-id="current.id" :heading="$t('github.linkedWork')" />
+
         <!-- Comments -->
         <section v-if="current" class="mt-8 border-t border-muted pt-5">
           <h3 class="text-sm font-semibold">{{ $t('feedback.comments') }} <span class="font-normal text-muted">{{ comments.length }}</span></h3>
@@ -250,7 +253,8 @@ const { t } = useI18n()
 
 // ---- the changelog link ----
 const changelogUrl = computed(() => (project.value ? `${appUrl.value}/changelog/${project.value.publicKey}` : ''))
-const changelogReady = computed(() => Boolean(config.value?.enabled && config.value.changelog))
+// The public changelog has its own switch (Changelog → Settings); it does not need the feedback board.
+const changelogReady = computed(() => Boolean(project.value?.changelog?.enabled))
 
 async function copyChangelogUrl() {
   if (!changelogReady.value) {
@@ -532,6 +536,9 @@ onMounted(async () => {
     if (!project.value) await loadProjects().catch(() => {})
     await loadConfig()
     await loadPosts()
+    // `?post=<id>` opens that post: the inbox links the posts a conversation is behind.
+    const wanted = typeof route.query.post === 'string' ? route.query.post : ''
+    if (wanted) void openPost(wanted)
   } catch (e: any) {
     error.value = e?.message || t('feedback.loadBoardError')
   } finally {

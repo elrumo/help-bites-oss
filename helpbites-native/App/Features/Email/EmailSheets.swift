@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// "New template" / "New master" (EmailTemplatePicker.vue): a starter, or a blank page.
+/// "New template" / "New shared template" (EmailTemplatePicker.vue): a starter, or a blank page.
 struct EmailStarterPicker: View {
   let title: String
   var onPick: (EmailStarter) -> Void
@@ -96,10 +96,10 @@ struct EmailStarterPicker: View {
   }
 }
 
-/// "Add master" on a project: link one of the masters in.
+/// "Add shared template" on a project: link one of the shared templates in.
 struct EmailAddMasterSheet: View {
   let inUse: Set<String>
-  /// Links the master; returns an error message, or nil once it's done.
+  /// Links the shared template; returns an error message, or nil once it's done.
   var onAdd: (String) async -> String?
   @Environment(SessionStore.self) private var session
   @Environment(Workspace.self) private var workspace
@@ -112,7 +112,7 @@ struct EmailAddMasterSheet: View {
   var body: some View {
     NavigationStack {
       List {
-        Text("The project uses the master's design with its own brand and values. Edits to the master reach it too.")
+        Text("The project uses the shared template's design with its own brand and values. Edits to the shared template reach it too.")
           .font(.lnMeta)
           .foregroundStyle(Theme.textMuted)
           .padding(.vertical, 8)
@@ -120,7 +120,7 @@ struct EmailAddMasterSheet: View {
         if loading {
           SkeletonRows(count: 3).linearRow()
         } else if masters.isEmpty {
-          EmptyState(systemImage: "envelope", title: "No masters yet", message: "Create one first.") {
+          EmptyState(systemImage: "envelope", title: "No shared templates yet", message: "Create one first.") {
             Button("Create one") { dismiss(); workspace.go(.emailTemplates) }.buttonStyle(.lnSecondaryCompact)
           }
           .linearRow()
@@ -149,7 +149,7 @@ struct EmailAddMasterSheet: View {
         if !error.isEmpty { ErrorText(message: error).linearRow() }
       }
       .linearList()
-      .panelScreen("Add a master")
+      .panelScreen("Add a shared template")
       .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
       .task {
         do {
@@ -198,8 +198,8 @@ struct EmailShareSheet: View {
 
   /// Why this template can only be shared view-only (shareEditRefusal).
   private var editRefusal: String? {
-    if template.isLinked { return "A linked master can only be shared view-only; edit the master instead." }
-    if template.projectId == nil { return "A master can only be shared view-only: an edit would change it for every project that uses it." }
+    if template.isLinked { return "A linked shared template can only be shared view-only; edit the shared template instead." }
+    if template.projectId == nil { return "A shared template can only be shared view-only: an edit would change it for every project that uses it." }
     if Self.systemKeys.contains(template.key) { return "“\(template.key)” is mail the server sends itself, so it can only be shared view-only." }
     return nil
   }

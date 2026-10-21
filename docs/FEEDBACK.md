@@ -1,23 +1,30 @@
-# Feedback boards
+# Feedback, planning and roadmap
 
-A public board per project where your users post ideas and bugs, vote on what
+A public feedback page per project where your users post ideas and bugs, vote on what
 matters, comment, and follow progress through a roadmap and a changelog.
 HelpBites knows nothing about your app: statuses, post types, platforms and
 tags are configured per project, and identity is the same host-signed token the chat
 uses.
 
-- **Plug and play** — one script tag renders the whole board (board, roadmap,
-  changelog, post pages, composer) inside your page.
+- **Plug and play** — one script tag renders the whole feedback page (posts,
+  roadmap, changelog, post pages, composer) inside your page.
 - **Your own UI** — everything the embed does is on `/v1/feedback`.
 - **Operators** — Project → Feedback in the panel: list or kanban, edit and
-  moderate posts, reply as the team, configure the board.
-- **Project board & roadmap** — Project → Board: Linear-style items linked to
+  moderate posts, reply as the team, configure the page.
+- **Planning & roadmap** — Project → Planning: Linear-style items linked to
   posts and conversations; the ones you pick make the public roadmap (see
-  [Board & roadmap](#board--roadmap)).
+  [Planning & roadmap](#planning--roadmap)).
+
+Three things used to share the word *board*. They are called **Feedback** (the
+public page where users post and vote), **Planning** (your private kanban of
+work items) and the **Roadmap** (the public view of the Planning items you
+publish). The API and the embed keep their names: `view=board` is the feedback
+page's column layout (*Columns* in the panel), and `board` and `board-items` are
+Planning.
 
 ## 1. Turn it on
 
-Panel → your project → **Feedback** → *Turn on the board*. Then open
+Panel → your project → **Feedback** → *Turn on feedback*. Then open
 **Settings** to shape it:
 
 | Setting | What it does |
@@ -155,16 +162,16 @@ Things to know:
   reach admins; a comment hidden after the fact arrives as `comment.deleted`.
   With `?pk=` the stream works with a plain `EventSource`.
 
-## Board & roadmap
+## Planning & roadmap
 
-Each project can also have a **board**: Linear-style items on a kanban, for
+Each project can also use **Planning**: Linear-style items on a kanban, for
 the work behind the feedback and the support conversations. The same items
-drive the **public roadmap**. Projects without a board keep the post-based
+drive the **public roadmap**. Projects without Planning keep the post-based
 roadmap (planned, in-progress and done posts).
 
 ### In the panel
 
-Project → **Board** → *Turn on the board*.
+Project → **Planning** → *Turn on planning*.
 
 - **Items** have a title, an internal Markdown description, a status, a
   priority, an assignee, labels, a target date and a `#number`. Drag a card
@@ -172,16 +179,23 @@ Project → **Board** → *Turn on the board*.
   is kept. `?item=<id>` opens an item, so links to it can be shared.
 - **Links.** An item links up to 50 feedback posts and 50 conversations. In the
   item, *Link post* takes a post's `#N`. In the inbox, a conversation's
-  **Board** section files a new item from it (prefilled with its subject and
+  **Planning** section files a new item from it (prefilled with its subject and
   the customer's last message) or adds it to an existing one; the link shows on
   the conversation's timeline as an internal event the customer never sees.
-  The feedback post editor has the same **Board** section.
+  The feedback post editor has the same **Planning** section.
+- **Filed from an error.** The Errors page's **File on board** button makes an item from a
+  tracker issue (see [ERRORS.md](ERRORS.md)); its drawer lists the errors it came from, each with
+  its link back to the tracker.
+- **Commits and pull requests.** When the GitHub App's webhook is on, a commit pushed to the
+  default branch or a pull request merged into it that says `#12` is listed on item 12 (or on
+  feedback post 12 when the board has no such item), with a *closes* marker for `fixes #12`.
+  A closing keyword also moves the item to the board's first done status. See [GITHUB.md](GITHUB.md).
 - **Votes.** An item's count is the sum of its linked posts' votes, hidden posts
-  left out. People vote on the posts, from the board or from the roadmap.
-- **Settings** — statuses (with the same categories as the feedback board),
+  left out. People vote on the posts, from the feedback page or from the roadmap.
+- **Settings** — statuses (with the same categories as Feedback),
   labels, the roadmap's layout and options, and **Sync linked feedback**: when
   an item moves to another status category, each linked post moves to the
-  feedback board's first status of that category, exactly as if an admin had
+  Feedback's first status of that category, exactly as if an admin had
   moved it — so followers get the usual status emails. Off by default.
 
 The settings are the `board` object on `PATCH /v1/admin/projects/:id` (partial:
@@ -189,8 +203,12 @@ The settings are the `board` object on `PATCH /v1/admin/projects/:id` (partial:
 
 ### What goes public
 
-The roadmap is published through the feedback board's public pages and API, so
-the feedback board must be on, with its Roadmap view.
+The roadmap is published through the feedback page's public pages and API, so
+Feedback must be on, with its Roadmap view.
+
+Switching Planning on does not empty the roadmap: it keeps listing
+feedback posts until at least one planning item is public in a planned, active or
+done status. From then on Planning's public items are the roadmap.
 
 - Items are **private by default**. Turn on *On public roadmap* per item.
 - A public item shows **once its status is planned, in progress or done** (by
@@ -229,7 +247,8 @@ the feedback board must be on, with its Roadmap view.
   post) or an operator with `?project=`. Returns `{ options, statuses, labels?,
   items }`; 404 unless the feedback board offers a roadmap and the project board
   is on. `GET /v1/feedback/config` says which roadmap applies:
-  `roadmapSource: "board" | "posts"`.
+  `roadmapSource: "board" | "posts"` (`board` once the board has a public item
+  in a roadmap status).
 - `GET|POST /v1/admin/board-items?project=<id>` (list, or create with optional
   `feedbackPostIds` / `conversationIds`), `PATCH|DELETE
   /v1/admin/board-items/:id`, and `POST /v1/admin/board-items/:id/links` with
@@ -238,6 +257,16 @@ the feedback board must be on, with its Roadmap view.
   and move items. The list filters by `&conversation=` or `&feedbackPost=`.
   Moving a card is a `PATCH` with `status` and a `rank` between its new
   neighbours (lower ranks come first).
+
+An item filed from an error carries `errorRefs: [{ provider, issueId, linkId, title, url }]`
+(empty otherwise). `GET /v1/admin/github-refs?project=<id>&kind=board|feedback&id=<item or post>`
+lists the commits and pull requests that mention it:
+
+```sh
+curl -H "Authorization: Bearer ak_…" \
+  "https://YOUR-SUPPORT-HOST/v1/admin/github-refs?project=PROJECT_ID&kind=board&id=12"
+# { "refs": [{ "kind": "pull_request", "ref": "34", "repo": "acme/web", "title": "Dark mode", "url": "https://github.com/…", "closes": true, "at": "…" }] }
+```
 
 **Known limit:** a person who voted on two posts linked to the same item counts
 twice in that item's total — the sum is per post, not per person.
@@ -291,6 +320,50 @@ publish what they write with no human looking. That second one is off by default
 applies to pushes; the button never publishes. A project's pushes run at most 20 times an hour.
 Uses the workspace's AI like every other AI feature (and counts toward its credits).
 
+### Telling the people it answers
+
+Two things happen when an entry goes public, and a third is yours to press.
+
+- **Followers of the posts it answers are emailed, once.** The posts the entry links, and the
+  posts of the board items it links, are looked up; everyone following one of them (and not
+  muted, not opted out of feedback mail, with an email) gets one "Shipped: …" mail with the
+  entry's title and summary, a link to the public entry, and the posts they follow, listed.
+  Someone following several of them gets one mail, not several. It uses the feedback board's
+  switch (*Email notifications*) and the project's mailer, exactly like a status change. The
+  event `changelog.entry.published` ([EVENTS.md](EVENTS.md)) is what triggers it. An entry counts
+  as becoming public when it is created published, edited to published, approved, or when its
+  draft release is published. Imports never mail. An entry published more than seven days
+  ago (a backdated one) is history and is not mailed. Delivery is at-most-once, like the
+  subscribers' mail: the entry is marked (`followersNotifiedAt`) before anything is sent, so
+  a retry or a second server never mails twice, and a failed send is logged, never retried.
+  This is separate from `changelog.notify`, which is about people who subscribed to the
+  changelog itself; a follower who is also a subscriber can get both.
+- **The same posts learn the version** (`shippedIn`), as before.
+- **Reply to the linked conversations (a button, never automatic).** Once an entry is public
+  and answers conversations (its own links, plus the conversations of its board items), the
+  editor shows **Reply to N linked conversations**: a dialog with the list (untick any) and a
+  message that starts as the entry's title and public address, yours to edit. Sending appends
+  that message as the team to each conversation, through the same path as an inbox reply, and
+  emails the customer unless you turn *Email them too* off. Error issues are left out (there is
+  no customer). Sending the same words to the same conversation twice is a no-op.
+
+```sh
+# Who would be told
+curl -H "Authorization: Bearer ak_…" \
+  "https://YOUR-SUPPORT-HOST/v1/admin/changelog/entries/ENTRY_ID/linked-conversations?project=PROJECT_ID"
+# { "count": 2, "conversations": [{ "id": "…", "subject": "Dark mode?", "endUserName": "Ada", "status": "open" }], "defaultBody": "Good news: “Dark mode” has just shipped.\n\nSee what changed: https://…" }
+
+# Tell them (conversationIds optional: default is all of them)
+curl -X POST -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  "https://YOUR-SUPPORT-HOST/v1/admin/changelog/entries/ENTRY_ID/reply-conversations?project=PROJECT_ID" \
+  -d '{ "body": "Dark mode is live, thanks for asking!", "notifyByEmail": true }'
+# { "sent": 2, "failed": 0, "results": [{ "conversationId": "…", "ok": true, "emailSent": true, "error": "" }] }
+```
+
+These are operator tools (an admin session or `ak_` key), not something a visitor's browser
+calls, so there is no embed snippet for them; the public side of an entry is the changelog
+page and `public/changelog.js` described below.
+
 ### Public
 
 | | |
@@ -333,6 +406,8 @@ Every route is in the OpenAPI spec, tag *Changelog*.
 | `POST /v1/admin/changelog/entries/import` | Secret or operator only. Up to 100 entries with your own `externalId`: created, or updated when it exists. Keeps the `slug` and `publishedAt` it is given and the review trail; never drafts, links or tells anyone |
 | `POST /v1/admin/changelog/entries/merge` | `{ refs: [2–10 entries], entry }`: creates the merged entry, which also cites the sources' commits, and archives the sources. Writing the merged text is yours |
 | `POST /v1/admin/changelog/entries/:id/links` | `{ kind: "feedback" \| "board" \| "conversation", id, linked }` |
+| `GET /v1/admin/changelog/entries/:id/linked-conversations` | Operator or `ak_` key. `{ count, conversations: [{ id, subject, endUserName, status }], defaultBody }`: the customer conversations the entry answers, its own and its board items' |
+| `POST /v1/admin/changelog/entries/:id/reply-conversations` | Operator or `ak_` key. `{ body, conversationIds?, notifyByEmail? }` → `{ sent, failed, results }`: replies as the team to each chosen conversation (all linked ones when omitted; up to 100) |
 | `GET`/`POST /v1/admin/changelog/releases` | List or create `{ version, title, summary }` |
 | `PATCH`/`DELETE /v1/admin/changelog/releases/:id` | Edit, or delete (its entries stay, with no release) |
 | `POST /v1/admin/changelog/releases/:id/publish` | Publish the release and its draft entries |
@@ -388,9 +463,12 @@ everyone but admins until the post is on the changelog.
   The answer is always `{ ok: true }`, whether or not the address is already subscribed;
   a repeat inside a day sends no second mail; ten requests an hour per IP and thirty
   confirm mails an hour per project.
-- **Your pages** take the links. `changelog.confirmUrl` and `changelog.unsubscribeUrl`
-  (default `{siteUrl}/changelog/confirm?token={token}` and `…/unsubscribe?token={token}`) are
-  where the mails point. Those pages `POST` the token (from a click or button, never on load:
+- **Hosted pages** take the links by default: `/u/changelog/confirm/<token>` and
+  `/u/changelog/unsubscribe/<token>` on this server (it needs `APP_URL`), in the project's accent
+  and logo. Each shows one button, so a mail scanner opening the link changes nothing.
+- **Or your own pages.** Set `changelog.confirmUrl` and `changelog.unsubscribeUrl` (an http(s)
+  URL or `{siteUrl}/…`, containing `{token}`; `''` goes back to the hosted pages) and the mails
+  point there instead. Your pages `POST` the token (from a click or button, never on load:
   mail scanners prefetch links) to `/v1/changelog/subscribe/confirm` and
   `/v1/changelog/subscribe/unsubscribe`. Every digest also carries an RFC 8058 `List-Unsubscribe`
   header pointing at the unsubscribe route on this server, which a mail provider POSTs with no
@@ -419,7 +497,8 @@ templates carry the design, in your project's email templates: `changelog` (vari
 `subjectLine`, `preheader`, `firstName`, `intro`, `entriesHtml`, `changelogUrl`, `footerNote`,
 `unsubscribeUrl`, `oneClickUnsubscribeUrl`) and `changelog-confirm` (`cadence`, `confirmUrl`). The
 words (`changelog.siteName`, `changelog.copy`) are yours to change; the defaults are neutral
-("We just shipped…"). Erasing an end user deletes their subscriptions too.
+("We just shipped…"). Erasing an end user deletes their subscriptions too: the ones tied to their
+user id and the ones made with their address alone.
 
 ### Moving a changelog over
 
@@ -449,6 +528,10 @@ through `/subscription`.
 - followers, when someone posts a public comment;
 - people `@mentioned` in a comment (only the thread's own participants can be
   mentioned) get a mention email instead of the comment email.
+
+- followers, once, when a changelog entry that answers the post (or a board item that links it)
+  goes public: a "Shipped: …" mail with the entry's title and a link to it (see *Telling the
+  people it answers* under Changelog).
 
 Never the person who acted, never for team notes or hidden posts. Only people
 whose identity token carried an `email` can be emailed, and

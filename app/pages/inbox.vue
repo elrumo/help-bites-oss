@@ -116,16 +116,19 @@
               :loading="threadLoading"
               :has-earlier="hasEarlier"
               :loading-earlier="loadingEarlier"
+              can-save-faq
               @load-earlier="loadEarlier"
               @retry="retry"
               @discard="discard"
               @unsend="unsend"
               @react="react"
+              @save-faq="openSaveFaq"
             >
               <template #empty><EmptyState icon="i-lucide-message-square-dashed" :title="$t('inbox.noMessages')" :description="$t('inbox.noMessagesDescription')" /></template>
             </ChatTranscript>
 
             <ChatComposer
+              ref="composerRef"
               v-model="draft"
               :placeholder="internalNote ? $t('inbox.addInternalNote') : $t('inbox.replyPlaceholder')"
               :error="threadError"
@@ -137,6 +140,9 @@
               @cancel-reply="threadId = ''"
               @upload-error="threadError = $event"
             >
+              <template #tools>
+                <InboxComposerTools :conversation-id="activeId" :project-id="activeConversation?.projectId || ''" :person="replyPerson" :disabled="internalNote" @insert="insertText" @draft="insertText" />
+              </template>
               <template #above>
                 <div class="mb-2 flex items-center gap-1.5" role="tablist" :aria-label="$t('inbox.messageType')">
                   <button type="button" role="tab" :aria-selected="!internalNote" class="chip h-6 px-2.5 text-xs" :class="!internalNote ? 'chip-active' : ''" @click="internalNote = false"><UIcon name="i-lucide-reply" class="size-3.5" />{{ $t('inbox.reply') }}</button>
@@ -158,8 +164,11 @@
             :type="activeType"
             :agents="humanAgents"
             :last-user-message="lastUserMessage"
+            :context="context"
             @triage="setTriage"
             @action="runAction"
+            @open="select"
+            @feedback="setFeedbackPosts"
           />
         </div>
       </template>
@@ -167,9 +176,11 @@
 
     <USlideover v-model:open="showContext" class="xl:hidden" :title="$t('inbox.details')" :ui="{ content: 'max-w-80', body: 'p-0 sm:p-0' }">
       <template #body>
-        <InboxConversationContext v-if="activeConversation && activeUser" class="h-full" :conversation="activeConversation" :user="activeUser" :project="activeProject" :type="activeType" :agents="humanAgents" :last-user-message="lastUserMessage" @triage="setTriage" @action="runAction" />
+        <InboxConversationContext v-if="activeConversation && activeUser" class="h-full" :conversation="activeConversation" :user="activeUser" :project="activeProject" :type="activeType" :agents="humanAgents" :last-user-message="lastUserMessage" :context="context" @triage="setTriage" @action="runAction" @open="select" @feedback="setFeedbackPosts" />
       </template>
     </USlideover>
+
+    <InboxSaveFaqModal v-model:open="faqOpen" :conversation-id="activeId" :models="context?.faqModels.models || []" :default-model-id="context?.faqModels.defaultModelId || ''" :initial="faqInitial" />
 
     <NewChatModal v-model:open="showNewChat" :projects="projects" :default-project-id="projectFilter === 'all' ? '' : projectFilter" @created="onCreated" />
   </div>
@@ -178,6 +189,7 @@
 <script setup lang="ts">
 import type { Attachment, Conversation, ConversationAction, ConversationType, Message } from '#shared/support'
 import { conversationToText, replyTarget, sortByCreatedAt } from '#shared/conversations'
+import { faqPrefill, type ConversationContextResponse, type HubFeedbackPost } from '#shared/conversationHub'
 import type { SupportEvent } from '~~/server/utils/events'
 import type { ChatListItem } from '~/components/chat/ChatConversationList.vue'
 import type { InboxEndUser } from '~/components/inbox/ConversationContext.vue'
@@ -186,7 +198,7 @@ import { newOutboxId, useChatOutbox, type OutboxEntry } from '~/composables/useC
 definePageMeta({ middleware: 'agent' })
 
 type QueueView = 'all' | 'unassigned' | 'mine' | 'open' | 'unread' | 'archived'
-type QueueCounts = { status: Record<string, number>, type: Record<string, number>, assignee: Record<string, number> }
+type ViewCounts = Record<QueueView, number>
 type HumanAgent = { id: string, username: string, email: string, name: string }
 
 const { api, token, agent, projects, loadProjects, agentHeaders } = useAgent()
@@ -202,8 +214,8 @@ const endUsers = ref<Record<string, InboxEndUser>>({})
 const listLoading = ref(false)
 const listError = ref('')
 const hasMore = ref(false)
-const queueCounts = ref<QueueCounts>({ status: {}, type: {}, assignee: {} })
-const archivedCount = ref(0)
+// Each view's count, from the server under the same filters as the list, so a pill's number is the rows it lists.
+const viewCounts = ref<ViewCounts>({ all: 0, unassigned: 0, mine: 0, open: 0, unread: 0, archived: 0 })
 const view = ref<QueueView>('all')
 const projectFilter = ref('all')
 const statusFilter = ref('any')
@@ -223,12 +235,12 @@ const projectItems = computed(() => [{ label: t('inbox.allProjects'), value: 'al
 const statusFilterItems = computed(() => [{ label: t('inbox.anyStatus'), value: 'any' }, { label: t('inbox.open'), value: 'open' }, { label: t('inbox.done'), value: 'done' }])
 const priorityFilterItems = computed(() => [{ label: t('inbox.anyPriority'), value: 'any' }, { label: t('inbox.low'), value: 'low' }, { label: t('inbox.normal'), value: 'normal' }, { label: t('inbox.high'), value: 'high' }, { label: t('inbox.urgent'), value: 'urgent' }])
 const viewItems = computed(() => [
-  { key: 'all' as const, label: t('inbox.all'), count: conversations.value.length },
-  { key: 'unassigned' as const, label: t('inbox.unassigned'), count: queueCounts.value.assignee.unassigned || 0 },
-  { key: 'mine' as const, label: t('inbox.mine'), count: agent.value?.id ? queueCounts.value.assignee[agent.value.id] || 0 : 0 },
-  { key: 'open' as const, label: t('inbox.open'), count: queueCounts.value.status.open || 0 },
-  { key: 'unread' as const, label: t('inbox.unread'), count: totalUnread.value },
-  { key: 'archived' as const, label: t('inbox.archived'), count: archivedCount.value }
+  { key: 'all' as const, label: t('inbox.all'), count: viewCounts.value.all },
+  { key: 'unassigned' as const, label: t('inbox.unassigned'), count: viewCounts.value.unassigned },
+  { key: 'mine' as const, label: t('inbox.mine'), count: viewCounts.value.mine },
+  { key: 'open' as const, label: t('inbox.open'), count: viewCounts.value.open },
+  { key: 'unread' as const, label: t('inbox.unread'), count: viewCounts.value.unread },
+  { key: 'archived' as const, label: t('inbox.archived'), count: viewCounts.value.archived }
 ])
 
 function scheduleLoad() {
@@ -245,11 +257,16 @@ function clearFilters() {
   void loadList()
 }
 
-// Archived threads live on the server side of the query, not in the loaded page.
+// A view is a server query: the page holds that view's rows, not a slice of the last page.
 async function setView(next: QueueView) {
-  const refetch = (view.value === 'archived') !== (next === 'archived')
+  if (view.value === next) return
   view.value = next
-  if (refetch) await loadList()
+  await loadList()
+}
+
+type QueuePage = { conversations: Conversation[], endUsers: Record<string, InboxEndUser>, hasMore: boolean, totalUnread: number, viewCounts?: ViewCounts }
+function queueQuery() {
+  return { project: projectFilter.value === 'all' ? undefined : projectFilter.value, status: statusFilter.value === 'any' ? undefined : statusFilter.value, priority: priorityFilter.value === 'any' ? undefined : priorityFilter.value, type: typeFilter.value || undefined, q: searchQuery.value.trim() || undefined, view: view.value === 'all' ? undefined : view.value }
 }
 
 async function loadList(more = false) {
@@ -257,24 +274,34 @@ async function loadList(more = false) {
   listError.value = ''
   try {
     const last = more ? conversations.value[conversations.value.length - 1] : null
-    const result = await api<{ conversations: Conversation[], endUsers: Record<string, InboxEndUser>, hasMore: boolean, totalUnread: number, counts: QueueCounts, archivedCount: number }>('/admin/conversations', {
-      query: { project: projectFilter.value === 'all' ? undefined : projectFilter.value, status: statusFilter.value === 'any' ? undefined : statusFilter.value, priority: priorityFilter.value === 'any' ? undefined : priorityFilter.value, type: typeFilter.value || undefined, q: searchQuery.value.trim() || undefined, archived: view.value === 'archived' ? 'true' : undefined, before: last?.lastMessageAt || undefined }
-    })
+    const result = await api<QueuePage>('/admin/conversations', { query: { ...queueQuery(), before: last?.lastMessageAt || undefined } })
     conversations.value = more ? [...conversations.value, ...result.conversations] : result.conversations
     endUsers.value = { ...endUsers.value, ...result.endUsers }
     hasMore.value = result.hasMore
     totalUnread.value = result.totalUnread
-    queueCounts.value = result.counts
-    archivedCount.value = result.archivedCount || 0
+    if (result.viewCounts) viewCounts.value = result.viewCounts
   } catch (error: any) {
     listError.value = error?.message || t('inbox.loadError')
   } finally { listLoading.value = false }
 }
 
+// A row changed (triage, archive, a live event): the counts follow from the server, a moment later and once per burst.
+let countsTimer: ReturnType<typeof setTimeout> | null = null
+function refreshCounts() {
+  if (countsTimer) clearTimeout(countsTimer)
+  countsTimer = setTimeout(async () => {
+    try {
+      const result = await api<QueuePage>('/admin/conversations', { query: { ...queueQuery(), limit: 1 } })
+      totalUnread.value = result.totalUnread
+      if (result.viewCounts) viewCounts.value = result.viewCounts
+    } catch {}
+  }, 600)
+}
+
 const filteredConversations = computed(() => conversations.value.filter((conversation) => {
   if (view.value === 'unassigned') return !conversation.assigneeId
   if (view.value === 'mine') return conversation.assigneeId === agent.value?.id
-  if (view.value === 'open') return conversation.statusCategory === 'open' || conversation.status === 'open'
+  if (view.value === 'open') return conversation.statusCategory === 'open'
   if (view.value === 'unread') return conversation.unreadByAgent > 0
   return true
 }))
@@ -299,6 +326,11 @@ const draft = computed({ get: () => drafts.value[activeId.value] || '', set: (va
 const notifyByEmail = ref(true)
 const internalNote = ref(false)
 const transcriptRef = ref<{ scrollToLatest: () => void } | null>(null)
+const composerRef = ref<{ focus: () => void } | null>(null)
+// Who the open customer is, their plan, earlier conversations and linked feedback: one read per open conversation.
+const context = ref<ConversationContextResponse | null>(null)
+const faqOpen = ref(false)
+const faqMessageId = ref('')
 
 const activeConversation = computed(() => conversations.value.find(conversation => conversation.id === activeId.value) || null)
 const activeProject = computed(() => activeConversation.value ? projectsById.value[activeConversation.value.projectId] || null : null)
@@ -309,16 +341,38 @@ const visibleMessages = computed(() => [...messages.value, ...sending.value, ...
 // What a board item filed from the context panel starts with.
 const lastUserMessage = computed(() => [...messages.value].reverse().find(message => message.sender === 'user' && message.kind === 'message' && message.body)?.body || '')
 const replyingTo = computed(() => replyTarget(visibleMessages.value, threadId.value, 'agent'))
+// Fills {{firstName}} and {{name}} in a saved reply.
+const replyPerson = computed(() => ({ name: context.value?.contact.name ?? activeUser.value?.name ?? '', email: context.value?.contact.email ?? activeUser.value?.email ?? '' }))
+const faqInitial = computed(() => faqPrefill([...messages.value].sort(sortByCreatedAt), faqMessageId.value))
 const ownActor = computed(() => (agent.value?.id ? `agent:${agent.value.id}` : 'agent'))
 
 function entryToMessage(entry: OutboxEntry, delivery: 'pending' | 'failed'): Message {
   return { id: entry.id, conversationId: entry.conversationId, sender: 'agent', senderName: t('inbox.you'), body: entry.body, attachments: entry.attachments, reactions: [], context: null, replyToId: entry.replyToId, clientId: entry.id, visibility: 'public', kind: 'message', createdAt: entry.createdAt, delivery, deliveryError: delivery === 'failed' ? entry.error : '' }
 }
 
+async function loadContext(id: string) {
+  try {
+    const result = await api<ConversationContextResponse>(`/admin/conversations/${id}/context`)
+    if (activeId.value === id) context.value = result
+  } catch {
+    // The panel's extra sections just stay out; the thread itself still works.
+    if (activeId.value === id) context.value = null
+  }
+}
+function setFeedbackPosts(posts: HubFeedbackPost[]) { if (context.value) context.value = { ...context.value, feedbackPosts: posts } }
+function openSaveFaq(message: Message) { faqMessageId.value = message.id; faqOpen.value = true }
+// Put saved-reply or draft text in the reply box: after what is already typed, never over it.
+function insertText(text: string) {
+  const typed = draft.value.replace(/\s+$/, '')
+  draft.value = typed ? `${typed}\n\n${text}` : text
+  composerRef.value?.focus()
+}
+
 async function select(id: string) {
-  activeId.value = id; threadId.value = ''; threadError.value = ''; messages.value = []; hasEarlier.value = false; activeUser.value = null; showContext.value = false
+  activeId.value = id; threadId.value = ''; threadError.value = ''; messages.value = []; hasEarlier.value = false; activeUser.value = null; showContext.value = false; context.value = null
   await router.replace({ query: id ? { c: id } : {} })
   if (!id) return
+  void loadContext(id)
   threadLoading.value = true
   try {
     const [detail, list] = await Promise.all([api<{ conversation: Conversation, endUser: InboxEndUser }>(`/admin/conversations/${id}`), api<{ messages: Message[], hasMore: boolean }>(`/admin/conversations/${id}/messages`)])
@@ -356,8 +410,10 @@ async function loadTypes(projectId: string) {
 function removeConversation(id: string) {
   conversations.value = conversations.value.filter(item => item.id !== id)
   if (activeId.value === id) void select('')
+  refreshCounts()
 }
 function upsertConversation(conversation: Conversation) {
+  refreshCounts()
   // Archived rows belong to the Archived view only, and the queue never shows them.
   if (Boolean(conversation.archivedAt) !== (view.value === 'archived')) {
     const hadRow = conversations.value.some(item => item.id === conversation.id)
@@ -422,7 +478,6 @@ async function toggleArchive(id: string) {
   const archive = !conversation.archivedAt
   try {
     const { conversation: updated } = await api<{ conversation: Conversation }>(`/admin/conversations/${id}/archive`, { method: 'POST', body: { archived: archive } })
-    archivedCount.value = Math.max(0, archivedCount.value + (archive ? 1 : -1))
     if (archive && conversation.unreadByAgent > 0) totalUnread.value = Math.max(0, totalUnread.value - conversation.unreadByAgent)
     upsertConversation(updated)
     toast.add({ title: archive ? t('inbox.archivedToast') : t('inbox.unarchivedToast'), icon: archive ? 'i-lucide-archive' : 'i-lucide-archive-restore' })
@@ -433,8 +488,7 @@ async function remove(id: string) {
   if (!conversation || !confirm(t('inbox.deleteConfirm'))) return
   try {
     await api(`/admin/conversations/${id}`, { method: 'DELETE' })
-    if (conversation.archivedAt) archivedCount.value = Math.max(0, archivedCount.value - 1)
-    else if (conversation.unreadByAgent > 0) totalUnread.value = Math.max(0, totalUnread.value - conversation.unreadByAgent)
+    if (!conversation.archivedAt && conversation.unreadByAgent > 0) totalUnread.value = Math.max(0, totalUnread.value - conversation.unreadByAgent)
     removeConversation(id)
     toast.add({ title: t('inbox.deleted'), icon: 'i-lucide-trash-2' })
   } catch (error: any) { threadError.value = listError.value = error?.message || t('inbox.deleteError') }
@@ -496,12 +550,19 @@ useEventStream(computed(() => '/v1/admin/events'), token, (event: SupportEvent) 
   if (event.type === 'conversation.deleted') { removeConversation(event.conversationId); return }
   upsertConversation(event.conversation)
   if (event.type === 'message.created') {
-    if (event.message.sender === 'user' && event.conversationId !== activeId.value) totalUnread.value += 1
-    if (event.conversationId === activeId.value) { if (!messages.value.some(message => message.id === event.message.id)) messages.value = [...messages.value, event.message]; if (event.message.sender === 'user') void markRead(activeId.value, true) }
+    if (event.conversationId === activeId.value) {
+      if (!messages.value.some(message => message.id === event.message.id)) messages.value = [...messages.value, event.message]
+      if (event.message.sender === 'user') void markRead(activeId.value, true)
+      // A teammate linked or unlinked a post from another window.
+      if (event.message.kind === 'event' && String(event.message.event?.type || '').startsWith('feedback.')) void loadContext(activeId.value)
+    }
   } else if (event.type === 'message.updated' && event.conversationId === activeId.value) {
     replaceMessage(event.message)
   } else if (event.type === 'message.deleted' && event.conversationId === activeId.value) messages.value = messages.value.filter(message => message.id !== event.messageId)
 }, () => { void loadList(); if (activeId.value) void select(activeId.value) })
+
+// Another page (the ⌘K search, a link in an overview) points this one at a thread while it is open.
+watch(() => route.query.c, (id) => { if (typeof id === 'string' && id && id !== activeId.value) void select(id) })
 
 onMounted(async () => {
   outbox.hydrate()

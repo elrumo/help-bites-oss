@@ -44,15 +44,27 @@ enum EmailRender {
     var vars: [String: String] = [:]
     for variable in variables { if let value = variable.defaultValue { vars[variable.key] = value } }
     if let brand {
+      // resolve.ts projectBrandVars: every key is always set, "" when the project has no value, so nothing leaks as {{project.…}}.
       vars["project.name"] = brand.name
-      vars["project.logoUrl"] = brand.brandLogoUrl ?? ""
+      vars["project.logoUrl"] = firstFilled(brand.look?.logoUrl, brand.brandLogoUrl)
       vars["project.url"] = brand.siteUrl ?? ""
-      vars["project.address"] = brand.marketing?.postalAddress ?? ""
+      vars["project.address"] = firstFilled(brand.company?.address, brand.marketing?.postalAddress)
+      vars["project.company"] = firstFilled(brand.company?.name, brand.company?.legalName, brand.name)
+      vars["project.email"] = brand.company?.email ?? ""
+      vars["project.privacyUrl"] = brand.legalLinks?.privacyUrl ?? ""
+      vars["project.termsUrl"] = brand.legalLinks?.termsUrl ?? ""
+      vars["project.cookiesUrl"] = brand.legalLinks?.cookiesUrl ?? ""
+      vars["project.refundUrl"] = brand.legalLinks?.refundUrl ?? ""
     }
     vars.merge(values) { $1 }
     var doc = document ?? emptyDocument
-    if linked, let brand { doc = applyProjectAccent(doc, accent: brand.theme?.accent) }
+    if linked, let brand { doc = applyProjectAccent(doc, accent: firstFilled(brand.look?.accent, brand.theme?.accent).nilIfEmpty) }
     return substitute(doc, vars)
+  }
+
+  /// JavaScript's `a || b || c` for optional strings.
+  private static func firstFilled(_ values: String?...) -> String {
+    values.compactMap { $0 }.first { !$0.isEmpty } ?? ""
   }
 
   /// The master's brand colour becomes the project accent, on buttons and in
@@ -616,4 +628,8 @@ enum EmailHTMLImport {
       return namedEntities[code.lowercased()] ?? String(match.output.0)
     }
   }
+}
+
+private extension String {
+  var nilIfEmpty: String? { isEmpty ? nil : self }
 }

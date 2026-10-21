@@ -11,6 +11,7 @@ struct SequencesList: View {
   @State private var error = ""
   @State private var editing: SequenceTarget?
   @State private var deleting: EmailSequence?
+  @State private var recipesOpen = false
 
   var body: some View {
     List {
@@ -52,7 +53,11 @@ struct SequencesList: View {
     .linearList()
     .refreshable { await load() }
     .task { await load() }
-    .toolbar { ToolbarItem(placement: .primaryAction) { Button { editing = .new } label: { Label("New sequence", systemImage: "plus") } } }
+    .toolbar {
+      ToolbarItem(placement: .primaryAction) { Button { recipesOpen = true } label: { Label("Recipes", systemImage: "wand.and.stars") } }
+      ToolbarItem(placement: .primaryAction) { Button { editing = .new } label: { Label("New sequence", systemImage: "plus") } }
+    }
+    .sheet(isPresented: $recipesOpen) { SequenceRecipesSheet(projectId: projectId) { Task { await load() } } }
     .sheet(item: $editing) { target in SequenceEditor(projectId: projectId, sequence: target.sequence) { Task { await load() } } }
     .confirmationDialog("Delete “\(deleting?.name ?? "")”?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible, presenting: deleting) { sequence in
       Button("Delete sequence", role: .destructive) { Task { await remove(sequence) } }
@@ -207,6 +212,79 @@ struct SequenceEditor: View {
     do {
       let _: Output = try await session.send(sequence.map { "/v1/sequences/\($0.id)" } ?? "/v1/sequences", method: sequence == nil ? "POST" : "PATCH", body: body)
       onSaved()
+      dismiss()
+    } catch { self.error = error.localizedDescription }
+  }
+}
+
+/// Ready-made sequences (web: the Recipes dialog in SequenceList.vue). Each lands as a draft;
+/// nothing is sent until it is activated.
+private struct SequenceRecipesSheet: View {
+  let projectId: String
+  let onInstalled: () -> Void
+  @Environment(SessionStore.self) private var session
+  @Environment(\.dismiss) private var dismiss
+
+  private struct Recipe: Decodable, Identifiable, Sendable {
+    struct Step: Decodable, Sendable { let delayMinutes: Int; let subject: String }
+    let id, name, description: String
+    let trigger: SequenceTrigger
+    let steps: [Step]
+  }
+
+  @State private var recipes: [Recipe] = []
+  @State private var loading = true
+  @State private var installing = ""
+  @State private var error = ""
+
+  var body: some View {
+    NavigationStack {
+      List {
+        Text("Ready-made sequences. They are added as drafts: read the emails, change them, then activate.")
+          .font(.lnMeta).foregroundStyle(Theme.textMuted).linearRow()
+        ErrorText(message: error).linearRow()
+        if loading { SkeletonRows(count: 3).linearRow() }
+        ForEach(recipes) { recipe in
+          HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+              Text(recipe.name).font(.lnRow).foregroundStyle(Theme.textHighlighted)
+              Text(recipe.description).font(.lnMeta).foregroundStyle(Theme.textMuted)
+              Text("\(recipe.steps.count) email\(recipe.steps.count == 1 ? "" : "s")").font(.lnCaption).foregroundStyle(Theme.textDimmed)
+            }
+            Spacer(minLength: 0)
+            Button {
+              Task { await install(recipe) }
+            } label: {
+              if installing == recipe.id { ProgressView() } else { Text("Use") }
+            }
+            .buttonStyle(.lnSecondaryCompact)
+            .disabled(!installing.isEmpty)
+          }
+          .linearRow()
+        }
+      }
+      .linearList()
+      .navigationTitle("Recipes")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+      .task { await load() }
+    }
+  }
+
+  private func load() async {
+    struct Response: Decodable, Sendable { let recipes: [Recipe] }
+    do { recipes = (try await session.get("/v1/automations/recipes", query: ["project": projectId]) as Response).recipes } catch { self.error = error.localizedDescription }
+    loading = false
+  }
+
+  private func install(_ recipe: Recipe) async {
+    struct Input: Encodable, Sendable { let project: String }
+    struct Output: Decodable, Sendable { let sequence: EmailSequence }
+    installing = recipe.id; error = ""
+    defer { installing = "" }
+    do {
+      let _: Output = try await session.send("/v1/automations/recipes/\(recipe.id)/install", body: Input(project: projectId))
+      onInstalled()
       dismiss()
     } catch { self.error = error.localizedDescription }
   }

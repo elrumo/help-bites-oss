@@ -1,7 +1,8 @@
 import { createError } from 'h3'
 import { MAX_SEQUENCE_STEPS, nextStepAt, validateSequenceInput, type Sequence, type SequenceStatus, type SequenceStep, type SequenceTrigger } from '#shared/marketing'
-import { campaignEmails, complianceProblems, publicBaseUrl, snapshotCampaign, type CampaignSnapshot } from './campaigns'
+import { CAMPAIGN_NO_MAILER, campaignEmails, campaignMailerReady, publicBaseUrl, snapshotCampaign, snapshotProblems, type CampaignSnapshot } from './campaigns'
 import { deliverEmails, type DeliveryResult, type EmailActor } from './emailDelivery'
+import { contactQuery, segmentWhere } from './contacts'
 import { emailSendingPaused } from './emailReputation'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
 import { runExclusive } from './redis'
@@ -52,14 +53,15 @@ export async function applySequenceInput(project: ParseObject, row: ParseObject,
   row.set('steps', steps)
 }
 
-/** Activating checks every step for an unsubscribe link and the postal address, as campaigns do. */
+/** Activating checks that email can send at all, and every step for an unsubscribe link and the postal address, as campaigns do. */
 export async function setSequenceStatus(project: ParseObject, row: ParseObject, status: unknown): Promise<void> {
   if (!['draft', 'active', 'paused'].includes(String(status))) throw createError({ statusCode: 400, statusMessage: 'status must be draft, active or paused' })
   if (status === 'active') {
     const steps = (row.get('steps') as SequenceStep[]) || []
     if (!steps.length) throw createError({ statusCode: 400, statusMessage: 'Add a step first' })
+    if (!campaignMailerReady(project)) throw createError({ statusCode: 503, statusMessage: CAMPAIGN_NO_MAILER })
     for (const [i, step] of steps.entries()) {
-      const problems = complianceProblems(project, (await snapshotCampaign(project, step.template)).document)
+      const problems = snapshotProblems(project, await snapshotCampaign(project, step.template))
       if (problems.length) throw createError({ statusCode: 400, statusMessage: `Step ${i + 1}: ${problems.join('; ')}` })
     }
     publicBaseUrl()
@@ -75,12 +77,14 @@ async function bump(sequence: ParseObject, changes: Partial<Record<'enrolled' | 
   await sequence.save(null, MASTER).catch(() => {})
 }
 
-/** Start a contact on a sequence, unless they already were on it. Returns whether they were enrolled. */
-export async function enrollContact(sequence: ParseObject, contact: ParseObject): Promise<boolean> {
+/** Why a contact was or was not put on a sequence. */
+type Enrolment = 'enrolled' | 'already' | 'not_subscribed'
+
+async function createEnrollment(sequence: ParseObject, contact: ParseObject): Promise<Enrolment> {
   const Parse = useParse()
   const steps = (sequence.get('steps') as SequenceStep[]) || []
   // Sequences are marketing: only people who agreed to it.
-  if (!steps.length || !contact.id || contact.get('subscription') !== 'subscribed') return false
+  if (!steps.length || !contact.id || contact.get('subscription') !== 'subscribed') return 'not_subscribed'
   const locked = await runExclusive(`sb:enroll:${sequence.id}:${contact.id}`, 30, async () => {
     const existing = await new Parse.Query('SequenceEnrollment').equalTo('sequence', sequence).equalTo('contact', contact).first(MASTER)
     if (existing) return false
@@ -94,9 +98,92 @@ export async function enrollContact(sequence: ParseObject, contact: ParseObject)
     await row.save(null, MASTER)
     return true
   }, { waitMs: 5000, failOpen: true })
-  const enrolled = locked.ran && locked.value
+  return locked.ran && locked.value ? 'enrolled' : 'already'
+}
+
+/** Start a contact on a sequence, unless they already were on it. Returns whether they were enrolled. */
+export async function enrollContact(sequence: ParseObject, contact: ParseObject): Promise<boolean> {
+  const enrolled = await createEnrollment(sequence, contact) === 'enrolled'
   if (enrolled) await bump(sequence, { enrolled: 1, active: 1 })
   return enrolled
+}
+
+export type EnrollSummary = { enrolled: number, skipped: { notSubscribed: number, optedOut: number, alreadyEnrolled: number, notFound: number }, truncated: boolean }
+
+/** Most people one call puts on a sequence from a segment; call again for the rest (those already on it are skipped). */
+export const ENROLL_SEGMENT_CAP = 5000
+const ENROLL_SCAN_CAP = 50_000
+const ENROLL_PAGE = 200
+const ENROLL_PARALLEL = 10
+
+/** Enroll many at once: those already on the sequence are found in one query, the rest a few at a time, and the counters are saved once at the end. */
+async function enrollMany(sequence: ParseObject, contacts: ParseObject[], summary: EnrollSummary): Promise<void> {
+  const rows = contacts.length ? await new (useParse()).Query('SequenceEnrollment').equalTo('sequence', sequence).containedIn('contact', contacts).select('contact').limit(contacts.length).find(MASTER) : []
+  const on = new Set(rows.map(row => pointerId(row.get('contact'))))
+  summary.skipped.alreadyEnrolled += on.size
+  const todo = contacts.filter(contact => !on.has(contact.id || ''))
+  let enrolled = 0
+  for (let i = 0; i < todo.length; i += ENROLL_PARALLEL) {
+    const results = await Promise.all(todo.slice(i, i + ENROLL_PARALLEL).map(contact => createEnrollment(sequence, contact)))
+    for (const result of results) {
+      if (result === 'enrolled') enrolled++
+      else if (result === 'already') summary.skipped.alreadyEnrolled++
+      else summary.skipped.notSubscribed++
+    }
+  }
+  summary.enrolled += enrolled
+  if (enrolled) await bump(sequence, { enrolled, active: enrolled })
+}
+
+const emptySummary = (): EnrollSummary => ({ enrolled: 0, skipped: { notSubscribed: 0, optedOut: 0, alreadyEnrolled: 0, notFound: 0 }, truncated: false })
+
+/** Put the contacts with these ids (up to 100) on a sequence. Ids that are not this project's contacts count as not found. */
+export async function enrollContactIds(project: ParseObject, sequence: ParseObject, ids: string[]): Promise<EnrollSummary> {
+  const summary = emptySummary()
+  const unique = [...new Set(ids)]
+  const contacts = unique.length ? await contactQuery(project).containedIn('objectId', unique).limit(unique.length).find(MASTER) : []
+  summary.skipped.notFound = unique.length - contacts.length
+  await enrollMany(sequence, contacts, summary)
+  return summary
+}
+
+/**
+ * Put everyone in a segment on a sequence (up to ENROLL_SEGMENT_CAP per call).
+ * Only subscribed people are enrolled, and for a topic sequence only those not
+ * opted out of the topic; the rest are counted by reason so the caller can say why.
+ */
+export async function enrollSegment(project: ParseObject, sequence: ParseObject, segmentId: string): Promise<EnrollSummary> {
+  const where = await segmentWhere(project, segmentId)
+  const topic = ((sequence.get('trigger') as SequenceTrigger | undefined) || { type: 'manual' }).topic
+  const summary = emptySummary()
+  const eligible = () => {
+    const query = contactQuery(project, where).equalTo('subscription', 'subscribed')
+    if (topic) query.notEqualTo('unsubscribedTopics', topic)
+    return query
+  }
+  const [everyone, subscribed, willing] = await Promise.all([contactQuery(project, where).count(MASTER), contactQuery(project, where).equalTo('subscription', 'subscribed').count(MASTER), eligible().count(MASTER)])
+  summary.skipped.notSubscribed = everyone - subscribed
+  summary.skipped.optedOut = subscribed - willing
+  let after = ''
+  let scanned = 0
+  for (;;) {
+    // Enrolling stops at the cap, scanning at a bigger one, so a second call can carry on past the people already on the sequence.
+    const room = ENROLL_SEGMENT_CAP - summary.enrolled
+    if (room <= 0 || scanned >= ENROLL_SCAN_CAP) {
+      summary.truncated = Boolean(await eligible().greaterThan('objectId', after).first(MASTER))
+      break
+    }
+    const size = Math.min(ENROLL_PAGE, room)
+    const query = eligible()
+    if (after) query.greaterThan('objectId', after)
+    const page = await query.ascending('objectId').limit(size).find(MASTER)
+    if (!page.length) break
+    await enrollMany(sequence, page, summary)
+    scanned += page.length
+    after = page.at(-1)!.id || ''
+    if (page.length < size) break
+  }
+  return summary
 }
 
 async function activeSequences(project: ParseObject, trigger: SequenceTrigger['type']): Promise<ParseObject[]> {
@@ -238,6 +325,13 @@ export async function runDueSequenceSteps(limit = SEQUENCE_LIMITS.perTick): Prom
           continue
         }
         snapshots.set(`${project.id}:${step.template}`, snapshot)
+        // No mailer at all: the step waits without trying, so the log does not fill with a failure every five minutes.
+        if (!campaignMailerReady(project)) {
+          row.set('nextAt', new Date(Date.now() + PLAN_RETRY_MS))
+          row.set('lastError', CAMPAIGN_NO_MAILER.slice(0, 300))
+          await row.save(null, MASTER)
+          continue
+        }
         let result: DeliveryResult | undefined
         try {
           [result] = await deliverEmails(campaignEmails(project, snapshot, [contact], { batchId, subject: step.subject || '', topic: trigger.topic || '', testMode: false, source: 'sequence', actor: SEQUENCE_ACTOR, base, metadata: { sequence: sequence.id || '', step: step.id } }))

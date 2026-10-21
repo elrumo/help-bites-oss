@@ -142,11 +142,15 @@ export function eventLabel(message: Message): string {
   if (event.type === 'action.performed') return `${String(event.actionKey || 'Host action')} · ${String(event.result || 'pending')}`
   if (event.type === 'board.linked' || event.type === 'board.unlinked') {
     const item = `${event.number ? `#${String(event.number)} ` : ''}${String(event.title || 'an item')}`
-    return event.type === 'board.linked' ? `Linked to board item ${item}` : `Unlinked from board item ${item}`
+    return event.type === 'board.linked' ? `Linked to planning item ${item}` : `Unlinked from planning item ${item}`
   }
   if (event.type === 'changelog.linked' || event.type === 'changelog.unlinked') {
     const entry = `${event.number ? `#${String(event.number)} ` : ''}${String(event.title || 'an entry')}`
     return event.type === 'changelog.linked' ? `Linked to changelog entry ${entry}` : `Unlinked from changelog entry ${entry}`
+  }
+  if (event.type === 'feedback.linked' || event.type === 'feedback.unlinked') {
+    const post = `${event.number ? `#${String(event.number)} ` : ''}${String(event.title || 'a post')}`
+    return event.type === 'feedback.linked' ? `Linked to feedback post ${post}` : `Unlinked from feedback post ${post}`
   }
   return 'Ticket updated'
 }

@@ -4,7 +4,7 @@
 // `$and` with the project (and, for campaigns, the subscription rules), so a
 // segment can narrow an audience but never widen it.
 
-import { ATTRIBUTE_KEY_RE, CONTACT_SUBSCRIPTIONS } from './contacts'
+import { ATTRIBUTE_KEY_RE, CONTACT_ORIGIN_TYPES, CONTACT_SUBSCRIPTIONS } from './contacts'
 
 export type SegmentOp =
   | 'is' | 'is_not' | 'contains' | 'starts_with' | 'exists' | 'not_exists'
@@ -15,9 +15,11 @@ export type SegmentValue = string | number | boolean
 export type SegmentRule = { field: string, op: SegmentOp, value?: SegmentValue }
 export type SegmentFilter = { match: 'all' | 'any', rules: SegmentRule[] }
 
-export type ContactSegment = { id: string, projectId: string, name: string, filter: SegmentFilter, createdAt: string | null, updatedAt: string | null }
+/** `auto`: made by HelpBites (a lead form's segment, or every lead); it can be renamed, edited and deleted like any other. */
+export type ContactSegment = { id: string, projectId: string, name: string, filter: SegmentFilter, auto: boolean, createdAt: string | null, updatedAt: string | null }
 
-type FieldKind = 'text' | 'enum' | 'list' | 'date' | 'attribute'
+/** `flag`: a yes/no question about a person's other records, answered by a lookup (see RELATION_FIELDS). */
+type FieldKind = 'text' | 'enum' | 'list' | 'date' | 'attribute' | 'flag'
 
 export const SEGMENT_FIELDS: { key: string, label: string, kind: FieldKind }[] = [
   { key: 'email', label: 'Email', kind: 'text' },
@@ -27,12 +29,33 @@ export const SEGMENT_FIELDS: { key: string, label: string, kind: FieldKind }[] =
   { key: 'tags', label: 'Tags', kind: 'list' },
   { key: 'unsubscribedTopics', label: 'Opted-out topics', kind: 'list' },
   { key: 'sources', label: 'Source', kind: 'list' },
+  { key: 'origin', label: 'Added via', kind: 'enum' },
+  { key: 'language', label: 'Language', kind: 'text' },
+  { key: 'leadForms', label: 'Lead form', kind: 'list' },
+  { key: 'stripePlan', label: 'Stripe plan', kind: 'text' },
+  { key: 'hasOpenConversation', label: 'Has an open conversation', kind: 'flag' },
+  { key: 'votedOnPost', label: 'Voted on a post', kind: 'flag' },
+  { key: 'hasErrors', label: 'Has errors', kind: 'flag' },
+  { key: 'finishedOnboarding', label: 'Finished onboarding', kind: 'flag' },
   { key: 'createdAt', label: 'Added', kind: 'date' },
   { key: 'lastSeenAt', label: 'Last seen', kind: 'date' },
   { key: 'updatedAt', label: 'Updated', kind: 'date' }
 ]
 
+/**
+ * Fields answered by looking at other records instead of a column on the
+ * contact. The server finds the matching contact ids first (server/utils/
+ * segmentRelations.ts) and hands them to compileSegmentFilter.
+ */
+export const RELATION_FIELDS = ['hasOpenConversation', 'votedOnPost', 'hasErrors', 'finishedOnboarding'] as const
+export type RelationField = typeof RELATION_FIELDS[number]
+/** For each relation field, the ids of the contacts it is true for. */
+export type RelationIds = Partial<Record<RelationField, string[]>>
+
+export const FLAG_VALUES = ['yes', 'no'] as const
+
 export const SEGMENT_OPS: Record<FieldKind, SegmentOp[]> = {
+  flag: ['is'],
   text: ['is', 'is_not', 'contains', 'starts_with', 'exists', 'not_exists'],
   enum: ['is', 'is_not'],
   list: ['includes', 'excludes', 'exists', 'not_exists'],
@@ -80,7 +103,14 @@ export function validateSegmentFilter(value: unknown): { filter: SegmentFilter, 
     if ((op === 'within_days' || op === 'not_within_days') && !(Number.isInteger(Number(v)) && Number(v) > 0 && Number(v) <= 3650)) { errors.push(`${at}: days must be a whole number from 1 to 3650`); continue }
     if ((op === 'gt' || op === 'lt') && !Number.isFinite(Number(v))) { errors.push(`${at}: needs a number`); continue }
     if ((op === 'before' || op === 'after') && Number.isNaN(new Date(String(v)).getTime())) { errors.push(`${at}: needs a date`); continue }
+    if (kind === 'flag') {
+      const flag = v === true || v === 'true' ? 'yes' : v === false || v === 'false' ? 'no' : v
+      if (!FLAG_VALUES.includes(flag as never)) { errors.push(`${at}: ${field} is yes or no`); continue }
+      rules.push({ field, op, value: flag as string })
+      continue
+    }
     if (field === 'subscription' && !CONTACT_SUBSCRIPTIONS.includes(v as never)) { errors.push(`${at}: subscription is one of ${CONTACT_SUBSCRIPTIONS.join(', ')}`); continue }
+    if (field === 'origin' && !CONTACT_ORIGIN_TYPES.includes(v as never)) { errors.push(`${at}: origin is one of ${CONTACT_ORIGIN_TYPES.join(', ')}`); continue }
     rules.push({ field, op, value: typeof v === 'string' ? v.trim() : v })
   }
   return { filter: { match, rules }, errors }
@@ -98,9 +128,24 @@ function attributeValues(value: SegmentValue): SegmentValue[] {
   return out
 }
 
-function compileRule(rule: SegmentRule, now: Date): Record<string, unknown> {
+// Fields stored under another name on the row. The Stripe plan is a contact attribute the Stripe sync keeps (shared/stripe.ts).
+const COLUMNS: Record<string, string> = { origin: 'origin.type', stripePlan: 'attributes.stripe_plan' }
+
+const isRelation = (field: string): field is RelationField => (RELATION_FIELDS as readonly string[]).includes(field)
+
+/** The relation lookups a filter needs before it can be compiled. */
+export function segmentRelationsNeeded(filter: SegmentFilter): RelationField[] {
+  return [...new Set(filter.rules.map(r => r.field).filter(isRelation))]
+}
+
+function compileRule(rule: SegmentRule, now: Date, relations: RelationIds): Record<string, unknown> {
+  if (isRelation(rule.field)) {
+    const ids = relations[rule.field]
+    if (!ids) throw new Error(`"${rule.field}" needs its contacts looked up first (resolveSegmentWhere)`)
+    return { objectId: rule.value === 'no' ? { $nin: ids } : { $in: ids } }
+  }
   const kind = segmentFieldKind(rule.field)!
-  const f = rule.field
+  const f = COLUMNS[rule.field] || rule.field
   const v = rule.value as SegmentValue
   const text = (x: SegmentValue) => (f === 'email' ? String(x).toLowerCase() : String(x))
   // Stored dates on the row are Parse Dates; dates inside `attributes` are ISO strings.
@@ -125,9 +170,14 @@ function compileRule(rule: SegmentRule, now: Date): Record<string, unknown> {
   }
 }
 
+/** Everyone who came through one lead form: the segment a form makes for itself. */
+export const leadFormSegmentFilter = (formId: string): SegmentFilter => ({ match: 'all', rules: [{ field: 'leadForms', op: 'includes', value: formId }] })
+/** Everyone who came through any lead form. */
+export const ALL_LEADS_SEGMENT: SegmentFilter = { match: 'all', rules: [{ field: 'leadForms', op: 'exists' }] }
+
 /** The filter as a Parse REST `where`; `{}` (everyone) when it has no rules. */
-export function compileSegmentFilter(filter: SegmentFilter, now = new Date()): Record<string, unknown> {
-  const parts = filter.rules.map(rule => compileRule(rule, now))
+export function compileSegmentFilter(filter: SegmentFilter, now = new Date(), relations: RelationIds = {}): Record<string, unknown> {
+  const parts = filter.rules.map(rule => compileRule(rule, now, relations))
   if (!parts.length) return {}
   if (parts.length === 1) return parts[0]!
   return filter.match === 'any' ? { $or: parts } : { $and: parts }

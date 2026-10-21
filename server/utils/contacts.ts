@@ -1,11 +1,12 @@
 import { createError, readBody } from 'h3'
-import { cleanAttributes, cleanTags, cleanTopicKeys, normalizeEmail, CONTACT_LIMITS, type Contact, type ContactAttributeValue, type ContactConsent, type ContactInput, type ContactSubscription } from '#shared/contacts'
-import { compileSegmentFilter, validateSegmentFilter, type ContactSegment, type SegmentFilter } from '#shared/segments'
+import { cleanAttributes, cleanTags, cleanTopicKeys, guessContactOrigin, normalizeEmail, originTypeForVia, readContactOrigin, CONTACT_LIMITS, type Contact, type ContactAttributeValue, type ContactConsent, type ContactInput, type ContactOriginType, type ContactSubscription } from '#shared/contacts'
+import { validateSegmentFilter, type ContactSegment, type SegmentFilter } from '#shared/segments'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
 import { runExclusive } from './redis'
 import { searchEndUserIds, syncEndUsersForSearch } from './searchSync'
 import { checkGauge, projectWorkspaceId } from './usage'
-import { emitWebhooks } from './webhooks'
+import { emitDomainEvent } from './domainEvents'
+import { resolveSegmentWhere } from './segmentRelations'
 
 // Contacts are EndUser rows (see shared/contacts.ts). Everything that creates
 // or changes one in bulk — the contacts API, CSV imports, database syncs,
@@ -33,12 +34,15 @@ export function serializeContact(row: ParseObject): Contact {
     name: String(row.get('name') || ''),
     username: String(row.get('username') || ''),
     avatarUrl: String(row.get('avatarUrl') || ''),
+    language: String(row.get('language') || ''),
     attributes: record(row.get('attributes')) as Record<string, ContactAttributeValue>,
     tags: strings(row.get('tags')),
     subscription: (row.get('subscription') as ContactSubscription) || 'none',
     unsubscribedTopics: strings(row.get('unsubscribedTopics')),
     consent: consent.at ? consent as ContactConsent : null,
     sources: strings(row.get('sources')),
+    origin: readContactOrigin(row.get('origin')) || guessContactOrigin({ externalId: row.get('externalId'), sources: row.get('sources'), consent: row.get('consent'), leadForms: row.get('leadForms'), anonymous: row.get('anonymous') }),
+    leadForms: strings(row.get('leadForms')),
     feedbackEmails: row.get('feedbackEmails') !== false,
     lastSeenAt: iso(row.get('lastSeenAt')),
     createdAt: iso(row.createdAt),
@@ -58,7 +62,12 @@ export type ContactWriteOptions = {
   /** Imports fill blanks only; the API and syncs overwrite (their data is the truth). */
   fillOnly?: boolean
   consent?: Omit<ContactConsent, 'source' | 'at'>
+  /** How someone new got here, when `via` does not say enough (a lead form and which one). */
+  origin?: { type: ContactOriginType, id?: string }
 }
+
+/** Writers that load many contacts at once: they do not publish `contact.created` per row. */
+const BULK_VIA = ['import', 'sync', 'stripe']
 
 export type ContactWriteResult = { index: number, status: 'created' | 'updated' | 'unchanged' | 'failed', id: string, error?: string }
 
@@ -68,10 +77,9 @@ export type SubscriptionChange = { contact: ParseObject, from: ContactSubscripti
 async function announce(project: ParseObject, changes: SubscriptionChange[]) {
   if (!changes.length) return
   try {
-    await emitWebhooks(project, changes.map(c => ({
-      type: 'contact.subscription_changed' as const,
-      data: { contact: { id: c.contact.id, externalId: c.contact.get('externalId') || '', email: c.contact.get('email') || '' }, from: c.from, to: c.to, unsubscribedTopics: c.contact.get('unsubscribedTopics') || [], ...(c.topics ? { topics: c.topics } : {}) }
-    })))
+    for (const c of changes) {
+      await emitDomainEvent(project, 'contact.subscription_changed', { contact: { id: c.contact.id, externalId: c.contact.get('externalId') || '', email: c.contact.get('email') || '' }, from: c.from, to: c.to, unsubscribedTopics: c.contact.get('unsubscribedTopics') || [], ...(c.topics ? { topics: c.topics } : {}) })
+    }
     // Loaded on use: sequences send through campaigns, which read contacts.
     const { enrollOnSubscribe } = await import('./sequences')
     await enrollOnSubscribe(project, changes.filter(c => c.to === 'subscribed' && c.from !== 'subscribed').map(c => c.contact))
@@ -110,6 +118,9 @@ export function applyContactInput(row: ParseObject, input: ContactInput, options
   if (input.externalId && !row.get('externalId')) set('externalId', input.externalId)
   fill('email', input.email)
   fill('name', input.name)
+  // A blank clears it (only the API and the panel send one); a language from a sync or import only fills a gap.
+  if (input.language === '' && !options.fillOnly) set('language', null)
+  else fill('language', input.language)
   if (input.attributes) {
     const base = record(row.get('attributes')) as Record<string, ContactAttributeValue>
     const incoming = options.fillOnly ? Object.fromEntries(Object.entries(input.attributes).filter(([k]) => base[k] === undefined)) : input.attributes
@@ -122,6 +133,12 @@ export function applyContactInput(row: ParseObject, input: ContactInput, options
     set('tags', tags)
   }
   if (options.sourceId && !strings(row.get('sources')).includes(options.sourceId)) set('sources', [...strings(row.get('sources')), options.sourceId])
+  if (input.leadForms?.length) {
+    const before = strings(row.get('leadForms'))
+    if (input.leadForms.some(id => !before.includes(id))) set('leadForms', [...new Set([...before, ...input.leadForms])])
+  }
+  // Set once, when the row is made: how this person first got here.
+  if (row.isNew() && !row.get('origin')) set('origin', { type: options.origin?.type || originTypeForVia(options.via), id: options.origin?.id || options.sourceId || '', at: now.toISOString() })
 
   let subscription: SubscriptionChange | null = null
   const current = (row.get('subscription') as ContactSubscription) || 'none'
@@ -224,6 +241,10 @@ async function writeContacts(project: ParseObject, inputs: ContactInput[], optio
   for (const [row, positions] of dirty) for (const r of positions) if (results[r]!.status !== 'failed') results[r]!.id = row.id || ''
   void syncEndUsersForSearch(rows.filter(r => r.id))
   void announce(project, changes.filter(c => c.contact.id))
+  // Bulk loads (an import, a database sync, Stripe) would flood the bus with one event per row.
+  if (!BULK_VIA.includes(options.via)) {
+    for (const r of results) if (r.status === 'created' && r.id) void emitDomainEvent(project, 'contact.created', { contact: { id: r.id, externalId: inputs[r.index]?.externalId || '', email: inputs[r.index]?.email || '' } })
+  }
   return results
 }
 
@@ -278,7 +299,7 @@ function readCursor(cursor: string): { at: Date, id: string } | null {
   return id && !Number.isNaN(date.getTime()) ? { at: date, id } : null
 }
 
-export type ContactListOptions = { where?: Record<string, unknown>, q?: string, tag?: string, subscription?: string, updatedSince?: Date, cursor?: string, limit?: number }
+export type ContactListOptions = { where?: Record<string, unknown>, q?: string, tag?: string, subscription?: string, origin?: string, leadForm?: string, updatedSince?: Date, cursor?: string, limit?: number }
 
 export async function listContacts(project: ParseObject, options: ContactListOptions): Promise<{ contacts: Contact[], nextCursor: string | null }> {
   const Parse = useParse()
@@ -287,6 +308,8 @@ export async function listContacts(project: ParseObject, options: ContactListOpt
   if (options.where && Object.keys(options.where).length) where.push(options.where)
   if (options.tag) where.push({ tags: options.tag })
   if (options.subscription) where.push({ subscription: options.subscription })
+  if (options.origin) where.push({ 'origin.type': options.origin })
+  if (options.leadForm) where.push({ leadForms: options.leadForm })
   if (options.updatedSince) where.push({ updatedAt: { $gte: { __type: 'Date', iso: options.updatedSince.toISOString() } } })
 
   const term = (options.q || '').trim()
@@ -329,6 +352,7 @@ export function serializeSegment(row: ParseObject): ContactSegment {
     projectId: pointerId(row.get('project')),
     name: String(row.get('name') || ''),
     filter: validateSegmentFilter(row.get('filter')).filter,
+    auto: Boolean(row.get('auto')),
     createdAt: iso(row.createdAt),
     updatedAt: iso(row.updatedAt)
   }
@@ -349,11 +373,11 @@ export function readSegmentFilter(value: unknown): SegmentFilter {
 
 /** The `where` for a stored segment, by id. */
 export async function segmentWhere(project: ParseObject, segmentId: string): Promise<Record<string, unknown>> {
-  return compileSegmentFilter(serializeSegment(await getProjectSegment(project, segmentId)).filter)
+  return resolveSegmentWhere(project, serializeSegment(await getProjectSegment(project, segmentId)).filter)
 }
 
 export async function previewSegment(project: ParseObject, filter: SegmentFilter): Promise<{ count: number, sample: Contact[] }> {
-  const where = compileSegmentFilter(filter)
+  const where = await resolveSegmentWhere(project, filter)
   const [count, rows] = await Promise.all([
     contactQuery(project, where).count(MASTER),
     contactQuery(project, where).descending('updatedAt').limit(10).find(MASTER)

@@ -2,8 +2,8 @@
 
 This is the admin-managed layer between uploaded support documentation and the
 support runtime. Administrators upload a `SUPPORT_FAQ.md`, it becomes structured,
-navigable, searchable knowledge, and it is assigned to AI assistants that can
-suggest or (optionally) send grounded answers.
+navigable, searchable knowledge, and it is assigned to AI assistants that
+(optionally) send grounded answers and hand the rest to a human.
 
 It follows the existing app's conventions: Parse classes defined in
 `scripts/ensure-schema.mjs`, auto-imported helpers in `server/utils/**`,
@@ -91,6 +91,54 @@ user-message routes) finds an active `SupportAgent` with `autoReply` on for the
 project, retrieves knowledge, calls the LLM (`server/utils/llm.ts`), and posts the
 answer via `appendMessage` — detached, so it never blocks the user's request.
 It's a no-op unless a project has an auto-reply agent with an LLM configured.
+
+**Hand-off.** A message a routing rule sends to a human, or one no knowledge
+matches (or none above `minConfidence`) when `fallbackBehavior` is `human` (the
+default), gets no AI answer. The conversation gets the `needs-human` label and an
+internal note with the reason, and the assistant answers nothing more in it while
+the label is on: removing it hands the conversation back. List them with
+`GET /v1/admin/conversations?tag=needs-human`. With `fallbackBehavior: 'silent'`
+an unsure message is simply left unanswered and unlabelled.
+
+**Readiness.** An assistant answers customers by itself only when four things
+hold, in the order to fix them: an AI provider (`llm`), knowledge it may read
+(`knowledge`), status `active` and `autoReply` on. The assistant's page opens with
+that strip, and `GET /v1/admin/support-agents/:id` returns it as
+`readiness: { checks: [{ key, ok }], canAnswer, live, faqs }` (`faqs` counts the
+answers it may read, up to 50: `50` means "50 or more"). `canAnswer` is what a
+test answer needs, `live` what customers get. The project's setup checklist uses
+the same checks.
+
+**Test answer.** Under the strip, ask what a customer would. It makes the same
+decision as a real message (`shared/knowledge.ts`: `routeAgentMessage` for the
+rules, `judgeKnowledge` for the confidence bar; `runAutoReply` calls the same
+two) without touching any conversation, and says why:
+
+```bash
+curl -X POST https://YOUR-SUPPORT-HOST/v1/admin/support-agents/$ID/test-answer \
+  -H "Authorization: Bearer ak_…" -H "content-type: application/json" \
+  -d '{ "query": "How do I get a refund?", "conversationType": "support" }'
+```
+
+```json
+{
+  "decision": { "outcome": "handoff", "reason": "rule", "ruleIndex": 1, "best": 0, "minConfidence": 0.5 },
+  "rule": { "keywords": ["refund"], "action": "human" },
+  "live": true, "model": "openai/mimo-v2.6-flash", "answer": null,
+  "knowledge": []
+}
+```
+
+`decision.outcome` is `answer`, `handoff` (the team gets it) or `silent`;
+`decision.reason` is `rule` or `default` (the routing rules, with `ruleIndex` the
+rule's position, from 0), `noKnowledge`, `lowConfidence` (best match `best` under
+`minConfidence`) or `confident`. A message a rule hands to the team never looks up
+knowledge, so `knowledge` is empty. When it would answer and an AI provider is
+set up, `answer` holds the reply it would send; that one call counts against AI
+credits like a real answer. `live` says whether the assistant answers customers
+by itself right now. It needs the `content` role. The older
+`POST …/support-agents/:id/retrieve` (retrieval only) and `…/generate` (answer
+only) remain.
 
 **Prompt grounding** (`llm.ts`): the system prompt instructs the model to answer
 only from the supplied knowledge, say when it doesn't know, and treat knowledge

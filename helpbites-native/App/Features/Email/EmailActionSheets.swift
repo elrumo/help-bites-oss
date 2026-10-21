@@ -99,7 +99,7 @@ struct EmailTestSheet: View {
               .autocorrectionDisabled()
           }
           if isMaster && !workspace.projects.isEmpty {
-            LabeledField(label: "Brand and sender", hint: "A master has no project of its own; borrow one's logo, colours and from-address.") {
+            LabeledField(label: "Brand and sender", hint: "A shared template has no project of its own; borrow one's logo, colours and from-address.") {
               Picker("Brand and sender", selection: $projectId) {
                 Text("None: sample values only").tag("")
                 ForEach(workspace.projects) { project in Text(project.name).tag(project.id) }
@@ -228,8 +228,8 @@ struct EmailAPISheet: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 24) {
           Text(isProject
-            ? "From your server, with this project's secret (Project → Dev). Never from a browser."
-            : "Masters are read by id with an admin API key. Projects that link this master fetch and send it by their own key.")
+            ? "From your server, with this project's secret (Project → Install & API). Never from a browser."
+            : "Shared templates are read by id with an admin API key. Projects that link this template fetch and send it by their own key.")
             .font(.lnMeta)
             .foregroundStyle(Theme.textMuted)
 

@@ -7,6 +7,7 @@ import { EMPTY_SEGMENT, type ContactSegment, type SegmentFilter } from '#shared/
 import type { AdminProject } from '~~/server/utils/projects'
 import ContactsTabs from '~/components/contacts/ContactsTabs.vue'
 import SegmentBuilder from '~/components/contacts/SegmentBuilder.vue'
+import AddToSequenceModal from '~/components/contacts/AddToSequenceModal.vue'
 
 const props = defineProps<{ project: AdminProject }>()
 
@@ -32,6 +33,10 @@ async function load() {
   }
 }
 onMounted(load)
+
+// "Add everyone to a sequence" for one segment.
+const sequenceFor = ref<ContactSegment | null>(null)
+const sequenceOpen = computed({ get: () => Boolean(sequenceFor.value), set: (v: boolean) => { if (!v) sequenceFor.value = null } })
 
 const editOpen = ref(false)
 const editing = ref<ContactSegment | null>(null)
@@ -89,14 +94,18 @@ async function remove(segment: ContactSegment) {
           <button type="button" class="flex min-w-0 flex-1 items-center gap-3 text-left" @click="edit(s)">
             <UIcon name="i-lucide-filter" class="size-4 shrink-0 text-muted" />
             <span class="min-w-0 flex-1 truncate font-medium text-highlighted">{{ s.name }}</span>
+            <UTooltip v-if="s.auto" :text="$t('contacts.segments.autoHint')"><UBadge :label="$t('contacts.segments.auto')" icon="i-lucide-clipboard-list" color="neutral" variant="soft" size="sm" /></UTooltip>
             <span class="text-xs text-muted">{{ $t('contacts.segments.ruleCount', s.filter.rules.length) }}</span>
             <span class="w-24 text-right text-xs tabular-nums text-muted">{{ counts[s.id] === undefined ? '…' : $t('contacts.segments.peopleCount', { count: counts[s.id]!.toLocaleString() }) }}</span>
           </button>
           <UTooltip :text="$t('contacts.segments.showPeople')"><UButton icon="i-lucide-users" size="xs" color="neutral" variant="ghost" square :to="{ query: { segment: s.id } }" :aria-label="$t('contacts.segments.showPeople')" /></UTooltip>
+          <UTooltip :text="$t('contacts.segments.addToSequence')"><UButton icon="i-lucide-list-plus" size="xs" color="neutral" variant="ghost" square :aria-label="$t('contacts.segments.addToSequence')" @click="sequenceFor = s" /></UTooltip>
           <UTooltip :text="$t('contacts.delete')"><UButton icon="i-lucide-trash-2" size="xs" color="neutral" variant="ghost" square class="text-muted opacity-60 group-hover:opacity-100" :aria-label="$t('contacts.segments.deleteLabel')" @click="remove(s)" /></UTooltip>
         </li>
       </ul>
     </div>
+
+    <AddToSequenceModal v-model:open="sequenceOpen" :project="project" :segment-id="sequenceFor?.id" :segment-name="sequenceFor?.name" />
 
     <UModal v-model:open="editOpen" :title="editing ? $t('contacts.segments.edit') : $t('contacts.segments.new')" :ui="{ content: 'max-w-2xl' }">
       <template #body>

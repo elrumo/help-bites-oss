@@ -309,8 +309,8 @@ private struct EmailComponentFieldRow: View {
 
 // MARK: - Library page
 
-/// The Components tab of the email page (EmailComponents.vue): on the masters
-/// page the shared library, on a project's page its own components and the
+/// The Components view of the email page (EmailComponents.vue), behind Templates: on the shared
+/// templates' page the shared library, on a project's page its own components and the
 /// shared ones. Editing one changes new insertions; emails that already use it
 /// keep their copy until they update from the library.
 struct EmailComponentLibrary: View {
@@ -326,7 +326,7 @@ struct EmailComponentLibrary: View {
   var body: some View {
     VStack(spacing: 0) {
       VStack(alignment: .leading, spacing: 10) {
-        Text((projectId != nil ? "This project's components and the shared ones." : "Shared with every project and master.")
+        Text((projectId != nil ? "This project's components and the shared ones." : "Shared with every project and shared template.")
           + " Insert them from Add in the editor; the AI designer uses them and saves new ones. Each email keeps its own copy.")
           .font(.lnMeta)
           .foregroundStyle(Theme.textMuted)

@@ -9,6 +9,7 @@
 import { watchDebounced } from '@vueuse/core'
 import type { EmailLogEntry, EmailLogStats, EmailLogStatus } from '~~/server/utils/emailLogs'
 import type { AdminProject } from '~~/server/utils/projects'
+import EmailSetupStrip from '~/components/email/EmailSetupStrip.vue'
 import EmailTabs from '~/components/email/EmailTabs.vue'
 import { compactCount, EMAIL_SOURCE_LABELS, EMAIL_STATUS, logTime } from '~/utils/emailStatus'
 
@@ -189,9 +190,11 @@ const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).t
         <USelect v-model="status" :items="statusItems" value-key="value" size="sm" class="hidden w-36 md:flex" :aria-label="$t('emailLibrary.log.status')" />
         <USelect v-model="source" :items="sourceItems" value-key="value" size="sm" class="hidden w-32 lg:flex" :aria-label="$t('emailLibrary.log.source')" />
         <USelect v-model="template" :items="templateItems" value-key="value" size="sm" class="hidden w-44 lg:flex" :ui="{ content: 'min-w-48' }" :aria-label="$t('emailLibrary.log.template')" />
+        <UTooltip v-if="project" :text="$t('emailEditor.suppressed')"><UButton icon="i-lucide-mail-x" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('emailEditor.suppressed')" :to="{ query: { view: 'suppressions' } }" /></UTooltip>
         <UTooltip :text="$t('emailLibrary.log.refresh')"><UButton icon="i-lucide-refresh-cw" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('emailLibrary.log.refresh')" @click="refresh" /></UTooltip>
       </template>
     </PageHeader>
+    <EmailSetupStrip v-if="project" :project-id="project.id" />
 
     <div class="min-h-0 flex-1 overflow-y-auto">
       <section class="border-b border-default px-4 py-4 md:px-6" :aria-label="$t('emailLibrary.log.last30Days')">
@@ -204,7 +207,7 @@ const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).t
           </div>
         </div>
         <UAlert
-          v-if="settings && !settings.configured"
+          v-if="!project && settings && !settings.configured"
           class="mt-3"
           icon="i-lucide-mail-warning"
           color="warning"
@@ -213,7 +216,7 @@ const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).t
           :description="$t('emailLibrary.log.notConfiguredDescription')"
         />
         <UAlert
-          v-else-if="settings && !settings.webhook.configured"
+          v-else-if="!project && settings && !settings.webhook.configured"
           class="mt-3"
           icon="i-lucide-webhook"
           color="neutral"
@@ -240,13 +243,13 @@ const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).t
         <li v-for="entry in logs" :key="entry.id" class="mx-2 flex items-center rounded-lg pr-2 transition-colors hover:bg-elevated">
           <button type="button" class="flex h-11 min-w-0 flex-1 items-center gap-3 rounded-lg px-3 text-left text-[13px]" @click="openId = entry.id">
             <UTooltip :text="EMAIL_STATUS[entry.status].hint">
-              <UBadge :icon="EMAIL_STATUS[entry.status].icon" :label="EMAIL_STATUS[entry.status].label" :color="EMAIL_STATUS[entry.status].color" variant="subtle" size="sm" class="w-28 shrink-0 justify-start" />
+              <UBadge :icon="EMAIL_STATUS[entry.status].icon" :label="EMAIL_STATUS[entry.status].label" :color="EMAIL_STATUS[entry.status].color" variant="subtle" size="sm" class="w-fit shrink-0 justify-start" />
             </UTooltip>
             <span class="w-48 shrink-0 truncate font-medium text-highlighted" :title="entry.to">{{ entry.to }}</span>
             <span class="min-w-0 flex-1 truncate text-muted">{{ entry.subject }}</span>
             <code v-if="entry.template?.key" class="hidden max-w-36 shrink-0 truncate rounded bg-elevated px-1.5 py-0.5 font-mono text-[11px] text-toned md:block">{{ entry.template.key }}</code>
             <span v-else-if="entry.template?.name" class="hidden max-w-44 shrink-0 truncate text-xs text-dimmed md:block">{{ entry.template.name }}</span>
-            <span v-if="!project" class="hidden w-28 shrink-0 truncate text-xs text-muted lg:block">{{ projectName(entry.projectId) }}</span>
+            <span v-if="!project" class="hidden w-fit shrink-0 truncate text-xs text-muted lg:block">{{ projectName(entry.projectId) }}</span>
             <span class="hidden w-20 shrink-0 text-xs text-muted xl:block">{{ EMAIL_SOURCE_LABELS[entry.source] || entry.source }}</span>
             <UIcon v-if="entry.testMode" name="i-lucide-flask-conical" class="size-3.5 shrink-0 text-dimmed" :aria-label="$t('emailLibrary.log.testMode')" />
             <span class="w-14 shrink-0 text-right text-xs text-muted">{{ logTime(entry.createdAt) }}</span>

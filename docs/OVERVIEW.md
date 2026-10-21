@@ -9,12 +9,14 @@ project in the workspace at once:
 - **At a glance**: unread and open conversations across the workspace, net
   revenue against the period before, and MRR. Agents see open error reports
   instead of the revenue tiles.
+- **Needs attention**: one list for every project, above the cards (below).
 - **Unread messages**: the latest conversations waiting on a reply, newest
   first. Each one opens in the inbox.
 - **Revenue by project**: net revenue by month across the workspace, then each
   project's net revenue and MRR with its share of the total.
 
-The panel reloads it as messages arrive. On the web it is `/overview` (`G` then
+The panel reloads it as messages arrive. The inbox's unread badge and the count
+beside Overview in the sidebar are kept live on every page, not only here. On the web it is `/overview` (`G` then
 `O`). In the native app it is the first tab on iPhone, and the top of the
 sidebar on iPad and Mac (`⌘0`).
 
@@ -78,4 +80,110 @@ curl https://YOUR-SUPPORT-HOST/v1/admin/overview?range=90d \
 - It is read-only and safe to poll. It reads what has already synced and never
   calls Stripe.
 
-There is no embed: the overview is for your team, not your users.
+## Needs attention
+
+One list of what waits on someone, across the workspace (and, for one project,
+on its own overview). It covers:
+
+| Kind | What it counts | Opens |
+|---|---|---|
+| `drafts` | Changelog drafts waiting for approval (every draft is reviewed before it publishes, including the ones AI writes from your commits) | Changelog |
+| `sync` | A contact source or a Stripe connection whose last sync failed. One row each, with the error under it | Contacts → Sources, Revenue |
+| `bounces` | Emails that bounced, drew a complaint, failed or were suppressed in the last 7 days | Email → Log |
+| `alerts` | Error alerts that fired in the last 24 hours | Errors |
+| `paused` | Campaigns and sequences paused by the reputation guard (hosted edition), with the reason | The email log |
+| `errors` | Open error reports | Errors |
+| `documents` | Knowledge documents that would not process | Knowledge |
+| `triage` | Feedback posts still in an open status | Feedback |
+
+A project's own overview adds `unread`, its conversations waiting on a reply
+(the workspace list leaves those to the inbox badge). Rows are grouped per
+project and kind, newest first, and a project with nothing to say adds nothing.
+
+`GET /v1/admin/attention` returns the workspace list. It accepts an operator
+session or an admin key; a key limited to some projects sees only those. It is
+cached for 15 seconds per workspace, so polling it is cheap (`?fresh=1` skips the cache). The panel reads it
+every minute and when the tab comes back.
+
+```bash
+curl https://YOUR-SUPPORT-HOST/v1/admin/attention \
+  -H "Authorization: Bearer ak_…"
+```
+
+```json
+{
+  "unreadMessages": 5,
+  "total": 4,
+  "items": [
+    { "key": "drafts:proj_123", "kind": "drafts", "projectId": "proj_123", "count": 2, "value": "CSV export", "detail": "", "section": "changelog", "at": "2026-10-21T09:12:00.000Z" },
+    { "key": "sync:stripe:proj_123", "kind": "sync", "projectId": "proj_123", "count": 1, "value": "Stripe", "detail": "Stripe answered 401: Invalid API Key", "section": "revenue", "at": "2026-10-21T08:00:00.000Z" }
+  ]
+}
+```
+
+- `total` is the sum of the `count`s: the number beside Overview in the sidebar.
+- `value` names what a row is about (the failing integration, the newest draft's
+  title); `detail` is the error behind it. `section` is the page that deals with
+  it, as a path under the project (`email?view=log`).
+- `unreadMessages` here can be up to 15 seconds old. For the live inbox badge call
+  `GET /v1/admin/unread`, which is never cached and returns `{ "unreadMessages": 5 }`.
+  It counts unread customer messages outside the archive, and stops at 1,000
+  conversations, as the inbox does. The panel recounts whenever a message
+  arrives on the event stream (`GET /v1/admin/events`).
+
+## Setup checklist
+
+A project's overview ends its page with a checklist of what is wired up. It is
+judged from what HelpBites has seen, never from a box someone ticked:
+
+| Row | Done when |
+|---|---|
+| Chat widget on your site | The widget has loaded on a page of your site (allowing an origin is not enough) |
+| Users identified | Your backend signed an identity token HelpBites accepted. Where email-only sign-in is on, a missing token is not a failure |
+| Someone is told about new chats | A notify address is set and this server can send mail, or a team member's phone gets push notifications |
+| Email sender | Mail can go out: the server has a Mailgun key and the project (or the server) has a from address and domain |
+| AI assistant ready | An assistant is active, has auto-reply on, an AI provider and knowledge to read. Not live is flagged, not just left undone |
+| Stripe | Connected and the last sync did not fail |
+| GitHub | At least one repository is linked |
+| Error tracking | A tracker is connected |
+
+Each row has a `state` (`done`, `todo`, `attention`), and the optional ones
+(assistant, Stripe, GitHub, errors, and identity where email-only sign-in is on)
+say so. A section a project hides from its sidebar takes its row with it, and a
+member who cannot use Stripe is not shown that row.
+
+`GET /v1/admin/projects/:id/setup` returns it; the project overview carries the
+same `setup` object next to `stats`, `attention` and `activity`.
+
+```json
+{
+  "done": 2, "total": 3,
+  "items": [
+    { "key": "widget", "state": "done", "reason": "seen", "value": "2026-10-21T08:00:00.000Z", "section": "dev", "optional": false },
+    { "key": "identity", "state": "todo", "reason": "missing", "value": "", "section": "dev", "optional": false },
+    { "key": "sender", "state": "done", "reason": "ready", "value": "hello@mail.acme.app", "section": "email?view=settings", "optional": false }
+  ]
+}
+```
+
+`reason` is a code (the full list is `SETUP_REASONS` in `shared/setup.ts`) and
+`value` is what it is about, so a client words it in its own language. The
+project overview no longer returns `health`; the checklist replaces it.
+
+## Hiding what a project does not use
+
+The sidebar groups a project's sections as Support (Conversations, Knowledge
+base, Assistants, Ticket types), Product (Feedback, Planning, Changelog,
+Onboarding), Grow (Contacts, Forms, Email, Revenue), Site (Pages, Blog, Legal,
+Brand) and Build (Errors, Flags, Install & API), with Overview above them and
+Settings below. **Project → Settings → Sidebar** takes out the ones the project
+does not use, in the sidebar and the ⌘K list, in the web panel and the native
+app. Nothing is deleted: the pages and the API keep working, and a hidden section
+stays in the sidebar while you are on it. Overview and Settings cannot be hidden.
+
+Through the API it is `hiddenSections` on the project:
+`PATCH /v1/admin/projects/:id` with `{ "hiddenSections": ["revenue", "pages"] }`.
+Unknown names, `overview` and `settings` are refused with a 400.
+
+There is no embed: the overview, the checklist and this list are for your team,
+not your users.

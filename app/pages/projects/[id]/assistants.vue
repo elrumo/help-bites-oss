@@ -21,7 +21,8 @@
         <span class="grid size-5 shrink-0 place-items-center rounded-md bg-primary-500/12 text-primary"><UIcon name="i-lucide-sparkles" class="size-3.5" /></span>
         <span class="shrink-0 font-medium text-highlighted">{{ a.name }}</span>
         <span class="min-w-0 flex-1 truncate text-muted">{{ a.description || a.model }}</span>
-        <span v-if="a.autoReply" class="hidden items-center gap-1 text-xs text-muted sm:inline-flex"><UIcon name="i-lucide-zap" class="size-3.5" />{{ $t('projectTools.assistants.autoReply') }}</span>
+        <!-- Only an active assistant answers: a draft with the switch on says nothing yet. -->
+        <span v-if="a.autoReply && a.status === 'active'" class="hidden items-center gap-1 text-xs text-muted sm:inline-flex"><UIcon name="i-lucide-zap" class="size-3.5" />{{ $t('projectTools.assistants.autoReply') }}</span>
         <StatusDot :status="a.status" />
       </NuxtLink>
     </div>

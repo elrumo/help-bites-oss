@@ -21,7 +21,7 @@ const kind = ref('parse')
 const name = ref('')
 const conn = reactive({ serverUrl: '', appId: '', className: '_User', table: '', idField: 'id', updatedField: '', collection: 'users' })
 const secret = reactive({ masterKey: '', url: '', json: '' })
-const mapping = reactive({ email: '', externalId: '', name: '', tags: '', subscribed: '' })
+const mapping = reactive({ email: '', externalId: '', name: '', language: '', tags: '', subscribed: '' })
 const asAttributes = ref<string[]>([])
 const consent = ref<'keep' | 'subscribed'>('keep')
 const everyMinutes = ref(60)
@@ -40,7 +40,7 @@ watch(open, (value) => {
   Object.assign(conn, { serverUrl: c?.serverUrl || '', appId: c?.appId || '', className: c?.className || '_User', table: c?.table || '', idField: s?.kind === 'postgres' ? c?.idField || 'id' : 'id', updatedField: s?.kind === 'parse' ? '' : c?.updatedField || '', collection: c?.collection || 'users' })
   Object.assign(secret, { masterKey: '', url: '', json: '' })
   const m = c?.mapping || {}
-  Object.assign(mapping, { email: m.email || '', externalId: m.externalId || '', name: m.name || '', tags: m.tags || '', subscribed: m.subscribed || '' })
+  Object.assign(mapping, { email: m.email || '', externalId: m.externalId || '', name: m.name || '', language: m.language || '', tags: m.tags || '', subscribed: m.subscribed || '' })
   asAttributes.value = Object.values(m.attributes || {})
   consent.value = c?.consent || 'keep'
   everyMinutes.value = c?.everyMinutes ?? 60
@@ -78,6 +78,7 @@ async function test() {
     mapping.email ||= pick(/^e?mail$/) || pick(/mail/)
     mapping.externalId ||= kind.value === 'parse' ? 'objectId' : kind.value === 'firestore' ? 'id' : conn.idField
     mapping.name ||= pick(/^(name|fullname|displayname|username)$/)
+    mapping.language ||= pick(/^(language|lang|locale|preferredlanguage)$/)
   } catch (e: any) {
     toast.add({ title: e?.message || t('contacts.sources.connectError'), color: 'error' })
   } finally {
@@ -152,6 +153,7 @@ const cell = (value: unknown) => (value === null || value === undefined ? '' : t
             <UFormField :label="$t('contacts.form.email')"><OptionalSelect v-model="mapping.email" :items="fieldItems" class="w-full" /></UFormField>
             <UFormField :label="$t('contacts.form.userId')" :hint="$t('contacts.sources.userIdHint')"><OptionalSelect v-model="mapping.externalId" :items="fieldItems" class="w-full" /></UFormField>
             <UFormField :label="$t('common.name')"><OptionalSelect v-model="mapping.name" :items="fieldItems" class="w-full" /></UFormField>
+            <UFormField :label="$t('contacts.form.language')"><OptionalSelect v-model="mapping.language" :items="fieldItems" class="w-full" /></UFormField>
             <UFormField :label="$t('contacts.form.tags')"><OptionalSelect v-model="mapping.tags" :items="fieldItems" class="w-full" /></UFormField>
             <UFormField :label="$t('contacts.sources.optedIn')" :hint="$t('contacts.sources.optedInHint')"><OptionalSelect v-model="mapping.subscribed" :items="fieldItems" class="w-full" /></UFormField>
             <UFormField :label="$t('contacts.sources.sync')"><USelect v-model="everyMinutes" :items="scheduleItems" value-key="value" class="w-full" /></UFormField>

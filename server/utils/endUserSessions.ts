@@ -49,6 +49,7 @@ async function createAnonymousRow(project: ParseObject, email: string, name: str
   row.set('pendingEmail', email)
   if (name) row.set('name', name)
   row.set('subscription', 'none')
+  row.set('origin', { type: 'app', id: '', at: new Date().toISOString() })
   row.set('anonWrites', 0)
   row.set('lastSeenAt', new Date())
   await row.save(null, MASTER)

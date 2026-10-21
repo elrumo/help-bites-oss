@@ -235,14 +235,14 @@ export async function publishCmsEntry(project: ParseObject, row: ParseObject): P
   row.set('status', 'published')
   row.set('publishedAt', new Date())
   await row.save(null, MASTER)
-  await emitWebhooks(project, [{ type: 'cms.entry.published', data: { entry: { id: row.id, slug: row.get('slug'), type: row.get('type'), version: row.get('version'), publishedAt: iso(row.get('publishedAt')) } } }])
+  await emitDomainEvent(project, 'cms.entry.published', { entry: { id: row.id, slug: row.get('slug'), type: row.get('type'), version: row.get('version'), publishedAt: iso(row.get('publishedAt')) } })
 }
 
 /** Visitors get a 404; the published copy is kept for the next publish to replace. */
 export async function unpublishCmsEntry(project: ParseObject, row: ParseObject): Promise<void> {
   row.set('status', 'draft')
   await row.save(null, MASTER)
-  await emitWebhooks(project, [{ type: 'cms.entry.unpublished', data: { entry: { id: row.id, slug: row.get('slug'), type: row.get('type') } } }])
+  await emitDomainEvent(project, 'cms.entry.unpublished', { entry: { id: row.id, slug: row.get('slug'), type: row.get('type') } })
 }
 
 // ---- settings --------------------------------------------------------------------
@@ -408,7 +408,7 @@ export async function listPublishedCmsEntries(project: ParseObject, options: { t
 
 /** A published entry's body as HTML and the CSS it needs, for a site that shows it as is. */
 export function cmsEntryHtml(project: ParseObject, entry: ReturnType<typeof toPublicCmsEntry>, library: CmsLibrary, host: string) {
-  return renderBlocks(entry.content, entry.style, entry.style.accent || projectAccent(project) || '#5e6ad2', { library, pk: String(project.get('publicKey') || ''), host })
+  return renderBlocks(entry.content, entry.style, entry.style.accent || projectAccent(project), { library, pk: String(project.get('publicKey') || ''), host })
 }
 
 /** A hosted page: the whole HTML document and its CSP, or null for a 404. */

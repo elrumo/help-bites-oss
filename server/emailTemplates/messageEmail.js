@@ -47,14 +47,14 @@ const messageEmailTemplate = `
               <tr>
                 <td style="padding: 8px 36px 40px 36px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
                   <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #94a3b8;">
-                    You can reply to this conversation from your {{appName}} inbox.
+                    {{note}}
                   </p>
                 </td>
               </tr>
             </tbody>
           </table>
           <p style="margin: 20px auto 0 auto; max-width: 520px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #94a3b8; text-align: center;">
-            You are receiving this because you have a {{appName}} account.
+            {{reason}}
           </p>
           {{poweredBy}}
         </td>

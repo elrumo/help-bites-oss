@@ -1,4 +1,4 @@
-import { CONTACT_SUBSCRIPTIONS } from '#shared/contacts'
+import { CONTACT_ORIGIN_TYPES, CONTACT_SUBSCRIPTIONS } from '#shared/contacts'
 import { billingRules } from '#shared/stripe'
 import { compileSegmentFilter } from '#shared/segments'
 
@@ -14,6 +14,8 @@ defineRouteMeta({
       { name: 'q', in: 'query', schema: { type: 'string' } },
       { name: 'tag', in: 'query', schema: { type: 'string' } },
       { name: 'subscription', in: 'query', schema: { type: 'string', enum: ['none', 'pending', 'subscribed', 'unsubscribed'] } },
+      { name: 'origin', in: 'query', schema: { type: 'string', enum: ['app', 'lead_form', 'signup', 'import', 'sync', 'stripe', 'api', 'panel', 'feedback'] }, description: 'How they were added (`origin.type`).' },
+      { name: 'leadForm', in: 'query', schema: { type: 'string' }, description: 'Only people who signed up through this lead form (its id).' },
       { name: 'updatedSince', in: 'query', schema: { type: 'string', format: 'date-time' }, description: 'Changed at or after this time: poll it to mirror unsubscribes into your database.' },
       { name: 'externalId', in: 'query', schema: { type: 'string' } },
       { name: 'email', in: 'query', schema: { type: 'string' } },
@@ -39,6 +41,8 @@ export default defineEventHandler(async (event) => {
   if (updatedSince && Number.isNaN(updatedSince.getTime())) throw createError({ statusCode: 400, statusMessage: 'updatedSince must be an ISO date' })
   const subscription = text('subscription')
   if (subscription && !CONTACT_SUBSCRIPTIONS.includes(subscription as never)) throw createError({ statusCode: 400, statusMessage: 'Unknown subscription' })
+  const origin = text('origin')
+  if (origin && !CONTACT_ORIGIN_TYPES.includes(origin as never)) throw createError({ statusCode: 400, statusMessage: 'Unknown origin' })
 
   // The segment and the billing filters both narrow the list.
   const billing = billingRules(text('billing'), text('minRevenue') ? Number(text('minRevenue')) : undefined)
@@ -48,6 +52,8 @@ export default defineEventHandler(async (event) => {
     q: text('q'),
     tag: text('tag'),
     subscription,
+    origin,
+    leadForm: text('leadForm'),
     updatedSince,
     cursor: text('cursor'),
     limit: Number(query.limit) || 50

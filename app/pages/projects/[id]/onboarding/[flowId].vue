@@ -103,6 +103,9 @@
                   <UFormField :label="$t('projectTools.onboarding.buttonLabel')">
                     <UInput v-model="step.buttonLabel" :maxlength="ONBOARDING_LIMITS.label" :placeholder="i === form.steps.length - 1 ? $t('projectTools.onboarding.getStarted') : $t('projectTools.onboarding.continue')" class="w-full" />
                   </UFormField>
+                  <UFormField v-if="pricingTables.length || step.pricingTable" :label="$t('projectTools.onboarding.pricingTable')" :help="pricingHelp(step.pricingTable)" class="sm:col-span-2">
+                    <OptionalSelect v-model="step.pricingTable" :items="pricingItems" :none-label="$t('projectTools.onboarding.noPricingTable')" class="w-full" />
+                  </UFormField>
                 </div>
               </div>
             </div>
@@ -178,6 +181,7 @@
 
 <script setup lang="ts">
 import { ONBOARDING_FONTS, ONBOARDING_KEY, ONBOARDING_LIMITS, ONBOARDING_PROGRESS, localizeOnboarding, newStepId, onboardingTexts, translationTexts, type OnboardingOptions, type OnboardingStep, type OnboardingStepText, type OnboardingStyle, type OnboardingTranslations } from '#shared/onboarding'
+import type { PublicPricingTable } from '#shared/pricing'
 
 definePageMeta({ middleware: 'agent' })
 
@@ -347,7 +351,7 @@ function move(index: number, by: number) {
 }
 
 function addStep() {
-  form.value.steps.push({ id: newStepId(), title: '', body: '', imageUrl: '', imageAlt: '', buttonLabel: '' })
+  form.value.steps.push({ id: newStepId(), title: '', body: '', imageUrl: '', imageAlt: '', buttonLabel: '', pricingTable: '' })
   previewStep.value = form.value.steps.length - 1
 }
 
@@ -387,8 +391,16 @@ async function upload(event: Event) {
 
 const kitImages = ref<{ id: string, name: string, url: string }[]>([])
 
+// ---- a pricing table on a step (a paywall at the end of the tour) ----
+const pricingTables = ref<{ key: string, name: string, status: string, published: PublicPricingTable | null }[]>([])
+const pricingItems = computed(() => pricingTables.value.map(table => ({ value: table.key, label: table.status === 'published' ? table.name : `${table.name} (${t('projectTools.onboarding.pricingDraft')})` })))
+function pricingHelp(key: string) {
+  const table = pricingTables.value.find(item => item.key === key)
+  return key && table?.status !== 'published' ? t('projectTools.onboarding.pricingNotPublished') : t('projectTools.onboarding.pricingTableHint')
+}
+
 // ---- look ----
-const projectAccent = computed(() => project.value?.theme?.accent || '#5e6ad2')
+const projectAccent = computed(() => project.value?.theme?.accent || '#4f46e5')
 const colourFields = computed(() => [
   { key: 'accent' as const, label: t('projectTools.onboarding.accent'), empty: t('projectTools.onboarding.projectAccent'), fallback: projectAccent.value },
   { key: 'background' as const, label: t('projectTools.onboarding.background'), empty: t('projectTools.onboarding.followsTheme'), fallback: previewTheme.value === 'dark' ? '#18181b' : '#ffffff' },
@@ -441,15 +453,23 @@ function drawPreview() {
     target: previewEl.value,
     step: previewStep.value,
     theme: previewTheme.value,
-    flow: { key: form.value.key, locale: lang.value || form.value.locale, version: flow.value.version, style, options: form.value.options, ...localizeOnboarding(form.value.name, form.value.steps, lang.value ? form.value.translations[lang.value] : undefined) }
+    flow: { key: form.value.key, locale: lang.value || form.value.locale, version: flow.value.version, style, options: form.value.options, ...withPricing(localizeOnboarding(form.value.name, form.value.steps, lang.value ? form.value.translations[lang.value] : undefined)) }
   }])
 }
 
-watch([form, lang, previewStep, previewTheme, previewEl, projectAccent], drawPreview, { deep: true, flush: 'post' })
+/** Steps with their pricing table as apps get it now (its published version). */
+function withPricing<T extends { steps: OnboardingStep[] }>(copy: T): T {
+  return { ...copy, steps: copy.steps.map(step => (step.pricingTable ? { ...step, pricing: pricingTables.value.find(table => table.key === step.pricingTable)?.published || null } : step)) }
+}
+
+watch([form, lang, previewStep, previewTheme, previewEl, projectAccent, pricingTables], drawPreview, { deep: true, flush: 'post' })
 
 onMounted(async () => {
   if (!project.value) loadProjects().catch(() => {})
   await load()
+  api<{ tables: { key: string, name: string, status: string, published: PublicPricingTable | null }[] }>('/admin/pricing-tables', { query: { project: id } })
+    .then(({ tables }) => { pricingTables.value = tables })
+    .catch(() => {})
   api<{ assets: { id: string, name: string, url: string, mime: string }[] }>('/admin/brand', { query: { project: id } })
     .then(({ assets }) => { kitImages.value = assets.filter(a => a.mime.startsWith('image/') && a.mime !== 'image/x-icon') })
     .catch(() => {})

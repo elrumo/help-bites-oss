@@ -34,6 +34,7 @@ import {
 import { anonymousWriteGate, revokeEndUserSessions } from './endUserSessions'
 import type { IdentityClaims } from './jwt'
 import type { OutgoingEmail } from './emailDelivery'
+import { emitDomainEventLater } from './domainEvents'
 
 type ParseQuery = InstanceType<ReturnType<typeof useParse>['Query']>
 
@@ -54,7 +55,9 @@ type ParseQuery = InstanceType<ReturnType<typeof useParse>['Query']>
 
 export type FeedbackActor =
   | { kind: 'anonymous' }
-  | { kind: 'user', externalId: string, name: string, isAdmin: boolean, claims: IdentityClaims }
+  // `onBehalf`: an operator acting for the customer (a post filed from their conversation): not rate limited
+  // as the customer, and it does not count as the customer showing up.
+  | { kind: 'user', externalId: string, name: string, isAdmin: boolean, claims: IdentityClaims, onBehalf?: boolean }
   | { kind: 'agent', agent: ParseObject }
 
 export type FeedbackContext = { project: ParseObject, config: FeedbackBoardConfig, actor: FeedbackActor }
@@ -564,7 +567,7 @@ async function stampAuthor(row: ParseObject, ctx: FeedbackContext): Promise<void
     row.set('authorIsTeam', true)
     row.set('agent', actor.agent)
   } else if (actor.kind === 'user') {
-    const endUser = await ensureEndUser(ctx.project, actor.claims)
+    const endUser = await ensureEndUser(ctx.project, actor.claims, { touch: !actor.onBehalf })
     row.set('authorExternalId', actor.externalId)
     // Names are public on boards that show them, so never fall back to the email.
     row.set('authorName', String(actor.claims.name || endUser.get('name') || endUser.get('username') || '').trim().slice(0, 120))
@@ -642,6 +645,35 @@ async function subscribe(project: ParseObject, row: ParseObject, subscriberIds: 
   if (fresh.length) await Parse.Object.saveAll(fresh, MASTER)
 }
 
+/** Make someone follow a post (a no-op when they already do): for operators acting for a customer. */
+export async function followFeedbackPost(project: ParseObject, post: ParseObject, externalId: string): Promise<void> {
+  await subscribe(project, post, [externalId])
+}
+
+/**
+ * A post written by a contact, filed by an operator on their behalf (from their
+ * conversation). It goes through createFeedbackPost as that person, so it is
+ * validated like their own posts, they start with a vote and they follow it.
+ * A contact with no user id (`externalId`) cannot be an author or a follower.
+ */
+export async function createFeedbackPostForContact(project: ParseObject, contact: ParseObject, payload: unknown): Promise<ParseObject> {
+  const externalId = String(contact.get('externalId') || '')
+  if (!externalId) throw createError({ statusCode: 409, statusMessage: 'This contact has no user id, so they cannot author or follow a post. Link an existing post instead.' })
+  const now = Math.floor(Date.now() / 1000)
+  const claims: IdentityClaims = {
+    iss: String(project.get('publicKey') || ''),
+    sub: externalId,
+    name: String(contact.get('name') || ''),
+    email: String(contact.get('email') || ''),
+    username: String(contact.get('username') || ''),
+    avatar: String(contact.get('avatarUrl') || ''),
+    iat: now,
+    exp: now + 60
+  }
+  const actor: FeedbackActor = { kind: 'user', externalId, name: claims.name || '', isAdmin: false, onBehalf: true, claims }
+  return await createFeedbackPost({ project, config: getFeedbackConfig(project), actor }, payload)
+}
+
 /** Re-read a row after an atomic array op, so responses and events carry the stored value. */
 async function reload(row: ParseObject): Promise<ParseObject> {
   const query = row.className === 'FeedbackPost' ? postQuery() : new (useParse()).Query(row.className).include('endUser')
@@ -654,7 +686,7 @@ export async function createFeedbackPost(ctx: FeedbackContext, payload: unknown)
   const { values, errors } = readFeedbackPostInput(payload, ctx.config, { admin, create: true })
   if (errors.length) badRequest(errors)
   if (values.pinnedCommentId) badRequest(['A new post has no comments to pin'])
-  if (ctx.actor.kind === 'user') await rateLimit(`sb:rl:fbpost:${ctx.project.id}:${ctx.actor.externalId}`, LIMITS.feedbackPostsPerUser.limit, LIMITS.feedbackPostsPerUser.window)
+  if (ctx.actor.kind === 'user' && !ctx.actor.onBehalf) await rateLimit(`sb:rl:fbpost:${ctx.project.id}:${ctx.actor.externalId}`, LIMITS.feedbackPostsPerUser.limit, LIMITS.feedbackPostsPerUser.window)
 
   const Parse = useParse()
   const now = new Date()
@@ -693,6 +725,8 @@ export async function createFeedbackPost(ctx: FeedbackContext, payload: unknown)
     await subscribe(ctx.project, row, [ctx.actor.externalId])
   }
   await publishPost(ctx, row, 'feedback.post.created')
+  const authorId = pointerId(row.get('endUser'))
+  emitDomainEventLater(ctx.project, 'feedback.post.created', { postId: row.id, number: row.get('number') ?? null, ...(authorId ? { contact: { id: authorId, externalId: String(row.get('authorExternalId') || '') } } : {}) })
   return row
 }
 
@@ -736,6 +770,7 @@ export async function updateFeedbackPost(ctx: FeedbackContext, row: ParseObject,
   }
   await row.save(null, MASTER)
   await publishPost(ctx, row)
+  if (transition.changed) emitDomainEventLater(ctx.project, 'feedback.post.status_changed', { postId: row.id, number: row.get('number') ?? null, from, to })
   if (transition.changed) void notifyFeedbackStatusChange(ctx, row, to)
   // A post that has just shipped may get a draft changelog entry (when the project asks for it).
   if (transition.changed && feedbackStatusCategory(ctx.config, from) !== 'done' && feedbackStatusCategory(ctx.config, to) === 'done') {
@@ -807,6 +842,7 @@ export async function voteOnFeedbackPost(ctx: FeedbackContext, row: ParseObject,
   await recountVotes(row)
   await row.save(null, MASTER)
   await publishPost(ctx, row)
+  if (voted) emitDomainEventLater(ctx.project, 'feedback.post.voted', { postId: row.id, number: row.get('number') ?? null, voterExternalId: ctx.actor.externalId })
   return voted
 }
 
@@ -1148,6 +1184,37 @@ async function emailEndUsers(ctx: FeedbackContext, row: ParseObject, externalIds
   })
 }
 
+export type FeedbackPersonMail = { email: string, name: string, subject: string, body: string, ctaUrl: string, ctaLabel: string }
+
+/**
+ * Mail that is written per person (the "shipped" mail names the posts each
+ * follower follows). Same gates, sender, template and log as `emailEndUsers`:
+ * the board's `emailNotifications` switch, the project's mailer and sender.
+ * The caller has already chosen the recipients (opt-outs and missing
+ * addresses included). Returns how many went out; a failed batch is logged.
+ */
+export async function emailFeedbackFollowers(ctx: FeedbackContext, kind: string, senderName: string, people: FeedbackPersonMail[]): Promise<number> {
+  if (!ctx.config.emailNotifications || !people.length) return 0
+  const appName = String(ctx.project.get('name') || 'Support')
+  const sender = projectEmailSender(ctx.project, { fromName: `${appName} feedback` })
+  if (!isMailerConfigured(sender)) return 0
+  const batchId = newEmailBatchId()
+  const poweredBy = await poweredByFor(ctx.project)
+  let sent = 0
+  for (let start = 0; start < people.length; start += 50) {
+    const mails: OutgoingEmail[] = people.slice(start, start + 50).map((person) => {
+      const { subject, html, text } = renderMessageEmail({ appName, senderName, recipientName: person.name, subject: person.subject, body: person.body, ctaUrl: person.ctaUrl, ctaLabel: person.ctaLabel, attachmentUrls: [], poweredBy })
+      return { project: ctx.project, to: { email: person.email, name: person.name }, subject, html, text, sender, log: { source: 'feedback', kind: 'message', templateName: `Feedback: ${kind}`, batchId, actor: SYSTEM_EMAIL_ACTOR } }
+    })
+    try {
+      sent += (await deliverEmails(mails)).filter(result => result.status === 'sent').length
+    } catch (error) {
+      console.error('[feedback] email failed:', (error as Error).message)
+    }
+  }
+  return sent
+}
+
 function actorExternalId(actor: FeedbackActor): string {
   return actor.kind === 'user' ? actor.externalId : ''
 }
@@ -1251,6 +1318,7 @@ async function importPerson(project: ParseObject, person: FeedbackImportPerson):
     endUser = new (Parse.Object.extend('EndUser'))() as ParseObject
     endUser.set('project', project)
     endUser.set('externalId', externalId)
+    endUser.set('origin', { type: 'feedback', id: '', at: new Date().toISOString() })
   }
   let dirty = endUser.isNew()
   // What the user's own token said wins over history: only fill blanks.
@@ -1496,10 +1564,16 @@ export async function importFeedbackPost(project: ParseObject, config: FeedbackB
 export async function eraseEndUserData(project: ParseObject, who: string | ParseObject): Promise<Record<string, number>> {
   const Parse = useParse()
   const externalId = typeof who === 'string' ? who : String(who.get('externalId') || '')
-  const counts = { posts: 0, comments: 0, votes: 0, reactions: 0, subscriptions: 0, conversations: 0, messages: 0, emailLogs: 0, enrollments: 0, endUsers: 0 }
+  const counts = { posts: 0, comments: 0, votes: 0, reactions: 0, subscriptions: 0, changelogSubscriptions: 0, conversations: 0, messages: 0, emailLogs: 0, enrollments: 0, files: 0, endUsers: 0 }
   if (externalId) await eraseFeedbackData(project, externalId, counts)
 
   const endUser = typeof who === 'string' ? await findEndUser(project, externalId) : who
+  // Changelog subscriptions are keyed by address as often as by user id: one made
+  // signed out (or by a newsletter-only contact) carries no id at all.
+  counts.changelogSubscriptions = await eraseChangelogSubscriptions(project, {
+    externalId,
+    emails: endUser ? [String(endUser.get('email') || ''), String(endUser.get('pendingEmail') || '')] : []
+  })
   if (endUser) {
     // A page at a time until none are left: an erasure must not stop at the first thousand.
     for (;;) {
@@ -1524,6 +1598,8 @@ export async function eraseEndUserData(project: ParseObject, who: string | Parse
     if (pending) counts.emailLogs += (await destroyWhere('EmailLog', q => q.equalTo('project', project).equalTo('to', pending))).length
     await revokeEndUserSessions(endUser)
     counts.enrollments = (await destroyWhere('SequenceEnrollment', q => q.equalTo('contact', endUser)).catch(() => [])).length
+    // Files they sent through a lead form: the rows and the stored objects.
+    counts.files = await eraseLeadFiles(project, endUser)
     // Queued webhook events about them carry their address; they go too.
     await destroyWhere('WebhookDelivery', q => q.equalTo('project', project).equalTo('status', 'pending').equalTo('payload.data.contact.id', endUser.id)).catch(() => [])
     await endUser.destroy(MASTER)
@@ -1580,7 +1656,9 @@ async function eraseFeedbackData(project: ParseObject, externalId: string, count
   }
 
   counts.changelogComments = await eraseChangelogComments(project, externalId)
-  counts.changelogSubscriptions = await eraseChangelogSubscriptions(project, externalId)
+  const blog = await eraseBlogData(project, externalId)
+  counts.blogComments = blog.comments
+  counts.blogReactions = blog.reactions
   // The EndUser row and its conversations are eraseEndUserData's: removing
   // them here would hide the row from it, and with it the mail log,
   // enrollments and opt-out suppression it clears.

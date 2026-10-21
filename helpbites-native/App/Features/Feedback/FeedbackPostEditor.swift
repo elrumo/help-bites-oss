@@ -43,6 +43,7 @@ struct FeedbackPostEditor: View {
             if let current {
               boardLinks(current)
               changelogLinks(current)
+              GithubRefsSection(projectId: store.projectId, kind: "feedback", targetId: current.id)
               thread(current)
             }
           }
@@ -244,14 +245,14 @@ struct FeedbackPostEditor: View {
     return String(decoding: data, as: UTF8.self)
   }
 
-  // MARK: Board
+  // MARK: Planning
 
-  /// The board items this post feeds, when the server has project boards.
+  /// The planning items this post feeds, when the server has project planning.
   @ViewBuilder private func boardLinks(_ post: FeedbackPost) -> some View {
     if workspace.project(store.projectId)?.board != nil {
       VStack(alignment: .leading, spacing: 10) {
         Rectangle().fill(Theme.borderMuted).frame(height: 1).padding(.top, 12)
-        Text("Board").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+        Text("Planning").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
         BoardLinksSection(projectId: store.projectId, kind: "feedback", targetId: post.id, title: post.title, description: post.body)
           .padding(.horizontal, -8)
       }

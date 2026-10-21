@@ -21,6 +21,7 @@ A flow is a list of steps under a **key**, the name your app asks for it by
 | `body` | Up to 600 characters. Line breaks are kept. |
 | `imageUrl`, `imageAlt` | An optional picture (any https URL; uploads and brand kit files work too) and its description for screen readers. |
 | `buttonLabel` | The button text. Empty uses the client's own: **Continue**, and **Get started** on the last step. |
+| `pricingTable` | The key of one of the project's [pricing tables](PRICING.md) to show under the text, such as a paywall at the end of the tour; choosing a plan finishes the tour. The public flow carries the published table as the step's `pricing` (null while it is a draft). `onboarding.js` draws it; the Swift snippet below shows the step's text only. |
 
 A flow has up to 12 steps, and a project up to 50 flows. The flow also has a
 `style` and `options`:
@@ -75,6 +76,7 @@ Set them as `data-*` attributes or in `init`:
 | `fallback` | A selector for a `<script type="application/json">` holding an offline copy (see below), or the copy itself in `init`. |
 | `locale` | The translation to show, a language tag such as `es` or `pt-BR`. Defaults to your `<html lang>`, then the browser's language. A flow without that translation shows in its own language. See [Languages](LANGUAGES.md). |
 | `host` | Where HelpBites is, when you serve `onboarding.js` from your own site. |
+| `token` | The person's identity token, to report who finished the flow (see [Who finished it](#who-finished-it)). A string, or a function returning one or a promise of one. |
 
 ```html
 <script>
@@ -143,6 +145,70 @@ and tell it where HelpBites is:
 HelpBites (four seconds), then any copy it saved, then your offline copy. With
 none of them, it shows nothing. A step whose image does not load shows without
 it.
+
+## Who finished it
+
+Hand the script the person's [identity token](CONNECTING.md) (the one the chat and
+the board use) and it tells HelpBites when they finish or skip the flow. HelpBites
+keeps the latest outcome on their contact, so you can build the segment
+**Finished onboarding** (Contacts → Segments → *Finished onboarding is yes*) and
+send them a different sequence than the people who skipped it.
+
+```html
+<script src="https://YOUR-SUPPORT-HOST/onboarding.js" data-project="pk_…" data-flow="welcome" data-token="eyJ…" defer></script>
+```
+
+When the token is minted after the page loads, pass a function. It runs when the
+person finishes, not before:
+
+```js
+HelpBitesOnboarding.push(['init', {
+  token: () => fetch('/api/support/token').then(r => r.json()).then(r => r.token)
+}])
+```
+
+The report is best effort: with no token, a signed-out visitor, or a network
+error, the script does nothing and the dialog behaves as before. Only a **Get
+started** on the last step counts as `completed`; **Skip** and Escape are `skipped`
+and do not match the segment. The latest outcome replaces the one before, so
+someone who skipped and later takes the tour again becomes a finisher.
+
+Without the script, send it yourself. The route is public (it takes the identity
+token, not a key), so it works from a browser, a server or a phone:
+
+```bash
+curl -s -X POST https://YOUR-SUPPORT-HOST/v1/onboarding/PROJECT_PUBLIC_KEY/welcome/complete \
+  -H "authorization: Bearer $IDENTITY_TOKEN" -H 'content-type: application/json' \
+  -d '{ "outcome": "completed" }'     # or "skipped"
+```
+
+`404` when the key is not a flow of the token's project, `401` for a missing or
+invalid token. The person's contact is created if it did not exist yet. Each
+report also emits the `onboarding.completed` [event](EVENTS.md) (webhooks can subscribe to it, and a
+sequence can start from it) and shows up in the contact's activity (**Finished onboarding “welcome”**).
+
+From Swift, add this next to the snippet below and call it from `onFinish`:
+
+```swift
+extension HelpBitesOnboarding {
+  /// Tells HelpBites the person finished (true) or skipped (false) the flow. Best effort: it never throws.
+  static func report(host: URL, projectKey: String, flow key: String, token: String, completed: Bool) async {
+    var request = URLRequest(url: host.appending(path: "v1/onboarding/\(projectKey)/\(key)/complete"))
+    request.httpMethod = "POST"
+    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = try? JSONEncoder().encode(["outcome": completed ? "completed" : "skipped"])
+    _ = try? await URLSession.shared.data(for: request)
+  }
+}
+```
+
+```swift
+ContentView()
+  .helpBitesOnboarding(host: host, projectKey: "pk_…", flow: "welcome") { completed in
+    Task { await HelpBitesOnboarding.report(host: host, projectKey: "pk_…", flow: "welcome", token: session.helpBitesToken, completed: completed) }
+  }
+```
 
 ## Plug and play: Swift
 

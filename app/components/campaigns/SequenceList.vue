@@ -7,7 +7,8 @@
 import type { Sequence, SequenceStep, SequenceTrigger } from '#shared/marketing'
 import type { AdminProject } from '~~/server/utils/projects'
 import type { EmailTemplate } from '~~/server/utils/emails'
-import CampaignsTabs from '~/components/campaigns/CampaignsTabs.vue'
+import EmailSetupStrip from '~/components/email/EmailSetupStrip.vue'
+import EmailTabs from '~/components/email/EmailTabs.vue'
 
 const props = defineProps<{ project: AdminProject }>()
 
@@ -39,6 +40,36 @@ type EditStep = SequenceStep & { amount: number, unit: number }
 const toEdit = (s: SequenceStep): EditStep => {
   const unit = s.delayMinutes && s.delayMinutes % 1440 === 0 ? 1440 : s.delayMinutes && s.delayMinutes % 60 === 0 ? 60 : 1
   return { ...s, amount: s.delayMinutes / unit, unit }
+}
+
+type Recipe = { id: string, name: string, description: string, trigger: SequenceTrigger, steps: { delayMinutes: number, subject: string }[] }
+const recipesOpen = ref(false)
+const recipes = ref<Recipe[]>([])
+const installing = ref('')
+
+async function openRecipes() {
+  recipesOpen.value = true
+  if (recipes.value.length) return
+  try {
+    recipes.value = (await api<{ recipes: Recipe[] }>('/automations/recipes', { query: { project: props.project.id } })).recipes
+  } catch (e: any) {
+    toast.add({ title: e?.message || t('campaigns.sequences.recipes.loadError'), color: 'error' })
+  }
+}
+
+// A recipe lands as a draft: nothing is sent until the operator activates it.
+async function install(recipe: Recipe) {
+  installing.value = recipe.id
+  try {
+    await api(`/automations/recipes/${recipe.id}/install`, { method: 'POST', body: { project: props.project.id } })
+    recipesOpen.value = false
+    toast.add({ title: t('campaigns.sequences.recipes.installed', { name: recipe.name }), color: 'success' })
+    await load()
+  } catch (e: any) {
+    toast.add({ title: e?.message || t('campaigns.sequences.recipes.installError'), color: 'error' })
+  } finally {
+    installing.value = ''
+  }
 }
 
 const open = ref(false)
@@ -107,10 +138,15 @@ const STATUS_COLOR = { draft: 'neutral', active: 'success', paused: 'warning' } 
 
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="project.id" :title="$t('campaigns.title')">
-      <template #title><CampaignsTabs current="sequences" /></template>
-      <template #actions><UButton icon="i-lucide-plus" :label="$t('campaigns.sequences.new')" size="sm" @click="edit(null)" /></template>
+    <PageHeader :project-id="project.id" :title="$t('nav.email')">
+      <template #title><EmailTabs current="sequences" /></template>
+      <template #actions>
+        <UButton icon="i-lucide-wand-sparkles" :label="$t('campaigns.sequences.recipes.button')" size="sm" color="neutral" variant="outline" @click="openRecipes" />
+        <UButton icon="i-lucide-plus" :label="$t('campaigns.sequences.new')" size="sm" @click="edit(null)" />
+      </template>
     </PageHeader>
+    <EmailSetupStrip :project-id="project.id" scope="bulk" />
+    <PlanLock feature="sequences" />
 
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div v-if="loading" class="space-y-1 p-4"><USkeleton v-for="i in 3" :key="i" class="h-14" /></div>
@@ -129,6 +165,21 @@ const STATUS_COLOR = { draft: 'neutral', active: 'success', paused: 'warning' } 
       </ul>
     </div>
 
+    <UModal v-model:open="recipesOpen" :title="$t('campaigns.sequences.recipes.title')" :description="$t('campaigns.sequences.recipes.description')" :ui="{ content: 'max-w-xl' }">
+      <template #body>
+        <ul class="space-y-2 text-[13px]">
+          <li v-for="recipe in recipes" :key="recipe.id" class="flex items-start gap-3 rounded-lg border border-default p-3">
+            <div class="min-w-0 flex-1">
+              <p class="font-medium text-highlighted">{{ recipe.name }}</p>
+              <p class="text-xs text-muted">{{ recipe.description }}</p>
+              <p class="mt-1 text-xs text-dimmed">{{ describe(recipe.trigger) }} · {{ $t('campaigns.sequences.emailCount', recipe.steps.length) }}</p>
+            </div>
+            <UButton :label="$t('campaigns.sequences.recipes.use')" size="xs" :loading="installing === recipe.id" :disabled="!!installing" @click="install(recipe)" />
+          </li>
+        </ul>
+      </template>
+    </UModal>
+
     <UModal v-model:open="open" :title="editing ? $t('campaigns.sequences.edit') : $t('campaigns.sequences.new')" :description="$t('campaigns.sequences.formDescription')" :ui="{ content: 'max-w-2xl' }">
       <template #body>
         <form class="space-y-5 text-[13px]" @submit.prevent="save">
@@ -136,7 +187,7 @@ const STATUS_COLOR = { draft: 'neutral', active: 'success', paused: 'warning' } 
           <div class="grid gap-3 sm:grid-cols-2">
             <UFormField :label="$t('campaigns.sequences.startsWhen')"><USelect v-model="form.trigger.type" :items="triggerItems" value-key="value" class="w-full" /></UFormField>
             <UFormField v-if="form.trigger.type === 'subscribed'" :label="$t('campaigns.sequences.topic')"><OptionalSelect v-model="form.trigger.topic" :items="topicItems" :none-label="$t('campaigns.sequences.anyTopic')" class="w-full" :disabled="!project.marketing.topics.length" /></UFormField>
-            <UFormField v-else-if="form.trigger.type === 'event'" :label="$t('campaigns.sequences.event')" hint="POST /v1/track"><UInput v-model="form.trigger.event" placeholder="trial_started" class="w-full font-mono" /></UFormField>
+            <UFormField v-else-if="form.trigger.type === 'event'" :label="$t('campaigns.sequences.event')" hint="POST /v1/track · onboarding.completed"><UInput v-model="form.trigger.event" placeholder="trial_started" class="w-full font-mono" /></UFormField>
           </div>
 
           <ol class="space-y-2">

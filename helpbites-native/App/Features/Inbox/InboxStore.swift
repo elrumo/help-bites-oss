@@ -2,12 +2,13 @@ import Foundation
 import Observation
 
 // The inbox's state and every call it makes: the queue (GET /conversations,
-// filtered on the server, split into views on the client), the open
+// filtered and split into views on the server), the open
 // conversation, triage, replies and notes, and the live event stream that keeps
 // all of it current. Mirrors app/pages/inbox.vue.
 
-/// The view pills above the list. They filter the loaded page on the client,
-/// as the web panel does; their counts come from the server's facets.
+/// The view pills above the list. Each is a server query (`view=`), as on the web
+/// panel, and its count comes from the server under the same filters, so a
+/// pill's number is the rows it lists.
 enum InboxQueue: String, CaseIterable, Identifiable {
   case all, unassigned, mine, open, unread, archived
   var id: String { rawValue }
@@ -48,6 +49,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   var conversations: [Conversation] = []
   var endUsers: [String: EndUser] = [:]
   private(set) var counts = InboxCounts(status: [:], type: [:], assignee: [:])
+  private(set) var viewCounts: [String: Int] = [:]
   /// Unread messages across every project; the sidebar badge.
   var totalUnread = 0
   private(set) var unreadByProject: [String: Int] = [:]
@@ -77,6 +79,8 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   private(set) var project: InboxProjectInfo?
   /// Field values from the detail; live events always carry `fields: {}`.
   private(set) var fields: [String: JSONValue] = [:]
+  /// The customer panel's read for the open conversation (plan, earlier conversations, linked feedback); nil until it loads.
+  private(set) var context: ConversationHubContext?
   private(set) var threadLoading = false
   var threadError = ""
   var propertiesError = ""
@@ -96,6 +100,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
       hasMore = cached.hasMore
       totalUnread = cached.totalUnread
       counts = cached.counts ?? counts
+      viewCounts = cached.viewCounts ?? [:]
       unreadByProject = cached.unreadByProject ?? [:]
     }
   }
@@ -117,10 +122,23 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   // MARK: - Queue
 
   /// Changes whenever the server query does; the screen reloads on it.
-  var queryKey: String { [projectFilter, statusFilter, priorityFilter, typeFilter, search.trimmingCharacters(in: .whitespaces), queue == .archived ? "archived" : ""].joined(separator: "\u{1f}") }
+  var queryKey: String { [projectFilter, statusFilter, priorityFilter, typeFilter, search.trimmingCharacters(in: .whitespaces), queue.rawValue].joined(separator: "\u{1f}") }
   var filtersActive: Bool { !projectFilter.isEmpty || !statusFilter.isEmpty || !priorityFilter.isEmpty || !typeFilter.isEmpty }
 
   func clearFilters() { projectFilter = ""; statusFilter = ""; priorityFilter = ""; typeFilter = "" }
+
+  /// The list's query: filters, search and the view.
+  private func queueQuery() -> [String: String] {
+    var query: [String: String] = [:]
+    if !projectFilter.isEmpty { query["project"] = projectFilter }
+    if !statusFilter.isEmpty { query["status"] = statusFilter }
+    if !priorityFilter.isEmpty { query["priority"] = priorityFilter }
+    if !typeFilter.isEmpty { query["type"] = typeFilter }
+    if queue != .all { query["view"] = queue.rawValue }
+    let term = search.trimmingCharacters(in: .whitespaces)
+    if !term.isEmpty { query["q"] = term }
+    return query
+  }
 
   func refresh(more: Bool = false) async {
     guard !session.token.isEmpty else { return }
@@ -128,14 +146,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
     let run = generation
     loading = true
     error = ""
-    var query: [String: String] = [:]
-    if !projectFilter.isEmpty { query["project"] = projectFilter }
-    if !statusFilter.isEmpty { query["status"] = statusFilter }
-    if !priorityFilter.isEmpty { query["priority"] = priorityFilter }
-    if !typeFilter.isEmpty { query["type"] = typeFilter }
-    if queue == .archived { query["archived"] = "true" }
-    let term = search.trimmingCharacters(in: .whitespaces)
-    if !term.isEmpty { query["q"] = term }
+    var query = queueQuery()
     if more, let last = conversations.last?.lastMessageAt { query["before"] = last }
     do {
       let page: InboxResponse = try await session.get("/v1/admin/conversations", query: query)
@@ -146,11 +157,12 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
       } else {
         conversations = page.conversations
       }
-      if !more, !filtersActive, search.isEmpty, queue != .archived { SnapshotCache.save(page, "inbox") }
+      if !more, !filtersActive, search.isEmpty, queue == .all { SnapshotCache.save(page, "inbox") }
       endUsers.merge(page.endUsers) { _, new in new }
       hasMore = page.hasMore
       totalUnread = page.totalUnread
       counts = page.counts ?? InboxCounts(status: [:], type: [:], assignee: [:])
+      viewCounts = page.viewCounts ?? [:]
       unreadByProject = page.unreadByProject ?? [:]
       archivedCount = page.archivedCount ?? 0
       if let current, let row = conversations.first(where: { $0.id == current.id }) { self.current = row }
@@ -167,12 +179,14 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
     case .all, .archived: return conversations
     case .unassigned: return conversations.filter { ($0.assigneeId ?? "").isEmpty }
     case .mine: return conversations.filter { !me.isEmpty && $0.assigneeId == me }
-    case .open: return conversations.filter { $0.statusCategory == "open" || $0.status == "open" }
+    case .open: return conversations.filter { $0.statusCategory == "open" }
     case .unread: return conversations.filter { $0.unreadByAgent > 0 }
     }
   }
 
   func count(_ queue: InboxQueue) -> Int {
+    if let count = viewCounts[queue.rawValue] { return count }
+    // An older server: its facets, which ignore the list's filters.
     switch queue {
     case .all: conversations.count
     case .unassigned: counts.assignee["unassigned"] ?? 0
@@ -263,8 +277,10 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
       endUser = nil
       project = nil
       fields = [:]
+      context = nil
     }
     threadLoading = true
+    Task { await loadContext(id) }
     defer { if selectedId == id { threadLoading = false } }
     do {
       async let detailRequest: DetailResponse = session.get("/v1/admin/conversations/\(id)")
@@ -391,6 +407,58 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
     }
   }
 
+  // MARK: - The customer panel
+
+  func loadContext(_ id: String) async {
+    guard !id.isEmpty else { return }
+    // The panel's extra sections just stay out when this fails; the thread itself still works.
+    if let result: ConversationHubContext = try? await session.get("/v1/admin/conversations/\(id)/context"), selectedId == id { context = result }
+  }
+
+  /// Link or unlink a feedback post (a post id or `#12`). Linking makes the customer follow it when they can.
+  func linkFeedbackPost(_ postId: String, linked: Bool) async throws {
+    let id = selectedId
+    guard !id.isEmpty else { return }
+    struct Input: Encodable, Sendable { let postId: String; let linked: Bool }
+    let result: HubFeedbackLink = try await session.send("/v1/admin/conversations/\(id)/feedback-posts", body: Input(postId: postId, linked: linked))
+    applyFeedbackLink(result, to: id)
+  }
+
+  /// File a new post written by the customer, who follows it, and link it here.
+  func fileFeedbackPost(title: String, body: String) async throws {
+    let id = selectedId
+    guard !id.isEmpty else { return }
+    struct Create: Encodable, Sendable { let title: String; let body: String }
+    struct Input: Encodable, Sendable { let create: Create }
+    let result: HubFeedbackLink = try await session.send("/v1/admin/conversations/\(id)/feedback-posts", body: Input(create: Create(title: title, body: body)))
+    applyFeedbackLink(result, to: id)
+  }
+
+  private func applyFeedbackLink(_ result: HubFeedbackLink, to id: String) {
+    guard selectedId == id, var panel = context else { return }
+    if result.linked {
+      if let index = panel.feedbackPosts.firstIndex(where: { $0.id == result.post.id }) { panel.feedbackPosts[index] = result.post } else { panel.feedbackPosts.append(result.post) }
+    } else {
+      panel.feedbackPosts.removeAll { $0.id == result.post.id }
+    }
+    context = panel
+  }
+
+  /// "Save as FAQ": a new active FAQ in a knowledge model, from a reply and the question it answered.
+  func saveFaq(modelId: String, question: String, answer: String) async throws {
+    let id = selectedId
+    guard !id.isEmpty else { return }
+    struct Input: Encodable, Sendable { let modelId: String?; let question: String; let answer: String }
+    struct Saved: Decodable, Sendable {}
+    let _: Saved = try await session.send("/v1/admin/conversations/\(id)/faq", body: Input(modelId: modelId.isEmpty ? nil : modelId, question: question, answer: answer))
+  }
+
+  /// An AI draft of a reply for the operator to edit. Nothing is stored or sent.
+  func draftReply() async throws -> HubDraft {
+    let id = selectedId
+    return try await session.send("/v1/admin/conversations/\(id)/draft")
+  }
+
   /// Start a conversation as the team; returns its id.
   func createConversation(_ input: InboxStartInput) async throws -> String {
     struct Output: Decodable, Sendable { let conversation: Conversation; let endUser: EndUser }
@@ -471,6 +539,8 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
       if message.sender == "user" { Task { await markRead(event.conversationId) } }
       // A teammate changed field values; events carry only the keys.
       if message.kind == "event", message.event?["fields"] != nil { Task { await reloadFields(event.conversationId) } }
+      // A teammate linked or unlinked a feedback post from another window.
+      if message.kind == "event", message.event?["type"]?.inboxText.hasPrefix("feedback.") == true { Task { await loadContext(event.conversationId) } }
     case "message.updated":
       if open, let message = event.message { upsertMessage(message) }
     case "message.deleted":
@@ -501,6 +571,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   /// when they match the current filters. Returns whether a row was added.
   @discardableResult
   private func upsert(_ conversation: Conversation) -> Bool {
+    refreshCountsSoon()
     if current?.id == conversation.id { current = conversation }
     // Archived rows belong to the Archived view only; the queue never lists them.
     if (conversation.archivedAt != nil) != (queue == .archived) {
@@ -522,9 +593,26 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
 
   /// Drop a conversation everywhere, closing it if it is the open one.
   private func remove(_ id: String) {
+    refreshCountsSoon()
     conversations.removeAll { $0.id == id }
     if selectedId == id { deselect() }
     if current?.id == id { current = nil; messages = [] }
+  }
+
+  /// A row changed (triage, archive, a live event): the counts follow from the server, a moment later and once per burst.
+  private var countsTask: Task<Void, Never>?
+  private func refreshCountsSoon() {
+    countsTask?.cancel()
+    countsTask = Task { [weak self] in
+      try? await Task.sleep(for: .milliseconds(600))
+      guard let self, !Task.isCancelled, !self.session.token.isEmpty else { return }
+      var query = self.queueQuery()
+      query["limit"] = "1"
+      guard let page: InboxResponse = try? await self.session.get("/v1/admin/conversations", query: query), !Task.isCancelled else { return }
+      self.totalUnread = page.totalUnread
+      if let counts = page.viewCounts { self.viewCounts = counts }
+      self.archivedCount = page.archivedCount ?? self.archivedCount
+    }
   }
 
   private func update(_ id: String, _ change: (inout Conversation) -> Void) {

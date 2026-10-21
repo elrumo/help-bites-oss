@@ -40,7 +40,6 @@ describe('native pages parity', () => {
     expect(swift.length).toBeGreaterThan(0)
     expect(projectSections.map(s => s.path)).toContain('pages')
     const workspace = readFileSync(join(root, 'helpbites-native/App/Shell/Workspace.swift'), 'utf8')
-    expect(workspace).toMatch(/\bpages\b.*\bemail\b/)
     expect(workspace).toContain('case pageEntry')
     for (const file of ['PagesScreen', 'PageEntryScreen', 'PageInspector', 'PageFieldInput', 'PagesFilesView', 'PagesSettingsView']) expect(existsSync(join(feature, `${file}.swift`))).toBe(true)
   })

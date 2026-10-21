@@ -127,7 +127,7 @@
                   <UButton :to="`/projects/${id}/email?view=log`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('projectPages.dev.log')" />
                 </div>
               </div>
-              <p class="step-text">{{ $t('projectPages.dev.emailSendPart') }} <code class="inline-code">html</code> {{ $t('projectPages.dev.emailFilePart') }} <code class="inline-code">GET /v1/email-logs</code> {{ $t('projectPages.dev.emailReadPart') }} <NuxtLink :to="`/projects/${id}/settings#email`" class="underline">{{ $t('projectPages.dev.projectSettings') }}</NuxtLink>{{ $t('projectPages.dev.period') }}</p>
+              <p class="step-text">{{ $t('projectPages.dev.emailSendPart') }} <code class="inline-code">html</code> {{ $t('projectPages.dev.emailFilePart') }} <code class="inline-code">GET /v1/email-logs</code> {{ $t('projectPages.dev.emailReadPart') }} <NuxtLink :to="`/projects/${id}/email?view=settings`" class="underline">{{ $t('projectPages.settings.senderMovedLink') }}</NuxtLink>{{ $t('projectPages.dev.period') }}</p>
               <CodeBlock :code="emailSnippet" lang="js" />
             </template>
           </div>
@@ -151,6 +151,9 @@
             </div>
           </div>
         </form>
+
+        <!-- Event webhooks: filtered, one secret each -->
+        <SettingsWebhookEndpoints :project-id="id" />
       </div>
       <p v-else-if="error" class="p-8 text-[13px] text-error">{{ error }}</p>
       <div v-else class="mx-auto max-w-4xl space-y-3 px-6 py-8"><USkeleton v-for="i in 4" :key="i" class="h-20 rounded-xl" /></div>
@@ -195,7 +198,8 @@ const integrations = computed(() => {
   const origins = p.allowedOrigins.length
   const flags = p.flags?.length || 0
   return [
-    { key: 'chat' as const, label: t('projectPages.dev.chatWidget'), icon: 'i-lucide-message-circle-more', tone: (origins ? 'ok' : 'warn') as Tone, status: origins ? t('projectPages.dev.originsCount', origins) : t('projectPages.dev.noOrigins') },
+    // Green only once the widget has loaded on a host page: allowing an origin is not installing it.
+    { key: 'chat' as const, label: t('projectPages.dev.chatWidget'), icon: 'i-lucide-message-circle-more', tone: (origins && p.widgetSeenAt ? 'ok' : 'warn') as Tone, status: !origins ? t('projectPages.dev.noOrigins') : p.widgetSeenAt ? t('projectPages.dev.originsCount', origins) : t('projectPages.dev.widgetNotSeen') },
     { key: 'feedback' as const, label: t('sections.feedback'), icon: 'i-lucide-lightbulb', tone: (p.feedback?.enabled ? 'ok' : 'off') as Tone, status: p.feedback?.enabled ? t('projectPages.dev.boardOn') : t('projectPages.dev.off') },
     { key: 'flags' as const, label: t('sections.flags'), icon: 'i-lucide-toggle-right', tone: (flags ? 'ok' : 'off') as Tone, status: flags ? t('projectPages.dev.flagsCount', flags) : t('projectPages.dev.noneYet') },
     { key: 'errors' as const, label: t('sections.errors'), icon: 'i-lucide-bug', tone: (p.errors?.connected ? 'ok' : 'off') as Tone, status: p.errors?.connected ? p.errors.providerName : t('projectPages.dev.notConnected') },

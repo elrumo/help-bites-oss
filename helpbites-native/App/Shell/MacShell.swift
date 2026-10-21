@@ -40,6 +40,7 @@ private struct MacSidebar: View {
     @Bindable var workspace = workspace
     List(selection: Binding(get: { Optional(workspace.macSelection) }, set: { if let route = $0 { workspace.go(route) } })) {
       Label("Overview", systemImage: "house").tag(AppRoute.overview)
+        .badge(workspace.attention.total)
       Label("Inbox", systemImage: "tray").tag(AppRoute.inbox)
         .badge(workspace.inbox.totalUnread)
       Label("Email", systemImage: "envelope").tag(AppRoute.emailTemplates)
@@ -47,9 +48,7 @@ private struct MacSidebar: View {
       Section {
         ForEach(workspace.projects) { project in
           DisclosureGroup(isExpanded: expansion(project.id)) {
-            ForEach(ProjectSection.allCases) { section in
-              Label(section.label, systemImage: section.systemImage).tag(AppRoute.project(project.id, section))
-            }
+            sectionRows(project.id)
           } label: {
             HStack(spacing: 8) {
               ProjectTile(id: project.id, name: project.name, accent: project.theme.accent, icon: project.iconUrl)
@@ -107,6 +106,31 @@ private struct MacSidebar: View {
     .buttonStyle(.borderless)
     .padding(.horizontal, 12)
     .padding(.vertical, 8)
+  }
+
+  /// A project's sections as the web sidebar lays them out: Overview, each group under its small heading
+  /// (an empty group is left out), then Settings. Sections the project hid are left out, except the one on screen.
+  @ViewBuilder private func sectionRows(_ projectId: String) -> some View {
+    let layout = workspace.layout(projectId, keeping: currentSection(projectId))
+    sectionRow(projectId, .overview)
+    ForEach(layout.groups) { entry in
+      Text(entry.group.label)
+        .font(.lnCaptionMedium).foregroundStyle(Theme.textMuted)
+        .padding(.top, 6)
+        .accessibilityAddTraits(.isHeader)
+      ForEach(entry.sections) { section in sectionRow(projectId, section) }
+    }
+    sectionRow(projectId, .settings)
+  }
+
+  private func sectionRow(_ projectId: String, _ section: ProjectSection) -> some View {
+    Label(section.label, systemImage: section.systemImage).tag(AppRoute.project(projectId, section))
+  }
+
+  /// The section of this project the window shows.
+  private func currentSection(_ id: String) -> ProjectSection? {
+    if case .project(let current, let section) = workspace.macSelection, current == id { return section }
+    return nil
   }
 
   private func expansion(_ id: String) -> Binding<Bool> {

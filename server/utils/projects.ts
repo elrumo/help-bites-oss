@@ -8,8 +8,16 @@ import { normalizeFeedbackConfig, validateFeedbackConfig, type FeedbackBoardConf
 import { normalizeBoardConfig, validateBoardConfig, type BoardConfig } from '#shared/board'
 import { normalizeChangelogConfig, validateChangelogConfig, type ChangelogConfig } from '#shared/changelog'
 import { normalizeLegalConfig, validateLegalConfig, type LegalConfig } from '#shared/legal/config'
+import { normalizeBlogConfig, validateBlogConfig, type BlogConfig } from '#shared/blog'
 import { normalizeFlags, validateFlags, type FeatureFlag } from '#shared/flags'
 import { normalizeMarketingConfig, validateMarketingConfig, type MarketingConfig } from '#shared/marketing'
+import { normalizeBrandConfig, validateBrandConfig } from '#shared/brand'
+import { normalizeHubConfig, validateHubConfig, type HubConfig } from '#shared/hub'
+import { companyEntity, type CompanyProfile } from '#shared/company'
+import { applyCompany, companyOf } from './company'
+import { legalLinksOf, type LegalLinks } from './legalLinks'
+import { legacyTheme, projectLook, type ProjectLook, type ProjectLookInput } from '#shared/projectLook'
+import { normalizeHiddenSections, validateHiddenSections } from '#shared/projectSections'
 
 export type ProjectTheme = { accent?: string, dark?: boolean }
 
@@ -20,7 +28,10 @@ export type PublicProject = {
   publicKey: string
   name: string
   allowedOrigins: string[]
+  /** The accent (and dark flag) as older clients read it; always the same colour as `look.accent`. */
   theme: ProjectTheme
+  /** The project's look, built from its Brand kit (shared/projectLook.ts): accent, logo, fonts, radius. Embeds wear this. */
+  look: ProjectLook
   allowAttachments: boolean
   /** Chat and feedback work with only an email address, no host-signed identity token (POST /v1/anonymous/session). */
   allowAnonymousUsers: boolean
@@ -37,6 +48,8 @@ export type PublicProject = {
   types?: PublicConversationType[]
   /** The project's feedback board; `enabled: false` when it has none. */
   feedback: FeedbackBoardConfig
+  /** The chat embed shows a Home tab (read from GET /v1/hub/{pk}); the hub settings turn it on. */
+  widgetHome: boolean
   /** The "Powered by HelpBites" link, null when the plan removes it. Set by the public routes, since it needs the workspace's plan. */
   poweredBy?: PoweredBy | null
 }
@@ -64,8 +77,16 @@ export type AdminProject = PublicProject & {
   board: BoardConfig
   /** Changelog options. Admin-only; what the changelog shows publicly is the entries themselves. */
   changelog: ChangelogConfig
-  /** Legal pages: the operator's identity and the look of the hosted pages. Admin-only. */
+  /** Legal pages: the look of the hosted pages (the operator's identity is `company`; `legal.entity` mirrors it). Admin-only. */
   legal: LegalConfig
+  /** Who is behind the product, written once; Legal and campaigns read it (shared/company.ts). */
+  company: CompanyProfile
+  /** The public hub page and the chat widget's Home tab (shared/hub.ts). */
+  hub: HubConfig
+  /** The public pages of the published legal documents, as `{{project.privacyUrl}}` and friends; '' for a type with none. */
+  legalLinks: LegalLinks
+  /** Blog options. Admin-only; what readers see is the published posts and GET /v1/blog. */
+  blog: BlogConfig
   /** `alertWebhookUrl` is set only for trackers whose alerts must be pointed at HelpBites by hand. */
   errors: { connected: boolean, provider: string, providerName: string, dsn: string, url: string, alertWebhookUrl: string }
   /** Every tracker project it reports to (`errors` is the first), each a pill on the Errors page. */
@@ -75,6 +96,12 @@ export type AdminProject = PublicProject & {
   /** Signed event webhooks (contact.subscription_changed, email.suppressed). */
   eventWebhookUrl: string
   hasEventWebhookSecret: boolean
+  /** When the chat widget last loaded inside a host page (to the hour); null until it ever has. */
+  widgetSeenAt: string | null
+  /** When a host-signed identity token was last accepted for this project (to the hour); null until one has. */
+  identitySeenAt: string | null
+  /** Sections the project left out of its sidebar (shared/projectSections.ts); their pages and API still work. */
+  hiddenSections: string[]
   createdAt: string | null
 }
 
@@ -191,6 +218,11 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     project.set('mailDomain', domain)
   }
   if ('emailLogContent' in input) project.set('emailLogContent', Boolean(input.emailLogContent))
+  if ('hiddenSections' in input) {
+    const { hidden, errors } = validateHiddenSections(input.hiddenSections)
+    if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
+    project.set('hiddenSections', hidden)
+  }
   if ('chatNotice' in input) project.set('chatNotice', String(input.chatNotice || '').trim().slice(0, 500))
   if ('brandLogoUrl' in input) project.set('brandLogoUrl', safeHttpUrl(input.brandLogoUrl))
   if ('iconUrl' in input) project.set('iconUrl', safeHttpUrl(input.iconUrl))
@@ -225,18 +257,40 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
     project.set('changelog', config)
   }
+  if (input.blog !== undefined) {
+    // Partial, like `changelog`: only the keys sent change.
+    const { config, errors } = validateBlogConfig(input.blog, normalizeBlogConfig(project.get('blog')))
+    if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
+    project.set('blog', config)
+  }
   if (input.legal !== undefined) {
     // Partial, like `changelog`: only the keys sent change.
     const { config, errors } = validateLegalConfig(input.legal, normalizeLegalConfig(project.get('legal')))
     if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
     project.set('legal', config)
+    // Who the operator is lives in the company profile; this older way of setting it writes there too.
+    const entity = (input.legal as { entity?: Record<string, unknown> }).entity
+    if (entity && typeof entity === 'object') {
+      const sent = (key: 'name' | 'address' | 'email' | 'dpo') => (key in entity ? { [key === 'name' ? 'legalName' : key]: config.entity[key] } : {})
+      applyCompany(project, { ...sent('name'), ...sent('address'), ...sent('email'), ...sent('dpo') })
+    }
   }
   if (input.marketing !== undefined) {
     // Partial, like `feedback`.
     const { config, errors } = validateMarketingConfig(input.marketing, normalizeMarketingConfig(project.get('marketing')))
     if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
     project.set('marketing', config)
+    // The postal address campaigns carry is the company's.
+    if (input.marketing && typeof input.marketing === 'object' && 'postalAddress' in input.marketing) applyCompany(project, { address: config.postalAddress })
   }
+  if (input.hub !== undefined) {
+    // Partial: only the keys sent change (`sections` and `links` are whole lists).
+    const { config, errors } = validateHubConfig(input.hub, normalizeHubConfig(project.get('hub')))
+    if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
+    project.set('hub', config)
+  }
+  // Last, so a request that sends both the older fields and the profile gets the profile.
+  if (input.company !== undefined) applyCompany(project, input.company)
   if ('eventWebhookUrl' in input) {
     const url = safeHttpUrl(input.eventWebhookUrl)
     // Clearing it is always allowed, and so is resending the saved URL: a workspace that lost the feature can still save its other settings.
@@ -259,31 +313,74 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     const theme = input.theme as Record<string, unknown>
     const accent = typeof theme.accent === 'string' && /^#[0-9a-f]{6}$/i.test(theme.accent.trim()) ? theme.accent.trim() : ''
     project.set('theme', { ...(accent ? { accent } : {}), ...(typeof theme.dark === 'boolean' ? { dark: theme.dark } : {}) })
+    // The Brand kit is where the accent lives; Settings edits it from here.
+    // An empty accent clears it; one that is not a colour is ignored rather than read as a clear.
+    if ('accent' in theme && (accent || !theme.accent)) {
+      const { config } = validateBrandConfig({ page: { accent } }, normalizeBrandConfig(project.get('brand')))
+      project.set('brand', config)
+    }
   }
 }
 
+/** The look of a project row: one read of the Brand kit, shared by every surface (shared/projectLook.ts). */
+export function lookOf(project: { get: (key: string) => unknown }, overrides: ProjectLookInput = {}): ProjectLook {
+  return projectLook({
+    name: project.get('name'),
+    theme: project.get('theme'),
+    brand: project.get('brand'),
+    brandLogoUrl: project.get('brandLogoUrl'),
+    assistantLogoUrl: project.get('assistantLogoUrl'),
+    iconUrl: project.get('iconUrl'),
+    brandLook: project.get('brandLook'),
+    ...overrides
+  })
+}
+
 export function serializePublicProject(project: ParseObject): PublicProject {
+  const look = lookOf(project)
   return {
     publicKey: String(project.get('publicKey') || ''),
     name: String(project.get('name') || ''),
     allowedOrigins: stringList(project.get('allowedOrigins')),
-    theme: (project.get('theme') as ProjectTheme) || {},
+    theme: legacyTheme(look, project.get('theme')),
+    look,
     allowAttachments: project.get('allowAttachments') !== false,
     allowAnonymousUsers: project.get('allowAnonymousUsers') === true,
     chatNotice: String(project.get('chatNotice') || ''),
-    brandLogoUrl: String(project.get('brandLogoUrl') || ''),
+    brandLogoUrl: look.logoUrl,
     assistantLogoUrl: String(project.get('assistantLogoUrl') || ''),
     letUsersChooseType: project.get('letUsersChooseType') === true,
     allowOtherType: project.get('allowOtherType') === true,
-    feedback: normalizeFeedbackConfig(project.get('feedback'))
+    feedback: normalizeFeedbackConfig(project.get('feedback')),
+    widgetHome: normalizeHubConfig(project.get('hub')).widgetHome.enabled
   }
+}
+
+/** The chat widget loaded inside a host page. One write an hour at most: this runs on every page view. */
+export async function markWidgetSeen(project: ParseObject): Promise<void> {
+  await stampSeen(project, 'widgetSeenAt')
+}
+
+/** The host's backend signed an identity token we accepted. One write an hour at most: this runs on every signed request. */
+export async function markIdentitySeen(project: ParseObject): Promise<void> {
+  await stampSeen(project, 'identitySeenAt')
+}
+
+async function stampSeen(project: ParseObject, field: 'widgetSeenAt' | 'identitySeenAt'): Promise<void> {
+  const seen = project.get(field) as Date | undefined
+  if (seen && Date.now() - seen.getTime() < 60 * 60 * 1000) return
+  project.set(field, new Date())
+  await project.save(null, MASTER)
 }
 
 export function serializeAdminProject(project: ParseObject): AdminProject {
   const errors = errorConfigOf(project)
   const tracker = providerOf(errors)
+  const company = companyOf(project)
   return {
     ...serializePublicProject(project),
+    // Settings edits the stored setting, not the kit's logo the embeds show.
+    brandLogoUrl: String(project.get('brandLogoUrl') || ''),
     id: project.id || '',
     slug: String(project.get('slug') || ''),
     siteUrl: String(project.get('siteUrl') || ''),
@@ -300,12 +397,19 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
     flags: normalizeFlags(project.get('flags')),
     board: normalizeBoardConfig(project.get('board')),
     changelog: normalizeChangelogConfig(project.get('changelog')),
-    legal: normalizeLegalConfig(project.get('legal')),
+    legal: { ...normalizeLegalConfig(project.get('legal')), entity: companyEntity(company) },
+    company,
+    legalLinks: legalLinksOf(project),
+    hub: normalizeHubConfig(project.get('hub')),
+    blog: normalizeBlogConfig(project.get('blog')),
     errors: { connected: Boolean(errors.dsn), provider: errors.dsn ? tracker.id : '', providerName: errors.dsn ? tracker.name : '', dsn: String(errors.dsn || ''), url: issuesUrlOf(errors), alertWebhookUrl: errors.dsn && tracker.manualAlerts ? errorWebhookUrl(project, errors) : '' },
     errorLinks: errorLinksOf(project).map(link => errorLinkView(project, link)),
-    marketing: normalizeMarketingConfig(project.get('marketing')),
+    marketing: { ...normalizeMarketingConfig(project.get('marketing')), postalAddress: company.address },
     eventWebhookUrl: String(project.get('eventWebhookUrl') || ''),
     hasEventWebhookSecret: Boolean(project.get('eventWebhookSecret')),
+    widgetSeenAt: iso(project.get('widgetSeenAt')),
+    identitySeenAt: iso(project.get('identitySeenAt')),
+    hiddenSections: normalizeHiddenSections(project.get('hiddenSections')),
     createdAt: iso(project.createdAt)
   }
 }

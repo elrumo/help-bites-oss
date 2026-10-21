@@ -1,15 +1,21 @@
 import { createError } from 'h3'
 import type { EmailDocument } from '#shared/email/blocks'
-import { applyProjectAccent, senderVariables } from '#shared/email/resolve'
+import { applyProjectAccent, brandAccentOf, senderVariables } from '#shared/email/resolve'
 import { extractTemplateVariables } from '#shared/email/placeholders'
 import { campaignBatchId, campaignStatsFrom, canMoveCampaign, CAMPAIGN_STATUSES, EMPTY_CAMPAIGN_STATS, normalizeMarketingConfig, type Campaign, type CampaignStats, type CampaignStatus } from '#shared/marketing'
 import type { ContactAttributeValue } from '#shared/contacts'
+import { groupByLocale, snapshotDocument, subjectForLocale, translatedDocuments } from '#shared/campaignLocale'
+import type { EmailStrings } from '#shared/email/translate'
+import { companyOf } from './company'
 import { contactQuery, getProjectSegment, serializeSegment } from './contacts'
-import { compileSegmentFilter } from '#shared/segments'
+import { resolveSegmentWhere } from './segmentRelations'
 import { deliverEmails, projectEmailSender, type DeliveryResult, type EmailActor, type EmailSender, type OutgoingEmail } from './emailDelivery'
 import { emailSendingPaused } from './emailReputation'
+import { isMailerConfigured } from './mailer'
 import { buildOutgoingEmails, type EmailSendRequest } from './emailSend'
-import { brandOf, findProjectEmail, serializeEmailTemplate } from './emails'
+import { localizeEmail } from '#shared/email/translate'
+import { blogNewsletterSnapshot } from './blogNewsletter'
+import { brandOf, findProjectEmail, readTranslations, serializeEmailTemplate } from './emails'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
 import { runExclusive } from './redis'
 import { signLinkToken } from './secrets'
@@ -28,7 +34,8 @@ import { planFeatureError, projectWorkspaceId, workspacePlan } from './usage'
 
 const CHUNK = 100
 const RUN_BUDGET_MS = 25_000
-// Mailgun is down or throttling: stop, keep the cursor, try again later.
+// Mailgun is down or throttling: stop, keep the cursor, try again later. With no
+// mailer at all the campaign pauses instead (see CAMPAIGN_NO_MAILER): waiting fixes nothing.
 const PROVIDER_DOWN_RE = /Mailgun (429|5\d\d)|not configured|timed? ?out|fetch failed|ECONN/i
 const PROVIDER_RETRY_MS = 5 * 60_000
 // A suspended workspace's campaign waits where it is, and is looked at again this much later.
@@ -36,7 +43,18 @@ const INACTIVE_RETRY_MS = 60 * 60_000
 // How many due campaigns dueCampaigns looks through to find one per workspace.
 const DUE_SCAN = 1000
 
-export type CampaignSnapshot = { document: EmailDocument, defaults: Record<string, string>, templateId: string, templateKey: string, templateName: string }
+/** `locale` and `translations` are the owner template's, so each recipient can get their own language (shared/campaignLocale.ts); snapshots from before them, and a blog post's, have neither and go out as designed. */
+export type CampaignSnapshot = { document: EmailDocument, defaults: Record<string, string>, templateId: string, templateKey: string, templateName: string, locale?: string, translations?: Record<string, EmailStrings> }
+
+/** A snapshot as it is kept on a row. Translation keys carry dots (`<block>#values.<field>`), which Parse refuses as object keys, so they are stored as pairs like the template's own. */
+export function snapshotToRow(snapshot: CampaignSnapshot): Record<string, unknown> {
+  return { ...snapshot, translations: Object.fromEntries(Object.entries(snapshot.translations || {}).map(([tag, strings]) => [tag, Object.entries(strings).map(([key, value]) => ({ key, value }))])) }
+}
+
+export function snapshotFromRow(value: unknown): CampaignSnapshot {
+  const raw = (value || {}) as CampaignSnapshot
+  return { ...raw, translations: readTranslations(raw.translations) }
+}
 
 export function serializeCampaign(row: ParseObject): Campaign {
   const audience = (row.get('audience') || {}) as { segment?: string, topic?: string }
@@ -47,6 +65,7 @@ export function serializeCampaign(row: ParseObject): Campaign {
     status: (row.get('status') as CampaignStatus) || 'draft',
     template: String(row.get('template') || ''),
     templateName: String(row.get('templateName') || ''),
+    blogPostId: pointerId(row.get('blogPost')),
     subject: String(row.get('subject') || ''),
     audience: { segment: audience.segment || '', topic: audience.topic || '' },
     scheduledAt: iso(row.get('scheduledAt')),
@@ -83,7 +102,9 @@ export async function applyCampaignInput(project: ParseObject, row: ParseObject,
       const t = serializeEmailTemplate(template)
       row.set('template', t.key || template.id)
       row.set('templateName', t.master?.name || t.name)
-    } else {
+      // A template replaces the blog post a campaign was sending.
+      row.unset('blogPost')
+    } else if (!row.get('blogPost')) {
       row.set('template', '')
       row.set('templateName', '')
     }
@@ -105,7 +126,7 @@ export async function applyCampaignInput(project: ParseObject, row: ParseObject,
  * segment can never lift: this project, subscribed, not opted out of the topic.
  */
 export async function campaignAudience(project: ParseObject, audience: { segment?: string, topic?: string }) {
-  const where = audience.segment ? compileSegmentFilter(serializeSegment(await getProjectSegment(project, audience.segment)).filter) : {}
+  const where = audience.segment ? await resolveSegmentWhere(project, serializeSegment(await getProjectSegment(project, audience.segment)).filter) : {}
   const query = contactQuery(project, where).equalTo('subscription', 'subscribed').exists('email')
   if (audience.topic) query.notEqualTo('unsubscribedTopics', audience.topic)
   return query
@@ -140,29 +161,55 @@ export function unsubscribeLinks(base: string, projectId: string, contactId: str
 
 // ---- content -------------------------------------------------------------------------
 
-/** The design as it will go out: the master's with this project's accent, or the template's own. */
+/**
+ * The design as it will go out: the master's with this project's accent, or the
+ * template's own. The language is chosen per recipient when it is sent (`campaignEmails`).
+ */
 export async function snapshotCampaign(project: ParseObject, ref: string): Promise<CampaignSnapshot> {
   if (!ref) throw createError({ statusCode: 400, statusMessage: 'Pick a template first' })
   const row = await findProjectEmail(project, ref)
   const t = serializeEmailTemplate(row)
   const source = t.master || t
   if (!source.document) throw createError({ statusCode: 400, statusMessage: 'That template has no design yet' })
-  const document = t.master ? applyProjectAccent(source.document, brandOf(project).theme?.accent) : source.document
+  const document = t.master ? applyProjectAccent(source.document, brandAccentOf(brandOf(project))) : source.document
   const defaults = Object.fromEntries(senderVariables(t, t.master).filter(v => v.defaultValue != null).map(v => [v.key, String(v.defaultValue)]))
-  return { document, defaults, templateId: row.id || '', templateKey: t.key, templateName: t.master?.name || t.name }
+  // A linked template's words, and so its translations, are its master's.
+  return { document, defaults, templateId: row.id || '', templateKey: t.key, templateName: t.master?.name || t.name, locale: source.locale, translations: source.translations }
+}
+
+/** What a campaign sends: its blog post when it carries one (blogNewsletter.ts), else its template. */
+export async function campaignContent(project: ParseObject, row: ParseObject): Promise<CampaignSnapshot> {
+  const postId = pointerId(row.get('blogPost'))
+  return postId ? await blogNewsletterSnapshot(project, postId) : await snapshotCampaign(project, String(row.get('template') || ''))
 }
 
 /** CAN-SPAM and RFC 8058: a way out and a postal address in every campaign, or it does not go. */
-export function complianceProblems(project: ParseObject, document: EmailDocument): string[] {
+export function complianceProblems(project: ParseObject, document: EmailDocument, translated: { locale: string, document: EmailDocument }[] = []): string[] {
   const keys = extractTemplateVariables(document)
   const problems: string[] = []
   if (!keys.includes('unsubscribeUrl') && !keys.includes('preferencesUrl')) problems.push('The template needs an unsubscribe link: add {{unsubscribeUrl}} (the Editorial digest starter has one in its footer)')
-  if (!normalizeMarketingConfig(project.get('marketing')).postalAddress) problems.push('Add your postal address under Campaigns → Settings; marketing email must carry it')
-  else if (!keys.includes('project.address')) problems.push('The template needs your postal address: add {{project.address}} to the footer')
+  if (!companyOf(project).address) problems.push('Add your postal address in Project settings → Company; marketing email must carry it')
+  else if (!keys.includes('project.address')) problems.push('The template needs your postal address: add {{project.address}} to the footer (and {{project.privacyUrl}} to link your privacy policy)')
+  // A translation may rewrite the footer: each language that is sent needs the same two things.
+  for (const { locale, document: other } of translated) {
+    const found = extractTemplateVariables(other)
+    if (!found.includes('unsubscribeUrl') && !found.includes('preferencesUrl')) problems.push(`The ${locale} translation lost the unsubscribe link: keep {{unsubscribeUrl}} in its footer`)
+    if (keys.includes('project.address') && !found.includes('project.address')) problems.push(`The ${locale} translation lost the postal address: keep {{project.address}} in its footer`)
+  }
   return problems
 }
 
+/** `complianceProblems` for a snapshot: its own design and every translation of it. */
+export const snapshotProblems = (project: ParseObject, snapshot: CampaignSnapshot): string[] => complianceProblems(project, snapshot.document, translatedDocuments(snapshot))
+
 /** Marketing mail's own sender when the project has one, else the project's. */
+export const CAMPAIGN_NO_MAILER = 'Email sending is not configured on this server (set MAILGUN_API_KEY, MAILGUN_DOMAIN and MAILGUN_FROM_EMAIL, or the project\'s own sending domain)'
+
+/** Whether this project's campaigns have anything to send through. */
+export function campaignMailerReady(project: ParseObject): boolean {
+  return isMailerConfigured(marketingSender(project))
+}
+
 export function marketingSender(project: ParseObject): EmailSender {
   const marketing = normalizeMarketingConfig(project.get('marketing'))
   const sender = projectEmailSender(project)
@@ -179,6 +226,7 @@ export function contactVariables(contact: ParseObject): Record<string, string> {
     'contact.name': name,
     'contact.firstName': name.split(/\s+/)[0] || '',
     'contact.email': String(contact.get('email') || ''),
+    'contact.language': String(contact.get('language') || ''),
     'contact.externalId': String(contact.get('externalId') || '')
   }
   for (const [key, value] of Object.entries(attributes)) {
@@ -195,39 +243,49 @@ export function blankValues(document: EmailDocument, subject: string): Record<st
   return Object.fromEntries([...keys].filter(k => !k.startsWith('project.')).map(k => [k, '']))
 }
 
-/** One message per contact, through the send API's own composer. */
-export function campaignEmails(project: ParseObject, snapshot: CampaignSnapshot, contacts: ParseObject[], options: { batchId: string, subject: string, topic: string, testMode: boolean, source: 'campaign' | 'sequence' | 'test', actor: EmailActor, base: string, metadata?: Record<string, string> }): OutgoingEmail[] {
+/**
+ * One message per contact, through the send API's own composer. People are
+ * grouped by the language they get (their `language`, matched to the
+ * template's translations): each group is composed from its own version of the
+ * design, so a contact whose language is "es" gets the Spanish email when the
+ * template has one.
+ */
+export function campaignEmails(project: ParseObject, snapshot: CampaignSnapshot, contacts: ParseObject[], options: { batchId: string, subject: string, topic: string, /** Send everyone in this language (a lead form's own) instead of each contact's. */ language?: string, testMode: boolean, source: 'campaign' | 'sequence' | 'form' | 'test', actor: EmailActor, base: string, metadata?: Record<string, string> }): OutgoingEmail[] {
   const sender = marketingSender(project)
-  const request: EmailSendRequest = {
-    content: { type: 'document', document: snapshot.document },
-    recipients: contacts.map((c) => {
-      const links = unsubscribeLinks(options.base, project.id || '', c.id || '', options.topic)
-      return { email: String(c.get('email')), name: String(c.get('name') || ''), variables: { ...contactVariables(c), unsubscribeUrl: links.unsubscribeUrl, preferencesUrl: links.preferencesUrl, oneClickUrl: links.headers['List-Unsubscribe'].slice(1, -1) } }
-    }),
-    cc: [],
-    bcc: [],
-    subject: options.subject,
-    text: '',
-    variables: { ...blankValues(snapshot.document, options.subject), ...snapshot.defaults },
-    from: {},
-    replyTo: '',
-    headers: { 'List-Unsubscribe': '<{{oneClickUrl}}>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
-    tags: [options.source === 'test' ? 'test' : options.source],
-    metadata: options.metadata || {},
-    attachments: [],
-    sendAt: null,
-    testMode: options.testMode,
-    ignoreSuppressions: false,
-    idempotencyKey: '',
-    project: project.id || ''
-  }
-  const mails = buildOutgoingEmails(project, options.actor, request, { type: 'document', document: snapshot.document }, sender, { batchId: options.batchId, source: options.source === 'test' ? 'test' : options.source })
-  for (const mail of mails) {
-    mail.log.templateKey = snapshot.templateKey
-    mail.log.templateName = snapshot.templateName
-    if (options.source === 'test') mail.subject = `[Test] ${mail.subject}`
-  }
-  return mails
+  return groupByLocale(contacts, c => options.language || String(c.get('language') || ''), snapshot).flatMap(({ locale, items }) => {
+    const document = snapshotDocument(snapshot, locale)
+    const subject = subjectForLocale(snapshot, locale, options.subject)
+    const request: EmailSendRequest = {
+      content: { type: 'document', document },
+      recipients: items.map((c) => {
+        const links = unsubscribeLinks(options.base, project.id || '', c.id || '', options.topic)
+        return { email: String(c.get('email')), name: String(c.get('name') || ''), variables: { ...contactVariables(c), unsubscribeUrl: links.unsubscribeUrl, preferencesUrl: links.preferencesUrl, oneClickUrl: links.headers['List-Unsubscribe'].slice(1, -1) } }
+      }),
+      cc: [],
+      bcc: [],
+      subject,
+      text: '',
+      variables: { ...blankValues(document, subject), ...snapshot.defaults },
+      from: {},
+      replyTo: '',
+      headers: { 'List-Unsubscribe': '<{{oneClickUrl}}>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+      tags: [options.source === 'test' ? 'test' : options.source],
+      metadata: options.metadata || {},
+      attachments: [],
+      sendAt: null,
+      testMode: options.testMode,
+      ignoreSuppressions: false,
+      idempotencyKey: '',
+      project: project.id || ''
+    }
+    const mails = buildOutgoingEmails(project, options.actor, request, { type: 'document', document }, sender, { batchId: options.batchId, source: options.source === 'test' ? 'test' : options.source })
+    for (const mail of mails) {
+      mail.log.templateKey = snapshot.templateKey
+      mail.log.templateName = snapshot.templateName
+      if (options.source === 'test') mail.subject = `[Test] ${mail.subject}`
+    }
+    return mails
+  })
 }
 
 // ---- numbers ------------------------------------------------------------------------
@@ -276,13 +334,14 @@ const CAMPAIGN_ACTOR: EmailActor = { type: 'system', id: '', name: 'Campaign' }
 /** Freeze the design, count the audience, and move a due campaign to sending. False when it cannot start. */
 async function startCampaign(project: ParseObject, row: ParseObject): Promise<boolean> {
   try {
-    const snapshot = await snapshotCampaign(project, String(row.get('template') || ''))
-    const problems = complianceProblems(project, snapshot.document)
+    const snapshot = await campaignContent(project, row)
+    const problems = snapshotProblems(project, snapshot)
     if (problems.length) throw createError({ statusCode: 400, statusMessage: problems.join('; ') })
     publicBaseUrl()
+    if (!campaignMailerReady(project)) throw createError({ statusCode: 503, statusMessage: CAMPAIGN_NO_MAILER })
     const audience = (row.get('audience') || {}) as { segment?: string, topic?: string }
     const count = await (await campaignAudience(project, audience)).count(MASTER)
-    row.set('snapshot', snapshot)
+    row.set('snapshot', snapshotToRow(snapshot))
     row.set('stats', { ...EMPTY_CAMPAIGN_STATS, audience: count })
     row.set('cursor', {})
     row.set('status', 'sending')
@@ -348,8 +407,13 @@ async function sendCampaign(row: ParseObject, workspaceId: string, budgetMs: num
     await stopCampaign(row, 'paused', `Paused: ${paused}`)
     return
   }
+  // The mailer went away mid-send: pause where it is, rather than retrying every few minutes for ever. Resuming carries on from the cursor.
+  if (!campaignMailerReady(project)) {
+    await stopCampaign(row, 'paused', `Paused: ${CAMPAIGN_NO_MAILER}`)
+    return
+  }
 
-  const snapshot = row.get('snapshot') as CampaignSnapshot
+  const snapshot = snapshotFromRow(row.get('snapshot'))
   const audience = (row.get('audience') || {}) as { segment?: string, topic?: string }
   const batchId = campaignBatchId(row.id || '')
   const subject = String(row.get('subject') || '')
@@ -361,7 +425,12 @@ async function sendCampaign(row: ParseObject, workspaceId: string, budgetMs: num
     // An operator may pause or cancel mid-run.
     const status = (await new Parse.Query('Campaign').select('status').get(row.id || '', MASTER)).get('status')
     if (status !== 'sending') return
-    const query = await campaignAudience(project, audience)
+    // A segment that cannot be worked out (too many matches for a lookup, a tracker that is down) pauses the send where it is.
+    const query = await campaignAudience(project, audience).catch(async (error: Error) => {
+      await stopCampaign(row, 'paused', `Paused: the audience could not be worked out (${error.message})`)
+      return null
+    })
+    if (!query) return
     if (cursor) query.greaterThan('objectId', cursor)
     const contacts = await query.ascending('objectId').limit(CHUNK).find(MASTER)
     if (!contacts.length) {
@@ -447,10 +516,11 @@ export async function moveCampaign(project: ParseObject, row: ParseObject, to: s
 
   if (to === 'scheduled' || (to === 'sending' && (from === 'draft' || from === 'scheduled'))) {
     // Checked now, so the operator hears about a missing unsubscribe link before the send time.
-    const snapshot = await snapshotCampaign(project, String(row.get('template') || ''))
-    const problems = complianceProblems(project, snapshot.document)
+    const snapshot = await campaignContent(project, row)
+    const problems = snapshotProblems(project, snapshot)
     if (problems.length) throw createError({ statusCode: 400, statusMessage: problems.join('; ') })
     publicBaseUrl()
+    if (!campaignMailerReady(project)) throw createError({ statusCode: 503, statusMessage: CAMPAIGN_NO_MAILER })
     let at = new Date()
     if (to === 'scheduled') {
       at = new Date(String(scheduledAt || ''))
@@ -465,6 +535,9 @@ export async function moveCampaign(project: ParseObject, row: ParseObject, to: s
     row.unset('nextAt')
     return
   }
-  if (to === 'sending') row.set('nextAt', new Date()) // resume
+  if (to === 'sending') {
+    if (!campaignMailerReady(project)) throw createError({ statusCode: 503, statusMessage: CAMPAIGN_NO_MAILER })
+    row.set('nextAt', new Date()) // resume
+  }
   row.set('status', to)
 }

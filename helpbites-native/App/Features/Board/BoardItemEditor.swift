@@ -16,6 +16,7 @@ struct BoardItemEditor: View {
   @State private var error = ""
   @Environment(Workspace.self) private var workspace
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.openURL) private var openURL
   @Environment(\.horizontalSizeClass) private var sizeClass
 
   init(store: BoardStore, itemId: String?) {
@@ -155,7 +156,7 @@ struct BoardItemEditor: View {
           LinearTextEditor(text: $draft.publicDescription, placeholder: "What this means for your users", minHeight: 72)
         }
         if !store.roadmapReady {
-          Text("The roadmap is published through the feedback board: turn it on, with its Roadmap view, under Feedback → Settings.")
+          Text("The public roadmap is published through public feedback: turn it on, with its Roadmap view, under Feedback → Settings.")
             .font(.lnCaption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
         } else if !config.isOnRoadmap(draft.status) {
           Text("Not on the roadmap yet: \(config.status(draft.status)?.label ?? "this status") stays private.")
@@ -226,7 +227,7 @@ struct BoardItemEditor: View {
           Text("\(item.conversations.count)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
         }
         if item.conversations.isEmpty {
-          Text("Link conversations from the inbox: open one and use the Board section in its details.")
+          Text("Link conversations from the inbox: open one and use the Planning section in its details.")
             .font(.lnMeta).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
         } else {
           Card {
@@ -237,12 +238,41 @@ struct BoardItemEditor: View {
         }
       }
 
+      if let errors = item.errorRefs, !errors.isEmpty {
+        VStack(alignment: .leading, spacing: 8) {
+          HStack(spacing: 6) {
+            Text("Filed from errors").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+            Text("\(errors.count)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
+          }
+          Card {
+            ForEach(Array(errors.enumerated()), id: \.element.id) { index, ref in
+              CardRow(divider: index < errors.count - 1) { errorRow(ref) }
+            }
+          }
+        }
+      }
+
+      GithubRefsSection(projectId: store.projectId, kind: "board", targetId: item.id)
+
       VStack(alignment: .leading, spacing: 8) {
         Text("Changelog").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
         ChangelogLinksSection(projectId: store.projectId, kind: "board", targetId: item.id, source: ["title": item.title, "publicDescription": item.publicDescription])
       }
 
       Button { confirmDelete = true } label: { Label("Delete item", systemImage: "trash") }.buttonStyle(GhostButtonStyle(tint: Theme.error))
+    }
+  }
+
+  /// An error this item was filed from, with the way back to the tracker.
+  private func errorRow(_ ref: BoardErrorRef) -> some View {
+    HStack(spacing: 8) {
+      Image(systemName: "ladybug").font(.system(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 16)
+      Text(ref.title.isEmpty ? ref.issueId : ref.title).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
+      Spacer(minLength: 4)
+      if let url = URL(string: ref.url), !ref.url.isEmpty {
+        Button { openURL(url) } label: { Label("Open in \(ref.providerName)", systemImage: "arrow.up.right") }
+          .buttonStyle(.lnGhost)
+      }
     }
   }
 
@@ -464,7 +494,7 @@ struct BoardItemPicker: View {
         } else if store.config == nil {
           SkeletonRows(count: 4).frame(maxHeight: .infinity, alignment: .top)
         } else if candidates.isEmpty {
-          EmptyState(systemImage: "rectangle.split.3x1", title: query.isEmpty ? "No other items" : "Nothing matches", message: query.isEmpty ? "Every item on the board is linked here already, or the board is empty." : nil)
+          EmptyState(systemImage: "rectangle.split.3x1", title: query.isEmpty ? "No other items" : "Nothing matches", message: query.isEmpty ? "Every planning item is linked here already, or none exist yet." : nil)
             .frame(maxHeight: .infinity, alignment: .top)
         } else {
           List(candidates) { item in

@@ -157,7 +157,7 @@ const FONTS = ['Inter', 'Geist', 'DM Sans', 'Manrope', 'Plus Jakarta Sans', 'Spa
       <section class="space-y-3 border-t border-default pt-4">
         <h3 class="text-xs font-semibold text-highlighted">{{ $t('projectTools.pages.style') }}</h3>
         <UFormField :label="$t('projectTools.pages.accent')" :help="pageStyle.accent ? undefined : $t('projectTools.pages.accentHelp')">
-          <EmailColorField :model-value="pageStyle.accent || undefined" :placeholder="projectAccent || '#5e6ad2'" clearable @update:model-value="setStyle({ accent: $event ?? '' })" />
+          <EmailColorField :model-value="pageStyle.accent || undefined" :placeholder="projectAccent || '#4f46e5'" clearable @update:model-value="setStyle({ accent: $event ?? '' })" />
         </UFormField>
         <div class="grid grid-cols-2 gap-3">
           <UFormField :label="$t('projectTools.pages.mode')">

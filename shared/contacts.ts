@@ -3,6 +3,8 @@
 // from the developer's database or signed up through a form. Shared by the
 // server and the panel; the native app mirrors the DTO.
 
+import { normalizeLocale } from './locales'
+
 export type ContactSubscription = 'none' | 'pending' | 'subscribed' | 'unsubscribed'
 export const CONTACT_SUBSCRIPTIONS: ContactSubscription[] = ['none', 'pending', 'subscribed', 'unsubscribed']
 
@@ -11,6 +13,16 @@ export type ContactAttributeValue = string | number | boolean
 /** Proof of marketing consent: how, when and from where someone opted in. */
 export type ContactConsent = { source: string, at: string, ip?: string, ua?: string, formUrl?: string, confirmedAt?: string }
 
+/**
+ * How a contact first got here, set once when the row is made: one of your
+ * app's users (an identity token, email-only access), a lead form (`id`: the
+ * form), the newsletter sign-up, a CSV import, a database sync (`id`: the
+ * source), Stripe, the API, the panel, or a feedback import.
+ */
+export type ContactOriginType = 'app' | 'lead_form' | 'signup' | 'import' | 'sync' | 'stripe' | 'api' | 'panel' | 'feedback'
+export const CONTACT_ORIGIN_TYPES: ContactOriginType[] = ['app', 'lead_form', 'signup', 'import', 'sync', 'stripe', 'api', 'panel', 'feedback']
+export type ContactOrigin = { type: ContactOriginType, id: string, at: string | null }
+
 export type Contact = {
   id: string
   externalId: string
@@ -18,6 +30,8 @@ export type Contact = {
   name: string
   username: string
   avatarUrl: string
+  /** The language to write to them in ("es", "pt-BR"); '' until known. Set by the app's identity token (`locale`), the API or the panel. */
+  language: string
   attributes: Record<string, ContactAttributeValue>
   tags: string[]
   subscription: ContactSubscription
@@ -26,6 +40,10 @@ export type Contact = {
   consent: ContactConsent | null
   /** Ids of the sources (database syncs) this contact came from. */
   sources: string[]
+  /** How they first got here; null for someone from before this was kept whose history says nothing. */
+  origin: ContactOrigin | null
+  /** Ids of the lead forms they signed up through. */
+  leadForms: string[]
   feedbackEmails: boolean
   lastSeenAt: string | null
   createdAt: string | null
@@ -37,6 +55,37 @@ export const CONTACT_LIMITS = { attributes: 50, attributeValue: 500, tags: 50, t
 // Stored as nested Mongo keys and queried as `attributes.<key>`: no dots, no `$`.
 export const ATTRIBUTE_KEY_RE = /^[A-Za-z][A-Za-z0-9_]{0,39}$/
 export const TOPIC_KEY_RE = /^[a-z0-9][a-z0-9_-]{0,39}$/
+
+/** The origin a writer's `via` (ContactWriteOptions) stands for. */
+export function originTypeForVia(via: string): ContactOriginType {
+  const map: Record<string, ContactOriginType> = { form: 'signup', import: 'import', panel: 'panel', sync: 'sync', stripe: 'stripe', lead_form: 'lead_form', app: 'app', feedback: 'feedback' }
+  return map[via] || 'api'
+}
+
+/** A stored origin, or null when it is not one. */
+export function readContactOrigin(value: unknown): ContactOrigin | null {
+  const raw = (value && typeof value === 'object' && !Array.isArray(value) ? value : {}) as Record<string, unknown>
+  if (!CONTACT_ORIGIN_TYPES.includes(raw.type as ContactOriginType)) return null
+  return { type: raw.type as ContactOriginType, id: typeof raw.id === 'string' ? raw.id : '', at: typeof raw.at === 'string' ? raw.at : null }
+}
+
+/**
+ * The best guess for a contact from before origins were kept: a sync it came
+ * from, how its consent was recorded, or an app user id. Null when nothing
+ * says (scripts/backfill-contacts.mjs writes the same guess once).
+ */
+export function guessContactOrigin(row: { externalId?: unknown, sources?: unknown, consent?: unknown, leadForms?: unknown, anonymous?: unknown }): ContactOrigin | null {
+  const list = (value: unknown) => (Array.isArray(value) ? value.map(String).filter(Boolean) : [])
+  const leadForms = list(row.leadForms)
+  if (leadForms.length) return { type: 'lead_form', id: leadForms[0]!, at: null }
+  const sources = list(row.sources)
+  if (sources.length) return { type: 'sync', id: sources[0]!, at: null }
+  const consent = (row.consent && typeof row.consent === 'object' ? row.consent : {}) as { source?: unknown }
+  const via = typeof consent.source === 'string' ? consent.source : ''
+  if (via) return { type: /^[A-Za-z0-9]{10}$/.test(via) ? 'sync' : originTypeForVia(via), id: /^[A-Za-z0-9]{10}$/.test(via) ? via : '', at: null }
+  if (row.anonymous === true || (typeof row.externalId === 'string' && row.externalId)) return { type: 'app', id: '', at: null }
+  return null
+}
 
 /** Lowercased address, or '' when it does not look like one. */
 export function normalizeEmail(value: unknown): string {
@@ -89,10 +138,14 @@ export type ContactInput = {
   externalId?: string
   email?: string
   name?: string
+  /** A language tag; '' clears it. */
+  language?: string
   attributes?: Record<string, ContactAttributeValue | null>
   tags?: string[]
   subscription?: ContactSubscription
   unsubscribedTopics?: string[]
+  /** Lead forms they came through (added, never removed). Written by the forms endpoint only. */
+  leadForms?: string[]
 }
 
 /** Validate one contact as the API receives it. Unknown keys are ignored. */
@@ -111,6 +164,11 @@ export function readContactInput(value: unknown): { input: ContactInput, errors:
     else input.email = email
   }
   if (typeof raw.name === 'string') input.name = raw.name.trim().slice(0, CONTACT_LIMITS.name)
+  if (raw.language !== undefined && raw.language !== null) {
+    const language = raw.language === '' ? '' : normalizeLocale(raw.language)
+    if (language === null) errors.push('language must be a language tag such as "es" or "pt-BR"')
+    else input.language = language
+  }
   if (raw.attributes !== undefined) {
     if (!raw.attributes || typeof raw.attributes !== 'object' || Array.isArray(raw.attributes)) errors.push('attributes must be an object')
     else {
@@ -137,6 +195,7 @@ export type ContactFieldMapping = {
   externalId?: string
   email?: string
   name?: string
+  language?: string
   tags?: string
   /** A truthy value means opted in, a falsy one opted out; blank leaves consent alone. */
   subscribed?: string
@@ -182,6 +241,8 @@ export function mapSourceRow(row: unknown, mapping: ContactFieldMapping): Contac
   if (!externalId && !email) return null
   const name = text(mapping.name).slice(0, CONTACT_LIMITS.name)
   if (name) input.name = name
+  const language = normalizeLocale(text(mapping.language))
+  if (language) input.language = language
   if (mapping.tags) input.tags = cleanTags(readPath(row, mapping.tags))
   if (mapping.subscribed) {
     const flag = readFlag(readPath(row, mapping.subscribed))
@@ -204,7 +265,7 @@ export function validateMapping(value: unknown): { mapping: ContactFieldMapping,
   const raw = (value && typeof value === 'object' && !Array.isArray(value) ? value : {}) as Record<string, unknown>
   const path = (v: unknown) => (typeof v === 'string' && /^[\w$-]+(\.[\w$-]+)*$/.test(v.trim()) ? v.trim().slice(0, 120) : '')
   const mapping: ContactFieldMapping = {}
-  for (const key of ['externalId', 'email', 'name', 'tags', 'subscribed'] as const) {
+  for (const key of ['externalId', 'email', 'name', 'language', 'tags', 'subscribed'] as const) {
     const p = path(raw[key])
     if (p) mapping[key] = p
   }
@@ -224,7 +285,7 @@ export function validateMapping(value: unknown): { mapping: ContactFieldMapping,
 
 /** Every source column the mapping reads, so a sync fetches only those (never a password hash). */
 export function mappedColumns(mapping: ContactFieldMapping): string[] {
-  const paths = [mapping.externalId, mapping.email, mapping.name, mapping.tags, mapping.subscribed, ...Object.values(mapping.attributes || {})]
+  const paths = [mapping.externalId, mapping.email, mapping.name, mapping.language, mapping.tags, mapping.subscribed, ...Object.values(mapping.attributes || {})]
   return [...new Set(paths.filter((p): p is string => Boolean(p)).map(p => p.split('.')[0]!))]
 }
 
@@ -273,7 +334,9 @@ export function guessMapping(columns: string[]): ContactFieldMapping {
     email: find(/^(e?mail|emailaddress)$/) || find(/mail/),
     externalId: find(/^(id|userid|externalid|uid|objectid)$/),
     name: find(/^(name|fullname|displayname)$/),
-    tags: find(/^tags?$/),
-    subscribed: find(/^(subscribed|optin|marketing|newsletter|consent)$/)
+    language: find(/^(language|lang|locale|preferredlanguage)$/),
+    tags: find(/^(tags?|labels?)$/),
+    // subscribed_to_emails: Ghost's members export.
+    subscribed: find(/^(subscribed|subscribedtoemails|optin|marketing|newsletter|consent)$/)
   }
 }

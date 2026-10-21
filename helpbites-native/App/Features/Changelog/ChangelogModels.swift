@@ -38,7 +38,7 @@ struct ChangelogSource: Decodable, Equatable, Identifiable, Sendable {
   let done: Bool
   var key: String { "\(kind):\(id)" }
   static func == (lhs: Self, rhs: Self) -> Bool { lhs.key == rhs.key && lhs.done == rhs.done && lhs.label == rhs.label }
-  var kindLabel: String { ["feedback": "Feedback post", "board": "Board item", "conversation": "Conversation"][kind] ?? kind }
+  var kindLabel: String { ["feedback": "Feedback post", "board": "Planning item", "conversation": "Conversation"][kind] ?? kind }
   var symbol: String { ["feedback": "lightbulb", "board": "rectangle.split.3x1", "conversation": "bubble.left"][kind] ?? "link" }
 }
 

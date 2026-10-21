@@ -26,3 +26,22 @@ describe('workspace overview', () => {
     expect([...keys].filter(key => !new RegExp(`\\b${key}\\b`).test(swift))).toEqual([])
   })
 })
+
+describe('project overview', () => {
+  // The panel translates the server's rows by key; a key with no words shows its English in every language.
+  test('every key the project overview sends has words in every panel language', () => {
+    const source = readFileSync(join(import.meta.dir, '..', 'server/utils/overview.ts'), 'utf8')
+    const body = source.slice(source.indexOf('export async function projectOverview'), source.indexOf('// ---- the workspace overview'))
+    const keysIn = (text: string, field: string) => [...text.matchAll(new RegExp(`\\b${field}: '(\\w+)'`, 'g'))].map(m => m[1]!)
+    // The setup rows and attention items carry codes the clients word themselves (tests/setup.test.ts, tests/attention.test.ts).
+    const keys = [
+      ...keysIn(body.slice(body.indexOf('const stats'), body.indexOf('const activity')), 'key').map(key => `stats.${key}`),
+      ...keysIn(body, 'titleKey').map(key => `activityTitle.${key}`)
+    ]
+    expect(keys.length).toBeGreaterThan(5)
+    for (const locale of ['en', 'es', 'ca', 'ja', 'ko', 'zh']) {
+      const words = JSON.parse(readFileSync(join(import.meta.dir, '..', `i18n/locales/${locale}.json`), 'utf8')).projectPages.overview
+      expect(keys.filter(key => typeof key.split('.').reduce((node: any, part) => node?.[part], words) !== 'string').map(key => `${locale}: ${key}`)).toEqual([])
+    }
+  })
+})

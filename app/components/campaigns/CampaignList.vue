@@ -2,7 +2,8 @@
 /** A project's broadcasts, newest first, with how each did. */
 import type { Campaign } from '#shared/marketing'
 import type { AdminProject } from '~~/server/utils/projects'
-import CampaignsTabs from '~/components/campaigns/CampaignsTabs.vue'
+import EmailSetupStrip from '~/components/email/EmailSetupStrip.vue'
+import EmailTabs from '~/components/email/EmailTabs.vue'
 import { CAMPAIGN_STATUS, percent } from '~/utils/campaignStatus'
 import { logTime } from '~/utils/emailStatus'
 
@@ -44,12 +45,14 @@ const when = (c: Campaign) => logTime(c.finishedAt || c.startedAt || c.scheduled
 
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <PageHeader :project-id="project.id" :title="$t('campaigns.title')">
-      <template #title><CampaignsTabs current="campaigns" /></template>
+    <PageHeader :project-id="project.id" :title="$t('nav.email')">
+      <template #title><EmailTabs current="campaigns" /></template>
       <template #actions>
         <UButton icon="i-lucide-plus" :label="$t('campaigns.new')" size="sm" :loading="creating" @click="create" />
       </template>
     </PageHeader>
+    <EmailSetupStrip :project-id="project.id" scope="bulk" />
+    <PlanLock feature="campaigns" />
 
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div v-if="loading" class="space-y-1 p-4"><USkeleton v-for="i in 5" :key="i" class="h-11" /></div>

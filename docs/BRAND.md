@@ -217,6 +217,14 @@ The full schema is in the OpenAPI docs at `/_docs/scalar`.
 
 ## Using the kit elsewhere in HelpBites
 
+The kit is the project's look. Its accent (the page's `accent`, else the first
+colour), logo, icon, typefaces and corner radius are what the chat widget,
+feedback board, forms, onboarding, legal and blog pages, campaign mail and the
+[public hub](HUB.md) all wear, and the API hands them out as `look` (for example
+in `GET /v1/projects/{pk}/public`). The accent in the project's Settings is this
+same colour: changing it there writes it here. Projects that never filled the kit
+in keep using the older Settings accent and logo until they do.
+
 In the panel, a logo or icon's menu has **Use as project logo** and **Use as
 project icon**, which the chat widget, feedback board, emails and legal pages
 already show. Onboarding steps can use any kit image as their picture.

@@ -46,7 +46,7 @@ enum EmailStatusText {
 
   static let sources: [(key: String, label: String)] = [
     ("api", "API"), ("admin", "Operator"), ("test", "Test"), ("notification", "Notification"), ("feedback", "Feedback"), ("system", "HelpBites"),
-    ("campaign", "Campaign"), ("sequence", "Sequence")
+    ("campaign", "Campaign"), ("sequence", "Sequence"), ("form", "Lead form")
   ]
 
   static func source(_ key: String?) -> String {
@@ -163,6 +163,68 @@ struct EmailNotice: View {
     }
     .padding(12)
     .background((tone == .neutral ? Theme.textMuted : tone.color).opacity(0.1), in: RoundedRectangle(cornerRadius: Metrics.radius))
+  }
+}
+
+/// What a project's email still needs, under the tab bar of every Email tab (web: EmailSetupStrip.vue):
+/// a mailer on the server, a sender, the delivery webhook, and for campaigns and sequences a postal
+/// address and a sender that is not paused. Nothing shows once there is nothing to say. The judging is
+/// the server's; this only words it.
+struct EmailSetupStrip: View {
+  let checks: [EmailSetupCheck]
+  /// On Campaigns, Sequences and Settings, which have two more things to be ready.
+  var bulk = false
+  /// Opens Email → Settings.
+  let openSettings: () -> Void
+
+  /// Blocking things first; the delivery webhook is a nudge, shown while there is nothing worse.
+  private var problems: [EmailSetupCheck] {
+    let open = checks.filter { $0.state != "ok" && ($0.scope == "all" || bulk) && Self.words($0) != nil }
+    return open.filter { $0.state == "todo" } + open.filter { $0.state != "todo" }
+  }
+
+  private var blocking: Bool { problems.contains { $0.state == "todo" } }
+
+  var body: some View {
+    if !problems.isEmpty {
+      VStack(alignment: .leading, spacing: 6) {
+        HStack(spacing: 8) {
+          Image(systemName: blocking ? "exclamationmark.triangle" : "info.circle")
+            .font(.system(size: 14, weight: .medium))
+            .foregroundStyle(blocking ? Theme.warning : Theme.textMuted)
+          Text(blocking ? "Email cannot go out yet" : "Email works; one thing is worth fixing").font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
+          Spacer(minLength: 8)
+          Button("Open settings", action: openSettings).buttonStyle(.lnGhost)
+        }
+        ForEach(problems) { check in
+          if let words = Self.words(check) {
+            Text("\(Text(words.title).fontWeight(.medium).foregroundStyle(Theme.text)) \(words.text)")
+              .font(.lnCaption)
+              .foregroundStyle(Theme.textMuted)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.leading, 22)
+          }
+        }
+      }
+      .padding(.horizontal, Metrics.gutter)
+      .padding(.vertical, 10)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(blocking ? Theme.warning.opacity(0.08) : Theme.elevated.opacity(0.5))
+      .overlay(alignment: .bottom) { Rectangle().fill(Theme.border).frame(height: 0.5) }
+      .accessibilityElement(children: .contain)
+    }
+  }
+
+  /// `emailSetup.<key>.title` and `emailSetup.<key>.<state>` of en.json; a pair the server does not send has no words.
+  private static func words(_ check: EmailSetupCheck) -> (title: String, text: String)? {
+    switch (check.key, check.state) {
+    case ("mailer", "todo"): return ("Mail server.", "This server has no Mailgun API key, so it cannot send any email. Set MAILGUN_API_KEY.")
+    case ("sender", "todo"): return ("Sender.", "Neither this project nor the server has a from address and sending domain. Set them in Email → Settings.")
+    case ("webhook", "warn"): return ("Delivery events.", "Mailgun's webhook is not set up, so the log never learns about deliveries, opens or bounces and bounced addresses are not suppressed.")
+    case ("postalAddress", "todo"): return ("Postal address.", "Every campaign must carry one. Add it in Email → Settings.")
+    case ("paused", "todo"): return ("Bulk mail is paused.", "\(check.value ?? "").")
+    default: return nil
+    }
   }
 }
 

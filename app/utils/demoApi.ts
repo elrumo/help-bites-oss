@@ -1,7 +1,15 @@
 import { DEFAULT_FEEDBACK_CONFIG, type FeedbackPost } from '#shared/feedback'
+import { billingFromAttributes, type ConversationContextResponse } from '#shared/conversationHub'
 import { DEFAULT_BOARD_CONFIG, ROADMAP_CATEGORIES, type BoardItem } from '#shared/board'
 import { DEFAULT_MARKETING_CONFIG } from '#shared/marketing'
+import { DEFAULT_COMPANY } from '#shared/company'
+import { DEFAULT_HUB_CONFIG } from '#shared/hub'
+import { projectLook } from '#shared/projectLook'
+import { presetForm } from '#shared/leadForms'
+import { DEFAULT_PRICING_CHECKOUT, DEFAULT_PRICING_EXPERIMENT, DEFAULT_PRICING_OPTIONS, DEFAULT_PRICING_STYLE, addFunnel, buildPublicPricing, emptyFunnel, pricingTexts, starterPricing, type PricingFunnel, type PricingSnapshot } from '#shared/pricing'
+import { ALL_LEADS_SEGMENT, leadFormSegmentFilter } from '#shared/segments'
 import { DEFAULT_CHANGELOG_CONFIG, type ChangelogEntry, type ChangelogRelease } from '#shared/changelog'
+import { DEFAULT_BLOG_CONFIG, type BlogPost } from '#shared/blog'
 import { normalizeBrandConfig } from '#shared/brand'
 import { normalizeSettings } from '#shared/cms/content'
 import { BUILTIN_COMPONENTS } from '#shared/cms/library'
@@ -17,6 +25,9 @@ import type { EmailFolder, EmailTemplate } from '~~/server/utils/emails'
 import type { EmailLogEntry, EmailLogStatus, EmailSuppression } from '~~/server/utils/emailLogs'
 import type { AdminProject } from '~~/server/utils/projects'
 import type { ProjectOverview } from '~~/server/utils/overview'
+import { attentionTotal, sortAttention, type AttentionItem, type WorkspaceAttention } from '#shared/attention'
+import { buildEmailSetup, type EmailSetup } from '#shared/emailSetup'
+import { buildSetup, type ProjectSetup } from '#shared/setup'
 import { OVERVIEW_UNREAD_LIMIT, revenueChange, type WorkspaceOverview, type WorkspaceRevenue } from '#shared/overview'
 import { REVENUE_RANGES, STRIPE_ATTR, type RevenueRange, type RevenueReport, type StripeConnection, type StripePaymentDto } from '#shared/stripe'
 
@@ -76,15 +87,17 @@ const bugType = (projectId: string): ConversationType => ({
 
 function project(id: string, name: string, siteUrl: string, accent: string, flags: FeatureFlag[]): AdminProject {
   return {
-    id, slug: slug(name), publicKey: `pk_demo_${id}`, name, siteUrl, allowedOrigins: [siteUrl], theme: { accent },
+    id, slug: slug(name), publicKey: `pk_demo_${id}`, name, siteUrl, allowedOrigins: [siteUrl], theme: { accent }, look: projectLook({ name, theme: { accent } }), widgetHome: false,
+    company: { ...DEFAULT_COMPANY, name, address: '1 Demo Street, Lisbon, Portugal', email: `hello@${new URL(siteUrl).host}` }, legalLinks: { privacyUrl: '', termsUrl: '', cookiesUrl: '', refundUrl: '' }, hub: DEFAULT_HUB_CONFIG,
     allowAttachments: true, allowAnonymousUsers: false, chatNotice: '', brandLogoUrl: '', iconUrl: '', assistantLogoUrl: '', letUsersChooseType: false, allowOtherType: false,
     feedback: { ...DEFAULT_FEEDBACK_CONFIG, enabled: true, title: `${name} feedback` },
     board: DEFAULT_BOARD_CONFIG,
     changelog: DEFAULT_CHANGELOG_CONFIG,
+    blog: DEFAULT_BLOG_CONFIG,
     inboxPath: '/inbox', fromName: `${name} Support`, notifyEmails: [`support@${new URL(siteUrl).host}`],
     fromEmail: '', replyTo: '', mailDomain: '', emailLogContent: false,
     actionWebhookUrl: '', hasActionWebhookSecret: false, flags,
-    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, errorLinks: id === 'acme' ? [{ id: 'main', label: 'Acme', name: 'Acme', team: 'helpbites', serverId: '', provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }] : [], createdAt: ago(60 * 24 * 90)
+    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, widgetSeenAt: ago(30), identitySeenAt: id === 'acme' ? ago(30) : null, hiddenSections: [], errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, errorLinks: id === 'acme' ? [{ id: 'main', label: 'Acme', name: 'Acme', team: 'helpbites', serverId: '', provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }] : [], createdAt: ago(60 * 24 * 90)
   }
 }
 
@@ -101,11 +114,16 @@ const types: Record<string, ConversationType[]> = { acme: [supportType('acme'), 
 const secrets: Record<string, string> = {}
 
 const endUsers: EndUser[] = []
-const segments: { id: string, projectId: string, name: string, filter: unknown, createdAt: string, updatedAt: string }[] = []
-const contactExtras: Record<string, { tags?: string[], subscription?: string }> = {}
+// One lead form with its two segments, as a project that made a waitlist has them.
+const demoLeadForm = { ...presetForm('waitlist'), id: 'lf_demo1', projectId: 'acme', key: 'waitlist', name: 'Launch waitlist', active: true, settings: { doubleOptIn: true, confirmTemplate: '', welcomeTemplate: '', sequence: '', tags: ['waitlist'], redirectUrl: '' }, segment: 'seg_demo_leads', path: '/v1/forms/pk_demo/waitlist', pagePath: '/f/pk_demo/waitlist', createdAt: ago(60 * 24 * 40), updatedAt: ago(60 * 24 * 2) }
+const segments: { id: string, projectId: string, name: string, filter: unknown, auto: boolean, createdAt: string, updatedAt: string }[] = [
+  { id: 'seg_demo_leads', projectId: 'acme', name: 'Leads · Launch waitlist', filter: leadFormSegmentFilter('lf_demo1'), auto: true, createdAt: ago(60 * 24 * 40), updatedAt: ago(60 * 24 * 40) },
+  { id: 'seg_demo_all_leads', projectId: 'acme', name: 'All leads', filter: ALL_LEADS_SEGMENT, auto: true, createdAt: ago(60 * 24 * 40), updatedAt: ago(60 * 24 * 40) }
+]
+const contactExtras: Record<string, { tags?: string[], subscription?: string, language?: string }> = {}
 const DEMO_PLANS = ['free', 'pro', 'team']
 const demoCampaigns = [{
-  id: 'cmp_demo1', projectId: 'acme', name: 'September product update', status: 'sent', template: 'newsletter', templateName: 'Editorial digest', subject: 'What shipped in September, {{firstName}}',
+  id: 'cmp_demo1', projectId: 'acme', name: 'September product update', status: 'sent', template: 'newsletter', templateName: 'Editorial digest', blogPostId: '', subject: 'What shipped in September, {{firstName}}',
   audience: { segment: '', topic: 'product' }, scheduledAt: ago(60 * 24 * 6), startedAt: ago(60 * 24 * 6), finishedAt: ago(60 * 24 * 6 - 4), testMode: false, lastError: '',
   stats: { audience: 1284, sent: 1279, failed: 0, suppressed: 5, delivered: 1262, opened: 611, clicked: 143, bounced: 9, complained: 1, unsubscribed: 7 },
   createdAt: ago(60 * 24 * 8), updatedAt: ago(60 * 24 * 6)
@@ -114,17 +132,52 @@ const demoCampaigns = [{
 function asContact(u: EndUser) {
   const n = Number(u.id.replace(/\D/g, '')) || 0
   const extra = contactExtras[u.id] || {}
+  const lead = u.projectId === 'acme' && n % 4 === 0
   // What a Stripe sync writes on a paying customer's contact.
   const paid = DEMO_REVENUE[u.projectId]?.customers.find(([email]) => email === u.email)
   const stripe = paid ? { [STRIPE_ATTR.customer]: customerId(paid[0]), [STRIPE_ATTR.revenue]: paid[1], [STRIPE_ATTR.payments]: paid[2], [STRIPE_ATTR.status]: 'active' } : {}
   return {
-    id: u.id, externalId: u.externalId, email: u.email, name: u.name, username: '', avatarUrl: '',
+    id: u.id, externalId: u.externalId, email: u.email, name: u.name, username: '', avatarUrl: '', language: extra.language ?? (n % 5 === 0 ? 'es' : 'en'),
     attributes: { plan: DEMO_PLANS[n % 3]!, seats: (n % 5) + 1, ...stripe }, tags: extra.tags || (n % 2 ? ['beta'] : []),
     subscription: extra.subscription || (n % 3 === 0 ? 'none' : 'subscribed'), unsubscribedTopics: [],
-    consent: n % 3 === 0 ? null : { source: 'form', at: ago(60 * 24 * 20) }, sources: [], feedbackEmails: true,
+    consent: n % 3 === 0 ? null : { source: lead ? 'lead_form' : 'form', at: ago(60 * 24 * 20) }, sources: [], feedbackEmails: true,
+    // Every fourth person came in through the waitlist; the rest are the app's own users.
+    origin: { type: lead ? 'lead_form' : 'app', id: lead ? demoLeadForm.id : '', at: ago(60 * 24 * 30 + n) }, leadForms: lead ? [demoLeadForm.id] : [],
     lastSeenAt: ago(n * 37), createdAt: ago(60 * 24 * 30 + n), updatedAt: ago(n)
   }
 }
+// A published pricing table with written prices: the demo has no Stripe.
+const demoPricingSnapshot: PricingSnapshot = { name: 'Pricing', template: 'tiers', ...starterPricing('tiers'), style: DEFAULT_PRICING_STYLE, options: { ...DEFAULT_PRICING_OPTIONS, cumulative: true }, checkout: DEFAULT_PRICING_CHECKOUT, locale: 'en', translations: {} }
+function demoPricingTable() {
+  const published = buildPublicPricing({ key: 'pricing', version: 1, publishedAt: ago(60 * 24 * 3), project: { name: 'Acme', logoUrl: '', accent: '#5e6ad2' }, snapshot: demoPricingSnapshot, catalog: null })
+  const { name, ...rest } = demoPricingSnapshot
+  return {
+    id: 'pt_demo1', key: 'pricing', name, status: 'published', version: 1, ...rest, changed: false, published, publishedAt: ago(60 * 24 * 3),
+    warnings: [], texts: pricingTexts(demoPricingSnapshot), checkoutError: null, experiment: DEFAULT_PRICING_EXPERIMENT,
+    path: '/v1/pricing/pk_demo/pricing', pagePath: '/pricing/pk_demo/pricing', updatedAt: ago(60 * 24 * 3)
+  }
+}
+
+// Its numbers since it went live: a few visits a day, some clicks, the odd purchase.
+function demoPricingStats(days: number) {
+  const total = emptyFunnel()
+  const series: Array<{ day: string } & PricingFunnel> = []
+  for (let i = Math.min(days, 3) - 1; i >= 0; i--) {
+    const visitors = 38 + ((i * 17) % 23)
+    const clicks = Math.round(visitors * 0.18)
+    const conversions = i === 1 ? 2 : 1
+    const funnel: PricingFunnel = { views: visitors + 9, visitors, clicks, checkouts: clicks - 2, conversions, revenue: { usd: conversions * 12000 }, plans: { pro: { clicks: clicks - 3, checkouts: clicks - 4, conversions }, team: { clicks: 3, checkouts: 2, conversions: 0 } } }
+    series.push({ day: ago(60 * 24 * i).slice(0, 10), ...funnel })
+    addFunnel(total, funnel)
+  }
+  return { total, days: series, experiment: null, conversions: null }
+}
+
+function demoLeadFormWithStats() {
+  const leads = endUsers.map(asContact).filter(c => c.leadForms.includes(demoLeadForm.id))
+  return { ...demoLeadForm, stats: { leads: leads.length, confirmed: leads.filter(c => c.subscription === 'subscribed').length } }
+}
+
 const conversations: Conversation[] = []
 const messages: Message[] = []
 const errorServers = [
@@ -158,7 +211,7 @@ function seed(projectId: string, user: Omit<EndUser, 'id' | 'projectId'>, subjec
   const conversation: Conversation = {
     id, projectId, endUserId: endUser.id, assistantId: '', subject, status: status.key, statusCategory: status.category, type: type.key, priority: 'normal',
     assigneeId: '', assignedAt: null, tags: [], fields: {}, subjectRef: null, reopenedAt: null, closedAt: null, doneAt: null, context: null,
-    lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 0, userReadAt: null, agentReadAt: null, archivedAt: null,
+    lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 0, userReadAt: null, agentReadAt: null, archivedAt: null, feedbackPostIds: [],
     createdAt: ago(thread[0]![2]), ...extra
   }
   const agentName = projects.find(p => p.id === projectId)!.fromName
@@ -268,6 +321,10 @@ const emailSuppressions: EmailSuppression[] = [
 const find = <T extends { id: string }>(list: T[], id: string | undefined, what: string): T => list.find(item => item.id === id) || fail(404, `${what} not found`)
 const typeOf = (c: Conversation) => types[c.projectId]?.find(t => t.key === c.type) || supportType(c.projectId)
 const userOf = (c: Conversation) => endUsers.find(u => u.id === c.endUserId)!
+const demoSavedReplies = [
+  { id: 'sr_demo1', title: 'Thanks, looking into it', shortcut: 'looking', body: 'Hi {{firstName}}, thanks for the report. We are looking into it and will write back as soon as we know more.' },
+  { id: 'sr_demo2', title: 'Refund policy', shortcut: 'refund', body: 'Hi {{firstName}}, you can ask for a refund within 30 days of the charge. Reply here and we will take care of it.' }
+]
 
 // Stripe, for the overview and the Revenue tab: net and MRR (at each month end) for the last
 // 12 months, oldest first, in dollars; today's paying plans (name, subscribers, MRR), top
@@ -380,6 +437,32 @@ function applyProject(p: AdminProject, body: Record<string, any>) {
   if (actionWebhookSecret) p.hasActionWebhookSecret = true
 }
 
+
+// What the setup checklist and the attention list say, from the demo's own rows.
+function demoSetup(p: AdminProject): ProjectSetup {
+  const stripe = DEMO_REVENUE[p.id]
+  return buildSetup({
+    hiddenSections: p.hiddenSections, allowedOrigins: p.allowedOrigins.length, widgetSeenAt: p.widgetSeenAt, identitySeenAt: p.identitySeenAt, allowAnonymousUsers: p.allowAnonymousUsers,
+    notifyEmails: p.notifyEmails.length, mailerReady: true, pushDevices: 0, fromEmail: p.fromEmail,
+    assistants: { total: 0, live: 0, first: '' }, stripe: { connected: Boolean(stripe), synced: Boolean(stripe), error: '' }, repos: 0, errorTracker: { connected: p.errors.connected, name: p.errors.providerName }
+  })
+}
+
+function demoEmailSetup(p: AdminProject): EmailSetup {
+  return buildEmailSetup({ apiKey: true, domain: p.mailDomain || 'mail.acme.app', fromEmail: p.fromEmail || 'hello@mail.acme.app', webhook: true, postalAddress: p.marketing.postalAddress, pausedReason: '' })
+}
+
+function demoAttention(p: AdminProject): AttentionItem[] {
+  const item = (kind: AttentionItem['kind'], count: number, section: string, at: string | null, extra: Partial<AttentionItem> = {}): AttentionItem[] => count ? [{ key: `${kind}:${p.id}`, kind, projectId: p.id, count, value: '', detail: '', section, at, ...extra }] : []
+  const drafts = changelogEntries.filter(entry => entry.projectId === p.id && entry.status === 'draft' && entry.reviewStatus === 'pending')
+  const failed = emailLogs.filter(e => e.projectId === p.id && ['failed', 'bounced', 'complained', 'suppressed'].includes(e.status))
+  return [
+    ...item('drafts', drafts.length, 'changelog', drafts[0]?.createdAt || null, { value: drafts[0]?.title || '' }),
+    ...item('bounces', failed.length, 'email?view=log', failed[0]?.createdAt || null)
+  ]
+}
+const demoUnread = () => conversations.filter(c => !c.archivedAt).reduce((sum, c) => sum + c.unreadByAgent, 0)
+
 // ---- routes -------------------------------------------------------------------
 
 // Acme's feedback board, project board and changelog. They tell one story: the
@@ -389,6 +472,7 @@ function applyProject(p: AdminProject, body: Record<string, any>) {
   const acme = projects[0]!
   acme.board = { ...DEFAULT_BOARD_CONFIG, enabled: true, syncFeedback: true, labels: [{ key: 'web', label: 'Web', color: 'info' }, { key: 'ios', label: 'iOS', color: 'warning' }, { key: 'api', label: 'API', color: 'success' }] }
   acme.changelog = { ...DEFAULT_CHANGELOG_CONFIG, enabled: true, autoDraft: true }
+  acme.blog = { ...DEFAULT_BLOG_CONFIG, enabled: true, title: 'The Acme blog', description: 'How we build Acme, and what is new.' }
 }
 
 const feedbackPosts: FeedbackPost[] = []
@@ -419,7 +503,7 @@ function boardItem(number: number, title: string, status: string, statusCategory
   boardItems.push({
     id: `item_demo${number}`, projectId: 'acme', number, title, description: '', publicDescription: isPublic ? title : '', status, statusCategory,
     rank: boardItems.length + 1, priority, assigneeId, labels, targetDate: null, public: isPublic,
-    feedbackPostIds: posts.map(post => post.id), conversationIds,
+    feedbackPostIds: posts.map(post => post.id), conversationIds, errorRefs: [],
     voteCount: posts.reduce((sum, post) => sum + post.voteCount, 0),
     posts: posts.map(post => ({ ...postRef(post), voteCount: post.voteCount, hidden: false })),
     conversations: conversationIds.map(id => ({ id, subject: id === 'conv_demo5' ? 'Export stuck' : 'Calendar shows tasks a day early', status: 'open', endUserName: id === 'conv_demo5' ? 'Maya Chen' : 'Priya Natarajan' })),
@@ -453,6 +537,21 @@ changelogEntry(5, 'Calendar dates no longer shift in Safari', 'Tasks showed up a
 const changelogReleases: ChangelogRelease[] = [
   { id: 'rel_demo1', projectId: 'acme', version: '2.4.0', title: 'Workspace URLs and faster search', summary: '', status: 'published', publishedAt: ago(60 * 24 * 2), createdAt: ago(60 * 24 * 3), updatedAt: ago(60 * 24 * 2) }
 ]
+
+// Acme's blog: a published story about the release, and a draft in progress.
+const blogPosts: BlogPost[] = []
+function blogPost(n: number, title: string, body: string, status: 'draft' | 'published', minutesAgo: number, extra: Partial<BlogPost> = {}) {
+  const published = status === 'published'
+  const excerpt = body.replace(/[#*_`>]/g, '').split('\n').find(line => line.trim())?.trim().slice(0, 200) || ''
+  blogPosts.push({
+    id: `blog_demo${n}`, projectId: 'acme', type: 'post', title, slug: slug(title), excerpt, excerptWritten: false, body, bodyFormat: 'markdown', bodyHtml: body.split('\n\n').map(p => `<p>${p}</p>`).join(''),
+    coverImageUrl: '', coverImageAlt: '', tags: [], featured: false, visibility: 'public', metaTitle: '', metaDescription: '', ogImageUrl: '', canonicalUrl: '', status, publishedAt: published ? ago(minutesAgo) : null, live: published, authorName: 'You', readingMinutes: 3,
+    commentsOpen: true, commentCount: 0, reactions: [], newsletter: null, url: `/blog/pk_demo_acme/${slug(title)}`, createdAt: ago(minutesAgo + 120), updatedAt: ago(minutesAgo), ...extra
+  })
+}
+blogPost(1, 'How we made notebook search work offline', 'Search used to wait for the server. In 2.4 it runs on your device first, so results show as you type, even on a plane.\n\nHere is how the index fits in a few megabytes, and what we tried first.', 'published', 60 * 24 * 2, { tags: ['Engineering'], featured: true, reactions: [{ key: 'heart', count: 12 }, { key: 'rocket', count: 5 }] })
+blogPost(2, 'Markdown export is coming', 'You asked, and it is nearly done: one zip per notebook, a file per page, images included.', 'draft', 60 * 2, { tags: ['Product'] })
+blogPost(3, 'About Acme', 'We are three people making a notebook that works offline and syncs when it can.', 'published', 60 * 24 * 30, { type: 'page' })
 
 const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/admin\/me$/, () => ({ agent: ME, workspace: WORKSPACE, role: 'owner', workspaces: [WORKSPACE], edition: 'community', plan: { id: UNLIMITED_PLAN.id, name: UNLIMITED_PLAN.name, unlimited: true }, features: { ...UNLIMITED_PLAN.features, teammatePasswords: true }, links: { sourceCode: '/source' } })],
@@ -493,28 +592,34 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const p = find(projects, params[0], 'Project')
     const scoped = conversations.filter(c => c.projectId === p.id)
     const mail = emailLogs.filter(e => e.projectId === p.id)
-    const failed = mail.filter(e => ['failed', 'bounced', 'complained', 'suppressed'].includes(e.status)).length
     const unread = scoped.filter(c => c.unreadByAgent > 0).length
-    const origins = p.allowedOrigins.length
     return {
       stats: [
         { key: 'open', label: 'Open conversations', value: scoped.filter(c => c.statusCategory === 'open' || c.statusCategory === 'pending').length, section: 'conversations' },
         { key: 'new', label: 'New this week', value: scoped.length, section: 'conversations' },
         { key: 'emails', label: 'Emails sent · 7d', value: mail.length, section: 'email?view=log' }
       ],
-      health: [
-        { key: 'chat', label: 'Chat widget', state: origins ? 'ok' : 'warn', detail: origins ? `${origins} allowed origin${origins === 1 ? '' : 's'}` : 'No allowed origins', section: 'dev' },
-        { key: 'email', label: 'Email sending', state: 'ok', detail: p.fromEmail || 'Default sender', section: 'settings' },
-        { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', detail: p.feedback.enabled ? 'On' : 'Off', section: 'feedback' },
-        { key: 'errors', label: 'Error tracking', state: p.errors.connected ? 'ok' : 'off', detail: p.errors.connected ? p.errors.providerName : 'Not connected', section: 'errors' }
-      ],
+      setup: demoSetup(p),
       attention: [
-        { key: 'unread', label: 'Unread conversations', count: unread, section: 'conversations' },
-        { key: 'emails', label: 'Failed emails · 7d', count: failed, section: 'email?view=log' }
-      ].filter(item => item.count > 0),
+        ...(unread ? [{ key: `unread:${p.id}`, kind: 'unread' as const, projectId: p.id, count: unread, value: '', detail: '', section: 'conversations', at: null }] : []),
+        ...sortAttention(demoAttention(p))
+      ],
       activity: scoped.filter(c => c.lastMessageAt).sort((a, b) => String(b.lastMessageAt).localeCompare(String(a.lastMessageAt))).slice(0, 10)
         .map(c => ({ id: `c:${c.id}`, title: userOf(c).name || userOf(c).email || 'Conversation', detail: c.lastMessagePreview, at: String(c.lastMessageAt), section: 'conversations', conversationId: c.id }))
     }
+  }],
+  ['GET', /^\/admin\/projects\/([^/]+)\/setup$/, ({ params }): ProjectSetup => demoSetup(find(projects, params[0], 'Project'))],
+  ['GET', /^\/admin\/projects\/([^/]+)\/email-setup$/, ({ params }): EmailSetup => demoEmailSetup(find(projects, params[0], 'Project'))],
+  ['GET', /^\/admin\/unread$/, () => ({ unreadMessages: demoUnread() })],
+  ['GET', /^\/admin\/attention$/, (): WorkspaceAttention => {
+    const items = sortAttention(projects.flatMap(demoAttention))
+    return { unreadMessages: demoUnread(), total: attentionTotal(items), items }
+  }],
+  // The same shape as the server's search, over the demo's conversations (there is no knowledge to search here).
+  ['GET', /^\/admin\/search$/, ({ query }) => {
+    const needle = String(query.q || '').trim().toLowerCase()
+    const rows = needle ? conversations.filter(c => `${c.subject} ${c.lastMessagePreview} ${userOf(c).name} ${userOf(c).email}`.toLowerCase().includes(needle)).slice(0, 20) : []
+    return { conversations: rows, endUsers: Object.fromEntries(rows.map(c => [c.endUserId, serializeUser(userOf(c))])), faqs: [] }
   }],
   ['GET', /^\/admin\/overview$/, ({ query }): WorkspaceOverview => {
     const open = (c: Conversation) => c.statusCategory === 'open' || c.statusCategory === 'pending'
@@ -609,6 +714,17 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['POST', /^\/admin\/errors\/([^/]+)\/analyze$/, ({ body }) => body.prompt
     ? { prompt: 'Exception: TypeError: Cannot read properties of undefined', files: ['acme/web/src/checkout.ts'] }
     : { text: '**Likely cause**\n\n`cart.items` is undefined when the cart is empty.\n\n**Suggested fix**\n\n```diff\n- const total = cart.items.reduce(...)\n+ const total = (cart.items ?? []).reduce(...)\n```\n\n**How to verify**\n\nSubmit an empty cart.\n\n**Impact**\n\nCheckout fails for empty carts.', files: ['acme/web/src/checkout.ts'], cached: false }],
+  // Filing an error on the board: one item per issue, as the server does.
+  ['GET', /^\/admin\/errors\/([^/]+)\/board$/, ({ params }) => ({ item: boardItems.find(item => item.errorRefs.some(ref => ref.issueId === params[0])) || null, boardEnabled: true })],
+  ['POST', /^\/admin\/errors\/([^/]+)\/board$/, ({ params }) => {
+    const issue = errorIssues.find(item => item.id === params[0]) || fail(404, 'Error not found')
+    const existing = boardItems.find(item => item.errorRefs.some(ref => ref.issueId === issue.id))
+    if (existing) return { item: existing, created: false }
+    boardItem(boardItems.length + 1, issue.title, 'backlog', 'open', [], '', '', [], [], false, 0)
+    const item = boardItems[boardItems.length - 1]!
+    item.errorRefs = [{ provider: 'glitchtip', issueId: issue.id, linkId: 'main', title: issue.title, url: issue.url }]
+    return { item, created: true }
+  }],
   ['PUT', /^\/admin\/errors\/([^/]+)$/, ({ params, body }) => {
     const issue = errorIssues.find(item => item.id === params[0]) || fail(404, 'Error not found')
     issue.status = body.status === 'open' ? 'unresolved' : body.status === 'closed' ? 'ignored' : 'resolved'
@@ -620,20 +736,33 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const q = (query.q || '').toLowerCase()
     const scoped = conversations.filter(c => !query.project || c.projectId === query.project)
     const live = scoped.filter(c => !c.archivedAt)
-    const rows = scoped
-      .filter(c => query.archived === 'any' || (query.archived === 'true' ? c.archivedAt : !c.archivedAt))
+    // As the server: every filter but the view, then each view (and its count) from those rows.
+    const filtered = scoped
       .filter(c => (!query.status || c.status === query.status) && (!query.priority || c.priority === query.priority) && (!query.type || c.type === query.type) && (!query.endUser || c.endUserId === query.endUser))
       .filter(c => !q || Object.values(userOf(c)).some(v => v.toLowerCase().includes(q)))
+    const views = {
+      all: (c: Conversation) => !c.archivedAt,
+      unassigned: (c: Conversation) => !c.archivedAt && !c.assigneeId,
+      mine: (c: Conversation) => !c.archivedAt && c.assigneeId === ME.id,
+      open: (c: Conversation) => !c.archivedAt && c.statusCategory === 'open',
+      unread: (c: Conversation) => !c.archivedAt && c.unreadByAgent > 0,
+      archived: (c: Conversation) => Boolean(c.archivedAt)
+    }
+    const view = (query.view && query.view in views ? query.view : query.archived === 'true' ? 'archived' : 'all') as keyof typeof views
+    const rows = filtered
+      .filter(c => query.archived === 'any' && view === 'all' ? true : views[view](c))
       .sort((a, b) => String(b.lastMessageAt).localeCompare(String(a.lastMessageAt)))
     const counts = { status: {} as Record<string, number>, type: {} as Record<string, number>, assignee: {} as Record<string, number> }
     for (const c of live) for (const [bucket, key] of [['status', c.status], ['type', c.type], ['assignee', c.assigneeId || 'unassigned']] as const) counts[bucket][key] = (counts[bucket][key] || 0) + 1
+    const viewCounts = Object.fromEntries(Object.entries(views).map(([key, match]) => [key, filtered.filter(match).length]))
     return {
       conversations: rows,
       endUsers: Object.fromEntries(rows.map(c => [c.endUserId, serializeUser(userOf(c))])),
       hasMore: false,
       totalUnread: conversations.filter(c => !c.archivedAt).reduce((sum, c) => sum + c.unreadByAgent, 0),
       counts,
-      archivedCount: scoped.length - live.length
+      viewCounts,
+      archivedCount: viewCounts.archived
     }
   }],
   ['POST', /^\/admin\/conversations$/, ({ body }) => {
@@ -644,7 +773,7 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const conversation: Conversation = {
       id: newId('conv'), projectId: p.id, endUserId: user.id, assistantId: '', subject: String(body.subject || ''), status: status.key, statusCategory: status.category, type: 'support', priority: 'normal',
       assigneeId: ME.id, assignedAt: now(), tags: [], fields: {}, subjectRef: null, reopenedAt: null, closedAt: null, doneAt: null, context: null,
-      lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 1, userReadAt: null, agentReadAt: now(), archivedAt: null, createdAt: now()
+      lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 1, userReadAt: null, agentReadAt: now(), archivedAt: null, feedbackPostIds: [], createdAt: now()
     }
     conversations.push(conversation)
     messages.push(message(conversation.id, 'agent', p.fromName, String(body.body || ''), now()))
@@ -655,6 +784,23 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const c = find(conversations, params[0], 'Conversation')
     return { conversation: c, endUser: serializeUser(userOf(c)), project: projects.find(p => p.id === c.projectId) }
   }],
+  // The customer panel: who they are, what they pay, earlier threads and the feedback they follow.
+  ['GET', /^\/admin\/conversations\/([^/]+)\/context$/, ({ params }): ConversationContextResponse => {
+    const c = find(conversations, params[0], 'Conversation')
+    const user = userOf(c)
+    const attributes = asContact(user).attributes as Record<string, any>
+    const plan = String(attributes.plan || '')
+    const post = feedbackPosts.find(p => p.projectId === c.projectId && p.title === c.subject)
+    return {
+      contact: { id: user.id, name: user.name, email: user.email, externalId: user.externalId, language: '', lastSeenAt: ago(12) },
+      billing: billingFromAttributes({ ...attributes, [STRIPE_ATTR.plan]: plan ? plan[0]!.toUpperCase() + plan.slice(1) : '', [STRIPE_ATTR.mrr]: ({ free: 0, pro: 19, team: 49 } as Record<string, number>)[plan] ?? 0 }, 'usd'),
+      pastConversations: conversations.filter(o => o.endUserId === c.endUserId && o.id !== c.id).slice(0, 10).map(o => ({ id: o.id, subject: o.subject, status: o.status, statusCategory: o.statusCategory, lastMessageAt: o.lastMessageAt, lastMessagePreview: o.lastMessagePreview, createdAt: o.createdAt })),
+      feedbackPosts: post ? [{ id: post.id, number: post.number, title: post.title, status: post.status, statusLabel: post.status, statusCategory: post.statusCategory, following: true }] : [],
+      faqModels: { models: [], defaultModelId: '' }
+    }
+  }],
+  ['GET', /^\/admin\/conversations\/([^/]+)\/suggestions$/, () => ({ faqs: [], savedReplies: demoSavedReplies })],
+  ['GET', /^\/admin\/saved-replies$/, () => ({ replies: demoSavedReplies.map(reply => ({ ...reply, projectId: 'acme', createdAt: ago(60 * 24 * 9), updatedAt: ago(60 * 24 * 9) })) })],
   ['PATCH', /^\/admin\/conversations\/([^/]+)$/, ({ params, body }) => {
     const c = find(conversations, params[0], 'Conversation')
     if (typeof body.status === 'string') setStatus(c, body.status)
@@ -838,6 +984,12 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/feedback\/([^/]+)$/, ({ params }) => ({ post: find(feedbackPosts, params[0], 'Post'), comments: [] })],
   ['GET', /^\/admin\/board-items$/, ({ query }) => { find(projects, query.project, 'Project'); return { items: boardItems.filter(item => item.projectId === query.project) } }],
   ['GET', /^\/admin\/changelog\/entries$/, ({ query }) => { find(projects, query.project, 'Project'); return { entries: changelogEntries.filter(entry => entry.projectId === query.project) } }],
+  ['GET', /^\/admin\/blog\/posts$/, ({ query }) => { find(projects, query.project, 'Project'); return { posts: blogPosts.filter(post => post.projectId === query.project) } }],
+  ['GET', /^\/admin\/blog\/posts\/([^/]+)$/, ({ params }) => ({ post: find(blogPosts, params[0], 'Post') })],
+  ['GET', /^\/admin\/blog\/comments$/, ({ query }) => { find(projects, query.project, 'Project'); return { comments: [], total: 0, hasMore: false } }],
+  // Nothing in the demo answers a conversation or mentions an item from GitHub.
+  ['GET', /^\/admin\/changelog\/entries\/([^/]+)\/linked-conversations$/, ({ params }) => ({ count: 0, conversations: [], defaultBody: `Good news: “${find(changelogEntries, params[0], 'Entry').title}” has just shipped.` })],
+  ['GET', /^\/admin\/github-refs$/, () => ({ refs: [] })],
   ['GET', /^\/admin\/changelog\/releases$/, ({ query }) => { find(projects, query.project, 'Project'); return { releases: changelogReleases.filter(release => release.projectId === query.project) } }],
   ['GET', /^\/feedback\/roadmap$/, ({ query }) => {
     const { board } = find(projects, query.project, 'Project')
@@ -848,18 +1000,29 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/contacts$/, ({ query }) => {
     const q = (query.q || '').toLowerCase()
     const rows = endUsers.filter(u => u.projectId === query.project && (!q || [u.name, u.email, u.externalId].some(v => v.toLowerCase().includes(q)))).map(asContact)
-    return { contacts: rows.filter(c => !query.subscription || c.subscription === query.subscription), nextCursor: null }
+    return { contacts: rows.filter(c => (!query.subscription || c.subscription === query.subscription) && (!query.origin || c.origin.type === query.origin) && (!query.leadForm || c.leadForms.includes(query.leadForm))), nextCursor: null }
   }],
   ['GET', /^\/contacts\/([^/]+)$/, ({ params }) => ({ contact: asContact(find(endUsers, params[0], 'Contact')) })],
   ['PATCH', /^\/contacts\/([^/]+)$/, ({ params, body }) => {
     const user = find(endUsers, params[0], 'Contact')
     if (typeof body.name === 'string') user.name = body.name
-    contactExtras[user.id] = { ...contactExtras[user.id], ...(body.tags ? { tags: body.tags } : {}), ...(body.subscription ? { subscription: body.subscription } : {}) }
+    contactExtras[user.id] = { ...contactExtras[user.id], ...(body.tags ? { tags: body.tags } : {}), ...(body.subscription ? { subscription: body.subscription } : {}), ...(typeof body.language === 'string' ? { language: body.language } : {}) }
     return { contact: asContact(user) }
+  }],
+  // One timeline from the demo's conversations and mail (the real one also merges feedback, votes, sequences and onboarding).
+  ['GET', /^\/contacts\/([^/]+)\/activity$/, ({ params, query }) => {
+    const user = find(endUsers, params[0], 'Contact')
+    const before = query.before ? new Date(query.before).getTime() : Infinity
+    const items = [
+      ...conversations.filter(c => c.endUserId === user.id).map(c => ({ id: `conversation:${c.id}`, type: 'conversation', at: c.createdAt, title: c.subject || 'Conversation', detail: c.status, ref: { kind: 'conversation', id: c.id } })),
+      ...emailLogs.filter(l => l.to === user.email).map(l => ({ id: `email:${l.id}`, type: 'email', at: l.createdAt, title: l.subject, detail: `${l.source} · ${l.status}`, ref: { kind: 'email_log', id: l.id } })),
+      { id: `joined:${user.id}`, type: 'joined', at: asContact(user).createdAt, title: 'Added as a contact', detail: '', ref: null }
+    ].filter(item => new Date(item.at).getTime() < before).sort((a, b) => b.at.localeCompare(a.at))
+    return { items: items.slice(0, Number(query.limit) || 50), nextBefore: null }
   }],
   ['GET', /^\/segments$/, ({ query }) => ({ segments: segments.filter(s => s.projectId === query.project) })],
   ['POST', /^\/segments$/, ({ body }) => {
-    const segment = { id: newId('seg'), projectId: String(body.project), name: String(body.name || 'Segment'), filter: body.filter || { match: 'all', rules: [] }, createdAt: now(), updatedAt: now() }
+    const segment = { id: newId('seg'), projectId: String(body.project), name: String(body.name || 'Segment'), filter: body.filter || { match: 'all', rules: [] }, auto: false, createdAt: now(), updatedAt: now() }
     segments.push(segment)
     return { segment }
   }],
@@ -877,6 +1040,17 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const rows = endUsers.filter(u => u.projectId === body.project).map(asContact)
     return { count: rows.length, sample: rows.slice(0, 10) }
   }],
+
+  ['GET', /^\/admin\/lead-forms$/, ({ query }) => ({ forms: query.project === 'acme' ? [demoLeadFormWithStats()] : [] })],
+  ['GET', /^\/admin\/lead-forms\/([^/]+)$/, ({ params }) => ({ form: find([demoLeadFormWithStats()], params[0], 'Form') })],
+
+  ['GET', /^\/admin\/pricing-tables$/, ({ query }) => ({ tables: query.project === 'acme' ? [demoPricingTable()] : [], stripe: { connected: false, error: '' } })],
+  ['GET', /^\/admin\/pricing-tables\/([^/]+)$/, ({ params }) => ({ table: find([demoPricingTable()], params[0], 'Pricing table') })],
+  ['GET', /^\/admin\/pricing-tables\/([^/]+)\/stats$/, ({ params, query }) => {
+    find([demoPricingTable()], params[0], 'Pricing table')
+    return demoPricingStats(Number(query.days) || 30)
+  }],
+  ['GET', /^\/admin\/stripe\/catalog$/, () => ({ connected: false, catalog: null, paymentLinks: false, error: '' })],
 
   ['GET', /^\/admin\/contact-sources$/, () => ({ sources: [], kinds: [{ kind: 'parse', label: 'Parse Server' }, { kind: 'postgres', label: 'Postgres / Supabase' }, { kind: 'firestore', label: 'Firebase / Firestore' }], ready: true })],
 

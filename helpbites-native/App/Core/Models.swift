@@ -26,6 +26,10 @@ struct Project: Codable, Identifiable, Equatable, Sendable {
   let errors: ProjectErrors?
   /// The project board's settings; nil from a server without boards.
   let board: BoardConfig?
+  /// Web paths (`revenue`, `types`) of the sections this project hid from its sidebar; nil from an older server.
+  let hiddenSections: [String]?
+  /// When a signed identity token last arrived from the host's backend; nil until one has (or from an older server).
+  let identitySeenAt: String?
 }
 
 struct Attachment: Codable, Equatable, Identifiable, Sendable {
@@ -56,6 +60,8 @@ struct Conversation: Codable, Identifiable, Equatable, Sendable {
   var userReadAt, agentReadAt: String?
   /// Set while the team has archived it; archived threads leave the inbox queue.
   let archivedAt: String?
+  /// Feedback posts the team linked to it (ids); nil from an older server.
+  let feedbackPostIds: [String]?
   let createdAt: String
 }
 
@@ -73,7 +79,8 @@ struct Message: Codable, Identifiable, Equatable, Sendable {
 
 struct ConversationDetail: Codable, Sendable { let conversation: Conversation; let endUser: EndUser; let project: Project }
 struct InboxCounts: Codable, Sendable { let status, type, assignee: [String: Int] }
-struct InboxResponse: Codable, Sendable { let conversations: [Conversation]; let endUsers: [String: EndUser]; let hasMore: Bool; let totalUnread: Int; let counts: InboxCounts?; let unreadByProject: [String: Int]?; let archivedCount: Int? }
+/// `viewCounts`: each view's count under the list's own filters, keyed by `InboxQueue` raw value; nil from an older server.
+struct InboxResponse: Codable, Sendable { let conversations: [Conversation]; let endUsers: [String: EndUser]; let hasMore: Bool; let totalUnread: Int; let counts: InboxCounts?; let viewCounts: [String: Int]?; let unreadByProject: [String: Int]?; let archivedCount: Int? }
 struct MessagePage: Codable, Sendable { let messages: [Message]; let hasMore: Bool }
 struct LoginResponse: Codable, Sendable { let sessionToken: String; let agent: Agent }
 /// A workspace as the server lists it (`serializeWorkspace`); `role` is yours in it.

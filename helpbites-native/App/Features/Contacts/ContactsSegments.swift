@@ -11,6 +11,8 @@ struct SegmentsList: View {
   @State private var error = ""
   @State private var editing: SegmentEditorTarget?
   @State private var deleting: ContactSegment?
+  /// The segment whose members are being put on a sequence.
+  @State private var sequenceFor: ContactSegment?
 
   var body: some View {
     List {
@@ -31,6 +33,7 @@ struct SegmentsList: View {
               Text("\(segment.filter.rules.count) rule\(segment.filter.rules.count == 1 ? "" : "s")").font(.lnMeta).foregroundStyle(Theme.textMuted)
             }
             Spacer()
+            if segment.auto == true { Tag(text: "Auto") }
             Text(counts[segment.id].map { "\($0.formatted()) people" } ?? "…").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
           }
           .frame(minHeight: Metrics.rowHeight)
@@ -38,8 +41,12 @@ struct SegmentsList: View {
         }
         .buttonStyle(.plain)
         .linearRow()
-        .contextMenu { Button("Delete", role: .destructive) { deleting = segment } }
+        .contextMenu {
+          Button { sequenceFor = segment } label: { Label("Add everyone to a sequence", systemImage: "text.badge.plus") }
+          Button("Delete", role: .destructive) { deleting = segment }
+        }
         .swipeActions { Button("Delete", role: .destructive) { deleting = segment } }
+        .swipeActions(edge: .leading) { Button { sequenceFor = segment } label: { Label("Add to sequence", systemImage: "text.badge.plus") }.tint(Theme.accent) }
       }
     }
     .linearList()
@@ -49,6 +56,7 @@ struct SegmentsList: View {
     .sheet(item: $editing) { target in
       SegmentEditor(projectId: projectId, segment: target.segment) { Task { await load() } }
     }
+    .sheet(item: $sequenceFor) { segment in AddToSequenceSheet(projectId: projectId, segment: segment) }
     .confirmationDialog("Delete “\(deleting?.name ?? "")”?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible, presenting: deleting) { segment in
       Button("Delete segment", role: .destructive) { Task { await remove(segment) } }
     } message: { _ in Text("Campaigns that target it will send to all subscribers until you pick another.") }
@@ -100,6 +108,8 @@ struct SegmentEditor: View {
   @State private var previewError = ""
   @State private var saving = false
   @State private var error = ""
+  /// The project's lead forms by id, for "Lead form includes …".
+  @State private var forms: [String: String] = [:]
   private static let attributeToken = "__attribute"
 
   var body: some View {
@@ -139,6 +149,11 @@ struct SegmentEditor: View {
     #if os(macOS)
     .frame(minWidth: 520, minHeight: 560)
     #endif
+    .task {
+      struct Named: Decodable, Sendable { let id, name: String }
+      struct Forms: Decodable, Sendable { let forms: [Named] }
+      if let r: Forms = try? await session.get("/v1/admin/lead-forms", query: ["project": projectId]) { forms = Dictionary(r.forms.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a }) }
+    }
     .onAppear {
       guard name.isEmpty, filter.rules.isEmpty, let segment else { return }
       name = segment.name
@@ -175,6 +190,20 @@ struct SegmentEditor: View {
       if rule.wrappedValue.field == "subscription" {
         Picker("Value", selection: textBinding(rule)) {
           ForEach(SubscriptionStatus.allCases) { Text($0.label).tag($0.rawValue) }
+        }
+      } else if rule.wrappedValue.field == "origin" {
+        Picker("Value", selection: textBinding(rule)) {
+          ForEach(ContactOriginKind.allCases) { Text($0.label).tag($0.rawValue) }
+        }
+      } else if kind == .flag {
+        Picker("Value", selection: textBinding(rule)) {
+          Text("Yes").tag("yes")
+          Text("No").tag("no")
+        }
+      } else if rule.wrappedValue.field == "leadForms", !forms.isEmpty {
+        Picker("Form", selection: textBinding(rule)) {
+          Text("Pick a form").tag("")
+          ForEach(forms.sorted { $0.value < $1.value }, id: \.key) { Text($0.value).tag($0.key) }
         }
       } else if SegmentSpec.isDays(rule.wrappedValue.op) {
         TextField("Days (30)", text: textBinding(rule)).inputHints(.numberPad)
@@ -213,7 +242,7 @@ struct SegmentEditor: View {
     rule.wrappedValue.field = token == Self.attributeToken ? SegmentSpec.attributePrefix : token
     let ops = SegmentSpec.ops(SegmentSpec.kind(rule.wrappedValue.field))
     if !ops.contains(rule.wrappedValue.op) { rule.wrappedValue.op = ops[0] }
-    rule.wrappedValue.value = .string(rule.wrappedValue.field == "subscription" ? "subscribed" : "")
+    rule.wrappedValue.value = .string(rule.wrappedValue.field == "subscription" ? "subscribed" : rule.wrappedValue.field == "origin" ? "lead_form" : SegmentSpec.kind(rule.wrappedValue.field) == .flag ? "yes" : "")
   }
 
   /// Rules still waiting for their value don't count yet, as on the web.

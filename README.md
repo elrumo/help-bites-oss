@@ -7,11 +7,11 @@ documented API.
 
 - **API** — `/v1/*`, OpenAPI at `/_docs/scalar`. Every `/v1/admin/*` operation accepts either an operator session or a general `ak_…` admin key created in the panel’s API keys page, either for the whole workspace or limited to chosen projects.
 - **Panel** — `/inbox`, `/projects`, `/emails`, `/agents`, `/knowledge`, `/assistants`. A fresh install shows a sign-up form for the first operator (set `SETUP_TOKEN` so only you can complete it); teammates are added from the Team page (or `bun run add-agent`).
-- **Knowledge** — upload `SUPPORT_FAQ.md`, review the detected FAQs, organize them in a path tree, and assign them to AI assistants that suggest or (optionally) send grounded answers. Hybrid search via Meilisearch.
+- **Knowledge** — upload `SUPPORT_FAQ.md`, review the detected FAQs, organize them in a path tree, and assign them to AI assistants that (optionally) send grounded answers and hand the rest to your team. Hybrid search via Meilisearch.
 - **Widget** — `/widget.js` + `/embed`
-- **Feedback boards** — a public board per project (posts, votes, comments, roadmap). Drop in `/feedback.js` or build on `/v1/feedback`; operators triage it under Project → Feedback.
-- **Changelog** — entries grouped into releases, drafted from the posts, board items, tickets and errors they came from, public at `/changelog/pk_…` + RSS. Operators write it under Project → Changelog.
-- **Project boards & roadmap** — Linear-style items per project on a kanban, linked to feedback posts and inbox conversations. Items you mark public make the roadmap at `/roadmap/<pk>`, in the feedback embed, or on `GET /v1/feedback/roadmap`; operators plan under Project → Board.
+- **Feedback and roadmap** — a public feedback page per project (posts, votes, comments, roadmap), with a private planning board behind it. Drop in `/feedback.js` or build on `/v1/feedback`; operators triage it under Project → Feedback.
+- **Changelog** — entries grouped into releases, drafted from the posts, planning items, tickets and errors they came from, public at `/changelog/pk_…` + RSS. Operators write it under Project → Changelog.
+- **Planning & roadmap** — Linear-style items per project on a kanban, linked to feedback posts and inbox conversations. Items you mark public make the roadmap at `/roadmap/<pk>`, in the feedback embed, or on `GET /v1/feedback/roadmap`; operators plan under Project → Planning.
 - **Email** — a block email designer (sections, a reusable component library) with an AI designer (High / Ultra models) that converts pasted HTML into editable blocks. Master templates are designed once and linked into projects, each filling in its own brand and values. Projects send a template, their own HTML (or an uploaded `.html` file), a block document or a plain message with `POST /v1/emails/send`: per-recipient variables, attachments, custom headers, scheduling, idempotency keys and a per-project sender. Every message lands in a searchable log kept current by Mailgun's delivery webhook, bounces and complaints are suppressed automatically.
 - **Error tracking** — optional GlitchTip or Bugsink projects provide Sentry-compatible DSNs; alerts become inbox conversations and status syncs both ways.
 - Docs: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), [docs/CONNECTING.md](docs/CONNECTING.md), [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md), [docs/FEEDBACK.md](docs/FEEDBACK.md), [docs/EMAIL.md](docs/EMAIL.md), [docs/ERRORS.md](docs/ERRORS.md)
@@ -64,11 +64,11 @@ Don't want to run it yourself? HelpBites Cloud is the hosted, paid edition. See
 server/routes/v1/**      the API, one file per route
 server/utils/            auth (identity tokens, agent sessions), conversations (write rules), events (Redis → SSE), mailer, s3
 shared/                  vocabulary and pure transcript helpers, used by server and app
-shared/feedback.ts       feedback board vocabulary, defaults and validation
-shared/board.ts          project board and roadmap vocabulary, validation and grouping
-app/                     Nuxt UI panel and the embed pages (/embed chat, /embed/feedback board)
+shared/feedback.ts       feedback vocabulary, defaults and validation
+shared/board.ts          planning and roadmap vocabulary, validation and grouping
+app/                     Nuxt UI panel and the embed pages (/embed chat, /embed/feedback page)
 public/widget.js         the chat loader host sites include
-public/feedback.js       the feedback board loader
+public/feedback.js       the feedback page loader
 scripts/                 ensure-schema, migrate-workspaces, add-agent, dev-token, smoke (+ isolation)
 cli/                     `helpbites changelog`: git changes → changelog entries (see cli/README.md)
 ```

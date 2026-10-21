@@ -7,7 +7,7 @@
         <span class="grid size-5 place-items-center rounded-[5px] bg-primary-500 text-white" aria-hidden="true"><UIcon name="i-lucide-message-circle-more" class="size-3.5" /></span>
         HelpBites
       </NuxtLink>
-      <span v-if="totalUnread" class="text-xs tabular-nums text-muted">{{ totalUnread }}</span>
+      <span v-if="totalUnread" class="text-xs tabular-nums text-muted" :title="$t('nav.unreadMessages', totalUnread)">{{ totalUnread }}</span>
       <UButton icon="i-lucide-search" color="neutral" variant="ghost" square class="ml-auto" :aria-label="$t('common.search')" @click="paletteOpen = true" />
     </header>
 
@@ -37,7 +37,7 @@
 
     <UModal v-model:open="paletteOpen" :ui="{ content: 'sm:max-w-xl' }">
       <template #content>
-        <UCommandPalette :groups="paletteGroups" :placeholder="$t('layout.palettePlaceholder')" class="h-96" close @update:open="paletteOpen = $event" />
+        <UCommandPalette v-model:search-term="search" :groups="paletteGroups" :loading="searching" :placeholder="$t('layout.palettePlaceholder')" class="h-96" close @update:open="paletteOpen = $event" />
       </template>
     </UModal>
 
@@ -68,6 +68,8 @@
 
 <script setup lang="ts">
 import type { CommandPaletteGroup, CommandPaletteItem } from '@nuxt/ui'
+import { watchDebounced } from '@vueuse/core'
+import { conversationHits, faqHitsOf, hasSearchTerm, searchTerm, type PaletteHit, type SearchHits } from '~/utils/paletteSearch'
 
 const { t } = useI18n()
 const { api, projects, demo, context, logout, loadProjects, switchWorkspace } = useAgent()
@@ -81,7 +83,8 @@ const closedWorkspace = computed(() => {
   return ''
 })
 const route = useRoute()
-const totalUnread = useState<number>('inbox-total-unread', () => 0)
+// The unread badge, live on every page (see useLiveCounts).
+const { unread: totalUnread } = useLiveCounts()
 const paletteOpen = useState('palette-open', () => false)
 const newProjectOpen = useState('new-project-open', () => false)
 const composeOpen = useState('compose-open', () => false)
@@ -92,6 +95,28 @@ watch(() => route.fullPath, () => { navOpen.value = false; paletteOpen.value = f
 const settingsTab = useState('settings-tab', () => '')
 
 function go(to: string) { paletteOpen.value = false; return navigateTo(to) }
+
+// What the palette finds in the text of conversations and knowledge answers, not only which page to open.
+// Debounced, and a slower answer to an older term never replaces a newer one.
+const search = ref('')
+const found = ref<SearchHits | null>(null)
+const searching = ref(false)
+let searchRun = 0
+watchDebounced(search, async (raw) => {
+  const run = ++searchRun
+  if (!hasSearchTerm(raw)) { found.value = null; searching.value = false; return }
+  searching.value = true
+  try {
+    const result = await api<SearchHits>('/admin/search', { query: { q: searchTerm(raw) } })
+    if (run === searchRun) found.value = result
+  } catch {
+    if (run === searchRun) found.value = null
+  } finally {
+    if (run === searchRun) searching.value = false
+  }
+}, { debounce: 250 })
+watch(paletteOpen, (open) => { if (!open) { search.value = ''; found.value = null } })
+const hitItems = (hits: PaletteHit[]): CommandPaletteItem[] => hits.map(hit => ({ label: hit.label, suffix: hit.suffix, icon: hit.icon, onSelect: () => go(hit.to) }))
 function openSettings(tab: string) { paletteOpen.value = false; settingsTab.value = tab }
 const paletteGroups = computed<CommandPaletteGroup<CommandPaletteItem>[]>(() => [
   {
@@ -103,6 +128,8 @@ const paletteGroups = computed<CommandPaletteGroup<CommandPaletteItem>[]>(() => 
       { label: t('layout.emailTemplates'), icon: 'i-lucide-mail', kbds: ['g', 'e'], onSelect: () => go('/emails?view=templates') },
       { label: t('layout.emailLog'), icon: 'i-lucide-history', onSelect: () => go('/emails?view=log') },
       { label: t('nav.projects'), icon: 'i-lucide-boxes', kbds: ['g', 'p'], onSelect: () => go('/projects') },
+      { label: t('nav.knowledge'), icon: 'i-lucide-book-open', onSelect: () => go('/knowledge') },
+      { label: t('nav.team'), icon: 'i-lucide-users-round', onSelect: () => go('/agents') },
       { label: t('nav.developer'), icon: 'i-lucide-code-xml', onSelect: () => go('/developer') }
     ]
   },
@@ -121,13 +148,16 @@ const paletteGroups = computed<CommandPaletteGroup<CommandPaletteItem>[]>(() => 
   {
     id: 'projects',
     label: t('nav.projects'),
-    items: projects.value.flatMap(project => projectSections.map(section => ({
+    items: projects.value.flatMap(project => visibleSections(project.hiddenSections).map(section => ({
       label: section.path === 'overview' ? project.name : `${project.name} › ${t('sections.' + section.path)}`,
       suffix: section.path === 'overview' ? project.siteUrl : undefined,
       icon: section.icon,
       onSelect: () => go(`/projects/${project.id}/${section.path}`)
     })))
-  }
+  },
+  // Matches come from the server in its own order, so the palette must not filter them again.
+  { id: 'conversations', label: t('layout.searchConversations'), ignoreFilter: true, items: hitItems(conversationHits(found.value, { project: id => projects.value.find(p => p.id === id)?.name || '', unknownCustomer: t('inbox.unknownCustomer') })) },
+  { id: 'knowledge', label: t('layout.searchKnowledge'), ignoreFilter: true, items: hitItems(faqHitsOf(found.value)) }
 ])
 
 // Linear's keys: ⌘K to jump, C to write, G then a letter to go.

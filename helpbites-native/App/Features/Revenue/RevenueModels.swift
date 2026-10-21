@@ -45,7 +45,8 @@ struct RevenueReport: Decodable, Equatable, Sendable {
   /// `mrr` is the MRR at the end of the month (this month: today).
   struct Month: Decodable, Equatable, Sendable, Identifiable { let month: String; let net: Double; let payments: Int; let mrr: Double; var id: String { month } }
   struct Plan: Decodable, Equatable, Sendable, Identifiable { let plan: String; let subscribers: Int; let mrr: Double; var id: String { plan } }
-  struct Customer: Decodable, Equatable, Sendable, Identifiable { let customerId, email: String; let net: Double; let payments: Int; var id: String { customerId } }
+  /// `contactId` is the person in HelpBites this customer is ('' when nobody matches), so a row can open them.
+  struct Customer: Decodable, Equatable, Sendable, Identifiable { let customerId, email: String; let contactId: String?; let net: Double; let payments: Int; var id: String { customerId } }
   struct OtherCurrency: Decodable, Equatable, Sendable { let currency: String; let net: Double }
 
   let currency: String
@@ -63,6 +64,8 @@ struct RevenueReport: Decodable, Equatable, Sendable {
 
 struct StripePayment: Decodable, Equatable, Identifiable, Sendable {
   let id, customerId, email: String
+  /// The person in HelpBites this belongs to ('' when nobody matches); only the revenue report adds it.
+  let contactId: String?
   let amount, refunded: Double
   let currency, status, description, receiptUrl: String
   let paidAt: String?

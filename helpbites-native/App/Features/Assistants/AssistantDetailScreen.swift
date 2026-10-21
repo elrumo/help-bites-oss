@@ -1,17 +1,20 @@
 import SwiftUI
 
-/// One assistant's settings (web: pages/assistants/[id].vue): configuration, model and
-/// connection, auto-reply rules, knowledge access and a retrieval test. Public so other
-/// screens (the Team page's AI agents) can push it too.
+/// One assistant's settings (web: pages/assistants/[id].vue): what it still needs before it
+/// answers customers by itself, configuration, model and connection, auto-reply rules,
+/// knowledge access and a test answer. Public so other screens (the Team page's AI agents)
+/// can push it too.
 struct AssistantDetailScreen: View {
   let assistantId: String
   @Environment(SessionStore.self) private var session
+  @Environment(Workspace.self) private var workspace
   @Environment(\.dismiss) private var dismiss
   @Environment(\.horizontalSizeClass) private var sizeClass
   @State private var draft = AssistantDraft()
   @State private var projectId = ""
   @State private var hasApiKey = false
   @State private var llm: AssistantLLMStatus?
+  @State private var readiness: AssistantReadiness?
   @State private var defaultModel = AssistantVocabulary.defaultModel
   @State private var types: [AssistantTicketType] = []
   @State private var loaded = false
@@ -24,28 +27,36 @@ struct AssistantDetailScreen: View {
   @State private var confirmDelete = false
   @State private var copyId: String?
 
+  /// Where the readiness strip's links scroll to (the web's #assistant-form and #knowledge-access).
+  private static let formAnchor = "assistant-form"
+  private static let knowledgeAnchor = "knowledge-access"
+
   var body: some View {
-    ScrollView {
-      Group {
-        if loaded {
-          VStack(alignment: .leading, spacing: 48) {
-            configuration
-            AssistantKnowledgeAccess(assistantId: assistantId, projectId: projectId)
-            AssistantRetrievalTest(assistantId: assistantId)
-          }
-        } else if loadError.isEmpty {
-          SkeletonRows(count: 6)
-        } else {
-          EmptyState(systemImage: "exclamationmark.triangle", title: "Couldn't load this assistant", message: loadError) {
-            Button("Try again") { Task { await load(); await loadTypes() } }.buttonStyle(.lnSecondaryCompact)
+    ScrollViewReader { proxy in
+      ScrollView {
+        Group {
+          if loaded {
+            VStack(alignment: .leading, spacing: 48) {
+              if let readiness { AssistantReadinessStrip(readiness: readiness) { fix($0, proxy) } }
+              configuration.id(Self.formAnchor)
+              AssistantKnowledgeAccess(assistantId: assistantId, projectId: projectId) { Task { await refreshReadiness() } }
+                .id(Self.knowledgeAnchor)
+              AssistantTestAnswer(assistantId: assistantId, types: types)
+            }
+          } else if loadError.isEmpty {
+            SkeletonRows(count: 6)
+          } else {
+            EmptyState(systemImage: "exclamationmark.triangle", title: "Couldn't load this assistant", message: loadError) {
+              Button("Try again") { Task { await load(); await loadTypes() } }.buttonStyle(.lnSecondaryCompact)
+            }
           }
         }
+        .frame(maxWidth: 640, alignment: .leading)
+        .padding(24)
+        .frame(maxWidth: .infinity)
       }
-      .frame(maxWidth: 640, alignment: .leading)
-      .padding(24)
-      .frame(maxWidth: .infinity)
+      .scrollDismissesKeyboard(.interactively)
     }
-    .scrollDismissesKeyboard(.interactively)
     .panelScreen(draft.name.isEmpty ? "Assistant" : draft.name)
     .toolbar {
       ToolbarItemGroup(placement: .primaryAction) {
@@ -85,13 +96,13 @@ struct AssistantDetailScreen: View {
         LinearTextEditor(text: $draft.systemPrompt, placeholder: "You are the WebBites support assistant. Be concise and friendly.", minHeight: 110)
       }
       connection
-      LabeledField(label: "Fallback when unsure", hint: "What to do when no knowledge matches") {
+      LabeledField(label: "Fallback when unsure", hint: "When no knowledge matches well enough. Hand to a human labels the conversation needs-human, and the assistant stays out of it until the label is removed.") {
         AssistantSelectField(selection: $draft.fallbackBehavior, options: AssistantVocabulary.fallbacks)
       }
       Toggle(isOn: $draft.autoReply.animation(.snappy)) {
         VStack(alignment: .leading, spacing: 2) {
           Text("Automatically reply to this project's users").font(.lnCallout).foregroundStyle(Theme.text)
-          Text("Off by default; sends grounded answers as this assistant").font(.lnCaption).foregroundStyle(Theme.textMuted)
+          Text("Off by default, and only while the status is Active; sends grounded answers as this assistant").font(.lnCaption).foregroundStyle(Theme.textMuted)
         }
       }
       .tint(Theme.accent)
@@ -155,7 +166,7 @@ struct AssistantDetailScreen: View {
   }
 
   private var llmLine: String {
-    guard let llm, llm.configured else { return "No LLM endpoint configured. Retrieval still works for answer suggestions; auto-reply will not run." }
+    guard let llm, llm.configured else { return "No LLM endpoint configured. Retrieval testing still works; auto-reply will not run." }
     return "Ready — \(llm.model) via \(llm.usingDefaultEndpoint ? "default" : "custom") endpoint."
   }
 
@@ -239,6 +250,15 @@ struct AssistantDetailScreen: View {
     withAnimation(.snappy) { draft.rules.swapAt(from, from + offset) }
   }
 
+  /// A missing check's link: the AI provider is set in Settings → AI, the rest are blocks of this page.
+  private func fix(_ key: String, _ proxy: ScrollViewProxy) {
+    switch key {
+    case "llm": workspace.go(.ai)
+    case "knowledge": withAnimation { proxy.scrollTo(Self.knowledgeAnchor, anchor: .top) }
+    default: withAnimation { proxy.scrollTo(Self.formAnchor, anchor: .top) }
+    }
+  }
+
   private func copyID() {
     Clipboard.copy(assistantId)
     idCopied = true
@@ -248,13 +268,15 @@ struct AssistantDetailScreen: View {
   // MARK: Requests
 
   private func load() async {
-    struct Response: Decodable, Sendable { let agent: AssistantRecord; let llm: AssistantLLMStatus? }
+    // `readiness` is optional so an older server still loads.
+    struct Response: Decodable, Sendable { let agent: AssistantRecord; let llm: AssistantLLMStatus?; let readiness: AssistantReadiness? }
     do {
       let response: Response = try await session.get("/v1/admin/support-agents/\(assistantId)")
       draft = AssistantDraft(response.agent)
       projectId = response.agent.projectId
       hasApiKey = response.agent.hasApiKey
       llm = response.llm
+      readiness = response.readiness
       // With no model of its own the effective model is the server's default.
       if response.agent.model.isEmpty, let model = response.llm?.model, !model.isEmpty { defaultModel = model }
       loadError = ""
@@ -262,6 +284,12 @@ struct AssistantDetailScreen: View {
     } catch {
       if !Task.isCancelled { loadError = error.localizedDescription }
     }
+  }
+
+  /// What the strip says depends on the knowledge assigned, so it reads again when that changes.
+  private func refreshReadiness() async {
+    struct Response: Decodable, Sendable { let readiness: AssistantReadiness? }
+    if let response: Response = try? await session.get("/v1/admin/support-agents/\(assistantId)"), let next = response.readiness { readiness = next }
   }
 
   /// The rule editor's ticket types; without them only "Any type" is offered, as on the web.
@@ -360,6 +388,51 @@ private struct AssistantPatch: Encodable, Sendable {
 }
 
 // MARK: - Shared pieces
+
+/// Whether the assistant will answer customers by itself, and what is missing if not: an AI
+/// provider, knowledge it may read, an active status and auto-reply on (web: AssistantReadiness.vue).
+/// `fix` is told the key of the check whose link was tapped.
+struct AssistantReadinessStrip: View {
+  let readiness: AssistantReadiness
+  let fix: (String) -> Void
+
+  var body: some View {
+    let tint = readiness.live ? Theme.success : Theme.warning
+    VStack(alignment: .leading, spacing: 12) {
+      HStack(spacing: 8) {
+        Image(systemName: readiness.live ? "checkmark.circle" : "exclamationmark.triangle")
+          .font(.system(size: 14, weight: .medium)).foregroundStyle(tint)
+        Text(readiness.live ? "Answering customers by itself" : "Not answering customers by itself yet")
+          .font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
+      }
+      LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 24, alignment: .topLeading)], alignment: .leading, spacing: 8) {
+        ForEach(readiness.checks, id: \.key) { check in line(check) }
+      }
+    }
+    .padding(16)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(tint.opacity(0.05), in: RoundedRectangle(cornerRadius: Metrics.radiusLarge))
+    .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(tint.opacity(0.4)))
+    .accessibilityElement(children: .contain)
+    .accessibilityLabel("Readiness")
+  }
+
+  private func line(_ check: AssistantReadiness.Check) -> some View {
+    HStack(alignment: .top, spacing: 6) {
+      Image(systemName: check.ok ? "checkmark" : "xmark")
+        .font(.system(size: 11, weight: .semibold)).foregroundStyle(check.ok ? Theme.success : Theme.warning)
+        .frame(width: 14, height: 18)
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(readiness.text(check)).font(.lnCaption).foregroundStyle(check.ok ? Theme.textMuted : Theme.text)
+        if !check.ok, let label = readiness.fixLabel(check) {
+          Button(label) { fix(check.key) }.buttonStyle(.plain).font(.lnCaptionMedium).foregroundStyle(Theme.accentText)
+        }
+      }
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+}
 
 /// A Linear select: the `.linear` field frame with the current choice; the menu checks it.
 struct AssistantSelectField: View {

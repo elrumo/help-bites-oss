@@ -22,6 +22,7 @@ struct SourcesList: View {
         Label("Set HELPBITES_SECRET on the server first: database credentials are stored encrypted with it (32+ random characters, e.g. openssl rand -base64 48), then restart.", systemImage: "key")
           .font(.lnMeta).foregroundStyle(Theme.warning).linearRow()
       }
+      if session.isLocked("contactSources") { PlanLockNotice(feature: "contactSources").linearRow() }
       if !error.isEmpty { ErrorText(message: error).linearRow() }
       if loading && sources.isEmpty { SkeletonRows(count: 2).linearRow() }
       else if sources.isEmpty {
@@ -162,7 +163,7 @@ struct SourceFormSheet: View {
 
   private static let schedules: [(label: String, value: Int)] = [("Every 15 minutes", 15), ("Hourly", 60), ("Every 6 hours", 360), ("Daily", 1440), ("Only when I click Sync", 0)]
   private var kindItems: [ContactSourceKind] { kinds.isEmpty ? [ContactSourceKind(kind: "parse", label: "Parse"), ContactSourceKind(kind: "postgres", label: "Postgres / Supabase"), ContactSourceKind(kind: "firestore", label: "Firestore")] : kinds }
-  private var mappedColumns: Set<String> { Set([mapping.email, mapping.externalId, mapping.name, mapping.tags, mapping.subscribed].compactMap { $0 }) }
+  private var mappedColumns: Set<String> { Set([mapping.email, mapping.externalId, mapping.name, mapping.language, mapping.tags, mapping.subscribed].compactMap { $0 }) }
   private var attributeColumns: [String] { fields.filter { !mappedColumns.contains($0) } }
   private var canSave: Bool { !fields.isEmpty && (mapping.email != nil || mapping.externalId != nil) && !saving }
 
@@ -200,6 +201,7 @@ struct SourceFormSheet: View {
             picker("Email", $mapping.email)
             picker("User id", $mapping.externalId)
             picker("Name", $mapping.name)
+            picker("Language", $mapping.language)
             picker("Tags", $mapping.tags)
             picker("Opted in (true/false)", $mapping.subscribed)
             Picker("Sync", selection: $everyMinutes) { ForEach(Self.schedules, id: \.value) { Text($0.label).tag($0.value) } }
@@ -326,6 +328,7 @@ struct SourceFormSheet: View {
       if mapping.email == nil { mapping.email = pick("^e?mail$") ?? pick("mail") }
       if mapping.externalId == nil { mapping.externalId = kind == "parse" ? "objectId" : kind == "firestore" ? "id" : idField }
       if mapping.name == nil { mapping.name = pick("^(name|fullname|displayname|username)$") }
+      if mapping.language == nil { mapping.language = pick("^(language|lang|locale|preferredlanguage)$") }
     } catch { self.error = error.localizedDescription }
   }
 

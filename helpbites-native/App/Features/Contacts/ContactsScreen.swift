@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// A project's people (web: projects/[id]/contacts.vue): the app's users,
-/// imports, database syncs and sign-ups; the saved segments; and the sources
-/// they sync from.
+/// imports, database syncs, lead forms and sign-ups, each with how they got
+/// here; the saved segments; and the sources they sync from.
 struct ContactsScreen: View {
   let projectId: String
   @State private var tab = "people"
@@ -37,10 +37,12 @@ struct ContactsScreen: View {
   var search = ""
   var subscription = ""
   var segment = ""
+  /// How they were added (`origin.type`), or "" for any way.
+  var origin = ""
   private var generation = 0
 
-  var queryKey: String { [search.trimmingCharacters(in: .whitespaces), subscription, segment].joined(separator: "\u{1f}") }
-  var filtered: Bool { !search.trimmingCharacters(in: .whitespaces).isEmpty || !subscription.isEmpty || !segment.isEmpty }
+  var queryKey: String { [search.trimmingCharacters(in: .whitespaces), subscription, segment, origin].joined(separator: "\u{1f}") }
+  var filtered: Bool { !search.trimmingCharacters(in: .whitespaces).isEmpty || !subscription.isEmpty || !segment.isEmpty || !origin.isEmpty }
 
   private func query(_ projectId: String) -> [String: String] {
     var query = ["project": projectId, "limit": "50"]
@@ -48,6 +50,7 @@ struct ContactsScreen: View {
     if !term.isEmpty { query["q"] = term }
     if !subscription.isEmpty { query["subscription"] = subscription }
     if !segment.isEmpty { query["segment"] = segment }
+    if !origin.isEmpty { query["origin"] = origin }
     return query
   }
 
@@ -93,9 +96,13 @@ private struct PeopleList: View {
   @Environment(SessionStore.self) private var session
   @State private var store = ContactsStore()
   @State private var segments: [ContactSegment] = []
+  /// Lead forms and syncs by id, so an origin reads "Lead form · Waitlist".
+  @State private var names: [String: String] = [:]
   @State private var open: Contact?
   @State private var importing = false
   @State private var adding = false
+  /// Everyone in the segment being looked at, put on a sequence.
+  @State private var sequencing = false
 
   var body: some View {
     @Bindable var filters = store
@@ -113,10 +120,14 @@ private struct PeopleList: View {
               ForEach(segments) { Text($0.name).tag($0.id) }
             }
           }
+          Picker("Added via", selection: $filters.origin) {
+            Text("Added any way").tag("")
+            ForEach(ContactOriginKind.allCases) { Label($0.label, systemImage: $0.systemImage).tag($0.rawValue) }
+          }
         } label: {
           Image(systemName: "line.3.horizontal.decrease")
             .foregroundStyle(Theme.textToned)
-            .overlay(alignment: .topTrailing) { if !store.subscription.isEmpty || !store.segment.isEmpty { Circle().fill(Theme.accent).frame(width: 7, height: 7).offset(x: 4, y: -3) } }
+            .overlay(alignment: .topTrailing) { if !store.subscription.isEmpty || !store.segment.isEmpty || !store.origin.isEmpty { Circle().fill(Theme.accent).frame(width: 7, height: 7).offset(x: 4, y: -3) } }
         }
         .menuStyle(.borderlessButton).fixedSize()
         .accessibilityLabel("Filter contacts")
@@ -132,9 +143,15 @@ private struct PeopleList: View {
       guard !Task.isCancelled else { return }
       await store.load(projectId, session: session)
     }
-    .task { if let r: SegmentsResponse = try? await session.get("/v1/segments", query: ["project": projectId]) { segments = r.segments } }
+    .task {
+      if let r: SegmentsResponse = try? await session.get("/v1/segments", query: ["project": projectId]) { segments = r.segments }
+      names = await ContactOriginNames.load(projectId, session: session)
+    }
     .toolbar {
       ToolbarItemGroup(placement: .primaryAction) {
+        if let segment = segments.first(where: { $0.id == store.segment }) {
+          Button { sequencing = true } label: { Label("Add everyone in “\(segment.name)” to a sequence", systemImage: "text.badge.plus") }
+        }
         Button { importing = true } label: { Label("Import CSV", systemImage: "square.and.arrow.down") }
         Button { adding = true } label: { Label("Add contact", systemImage: "plus") }
       }
@@ -144,6 +161,7 @@ private struct PeopleList: View {
         if let changed { store.replace(changed) } else { store.remove(contact.id) }
       }
     }
+    .sheet(isPresented: $sequencing) { AddToSequenceSheet(projectId: projectId, segment: segments.first { $0.id == store.segment }) }
     .sheet(isPresented: $importing) { CsvImportSheet(projectId: projectId) { Task { await store.load(projectId, session: session) } } }
     .sheet(isPresented: $adding) { AddContactSheet(projectId: projectId) { contact in
       Task { await store.load(projectId, session: session); open = contact }
@@ -156,7 +174,7 @@ private struct PeopleList: View {
     let rows = store.contacts
     return List {
       ForEach(rows) { contact in
-        Button { open = contact } label: { PeopleRow(contact: contact) }
+        Button { open = contact } label: { PeopleRow(contact: contact, origin: ContactOriginKind.label(contact.origin, names: names)) }
           .buttonStyle(.plain)
           .linearRow()
           // The next page loads as the last rows scroll into view: only the visible rows are ever built.
@@ -182,15 +200,31 @@ private struct PeopleList: View {
   }
 }
 
+/// The names an origin's id stands for: the project's lead forms and database syncs (a role that may not see syncs gets the forms).
+enum ContactOriginNames {
+  static func load(_ projectId: String, session: SessionStore) async -> [String: String] {
+    struct Named: Decodable, Sendable { let id, name: String }
+    struct Forms: Decodable, Sendable { let forms: [Named] }
+    struct Sources: Decodable, Sendable { let sources: [Named] }
+    var names: [String: String] = [:]
+    if let r: Forms = try? await session.get("/v1/admin/lead-forms", query: ["project": projectId]) { for f in r.forms { names[f.id] = f.name } }
+    if let r: Sources = try? await session.get("/v1/admin/contact-sources", query: ["project": projectId]) { for s in r.sources { names[s.id] = s.name } }
+    return names
+  }
+}
+
 private struct PeopleRow: View {
   let contact: Contact
+  /// "Lead form · Waitlist"; empty when nothing says how they got here.
+  var origin = ""
   var body: some View {
     let status = SubscriptionStatus.of(contact.subscription)
+    let detail = [contact.name.isEmpty ? "" : contact.email, origin].filter { !$0.isEmpty }.joined(separator: " · ")
     HStack(spacing: 12) {
       avatar
       VStack(alignment: .leading, spacing: 2) {
         Text(contact.displayName).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-        if !contact.name.isEmpty, !contact.email.isEmpty { Text(contact.email).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1) }
+        if !detail.isEmpty { Text(detail).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1) }
       }
       Spacer(minLength: 8)
       if let tag = contact.tags.first { Tag(text: contact.tags.count > 1 ? "\(tag) +\(contact.tags.count - 1)" : tag).fixedSize() }

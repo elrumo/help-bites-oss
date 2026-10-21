@@ -73,15 +73,16 @@ export function serializeConversation(row: ParseObject): Conversation {
     userReadAt: iso(row.get('userReadAt')),
     agentReadAt: iso(row.get('agentReadAt')),
     archivedAt: iso(row.get('archivedAt')),
+    feedbackPostIds: Array.isArray(row.get('feedbackPostIds')) ? (row.get('feedbackPostIds') as unknown[]).filter((id): id is string => typeof id === 'string') : [],
     createdAt: iso(row.createdAt) || ''
   }
 }
 
-/** A conversation as its end user sees it: triage (priority, assignment, tags) is the team's business. */
-export type EndUserConversation = Omit<Conversation, 'priority' | 'assigneeId' | 'assignedAt' | 'tags'>
+/** A conversation as its end user sees it: triage (priority, assignment, tags, linked feedback) is the team's business. */
+export type EndUserConversation = Omit<Conversation, 'priority' | 'assigneeId' | 'assignedAt' | 'tags' | 'feedbackPostIds'>
 
 export function withoutTriage(conversation: Conversation): EndUserConversation {
-  const { priority: _priority, assigneeId: _assigneeId, assignedAt: _assignedAt, tags: _tags, ...rest } = conversation
+  const { priority: _priority, assigneeId: _assigneeId, assignedAt: _assignedAt, tags: _tags, feedbackPostIds: _feedbackPostIds, ...rest } = conversation
   return rest
 }
 
@@ -272,6 +273,7 @@ export async function createConversation(project: ParseObject, endUser: ParseObj
   if (actor === 'user') await reserveUsage(await projectWorkspaceId(project), 'conversations')
   await row.save(null, MASTER)
   void syncConversationForSearch(row)
+  emitDomainEventLater(project, 'conversation.created', { conversationId: row.id, contact: { id: endUser.id, externalId: endUser.get('externalId') || '', email: endUser.get('email') || '' }, type: type.key })
   return row
 }
 
@@ -336,6 +338,8 @@ export async function appendMessage({ conversation, sender, senderName, agent, s
     conversation.set('statusCategory', status.category)
     if (sender === 'user' && current.isTerminal && type.userCanReopen) conversation.unset('closedAt')
     await conversation.save(null, MASTER)
+    // A customer writing into a closed thread reopens it.
+    if (sender === 'user' && reopenStatus !== previous.status) emitStatusChanged(conversation, previous.status, reopenStatus, status.category)
   }
 
   await publishEvent({
@@ -437,7 +441,10 @@ export async function setStatus(conversation: ParseObject, status: string): Prom
     conversationId: conversation.id || '',
     conversation: serializeConversationEvent(conversation)
   })
-  if (previous !== next.key) await appendEvent(conversation, { type: 'status.changed', from: previous, to: next.key })
+  if (previous !== next.key) {
+    emitStatusChanged(conversation, previous, next.key, next.category)
+    await appendEvent(conversation, { type: 'status.changed', from: previous, to: next.key })
+  }
 }
 
 /** Agent-only ticket metadata. One save and one internal timeline event keep
@@ -486,8 +493,15 @@ export async function updateConversation(conversation: ParseObject, input: Recor
       conversationId: conversation.id || '',
       conversation: serializeConversationEvent(conversation)
     })
+    const { from, to } = changed.status as { from: string, to: string }
+    emitStatusChanged(conversation, from, to, String(conversation.get('statusCategory') || ''))
   }
   await appendEvent(conversation, { type: changed.status ? 'status.changed' : changed.assignee !== undefined ? 'assigned' : 'field.changed', ...changed, byName: agent.get('name') || agent.get('username') || 'Agent' }, agent)
+}
+
+/** The `conversation.status_changed` domain event. Fire and forget: the status is already saved. */
+function emitStatusChanged(conversation: ParseObject, from: string, to: string, statusCategory: string): void {
+  emitDomainEventLater(conversation.get('project'), 'conversation.status_changed', { conversationId: conversation.id, from, to, statusCategory, ...(pointerId(conversation.get('endUser')) ? { contact: { id: pointerId(conversation.get('endUser')) } } : {}) })
 }
 
 export async function appendInternalNote(conversation: ParseObject, senderName: string, agent: ParseObject, body: string): Promise<ParseObject> {
@@ -502,7 +516,8 @@ export async function appendEvent(conversation: ParseObject, event: Record<strin
   row.set('conversation', conversation)
   row.set('sender', 'agent')
   row.set('senderName', 'System')
-  if (agent) row.set('agent', agent)
+  // An automated actor (a webhook's stand-in, see githubRefs.ts) is not a saved operator: nothing to point at.
+  if (agent?.id) row.set('agent', agent)
   row.set('body', '')
   row.set('attachments', [])
   row.set('context', null)
