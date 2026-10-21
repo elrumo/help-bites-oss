@@ -57,6 +57,7 @@ function pinned<T extends { project: ParseObject }>(ctx: MemberContext, found: T
 export const scoped = {
   conversation: async (ctx: MemberContext, id: string) => viaProject(ctx, await getConversation(id), 'Conversation not found'),
   message: async (ctx: MemberContext, id: string) => viaProject(ctx, await getMessage(id), 'Message not found'),
+  savedReply: async (ctx: MemberContext, id: string) => viaProject(ctx, await getSavedReply(id), 'Saved reply not found'),
 
   emailTemplate: async (ctx: MemberContext, id: string) => viaWorkspace(ctx, await getEmailTemplate(id), 'Email template not found'),
   emailFolder: async (ctx: MemberContext, id: string) => viaWorkspace(ctx, await getEmailFolder(id), 'Folder not found'),
