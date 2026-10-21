@@ -1,16 +1,22 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The email page (pages/emails/index.vue, pages/projects/[id]/email.vue):
-/// templates, the component library, the log of everything sent, and the
-/// suppressed addresses, as tabs (EmailTabs.vue). Templates are a folder of them (EmailLibrary.vue):
-/// the masters when `projectId` is nil, else one project's templates next to
-/// the masters it links. Own templates and masters open in the web editor; a
-/// linked master opens this project's values for it.
+/// The email page (pages/emails/index.vue, pages/projects/[id]/email.vue), as tabs (EmailTabs.vue).
+/// A project's Email is one section: Templates (the component library behind it), Campaigns,
+/// Sequences, the Log (the suppressed addresses behind it) and Settings, where its one sender lives.
+/// With `projectId` nil it is the shared templates' page: Shared templates, Components, Log and
+/// Suppressed. Templates are a folder of them (EmailLibrary.vue): the shared templates when
+/// `projectId` is nil, else one project's templates next to the shared templates it links. Own
+/// templates and shared templates open in the editor; a linked shared template opens this project's
+/// values for it.
 struct EmailLibraryScreen: View {
   let projectId: String?
   @Environment(SessionStore.self) private var session
   @State private var tab: EmailTab
+  /// What the project's email still needs, under the tab bar (project tabs only).
+  @State private var setup: EmailSetup?
+  /// Bumped after Settings saves, so the setup strip reads the project again.
+  @State private var setupVersion = 0
 
   /// `logBatch` opens the Log on one send's recipients (a campaign links here with its `cm_` id).
   private let logBatch: String
@@ -18,7 +24,9 @@ struct EmailLibraryScreen: View {
   init(projectId: String?, initialTab: EmailTab = .templates, logBatch: String = "") {
     self.projectId = projectId
     self.logBatch = logBatch
-    _tab = State(initialValue: logBatch.isEmpty ? initialTab : .log)
+    let start = logBatch.isEmpty ? initialTab : .log
+    // The shared templates' page has no Campaigns, Sequences or Settings.
+    _tab = State(initialValue: projectId == nil && start.projectOnly ? .templates : start)
   }
 
   @State private var templates: [EmailTemplateItem] = []
@@ -76,8 +84,8 @@ struct EmailLibraryScreen: View {
     var title: String {
       switch self {
       case .deleteFolder(let folder): return "Delete “\(folder.name)”? What is inside moves up a level."
-      case .deleteTemplate(let t): return t.isLinked ? "Remove “\(t.title)” from this project? The master stays." : "Delete “\(t.name)”? This cannot be undone."
-      case .detach: return "Detach from the master? This project gets its own editable copy, and later edits to the master no longer reach it."
+      case .deleteTemplate(let t): return t.isLinked ? "Remove “\(t.title)” from this project? The shared template stays." : "Delete “\(t.name)”? This cannot be undone."
+      case .detach: return "Detach from the shared template? This project gets its own editable copy, and later edits to the shared template no longer reach it."
       case .importJSON(let pending):
         let count = pending.templates.count
         let plan = pending.plan
@@ -98,7 +106,7 @@ struct EmailLibraryScreen: View {
     var destructive: Bool { if case .importJSON = self { false } else { true } }
   }
 
-  private var newLabel: String { projectId == nil ? "New master" : "New template" }
+  private var newLabel: String { projectId == nil ? "New shared template" : "New template" }
 
   private var screenTitle: String {
     if projectId != nil { return "Email" }
@@ -107,15 +115,25 @@ struct EmailLibraryScreen: View {
     case .components: return "Email components"
     case .log: return "Email log"
     case .suppressed: return "Suppressed addresses"
+    // Not on this page (init sends them to Templates); a project's pages are titled "Email".
+    case .campaigns, .sequences, .settings: return "Email"
     }
   }
+
+  /// A new key reads the setup again: another tab, or a save of the sender.
+  private var setupKey: String { "\(projectId ?? "")-\(tab.rawValue)-\(setupVersion)" }
 
   var body: some View {
     VStack(spacing: 0) {
       tabBar
+      if projectId != nil {
+        EmailSetupStrip(checks: setup?.checks ?? [], bulk: tab.projectOnly) { tab = .settings }
+      }
       switch tab {
       case .templates: templatesView
       case .components: EmailComponentLibrary(projectId: projectId)
+      case .campaigns, .sequences, .settings:
+        if let projectId { CampaignsScreen(projectId: projectId, tab: tab) { setupVersion += 1 } }
       case .log: EmailLogScreen(projectId: projectId, batch: logBatch)
       case .suppressed: EmailSuppressionsScreen(projectId: projectId)
       }
@@ -123,24 +141,49 @@ struct EmailLibraryScreen: View {
     .panelScreen(screenTitle)
     .toolbar {
       if let projectId { ToolbarItem(placement: .principal) { ProjectBreadcrumb(projectId: projectId, title: "Email") } }
+      // Suppressed addresses sit behind the Log, as on the web.
+      if projectId != nil && tab == .log {
+        ToolbarItem(placement: .topBarTrailing) { IconButton(systemImage: "envelope.badge.shield.half.filled", label: "Suppressed") { tab = .suppressed } }
+      }
+    }
+    // Each tab reads the setup again, as each of the web's pages does, and so does a save of the sender.
+    .task(id: setupKey) {
+      guard let projectId else { return }
+      let loaded = await EmailSetup.load(projectId, session: session)
+      if !Task.isCancelled { setup = loaded }
     }
   }
 
-  /// The page's sections, a segmented control above whichever is showing.
-  private var tabBar: some View {
-    Picker("Email sections", selection: $tab) {
-      Label(projectId == nil ? "Masters" : "Templates", systemImage: "rectangle.3.group").tag(EmailTab.templates)
-      Label("Components", systemImage: "puzzlepiece").tag(EmailTab.components)
-      Label("Log", systemImage: "clock.arrow.circlepath").tag(EmailTab.log)
-      Label("Suppressed", systemImage: "envelope.badge.shield.half.filled").tag(EmailTab.suppressed)
+  private func tabTitle(_ item: EmailTab) -> String {
+    switch item {
+    case .templates: projectId == nil ? "Shared templates" : "Templates"
+    case .components: "Components"
+    case .campaigns: "Campaigns"
+    case .sequences: "Sequences"
+    case .log: "Log"
+    case .suppressed: "Suppressed"
+    case .settings: "Settings"
     }
-    .pickerStyle(.segmented)
-    .labelStyle(.titleOnly)
-    .frame(maxWidth: 520)
-    .padding(.horizontal, Metrics.gutter)
+  }
+
+  /// The page's sections, a row of pills above whichever is showing. A project's bar keeps Templates lit
+  /// on the Components view and Log on the Suppressed one; pressing it goes back.
+  private var tabBar: some View {
+    let lit = projectId == nil ? tab : tab.inProjectBar
+    // Campaigns and Sequences are one plan feature on the web's bar, and carry its lock.
+    let locked = session.isLocked("campaigns")
+    return ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: 6) {
+        ForEach(EmailTab.bar(shared: projectId == nil)) { item in
+          Pill(label: tabTitle(item), systemImage: locked && (item == .campaigns || item == .sequences) ? "lock" : nil, isActive: item == lit) { tab = item }
+        }
+      }
+      .padding(.horizontal, Metrics.gutter)
+    }
     .padding(.top, 10)
     .padding(.bottom, 2)
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .accessibilityElement(children: .contain)
+    .accessibilityLabel("Email sections")
   }
 
   private var templatesView: some View {
@@ -163,7 +206,8 @@ struct EmailLibraryScreen: View {
             .contentShape(Rectangle())
         }
         .accessibilityLabel("Import or export")
-        if projectId != nil { IconButton(systemImage: "link", label: "Add master") { addMasterOpen = true } }
+        if projectId != nil { IconButton(systemImage: "puzzlepiece", label: "Components") { tab = .components } }
+        if projectId != nil { IconButton(systemImage: "link", label: "Add shared template") { addMasterOpen = true } }
         if busy { ProgressView() } else { Button { pickerOpen = true } label: { Label(newLabel, systemImage: "plus") } }
       }
     }
@@ -227,8 +271,8 @@ struct EmailLibraryScreen: View {
   private var header: some View {
     VStack(alignment: .leading, spacing: 10) {
       Text(projectId == nil
-        ? "Masters: design once, link into any project. Each project fills in its brand and values."
-        : "This project's templates, plus masters it uses with its own brand and values.")
+        ? "Shared templates: design once, link into any project. Each project fills in its brand and values."
+        : "This project's templates, plus shared templates it uses with its own brand and values.")
         .font(.lnMeta)
         .foregroundStyle(Theme.textMuted)
       SearchField(text: $search)
@@ -237,7 +281,7 @@ struct EmailLibraryScreen: View {
           Label(notice, systemImage: "checkmark.circle").font(.lnMeta).foregroundStyle(Theme.success).lineLimit(2)
           Spacer(minLength: 0)
           if let target = noticeTarget {
-            Button("Open master") { editing = target; notice = ""; noticeTarget = nil }.buttonStyle(.lnGhost)
+            Button("Open shared template") { editing = target; notice = ""; noticeTarget = nil }.buttonStyle(.lnGhost)
           }
           Button { notice = ""; noticeTarget = nil } label: { Image(systemName: "xmark").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted) }
             .buttonStyle(.plain)
@@ -269,8 +313,8 @@ struct EmailLibraryScreen: View {
             systemImage: "envelope",
             title: search.isEmpty ? "No templates here yet" : "No templates match",
             message: !search.isEmpty ? "Try another name." : projectId != nil
-              ? "Start one from scratch, or add a master so this project shares its design."
-              : "A master is designed once and reused by every project, each with its own logo, colours and copy."
+              ? "Start one from scratch, or add a shared template so this project shares its design."
+              : "A shared template is designed once and reused by every project, each with its own logo, colours and copy."
           ) {
             if search.isEmpty { Button { pickerOpen = true } label: { Label(newLabel, systemImage: "plus") }.buttonStyle(.lnPrimaryCompact) }
           }
@@ -332,7 +376,7 @@ struct EmailLibraryScreen: View {
           VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
               Text(t.title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-              if t.isLinked { Tag(text: "Master", tint: Theme.accent) }
+              if t.isLinked { Tag(text: "Shared template", tint: Theme.accent).layoutPriority(1) }
               if t.shareMode != nil {
                 Image(systemName: "globe").font(.system(size: 11)).foregroundStyle(Theme.textMuted).accessibilityLabel("Shared")
               }
@@ -368,7 +412,7 @@ struct EmailLibraryScreen: View {
     Section {
       Button { open(t) } label: { Label(t.isLinked ? "Open" : "Edit", systemImage: "pencil") }
       if let masterId = t.masterId {
-        Button { editing = EmailEditorTarget(id: masterId, name: t.title) } label: { Label("Edit master", systemImage: "square.stack") }
+        Button { editing = EmailEditorTarget(id: masterId, name: t.title) } label: { Label("Edit shared template", systemImage: "square.stack") }
       } else {
         Button { promptText = t.name; prompt = .renameTemplate(t) } label: { Label("Rename", systemImage: "character.cursor.ibeam") }
       }
@@ -396,7 +440,7 @@ struct EmailLibraryScreen: View {
         ForEach(folders) { folder in Button(folder.name) { Task { await move(t, to: folder.id) } } }
       } label: { Label("Move to", systemImage: "folder") }
       if projectId != nil && !t.isLinked {
-        Button { Task { await copyToMasters(t) } } label: { Label("Copy to masters", systemImage: "books.vertical") }
+        Button { Task { await copyToMasters(t) } } label: { Label("Copy to shared templates", systemImage: "books.vertical") }
       }
       if t.isLinked { Button { confirm = .detach(t) } label: { Label("Detach", systemImage: "arrow.triangle.branch") } }
     }
@@ -413,7 +457,7 @@ struct EmailLibraryScreen: View {
       .contentShape(Rectangle())
   }
 
-  /// A thumbnail in the email's own colours: page, card and button (the project accent on linked masters).
+  /// A thumbnail in the email's own colours: page, card and button (the project accent on linked shared templates).
   private func swatch(_ t: EmailTemplateItem) -> some View {
     var doc = t.document ?? t.master?.document
     if t.isLinked, let current = doc, let brand { doc = EmailRender.applyProjectAccent(current, accent: brand.theme?.accent) }
@@ -512,7 +556,7 @@ struct EmailLibraryScreen: View {
     } catch { self.error = error.localizedDescription }
   }
 
-  /// Link a master into this project, then open its values. Returns an error for the sheet.
+  /// Link a shared template into this project, then open its values. Returns an error for the sheet.
   private func link(master masterId: String) async -> String? {
     guard let projectId else { return nil }
     var body: [String: JSONValue] = ["master": .string(masterId), "project": .string(projectId)]
@@ -561,7 +605,7 @@ struct EmailLibraryScreen: View {
     catch { self.error = error.localizedDescription }
   }
 
-  /// Every template of this project (or every master) in one file, in the format import takes.
+  /// Every template of this project (or every shared template) in one file, in the format import takes.
   private func exportAll() async {
     let query = projectId.map { ["project": $0] } ?? [:]
     do {
@@ -625,12 +669,12 @@ struct EmailLibraryScreen: View {
     } catch { self.error = error.localizedDescription }
   }
 
-  /// A new master with this template's design and variables; the project keeps its own copy.
+  /// A new shared template with this template's design and variables; the project keeps its own copy.
   private func copyToMasters(_ t: EmailTemplateItem) async {
     struct Input: Encodable, Sendable { let name: String; let document: JSONValue?; let variables: [EmailVariable] }
     do {
       let response: EmailTemplateResponse = try await session.send("/v1/admin/emails", body: Input(name: t.name, document: t.document, variables: t.variables))
-      show("Copied “\(t.name)” to masters", open: EmailEditorTarget(id: response.template.id, name: response.template.name))
+      show("Copied “\(t.name)” to shared templates", open: EmailEditorTarget(id: response.template.id, name: response.template.name))
     } catch { self.error = error.localizedDescription }
   }
 

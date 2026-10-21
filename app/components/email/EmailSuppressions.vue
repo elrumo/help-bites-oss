@@ -8,6 +8,7 @@
 import { watchDebounced } from '@vueuse/core'
 import type { EmailSuppression } from '~~/server/utils/emailLogs'
 import type { AdminProject } from '~~/server/utils/projects'
+import EmailSetupStrip from '~/components/email/EmailSetupStrip.vue'
 import EmailTabs from '~/components/email/EmailTabs.vue'
 import { EMAIL_SUPPRESSION_REASON_LABELS, logTime } from '~/utils/emailStatus'
 
@@ -110,6 +111,7 @@ async function add() {
         <UButton icon="i-lucide-plus" :label="$t('emailLibrary.common.add')" size="sm" @click="openAdd" />
       </template>
     </PageHeader>
+    <EmailSetupStrip v-if="project" :project-id="project.id" />
     <p class="shrink-0 border-b border-default px-6 py-2.5 text-[13px] text-muted">
       {{ $t('emailLibrary.suppressions.intro') }}
     </p>

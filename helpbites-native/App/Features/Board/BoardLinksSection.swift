@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The board items a conversation or a feedback post feeds (components/BoardLinks.vue):
+/// The planning items a conversation or a feedback post feeds (components/BoardLinks.vue):
 /// open one, unlink it, file a new one prefilled from it (already linked), or add it
-/// to an item already on the board. Callers show it only when the server has boards
-/// (`Project.board` is set); a board that's off offers to set one up.
+/// to an item already in planning. Callers show it only when the server has planning
+/// (`Project.board` is set); planning that's off offers to set it up.
 struct BoardLinksSection: View {
   let projectId: String
   /// "conversation" or "feedback".
@@ -20,7 +20,7 @@ struct BoardLinksSection: View {
   @State private var error = ""
   @State private var picking = false
   @State private var editing: EditorRoute?
-  /// The board, loaded only when an item is opened or picked.
+  /// The planning board, loaded only when an item is opened or picked.
   @State private var board: BoardStore?
 
   private struct EditorRoute: Identifiable { let id: String }
@@ -33,7 +33,7 @@ struct BoardLinksSection: View {
         Button { workspace.go(.project(projectId, .board)) } label: {
           HStack(spacing: 8) {
             Image(systemName: "rectangle.split.3x1").font(.system(size: 12)).foregroundStyle(Theme.textDimmed)
-            Text("Set up the project board").foregroundStyle(Theme.textMuted)
+            Text("Set up Planning").foregroundStyle(Theme.textMuted)
             Spacer(minLength: 0)
           }
           .font(.lnMeta)

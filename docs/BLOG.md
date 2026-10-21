@@ -93,13 +93,13 @@ Any published post can go to your subscribers: **Send as newsletter** beside the
 editor (admins). It becomes a campaign ([MARKETING.md](MARKETING.md)), so it has
 everything campaigns have: one message per subscribed contact with an email,
 topics, segments, test sends, pause and cancel, the delivery log and its numbers,
-under **Campaigns**.
+under **Email → Campaigns**.
 
 - The email is built from the post when sending starts: your logo, the title,
   date and reading time, the cover, the body (styled for mail clients), a
   **Read it on the blog** button and the footer with the unsubscribe link, the
   preferences link and your postal address.
-- **Postal address required** (Campaigns → Settings), as for every campaign.
+- **Postal address required** (Email → Settings), as for every campaign.
 - **Audience**: subscribed contacts with an email. **Topic** (default: the blog's
   **Default topic**) leaves out whoever opted out of it; a **segment** narrows it.
 - **Send now**, **Schedule**, or **Save as a draft** to send a test from the

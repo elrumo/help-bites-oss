@@ -230,7 +230,7 @@ enum EmailLint {
     visit(design.blocks, behind: s.contentBackground)
 
     if master, !design.placeholderKeys.contains(where: { $0.hasPrefix("project.") }) {
-      issues.append(EmailIssue(level: .warning, message: "This master does not use the project brand", fix: "Use {{project.name}} for the product name, {{project.logoUrl}} as the logo image src and {{project.url}} for links, instead of hardcoded values."))
+      issues.append(EmailIssue(level: .warning, message: "This shared template does not use the project brand", fix: "Use {{project.name}} for the product name, {{project.logoUrl}} as the logo image src and {{project.url}} for links, instead of hardcoded values."))
     }
     return issues
   }

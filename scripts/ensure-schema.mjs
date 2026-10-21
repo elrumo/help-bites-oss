@@ -257,7 +257,11 @@ const SCHEMAS = {
       eventWebhookUrl: { type: 'String' },
       eventWebhookSecret: { type: 'String' },
       // When the chat widget last loaded on a host page (stamped at most hourly); setup is green only after it has.
-      widgetSeenAt: { type: 'Date' }
+      widgetSeenAt: { type: 'Date' },
+      // When a host-signed identity token was last accepted (stamped at most hourly); the setup checklist's "identity seen".
+      identitySeenAt: { type: 'Date' },
+      // Sections left out of the project's sidebar (shared/projectSections.ts).
+      hiddenSections: { type: 'Array' }
     },
     indexes: {
       publicKey_1: { publicKey: 1 },

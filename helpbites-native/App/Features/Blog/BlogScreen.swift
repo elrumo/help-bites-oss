@@ -52,7 +52,7 @@ private struct BlogView: View {
       .confirmationDialog("Delete this post?", isPresented: binding($deleting), titleVisibility: .visible, presenting: deleting) { post in
         Button("Delete post", role: .destructive) { Task { await delete(post) } }
       } message: { _ in
-        Text("Its comments and reactions go with it. A newsletter it went out as stays under Campaigns.")
+        Text("Its comments and reactions go with it. A newsletter it went out as stays under Email → Campaigns.")
       }
       .confirmationDialog("Delete this comment?", isPresented: binding($deletingComment), titleVisibility: .visible, presenting: deletingComment) { comment in
         Button("Delete comment", role: .destructive) { Task { await store.deleteComment(comment) } }

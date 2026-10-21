@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A project's link to a master (EmailLinkedPanel.vue): the master's design
+/// A project's link to a shared template (EmailLinkedPanel.vue): its design
 /// with this project's brand, the project's own values for the master's
 /// variables, and the key the send API knows it by.
 struct EmailLinkedPanel: View {
@@ -40,7 +40,7 @@ struct EmailLinkedPanel: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 28) {
-          Text("Linked master: its design, this project's brand and values.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+          Text("Linked shared template: its design, this project's brand and values.").font(.lnMeta).foregroundStyle(Theme.textMuted)
           if let master {
             SandboxedWebView(html: EmailRender.html(EmailRender.resolve(document: master.document, variables: master.variables, values: values, linked: true, brand: brand)))
               .frame(height: 320)
@@ -62,7 +62,7 @@ struct EmailLinkedPanel: View {
         .frame(maxWidth: 640, alignment: .leading)
         .frame(maxWidth: .infinity)
       }
-      .panelScreen(master?.name ?? "Master")
+      .panelScreen(master?.name ?? "Shared template")
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
         ToolbarItem(placement: .confirmationAction) {
@@ -70,7 +70,7 @@ struct EmailLinkedPanel: View {
         }
       }
       .confirmationDialog(
-        confirm == .detach ? "Detach from the master? This project gets its own editable copy, and later edits to the master no longer reach it." : "Remove this master from the project? The master itself stays.",
+        confirm == .detach ? "Detach from the shared template? This project gets its own editable copy, and later edits to the shared template no longer reach it." : "Remove this shared template from the project? The template itself stays.",
         isPresented: Binding(get: { confirm != nil }, set: { if !$0 { confirm = nil } }),
         titleVisibility: .visible,
         presenting: confirm
@@ -87,8 +87,8 @@ struct EmailLinkedPanel: View {
   private var brandSection: some View {
     VStack(alignment: .leading, spacing: 8) {
       heading("Brand")
-      markdown((usesBrand ? "Filled in from this project: " : "This master does not use the project brand placeholders yet. Available: ")
-        + "`{{project.name}}`, `{{project.logoUrl}}`, `{{project.url}}`. Buttons in the master's brand colour take the project accent.")
+      markdown((usesBrand ? "Filled in from this project: " : "This shared template does not use the project brand placeholders yet. Available: ")
+        + "`{{project.name}}`, `{{project.logoUrl}}`, `{{project.url}}`. Buttons in the shared template's brand colour take the project accent.")
       if let brand {
         FlowLayout(spacing: 6) {
           Tag(text: brand.name)
@@ -116,9 +116,9 @@ struct EmailLinkedPanel: View {
     return VStack(alignment: .leading, spacing: 8) {
       heading("Languages")
       if tags.isEmpty {
-        Text("The master is written in \(own) and has no translations. Add them in the master and this project sends them too.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+        Text("The shared template is written in \(own) and has no translations. Add them in the shared template and this project sends them too.").font(.lnMeta).foregroundStyle(Theme.textMuted)
       } else {
-        Text("This template uses the master's translations. Pass `locale` to the send API to pick one; without it, or for a language the master lacks, the email goes out in \(own). Edit them in the master.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+        Text("This template uses the shared template's translations. Pass `locale` to the send API to pick one; without it, or for a language the shared template lacks, the email goes out in \(own). Edit them in the shared template.").font(.lnMeta).foregroundStyle(Theme.textMuted)
         FlowLayout(spacing: 6) { ForEach(tags, id: \.self) { Tag(text: ContentLocale.name($0)) } }
       }
     }
@@ -127,7 +127,7 @@ struct EmailLinkedPanel: View {
   private var valuesSection: some View {
     VStack(alignment: .leading, spacing: 14) {
       heading("Values for this project")
-      if fields.isEmpty { Text("The master has no variables of its own.").font(.lnMeta).foregroundStyle(Theme.textMuted) }
+      if fields.isEmpty { Text("The shared template has no variables of its own.").font(.lnMeta).foregroundStyle(Theme.textMuted) }
       ForEach(fields, id: \.key) { variable in
         let label = variable.label ?? ""
         LabeledField(label: label.isEmpty ? variable.key : label, hint: label.isEmpty ? nil : variable.key) {
@@ -148,7 +148,7 @@ struct EmailLinkedPanel: View {
   private var actions: some View {
     HStack(spacing: 8) {
       if let master {
-        Button { editingMaster = EmailEditorTarget(id: master.id, name: master.name) } label: { Label("Edit master", systemImage: "pencil") }
+        Button { editingMaster = EmailEditorTarget(id: master.id, name: master.name) } label: { Label("Edit shared template", systemImage: "pencil") }
           .buttonStyle(.lnSecondaryCompact)
       }
       Button {

@@ -132,7 +132,7 @@ struct BlogSettingsSheet: View {
 // MARK: - Newsletter
 
 /// Email a published post to subscribers. It becomes a campaign (test sends,
-/// pause, numbers under Campaigns); "Save as a draft" stops there.
+/// pause, numbers under Email → Campaigns); "Save as a draft" stops there.
 struct BlogNewsletterSheet: View {
   let store: BlogStore
   let post: BlogPost
@@ -165,7 +165,7 @@ struct BlogNewsletterSheet: View {
         DatePicker("Send at", selection: $at, in: Date()..., displayedComponents: [.date, .hourAndMinute]).font(.lnBody)
       }
       if (store.project?.marketing?.postalAddress ?? "").isEmpty {
-        hint("Campaigns must carry your postal address. Add it under Campaigns → Settings first.")
+        hint("Campaigns must carry your postal address. Add it under Email → Settings first.")
       }
       HStack(spacing: 8) {
         Button { Task { await send("draft") } } label: { busyLabel("Save as a draft", "draft") }.buttonStyle(.lnSecondary)

@@ -20,6 +20,7 @@ struct OverviewScreen: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 28) {
         ErrorText(message: error)
+        attentionSection
         if let overview {
           projectCards(overview)
           if !overview.projects.isEmpty {
@@ -65,6 +66,21 @@ struct OverviewScreen: View {
       pendingReload = Task {
         try? await Task.sleep(for: .seconds(1.5))
         if !Task.isCancelled { await load() }
+      }
+    }
+  }
+
+  // MARK: Needs attention
+
+  /// Drafts to approve, syncs that failed, mail that bounced, alerts that fired: one list for every project.
+  @ViewBuilder private var attentionSection: some View {
+    if !workspace.attention.items.isEmpty {
+      VStack(alignment: .leading, spacing: 10) {
+        HStack(spacing: 6) {
+          Text("Needs attention").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+          Text("\(workspace.attention.total)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
+        }
+        AttentionList(items: workspace.attention.items, withProject: true)
       }
     }
   }
@@ -378,11 +394,56 @@ struct OverviewScreen: View {
   }
 
   private func load() async {
+    async let attention: Void = workspace.loadAttention()
     do {
       overview = try await session.get("/v1/admin/overview", query: ["range": range.rawValue])
       error = ""
     } catch {
       if !Task.isCancelled { self.error = error.localizedDescription }
     }
+    await attention
+  }
+}
+
+/// The things that wait on you (web: AttentionList.vue), a row each: what it is, an optional muted
+/// detail, a count past one, and a tap to the page that deals with it. `withProject` names the project
+/// on each row, as the workspace Overview does; a project's own list leaves it out.
+struct AttentionList: View {
+  let items: [AttentionItem]
+  var withProject = false
+  @Environment(Workspace.self) private var workspace
+
+  var body: some View {
+    Card {
+      ForEach(items) { item in
+        CardRow(divider: item.id != items.last?.id) {
+          Button { open(item) } label: { row(item) }.buttonStyle(.plain)
+        }
+      }
+    }
+  }
+
+  private func row(_ item: AttentionItem) -> some View {
+    let project = withProject ? workspace.project(item.projectId) : nil
+    return HStack(spacing: 10) {
+      Image(systemName: item.systemImage).font(.system(size: 13)).foregroundStyle(Theme.warning).frame(width: 18)
+      if let project { ProjectDot(id: project.id, accent: project.theme.accent, icon: project.iconUrl) }
+      VStack(alignment: .leading, spacing: 2) {
+        (Text(project.map { "\($0.name)  " } ?? "").font(.lnMetaMedium).foregroundStyle(Theme.textToned)
+          + Text(item.text).font(.lnRow).foregroundStyle(Theme.textHighlighted))
+          .lineLimit(1)
+        if !item.detail.isEmpty { Text(item.detail).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1) }
+      }
+      Spacer(minLength: 8)
+      if item.count > 1 { Text("\(item.count)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted) }
+      Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+    }
+    .contentShape(Rectangle())
+  }
+
+  /// A paused sender belongs to no project: it opens the email log across them. The `?view=` of a section is dropped.
+  private func open(_ item: AttentionItem) {
+    if item.projectId.isEmpty { workspace.go(.emailLog) }
+    else { workspace.go(.project(item.projectId, ProjectSection.fromWeb(item.section) ?? .dev)) }
   }
 }

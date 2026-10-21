@@ -41,7 +41,7 @@ struct InboxPropertiesPanel: View {
           section("\(type.name) fields") { InboxFieldEditors(fields: type.fields) }
         }
         if workspace.project(conversation.projectId)?.board != nil {
-          section("Board") {
+          section("Planning") {
             BoardLinksSection(projectId: conversation.projectId, kind: "conversation", targetId: conversation.id, title: conversation.subject, description: lastCustomerMessage(store))
           }
         }
@@ -51,7 +51,7 @@ struct InboxPropertiesPanel: View {
         }
         InboxRecentErrors(conversation: conversation, externalId: store.endUsers[conversation.endUserId]?.externalId ?? "")
         if let type, !type.actions.isEmpty {
-          section("Actions") { InboxActions(actions: type.actions) }
+          section("Actions") { InboxActions(actions: type.actions, projectId: conversation.projectId) }
         }
       }
       .padding(.horizontal, 12)
@@ -61,7 +61,7 @@ struct InboxPropertiesPanel: View {
     .background(Theme.panel)
   }
 
-  /// What a board item filed from here starts with: the customer's latest words.
+  /// What a planning item filed from here starts with: the customer's latest words.
   private func lastCustomerMessage(_ store: InboxStore) -> String {
     guard store.selectedId == conversation.id else { return "" }
     return store.messages.last { $0.sender == "user" && $0.kind != "event" && !$0.body.isEmpty }?.body ?? ""
@@ -395,9 +395,11 @@ private struct InboxFieldEditors: View {
 // MARK: - Host actions
 
 /// The type's host actions: confirm text first, a required internal note via a
-/// prompt, destructive ones in red. The webhook's verdict lands on the timeline.
+/// prompt, destructive ones in red. The webhook's verdict lands on the timeline. Without an
+/// action webhook on the project they would fail, so a warning with a link to set it up sits above.
 private struct InboxActions: View {
   let actions: [ConversationAction]
+  let projectId: String
   @Environment(Workspace.self) private var workspace
   @State private var confirming: ConversationAction?
   @State private var noting: ConversationAction?
@@ -405,16 +407,19 @@ private struct InboxActions: View {
   @State private var running = ""
 
   var body: some View {
-    FlowLayout(spacing: 6) {
-      ForEach(actions) { action in
-        Button { start(action) } label: {
-          HStack(spacing: 6) {
-            if running == action.key { ProgressView().controlSize(.mini) }
-            Text(title(action))
+    VStack(alignment: .leading, spacing: 8) {
+      if noWebhook { noWebhookWarning }
+      FlowLayout(spacing: 6) {
+        ForEach(actions) { action in
+          Button { start(action) } label: {
+            HStack(spacing: 6) {
+              if running == action.key { ProgressView().controlSize(.mini) }
+              Text(title(action))
+            }
           }
+          .buttonStyle(InboxActionStyle(destructive: action.destructive == true))
+          .disabled(!running.isEmpty)
         }
-        .buttonStyle(InboxActionStyle(destructive: action.destructive == true))
-        .disabled(!running.isEmpty)
       }
     }
     .padding(.horizontal, 8)
@@ -431,6 +436,24 @@ private struct InboxActions: View {
   }
 
   private func title(_ action: ConversationAction) -> String { action.label.isEmpty ? action.key : action.label }
+
+  /// The project has no action webhook (URL and secret, shared/support.ts actionWebhookReady). A project not loaded yet stays quiet.
+  private var noWebhook: Bool {
+    guard let project = workspace.project(projectId) else { return false }
+    return (project.actionWebhookUrl ?? "").isEmpty || project.hasActionWebhookSecret != true
+  }
+
+  private var noWebhookWarning: some View {
+    HStack(alignment: .top, spacing: 6) {
+      Image(systemName: "exclamationmark.triangle").font(.system(size: 11, weight: .medium)).padding(.top, 2)
+      VStack(alignment: .leading, spacing: 2) {
+        Text("This project has no action webhook, so these will fail.")
+        Button("Set it up") { workspace.go(.project(projectId, .dev)) }.buttonStyle(.plain).font(.lnCaptionMedium)
+      }
+    }
+    .font(.lnCaption)
+    .foregroundStyle(Theme.warning)
+  }
 
   private func start(_ action: ConversationAction) {
     if action.requiresNote == true {

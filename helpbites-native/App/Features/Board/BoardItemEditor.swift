@@ -155,7 +155,7 @@ struct BoardItemEditor: View {
           LinearTextEditor(text: $draft.publicDescription, placeholder: "What this means for your users", minHeight: 72)
         }
         if !store.roadmapReady {
-          Text("The roadmap is published through the feedback board: turn it on, with its Roadmap view, under Feedback → Settings.")
+          Text("The public roadmap is published through public feedback: turn it on, with its Roadmap view, under Feedback → Settings.")
             .font(.lnCaption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
         } else if !config.isOnRoadmap(draft.status) {
           Text("Not on the roadmap yet: \(config.status(draft.status)?.label ?? "this status") stays private.")
@@ -226,7 +226,7 @@ struct BoardItemEditor: View {
           Text("\(item.conversations.count)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
         }
         if item.conversations.isEmpty {
-          Text("Link conversations from the inbox: open one and use the Board section in its details.")
+          Text("Link conversations from the inbox: open one and use the Planning section in its details.")
             .font(.lnMeta).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
         } else {
           Card {
@@ -464,7 +464,7 @@ struct BoardItemPicker: View {
         } else if store.config == nil {
           SkeletonRows(count: 4).frame(maxHeight: .infinity, alignment: .top)
         } else if candidates.isEmpty {
-          EmptyState(systemImage: "rectangle.split.3x1", title: query.isEmpty ? "No other items" : "Nothing matches", message: query.isEmpty ? "Every item on the board is linked here already, or the board is empty." : nil)
+          EmptyState(systemImage: "rectangle.split.3x1", title: query.isEmpty ? "No other items" : "Nothing matches", message: query.isEmpty ? "Every planning item is linked here already, or none exist yet." : nil)
             .frame(maxHeight: .infinity, alignment: .top)
         } else {
           List(candidates) { item in

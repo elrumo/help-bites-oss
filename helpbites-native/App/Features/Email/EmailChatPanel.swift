@@ -83,7 +83,7 @@ struct EmailChatPanel: View {
   }
 
   private var emptyHint: String {
-    let scope = store.isMaster ? "As a master it uses each project's logo, name and accent, so write it once for all of them." : "Click any block to point at it."
+    let scope = store.isMaster ? "As a shared template it uses each project's logo, name and accent, so write it once for all of them." : "Click any block to point at it."
     return "Describe it, or start from one of these. " + scope
   }
 

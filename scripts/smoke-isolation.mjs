@@ -170,6 +170,9 @@ await attempt('rename A\'s project', `/v1/admin/projects/${project.id}`, { metho
 await attempt('read A\'s project secret', `/v1/admin/projects/${project.id}/secret`)
 await attempt('rotate A\'s project secret', `/v1/admin/projects/${project.id}/rotate-secret`, { method: 'POST' })
 await attempt('read A\'s project overview', `/v1/admin/projects/${project.id}/overview`)
+await attempt('read A\'s project setup checklist', `/v1/admin/projects/${project.id}/setup`)
+await attempt('read A\'s project email setup', `/v1/admin/projects/${project.id}/email-setup`)
+await attempt('hide sections on A\'s project', `/v1/admin/projects/${project.id}`, { method: 'PATCH', body: { hiddenSections: ['revenue'] } })
 await attempt('read A\'s conversation types', `/v1/admin/projects/${project.id}/types`)
 for (const [label, id] of [['A\'s master template', master.template.id], ['A\'s project template', projectTemplate.template.id]]) {
   await attempt(`read ${label}`, `/v1/admin/emails/${id}`)
@@ -207,6 +210,7 @@ if (faq?.faq) {
   await attempt('delete A\'s FAQ', `/v1/admin/knowledge/faqs/${faq.faq.id}`, { method: 'DELETE' })
 }
 await attempt('read A\'s assistant', `/v1/admin/support-agents/${assistant.id}`)
+await attempt('test A\'s assistant\'s answer', `/v1/admin/support-agents/${assistant.id}/test-answer`, { method: 'POST', body: { query: 'hello' } })
 await attempt('edit A\'s assistant', `/v1/admin/support-agents/${assistant.id}`, { method: 'PATCH', body: { name: 'pwned' } })
 await attempt('read A\'s assistant knowledge', `/v1/admin/support-agents/${assistant.id}/knowledge`)
 await attempt('read A\'s assistant assignments', `/v1/admin/support-agents/${assistant.id}/assignments`)
@@ -305,7 +309,7 @@ const viaSecret = await call(`/v1/contacts?project=${projectB.id}`, { token: sec
 check((refused(viaSecret.status) || viaSecret.status < 300) && !viaSecret.text.includes(TAG_B) && !viaSecret.text.includes(projectB.id), 'A\'s project secret cannot reach B\'s project')
 
 // Lists and search: nothing of A's, anywhere.
-for (const path of ['/v1/admin/projects', '/v1/admin/conversations', `/v1/admin/end-users?q=${MARK}`, '/v1/admin/emails', '/v1/admin/email-folders', '/v1/admin/email-components', '/v1/admin/email-logs', '/v1/admin/email-suppressions', '/v1/admin/knowledge/models', '/v1/admin/support-agents', '/v1/admin/agents', '/v1/admin/api-keys', '/v1/admin/invitations', `/v1/admin/search?q=${MARK}`, '/v1/admin/errors/providers', '/v1/admin/overview?range=all']) {
+for (const path of ['/v1/admin/projects', '/v1/admin/conversations', `/v1/admin/end-users?q=${MARK}`, '/v1/admin/emails', '/v1/admin/email-folders', '/v1/admin/email-components', '/v1/admin/email-logs', '/v1/admin/email-suppressions', '/v1/admin/knowledge/models', '/v1/admin/support-agents', '/v1/admin/agents', '/v1/admin/api-keys', '/v1/admin/invitations', `/v1/admin/search?q=${MARK}`, '/v1/admin/errors/providers', '/v1/admin/overview?range=all', '/v1/admin/attention', '/v1/admin/unread']) {
   const res = await call(path, B)
   check(res.status < 300 && !res.text.includes(MARK) && !res.text.includes(project.id), `B's ${path} shows nothing of A's`)
 }

@@ -10,6 +10,7 @@
 import { DEFAULT_SETTINGS, type EmailDocument } from '#shared/email/blocks'
 import { componentInstance, type EmailComponentDef } from '#shared/email/components'
 import type { AdminProject } from '~~/server/utils/projects'
+import EmailSetupStrip from '~/components/email/EmailSetupStrip.vue'
 import EmailTabs from '~/components/email/EmailTabs.vue'
 import EmailCardPreview from '~/components/email/EmailCardPreview.vue'
 import EmailComponentDialog from '~/components/email/EmailComponentDialog.vue'
@@ -77,6 +78,7 @@ async function remove(component: EmailComponentDef) {
         <UButton icon="i-lucide-plus" :label="$t('emailEditor.newComponent')" size="sm" @click="edit(null)" />
       </template>
     </PageHeader>
+    <EmailSetupStrip v-if="project" :project-id="project.id" />
     <p class="shrink-0 border-b border-default px-6 py-2.5 text-[13px] text-muted">
       {{ project ? $t('emailEditor.projectComponentsNote') : $t('emailEditor.sharedComponentsNote') }}
       {{ $t('emailEditor.componentsHelp') }}

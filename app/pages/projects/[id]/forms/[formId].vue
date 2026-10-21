@@ -138,7 +138,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
               <UButton icon="i-lucide-mail-plus" :label="$t('projectTools.forms.newTemplate')" size="xs" color="neutral" variant="ghost" :to="`/projects/${id}/email`" />
-              <UButton icon="i-lucide-workflow" :label="$t('projectTools.forms.manageSequences')" size="xs" color="neutral" variant="ghost" :to="`/projects/${id}/campaigns?view=sequences`" />
+              <UButton icon="i-lucide-workflow" :label="$t('projectTools.forms.manageSequences')" size="xs" color="neutral" variant="ghost" :to="`/projects/${id}/email?view=sequences`" />
             </div>
           </section>
 
@@ -175,7 +175,7 @@
             </ul>
             <div class="flex flex-wrap gap-2">
               <UButton v-if="segmentId" icon="i-lucide-users" :label="$t('projectTools.forms.showAll')" size="xs" color="neutral" variant="soft" :to="`/projects/${id}/contacts?segment=${segmentId}`" />
-              <UButton v-if="segmentId" icon="i-lucide-megaphone" :label="$t('projectTools.forms.emailThem')" size="xs" color="neutral" variant="ghost" :to="`/projects/${id}/campaigns`" />
+              <UButton v-if="segmentId" icon="i-lucide-megaphone" :label="$t('projectTools.forms.emailThem')" size="xs" color="neutral" variant="ghost" :to="`/projects/${id}/email?view=campaigns`" />
             </div>
           </section>
         </div>

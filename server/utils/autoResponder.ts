@@ -1,4 +1,4 @@
-import { matchAgentRules } from '#shared/knowledge'
+import { describeHandoff, judgeKnowledge, routeAgentMessage } from '#shared/knowledge'
 
 // Optional AI auto-reply. Invoked from the user-message routes AFTER a user
 // message is committed: a cheap check here, then the answer itself runs as
@@ -106,9 +106,9 @@ export async function runAutoReply(conversationId: string, messageId: string): P
   if (conversationTags(conversation).includes(HANDOFF_TAG)) return
 
   // Rules decide whether this message gets an AI answer or waits for a human.
-  const action = matchAgentRules(readAgentRules(agent), { conversationType: String(conversation.get('type') || ''), text: query }, readDefaultAction(agent))
-  if (action === 'human') {
-    await handOffToHuman(conversation, agent, asked, 'a rule sends messages like this one to the team')
+  const routed = routeAgentMessage(readAgentRules(agent), { conversationType: String(conversation.get('type') || ''), text: query }, readDefaultAction(agent))
+  if (routed.action === 'human') {
+    await handOffToHuman(conversation, agent, asked, describeHandoff({ reason: routed.reason, minConfidence: 0 }))
     return
   }
 
@@ -132,14 +132,9 @@ export async function runAutoReply(conversationId: string, messageId: string): P
   // Unsure (nothing matched, or the best match is under the assistant's
   // confidence bar): no AI answer. "Hand to a human" (the default) labels the
   // conversation for the team; "Stay silent" leaves it as it is.
-  const minConfidence = readMinConfidence(agent)
-  const unsure = !knowledge.length
-    ? 'no knowledge matched the question'
-    : minConfidence > 0 && knowledge.reduce((m, k) => Math.max(m, k.score || 0), 0) < minConfidence
-      ? `no knowledge matched with at least ${Math.round(minConfidence * 100)}% confidence`
-      : ''
-  if (unsure) {
-    if (agent.get('fallbackBehavior') !== 'silent') await handOffToHuman(conversation, agent, asked, unsure)
+  const judged = judgeKnowledge(knowledge.map(k => k.score || 0), readMinConfidence(agent), agent.get('fallbackBehavior') === 'silent' ? 'silent' : 'human')
+  if (judged.outcome !== 'answer') {
+    if (judged.outcome === 'handoff') await handOffToHuman(conversation, agent, asked, describeHandoff(judged))
     return
   }
 

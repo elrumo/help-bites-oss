@@ -17,6 +17,7 @@ import EmailCardPreview from '~/components/email/EmailCardPreview.vue'
 import EmailTemplatePicker from '~/components/email/EmailTemplatePicker.vue'
 import EmailLinkedPanel from '~/components/email/EmailLinkedPanel.vue'
 import EmailApiDialog from '~/components/email/EmailApiDialog.vue'
+import EmailSetupStrip from '~/components/email/EmailSetupStrip.vue'
 import EmailTabs from '~/components/email/EmailTabs.vue'
 import EmailTestDialog from '~/components/email/EmailTestDialog.vue'
 
@@ -289,17 +290,19 @@ const linkedMasterIds = computed(() => new Set(templates.value.map(t => t.master
     <PageHeader :project-id="project?.id" :title="$t('nav.email')">
       <template #title><EmailTabs current="templates" :masters="!project" /></template>
       <template #actions>
-        <UInput v-model="search" icon="i-lucide-search" :placeholder="$t('common.search')" size="sm" class="hidden w-44 sm:block" />
+        <UInput v-model="search" icon="i-lucide-search" :placeholder="$t('common.search')" size="sm" class="hidden w-44 2xl:block" />
         <UTooltip :text="$t('emailLibrary.library.newFolder')"><UButton icon="i-lucide-folder-plus" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('emailLibrary.library.newFolder')" @click="newFolder" /></UTooltip>
         <UDropdownMenu :items="transferItems">
           <UTooltip :text="$t('emailLibrary.library.importExport')"><UButton icon="i-lucide-file-up" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('emailLibrary.library.importExport')" /></UTooltip>
         </UDropdownMenu>
         <input ref="fileInput" type="file" accept=".html,.htm,text/html" class="hidden" @change="importHtml">
         <input ref="jsonInput" type="file" accept=".json,application/json" class="hidden" @change="importJson">
+        <UTooltip v-if="project" :text="$t('emailEditor.components')"><UButton icon="i-lucide-puzzle" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('emailEditor.components')" :to="{ query: { view: 'components' } }" /></UTooltip>
         <UButton v-if="project" icon="i-lucide-link" :label="$t('emailLibrary.library.addMaster')" size="sm" color="neutral" variant="outline" @click="openLinkPicker" />
         <UButton icon="i-lucide-plus" :label="project ? $t('emailLibrary.library.newTemplate') : $t('emailLibrary.library.newMaster')" size="sm" :loading="busy" @click="pickerOpen = true" />
       </template>
     </PageHeader>
+    <EmailSetupStrip v-if="project" :project-id="project.id" />
     <p class="shrink-0 border-b border-default px-6 py-2.5 text-[13px] text-muted">
       <template v-if="project">{{ $t('emailLibrary.library.projectSubtitle') }}</template>
       <template v-else>{{ $t('emailLibrary.library.masterSubtitle') }}</template>

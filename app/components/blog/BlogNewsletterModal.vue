@@ -16,7 +16,7 @@
         <UFormField :label="$t('blog.scheduleFor')" :description="$t('blog.scheduleForHint')">
           <UInput v-model="scheduledAt" type="datetime-local" class="w-full" />
         </UFormField>
-        <p v-if="!postalAddress" class="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs">{{ $t('blog.needsAddress') }} <NuxtLink :to="`/projects/${projectId}/campaigns`" class="underline underline-offset-2">{{ $t('sections.campaigns') }}</NuxtLink>{{ $t('blog.needsAddressEnd') }}</p>
+        <p v-if="!postalAddress" class="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs">{{ $t('blog.needsAddress') }} <NuxtLink :to="`/projects/${projectId}/email?view=settings`" class="underline underline-offset-2">{{ $t('nav.email') }}</NuxtLink>{{ $t('blog.needsAddressEnd') }}</p>
         <p class="text-xs text-muted">{{ $t('blog.newsletterGoesOnce') }}</p>
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
       </form>
@@ -38,7 +38,7 @@ import type { Campaign, MarketingTopic } from '#shared/marketing'
 import { fromLocalInput } from '~/utils/blogDraft'
 
 // Email a published post to the project's subscribers. It becomes a campaign
-// (test sends, pause, numbers under Campaigns); "Save as a draft" stops there
+// (test sends, pause, numbers under Email → Campaigns); "Save as a draft" stops there
 // so the operator can send a test first.
 
 const props = defineProps<{ post: BlogPost, projectId: string, topics: MarketingTopic[], defaultTopic: string, postalAddress: string }>()

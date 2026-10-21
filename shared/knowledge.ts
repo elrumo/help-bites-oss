@@ -515,19 +515,99 @@ export function normalizeAgentRules(value: unknown): AgentRule[] {
   return out
 }
 
-/** First matching rule's action; no match → defaultAction. A rule matches when
- *  every condition it sets holds (an unset condition is "any"). */
-export function matchAgentRules(rules: AgentRule[], ctx: { conversationType: string, text: string }, defaultAction: AgentRuleAction = 'auto'): AgentRuleAction {
+/** The rule that decides a message, or none: the first whose every condition holds (an unset condition is "any"). */
+function firstMatchingRule(rules: AgentRule[], ctx: { conversationType: string, text: string }): { rule: AgentRule, index: number } | null {
   const text = String(ctx.text || '').toLowerCase()
   const type = String(ctx.conversationType || '')
-  for (const rule of Array.isArray(rules) ? rules : []) {
+  const list = Array.isArray(rules) ? rules : []
+  for (let index = 0; index < list.length; index++) {
+    const rule = list[index]
     if (!rule || (rule.action !== 'auto' && rule.action !== 'human')) continue
     const typeOk = !rule.conversationType || rule.conversationType === type
     const kw = Array.isArray(rule.keywords) ? rule.keywords : []
     const kwOk = kw.length === 0 || kw.some(k => text.includes(String(k).toLowerCase()))
-    if (typeOk && kwOk) return rule.action
+    if (typeOk && kwOk) return { rule, index }
   }
-  return defaultAction
+  return null
+}
+
+/** First matching rule's action; no match → defaultAction. A rule matches when
+ *  every condition it sets holds (an unset condition is "any"). */
+export function matchAgentRules(rules: AgentRule[], ctx: { conversationType: string, text: string }, defaultAction: AgentRuleAction = 'auto'): AgentRuleAction {
+  return firstMatchingRule(rules, ctx)?.rule.action ?? defaultAction
+}
+
+// ---- why an assistant answered, or did not ----------------------------------------
+// The support runtime (server/utils/autoResponder.ts) and the assistant's "test
+// answer" both decide with these, so what the test says is what a customer gets.
+
+/** `rule`/`default`: the routing rules (or their default) sent it to a person or let it through. `noKnowledge`/`lowConfidence`: nothing it may read answers well enough. `confident`: it will answer. */
+export type AgentDecisionReason = 'rule' | 'default' | 'noKnowledge' | 'lowConfidence' | 'confident'
+export type AgentDecision = {
+  outcome: 'answer' | 'handoff' | 'silent'
+  reason: AgentDecisionReason
+  /** The routing rule behind a `rule` reason, as its position in the assistant's list. */
+  ruleIndex: number | null
+  /** The best knowledge match's score (0..1), and the bar it had to clear. */
+  best: number
+  minConfidence: number
+}
+
+/** Step one, before any knowledge is looked up: does a rule send this message to the team? */
+export function routeAgentMessage(rules: AgentRule[], ctx: { conversationType: string, text: string }, defaultAction: AgentRuleAction = 'auto'): { action: AgentRuleAction, reason: 'rule' | 'default', ruleIndex: number | null } {
+  const match = firstMatchingRule(rules, ctx)
+  return match ? { action: match.rule.action, reason: 'rule', ruleIndex: match.index } : { action: defaultAction, reason: 'default', ruleIndex: null }
+}
+
+/** Step two, with what retrieval found: sure enough to answer, or not. "Unsure" hands over to the team unless the assistant is set to stay silent. */
+export function judgeKnowledge(scores: number[], minConfidence: number, fallback: AgentFallback): AgentDecision {
+  const best = scores.reduce((m, score) => Math.max(m, Number(score) || 0), 0)
+  const unsure = !scores.length ? 'noKnowledge' : minConfidence > 0 && best < minConfidence ? 'lowConfidence' : ''
+  return unsure
+    ? { outcome: fallback === 'silent' ? 'silent' : 'handoff', reason: unsure, ruleIndex: null, best, minConfidence }
+    : { outcome: 'answer', reason: 'confident', ruleIndex: null, best, minConfidence }
+}
+
+/** Both steps, for one message: what the assistant does with it. */
+export function decideAgentReply(agent: { rules: AgentRule[], defaultAction: AgentRuleAction, minConfidence: number, fallbackBehavior: AgentFallback }, ctx: { conversationType: string, text: string }, scores: number[]): AgentDecision {
+  const route = routeAgentMessage(agent.rules, ctx, agent.defaultAction)
+  if (route.action === 'human') return { outcome: 'handoff', reason: route.reason, ruleIndex: route.ruleIndex, best: 0, minConfidence: agent.minConfidence }
+  const judged = judgeKnowledge(scores, agent.minConfidence, agent.fallbackBehavior)
+  // A message the rules let through goes on to the knowledge; `ruleIndex` stays, so the test can say which rule let it by.
+  return { ...judged, ruleIndex: route.ruleIndex }
+}
+
+/** The reason for a hand-off in words, for the internal note left on the conversation. */
+export function describeHandoff(decision: Pick<AgentDecision, 'reason' | 'minConfidence'>): string {
+  if (decision.reason === 'rule') return 'a rule sends messages like this one to the team'
+  if (decision.reason === 'default') return 'no rule matched, and the assistant hands those to the team by default'
+  if (decision.reason === 'lowConfidence') return `no knowledge matched with at least ${Math.round(decision.minConfidence * 100)}% confidence`
+  return 'no knowledge matched the question'
+}
+
+// ---- is an assistant ready ----------------------------------------------------------
+
+/** What an assistant needs before it answers on its own, in the order to fix them. */
+export const ASSISTANT_CHECKS = ['llm', 'knowledge', 'active', 'autoReply'] as const
+export type AssistantCheckKey = typeof ASSISTANT_CHECKS[number]
+export type AssistantCheck = { key: AssistantCheckKey, ok: boolean }
+export type AssistantReadiness = {
+  checks: AssistantCheck[]
+  /** An AI provider and knowledge to read: a test answer works. */
+  canAnswer: boolean
+  /** Active with auto-reply on as well: it answers customers by itself. */
+  live: boolean
+  /** How many answers it may read (capped by the server's look-up). */
+  faqs: number
+}
+
+/** How many readable answers the server counts before it says "that many or more". */
+export const ASSISTANT_FAQ_LOOKUP = 50
+
+export function assistantReadiness(facts: { status: string, autoReply: boolean, llm: boolean, faqs: number }): AssistantReadiness {
+  const ok: Record<AssistantCheckKey, boolean> = { llm: facts.llm, knowledge: facts.faqs > 0, active: facts.status === 'active', autoReply: facts.autoReply }
+  const canAnswer = ok.llm && ok.knowledge
+  return { checks: ASSISTANT_CHECKS.map(key => ({ key, ok: ok[key] })), canAnswer, live: canAnswer && ok.active && ok.autoReply, faqs: facts.faqs }
 }
 
 /** Post-retrieval filter by status/language, preserving the incoming ranking. */
