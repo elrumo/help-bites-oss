@@ -74,6 +74,7 @@ function onDrop(e: DragEvent) {
   <div :class="depth ? 'ms-3 border-s border-default ps-1.5' : ''">
     <div v-for="f in fields" :key="f.key" class="space-y-px" @dragleave.self="dropAt = null">
       <p v-if="f.list.length && (depth || fields.length > 1)" class="px-2 pt-1 text-[11px] text-dimmed">{{ f.field.label }}</p>
+      <TransitionGroup tag="div" name="layer-move" class="space-y-px">
       <div v-for="(child, i) in f.list" :key="child._uid" class="relative" @dragover="onDragOver($event, f.key, i)" @drop.prevent="onDrop">
         <span v-if="dropAt?.field === f.key && dropAt.index === i" class="pointer-events-none absolute inset-x-1 -top-px z-10 h-0.5 rounded-full bg-primary" />
         <UButton
@@ -99,6 +100,7 @@ function onDrop(e: DragEvent) {
         <CmsLayers :block="child" :library="library" :selected-id="selectedId" :depth="depth + 1" />
         <span v-if="i === f.list.length - 1 && dropAt?.field === f.key && dropAt.index === f.list.length" class="pointer-events-none absolute inset-x-1 -bottom-px z-10 h-0.5 rounded-full bg-primary" />
       </div>
+      </TransitionGroup>
       <!-- An empty list is one quiet line: its add menu, which a dragged block can also drop on. -->
       <div class="rounded-md" :class="!f.list.length && dropAt?.field === f.key && 'ring-1 ring-primary'" @dragover="!f.list.length && onDragOver($event, f.key, 0)" @drop.prevent="!f.list.length && onDrop($event)">
         <UDropdownMenu :items="addItems(f.field.allow, f.key)" :content="{ align: 'start' }" :ui="{ content: 'max-h-80' }">
@@ -108,3 +110,8 @@ function onDrop(e: DragEvent) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.layer-move-move { transition: transform 240ms cubic-bezier(.2, .8, .2, 1); }
+@media (prefers-reduced-motion: reduce) { .layer-move-move { transition: none; } }
+</style>

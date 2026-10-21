@@ -8,7 +8,8 @@
  * innermost one. The page's top-level blocks (`data-ids`, in order) get a drag
  * handle; nested blocks move from the layers list. Links and forms do nothing
  * here. Dragging uses pointer events: a line marks the landing spot and
- * nothing moves until the drop.
+ * nothing moves until the drop; then the re-rendered blocks glide (FLIP) from
+ * where they were to where they now sit.
  */
 export const CMS_PREVIEW_RUNTIME = `
 (function () {
@@ -44,6 +45,21 @@ export const CMS_PREVIEW_RUNTIME = `
       var on = el.getAttribute('data-hb-uid') === id;
       el.toggleAttribute('data-hb-selected', on);
       if (on && reveal) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  }
+
+  function tops() {
+    var out = {};
+    rows().forEach(function (el) { out[el.getAttribute('data-hb-uid')] = el.getBoundingClientRect().top; });
+    return out;
+  }
+
+  function glide(before, prev) {
+    if (!document.body.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (prev.length !== ids.length || prev.join() === ids.join() || prev.slice().sort().join() !== ids.slice().sort().join()) return;
+    rows().forEach(function (el) {
+      var dy = before[el.getAttribute('data-hb-uid')] - el.getBoundingClientRect().top;
+      if (dy) el.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.2, .8, .2, 1)' });
     });
   }
 
@@ -136,9 +152,12 @@ export const CMS_PREVIEW_RUNTIME = `
       document.title = next.title;
       Array.prototype.forEach.call(document.head.querySelectorAll('style:not([data-hb-editor]), link[rel="stylesheet"]'), function (el) { el.remove(); });
       Array.prototype.forEach.call(next.head.querySelectorAll('style, link[rel="stylesheet"]'), function (el) { document.head.appendChild(el); });
+      var before = tops();
+      var prev = ids;
       document.body.innerHTML = next.body.innerHTML;
       ids = d.ids;
       tag();
+      glide(before, prev);
       apply(selectedId);
     }
   });
