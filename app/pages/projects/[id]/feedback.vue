@@ -533,6 +533,9 @@ onMounted(async () => {
     if (!project.value) await loadProjects().catch(() => {})
     await loadConfig()
     await loadPosts()
+    // `?post=<id>` opens that post: the inbox links the posts a conversation is behind.
+    const wanted = typeof route.query.post === 'string' ? route.query.post : ''
+    if (wanted) void openPost(wanted)
   } catch (e: any) {
     error.value = e?.message || t('feedback.loadBoardError')
   } finally {
