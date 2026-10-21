@@ -207,7 +207,7 @@
       "id": "blog",
       "name": "Blog and newsletter",
       "category": "product",
-      "summary": "A Ghost-like blog: posts and standalone pages in a rich editor (Nuxt UI's TipTap), featured or members-only, scheduled or published on a designed hosted blog (layouts, navigation, search, SEO fields, sitemap, structured data), an embed and RSS; readers react and comment (moderated, threaded); any post can go to subscribers as a newsletter campaign (publish and email in one step); webhooks when posts go live; an import from Ghost.",
+      "summary": "A Ghost-like blog: posts and standalone pages in a rich editor (Nuxt UI's TipTap), featured or members-only, scheduled or published on a designed hosted blog (layouts, navigation, search, SEO fields, sitemap, structured data), an embed and RSS; readers react and comment (moderated, threaded); any post can go to subscribers as a newsletter campaign (publish and email in one step); webhooks when posts go live; an import from Ghost; Write with AI drafts, continues or improves a post, or suggests its title, excerpt and tags, from the project's GitHub repos.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "entitlement": "campaigns",

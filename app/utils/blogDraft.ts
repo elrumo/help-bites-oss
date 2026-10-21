@@ -115,3 +115,6 @@ export function blogPostCreateBody(draft: BlogPostDraft, projectId: string): Rec
     ...(draft.authorName.trim() ? { authorName: draft.authorName.trim() } : {})
   }
 }
+
+/** What `POST /admin/blog/ai` proposes; fields a mode does not produce are empty. */
+export type BlogAiResult = { body: string, title: string, excerpt: string, metaDescription: string, tags: string[], notes: string, repos: { repo: string, read: boolean }[] }

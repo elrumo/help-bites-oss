@@ -327,6 +327,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   as Markdown (an imported post stays HTML) and rendered once, through an
   allowlist that lets YouTube and Vimeo players through, sandboxed. Drafts save
   themselves; a live post changes only when you press Update.
+- **Write with AI.** Draft a post from a one-line brief, continue it, improve its
+  text, or get a title, excerpt, search description and tags, all grounded in the
+  project's connected GitHub repos (read-only). Nothing changes until you apply
+  the proposal in the editor, on web and native.
 - **Publish or schedule.** A cover with alt text, an excerpt, up to 10 tags, the
   author and a slug per post. A later date schedules it; it goes live on its own.
   **Featured** posts lead; **members-only** posts show their excerpt to everyone

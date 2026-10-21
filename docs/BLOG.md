@@ -47,6 +47,15 @@ storage.
 - **Drafts save themselves** a moment after you stop typing. A **live or
   scheduled** post keeps your edits until you press **Update**, so half a
   sentence never goes public. ⌘S / Ctrl+S saves either way.
+- **Write with AI.** The **Write with AI** button (web and the native app) reads
+  the project's connected GitHub repos (read-only: README, manifests and file
+  list, three repos at most) and the post as it stands, and proposes Markdown:
+  **write** a whole post from a one-line brief, **continue** it, **improve** its
+  text, or suggest a **title, excerpt, search description and tags**. Nothing is
+  saved until you apply the proposal to the editor, where it saves like any
+  edit. It runs on the workspace's AI provider (or the server's gateway, in AI
+  credits), is told not to invent features the repos do not show, and is not
+  offered for a post kept as HTML. See [over the API](#write-with-ai-over-the-api).
 - **Settings beside the editor**: status, publish date, address (`slug`),
   **Featured**, **Who can read it** (everyone, or members only), excerpt, cover
   image and its alt text, up to 10 tags, author, whether the post takes
@@ -514,6 +523,27 @@ curl -s -X PATCH https://YOUR-SUPPORT-HOST/v1/admin/projects/PROJECT_ID \
   -d '{"blog":{"design":{"layout":"magazine","font":"serif","navigation":[{"label":"About","url":"/about"}]}}}'
 ```
 
+### Write with AI over the API
+
+`POST /v1/admin/blog/ai` is what the editor's button calls. Nothing is saved: you
+get a proposal and send what you keep to the create or update endpoint above.
+
+```bash
+curl -X POST https://your-helpbites.example/v1/admin/blog/ai \
+  -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{ "project": "PROJECT_ID", "mode": "write",
+        "instruction": "Announce our new offline mode, for a technical audience." }'
+# { "result": { "title": "…", "excerpt": "…", "metaDescription": "…", "tags": ["…"],
+#               "body": "## …", "notes": "…", "repos": [{ "repo": "you/app", "read": true }] } }
+```
+
+- `mode`: `write` (needs `instruction` or `title`), `continue`, `improve` and `meta`
+  (these need `body`, the Markdown so far). `continue` returns only the text to add.
+- `repos`: `owner/name` of linked repos to read; all of the project's when left out.
+  `GET /v1/admin/cms/repos?project=…` lists them.
+- Fields a mode does not produce are empty. Errors: `400` nothing to go on, `501`
+  no AI provider configured, `502` the provider failed, `429` six a minute per operator.
+
 ## Webhooks
 
 With the project's event webhook set (**Email → Settings**; see
@@ -575,6 +605,7 @@ curl -s -X POST https://YOUR-SUPPORT-HOST/v1/admin/blog/import \
 | Navigation | 8 links |
 | Ghost import | 2,000 posts per file |
 | Excerpt | 300 characters |
+| Write with AI | 2,000 characters of instruction, 3 repos, 6 requests a minute per operator |
 | Tags | 10 per post, 40 characters each |
 | Images | 8 MB, PNG, JPEG, GIF or WebP |
 | Comments | 4,000 characters, 6 links, five per ten minutes per reader |
