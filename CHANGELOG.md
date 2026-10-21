@@ -35,6 +35,14 @@ All notable changes to the community edition. Versions are Docker image tags
 - Contacts show how they were added (**Added via**: app user, lead form, sign-up, import, sync, Stripe, API, by hand,
   feedback import), filterable in the people list, segments (`origin`, `leadForms`) and `GET /v1/contacts?origin=`.
   New contacts record it themselves; run `bun scripts/backfill-contacts.mjs --apply` once to store it for older ones.
+- Blog and newsletter (`docs/BLOG.md`): posts written in the panel's rich editor (Nuxt UI's TipTap, saved as
+  Markdown) or through `/v1/admin/blog/*`, scheduled or published on a hosted, indexable blog at `/blog/<public key>`,
+  drawn into any site by `public/blog.js` (MIT), served as JSON at `/v1/blog` and as RSS at
+  `/v1/projects/<public key>/blog.rss`. Readers react and comment (identity token or email-only session); the team
+  moderates and replies from the panel and the native app. Any published post can go to subscribers as a campaign,
+  which in the cloud edition needs a plan with campaigns. New classes `BlogPost` and `BlogComment`, and fields
+  `Project.blog` and `Campaign.blogPost` (need `schema:apply`; the container does it on boot). Images go to the bucket
+  under `<projectId>/blog/`. A person's blog comments and reactions are erased with the rest of their data.
 - Languages and AI translation for onboarding flows, legal documents and email templates (`docs/LANGUAGES.md`). New
   fields `OnboardingFlow.locale` and `translations`, `LegalDocument.translationOf` and `EmailTemplate.locale` and
   `translations` (need `schema:apply`; the container does it on boot). `POST …/translate` on each uses the workspace's

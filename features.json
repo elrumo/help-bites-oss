@@ -134,6 +134,21 @@
       "landing": { "listed": true, "key": "landing.showcase.changelog" }
     },
     {
+      "id": "blog",
+      "name": "Blog and newsletter",
+      "category": "product",
+      "summary": "Posts written in a rich editor (Nuxt UI's TipTap) and saved as Markdown, scheduled or published on a hosted blog, an embed and RSS; readers react and comment (moderated, threaded); any post can go to subscribers as a newsletter campaign.",
+      "editions": ["community", "cloud"],
+      "plan": "all",
+      "entitlement": "campaigns",
+      "status": "stable",
+      "web": { "panel": ["app/pages/projects/[id]/blog/index.vue", "app/pages/projects/[id]/blog/[postId].vue"], "public": ["/blog/:pk", "/blog/:pk/:slug"] },
+      "native": { "folders": ["helpbites-native/App/Features/Blog"], "parity": "tests/blogNativeParity.test.ts" },
+      "api": { "prefixes": ["/v1/blog", "/v1/admin/blog", "/v1/projects/:pk/blog.rss"], "docs": "docs/BLOG.md" },
+      "embed": { "web": "public/blog.js", "swift": "docs/BLOG.md#in-a-swift-app", "customize": ["data-view (blog, post, extras)", "data-post", "data-tag", "data-limit", "data-theme", "data-accent", "data-radius", "data-font", "data-show", "data-deep-link-param", "data-host", "JS init options (getToken, onSignIn, labels)", "--hb-blog-* CSS variables", "::part() hooks", "helpbites:blog events", "Swift accent and cornerRadius"] },
+      "landing": { "listed": true, "key": "landing.features.feedback.blog" }
+    },
+    {
       "id": "email-designer",
       "name": "Email designer",
       "category": "email",
@@ -464,6 +479,7 @@
     "CMS content has no per-field translations, scheduled publishing or version history; folders such as es/… stand in for languages.",
     "The CMS generates no TypeScript types from component schemas.",
     "The native app shows the plan, usage and plan locks but has no billing: subscribing and managing the subscription happen in the web panel's Settings → Billing.",
-    "Lead forms have no CAPTCHA (a honeypot and rate limits only), no file uploads, no translations and no A/B tests; answers are saved on the contact rather than kept as separate submissions, and never overwrite an answer the contact already has."
+    "Lead forms have no CAPTCHA (a honeypot and rate limits only), no file uploads, no translations and no A/B tests; answers are saved on the contact rather than kept as separate submissions, and never overwrite an answer the contact already has.",
+    "The native app edits a blog post's Markdown as text with a preview; the rich (TipTap) editor and its slash menu are web-only. Blog posts, comments and the embed have no translations, the blog has no custom domain (it lives at /blog/<public key>), and the MCP server has no blog tools yet."
   ]
 }

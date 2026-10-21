@@ -8,6 +8,7 @@ import { normalizeFeedbackConfig, validateFeedbackConfig, type FeedbackBoardConf
 import { normalizeBoardConfig, validateBoardConfig, type BoardConfig } from '#shared/board'
 import { normalizeChangelogConfig, validateChangelogConfig, type ChangelogConfig } from '#shared/changelog'
 import { normalizeLegalConfig, validateLegalConfig, type LegalConfig } from '#shared/legal/config'
+import { normalizeBlogConfig, validateBlogConfig, type BlogConfig } from '#shared/blog'
 import { normalizeFlags, validateFlags, type FeatureFlag } from '#shared/flags'
 import { normalizeMarketingConfig, validateMarketingConfig, type MarketingConfig } from '#shared/marketing'
 
@@ -66,6 +67,8 @@ export type AdminProject = PublicProject & {
   changelog: ChangelogConfig
   /** Legal pages: the operator's identity and the look of the hosted pages. Admin-only. */
   legal: LegalConfig
+  /** Blog options. Admin-only; what readers see is the published posts and GET /v1/blog. */
+  blog: BlogConfig
   /** `alertWebhookUrl` is set only for trackers whose alerts must be pointed at HelpBites by hand. */
   errors: { connected: boolean, provider: string, providerName: string, dsn: string, url: string, alertWebhookUrl: string }
   /** Every tracker project it reports to (`errors` is the first), each a pill on the Errors page. */
@@ -227,6 +230,12 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
     project.set('changelog', config)
   }
+  if (input.blog !== undefined) {
+    // Partial, like `changelog`: only the keys sent change.
+    const { config, errors } = validateBlogConfig(input.blog, normalizeBlogConfig(project.get('blog')))
+    if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
+    project.set('blog', config)
+  }
   if (input.legal !== undefined) {
     // Partial, like `changelog`: only the keys sent change.
     const { config, errors } = validateLegalConfig(input.legal, normalizeLegalConfig(project.get('legal')))
@@ -311,6 +320,7 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
     board: normalizeBoardConfig(project.get('board')),
     changelog: normalizeChangelogConfig(project.get('changelog')),
     legal: normalizeLegalConfig(project.get('legal')),
+    blog: normalizeBlogConfig(project.get('blog')),
     errors: { connected: Boolean(errors.dsn), provider: errors.dsn ? tracker.id : '', providerName: errors.dsn ? tracker.name : '', dsn: String(errors.dsn || ''), url: issuesUrlOf(errors), alertWebhookUrl: errors.dsn && tracker.manualAlerts ? errorWebhookUrl(project, errors) : '' },
     errorLinks: errorLinksOf(project).map(link => errorLinkView(project, link)),
     marketing: normalizeMarketingConfig(project.get('marketing')),

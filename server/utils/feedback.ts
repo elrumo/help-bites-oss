@@ -1587,6 +1587,9 @@ async function eraseFeedbackData(project: ParseObject, externalId: string, count
   }
 
   counts.changelogComments = await eraseChangelogComments(project, externalId)
+  const blog = await eraseBlogData(project, externalId)
+  counts.blogComments = blog.comments
+  counts.blogReactions = blog.reactions
   // The EndUser row and its conversations are eraseEndUserData's: removing
   // them here would hide the row from it, and with it the mail log,
   // enrollments and opt-out suppression it clears.

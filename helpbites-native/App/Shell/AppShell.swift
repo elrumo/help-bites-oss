@@ -116,6 +116,7 @@ struct RouteView: View {
       case .overview: ProjectOverviewScreen(projectId: id)
       case .revenue: RevenueScreen(projectId: id)
       case .changelog: ChangelogScreen(projectId: id)
+      case .blog: BlogScreen(projectId: id)
       case .onboarding: OnboardingScreen(projectId: id)
       case .legal: LegalScreen(projectId: id)
       case .brand: BrandScreen(projectId: id)

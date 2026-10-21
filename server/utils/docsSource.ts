@@ -1,5 +1,6 @@
 import type { DocPage } from '#shared/docs'
 import { renderDoc, type RenderedDoc } from './docsRender'
+import blog from '../../docs/BLOG.md'
 import brand from '../../docs/BRAND.md'
 import connecting from '../../docs/CONNECTING.md'
 import deployment from '../../docs/DEPLOYMENT.md'
@@ -18,6 +19,7 @@ import transfer from '../../docs/TRANSFER.md'
 // image ships .output only, never docs/). One import per entry in
 // shared/docs.ts; tests/docs.test.ts fails if one is missing.
 const SOURCES: Record<string, string> = {
+  'BLOG.md': blog,
   'BRAND.md': brand,
   'CONNECTING.md': connecting,
   'DEPLOYMENT.md': deployment,

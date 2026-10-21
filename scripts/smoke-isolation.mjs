@@ -122,6 +122,9 @@ const brandUpload = await maybe('brand file (needs S3)', async () => {
 const { component: cmsComponent } = await api('/v1/admin/cms/components', { ...A, method: 'POST', body: { project: project.id, key: `${MARK}_card`.toLowerCase(), name: `${MARK} card`, fields: [{ key: 'text', type: 'text' }], html: '<div>{{@text}}</div>' } })
 const { entry: cmsEntry } = await api('/v1/admin/cms/entries', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} page`, template: 'waitlist' } })
 await api(`/v1/admin/cms/settings`, { ...A, method: 'PATCH', body: { project: project.id, brief: { audience: `${MARK} audience` } } })
+await api(`/v1/admin/projects/${project.id}`, { ...A, method: 'PATCH', body: { blog: { enabled: true } } })
+const { post: blogPost } = await api('/v1/admin/blog/posts', { ...A, method: 'POST', body: { project: project.id, title: `${MARK} story`, body: `${MARK} words`, status: 'published' } })
+const { comment: blogComment } = await api(`/v1/blog/${blogPost.slug}/comments`, { token: userToken, method: 'POST', body: { body: `${MARK} reader comment` } })
 const cmsUpload = await maybe('pages file (needs S3)', async () => {
   const res = await upload('/v1/admin/cms/assets', { project: project.id, name: `${MARK} shot` }, A)
   if (res.status >= 300) throw new Error(`${res.status} ${res.json.statusMessage || ''}`)
@@ -243,10 +246,20 @@ await attempt('edit A\'s lead form', `/v1/admin/lead-forms/${leadForm.id}`, { me
 await attempt('create a lead form in A\'s project', '/v1/admin/lead-forms', { method: 'POST', body: { project: project.id, name: 'pwned' } })
 await attempt('list the leads of A\'s form', `/v1/contacts?project=${project.id}&leadForm=${leadForm.id}`)
 await attempt('delete A\'s lead form', `/v1/admin/lead-forms/${leadForm.id}`, { method: 'DELETE' })
+await attempt('list A\'s blog', `/v1/admin/blog/posts?project=${project.id}`)
+await attempt('read A\'s blog post', `/v1/admin/blog/posts/${blogPost.id}`)
+await attempt('edit A\'s blog post', `/v1/admin/blog/posts/${blogPost.id}`, { method: 'PATCH', body: { title: 'pwned', status: 'draft' } })
+await attempt('send A\'s post as a newsletter', `/v1/admin/blog/posts/${blogPost.id}/newsletter`, { method: 'POST', body: { send: 'draft' } })
+await attempt('write a post in A\'s project', '/v1/admin/blog/posts', { method: 'POST', body: { project: project.id, title: 'pwned' } })
+await attempt('list A\'s blog comments', `/v1/admin/blog/comments?project=${project.id}`)
+await attempt('hide A\'s blog comment', `/v1/blog/comments/${blogComment.id}`, { method: 'PATCH', body: { status: 'hidden' } })
+await attempt('reply on A\'s blog as A\'s team', `/v1/blog/${blogPost.id}/comments?project=${project.id}`, { method: 'POST', body: { body: 'pwned' } })
+await attempt('delete A\'s blog comment', `/v1/blog/comments/${blogComment.id}`, { method: 'DELETE' })
+await attempt('delete A\'s blog post', `/v1/admin/blog/posts/${blogPost.id}`, { method: 'DELETE' })
 await attempt('read A\'s brand kit', `/v1/admin/brand?project=${project.id}`)
 await attempt('edit A\'s brand kit', `/v1/admin/brand?project=${project.id}`, { method: 'PATCH', body: { tagline: 'pwned', page: { public: true } } })
 await attempt('preview A\'s brand page', `/v1/admin/brand/preview?project=${project.id}`, { method: 'POST', body: {} })
-for (const [label, path] of [['upload into A\'s brand kit', '/v1/admin/brand/assets'], ['upload an onboarding picture to A\'s project', '/v1/admin/onboarding/images']]) {
+for (const [label, path] of [['upload into A\'s brand kit', '/v1/admin/brand/assets'], ['upload an onboarding picture to A\'s project', '/v1/admin/onboarding/images'], ['upload a blog image to A\'s project', '/v1/admin/blog/images']]) {
   for (const who of [{ name: 'session', auth: B }, { name: 'api key', auth: { token: keyB } }]) {
     const res = await upload(path, { project: project.id }, who.auth)
     check(refused(res.status) && !res.text.includes(MARK), `${label} (${who.name}) → ${res.status}`)
@@ -330,6 +343,10 @@ check(formAfter?.name === `${MARK} form` && formAfter.settings.doubleOptIn === t
 const kitAfter = (await call(`/v1/admin/brand?project=${project.id}`, A)).json
 check(kitAfter.brand?.tagline === `${MARK} tagline` && kitAfter.brand.page.public === false, 'A\'s brand kit is untouched')
 if (brandUpload) check(kitAfter.assets?.some(a => a.id === brandUpload.id && a.name === `${MARK} logo`), 'A\'s brand file is untouched')
+const blogAfter = (await call(`/v1/admin/blog/posts/${blogPost.id}`, A)).json.post
+check(blogAfter?.title === `${MARK} story` && blogAfter.status === 'published', 'A\'s blog post is untouched')
+const blogThread = (await call(`/v1/blog/${blogPost.slug}/comments?pk=${project.publicKey}`)).json
+check(blogThread.comments?.length === 1 && blogThread.comments[0].body === `${MARK} reader comment`, 'A\'s blog comment is untouched')
 const pageAfter = (await call(`/v1/admin/cms/entries/${cmsEntry.id}`, A)).json.entry
 check(pageAfter?.name === `${MARK} page` && pageAfter.status === 'draft', 'A\'s page is untouched')
 check((await call(`/v1/admin/cms/components/${cmsComponent.id}`, A)).json.component?.name === `${MARK} card`, 'A\'s component is untouched')
