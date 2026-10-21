@@ -52,6 +52,8 @@
 
       <div class="space-y-px">
         <p class="flex h-7 items-center px-2 text-xs font-medium text-muted">{{ $t('nav.workspace') }}</p>
+        <NuxtLink to="/knowledge" class="nav-item" active-class="nav-item-active"><UIcon name="i-lucide-book-open" class="size-4 shrink-0 text-muted" />{{ $t('nav.knowledge') }}</NuxtLink>
+        <NuxtLink to="/agents" class="nav-item" active-class="nav-item-active"><UIcon name="i-lucide-users-round" class="size-4 shrink-0 text-muted" />{{ $t('nav.team') }}</NuxtLink>
         <NuxtLink to="/developer" class="nav-item" active-class="nav-item-active"><UIcon name="i-lucide-code-xml" class="size-4 shrink-0 text-muted" />{{ $t('nav.developer') }}</NuxtLink>
         <button type="button" class="nav-item" @click="settingsTab = 'account'"><UIcon name="i-lucide-settings" class="size-4 shrink-0 text-muted" />{{ $t('nav.settings') }}</button>
       </div>
