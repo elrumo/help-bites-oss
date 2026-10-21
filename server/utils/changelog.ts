@@ -586,7 +586,8 @@ async function announcePublished(project: ParseObject, rows: ParseObject[]): Pro
       releaseId: pointerId(row.get('release')) || null,
       publishedAt: iso(row.get('publishedAt')),
       feedbackPostIds: stringList(row.get('feedbackPostIds')),
-      boardItemIds: stringList(row.get('boardItemIds'))
+      boardItemIds: stringList(row.get('boardItemIds')),
+      conversationIds: stringList(row.get('conversationIds'))
     })
   }
 }

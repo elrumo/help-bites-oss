@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { normalizeHubConfig } from '#shared/hub'
 
 defineRouteMeta({
   openAPI: {

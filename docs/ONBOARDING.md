@@ -183,8 +183,8 @@ curl -s -X POST https://YOUR-SUPPORT-HOST/v1/onboarding/PROJECT_PUBLIC_KEY/welco
 
 `404` when the key is not a flow of the token's project, `401` for a missing or
 invalid token. The person's contact is created if it did not exist yet. Each
-report also emits the `onboarding.completed` domain event (webhook endpoints can subscribe to it) and shows
-up in the contact's activity (**Finished onboarding “welcome”**).
+report also emits the `onboarding.completed` [event](EVENTS.md) (webhooks can subscribe to it, and a
+sequence can start from it) and shows up in the contact's activity (**Finished onboarding “welcome”**).
 
 From Swift, add this next to the snippet below and call it from `onFinish`:
 

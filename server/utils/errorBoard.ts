@@ -61,7 +61,7 @@ export async function fileErrorOnBoard(project: ParseObject, agent: ParseObject,
     item.set('errorKeys', [key])
     await item.save(null, MASTER)
     const conversationId = await linkErrorConversation(project, agent, item, link, issueId)
-    await emitDomainEvent(project, 'errors.filed_on_board', { boardItemId: item.id, number: item.get('number') ?? null, provider: providerId, issueId, linkId: ref.linkId, conversationId: conversationId || null })
+    await emitDomainEvent(project, 'errors.filed_on_board', { itemId: item.id, number: item.get('number') ?? null, provider: providerId, issueId, linkId: ref.linkId, conversationId: conversationId || null })
     return { item, created: true }
   }, { failOpen: true, waitMs: 5000 })
   if (!held.ran) throw createError({ statusCode: 409, statusMessage: 'This error is being filed right now. Try again in a moment.' })

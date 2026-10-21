@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { normalizeHubConfig } from '#shared/hub'
 
 // The project's public hub: /hub/<public key>. One page that gathers its
 // changelog, roadmap, feedback board, blog, legal documents and brand kit, with

@@ -183,10 +183,10 @@ export async function handleGithubPullRequest(payload: any): Promise<number> {
       const result = await recordGithubRefs(project, { kind: 'pull_request', ref: String(number), repo, title, url, at: Number.isNaN(at.getTime()) ? new Date() : at, mentions })
       recorded += result.targets.length
       await emitDomainEvent(project, 'github.pull_request.merged', {
-        repo, number, title, url,
-        boardItemIds: result.targets.filter(t => t.kind === 'board').map(t => t.id),
-        feedbackPostIds: result.targets.filter(t => t.kind === 'feedback').map(t => t.id),
-        closedBoardItemIds: result.closed
+        number, repo, title, url,
+        targets: result.targets.map(t => ({ kind: t.kind, id: t.id, closes: t.closes })),
+        // Board items this merge moved to done (a closing keyword on one that was still open).
+        closed: result.closed
       })
     } catch (error) {
       console.warn('[github] could not record a merged pull request:', (error as Error).message)
