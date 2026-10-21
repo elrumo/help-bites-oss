@@ -21,6 +21,7 @@ export const projectSections: ProjectSection[] = [
   { path: 'forms', label: 'Forms', icon: 'i-lucide-clipboard-list' },
   { path: 'email', label: 'Email', icon: 'i-lucide-mail' },
   { path: 'revenue', label: 'Revenue', icon: 'i-lucide-circle-dollar-sign' },
+  { path: 'pricing', label: 'Pricing', icon: 'i-lucide-tags' },
   { path: 'pages', label: 'Pages', icon: 'i-lucide-layout-template' },
   { path: 'blog', label: 'Blog', icon: 'i-lucide-newspaper' },
   { path: 'legal', label: 'Legal', icon: 'i-lucide-scale', feature: 'legalDocs' },

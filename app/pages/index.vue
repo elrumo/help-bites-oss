@@ -468,6 +468,7 @@ const features = computed(() => [
       { term: t('landing.features.app.bubble.term'), desc: t('landing.features.app.bubble.desc') },
       { term: t('landing.features.app.context.term'), desc: t('landing.features.app.context.desc') },
       { term: t('landing.features.app.onboarding.term'), desc: t('landing.features.app.onboarding.desc') },
+      { term: t('landing.features.app.pricing.term'), desc: t('landing.features.app.pricing.desc') },
       { term: t('landing.features.app.media.term'), desc: t('landing.features.app.media.desc') },
       { term: t('landing.features.app.colours.term'), desc: t('landing.features.app.colours.desc') },
       { term: t('landing.features.app.none.term'), desc: t('landing.features.app.none.desc') }

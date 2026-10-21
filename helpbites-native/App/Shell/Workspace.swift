@@ -34,6 +34,8 @@ enum AppRoute: Hashable {
   case onboardingFlow(String, String)
   /// One lead form (project id, form id).
   case leadForm(String, String)
+  /// One pricing table (project id, table id).
+  case pricingTable(String, String)
 }
 
 /// The tab bar's tabs (iPhone), which become the sidebar on iPad and Mac. The
@@ -60,7 +62,7 @@ enum SectionGroup: String, CaseIterable {
 /// A project's sections, nested under it in the sidebar like a Linear team's. The cases run in
 /// sidebar order; the web's Pages section has no screen here.
 enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
-  case overview, conversations, knowledge, assistants, tickets, feedback, board, changelog, onboarding, contacts, forms, email, revenue, blog, legal, brand, errors, flags, dev, settings
+  case overview, conversations, knowledge, assistants, tickets, feedback, board, changelog, onboarding, contacts, forms, email, revenue, pricing, blog, legal, brand, errors, flags, dev, settings
   var id: String { rawValue }
   var label: String {
     switch self {
@@ -69,6 +71,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .contacts: "Contacts"
     case .forms: "Forms"
     case .revenue: "Revenue"
+    case .pricing: "Pricing"
     case .knowledge: "Knowledge base"
     case .assistants: "Assistants"
     case .tickets: "Ticket types"
@@ -99,6 +102,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .board: "rectangle.split.3x1"
     case .email: "envelope"
     case .revenue: "dollarsign.circle"
+    case .pricing: "tag"
     case .changelog: "scroll"
     case .blog: "newspaper"
     case .onboarding: "rectangle.stack"
@@ -116,7 +120,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .overview, .settings: nil
     case .conversations, .knowledge, .assistants, .tickets: .support
     case .feedback, .board, .changelog, .onboarding: .product
-    case .contacts, .forms, .email, .revenue: .grow
+    case .contacts, .forms, .email, .revenue, .pricing: .grow
     case .blog, .legal, .brand: .site
     case .errors, .flags, .dev: .build
     }
@@ -261,6 +265,9 @@ struct SectionLayout {
     case .leadForm(let id, _):
       if sidebar { tab = .section(id, .forms); return }
       go(.project(id, .forms)); projectsPath.append(route)
+    case .pricingTable(let id, _):
+      if sidebar { tab = .section(id, .pricing); return }
+      go(.project(id, .pricing)); projectsPath.append(route)
     }
     #endif
   }
@@ -279,6 +286,9 @@ struct SectionLayout {
       macPath = [route]
     case .leadForm(let id, _):
       macSelection = .project(id, .forms)
+      macPath = [route]
+    case .pricingTable(let id, _):
+      macSelection = .project(id, .pricing)
       macPath = [route]
     default:
       macSelection = route

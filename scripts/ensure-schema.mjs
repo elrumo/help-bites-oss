@@ -1056,6 +1056,68 @@ const SCHEMAS = {
       project_key: { _p_project: 1, key: 1 }
     }
   },
+  // A pricing table (server/utils/pricing.ts), read at /v1/pricing/<publicKey>/<key> and hosted at
+  // /pricing/<publicKey>/<key>. `plans`, `features`, `content`, `style`, `options` and `checkout` are
+  // shared/pricing.ts shapes, the working copy; `published` is { snapshot, stripe }: the copy apps get,
+  // frozen at each publish, with the Stripe products, prices and payment links it used then (shown
+  // while Stripe cannot be read). `checkoutError` is the last time Stripe refused a checkout.
+  PricingTable: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      // Unique within the project (checked on write).
+      key: { type: 'String' },
+      name: { type: 'String' },
+      // draft | published
+      status: { type: 'String' },
+      // tiers | rows | paywall | matrix | spotlight
+      template: { type: 'String' },
+      plans: { type: 'Array' },
+      features: { type: 'Array' },
+      content: { type: 'Object' },
+      style: { type: 'Object' },
+      options: { type: 'Object' },
+      checkout: { type: 'Object' },
+      // The language the copy is written in (default en), and its translations by flat key:
+      // { <locale>: { 'plans/<id>/name': '…', 'features/<id>/text': '…' } } (Mongo keeps no dots in keys).
+      locale: { type: 'String' },
+      translations: { type: 'Object' },
+      published: { type: 'Object' },
+      publishedAt: { type: 'Date' },
+      version: { type: 'Number' },
+      checkoutError: { type: 'Object' },
+      // An A/B test with other tables as variants (shared/pricing.ts PricingExperiment).
+      experiment: { type: 'Object' }
+    },
+    indexes: {
+      project_key: { _p_project: 1, key: 1 },
+      project_status: { _p_project: 1, status: 1, _created_at: 1 }
+    }
+  },
+  // A pricing table's numbers for one day and one A/B test run (`run` '' for traffic outside a test),
+  // written by server/utils/pricingStats.ts from what Redis counted. `visitors` is a HyperLogLog
+  // estimate; `revenue` is { <currency>: <smallest unit> }; `plans` is { <plan key>: { clicks, checkouts, conversions } }.
+  // `tableId` and `projectId` sit beside the pointers so the reports can query by them.
+  PricingStat: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      projectId: { type: 'String' },
+      table: { type: 'Pointer', targetClass: 'PricingTable' },
+      tableId: { type: 'String' },
+      run: { type: 'String' },
+      // YYYY-MM-DD (UTC)
+      day: { type: 'String' },
+      views: { type: 'Number' },
+      visitors: { type: 'Number' },
+      clicks: { type: 'Number' },
+      checkouts: { type: 'Number' },
+      conversions: { type: 'Number' },
+      revenue: { type: 'Object' },
+      plans: { type: 'Object' }
+    },
+    indexes: {
+      table_run_day: { tableId: 1, run: 1, day: 1 }
+    }
+  },
   // A lead form (server/utils/leadForms.ts): a waitlist or interest form read and posted at
   // /v1/forms/<publicKey>/<key> and hosted at /f/<publicKey>/<key>. `fields`, `content`, `style`
   // and `settings` are shared/leadForms.ts shapes. The ids it names are columns of their own, so a

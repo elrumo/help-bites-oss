@@ -122,6 +122,7 @@ const leadFile = await maybe('lead form file (needs S3)', async () => {
   if (res.status !== 202) throw new Error(`${res.status} ${await res.text()}`)
   return (await api(`/v1/admin/lead-files?project=${project.id}&form=${leadForm.id}`, A)).files[0]
 })
+const { table: pricingTable } = await api('/v1/admin/pricing-tables', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} pricing` } })
 await api(`/v1/admin/brand?project=${project.id}`, { ...A, method: 'PATCH', body: { tagline: `${MARK} tagline` } })
 const brandUpload = await maybe('brand file (needs S3)', async () => {
   const res = await upload('/v1/admin/brand/assets', { project: project.id, name: `${MARK} logo` }, A)
@@ -277,6 +278,20 @@ await attempt('hide A\'s blog comment', `/v1/blog/comments/${blogComment.id}`, {
 await attempt('reply on A\'s blog as A\'s team', `/v1/blog/${blogPost.id}/comments?project=${project.id}`, { method: 'POST', body: { body: 'pwned' } })
 await attempt('delete A\'s blog comment', `/v1/blog/comments/${blogComment.id}`, { method: 'DELETE' })
 await attempt('delete A\'s blog post', `/v1/admin/blog/posts/${blogPost.id}`, { method: 'DELETE' })
+await attempt('list A\'s pricing tables', `/v1/admin/pricing-tables?project=${project.id}`)
+await attempt('read A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}`)
+await attempt('edit A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}`, { method: 'PATCH', body: { name: 'pwned', checkout: { successUrl: 'https://evil.test/' } } })
+await attempt('preview A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/preview`, { method: 'POST', body: {} })
+await attempt('publish A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/publish`, { method: 'POST' })
+await attempt('translate A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/translate`, { method: 'POST', body: { locales: ['es'] } })
+await attempt('create a pricing table in A\'s project', '/v1/admin/pricing-tables', { method: 'POST', body: { project: project.id, name: 'pwned' } })
+await attempt('read A\'s pricing numbers', `/v1/admin/pricing-tables/${pricingTable.id}/stats?refresh=1`)
+await attempt('add a variant to A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/variants`, { method: 'POST', body: {} })
+await attempt('start an A/B test on A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/experiment/start`, { method: 'POST' })
+await attempt('stop an A/B test on A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/experiment/stop`, { method: 'POST', body: {} })
+await attempt('ask AI about A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/suggest`, { method: 'POST', body: { notes: 'x' } })
+await attempt('read A\'s Stripe catalog', `/v1/admin/stripe/catalog?project=${project.id}`)
+await attempt('delete A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}`, { method: 'DELETE' })
 await attempt('read A\'s brand kit', `/v1/admin/brand?project=${project.id}`)
 await attempt('edit A\'s brand kit', `/v1/admin/brand?project=${project.id}`, { method: 'PATCH', body: { tagline: 'pwned', page: { public: true } } })
 await attempt('preview A\'s brand page', `/v1/admin/brand/preview?project=${project.id}`, { method: 'POST', body: {} })
@@ -360,6 +375,8 @@ check((await call(`/v1/admin/knowledge/models/${model.id}`, A)).json.model?.name
 const flowAfter = (await call(`/v1/admin/onboarding/flows/${flow.id}`, A)).json.flow
 check(flowAfter?.name === `${MARK} flow` && flowAfter.status === 'draft', 'A\'s onboarding flow is untouched')
 const formAfter = (await call(`/v1/admin/lead-forms/${leadForm.id}`, A)).json.form
+const pricingAfter = (await call(`/v1/admin/pricing-tables/${pricingTable.id}`, A)).json.table
+check(pricingAfter?.name === `${MARK} pricing` && pricingAfter.status === 'draft' && pricingAfter.checkout.successUrl === '' && !pricingAfter.experiment.variants.length, 'A\'s pricing table is untouched')
 check(formAfter?.name === `${MARK} form` && formAfter.settings.doubleOptIn === true, 'A\'s lead form is untouched')
 if (leadFile) check((await call(`/v1/admin/lead-files/${leadFile.id}/download`, A)).status === 200, 'A\'s lead file is untouched')
 const kitAfter = (await call(`/v1/admin/brand?project=${project.id}`, A)).json

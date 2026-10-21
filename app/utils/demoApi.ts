@@ -2,6 +2,7 @@ import { DEFAULT_FEEDBACK_CONFIG, type FeedbackPost } from '#shared/feedback'
 import { DEFAULT_BOARD_CONFIG, ROADMAP_CATEGORIES, type BoardItem } from '#shared/board'
 import { DEFAULT_MARKETING_CONFIG } from '#shared/marketing'
 import { presetForm } from '#shared/leadForms'
+import { DEFAULT_PRICING_CHECKOUT, DEFAULT_PRICING_EXPERIMENT, DEFAULT_PRICING_OPTIONS, DEFAULT_PRICING_STYLE, addFunnel, buildPublicPricing, emptyFunnel, pricingTexts, starterPricing, type PricingFunnel, type PricingSnapshot } from '#shared/pricing'
 import { ALL_LEADS_SEGMENT, leadFormSegmentFilter } from '#shared/segments'
 import { DEFAULT_CHANGELOG_CONFIG, type ChangelogEntry, type ChangelogRelease } from '#shared/changelog'
 import { DEFAULT_BLOG_CONFIG, type BlogPost } from '#shared/blog'
@@ -140,6 +141,33 @@ function asContact(u: EndUser) {
     lastSeenAt: ago(n * 37), createdAt: ago(60 * 24 * 30 + n), updatedAt: ago(n)
   }
 }
+// A published pricing table with written prices: the demo has no Stripe.
+const demoPricingSnapshot: PricingSnapshot = { name: 'Pricing', template: 'tiers', ...starterPricing('tiers'), style: DEFAULT_PRICING_STYLE, options: { ...DEFAULT_PRICING_OPTIONS, cumulative: true }, checkout: DEFAULT_PRICING_CHECKOUT, locale: 'en', translations: {} }
+function demoPricingTable() {
+  const published = buildPublicPricing({ key: 'pricing', version: 1, publishedAt: ago(60 * 24 * 3), project: { name: 'Acme', logoUrl: '', accent: '#5e6ad2' }, snapshot: demoPricingSnapshot, catalog: null })
+  const { name, ...rest } = demoPricingSnapshot
+  return {
+    id: 'pt_demo1', key: 'pricing', name, status: 'published', version: 1, ...rest, changed: false, published, publishedAt: ago(60 * 24 * 3),
+    warnings: [], texts: pricingTexts(demoPricingSnapshot), checkoutError: null, experiment: DEFAULT_PRICING_EXPERIMENT,
+    path: '/v1/pricing/pk_demo/pricing', pagePath: '/pricing/pk_demo/pricing', updatedAt: ago(60 * 24 * 3)
+  }
+}
+
+// Its numbers since it went live: a few visits a day, some clicks, the odd purchase.
+function demoPricingStats(days: number) {
+  const total = emptyFunnel()
+  const series: Array<{ day: string } & PricingFunnel> = []
+  for (let i = Math.min(days, 3) - 1; i >= 0; i--) {
+    const visitors = 38 + ((i * 17) % 23)
+    const clicks = Math.round(visitors * 0.18)
+    const conversions = i === 1 ? 2 : 1
+    const funnel: PricingFunnel = { views: visitors + 9, visitors, clicks, checkouts: clicks - 2, conversions, revenue: { usd: conversions * 12000 }, plans: { pro: { clicks: clicks - 3, checkouts: clicks - 4, conversions }, team: { clicks: 3, checkouts: 2, conversions: 0 } } }
+    series.push({ day: ago(60 * 24 * i).slice(0, 10), ...funnel })
+    addFunnel(total, funnel)
+  }
+  return { total, days: series, experiment: null, conversions: null }
+}
+
 function demoLeadFormWithStats() {
   const leads = endUsers.map(asContact).filter(c => c.leadForms.includes(demoLeadForm.id))
   return { ...demoLeadForm, stats: { leads: leads.length, confirmed: leads.filter(c => c.subscription === 'subscribed').length } }
@@ -964,6 +992,14 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
 
   ['GET', /^\/admin\/lead-forms$/, ({ query }) => ({ forms: query.project === 'acme' ? [demoLeadFormWithStats()] : [] })],
   ['GET', /^\/admin\/lead-forms\/([^/]+)$/, ({ params }) => ({ form: find([demoLeadFormWithStats()], params[0], 'Form') })],
+
+  ['GET', /^\/admin\/pricing-tables$/, ({ query }) => ({ tables: query.project === 'acme' ? [demoPricingTable()] : [], stripe: { connected: false, error: '' } })],
+  ['GET', /^\/admin\/pricing-tables\/([^/]+)$/, ({ params }) => ({ table: find([demoPricingTable()], params[0], 'Pricing table') })],
+  ['GET', /^\/admin\/pricing-tables\/([^/]+)\/stats$/, ({ params, query }) => {
+    find([demoPricingTable()], params[0], 'Pricing table')
+    return demoPricingStats(Number(query.days) || 30)
+  }],
+  ['GET', /^\/admin\/stripe\/catalog$/, () => ({ connected: false, catalog: null, paymentLinks: false, error: '' })],
 
   ['GET', /^\/admin\/contact-sources$/, () => ({ sources: [], kinds: [{ kind: 'parse', label: 'Parse Server' }, { kind: 'postgres', label: 'Postgres / Supabase' }, { kind: 'firestore', label: 'Firebase / Firestore' }], ready: true })],
 

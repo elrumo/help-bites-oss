@@ -12,6 +12,8 @@ struct OnboardingPreview: View {
   let options: OnboardingOptions
   /// The project's accent, for a flow that leaves `style.accent` empty.
   let projectAccent: String?
+  /// The project's published pricing tables by key, for steps that show one.
+  var pricing: [String: PublicPricingTable] = [:]
   @State private var index = 0
   @State private var dark = false
   /// A language of `translations`; nil shows the flow's own.
@@ -66,6 +68,7 @@ struct OnboardingPreview: View {
 
   private func screen(_ step: OnboardingStep, at index: Int) -> some View {
     let last = index == steps.count - 1
+    let plans = step.pricingTable.isEmpty ? nil : pricing[step.pricingTable]
     let hex = style.accent.isEmpty ? (projectAccent ?? "") : style.accent
     let tint = Self.color(hex) ?? Theme.accent
     let onTint = Self.color(hex) == nil ? Color.white : Self.readable(on: hex)
@@ -84,15 +87,22 @@ struct OnboardingPreview: View {
         if options.skippable && !last { Button("Skip") { self.index = 0 }.buttonStyle(.plain).foregroundStyle(.secondary) }
       }
       .frame(minHeight: 28)
-      if let url = URL(string: step.imageUrl), !step.imageUrl.isEmpty {
-        CachedAsyncImage(url: url) { $0.resizable().scaledToFit() } placeholder: { Color.clear }
-          .frame(maxWidth: .infinity).aspectRatio(4 / 3, contentMode: .fit)
-          .background(tint.opacity(0.1), in: .rect(cornerRadius: max(0, radius - 8)))
-          .accessibilityLabel(step.imageAlt)
+      ScrollView {
+        VStack(alignment: .leading, spacing: 16) {
+          if let url = URL(string: step.imageUrl), !step.imageUrl.isEmpty {
+            CachedAsyncImage(url: url) { $0.resizable().scaledToFit() } placeholder: { Color.clear }
+              .frame(maxWidth: .infinity).aspectRatio(4 / 3, contentMode: .fit)
+              .background(tint.opacity(0.1), in: .rect(cornerRadius: max(0, radius - 8)))
+              .accessibilityLabel(step.imageAlt)
+          }
+          Text(step.title).font(.title2.weight(.semibold))
+          Text(step.body).foregroundStyle(.secondary)
+          // A step with a pricing table shows its plans (as onboarding.js does, narrow), drawn with the flow's accent.
+          if let table = plans { PricingTableView(table: table, accent: hex.isEmpty ? nil : tint, compact: true) }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
       }
-      Text(step.title).font(.title2.weight(.semibold))
-      Text(step.body).foregroundStyle(.secondary)
-      Spacer(minLength: 0)
+      .scrollIndicators(.hidden)
       HStack(spacing: 10) {
         if index > 0 { Button("Back") { withAnimation { self.index = index - 1 } }.buttonStyle(.bordered).controlSize(.large) }
         Button {
@@ -100,7 +110,8 @@ struct OnboardingPreview: View {
         } label: {
           Text(step.buttonLabel.isEmpty ? (last ? "Get started" : "Continue") : step.buttonLabel).fontWeight(.semibold)
             .frame(maxWidth: .infinity, minHeight: 46)
-            .background(tint, in: .rect(cornerRadius: max(6, radius * 0.6))).foregroundStyle(onTint)
+            .background(plans == nil ? AnyShapeStyle(tint) : AnyShapeStyle(Color.secondary.opacity(0.12)), in: .rect(cornerRadius: max(6, radius * 0.6)))
+            .foregroundStyle(plans == nil ? onTint : Color.primary)
         }
         .buttonStyle(.plain)
       }

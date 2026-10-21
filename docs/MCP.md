@@ -106,9 +106,21 @@ a key's project limit apply exactly as they do in the panel and the native app.
 | `update_changelog_entry` | Edit an entry, or publish a draft. |
 | `list_errors` | Issues from the connected error tracker. |
 | `get_error` | One issue with its latest event and stack trace. |
+| `list_pricing_tables` | A project's pricing tables. |
+| `get_pricing_table` | One table's plans, features, words, look and A/B test. |
+| `create_pricing_table` | Start a draft from a template. |
+| `update_pricing_table` | Edit plans, features, prices, words, look or translations. |
+| `publish_pricing_table` | Make the table live: asks first. |
+| `get_stripe_catalog` | Stripe products, prices and payment links to link plans to. |
+| `get_pricing_stats` | Views, clicks, purchases and revenue, and the A/B test result. |
+| `suggest_pricing` | AI proposal for plans, features and prices, from the repos and Stripe. |
+| `add_pricing_variant` | Copy a table to test against it. |
+| `start_pricing_experiment` | Start an A/B test: asks first. |
+| `stop_pricing_experiment` | End it, optionally keeping the winner. |
 
 Try: *"Which conversations are unread? Draft a reply to the one about the failed
-export, and show it to me before sending."*
+export, and show it to me before sending."* Or: *"Suggest plans for our pricing
+table from the repo, and show me before you change anything."*
 
 ## Safe by design
 

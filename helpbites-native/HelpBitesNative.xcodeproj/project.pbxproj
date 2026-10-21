@@ -155,6 +155,14 @@
 		F93B357EA692E10449C7D62A /* LanguageControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = EADCA1EE05A71ED71E674DB5 /* LanguageControls.swift */; };
 		F99383D43B3E62DB5DF9B936 /* InboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E66C75ABF3816D680627EA3A /* InboxStore.swift */; };
 		FEC0079E5262816CDD193342 /* KnowledgeDocumentsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E85DDB4ECE83ACE04C81C7E /* KnowledgeDocumentsSheet.swift */; };
+		4BA796742C10A14123F804D7 /* PricingLanguages.swift in Sources */ = {isa = PBXBuildFile; fileRef = C72D24A5E04D5D98E3F9B22C /* PricingLanguages.swift */; };
+		96DF79869D00DA030BA2055D /* PricingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F70E5B56CA70510D86DD53 /* PricingModels.swift */; };
+		97FC6B814A2072D8D4A6BB99 /* PricingPlanEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBE076181FFD00395D97D302 /* PricingPlanEditor.swift */; };
+		86383DF313E9A87842B99FEE /* PricingPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EDF3E6FE387062407EEF7DF /* PricingPreview.swift */; };
+		54884514EDF388021BE27733 /* PricingResults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 631CDDD8E96B7EB41BE94469 /* PricingResults.swift */; };
+		38F30DE988753A67EC47A006 /* PricingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B08C0534533368225C5DD850 /* PricingScreen.swift */; };
+		B11F364EF7085E19BFD215D3 /* PricingSuggest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507639A303CA32B490D65FE1 /* PricingSuggest.swift */; };
+		0DB92561BF9ADAFC6C92C281 /* PricingTableScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5B6888053944B343FC9BA6 /* PricingTableScreen.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -311,6 +319,14 @@
 		FAC97D2281787653CEBB896D /* OnboardingFlowScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowScreen.swift; sourceTree = "<group>"; };
 		FB32ACBB8C379B356FAB4079 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		FBDC070C9CAED8B1B82F725C /* EmailLayers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailLayers.swift; sourceTree = "<group>"; };
+		C72D24A5E04D5D98E3F9B22C /* PricingLanguages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingLanguages.swift; sourceTree = "<group>"; };
+		25F70E5B56CA70510D86DD53 /* PricingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingModels.swift; sourceTree = "<group>"; };
+		CBE076181FFD00395D97D302 /* PricingPlanEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingPlanEditor.swift; sourceTree = "<group>"; };
+		9EDF3E6FE387062407EEF7DF /* PricingPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingPreview.swift; sourceTree = "<group>"; };
+		631CDDD8E96B7EB41BE94469 /* PricingResults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingResults.swift; sourceTree = "<group>"; };
+		B08C0534533368225C5DD850 /* PricingScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingScreen.swift; sourceTree = "<group>"; };
+		507639A303CA32B490D65FE1 /* PricingSuggest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingSuggest.swift; sourceTree = "<group>"; };
+		2C5B6888053944B343FC9BA6 /* PricingTableScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingTableScreen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -555,6 +571,21 @@
 			path = Tickets;
 			sourceTree = "<group>";
 		};
+		E1C2C4D7690AF9D51983BC17 /* Pricing */ = {
+			isa = PBXGroup;
+			children = (
+				C72D24A5E04D5D98E3F9B22C /* PricingLanguages.swift */,
+				25F70E5B56CA70510D86DD53 /* PricingModels.swift */,
+				CBE076181FFD00395D97D302 /* PricingPlanEditor.swift */,
+				9EDF3E6FE387062407EEF7DF /* PricingPreview.swift */,
+				631CDDD8E96B7EB41BE94469 /* PricingResults.swift */,
+				B08C0534533368225C5DD850 /* PricingScreen.swift */,
+				507639A303CA32B490D65FE1 /* PricingSuggest.swift */,
+				2C5B6888053944B343FC9BA6 /* PricingTableScreen.swift */,
+			);
+			path = Pricing;
+			sourceTree = "<group>";
+		};
 		A0934D35DBA118F125DD65BA /* Revenue */ = {
 			isa = PBXGroup;
 			children = (
@@ -657,6 +688,7 @@
 				8858E537225228F4D1DCCCC9 /* Legal */,
 				3B8DF9A242D6351B0A673B6B /* Onboarding */,
 				01F1A038653B2778DD878AA5 /* Overview */,
+				E1C2C4D7690AF9D51983BC17 /* Pricing */,
 				5F63B4AC0CA09D3F34C928F3 /* Projects */,
 				A0934D35DBA118F125DD65BA /* Revenue */,
 				E6454F1C4042C9DAF58C3A4E /* Settings */,
@@ -755,6 +787,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4BA796742C10A14123F804D7 /* PricingLanguages.swift in Sources */,
+				96DF79869D00DA030BA2055D /* PricingModels.swift in Sources */,
+				97FC6B814A2072D8D4A6BB99 /* PricingPlanEditor.swift in Sources */,
+				86383DF313E9A87842B99FEE /* PricingPreview.swift in Sources */,
+				54884514EDF388021BE27733 /* PricingResults.swift in Sources */,
+				38F30DE988753A67EC47A006 /* PricingScreen.swift in Sources */,
+				B11F364EF7085E19BFD215D3 /* PricingSuggest.swift in Sources */,
+				0DB92561BF9ADAFC6C92C281 /* PricingTableScreen.swift in Sources */,
 				C3AB72C554AAE1AC966F6548 /* AIScreen.swift in Sources */,
 				73C91F75051DF76707AF73AD /* APIClient.swift in Sources */,
 				A1BAC14F0486F6D3C03705CB /* APIKeysScreen.swift in Sources */,

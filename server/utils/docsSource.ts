@@ -13,6 +13,7 @@ import legal from '../../docs/LEGAL.md'
 import mcp from '../../docs/MCP.md'
 import onboarding from '../../docs/ONBOARDING.md'
 import pages from '../../docs/PAGES.md'
+import pricing from '../../docs/PRICING.md'
 import transfer from '../../docs/TRANSFER.md'
 
 // The text of each published guide, bundled into the server at build time (the
@@ -32,6 +33,7 @@ const SOURCES: Record<string, string> = {
   'MCP.md': mcp,
   'ONBOARDING.md': onboarding,
   'PAGES.md': pages,
+  'PRICING.md': pricing,
   'TRANSFER.md': transfer
 }
 

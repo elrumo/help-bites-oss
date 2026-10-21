@@ -22,6 +22,7 @@ export const PROJECT_SECTION_GROUPS: Record<string, SectionGroup | null> = {
   forms: 'grow',
   email: 'grow',
   revenue: 'grow',
+  pricing: 'grow',
   pages: 'site',
   blog: 'site',
   legal: 'site',

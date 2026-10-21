@@ -36,6 +36,16 @@ All notable changes to the community edition. Versions are Docker image tags
     assistant leaves when it hands over because no rule matched and its default is "hand to a human" now says so
     instead of claiming a rule did.
   - The ticket type editor and the inbox warn when a type has actions but the project has no action webhook URL and secret.
+- Pricing tables: plan cards, rows, a paywall, a comparison table or a spotlight plan under **Project → Pricing** (web
+  and native), embedded with `public/pricing.js`, on a hosted page at `/pricing/<public key>/<key>`, in SwiftUI, in an
+  onboarding step, or read from `GET /v1/pricing/{pk}/{key}`; managed at `/v1/admin/pricing-tables`. See
+  `docs/PRICING.md`. New classes `PricingTable` and `PricingStat`, and field `pricingTable` on onboarding steps (need
+  `schema:apply`; the container does it on boot). Plans linked to Stripe read products, prices and Payment Links
+  through the project's Stripe key (new `GET /v1/admin/stripe/catalog`); Stripe Checkout buttons need "Checkout
+  Sessions: Write" on that key and purchase counting needs "Checkout Sessions: Read", so the key is no longer
+  read-only when you use them. The marketing worker flushes view and click counts from Redis and checks Stripe for
+  completed sessions every ten minutes per project with a published table. `/pricing/<pk>/<key>` joins the frameable
+  paths. A/B tests, AI suggestions (the workspace's AI or the gateway) and 11 new MCP tools come with it.
 - Changelog subscription emails link to hosted confirm and unsubscribe pages on this server
   (`/u/changelog/confirm/<token>`, `/u/changelog/unsubscribe/<token>`; they need `APP_URL`) instead of
   `{siteUrl}/changelog/confirm` and `…/unsubscribe` on the project's own site, which most projects never built.

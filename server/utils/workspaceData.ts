@@ -98,6 +98,8 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   LegalDocumentVersion: { scope: 'parent', parent: { field: 'document', className: 'LegalDocument' } },
   OnboardingFlow: { scope: 'project' },
   LeadForm: { scope: 'project' },
+  PricingTable: { scope: 'project' },
+  PricingStat: { scope: 'project' },
   // Its file goes with the project's `<projectId>/` prefix.
   LeadFile: { scope: 'project' },
   // Its file goes with the project's `<projectId>/` prefix.
