@@ -155,7 +155,7 @@ struct AssistantDetailScreen: View {
   }
 
   private var llmLine: String {
-    guard let llm, llm.configured else { return "No LLM endpoint configured. Retrieval still works for answer suggestions; auto-reply will not run." }
+    guard let llm, llm.configured else { return "No LLM endpoint configured. Retrieval testing still works; auto-reply will not run." }
     return "Ready — \(llm.model) via \(llm.usingDefaultEndpoint ? "default" : "custom") endpoint."
   }
 

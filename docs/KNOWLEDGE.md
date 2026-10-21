@@ -2,8 +2,8 @@
 
 This is the admin-managed layer between uploaded support documentation and the
 support runtime. Administrators upload a `SUPPORT_FAQ.md`, it becomes structured,
-navigable, searchable knowledge, and it is assigned to AI assistants that can
-suggest or (optionally) send grounded answers.
+navigable, searchable knowledge, and it is assigned to AI assistants that
+(optionally) send grounded answers and hand the rest to a human.
 
 It follows the existing app's conventions: Parse classes defined in
 `scripts/ensure-schema.mjs`, auto-imported helpers in `server/utils/**`,

@@ -84,7 +84,7 @@ private struct InboxQueueColumn: View {
   var body: some View {
     @Bindable var store = workspace.inbox
     VStack(spacing: 0) {
-      SearchField(text: $store.search, prompt: "Search conversations") { Task { await store.refresh() } }
+      SearchField(text: $store.search, prompt: "Search by name, email or user ID") { Task { await store.refresh() } }
         .padding(.horizontal, 12)
         .padding(.top, 8)
       ScrollView(.horizontal, showsIndicators: false) {

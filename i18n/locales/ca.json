@@ -181,7 +181,7 @@
     "languageNote": "Per defecte usa l'idioma del teu sistema. Només canvia el panell."
   },
   "inbox": {
-    "searchPlaceholder": "Cerca converses",
+    "searchPlaceholder": "Cerca per nom, correu o ID d'usuari",
     "closeSearch": "Tanca la cerca",
     "filterConversations": "Filtra les converses",
     "filter": "Filtre",
@@ -1798,7 +1798,7 @@
     "boardSettings": "Configuració del tauler",
     "boardSettingsDescription": "Tu defineixes els estats, els tipus de publicació i les plataformes.",
     "changelogFirstTitle": "Activa primer les novetats",
-    "changelogFirstDescription": "Les novetats es publiquen a través del tauler de comentaris: activa el tauler, amb la seva vista de Novetats, a Configuració.",
+    "changelogFirstDescription": "Activa «Novetats públiques» a Projecte → Novetats → Configuració. No necessita el tauler de comentaris.",
     "changelogLinkCopied": "Enllaç de novetats copiat",
     "yourChangelog": "Les teves novetats públiques",
     "saveError": "No s'ha pogut desar",
@@ -2182,7 +2182,7 @@
         "body": "Respon com a equip, deixa notes que el client mai no veurà i mira qui és i què li ha fallat sense sortir del fil.",
         "b1": "Projectes amb colors, un únic comptador de no llegits i actualitzacions en directe",
         "b2": "Assigna, prioritza, etiqueta i tanca, amb camps personalitzats per tipus de tiquet",
-        "b3": "Els seus errors recents i els comentaris enllaçats apareixen al costat del xat",
+        "b3": "Els seus errors recents i els elements del tauler enllaçats apareixen al costat del xat",
         "b4": "Les respostes també s'envien per correu quan no hi són",
         "alt": "La safata de HelpBites: una llista de converses, un fil amb una nota interna i el panell del client."
       },
@@ -2331,7 +2331,7 @@
         },
         "notes": {
           "term": "Notes, context i errors",
-          "desc": "Notes internes que el teu client mai no veu. Els seus errors recents i els comentaris enllaçats apareixen al costat de la conversa."
+          "desc": "Notes internes que el teu client mai no veu. Els seus errors recents i els elements del tauler enllaçats apareixen al costat de la conversa."
         },
         "away": {
           "term": "Correu quan no hi ets",
@@ -2593,7 +2593,7 @@
     "ready": "Llest — {model} mitjançant {endpoint}.",
     "defaultEndpoint": "endpoint per defecte",
     "customEndpoint": "endpoint personalitzat",
-    "notConfigured": "No hi ha cap endpoint de LLM configurat. La recuperació continua funcionant per als suggeriments de resposta; la resposta automàtica no s'executarà.",
+    "notConfigured": "No hi ha cap endpoint de LLM configurat. La prova de recuperació continua funcionant; la resposta automàtica no s'executarà.",
     "fallback": "Alternativa si no n'estàs segur",
     "fallbackHint": "Què fer quan cap coneixement coincideix",
     "fallbackHuman": "Passar a una persona",
@@ -3071,7 +3071,7 @@
     "assistants": {
       "newAssistant": "Nou assistent",
       "emptyTitle": "Encara no hi ha assistents",
-      "emptyDescription": "Un assistent respon als usuaris del projecte amb el coneixement que li donis, o suggereix respostes per al teu equip.",
+      "emptyDescription": "Un assistent respon als usuaris del projecte amb el coneixement que li donis, i passa la resta al teu equip.",
       "autoReply": "Resposta automàtica",
       "nameHint": "Posa-li el nom del públic al qual serveix, com «Facturació».",
       "createAssistant": "Crea l'assistent",

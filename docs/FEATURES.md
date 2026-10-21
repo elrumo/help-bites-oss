@@ -72,7 +72,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   its own currency. It updates as messages arrive. Web and native.
   [OVERVIEW.md](OVERVIEW.md)
 - **One inbox for every project.** Projects are colour-coded, with one unread
-  count and filters for All, Mine, Unassigned, Open, Unread and Archived. Search by text.
+  count and filters for All, Mine, Unassigned, Open, Unread and Archived. Search by
+  the customer's name, email or user ID.
 - **Triage.** Assign a teammate, set priority (low, normal, high, urgent), add
   tags, and mark a conversation open or done. A customer who writes into a done
   conversation reopens it.
@@ -86,8 +87,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Write first.** Start a conversation with a user, for example after a failed
   payment.
 - **Unsend and react.** Delete a message, or add a reaction.
-- **Customer context.** The user's record, their recent errors, and any board
-  items or feedback posts linked to the conversation.
+- **Customer context.** The user's record, their recent errors, and the board
+  items and changelog entries linked to the conversation.
 - **Email alerts.** Each project emails the addresses you choose when someone
   writes. Users who gave an address get replies by email, with a link back into
   the thread.
@@ -464,7 +465,8 @@ See [EDITIONS.md](EDITIONS.md).
 
 ## 14. Not built yet, and known limits
 
-- **Native app.** No workspace picker yet, so it works in the user's default workspace.
+- **Native app.** English only: it has no translations yet, while the web panel
+  has five more languages.
 - **Push.** Off until APNs credentials are set on the server.
 - **Contact sync.** Rows deleted upstream are not noticed yet. Erase them through
   the API. [CONTACTS.md](CONTACTS.md)
@@ -491,4 +493,4 @@ See [EDITIONS.md](EDITIONS.md).
 - **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
   email, campaigns, legal documents, flags or knowledge base editing, and it issues no refresh tokens, so an
   OAuth-connected assistant signs in again after a year. [MCP.md](MCP.md)
-- **Language.** The panel is translated into Spanish, Catalan, Chinese, Japanese and Korean; the widgets are English only.
+- **Language.** The web panel is translated into Spanish, Catalan, Chinese, Japanese and Korean; the native app and the widgets are English only.

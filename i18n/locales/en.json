@@ -182,7 +182,7 @@
     "languageNote": "Defaults to your system language. This only changes the panel."
   },
   "inbox": {
-    "searchPlaceholder": "Search conversations",
+    "searchPlaceholder": "Search by name, email or user ID",
     "closeSearch": "Close search",
     "filterConversations": "Filter conversations",
     "filter": "Filter",
@@ -1819,7 +1819,7 @@
     "boardSettings": "Board settings",
     "boardSettingsDescription": "Statuses, post types and platforms are yours to define.",
     "changelogFirstTitle": "Turn on the changelog first",
-    "changelogFirstDescription": "The changelog is published through the feedback board: turn the board on, with its Changelog view, under Settings.",
+    "changelogFirstDescription": "Switch on “Public changelog” in Project → Changelog → Settings. It does not need the feedback board.",
     "changelogLinkCopied": "Changelog link copied",
     "yourChangelog": "Your public changelog",
     "saveError": "Could not save",
@@ -2203,7 +2203,7 @@
         "body": "Reply as the team, leave notes the customer never sees, and see who they are and what broke for them without leaving the thread.",
         "b1": "Colour-coded projects, one unread count, live updates",
         "b2": "Assign, prioritise, label and close, with custom fields per ticket type",
-        "b3": "Their recent errors and linked feedback sit beside the chat",
+        "b3": "Their recent errors and linked board items sit beside the chat",
         "b4": "Replies also go out by email when they are away",
         "alt": "The HelpBites inbox: a conversation list, a thread with an internal note, and the customer panel."
       },
@@ -2352,7 +2352,7 @@
         },
         "notes": {
           "term": "Notes, context and errors",
-          "desc": "Internal notes your customer never sees. Their recent errors and linked feedback sit beside the conversation."
+          "desc": "Internal notes your customer never sees. Their recent errors and linked board items sit beside the conversation."
         },
         "away": {
           "term": "Email when you are away",
@@ -2618,7 +2618,7 @@
     "ready": "Ready — {model} via {endpoint}.",
     "defaultEndpoint": "default endpoint",
     "customEndpoint": "custom endpoint",
-    "notConfigured": "No LLM endpoint configured. Retrieval still works for answer suggestions; auto-reply will not run.",
+    "notConfigured": "No LLM endpoint configured. Retrieval testing still works; auto-reply will not run.",
     "fallback": "Fallback when unsure",
     "fallbackHint": "When no knowledge matches well enough. Hand to a human labels the conversation needs-human, and the assistant stays out of it until the label is removed.",
     "fallbackHuman": "Hand to a human",
@@ -3096,7 +3096,7 @@
     "assistants": {
       "newAssistant": "New assistant",
       "emptyTitle": "No assistants yet",
-      "emptyDescription": "An assistant answers this project's users from the knowledge you give it, or suggests replies for your team.",
+      "emptyDescription": "An assistant answers this project's users from the knowledge you give it, and hands the rest to your team.",
       "autoReply": "Auto-reply",
       "nameHint": "Name it after the audience it serves, like “Billing”.",
       "createAssistant": "Create assistant",

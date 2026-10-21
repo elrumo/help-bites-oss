@@ -37,7 +37,7 @@ struct AssistantsScreen: View {
     if loading && assistants.isEmpty {
       SkeletonRows(count: 3).frame(maxHeight: .infinity, alignment: .top)
     } else if assistants.isEmpty && error.isEmpty {
-      EmptyState(systemImage: "sparkles", title: "No assistants yet", message: "An assistant answers this project's users from the knowledge you give it, or suggests replies for your team.") {
+      EmptyState(systemImage: "sparkles", title: "No assistants yet", message: "An assistant answers this project's users from the knowledge you give it, and hands the rest to your team.") {
         Button { creating = true } label: { Label("New assistant", systemImage: "plus") }.buttonStyle(.lnPrimaryCompact)
       }
       .frame(maxHeight: .infinity, alignment: .top)

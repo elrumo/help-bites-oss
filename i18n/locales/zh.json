@@ -181,7 +181,7 @@
     "languageNote": "默认使用你的系统语言。这只会改变面板。"
   },
   "inbox": {
-    "searchPlaceholder": "搜索会话",
+    "searchPlaceholder": "按姓名、邮箱或用户 ID 搜索",
     "closeSearch": "关闭搜索",
     "filterConversations": "筛选会话",
     "filter": "筛选",
@@ -1798,7 +1798,7 @@
     "boardSettings": "看板设置",
     "boardSettingsDescription": "状态、帖子类型和平台由你自行定义。",
     "changelogFirstTitle": "请先开启更新日志",
-    "changelogFirstDescription": "更新日志通过反馈看板发布：请在“设置”中开启看板及其“更新日志”视图。",
+    "changelogFirstDescription": "在“项目 → 更新日志 → 设置”中开启“公开更新日志”。它不需要反馈看板。",
     "changelogLinkCopied": "更新日志链接已复制",
     "yourChangelog": "你的公开更新日志",
     "saveError": "无法保存",
@@ -2182,7 +2182,7 @@
         "body": "以团队身份回复，留下客户永远看不到的备注，并无需离开会话就能看到对方是谁、遇到了什么问题。",
         "b1": "按颜色区分的项目、统一的未读计数和实时更新",
         "b2": "分配、排序优先级、打标签和关闭，每种工单类型都有自定义字段",
-        "b3": "他们最近的错误和关联的反馈会显示在聊天旁边",
+        "b3": "他们最近的错误和关联的看板事项会显示在聊天旁边",
         "b4": "对方不在线时，回复也会通过邮件发出",
         "alt": "HelpBites 收件箱：会话列表、带内部备注的会话线程，以及客户面板。"
       },
@@ -2331,7 +2331,7 @@
         },
         "notes": {
           "term": "备注、上下文与错误",
-          "desc": "客户永远看不到的内部备注。他们最近的错误和关联的反馈会显示在会话旁边。"
+          "desc": "客户永远看不到的内部备注。他们最近的错误和关联的看板事项会显示在会话旁边。"
         },
         "away": {
           "term": "你不在时通过邮件通知",
@@ -2593,7 +2593,7 @@
     "ready": "已就绪 — {model}，通过{endpoint}。",
     "defaultEndpoint": "默认端点",
     "customEndpoint": "自定义端点",
-    "notConfigured": "未配置 LLM 端点。检索仍可用于回答建议，但不会运行自动回复。",
+    "notConfigured": "未配置 LLM 端点。检索测试仍可使用，但不会运行自动回复。",
     "fallback": "不确定时的处理方式",
     "fallbackHint": "没有匹配的知识时怎么办",
     "fallbackHuman": "转交人工",
@@ -3071,7 +3071,7 @@
     "assistants": {
       "newAssistant": "新建助手",
       "emptyTitle": "还没有助手",
-      "emptyDescription": "助手会根据你提供的知识回答项目用户的问题，或为你的团队提供回复建议。",
+      "emptyDescription": "助手会根据你提供的知识回答项目用户的问题，其余的交给你的团队。",
       "autoReply": "自动回复",
       "nameHint": "以它服务的受众命名，例如“账单”。",
       "createAssistant": "创建助手",
