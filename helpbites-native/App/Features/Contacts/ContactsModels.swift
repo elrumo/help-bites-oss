@@ -53,6 +53,8 @@ enum ContactOriginKind: String, CaseIterable, Identifiable {
 
 struct Contact: Codable, Identifiable, Equatable, Sendable {
   let id, externalId, email, name, username, avatarUrl, subscription: String
+  /// The language to write to them in ("es", "pt-BR"); nil or blank until known, and absent on servers from before it.
+  let language: String?
   let attributes: [String: JSONValue]
   let tags, unsubscribedTopics, sources: [String]
   let consent: ContactConsent?
@@ -65,6 +67,7 @@ struct Contact: Codable, Identifiable, Equatable, Sendable {
   var displayName: String { !name.isEmpty ? name : !email.isEmpty ? email : !externalId.isEmpty ? externalId : "Unnamed" }
 }
 
+/// GET /v1/contacts.
 struct ContactPage: Decodable, Sendable { let contacts: [Contact]; let nextCursor: String? }
 
 /// What a subscription status means, as the web's SUBSCRIPTION_STATUS (app/utils/contactStatus.ts).
@@ -109,13 +112,16 @@ struct ContactSegment: Codable, Identifiable, Equatable, Sendable {
 
 /// Mirrors shared/segments.ts: which fields a rule can test and what it can ask of each.
 enum SegmentSpec {
-  enum Kind { case text, enumeration, list, date, attribute }
+  /// `flag`: a yes/no question the server answers by looking at the person's other records.
+  enum Kind { case text, enumeration, list, date, attribute, flag }
   static let attributePrefix = "attributes."
   static let fields: [(key: String, label: String, kind: Kind)] = [
     ("email", "Email", .text), ("name", "Name", .text), ("externalId", "User id", .text),
     ("subscription", "Subscription", .enumeration), ("tags", "Tags", .list),
     ("unsubscribedTopics", "Opted-out topics", .list), ("sources", "Source", .list),
-    ("origin", "Added via", .enumeration), ("leadForms", "Lead form", .list),
+    ("origin", "Added via", .enumeration), ("language", "Language", .text), ("leadForms", "Lead form", .list),
+    ("stripePlan", "Stripe plan", .text), ("hasOpenConversation", "Has an open conversation", .flag),
+    ("votedOnPost", "Voted on a post", .flag), ("hasErrors", "Has errors", .flag), ("finishedOnboarding", "Finished onboarding", .flag),
     ("createdAt", "Added", .date), ("lastSeenAt", "Last seen", .date), ("updatedAt", "Updated", .date)
   ]
   static func kind(_ field: String) -> Kind {
@@ -129,6 +135,7 @@ enum SegmentSpec {
     case .list: ["includes", "excludes", "exists", "not_exists"]
     case .date: ["before", "after", "within_days", "not_within_days", "exists", "not_exists"]
     case .attribute: ["is", "is_not", "contains", "starts_with", "gt", "lt", "before", "after", "exists", "not_exists"]
+    case .flag: ["is"]
     }
   }
   static let opLabels: [String: String] = [
@@ -146,7 +153,7 @@ struct SegmentPreview: Decodable, Sendable { let count: Int; let sample: [Contac
 
 /// The mapping of a source's (or CSV file's) columns onto contact fields.
 struct ContactMapping: Codable, Equatable, Sendable {
-  var externalId, email, name, tags, subscribed: String?
+  var externalId, email, name, language, tags, subscribed: String?
   var attributes: [String: String]?
 }
 
@@ -173,7 +180,7 @@ struct ContactSource: Codable, Identifiable, Equatable, Sendable {
 
 /// One contact as the API takes it (import rows, "Add").
 struct ContactInput: Encodable, Sendable {
-  var externalId, email, name: String?
+  var externalId, email, name, language: String?
   var attributes: [String: JSONValue]?
   var tags: [String]?
   var subscription: String?

@@ -60,6 +60,14 @@ struct ErrorDetail: Decodable, Sendable {
   let at: String
 }
 
+/// `GET` and `POST /v1/admin/errors/:id/board`: the board item an error was filed as. `boardEnabled` is
+/// only sent by the GET (filing needs the project board on).
+struct ErrorBoardState: Decodable, Sendable {
+  struct Item: Decodable, Equatable, Identifiable, Sendable { let id, title: String; let number: Int? }
+  let item: Item?
+  let boardEnabled: Bool?
+}
+
 /// `POST /v1/admin/errors/:id/analyze`.
 struct ErrorAnalysis: Decodable, Sendable { let text: String; let files: [String]; let cached: Bool }
 

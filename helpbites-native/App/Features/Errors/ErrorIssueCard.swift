@@ -9,6 +9,7 @@ struct ErrorIssueCard: View {
   let onStatus: (String) -> Void
 
   @Environment(SessionStore.self) private var session
+  @Environment(Workspace.self) private var workspace
   @Environment(\.openURL) private var openURL
   @State private var open = false
   @State private var loading = false
@@ -21,6 +22,17 @@ struct ErrorIssueCard: View {
   @State private var copying = false
   @State private var copied = false
   @State private var aiError = ""
+  /// The board item this error was filed as, if any; filing needs the project board on.
+  @State private var filed: ErrorBoardState.Item?
+  @State private var boardEnabled = false
+  @State private var filing = false
+  @State private var boardError = ""
+  @State private var boardLoaded = false
+  /// The board, made only when the filed item is opened.
+  @State private var board: BoardStore?
+  @State private var boardItem: BoardRoute?
+
+  private struct BoardRoute: Identifiable { let id: String }
 
   private enum Tab: String, CaseIterable, Identifiable {
     case stack = "Stacktrace", details = "Details", crumbs = "Breadcrumbs", tags = "Tags"
@@ -35,6 +47,9 @@ struct ErrorIssueCard: View {
       if open { expanded.padding(.top, 4).padding(.bottom, 12) }
     }
     .animation(nil, value: open)
+    .sheet(item: $boardItem) { route in
+      if let board { BoardItemEditor(store: board, itemId: route.id) }
+    }
   }
 
   // MARK: Header
@@ -92,6 +107,7 @@ struct ErrorIssueCard: View {
       } else if let detail {
         eventView(detail)
       }
+      boardSection
       aiSection
     }
     .padding(12)
@@ -180,6 +196,36 @@ struct ErrorIssueCard: View {
     }
   }
 
+  // MARK: File on board
+
+  /// Files the error once, as a board item; after that it shows the item. Hidden while the project board is off.
+  @ViewBuilder private var boardSection: some View {
+    if let filed {
+      Button {
+        if board == nil { board = BoardStore(projectId: projectId, workspace: workspace) }
+        boardItem = BoardRoute(id: filed.id)
+      } label: {
+        HStack(spacing: 8) {
+          Image(systemName: "rectangle.split.3x1").font(.system(size: 12)).foregroundStyle(Theme.accentText)
+          Text("On the board: \(filed.number.map { "#\($0) " } ?? "")\(filed.title)").font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
+          Spacer(minLength: 0)
+          Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textMuted)
+        }
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityHint("Opens the board item")
+    } else if boardEnabled {
+      VStack(alignment: .leading, spacing: 6) {
+        Button { Task { await fileOnBoard() } } label: {
+          if filing { ProgressView().controlSize(.small) } else { Label("File on board", systemImage: "rectangle.split.3x1") }
+        }
+        .buttonStyle(.lnSecondaryCompact).disabled(filing)
+        ErrorText(message: boardError)
+      }
+    }
+  }
+
   // MARK: Fix with AI
 
   private var aiSection: some View {
@@ -217,8 +263,33 @@ struct ErrorIssueCard: View {
 
   private func toggle() {
     open.toggle()
-    guard open, detail == nil, !loading else { return }
+    guard open else { return }
+    if !boardLoaded { Task { await loadBoard() } }
+    guard detail == nil, !loading else { return }
     Task { await loadDetail() }
+  }
+
+  private func loadBoard() async {
+    boardLoaded = true
+    do {
+      let state: ErrorBoardState = try await session.get("\(path)/board", query: ["project": projectId, "link": issue.linkId])
+      filed = state.item
+      boardEnabled = state.boardEnabled ?? false
+    } catch {
+      // The card works without it: no button.
+      boardLoaded = false
+    }
+  }
+
+  private struct BoardInput: Encodable, Sendable { let project, link: String }
+
+  private func fileOnBoard() async {
+    filing = true; boardError = ""
+    defer { filing = false }
+    do {
+      let state: ErrorBoardState = try await session.send("\(path)/board", body: BoardInput(project: projectId, link: issue.linkId))
+      filed = state.item
+    } catch { boardError = error.localizedDescription }
   }
 
   private func loadDetail() async {

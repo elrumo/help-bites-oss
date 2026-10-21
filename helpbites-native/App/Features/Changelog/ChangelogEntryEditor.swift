@@ -60,6 +60,9 @@ struct ChangelogEntryEditor: View {
   /// The board, loaded only when a linked item is opened.
   @State private var board: BoardStore?
   @State private var boardItem: BoardRoute?
+  /// The conversations a public entry answers, for "Reply to N linked conversations".
+  @State private var linkedConversations: ChangelogLinkedConversations?
+  @State private var replying = false
   @Environment(Workspace.self) private var workspace
   @Environment(\.dismiss) private var dismiss
   @Environment(\.horizontalSizeClass) private var sizeClass
@@ -93,6 +96,7 @@ struct ChangelogEntryEditor: View {
               notes(current)
               review(current)
               sources(current)
+              replySection(current)
               Button(role: .destructive) { confirmDelete = true } label: { Label("Delete entry", systemImage: "trash") }
                 .buttonStyle(.lnGhost).tint(Theme.error)
             }
@@ -128,8 +132,12 @@ struct ChangelogEntryEditor: View {
         await store.ensureLoaded()
         if !filled, let current { draft = ChangelogEntryDraft(entry: current); filled = true }
       }
+      .task(id: replyKey) { await loadLinkedConversations() }
       .sheet(item: $boardItem) { route in
         if let board { BoardItemEditor(store: board, itemId: route.id) }
+      }
+      .sheet(isPresented: $replying) {
+        if let entryId, let linkedConversations { ChangelogReplySheet(projectId: store.projectId, entryId: entryId, linked: linkedConversations) }
       }
     }
     .presentationDetents([.large])
@@ -365,6 +373,43 @@ struct ChangelogEntryEditor: View {
   private func addSource(_ entry: ChangelogEntry) async {
     let value = linkRef.trimmingCharacters(in: .whitespacesAndNewlines)
     if !value.isEmpty, await setLink(entry, linkKind, value, true) { linkRef = "" }
+  }
+
+  // MARK: Reply to the people it answers
+
+  /// Looked up again when the entry becomes public or its links change.
+  private var replyKey: String {
+    guard let current else { return "" }
+    return "\(current.id)|\(store.state(current) == .live)|\(current.sources.count)"
+  }
+
+  private func loadLinkedConversations() async {
+    guard let current, store.state(current) == .live else { linkedConversations = nil; return }
+    do {
+      let found: ChangelogLinkedConversations = try await workspace.session.get("/v1/admin/changelog/entries/\(current.id)/linked-conversations", query: ["project": store.projectId])
+      linkedConversations = found
+    } catch {
+      // The editor works without it; the section just does not show.
+      if case APIError.cancelled = error { return }
+      linkedConversations = nil
+    }
+  }
+
+  /// Only once the entry is public and answers somebody's conversation. Never sent on its own.
+  @ViewBuilder private func replySection(_ entry: ChangelogEntry) -> some View {
+    if store.state(entry) == .live, let linked = linkedConversations, linked.count > 0 {
+      HStack(spacing: 10) {
+        Image(systemName: "bubble.left.and.bubble.right").font(.system(size: 14)).foregroundStyle(Theme.accentText)
+        Text("This entry answers \(linked.count) \(linked.count == 1 ? "conversation" : "conversations"). You can tell them it shipped.")
+          .font(.lnMeta).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
+        Spacer(minLength: 4)
+        Button { replying = true } label: { Label("Reply to \(linked.count) linked \(linked.count == 1 ? "conversation" : "conversations")", systemImage: "paperplane") }
+          .buttonStyle(.lnSecondaryCompact)
+      }
+      .padding(12)
+      .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
+      .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
+    }
   }
 
   // MARK: Writes

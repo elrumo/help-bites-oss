@@ -35,7 +35,7 @@ const library = libraryOf()
 // Thumbnails render once: the templates do not change while the panel runs.
 const thumbs = computed(() => Object.fromEntries(CMS_TEMPLATES.map((tpl) => {
   const start = templateContent(tpl.id, project.value?.name || 'Acme')!
-  const html = renderPage({ name: tpl.name, content: normalizeContent(start.content, library, 'page').content, style: normalizeStyle(start.style), projectAccent: project.value?.theme?.accent || '#5e6ad2' }, { library, pk: '', host: '' })
+  const html = renderPage({ name: tpl.name, content: normalizeContent(start.content, library, 'page').content, style: normalizeStyle(start.style), projectAccent: project.value?.theme?.accent || '#4f46e5' }, { library, pk: '', host: '' })
   return [tpl.id, html]
 })))
 

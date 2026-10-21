@@ -140,6 +140,13 @@
               </form>
               <p class="text-xs text-muted">{{ $t('changelog.linkHint') }}</p>
             </section>
+
+            <!-- Only once it is public, and only when it answers somebody's conversation. Never sent on its own. -->
+            <section v-if="linkedConversations?.count && stateOf(current).key === 'public'" class="flex flex-wrap items-center gap-3 rounded-lg border border-default bg-elevated px-3 py-2.5">
+              <UIcon name="i-lucide-messages-square" class="size-4 shrink-0 text-primary" />
+              <p class="min-w-0 flex-1 text-[13px] text-muted">{{ $t('changelog.reply.hint', linkedConversations.count) }}</p>
+              <UButton icon="i-lucide-send" size="sm" color="primary" variant="soft" :label="$t('changelog.reply.button', linkedConversations.count)" @click="replyOpen = true" />
+            </section>
           </template>
 
           <p v-if="entryError" class="text-sm text-error">{{ entryError }}</p>
@@ -156,6 +163,8 @@
         </div>
       </template>
     </USlideover>
+
+    <ChangelogReplyDialog v-if="current && linkedConversations" v-model:open="replyOpen" :project-id="id" :entry-id="current.id" :linked="linkedConversations" @sent="loadLinkedConversations" />
 
     <!-- Settings -->
     <USlideover v-model:open="showSettings" :title="$t('changelog.settingsTitle')" :description="$t('changelog.settingsDescription')" :ui="{ content: 'sm:max-w-lg' }">
@@ -234,6 +243,7 @@
 
 <script setup lang="ts">
 import { CHANGELOG_TAGS, CHANGELOG_TAG_LABELS, isEntryPublic, type ChangelogEntry, type ChangelogLinkKind, type ChangelogRelease, type ChangelogSource, type ChangelogStatus, type ChangelogTag } from '#shared/changelog'
+import type { ChangelogLinkedConversations } from '#shared/changelogReply'
 import type { AdminProject } from '~~/server/utils/projects'
 
 // A project's changelog: entries (what shipped, in your own words) grouped into
@@ -398,9 +408,30 @@ watch(() => [route.query.entry, loading.value, entries.value.length] as const, (
   entryOpen.value = true
 }, { immediate: true })
 
+// The conversations a public entry answers, for "Reply to N linked conversations". Looked up when the editor
+// opens on a public entry and again when its links or state change; the reply itself is always the person's click.
+const linkedConversations = ref<ChangelogLinkedConversations | null>(null)
+const replyOpen = ref(false)
+
+async function loadLinkedConversations() {
+  const entry = current.value
+  if (!entry || stateOf(entry).key !== 'public') { linkedConversations.value = null; return }
+  try {
+    const found = await api<ChangelogLinkedConversations>(`/admin/changelog/entries/${entry.id}/linked-conversations`, { query: { project: id } })
+    if (current.value?.id === entry.id) linkedConversations.value = found
+  } catch {
+    // The editor works without it; the section just does not show.
+    linkedConversations.value = null
+  }
+}
+
+watch(() => [current.value?.id, current.value && stateOf(current.value).key, current.value?.sources.length] as const, () => { void loadLinkedConversations() }, { immediate: true })
+
 watch(entryOpen, (open) => {
   if (open) return
   editingId.value = ''
+  linkedConversations.value = null
+  replyOpen.value = false
   if (route.query.entry) void router.replace({ query: { ...route.query, entry: undefined } })
 })
 

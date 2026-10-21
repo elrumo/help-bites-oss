@@ -16,6 +16,7 @@ const { t } = useI18n()
 
 const ATTRIBUTE = '__attribute'
 const fieldItems = computed(() => [...SEGMENT_FIELDS.map(f => ({ label: t(`contacts.builder.field.${f.key}`), value: f.key })), { label: t('contacts.builder.attributeField'), value: ATTRIBUTE }])
+const flagItems = computed(() => [{ label: t('contacts.builder.yes'), value: 'yes' }, { label: t('contacts.builder.no'), value: 'no' }])
 const matchItems = computed(() => [{ label: t('contacts.builder.allOf'), value: 'all' }, { label: t('contacts.builder.anyOf'), value: 'any' }])
 const subscriptionItems = computed(() => Object.keys(SUBSCRIPTION_STATUS).map(value => ({ label: t(`contacts.subscription.${value}.label`), value })))
 const originItems = computed(() => CONTACT_ORIGIN_TYPES.map((value): { label: string, value: string } => ({ label: t(`contacts.origin.${value}`), value })))
@@ -38,7 +39,7 @@ const isDate = (rule: SegmentRule) => rule.op === 'before' || rule.op === 'after
 function setField(rule: SegmentRule, value: string) {
   rule.field = value === ATTRIBUTE ? 'attributes.' : value
   if (!SEGMENT_OPS[kindOf(rule)].includes(rule.op)) rule.op = SEGMENT_OPS[kindOf(rule)][0]!
-  rule.value = rule.field === 'subscription' ? 'subscribed' : rule.field === 'origin' ? 'lead_form' : ''
+  rule.value = rule.field === 'subscription' ? 'subscribed' : rule.field === 'origin' ? 'lead_form' : kindOf(rule) === 'flag' ? 'yes' : ''
 }
 
 function addRule() {
@@ -78,6 +79,7 @@ watchDebounced(filter, preview, { debounce: 400, deep: true, immediate: true })
       <template v-if="needsValue(rule)">
         <USelect v-if="rule.field === 'subscription'" v-model="rule.value as string" :items="subscriptionItems" value-key="value" size="sm" class="w-40" :aria-label="$t('contacts.drawer.value')" />
         <USelect v-else-if="rule.field === 'origin'" v-model="rule.value as string" :items="originItems" value-key="value" size="sm" class="w-44" :aria-label="$t('contacts.drawer.value')" />
+        <USelect v-else-if="kindOf(rule) === 'flag'" v-model="rule.value as string" :items="flagItems" value-key="value" size="sm" class="w-24" :aria-label="$t('contacts.drawer.value')" />
         <USelect v-else-if="rule.field === 'leadForms' && formItems.length" v-model="rule.value as string" :items="formItems" value-key="value" :placeholder="$t('contacts.builder.pickForm')" size="sm" class="w-48" :aria-label="$t('contacts.drawer.value')" />
         <UInput v-else-if="isDays(rule)" v-model.number="rule.value as number" type="number" min="1" placeholder="30" size="sm" class="w-24" :aria-label="$t('contacts.builder.aria.days')" />
         <UInput v-else-if="isDate(rule)" v-model="rule.value as string" type="date" size="sm" class="w-40" :aria-label="$t('contacts.builder.aria.date')" />

@@ -3,7 +3,7 @@ import { createError } from 'h3'
 import { iso, pointerId } from './parse'
 import { isProbablyEmail } from './projects'
 import { unsubscribeContactByEmail } from './contacts'
-import { emitWebhooks } from './webhooks'
+import { emitDomainEvent } from './domainEvents'
 
 // Reading the send history, keeping it current from Mailgun's delivery
 // webhooks, and the per-project list of addresses that are no longer mailed
@@ -486,7 +486,7 @@ export async function applyMailgunEvent(data: Record<string, any>): Promise<'app
     if (project && update.suppress.reason === 'unsubscribe' && isMarketingSource(row?.get('source'))) await unsubscribeContactByEmail(project, recipient, 'mailgun')
     else if (project) {
       const { added } = await addEmailSuppressions(project, [{ email: recipient, reason: update.suppress.reason, detail: update.suppress.detail, source: 'webhook' }])
-      if (added.length) await emitWebhooks(project, [{ type: 'email.suppressed', data: { email: recipient, reason: update.suppress.reason, detail: update.suppress.detail } }])
+      if (added.length) await emitDomainEvent(project, 'email.suppressed', { email: recipient, reason: update.suppress.reason, detail: update.suppress.detail })
     }
   }
   return row ? 'applied' : 'ignored'

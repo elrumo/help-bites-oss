@@ -94,7 +94,8 @@ English.
    ([one person, one contact](CONTACTS.md#one-person-one-contact)). Someone new
    remembers how they got here: `origin: { type: 'lead_form', id: <form id> }`,
    shown as **Added via** in the people list. People who were already contacts
-   keep their origin.
+   keep their origin. The first language of their browser fills the contact's
+   `language` when it is empty, so the welcome email can come in it.
 2. **They join the form's segment.** The form's id is added to the contact's
    `leadForms`. Creating a form makes a segment **Leads · <form name>**
    (`leadForms includes <id>`), and the project's first form also makes
@@ -110,7 +111,9 @@ English.
 5. **Once they are on the list** (subscribed: confirmed, or right away without
    double opt-in), the **welcome email** goes out (any of the project's
    templates; it is sent once per form and person, with their answers as
-   placeholders such as `{{firstName}}` or `{{company}}`, and `{{unsubscribeUrl}}`)
+   placeholders such as `{{firstName}}` or `{{company}}`, and `{{unsubscribeUrl}}`;
+   in the person's language when the template has a
+   [translation](LANGUAGES.md#a-contacts-language) of it)
    and they start the form's **sequence**. A draft or paused sequence holds them at
    the first step until you activate it.
 6. The **redirect URL** is where a plain HTML form, the hosted page and the

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 /** One error in a side panel: the latest event (stack trace, details, breadcrumbs, tags) and its saved AI write-up. */
+import type { BoardItem } from '#shared/board'
 import type { ErrorDetail } from '#shared/errors'
 import type { SavedAnalysis } from '~~/server/utils/errorAi'
 
@@ -30,11 +31,36 @@ const keyInfo = computed<Array<[string, string]>>(() => {
 const query = () => ({ project: props.projectId, link: issue.value.linkId })
 const path = () => `/admin/errors/${encodeURIComponent(issue.value.id)}`
 
+// The board item this error was filed as, if any (a project with the board off cannot file).
+const board = ref<{ item: BoardItem | null, boardEnabled: boolean } | null>(null)
+const filed = computed(() => board.value?.item || null)
+const filing = ref(false)
+const boardError = ref('')
+
+async function loadBoard(row: any) {
+  try {
+    const found = await api<{ item: BoardItem | null, boardEnabled: boolean }>(`${path()}/board`, { query: query() })
+    if (issue.value === row) board.value = found
+  } catch { /* the drawer works without it: no button */ }
+}
+
+async function fileOnBoard() {
+  const row = issue.value
+  filing.value = true
+  boardError.value = ''
+  try {
+    const { item } = await api<{ item: BoardItem, created: boolean }>(`${path()}/board`, { method: 'POST', body: query() })
+    if (issue.value === row) board.value = { item, boardEnabled: true }
+  } catch (cause: any) { boardError.value = cause.message || t('errors.board.failed') } finally { filing.value = false }
+}
+
 watch(issue, async (row) => {
   detail.value = null; loadError.value = ''; aiError.value = ''; tab.value = 'stack'; showAll.value = false
+  board.value = null; boardError.value = ''
   analysis.value = props.saved || null
   cached.value = Boolean(props.saved)
   if (!row) return
+  void loadBoard(row)
   loading.value = true
   try {
     const loaded = await api<ErrorDetail>(path(), { query: query() })
@@ -76,10 +102,14 @@ async function copyPrompt() {
   <USlideover v-model:open="open" :title="issue?.title || $t('errors.error')" :description="issue ? `${issue.culprit || $t('errors.unknownLocation')} · ${$t('errors.eventCount', issue.count || 1)}` : ''" :ui="{ content: 'max-w-2xl' }">
     <template #body>
       <div v-if="issue" class="space-y-4 text-[13px]">
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <UBadge v-if="issue.linkLabel" color="neutral" variant="subtle" size="sm" class="rounded-full">{{ issue.linkLabel }}</UBadge>
+          <!-- Filed once, as a board item; pressing it again only opens that item. -->
+          <UButton v-if="filed" :to="`/projects/${projectId}/board?item=${filed.id}`" color="neutral" variant="soft" size="xs" icon="i-lucide-square-kanban" :label="$t('errors.board.onBoard', { number: filed.number ?? '', title: filed.title })" class="max-w-64" :ui="{ label: 'truncate' }" />
+          <UButton v-else-if="board?.boardEnabled" color="neutral" variant="soft" size="xs" icon="i-lucide-square-kanban" :label="$t('errors.board.file')" :loading="filing" @click="fileOnBoard" />
           <UButton :to="issue.url" target="_blank" color="neutral" variant="ghost" size="xs" icon="i-lucide-arrow-up-right" :label="$t('errors.openIn', { provider: issue.providerName })" class="ml-auto" />
         </div>
+        <p v-if="boardError" class="text-sm text-error">{{ boardError }}</p>
 
         <section class="space-y-3 rounded-lg border border-default bg-default p-3">
           <div class="flex flex-wrap items-center gap-2">

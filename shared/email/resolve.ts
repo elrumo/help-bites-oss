@@ -13,8 +13,27 @@ import { componentValue } from './render'
 
 export type TemplateVariable = { key: string, label?: string, defaultValue?: string }
 
-/** The slice of a project a template can see. */
-export type EmailBrand = { name?: string, brandLogoUrl?: string, siteUrl?: string, theme?: { accent?: string }, address?: string }
+/**
+ * The slice of a project a template can see. The server builds it with brandOf()
+ * (emails.ts); the panel passes the project itself, so every field after
+ * `theme` is read where it exists and left out where it does not.
+ */
+export type EmailBrand = {
+  name?: string
+  brandLogoUrl?: string
+  siteUrl?: string
+  theme?: { accent?: string }
+  address?: string
+  /** The project's look (shared/projectLook.ts): wins over `brandLogoUrl` and `theme.accent`, which Settings edits as stored. */
+  look?: { accent?: string, logoUrl?: string }
+  /** The company profile (shared/company.ts). */
+  company?: { name?: string, legalName?: string, address?: string, email?: string }
+  /** The public pages of the published legal documents (shared/legal/links.ts). */
+  legalLinks?: { privacyUrl?: string, termsUrl?: string, cookiesUrl?: string, refundUrl?: string }
+}
+
+/** The accent applied to buttons of a linked master: the look's, else the stored one. */
+export const brandAccentOf = (brand: EmailBrand): string | undefined => brand.look?.accent || brand.theme?.accent
 
 export type ResolvableTemplate = {
   name: string
@@ -29,13 +48,26 @@ export const BRAND_VARIABLE_PREFIX = 'project.'
 /** Reserved placeholders filled per message at send time: `{{recipient.email}}`, `{{recipient.name}}`. */
 export const RECIPIENT_VARIABLE_PREFIX = 'recipient.'
 
+/** Every `{{project.*}}` placeholder, for lists, linting and the editor. Unknown ones are never filled with anything. */
+export const PROJECT_VARIABLES = ['project.name', 'project.logoUrl', 'project.url', 'project.address', 'project.company', 'project.email', 'project.privacyUrl', 'project.termsUrl', 'project.cookiesUrl', 'project.refundUrl'] as const
+
 export function projectBrandVars(brand: EmailBrand): Record<string, string> {
+  const links = brand.legalLinks || {}
+  const company = brand.company || {}
+  // Every key is always present, '' when the project has no value: a blank, never a leaked `{{project.privacyUrl}}`.
   return {
     'project.name': brand.name || '',
-    'project.logoUrl': brand.brandLogoUrl || '',
+    'project.logoUrl': brand.look?.logoUrl || brand.brandLogoUrl || '',
     'project.url': brand.siteUrl || '',
-    // The postal address marketing email must carry (Project → Campaigns → Settings).
-    'project.address': brand.address || ''
+    // The postal address marketing email must carry (Project settings → Company).
+    'project.address': company.address || brand.address || '',
+    'project.company': company.name || company.legalName || brand.name || '',
+    'project.email': company.email || '',
+    // The public pages of the published legal documents; '' for a type with none.
+    'project.privacyUrl': links.privacyUrl || '',
+    'project.termsUrl': links.termsUrl || '',
+    'project.cookiesUrl': links.cookiesUrl || '',
+    'project.refundUrl': links.refundUrl || ''
   }
 }
 
@@ -90,7 +122,7 @@ export function resolveTemplate(
   Object.assign(vars, row.variableValues || {}, opts.values || {})
 
   let doc = source.document || emptyDocument()
-  if (opts.master && opts.brand) doc = applyProjectAccent(doc, opts.brand.theme?.accent)
+  if (opts.master && opts.brand) doc = applyProjectAccent(doc, brandAccentOf(opts.brand))
   const document = applyTemplateVariables(doc, vars)
   return { subject: document.settings.title || source.name, document }
 }

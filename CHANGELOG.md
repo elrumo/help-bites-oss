@@ -5,6 +5,70 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- Events and webhook endpoints (`docs/EVENTS.md`). Everything that happens in a project is published as a domain event; the
+  project's original single event webhook keeps the events it always had, and `WebhookEndpoint` rows (up to 10 a project, each with its
+  own secret and an event filter) receive any of them: `/v1/admin/projects/{id}/webhooks`. A sequence can now start from any
+  event (`{ "type": "event", "event": "onboarding.completed" }`), and four ready-made recipes install as draft sequences
+  (`/v1/automations/recipes`). `contact.created` is not published per row for imports, database syncs and Stripe. Schema
+  (needs `schema:apply`; the container does it on boot): new class `WebhookEndpoint`, new field `WebhookDelivery.endpoint`.
+- `GET /v1/contacts/{id}/activity`: one person's conversations, posts, votes, emails, sequences, payments and onboarding in one
+  list. Contacts get a `language` (also set by the identity token's new `locale` claim); segments get the fields Stripe plan,
+  Language, Has an open conversation, Voted on a post, Has errors and Finished onboarding. New: `EndUser.language`, class
+  `OnboardingCompletion` (`POST /v1/onboarding/{pk}/{key}/complete`). The MCP server gains 22 tools.
+- The project's look is read one way everywhere (the Brand kit first, then the older Settings accent and logos): the
+  widget, boards, forms, onboarding, legal and blog pages, campaign mail and brand page all agree. **The default accent is
+  now `#4f46e5` everywhere** (forms and onboarding used `#5e6ad2` when a project had no colour); a project that never set a
+  colour sees that change on its forms and flows. Saving the accent in project Settings writes the kit's page accent, and the
+  panel and native app send it only when it changed. `legal.accent`, `legal.logoUrl` and `legal.font` stay as optional overrides
+  for the legal pages. New field `Project.brandLook` (kept by the kit's files).
+- One company profile. New field `Project.company` `{ name, legalName, address, email, phone, website, dpo }`, set with
+  `PATCH /v1/admin/projects/{id}` `{ company }` and shown in project Settings. Legal documents and campaigns read it;
+  `legal.entity` and `marketing.postalAddress` still work (they write to it, and mirror it). Nothing to run: a project that
+  predates it is read from those two fields and the first read of the project list copies them into the profile.
+- Email templates get `{{project.company}}`, `{{project.email}}`, `{{project.privacyUrl}}`, `{{project.termsUrl}}`,
+  `{{project.cookiesUrl}}` and `{{project.refundUrl}}`. The links come from the new field `Project.legalLinks`, rebuilt when
+  a legal document is published, unpublished, renamed or deleted (it needs `APP_URL`; a project whose documents were already
+  published gets its links the next time one is touched). Not carried by exports.
+- Public hub. New field `Project.hub` `{ enabled, title, tagline, sections, links, widgetHome }` (off by default); the page
+  `/hub/{pk}`, `GET /v1/hub/{pk}` and `GET /v1/hub/{pk}/loader`; a Home tab in the chat widget (`hub.widgetHome`); and
+  `public/helpbites.js`, one script tag that adds the chat, feedback, changelog and onboarding scripts (`docs/HUB.md`).
+  Schema (needs `schema:apply`; the container does it on boot): `Project.company`, `Project.hub`, `Project.legalLinks`.
+- The conversation panel is the customer's hub (`docs/SUPPORT.md`). New: `GET /v1/admin/conversations/{id}/context`
+  (plan and MRR from the Stripe attributes, past conversations, linked feedback), `POST …/feedback-posts` (link, unlink or
+  file a post as the customer, who follows it), `POST …/faq` (save an answer as an FAQ, origin `conversation`),
+  `GET …/suggestions` and `POST …/draft` (FAQ and saved-reply picker, AI draft), and `/v1/admin/saved-replies`. Schema
+  (needs `schema:apply`; the container does it on boot): new class `SavedReply`, new fields `Conversation.feedbackPostIds` and
+  `Faq.conversationId`. `conversation.created`, `conversation.status_changed` and `conversation.feedback_linked` are now
+  published. Exports now write feedback posts before conversations, so a link can be carried; older export files have no links and import as before.
+- Shipping connects the features. When a changelog entry goes public, the followers of the feedback posts it
+  links (and of the posts of the board items it links) get one "Shipped" email, once (new field
+  `ChangelogEntry.followersNotifiedAt`; new domain event `changelog.entry.published`; it needs the feedback board's
+  email notifications on and a mailer). The entry editor offers **Reply to N linked conversations**
+  (`GET …/changelog/entries/:id/linked-conversations`, `POST …/reply-conversations`), never sent on its own.
+- **File on board** on an error (`POST /v1/admin/errors/:id/board`): a board item titled from the issue, once per issue
+  (new fields `BoardItem.errorRefs` and `BoardItem.errorKeys`, with an index; event `errors.filed_on_board`).
+- GitHub: commits pushed to the default branch and pull requests merged into it that mention `#12` link to that board
+  item or feedback post, and `fixes #12` moves the board item to the first done status (new class `GithubRef`, listed
+  by `GET /v1/admin/github-refs`; events `github.commit.referenced`, `github.pull_request.merged`). All of these need
+  `schema:apply`; the container does it on boot. **Self-hosters who registered the GitHub App: add the *Pull requests:
+  read-only* permission and subscribe to the *Pull request* event** (GitHub app settings, then each installation
+  accepts the new permission). Nothing breaks without it, but merged pull requests are not linked. See `docs/GITHUB.md`.
+- Contacts have a language: new field `EndUser.language` (needs `schema:apply`; the container does it on boot), a language
+  tag such as `es` or `pt-BR`. It is filled by the new optional `locale` claim of identity tokens (only into a gap),
+  `language` on `POST`/`PATCH /v1/contacts`, the contact's page, a CSV or sync column mapped to Language, or a lead
+  form's visitor (their browser language). Campaigns, sequence steps and lead-form welcome emails now go out in the
+  translation of the template closest to each contact's language (the template's own otherwise); a translation without
+  the unsubscribe link or postal address stops the campaign. New placeholder `{{contact.language}}`. A running campaign's
+  frozen snapshot now also carries the template's translations; campaigns already sending carry on as designed.
+- Onboarding reports who finished it: new class `OnboardingCompletion` (needs `schema:apply`), written by
+  `POST /v1/onboarding/{pk}/{key}/complete` with a person's identity token, which `public/onboarding.js` calls itself
+  when given `data-token` / `init({ token })`. Segments gain **Finished onboarding**.
+- `POST /v1/sequences/{id}/enrollments` also takes `segment` (everyone in a segment, up to 5,000 per call) next to
+  `contacts`, and answers `{ enrolled, skipped: { notSubscribed, optedOut, alreadyEnrolled, notFound }, truncated }`
+  instead of `{ enrolled }`; `contacts` or `segment` is now required (`400` without).
+- `GET /v1/contacts/{id}/activity`: one person's conversations, feedback, emails, sequences, payments and onboarding in a
+  single paged list; the contact page (web and native) uses it. The revenue report's top customers and recent payments
+  carry `contactId` and open the person.
 - Easier to understand, across the panel and the native app:
   - A project's sidebar sections are grouped as Support, Product, Grow, Site and Build, and a project can hide the ones it
     does not use (**Project → Settings → Sidebar**, or `hiddenSections` on `PATCH /v1/admin/projects/:id`). Nothing is

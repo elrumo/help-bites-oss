@@ -51,8 +51,59 @@
 
       <div class="relative flex-1 min-h-0">
         <Transition :name="nav">
+          <!-- Home tab: public, so it shows before the host has signed anyone in -->
+          <div v-if="showHome" key="home" class="absolute inset-0 space-y-5 overflow-y-auto px-4 py-4">
+            <p class="text-sm font-semibold text-highlighted">{{ project?.look?.tagline || $t('embed.home.welcome') }}</p>
+
+            <section v-if="home?.changelog" class="space-y-2">
+              <p class="section-label">{{ $t('embed.home.whatsNew') }}</p>
+              <a
+                v-for="(entry, index) in home.changelog.entries"
+                :key="index"
+                :href="entry.url"
+                target="_blank"
+                rel="noopener"
+                class="block rounded-lg border border-default px-3 py-2.5 transition-colors hover:bg-elevated"
+              >
+                <span class="block truncate text-[13px] font-medium text-highlighted">{{ entry.title }}</span>
+                <span v-if="entry.summary" class="line-clamp-2 text-xs text-muted">{{ entry.summary }}</span>
+              </a>
+              <a :href="home.changelog.url" target="_blank" rel="noopener" class="inline-block text-xs text-primary hover:underline">{{ $t('embed.home.seeAll') }}</a>
+            </section>
+
+            <section v-if="home?.feedback" class="space-y-2">
+              <p class="section-label">{{ $t('embed.home.feedback') }}</p>
+              <a
+                v-for="(post, index) in home.feedback.posts"
+                :key="index"
+                :href="post.url"
+                target="_blank"
+                rel="noopener"
+                class="flex items-center gap-3 rounded-lg border border-default px-3 py-2.5 transition-colors hover:bg-elevated"
+              >
+                <span class="min-w-0 flex-1 truncate text-[13px] font-medium text-highlighted">{{ post.title }}</span>
+                <span class="flex shrink-0 items-center gap-0.5 text-xs text-muted" :title="$t('embed.home.votes')"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ post.votes }}</span>
+              </a>
+              <UButton :href="home.feedback.url" target="_blank" rel="noopener" block color="neutral" variant="subtle" icon="i-lucide-lightbulb" :label="$t('embed.home.shareIdea')" />
+            </section>
+
+            <section v-if="home?.onboarding" class="space-y-2">
+              <p class="section-label">{{ $t('embed.home.gettingStarted') }}</p>
+              <button
+                v-for="flow in home.onboarding.flows"
+                :key="flow.key"
+                type="button"
+                class="flex w-full items-center gap-3 rounded-lg border border-default px-3 py-2.5 text-left transition-colors hover:bg-elevated"
+                @click="startFlow(flow.key)"
+              >
+                <span class="min-w-0 flex-1 truncate text-[13px] font-medium text-highlighted">{{ flow.name }}</span>
+                <span class="shrink-0 text-xs text-primary">{{ $t('embed.home.start') }}</span>
+              </button>
+            </section>
+          </div>
+
           <!-- Not authenticated yet -->
-          <div v-if="state === 'waiting'" key="waiting" class="absolute inset-0 flex items-center justify-center px-6 text-center text-[13px] text-muted">
+          <div v-else-if="state === 'waiting'" key="waiting" class="absolute inset-0 flex items-center justify-center px-6 text-center text-[13px] text-muted">
             {{ waitingText }}
           </div>
 
@@ -143,6 +194,23 @@
       </div>
     </div>
 
+    <!-- Home | Messages. Only when the project turned the Home tab on and there is something on it. -->
+    <nav v-if="tabsVisible" class="flex shrink-0 border-t border-default" :aria-label="$t('embed.home.tabs')">
+      <button
+        v-for="item in tabItems"
+        :key="item.key"
+        type="button"
+        class="relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors"
+        :class="tab === item.key ? 'text-primary' : 'text-muted hover:text-default'"
+        :aria-current="tab === item.key ? 'page' : undefined"
+        @click="setTab(item.key)"
+      >
+        <UIcon :name="item.icon" class="size-5" />
+        {{ item.label }}
+        <span v-if="item.badge" class="absolute right-1/2 top-1 -mr-5 min-w-4 rounded-full bg-error px-1 text-center text-[10px] leading-4 text-white">{{ item.badge > 9 ? '9+' : item.badge }}</span>
+      </button>
+    </nav>
+
     <p v-if="project?.poweredBy" class="shrink-0 pb-2 text-center text-[11px] leading-tight">
       <a :href="project.poweredBy.url" target="_blank" rel="noopener" class="text-dimmed transition-colors hover:text-muted">{{ $t('embed.poweredBy') }}</a>
     </p>
@@ -183,16 +251,61 @@ const waitingText = ref(t('embed.chat.connecting'))
 // Which way the next view slides: into a thread pushes, Back pops.
 const nav = ref<'push' | 'pop'>('push')
 
+// ---- Home tab ----
+// A project can turn on a Home tab (Project -> Settings -> Public hub -> Chat widget home): what is new,
+// top feedback and onboarding flows, read from GET /v1/hub/{pk}. It is public data, so it needs no
+// sign-in. Without it, or in the wide inline layout, the chat is exactly what it was.
+type HomeData = {
+  changelog: { url: string, entries: { title: string, summary: string, tag: string, publishedAt: string | null, url: string }[] } | null
+  feedback: { url: string, posts: { title: string, votes: number, url: string }[] } | null
+  onboarding: { flows: { key: string, name: string }[] } | null
+}
+const home = ref<HomeData | null>(null)
+const tab = ref<'home' | 'messages'>('messages')
+const homeEnabled = computed(() => !twoPane.value && Boolean(home.value && (home.value.changelog || home.value.feedback || home.value.onboarding)))
+const showHome = computed(() => homeEnabled.value && tab.value === 'home' && !activeId.value)
+const tabsVisible = computed(() => homeEnabled.value && !activeId.value)
+const unreadTotal = computed(() => conversations.value.reduce((sum, c) => sum + c.unreadByUser, 0))
+const tabItems = computed(() => [
+  { key: 'home' as const, label: t('embed.home.tab'), icon: 'i-lucide-house', badge: 0 },
+  { key: 'messages' as const, label: t('embed.home.messagesTab'), icon: 'i-lucide-messages-square', badge: unreadTotal.value }
+])
+
+function setTab(next: 'home' | 'messages') {
+  tab.value = next
+  nav.value = 'pop'
+  // A first message has nowhere to go but the form, as when there is no Home tab.
+  if (next === 'messages' && state.value === 'ready' && !hasConversations.value && !listLoading.value) composing.value = true
+  if (next === 'home') composing.value = false
+}
+
+async function loadHome() {
+  try {
+    const result = await $fetch<{ home: HomeData | null }>(`/v1/hub/${encodeURIComponent(pk)}`)
+    home.value = result.home
+    if (homeEnabled.value && !activeId.value) tab.value = 'home'
+  } catch {
+    home.value = null
+  }
+}
+
+// The host's onboarding.js shows the flow (public/widget.js forwards this); the panel closes behind it.
+function startFlow(key: string) {
+  post({ type: 'onboarding', flow: key })
+}
+
 const inSubview = computed(() => Boolean(activeId.value || composing.value))
 // A first-time user (no conversations) lands straight on the form, so there's
 // nowhere for Back to go until they have at least one thread.
 const canGoBack = computed(() => Boolean(activeId.value) || hasConversations.value)
 const headerTitle = computed(() => {
+  if (showHome.value) return project.value?.name || t('embed.chat.support')
   if (composing.value) return t('embed.chat.newMessage')
   if (activeId.value) return activeConversation.value?.subject || project.value?.name || t('embed.chat.support')
   return project.value?.name ? t('embed.chat.supportFor', { name: project.value.name }) : t('embed.chat.support')
 })
 const headerNote = computed(() => {
+  if (showHome.value) return ''
   if (composing.value) return t('embed.chat.realPersonReplies')
   if (activeId.value && activeConversation.value?.status === 'done') return t('embed.chat.resolvedNote')
   return ''
@@ -302,7 +415,7 @@ async function loadList() {
     const wanted = typeof route.query.c === 'string' ? route.query.c : ''
     if (wanted && !activeId.value) void select(wanted)
     // No history yet → open the form directly instead of an empty list.
-    else if (!conversations.value.length && !activeId.value && !composing.value) composing.value = true
+    else if (!conversations.value.length && !activeId.value && !composing.value && !showHome.value) composing.value = true
   } catch (e: any) {
     waitingText.value = e?.message || t('embed.chat.loadConversationsError')
     state.value = 'waiting'
@@ -347,6 +460,7 @@ function entryToMessage(entry: OutboxEntry, delivery: 'pending' | 'failed'): Mes
 
 async function select(id: string) {
   nav.value = 'push'
+  tab.value = 'messages'
   activeId.value = id
   composing.value = false
   threadId.value = ''
@@ -500,6 +614,8 @@ onMounted(async () => {
     waitingText.value = t('embed.chat.unknownProject')
     return
   }
+  // Before the host is told we are ready, so the first thing it sees is the right tab.
+  if (project.value?.widgetHome) await loadHome()
   if (direct) {
     token.value = direct
     state.value = 'ready'

@@ -34,7 +34,9 @@ struct ProjectSettingsScreen: View {
           VStack(alignment: .leading, spacing: 40) {
             general
             branding(project)
+            companyCard
             widget
+            hubCard(project)
             notifications
             sidebar
             collaborators
@@ -105,6 +107,9 @@ struct ProjectSettingsScreen: View {
       divider
       row("Colour", "The sidebar tile, the widget's send button and your chat bubbles.") {
         VStack(alignment: .leading, spacing: 10) {
+          Text("This is the accent of your Brand kit: widgets, boards, forms, legal, blog and hub pages and campaign mail all follow it.")
+            .font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
+          Button { workspace.go(.project(projectId, .brand)) } label: { Label("Open the Brand kit", systemImage: "paintpalette") }.buttonStyle(.lnSecondaryCompact)
           LazyVGrid(columns: [GridItem(.adaptive(minimum: 30, maximum: 30), spacing: 8)], alignment: .leading, spacing: 8) {
             ForEach(Self.swatches, id: \.self) { swatch in
               Button { form.accent = swatch } label: {
@@ -145,6 +150,18 @@ struct ProjectSettingsScreen: View {
       }
       divider
       widgetPreview
+    }
+  }
+
+  private var companyCard: some View {
+    section("Company", "Who is behind the product, written once.") {
+      cardBody { CompanyFields(company: $form.company) }
+    }
+  }
+
+  private func hubCard(_ project: ProjectsAdminProject) -> some View {
+    section("Public hub", "One page that gathers what you publish, and a Home tab for the chat widget.") {
+      cardBody { HubFields(hub: $form.hub, publicKey: project.publicKey, projectName: form.name) }
     }
   }
 
@@ -456,10 +473,12 @@ struct ProjectSettingsScreen: View {
       chatNotice: form.chatNotice, allowAttachments: form.allowAttachments, allowAnonymousUsers: form.allowAnonymousUsers,
       letUsersChooseType: form.letUsersChooseType, allowOtherType: form.allowOtherType,
       notifyEmails: form.notifyEmails,
+      company: form.company, hub: form.hub.droppingBlankLinks,
       // The whole set goes back, so a section only the web has (Pages) stays hidden.
       hiddenSections: form.hidden.sorted(),
+      // The accent is the Brand kit's: send it only when it changed here, so saving something else never pins it.
       // `theme` is replaced whole on the server: send `dark` back so saving here keeps it.
-      theme: ProjectTheme(accent: accent.isEmpty ? nil : accent, dark: project?.theme.dark)
+      theme: accent == (project?.theme.accent ?? "") ? nil : ProjectTheme(accent: accent.isEmpty ? nil : accent, dark: project?.theme.dark)
     )
     do {
       fill(try await ProjectsAdminProject.save(projectId, body, workspace: workspace))
@@ -530,6 +549,8 @@ private struct SettingsForm: Equatable {
   var name = "", siteUrl = "", inboxPath = "", iconUrl = "", brandLogoUrl = "", assistantLogoUrl = "", accent = "", chatNotice = ""
   var notifyEmails = ""
   var allowAttachments = true, allowAnonymousUsers = false, letUsersChooseType = false, allowOtherType = false
+  var company = CompanyProfile()
+  var hub = HubConfig()
   /// Web paths of the sections left out of the sidebar. A set, so ticking and unticking back reads as unchanged.
   var hidden: Set<String> = []
 
@@ -548,6 +569,8 @@ private struct SettingsForm: Equatable {
     letUsersChooseType = project.letUsersChooseType ?? false
     allowOtherType = project.allowOtherType ?? false
     notifyEmails = project.notifyEmails.joined(separator: ", ")
+    company = project.company ?? CompanyProfile()
+    hub = project.hub ?? HubConfig()
     hidden = Set(project.hiddenSections ?? [])
   }
 }
@@ -557,6 +580,9 @@ private struct SettingsInput: Encodable, Sendable {
   let name, siteUrl, inboxPath, iconUrl, brandLogoUrl, assistantLogoUrl, chatNotice: String
   let allowAttachments, allowAnonymousUsers, letUsersChooseType, allowOtherType: Bool
   let notifyEmails: String
+  let company: CompanyProfile
+  let hub: HubConfig
   let hiddenSections: [String]
-  let theme: ProjectTheme
+  /// Sent only when the accent changed (it is the Brand kit's).
+  let theme: ProjectTheme?
 }

@@ -1,5 +1,6 @@
 import { poweredByHtml, type PoweredBy } from './branding'
 import { escapeHtml } from './messageEmail'
+import { lookOf } from './projects'
 
 // The few public pages marketing email links to — preferences, confirm,
 // sign-up, lead forms — as plain server-rendered HTML: no JavaScript, no sign-in, they
@@ -12,11 +13,11 @@ export type PageBrand = { name: string, logoUrl: string, accent: string, powered
 const RTL = new Set(['ar', 'he', 'fa', 'ur'])
 
 export function pageBrand(project: { get: (key: string) => unknown }, poweredBy: PoweredBy | null = null): PageBrand {
-  const theme = (project.get('theme') || {}) as { accent?: string }
+  const look = lookOf(project)
   return {
-    name: String(project.get('name') || 'Newsletter'),
-    logoUrl: String(project.get('brandLogoUrl') || project.get('iconUrl') || ''),
-    accent: /^#[0-9a-f]{6}$/i.test(String(theme.accent || '')) ? String(theme.accent) : '#4f46e5',
+    name: look.name || 'Newsletter',
+    logoUrl: look.logoUrl || look.iconUrl,
+    accent: look.accent,
     poweredBy
   }
 }

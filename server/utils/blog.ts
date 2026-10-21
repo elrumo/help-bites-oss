@@ -25,7 +25,7 @@ import { EMPTY_CAMPAIGN_STATS } from '#shared/marketing'
 import { literalBraceText } from './blogRender'
 import { anonymousWriteGate } from './endUserSessions'
 import type { IdentityClaims } from './jwt'
-import type { WebhookEventType } from './webhooks'
+import { emitDomainEvent } from './domainEvents'
 
 // The blog: posts the team writes in the panel (or through the API) and
 // readers find on the hosted page, through the embed, in the RSS feed and, as
@@ -437,7 +437,7 @@ async function applyBlogPostInput(project: ParseObject, row: ParseObject, payloa
 
 // ---- events ----------------------------------------------------------------------
 
-type BlogEvent = { type: WebhookEventType, data: Record<string, unknown> }
+type BlogEvent = { type: string, data: Record<string, unknown> }
 
 function blogWebhookPost(project: ParseObject, row: ParseObject) {
   return { id: row.id || '', slug: String(row.get('slug') || ''), title: String(row.get('title') || ''), visibility: visibilityOf(row), publishedAt: iso(row.get('publishedAt')), url: blogPostUrl(project, row) }
@@ -453,14 +453,14 @@ function blogAnnouncement(project: ParseObject, row: ParseObject, edited: boolea
   const live = blogPostTypeOf(row) === 'post' && isBlogPostRowLive(row)
   const announced = row.get('announced') === true
   if (live !== announced) row.set('announced', live)
-  const type: WebhookEventType | null = live && !announced ? 'blog.post.published' : !live && announced ? 'blog.post.unpublished' : live && edited ? 'blog.post.updated' : null
+  const type: string | null = live && !announced ? 'blog.post.published' : !live && announced ? 'blog.post.unpublished' : live && edited ? 'blog.post.updated' : null
   return type ? { type, data: { post: blogWebhookPost(project, row) } } : null
 }
 
 async function saveAndAnnounce(project: ParseObject, row: ParseObject, options: { edited: boolean, quiet?: boolean }): Promise<void> {
   const event = blogAnnouncement(project, row, options.edited)
   await row.save(null, MASTER)
-  if (event && !options.quiet) await emitWebhooks(project, [event])
+  if (event && !options.quiet) await emitDomainEvent(project, event.type, event.data)
 }
 
 /** Scheduled posts whose moment came in the last day, announced by the worker (older ones are left alone: an import is not news). */
@@ -537,7 +537,7 @@ export async function deleteBlogPost(project: ParseObject, row: ParseObject): Pr
     await Parse.Object.destroyAll(comments, MASTER)
   }
   await row.destroy(MASTER)
-  if (event) await emitWebhooks(project, [event])
+  if (event) await emitDomainEvent(project, event.type, event.data)
 }
 
 // ---- reactions -------------------------------------------------------------------

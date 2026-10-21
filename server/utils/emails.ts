@@ -6,7 +6,10 @@ import { DEFAULT_CONTENT_LOCALE, matchLocale, normalizeLocale } from '#shared/lo
 import { MAX_DOCUMENT_CHARS } from '#shared/email/ops'
 import { extractTemplateVariables } from '#shared/email/placeholders'
 import { renderEmailHtml } from '#shared/email/render'
-import { applyProjectAccent, BRAND_VARIABLE_PREFIX, plainTextFor, RECIPIENT_VARIABLE_PREFIX, resolveTemplate, type EmailBrand, type TemplateVariable } from '#shared/email/resolve'
+import { applyProjectAccent, brandAccentOf, BRAND_VARIABLE_PREFIX, plainTextFor, RECIPIENT_VARIABLE_PREFIX, resolveTemplate, type EmailBrand, type TemplateVariable } from '#shared/email/resolve'
+import { companyOf } from './company'
+import { legalLinksOf } from './legalLinks'
+import { lookOf } from './projects'
 
 // Email templates. One class, three kinds of row:
 //
@@ -282,7 +285,7 @@ export async function applyEmailInput(row: ParseObject, input: Record<string, un
 export function detachEmailTemplate(row: ParseObject, project: ParseObject): void {
   const master = row.get('master') as ParseObject
   const values = readValues(row.get('values'))
-  const doc = applyProjectAccent(master.get('document') as EmailDocument, brandOf(project).theme?.accent)
+  const doc = applyProjectAccent(master.get('document') as EmailDocument, brandAccentOf(brandOf(project)))
   row.set('document', doc)
   row.set('locale', master.get('locale') || DEFAULT_CONTENT_LOCALE)
   if (master.get('translations')) row.set('translations', master.get('translations'))
@@ -293,13 +296,19 @@ export function detachEmailTemplate(row: ParseObject, project: ParseObject): voi
 
 // ---- rendering -------------------------------------------------------------
 
+/** What a template sees of a project: its look (Brand kit), company profile and legal pages. Synchronous: everything is kept on the project row. */
 export function brandOf(project: ParseObject): EmailBrand {
+  const look = lookOf(project)
+  const company = companyOf(project)
   return {
-    name: String(project.get('name') || ''),
-    brandLogoUrl: String(project.get('brandLogoUrl') || ''),
+    name: look.name,
+    brandLogoUrl: look.logoUrl,
     siteUrl: String(project.get('siteUrl') || ''),
-    theme: (project.get('theme') as EmailBrand['theme']) || {},
-    address: String((project.get('marketing') as { postalAddress?: string } | undefined)?.postalAddress || '')
+    theme: { accent: look.accent },
+    look: { accent: look.accent, logoUrl: look.logoUrl },
+    address: company.address,
+    company,
+    legalLinks: legalLinksOf(project)
   }
 }
 

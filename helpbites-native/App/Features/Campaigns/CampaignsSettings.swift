@@ -85,7 +85,7 @@ struct ProjectEmailSettingsView: View {
 
         Section {
           TextField("Postal address", text: $form.postalAddress, prompt: Text("Acme Inc, 1 Main Street, Lisbon, Portugal"), axis: .vertical)
-        } header: { Text("Required in every campaign") } footer: { Text("Shown in the footer of every marketing email; the law requires it") }
+        } header: { Text("Required in every campaign") } footer: { Text("Shown as {{project.address}}; the law requires it in marketing email. This is your company profile's address (Project settings → Company), which legal documents use too.") }
 
         Section {
           ForEach($form.topics) { $topic in

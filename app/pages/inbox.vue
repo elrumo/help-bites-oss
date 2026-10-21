@@ -116,16 +116,19 @@
               :loading="threadLoading"
               :has-earlier="hasEarlier"
               :loading-earlier="loadingEarlier"
+              can-save-faq
               @load-earlier="loadEarlier"
               @retry="retry"
               @discard="discard"
               @unsend="unsend"
               @react="react"
+              @save-faq="openSaveFaq"
             >
               <template #empty><EmptyState icon="i-lucide-message-square-dashed" :title="$t('inbox.noMessages')" :description="$t('inbox.noMessagesDescription')" /></template>
             </ChatTranscript>
 
             <ChatComposer
+              ref="composerRef"
               v-model="draft"
               :placeholder="internalNote ? $t('inbox.addInternalNote') : $t('inbox.replyPlaceholder')"
               :error="threadError"
@@ -137,6 +140,9 @@
               @cancel-reply="threadId = ''"
               @upload-error="threadError = $event"
             >
+              <template #tools>
+                <InboxComposerTools :conversation-id="activeId" :project-id="activeConversation?.projectId || ''" :person="replyPerson" :disabled="internalNote" @insert="insertText" @draft="insertText" />
+              </template>
               <template #above>
                 <div class="mb-2 flex items-center gap-1.5" role="tablist" :aria-label="$t('inbox.messageType')">
                   <button type="button" role="tab" :aria-selected="!internalNote" class="chip h-6 px-2.5 text-xs" :class="!internalNote ? 'chip-active' : ''" @click="internalNote = false"><UIcon name="i-lucide-reply" class="size-3.5" />{{ $t('inbox.reply') }}</button>
@@ -158,8 +164,11 @@
             :type="activeType"
             :agents="humanAgents"
             :last-user-message="lastUserMessage"
+            :context="context"
             @triage="setTriage"
             @action="runAction"
+            @open="select"
+            @feedback="setFeedbackPosts"
           />
         </div>
       </template>
@@ -167,9 +176,11 @@
 
     <USlideover v-model:open="showContext" class="xl:hidden" :title="$t('inbox.details')" :ui="{ content: 'max-w-80', body: 'p-0 sm:p-0' }">
       <template #body>
-        <InboxConversationContext v-if="activeConversation && activeUser" class="h-full" :conversation="activeConversation" :user="activeUser" :project="activeProject" :type="activeType" :agents="humanAgents" :last-user-message="lastUserMessage" @triage="setTriage" @action="runAction" />
+        <InboxConversationContext v-if="activeConversation && activeUser" class="h-full" :conversation="activeConversation" :user="activeUser" :project="activeProject" :type="activeType" :agents="humanAgents" :last-user-message="lastUserMessage" :context="context" @triage="setTriage" @action="runAction" @open="select" @feedback="setFeedbackPosts" />
       </template>
     </USlideover>
+
+    <InboxSaveFaqModal v-model:open="faqOpen" :conversation-id="activeId" :models="context?.faqModels.models || []" :default-model-id="context?.faqModels.defaultModelId || ''" :initial="faqInitial" />
 
     <NewChatModal v-model:open="showNewChat" :projects="projects" :default-project-id="projectFilter === 'all' ? '' : projectFilter" @created="onCreated" />
   </div>
@@ -178,6 +189,7 @@
 <script setup lang="ts">
 import type { Attachment, Conversation, ConversationAction, ConversationType, Message } from '#shared/support'
 import { conversationToText, replyTarget, sortByCreatedAt } from '#shared/conversations'
+import { faqPrefill, type ConversationContextResponse, type HubFeedbackPost } from '#shared/conversationHub'
 import type { SupportEvent } from '~~/server/utils/events'
 import type { ChatListItem } from '~/components/chat/ChatConversationList.vue'
 import type { InboxEndUser } from '~/components/inbox/ConversationContext.vue'
@@ -314,6 +326,11 @@ const draft = computed({ get: () => drafts.value[activeId.value] || '', set: (va
 const notifyByEmail = ref(true)
 const internalNote = ref(false)
 const transcriptRef = ref<{ scrollToLatest: () => void } | null>(null)
+const composerRef = ref<{ focus: () => void } | null>(null)
+// Who the open customer is, their plan, earlier conversations and linked feedback: one read per open conversation.
+const context = ref<ConversationContextResponse | null>(null)
+const faqOpen = ref(false)
+const faqMessageId = ref('')
 
 const activeConversation = computed(() => conversations.value.find(conversation => conversation.id === activeId.value) || null)
 const activeProject = computed(() => activeConversation.value ? projectsById.value[activeConversation.value.projectId] || null : null)
@@ -324,16 +341,38 @@ const visibleMessages = computed(() => [...messages.value, ...sending.value, ...
 // What a board item filed from the context panel starts with.
 const lastUserMessage = computed(() => [...messages.value].reverse().find(message => message.sender === 'user' && message.kind === 'message' && message.body)?.body || '')
 const replyingTo = computed(() => replyTarget(visibleMessages.value, threadId.value, 'agent'))
+// Fills {{firstName}} and {{name}} in a saved reply.
+const replyPerson = computed(() => ({ name: context.value?.contact.name ?? activeUser.value?.name ?? '', email: context.value?.contact.email ?? activeUser.value?.email ?? '' }))
+const faqInitial = computed(() => faqPrefill([...messages.value].sort(sortByCreatedAt), faqMessageId.value))
 const ownActor = computed(() => (agent.value?.id ? `agent:${agent.value.id}` : 'agent'))
 
 function entryToMessage(entry: OutboxEntry, delivery: 'pending' | 'failed'): Message {
   return { id: entry.id, conversationId: entry.conversationId, sender: 'agent', senderName: t('inbox.you'), body: entry.body, attachments: entry.attachments, reactions: [], context: null, replyToId: entry.replyToId, clientId: entry.id, visibility: 'public', kind: 'message', createdAt: entry.createdAt, delivery, deliveryError: delivery === 'failed' ? entry.error : '' }
 }
 
+async function loadContext(id: string) {
+  try {
+    const result = await api<ConversationContextResponse>(`/admin/conversations/${id}/context`)
+    if (activeId.value === id) context.value = result
+  } catch {
+    // The panel's extra sections just stay out; the thread itself still works.
+    if (activeId.value === id) context.value = null
+  }
+}
+function setFeedbackPosts(posts: HubFeedbackPost[]) { if (context.value) context.value = { ...context.value, feedbackPosts: posts } }
+function openSaveFaq(message: Message) { faqMessageId.value = message.id; faqOpen.value = true }
+// Put saved-reply or draft text in the reply box: after what is already typed, never over it.
+function insertText(text: string) {
+  const typed = draft.value.replace(/\s+$/, '')
+  draft.value = typed ? `${typed}\n\n${text}` : text
+  composerRef.value?.focus()
+}
+
 async function select(id: string) {
-  activeId.value = id; threadId.value = ''; threadError.value = ''; messages.value = []; hasEarlier.value = false; activeUser.value = null; showContext.value = false
+  activeId.value = id; threadId.value = ''; threadError.value = ''; messages.value = []; hasEarlier.value = false; activeUser.value = null; showContext.value = false; context.value = null
   await router.replace({ query: id ? { c: id } : {} })
   if (!id) return
+  void loadContext(id)
   threadLoading.value = true
   try {
     const [detail, list] = await Promise.all([api<{ conversation: Conversation, endUser: InboxEndUser }>(`/admin/conversations/${id}`), api<{ messages: Message[], hasMore: boolean }>(`/admin/conversations/${id}/messages`)])
@@ -511,7 +550,12 @@ useEventStream(computed(() => '/v1/admin/events'), token, (event: SupportEvent) 
   if (event.type === 'conversation.deleted') { removeConversation(event.conversationId); return }
   upsertConversation(event.conversation)
   if (event.type === 'message.created') {
-    if (event.conversationId === activeId.value) { if (!messages.value.some(message => message.id === event.message.id)) messages.value = [...messages.value, event.message]; if (event.message.sender === 'user') void markRead(activeId.value, true) }
+    if (event.conversationId === activeId.value) {
+      if (!messages.value.some(message => message.id === event.message.id)) messages.value = [...messages.value, event.message]
+      if (event.message.sender === 'user') void markRead(activeId.value, true)
+      // A teammate linked or unlinked a post from another window.
+      if (event.message.kind === 'event' && String(event.message.event?.type || '').startsWith('feedback.')) void loadContext(activeId.value)
+    }
   } else if (event.type === 'message.updated' && event.conversationId === activeId.value) {
     replaceMessage(event.message)
   } else if (event.type === 'message.deleted' && event.conversationId === activeId.value) messages.value = messages.value.filter(message => message.id !== event.messageId)

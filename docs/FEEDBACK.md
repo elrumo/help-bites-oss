@@ -183,6 +183,13 @@ Project → **Planning** → *Turn on planning*.
   the customer's last message) or adds it to an existing one; the link shows on
   the conversation's timeline as an internal event the customer never sees.
   The feedback post editor has the same **Planning** section.
+- **Filed from an error.** The Errors page's **File on board** button makes an item from a
+  tracker issue (see [ERRORS.md](ERRORS.md)); its drawer lists the errors it came from, each with
+  its link back to the tracker.
+- **Commits and pull requests.** When the GitHub App's webhook is on, a commit pushed to the
+  default branch or a pull request merged into it that says `#12` is listed on item 12 (or on
+  feedback post 12 when the board has no such item), with a *closes* marker for `fixes #12`.
+  A closing keyword also moves the item to the board's first done status. See [GITHUB.md](GITHUB.md).
 - **Votes.** An item's count is the sum of its linked posts' votes, hidden posts
   left out. People vote on the posts, from the feedback page or from the roadmap.
 - **Settings** — statuses (with the same categories as Feedback),
@@ -251,6 +258,16 @@ done status. From then on Planning's public items are the roadmap.
   Moving a card is a `PATCH` with `status` and a `rank` between its new
   neighbours (lower ranks come first).
 
+An item filed from an error carries `errorRefs: [{ provider, issueId, linkId, title, url }]`
+(empty otherwise). `GET /v1/admin/github-refs?project=<id>&kind=board|feedback&id=<item or post>`
+lists the commits and pull requests that mention it:
+
+```sh
+curl -H "Authorization: Bearer ak_…" \
+  "https://YOUR-SUPPORT-HOST/v1/admin/github-refs?project=PROJECT_ID&kind=board&id=12"
+# { "refs": [{ "kind": "pull_request", "ref": "34", "repo": "acme/web", "title": "Dark mode", "url": "https://github.com/…", "closes": true, "at": "…" }] }
+```
+
 **Known limit:** a person who voted on two posts linked to the same item counts
 twice in that item's total — the sum is per post, not per person.
 
@@ -303,6 +320,50 @@ publish what they write with no human looking. That second one is off by default
 applies to pushes; the button never publishes. A project's pushes run at most 20 times an hour.
 Uses the workspace's AI like every other AI feature (and counts toward its credits).
 
+### Telling the people it answers
+
+Two things happen when an entry goes public, and a third is yours to press.
+
+- **Followers of the posts it answers are emailed, once.** The posts the entry links, and the
+  posts of the board items it links, are looked up; everyone following one of them (and not
+  muted, not opted out of feedback mail, with an email) gets one "Shipped: …" mail with the
+  entry's title and summary, a link to the public entry, and the posts they follow, listed.
+  Someone following several of them gets one mail, not several. It uses the feedback board's
+  switch (*Email notifications*) and the project's mailer, exactly like a status change. The
+  event `changelog.entry.published` ([EVENTS.md](EVENTS.md)) is what triggers it. An entry counts
+  as becoming public when it is created published, edited to published, approved, or when its
+  draft release is published. Imports never mail. An entry published more than seven days
+  ago (a backdated one) is history and is not mailed. Delivery is at-most-once, like the
+  subscribers' mail: the entry is marked (`followersNotifiedAt`) before anything is sent, so
+  a retry or a second server never mails twice, and a failed send is logged, never retried.
+  This is separate from `changelog.notify`, which is about people who subscribed to the
+  changelog itself; a follower who is also a subscriber can get both.
+- **The same posts learn the version** (`shippedIn`), as before.
+- **Reply to the linked conversations (a button, never automatic).** Once an entry is public
+  and answers conversations (its own links, plus the conversations of its board items), the
+  editor shows **Reply to N linked conversations**: a dialog with the list (untick any) and a
+  message that starts as the entry's title and public address, yours to edit. Sending appends
+  that message as the team to each conversation, through the same path as an inbox reply, and
+  emails the customer unless you turn *Email them too* off. Error issues are left out (there is
+  no customer). Sending the same words to the same conversation twice is a no-op.
+
+```sh
+# Who would be told
+curl -H "Authorization: Bearer ak_…" \
+  "https://YOUR-SUPPORT-HOST/v1/admin/changelog/entries/ENTRY_ID/linked-conversations?project=PROJECT_ID"
+# { "count": 2, "conversations": [{ "id": "…", "subject": "Dark mode?", "endUserName": "Ada", "status": "open" }], "defaultBody": "Good news: “Dark mode” has just shipped.\n\nSee what changed: https://…" }
+
+# Tell them (conversationIds optional: default is all of them)
+curl -X POST -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  "https://YOUR-SUPPORT-HOST/v1/admin/changelog/entries/ENTRY_ID/reply-conversations?project=PROJECT_ID" \
+  -d '{ "body": "Dark mode is live, thanks for asking!", "notifyByEmail": true }'
+# { "sent": 2, "failed": 0, "results": [{ "conversationId": "…", "ok": true, "emailSent": true, "error": "" }] }
+```
+
+These are operator tools (an admin session or `ak_` key), not something a visitor's browser
+calls, so there is no embed snippet for them; the public side of an entry is the changelog
+page and `public/changelog.js` described below.
+
 ### Public
 
 | | |
@@ -345,6 +406,8 @@ Every route is in the OpenAPI spec, tag *Changelog*.
 | `POST /v1/admin/changelog/entries/import` | Secret or operator only. Up to 100 entries with your own `externalId`: created, or updated when it exists. Keeps the `slug` and `publishedAt` it is given and the review trail; never drafts, links or tells anyone |
 | `POST /v1/admin/changelog/entries/merge` | `{ refs: [2–10 entries], entry }`: creates the merged entry, which also cites the sources' commits, and archives the sources. Writing the merged text is yours |
 | `POST /v1/admin/changelog/entries/:id/links` | `{ kind: "feedback" \| "board" \| "conversation", id, linked }` |
+| `GET /v1/admin/changelog/entries/:id/linked-conversations` | Operator or `ak_` key. `{ count, conversations: [{ id, subject, endUserName, status }], defaultBody }`: the customer conversations the entry answers, its own and its board items' |
+| `POST /v1/admin/changelog/entries/:id/reply-conversations` | Operator or `ak_` key. `{ body, conversationIds?, notifyByEmail? }` → `{ sent, failed, results }`: replies as the team to each chosen conversation (all linked ones when omitted; up to 100) |
 | `GET`/`POST /v1/admin/changelog/releases` | List or create `{ version, title, summary }` |
 | `PATCH`/`DELETE /v1/admin/changelog/releases/:id` | Edit, or delete (its entries stay, with no release) |
 | `POST /v1/admin/changelog/releases/:id/publish` | Publish the release and its draft entries |
@@ -465,6 +528,10 @@ through `/subscription`.
 - followers, when someone posts a public comment;
 - people `@mentioned` in a comment (only the thread's own participants can be
   mentioned) get a mention email instead of the comment email.
+
+- followers, once, when a changelog entry that answers the post (or a board item that links it)
+  goes public: a "Shipped: …" mail with the entry's title and a link to it (see *Telling the
+  people it answers* under Changelog).
 
 Never the person who acted, never for team notes or hidden posts. Only people
 whose identity token carried an `email` can be emailed, and

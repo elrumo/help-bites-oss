@@ -15,14 +15,14 @@ struct LegalLookSheet: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 16) {
-          Text("Used by every legal document of this project.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+          Text("Used by every legal document of this project. Your name, address, email and data protection officer are the company profile (Project settings → Company), shared with campaigns; editing them here updates it.").font(.lnMeta).foregroundStyle(Theme.textMuted)
           LabeledField(label: "Company or person", hint: "Named as the operator") { TextField("", text: $form.entity.name).textFieldStyle(.linear) }
           LabeledField(label: "Postal address") { TextField("", text: $form.entity.address).textFieldStyle(.linear) }
           LabeledField(label: "Legal contact email") {
             TextField("", text: $form.entity.email).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
           }
           LabeledField(label: "Data protection officer", hint: "Optional") { TextField("", text: $form.entity.dpo).textFieldStyle(.linear) }
-          LabeledField(label: "Accent colour", hint: "Empty uses the project's") {
+          LabeledField(label: "Accent colour", hint: "Empty uses your Brand kit accent") {
             HStack(spacing: 10) {
               ColorPicker("Accent colour", selection: accentColor, supportsOpacity: false).labelsHidden()
               TextField("#4f46e5", text: $form.accent).textFieldStyle(.linear).font(.lnMono).textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -35,7 +35,7 @@ struct LegalLookSheet: View {
             }
             .pickerStyle(.segmented).labelsHidden()
           }
-          LabeledField(label: "Logo URL", hint: "Empty uses the project's logo") {
+          LabeledField(label: "Logo URL", hint: "Empty uses your Brand kit logo") {
             TextField("https://", text: $form.logoUrl).textFieldStyle(.linear).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
           }
           LabeledField(label: "Footer text") { TextField("", text: $form.footerText).textFieldStyle(.linear) }

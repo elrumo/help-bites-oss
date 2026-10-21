@@ -445,7 +445,7 @@ async function translate(locales: string[], overwrite: boolean) {
 }
 
 // ---- look ----
-const projectAccent = computed(() => project.value?.theme?.accent || '#5e6ad2')
+const projectAccent = computed(() => project.value?.theme?.accent || '#4f46e5')
 const colourFields = computed(() => [
   { key: 'accent' as const, label: t('projectTools.forms.accent'), empty: t('projectTools.forms.projectAccent'), fallback: projectAccent.value },
   { key: 'background' as const, label: t('projectTools.forms.background'), empty: t('projectTools.forms.noBackground'), fallback: previewTheme.value === 'dark' ? '#18181b' : '#ffffff' },

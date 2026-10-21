@@ -35,7 +35,15 @@
               </div>
 
               <div class="row">
-                <div class="row-label"><p class="row-title">{{ $t('projectPages.settings.colour') }}</p><p class="section-hint">{{ $t('projectPages.settings.colourHint') }}</p></div>
+                <div class="row-label">
+                  <p class="row-title">{{ $t('projectPages.settings.colour') }}</p>
+                  <p class="section-hint">{{ $t('projectPages.settings.colourHint') }}</p>
+                  <p class="section-hint">
+                    <i18n-t keypath="projectPages.settings.colourKit" tag="span">
+                      <template #brand><NuxtLink :to="`/projects/${id}/brand`" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('projectPages.settings.colourKitLink') }}</NuxtLink></template>
+                    </i18n-t>
+                  </p>
+                </div>
                 <div class="space-y-2.5">
                   <div class="flex flex-wrap gap-2" role="radiogroup" :aria-label="$t('projectPages.settings.accentColour')">
                     <button
@@ -102,6 +110,12 @@
             <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/gif,image/webp" class="hidden" @change="upload">
           </section>
 
+          <!-- Company -->
+          <section id="company" class="section">
+            <header><h2 class="section-title">{{ $t('projectPages.settings.company') }}</h2><p class="section-hint">{{ $t('projectPages.settings.companyHint') }}</p></header>
+            <div class="card"><SettingsProjectCompany v-model="form.company" /></div>
+          </section>
+
           <!-- Chat widget -->
           <section id="widget" class="section">
             <header><h2 class="section-title">{{ $t('projectPages.settings.chatWidget') }}</h2><p class="section-hint">{{ $t('projectPages.settings.chatWidgetHint') }}</p></header>
@@ -116,6 +130,12 @@
                 <UCheckbox v-model="form.allowOtherType" :label="$t('projectPages.settings.offerOther')" :description="$t('projectPages.settings.offerOtherDescription')" :disabled="!form.letUsersChooseType" class="pl-6" />
               </div>
             </div>
+          </section>
+
+          <!-- Public hub -->
+          <section id="hub" class="section">
+            <header><h2 class="section-title">{{ $t('projectPages.settings.hub') }}</h2><p class="section-hint">{{ $t('projectPages.settings.hubHint') }}</p></header>
+            <div class="card"><SettingsProjectHub v-model="form.hub" :public-key="project.publicKey" :project-name="project.name" /></div>
           </section>
 
           <!-- Notifications -->
@@ -190,6 +210,8 @@
 import type { AdminProject } from '~~/server/utils/projects'
 import { projectColor } from '~/utils/projectColor'
 import { can } from '#shared/roles'
+import { normalizeCompany } from '#shared/company'
+import { normalizeHubConfig } from '#shared/hub'
 import { groupSections } from '#shared/projectSections'
 
 definePageMeta({ middleware: 'agent' })
@@ -215,7 +237,9 @@ let uploadTarget: ImageField = 'iconUrl'
 const sections = computed(() => [
   { id: 'general', label: t('projectPages.settings.general') },
   { id: 'branding', label: t('projectPages.settings.branding') },
+  { id: 'company', label: t('projectPages.settings.company') },
   { id: 'widget', label: t('projectPages.settings.chatWidget') },
+  { id: 'hub', label: t('projectPages.settings.hub') },
   { id: 'notifications', label: t('projectPages.settings.notifications') },
   { id: 'sidebar', label: t('projectPages.settings.sidebar') },
   { id: 'collaborators', label: t('projectPages.settings.collaborators') },
@@ -229,7 +253,7 @@ const widgetImages = computed(() => [
 // Linear's indigo, then the colours projects without one are given.
 const swatches = ['#5e6ad2', '#0f766e', '#0369a1', '#0e7490', '#4d7c0f', '#b45309', '#c2410c', '#be123c', '#7c3aed']
 
-const blank = () => ({ name: '', siteUrl: '', inboxPath: '', iconUrl: '', brandLogoUrl: '', assistantLogoUrl: '', accent: '', chatNotice: '', allowAttachments: true, allowAnonymousUsers: false, letUsersChooseType: false, allowOtherType: false, notifyEmailsText: '', hiddenSections: [] as string[] })
+const blank = () => ({ name: '', siteUrl: '', inboxPath: '', iconUrl: '', brandLogoUrl: '', assistantLogoUrl: '', accent: '', chatNotice: '', allowAttachments: true, allowAnonymousUsers: false, letUsersChooseType: false, allowOtherType: false, company: normalizeCompany(null), hub: normalizeHubConfig(null), notifyEmailsText: '', hiddenSections: [] as string[] })
 const form = reactive(blank())
 const snapshot = ref('')
 const dirty = computed(() => !!snapshot.value && JSON.stringify(form) !== snapshot.value)
@@ -241,7 +265,7 @@ function showSection(path: string, show: boolean) {
   form.hiddenSections = show ? form.hiddenSections.filter(item => item !== path) : [...form.hiddenSections, path]
 }
 // The widget falls back to the panel's indigo, not the sidebar's hashed colour.
-const widgetAccent = computed(() => (validAccent.value && form.accent) || '#5e6ad2')
+const widgetAccent = computed(() => (validAccent.value && form.accent) || '#4f46e5')
 
 function fill(p: AdminProject) {
   project.value = p
@@ -258,6 +282,8 @@ function fill(p: AdminProject) {
     allowAnonymousUsers: p.allowAnonymousUsers === true,
     letUsersChooseType: p.letUsersChooseType,
     allowOtherType: p.allowOtherType,
+    company: normalizeCompany(p.company),
+    hub: normalizeHubConfig(p.hub),
     notifyEmailsText: p.notifyEmails.join(', '),
     hiddenSections: [...(p.hiddenSections || [])]
   })
@@ -300,10 +326,13 @@ async function save() {
   saveError.value = ''
   try {
     const { accent, notifyEmailsText, ...rest } = form
+    // The accent is the Brand kit's: send it only when it changed here, so saving something else never pins it.
+    const accentChanged = accent.trim() !== (project.value?.theme?.accent || '')
     const result = await api<{ project: AdminProject }>(`/admin/projects/${id}`, {
       method: 'PATCH',
       // The server replaces theme wholesale; keep the keys this page doesn't edit.
-      body: { ...rest, notifyEmails: notifyEmailsText, theme: { ...project.value?.theme, accent: accent.trim() } }
+      // A link row left blank is dropped rather than rejected.
+      body: { ...rest, hub: { ...rest.hub, links: rest.hub.links.filter(link => link.label.trim() || link.url.trim()) }, notifyEmails: notifyEmailsText, ...(accentChanged ? { theme: { ...project.value?.theme, accent: accent.trim() } } : {}) }
     })
     fill(result.project)
     await loadProjects()

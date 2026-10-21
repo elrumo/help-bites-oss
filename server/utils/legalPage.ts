@@ -4,6 +4,7 @@ import { localeName, normalizeLocale } from '#shared/locales'
 import { poweredByHtml, type PoweredBy } from './branding'
 import { legalToc } from './legalRender'
 import { escapeHtml } from './messageEmail'
+import { lookOf } from './projects'
 import type { LegalSection } from '#shared/legal/types'
 
 // The hosted legal pages, as plain server-rendered HTML in the style of
@@ -21,15 +22,20 @@ const FONT_STACKS: Record<LegalFont, string> = {
 export type LegalTranslationLink = { locale: string, title: string, path: string }
 type Doc = { type: string, slug: string, title: string, tldr: string, effectiveDate: string | null, version: number, html: string, sections: LegalSection[], locale?: string, translations?: LegalTranslationLink[], /** This page's own path, and the site's origin: both needed for hreflang links. */ path?: string, origin?: string }
 
-function look(project: ParseObject) {
+/**
+ * The project's look (Brand kit) with the legal pages' own settings on top:
+ * `legal.accent`, `legal.logoUrl` and `legal.font` are optional per-document-set
+ * overrides, blank by default, so a project that never touched them wears the kit.
+ */
+export function legalLook(project: ParseObject) {
   const config = normalizeLegalConfig(project.get('legal'))
-  const theme = (project.get('theme') || {}) as { accent?: string }
-  const themed = /^#[0-9a-f]{6}$/i.test(String(theme.accent || '')) ? String(theme.accent) : ''
+  const base = lookOf(project)
+  const own = (url: string) => (/^https?:\/\//.test(url) ? url : '')
   return {
-    name: String(project.get('name') || ''),
-    accent: config.accent || themed || '#4f46e5',
+    name: base.name,
+    accent: config.accent || base.accent,
     font: FONT_STACKS[LEGAL_FONTS.includes(config.font) ? config.font : 'system'],
-    logo: [config.logoUrl, String(project.get('brandLogoUrl') || ''), String(project.get('iconUrl') || '')].find(url => /^https?:\/\//.test(url)) || '',
+    logo: own(config.logoUrl) || base.logoUrl || base.iconUrl,
     footer: config.footerText
   }
 }
@@ -86,7 +92,7 @@ footer.legal-foot { margin-top: 28px; text-align: center; color: var(--muted); f
 `
 
 function shell(project: ParseObject, title: string, description: string, body: string, poweredBy: PoweredBy | null, page: { lang?: string, head?: string } = {}): string {
-  const l = look(project)
+  const l = legalLook(project)
   const logo = l.logo ? `<img src="${escapeHtml(l.logo)}" alt="" width="36" height="36">` : ''
   return `<!doctype html>
 <html lang="${escapeHtml(normalizeLocale(page.lang) || 'en')}">

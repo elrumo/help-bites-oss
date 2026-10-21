@@ -148,6 +148,25 @@ test('the demo is on the unlimited plan, so the panel shows no plan or limits', 
   await expect(demoApi('/admin/workspace/ai', { method: 'PUT', body: { endpoint: 'https://api.openai.com/v1' } })).rejects.toMatchObject({ statusCode: 403 })
 })
 
+test('the demo answers the customer panel and the reply picker, so the inbox page loads', async () => {
+  const { conversations } = await demoApi<any>('/admin/conversations', { query: { project: 'acme' } })
+  for (const { id } of conversations) {
+    const context = await demoApi<any>(`/admin/conversations/${id}/context`)
+    expect(context.contact.id).toBeTruthy()
+    expect(context.pastConversations.every((c: any) => c.id !== id)).toBe(true)
+    expect(context.faqModels).toEqual({ models: [], defaultModelId: '' })
+    if (context.billing) expect(context.billing).toMatchObject({ currency: 'usd', customerId: expect.stringMatching(/^cus_/) })
+  }
+  // At least one demo customer pays, so the billing card shows somewhere.
+  const all = await Promise.all(conversations.map((c: any) => demoApi<any>(`/admin/conversations/${c.id}/context`)))
+  expect(all.some(context => context.billing)).toBe(true)
+  const { savedReplies, faqs } = await demoApi<any>(`/admin/conversations/${conversations[0].id}/suggestions`)
+  expect(savedReplies.length).toBeGreaterThan(0)
+  expect(faqs).toEqual([])
+  expect((await demoApi<any>('/admin/saved-replies', { query: { project: 'acme' } })).replies.length).toBe(savedReplies.length)
+  await expect(demoApi(`/admin/conversations/${conversations[0].id}/draft`, { method: 'POST' })).rejects.toMatchObject({ statusCode: 403 })
+})
+
 test('the demo shows a published pricing table with written prices', async () => {
   const { tables } = await demoApi<any>('/admin/pricing-tables', { query: { project: 'acme' } })
   expect(tables).toHaveLength(1)

@@ -471,6 +471,7 @@ const features = computed(() => [
       { term: t('landing.features.app.pricing.term'), desc: t('landing.features.app.pricing.desc') },
       { term: t('landing.features.app.media.term'), desc: t('landing.features.app.media.desc') },
       { term: t('landing.features.app.colours.term'), desc: t('landing.features.app.colours.desc') },
+      { term: t('landing.features.app.hub.term'), desc: t('landing.features.app.hub.desc') },
       { term: t('landing.features.app.none.term'), desc: t('landing.features.app.none.desc') }
     ]
   },
@@ -481,6 +482,7 @@ const features = computed(() => [
       { term: t('landing.features.inbox.live.term'), desc: t('landing.features.inbox.live.desc') },
       { term: t('landing.features.inbox.overview.term'), desc: t('landing.features.inbox.overview.desc') },
       { term: t('landing.features.inbox.notes.term'), desc: t('landing.features.inbox.notes.desc') },
+      { term: t('landing.features.inbox.hub.term'), desc: t('landing.features.inbox.hub.desc') },
       { term: t('landing.features.inbox.away.term'), desc: t('landing.features.inbox.away.desc') },
       { term: t('landing.features.inbox.first.term'), desc: t('landing.features.inbox.first.desc') },
       { term: t('landing.features.inbox.native.term'), desc: t('landing.features.inbox.native.desc') }

@@ -14,6 +14,6 @@ describe('licensing', () => {
   test('what customers embed or run on their machines is MIT', () => {
     expect(JSON.parse(read('cli/package.json')).license).toBe('MIT')
     expect(read('cli/LICENSE')).toContain('MIT License')
-    for (const loader of ['public/widget.js', 'public/feedback.js', 'public/pricing.js']) expect(read(loader).startsWith('/* SPDX-License-Identifier: MIT')).toBe(true)
+    for (const loader of ['public/widget.js', 'public/feedback.js', 'public/pricing.js', 'public/helpbites.js']) expect(read(loader).startsWith('/* SPDX-License-Identifier: MIT')).toBe(true)
   })
 })

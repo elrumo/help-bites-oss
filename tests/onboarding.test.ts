@@ -50,4 +50,17 @@ describe('onboarding flows', () => {
     expect(source).not.toMatch(/\bimport\s|require\(/)
     expect(() => new Function(source)).not.toThrow()
   })
+
+  test('the web script reports who finished or skipped with the identity token, best effort', () => {
+    const source = readFileSync(join(import.meta.dir, '../public/onboarding.js'), 'utf8')
+    // data-token or init({ token }), a string or a function; one POST to the flow's /complete with the token as a bearer.
+    expect(source).toContain("token: attr('token')")
+    expect(source).toContain("typeof given === 'function' ? given() : given")
+    expect(source).toContain("'/complete'")
+    expect(source).toContain("authorization: 'Bearer ' + token")
+    expect(source).toContain("result === 'complete' ? 'completed' : 'skipped'")
+    // A failed or missing report changes nothing for the visitor: every path ends in a catch, and it runs after the outcome is remembered.
+    expect(source).toMatch(/\.catch\(function \(\) \{\}\)\s*\} catch \(e\) \{\}/)
+    expect(source.indexOf("store(seenKey(), { version")).toBeLessThan(source.lastIndexOf('report(flow, result)'))
+  })
 })

@@ -16,15 +16,17 @@ export const IMPORT_ORDER = [
   'EndUser',
   'ContactSegment',
   'ConversationType',
+  'SavedReply',
   'KnowledgeModel',
   'KnowledgeNode',
   'KnowledgeDocument',
   'Faq',
   'SupportAgent',
   'AgentKnowledgeAssignment',
+  // Before the conversations that link it (Conversation.feedbackPostIds).
+  'FeedbackPost',
   'Conversation',
   'Message',
-  'FeedbackPost',
   'FeedbackComment',
   'FeedbackVote',
   'FeedbackSubscription',
@@ -39,6 +41,7 @@ export const IMPORT_ORDER = [
   'LegalDocument',
   'LegalDocumentVersion',
   'OnboardingFlow',
+  'OnboardingCompletion',
   'PricingTable',
   'PricingStat',
   'CmsComponent',
@@ -70,13 +73,15 @@ export const NOT_PORTABLE: Record<string, string> = {
   StripeAccount: 'its Stripe key is not exported; connect Stripe again',
   StripePayment: 'comes from the Stripe account',
   StripeSubscription: 'comes from the Stripe account',
+  WebhookEndpoint: 'its signing secret is not exported; add the endpoint again',
   WebhookDelivery: 'the old instance\'s outbox',
   BrandAsset: 'a file in the old bucket',
   CmsAsset: 'a file in the old bucket; pages keep linking to it there',
   LeadFile: 'a file in the old bucket; download it there before you move',
   Campaign: 'could send again; recreate it from the template',
   SequenceEnrollment: 'would send the next step again',
-  DataTransfer: 'the old instance\'s own bookkeeping'
+  DataTransfer: 'the old instance\'s own bookkeeping',
+  GithubRef: 'rebuilt from new pushes and merges: the repos a project reads are not carried over either'
 }
 
 /** Workspace-level classes that belong to one project when they carry its pointer: what a project export takes besides its project-scoped rows. */
@@ -88,7 +93,8 @@ export const PROJECT_PINNED = ['KnowledgeModel', 'SupportAgent', 'EmailFolder', 
  * replaced with the new ones; any other value stays as it was.
  */
 export const ID_PATHS: Record<string, Record<string, string>> = {
-  Conversation: { assistantId: 'SupportAgent' },
+  Conversation: { assistantId: 'SupportAgent', feedbackPostIds: 'FeedbackPost' },
+  Faq: { conversationId: 'Conversation' },
   Message: { replyToId: 'Message' },
   FeedbackPost: { pinnedCommentId: 'FeedbackComment' },
   FeedbackComment: { parentId: 'FeedbackComment', replyToId: 'FeedbackComment' },
@@ -106,7 +112,8 @@ export const ID_PATHS: Record<string, Record<string, string>> = {
 
 /** Fields that mean something only on the instance they came from. */
 export const DROP_FIELDS: Record<string, string[]> = {
-  Project: ['repos', 'repoIds', 'telegram', 'changelogRun'],
+  // legalLinks holds absolute URLs on the source instance; the next legal publish rebuilds them here.
+  Project: ['repos', 'repoIds', 'telegram', 'changelogRun', 'legalLinks'],
   EmailTemplate: ['lastActorId'],
   EmailLog: ['actorId'],
   // The old instance's Stripe refusal; the next checkout tells the new one.

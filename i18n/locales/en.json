@@ -287,6 +287,65 @@
     "about": "About",
     "recentErrors": "Recent errors",
     "actions": "Actions",
+    "hub": {
+      "billing": "Billing",
+      "mrr": "MRR",
+      "noPlan": "No plan",
+      "openContact": "Open contact",
+      "pastConversations": "Past conversations",
+      "feedbackNoPosts": "No post linked yet.",
+      "feedbackFileNew": "File a post",
+      "feedbackAddExisting": "Add an existing post",
+      "feedbackSearch": "Search posts by title",
+      "feedbackFollowing": "Follows this post",
+      "feedbackNotFollowing": "Not following",
+      "feedbackUnlink": "Unlink #{number} {title}",
+      "feedbackNoUserId": "This contact has no user id, so they cannot follow a post or file one. You can still link an existing post.",
+      "feedbackNewDescription": "Creates a post written by {name}. They follow it and hear when it changes.",
+      "feedbackTitleLabel": "Title",
+      "feedbackBodyLabel": "Details",
+      "feedbackFile": "File and follow",
+      "feedbackLinkError": "Could not link the post",
+      "feedbackUnlinkError": "Could not unlink the post",
+      "feedbackCreateError": "Could not file the post",
+      "feedbackLoadError": "Could not load posts",
+      "pickerOpen": "Insert a saved reply or FAQ",
+      "pickerSearch": "Search saved replies and FAQs",
+      "pickerSavedReplies": "Saved replies",
+      "pickerFaqs": "FAQs",
+      "pickerEmpty": "Nothing matches.",
+      "pickerManage": "Manage saved replies",
+      "pickerError": "Could not load suggestions",
+      "savedRepliesTitle": "Saved replies",
+      "savedRepliesDescription": "Canned answers for this project. {firstName} and {name} are filled in from the customer when you insert one.",
+      "savedReplyNew": "New saved reply",
+      "savedReplyEdit": "Edit",
+      "savedReplyTitle": "Title",
+      "savedReplyShortcut": "Shortcut",
+      "savedReplyShortcutHint": "Optional, e.g. refund",
+      "savedReplyBody": "Reply",
+      "savedReplySave": "Save",
+      "savedReplyDelete": "Delete",
+      "savedReplyDeleteConfirm": "Delete this saved reply?",
+      "savedReplyEmpty": "No saved replies yet.",
+      "savedReplyLoadError": "Could not load saved replies",
+      "savedReplySaveError": "Could not save the reply",
+      "savedReplyDeleteError": "Could not delete the reply",
+      "draftButton": "Draft a reply with AI",
+      "draftReady": "Draft ready. Check it before you send.",
+      "draftNoSources": "No FAQ matched this question, so check the facts.",
+      "draftError": "Could not draft a reply",
+      "saveFaq": "Save as FAQ",
+      "saveFaqDescription": "Assistants use this answer from now on.",
+      "faqQuestion": "Question",
+      "faqAnswer": "Answer",
+      "faqModel": "Knowledge model",
+      "faqNoModel": "This workspace has no knowledge model yet. Create one first.",
+      "faqOpenKnowledge": "Open Knowledge",
+      "faqSave": "Save FAQ",
+      "faqSaved": "Saved as an FAQ",
+      "faqSaveError": "Could not save the FAQ"
+    },
     "actionsNoWebhook": "This project has no action webhook, so these will fail.",
     "actionsNoWebhookFix": "Set it up"
   },
@@ -389,7 +448,9 @@
     "untitled": "Untitled",
     "setUpBoard": "Set up Planning",
     "addToExisting": "Add to existing…",
-    "unlinkItem": "Unlink #{number} {title}"
+    "unlinkItem": "Unlink #{number} {title}",
+    "filedFromErrors": "Filed from errors",
+    "openInTracker": "Open in {provider}"
   },
   "changelog": {
     "publicCount": "{count} public",
@@ -536,7 +597,26 @@
     "tagImproved": "Improved",
     "tagFixed": "Fixed",
     "tagRemoved": "Removed",
-    "tagBreaking": "Breaking"
+    "tagBreaking": "Breaking",
+    "reply": {
+      "title": "Reply to linked conversations",
+      "description": "Tell the people this entry answers. Nothing is sent until you press send.",
+      "message": "Your message",
+      "conversations": "Conversations",
+      "chosen": "{chosen} of {total} selected",
+      "all": "Select all",
+      "none": "Select none",
+      "sent": "Sent",
+      "sentEmailed": "Sent and emailed",
+      "failed": "Failed",
+      "email": "Email them too",
+      "emailDescription": "People with an email address also get the reply by email, as with any reply from the inbox.",
+      "summary": "{sent} sent, {failed} failed.",
+      "send": "Send to {count} conversation | Send to {count} conversations",
+      "error": "Could not send the replies.",
+      "hint": "This entry answers {count} conversation. You can tell them it shipped. | This entry answers {count} conversations. You can tell them it shipped.",
+      "button": "Reply to {count} linked conversation | Reply to {count} linked conversations"
+    }
   },
   "blog": {
     "posts": "Posts",
@@ -851,7 +931,8 @@
     "ticketType": "Ticket type",
     "alsoEmail": "Also send by email",
     "none": "None",
-    "couldNotSend": "Could not send"
+    "couldNotSend": "Could not send",
+    "saveAsFaq": "Save as FAQ"
   },
   "shared": {
     "humanNote": "No AI here — you're talking to a real human.",
@@ -982,7 +1063,13 @@
         "lastSeenAt": "Last seen",
         "updatedAt": "Updated",
         "origin": "Added via",
-        "leadForms": "Lead form"
+        "leadForms": "Lead form",
+        "language": "Language",
+        "stripePlan": "Stripe plan",
+        "hasOpenConversation": "Has an open conversation",
+        "votedOnPost": "Voted on a post",
+        "hasErrors": "Has errors",
+        "finishedOnboarding": "Finished onboarding"
       },
       "op": {
         "is": "is",
@@ -1008,7 +1095,9 @@
         "date": "Date",
         "removeRule": "Remove rule"
       },
-      "pickForm": "Pick a form"
+      "pickForm": "Pick a form",
+      "yes": "Yes",
+      "no": "No"
     },
     "form": {
       "email": "Email",
@@ -1017,7 +1106,8 @@
       "optional": "Optional",
       "tags": "Tags",
       "userId": "User id",
-      "userIdHint": "Your app's id"
+      "userIdHint": "Your app's id",
+      "language": "Language"
     },
     "drawer": {
       "loadError": "Could not load the contact",
@@ -1064,6 +1154,14 @@
       "addedVia": "Added via",
       "leadForms": "Lead forms",
       "deletedForm": "A deleted form",
+      "language": "Language",
+      "languageHint": "The language we write to them in. Campaigns and sequences send the matching translation of a template.",
+      "activity": "Activity",
+      "activityNone": "Nothing yet.",
+      "activityError": "Could not load their activity",
+      "showOlder": "Show older",
+      "addToSequence": "Add to sequence",
+      "languageNone": "Not set",
       "files": "Files sent"
     },
     "empty": {
@@ -1101,7 +1199,9 @@
       "everyoneOptedIn": "Everyone in this file asked for marketing email",
       "everyoneOptedInDescription": "Only if you have their consent. Nobody who unsubscribed is subscribed again.",
       "fillBlanks": "Fill blanks only",
-      "fillBlanksDescription": "Keep names and attributes you already have."
+      "fillBlanksDescription": "Keep names and attributes you already have.",
+      "language": "Language",
+      "languageHint": "A language tag such as es or pt-BR"
     },
     "segments": {
       "new": "New segment",
@@ -1119,7 +1219,8 @@
       "ruleCount": "{count} rule | {count} rules",
       "peopleCount": "{count} people",
       "auto": "Auto",
-      "autoHint": "Made for a lead form. Rename, edit or delete it like any other segment."
+      "autoHint": "Made for a lead form. Rename, edit or delete it like any other segment.",
+      "addToSequence": "Add everyone to a sequence"
     },
     "sources": {
       "connect": "Connect a database",
@@ -1202,6 +1303,26 @@
       "api": "API",
       "panel": "Added by hand",
       "feedback": "Feedback import"
+    },
+    "sequence": {
+      "title": "Add to a sequence",
+      "descriptionOne": "Start this person on one of your active sequences.",
+      "descriptionSegment": "Start everyone in “{name}” on one of your active sequences.",
+      "pick": "Sequence",
+      "none": "No sequence is active. Activate one first.",
+      "openSequences": "Open sequences",
+      "rule": "Only people who are subscribed to marketing email are added. Anyone already on the sequence is left alone.",
+      "loadError": "Could not load sequences",
+      "addError": "Could not add them",
+      "add": "Add",
+      "addMore": "Add the next batch",
+      "added": "{count} added to the sequence.",
+      "skipped": "Left out:",
+      "alreadyOn": "{count} already on it",
+      "notSubscribed": "{count} not subscribed",
+      "optedOut": "{count} opted out of its topic",
+      "notFound": "{count} not found",
+      "truncated": "That was the most one call adds. Add the next batch to carry on."
     }
   },
   "campaigns": {
@@ -1279,6 +1400,15 @@
         "wait": "Wait",
         "unit": "Unit",
         "removeStep": "Remove step"
+      },
+      "recipes": {
+        "button": "Recipes",
+        "title": "Start from a recipe",
+        "description": "Ready-made sequences. They are added as drafts: read the emails, change them, then activate.",
+        "use": "Use",
+        "installed": "“{name}” added as a draft",
+        "installError": "Could not add the recipe",
+        "loadError": "Could not load the recipes"
       }
     },
     "settings": {
@@ -1311,7 +1441,9 @@
       "retried": ", retried for a day.",
       "signingSecret": "Signing secret",
       "secretSet": "Set; type a new one to replace it",
-      "secretLength": "16+ characters"
+      "secretLength": "16+ characters",
+      "postalAddressCompany": "This is the address in your {company}: legal documents use it too.",
+      "postalAddressCompanyLink": "company profile"
     }
   },
   "emailEditor": {
@@ -2014,6 +2146,20 @@
       "none": "This project has no public changelog.",
       "loadFailed": "The changelog could not be loaded.",
       "missingKey": "Missing project key. Check the data-project attribute on the changelog script."
+    },
+    "home": {
+      "tab": "Home",
+      "messagesTab": "Messages",
+      "tabs": "Chat sections",
+      "whatsNew": "What is new",
+      "seeAll": "See all updates",
+      "feedback": "Feedback",
+      "shareIdea": "Share an idea",
+      "seeBoard": "See all ideas",
+      "votes": "Votes",
+      "gettingStarted": "Getting started",
+      "start": "Start",
+      "welcome": "How can we help?"
     }
   },
   "feedback": {
@@ -2383,7 +2529,8 @@
       "manual": "Manual",
       "imported": "Imported",
       "ai-generated": "AI-generated",
-      "api": "API"
+      "api": "API",
+      "conversation": "From a conversation"
     }
   },
   "landing": {
@@ -2510,7 +2657,7 @@
       "changelog": {
         "eyebrow": "Changelog",
         "title": "A changelog that writes its first draft.",
-        "body": "Entries are drafted by AI from your GitHub commits or finished work, and wait for your review. Nothing is public until you approve it.",
+        "body": "Entries are drafted by AI from your GitHub commits or finished work, and wait for your review. Nothing is public until you approve it. When one ships, the people who asked for it hear about it.",
         "b1": "Group entries into versioned releases",
         "b2": "A public page, JSON and RSS, plus digest emails for readers",
         "b3": "Or write entries yourself, or from the command line",
@@ -2617,11 +2764,15 @@
         },
         "colours": {
           "term": "Your colours",
-          "desc": "Set an accent colour per project and the chat takes it on."
+          "desc": "Your Brand kit sets the accent, logo, typefaces and corner radius once. The chat, boards, forms, legal and blog pages and campaign mail all wear them."
         },
         "none": {
           "term": "Or none of it",
           "desc": "Every endpoint is public and documented. Build your own chat UI on /v1/* instead."
+        },
+        "hub": {
+          "term": "One tag, one public page",
+          "desc": "helpbites.js adds the chat, feedback board, changelog and onboarding your project has. A page at /hub gathers your changelog, roadmap, feedback, blog and legal documents, and the chat can open on a Home tab with what is new."
         }
       },
       "inbox": {
@@ -2650,6 +2801,10 @@
         "native": {
           "term": "iPhone, iPad and Mac",
           "desc": "A native app for the inbox, replies and most of the panel, with push notifications once your server has APNs set up."
+        },
+        "hub": {
+          "term": "The customer, beside the chat",
+          "desc": "Their plan and MRR from Stripe, their earlier conversations and the feedback they asked for, which they follow. Reply from saved replies and FAQs, or have AI draft an answer from your knowledge for you to edit."
         }
       },
       "feedback": {
@@ -2661,8 +2816,7 @@
         },
         "roadmap": {
           "term": "A roadmap from your own planning",
-          "desc": "Plan internal work on a kanban, link it to posts and conversations, and publish only the items you pick."
-        },
+          "desc": "Plan internal work on a kanban, link it to posts and conversations, and publish only the items you pick. File an error on it in one click, and see the GitHub commits and pull requests that finished each item."        },
         "changelog": {
           "term": "A changelog from what shipped",
           "desc": "Entries grouped into releases, drafted from finished work and reviewed before they go public. Includes RSS and digest emails."
@@ -2725,7 +2879,7 @@
         "hint": "Roles, error tracking and flags that sit next to support.",
         "errors": {
           "term": "Error tracking",
-          "desc": "Connect GlitchTip or Bugsink. Browse errors with their stack traces, get alert emails or Telegram messages when one spikes, and fix them with AI that reads your GitHub repos."
+          "desc": "Connect GlitchTip or Bugsink. Browse errors with their stack traces, get alert emails or Telegram messages when one spikes, file one on your board, and fix them with AI that reads your GitHub repos."
         },
         "legal": {
           "term": "Hosted legal pages",
@@ -2869,14 +3023,16 @@
       "email": "Legal contact email",
       "dpo": "Data protection officer",
       "accent": "Accent colour",
-      "accentHint": "Empty uses the project's",
+      "accentHint": "Empty uses your Brand kit accent",
       "font": "Font",
       "fontSans": "Sans-serif",
       "fontSerif": "Serif",
       "fontMono": "Monospace",
       "logo": "Logo URL",
-      "logoHint": "Empty uses the project's logo",
-      "footer": "Footer text"
+      "logoHint": "Empty uses your Brand kit logo",
+      "footer": "Footer text",
+      "companyNote": "Your name, address, email and data protection officer come from the {company}, shared with campaigns. Editing them here updates it.",
+      "companyLink": "company profile"
     }
   },
   "assistants": {
@@ -3227,6 +3383,59 @@
       "leaveConfirm": "Leave without saving your changes?",
       "data": "Data",
       "dataHint": "Take this project to another HelpBites.",
+      "colourKit": "This is the accent of your {brand}: widgets, boards, forms, legal, blog and hub pages and campaign mail all follow it.",
+      "colourKitLink": "Brand kit",
+      "optional": "Optional",
+      "company": "Company",
+      "companyHint": "Who is behind the product, written once.",
+      "companyUsedBy": "Legal documents name you as the operator, campaigns print your address in every footer, and email templates can fill in your company name, address, email and legal page links.",
+      "companyName": "Company name",
+      "companyNameHint": "The name people know",
+      "companyLegalName": "Legal name",
+      "companyLegalNameHint": "As registered; used in contracts and notices",
+      "companyAddress": "Postal address",
+      "companyAddressHint": "Marketing email must carry it",
+      "companyEmail": "Contact email",
+      "companyPhone": "Phone",
+      "companyWebsite": "Website",
+      "companyDpo": "Data protection officer",
+      "hub": "Public hub",
+      "hubHint": "One page that gathers what you publish, and a Home tab for the chat widget.",
+      "hubEnabled": "Public page",
+      "hubEnabledHint": "A page at /hub/your-key with your changelog, roadmap, feedback, blog, legal documents and brand kit. A section shows only when it has something public.",
+      "hubSavedNote": "Save your changes to publish the page.",
+      "hubCopy": "Copy link",
+      "hubOpen": "Open the page",
+      "hubCopied": "Link copied",
+      "hubTitle": "Title",
+      "hubTitleHint": "Defaults to the project name",
+      "hubTagline": "Tagline",
+      "hubTaglineHint": "Defaults to your Brand kit tagline",
+      "hubSections": "Sections",
+      "hubSectionsHint": "Tick what to list and put it in order. One with nothing public stays out of the page.",
+      "hubSection": {
+        "about": "About",
+        "changelog": "What is new (changelog)",
+        "roadmap": "Roadmap",
+        "feedback": "Feedback",
+        "blog": "Blog",
+        "legal": "Legal documents",
+        "brand": "Brand kit",
+        "contact": "Contact us (opens the chat)"
+      },
+      "hubMoveUp": "Move up",
+      "hubMoveDown": "Move down",
+      "hubLinks": "Your own links",
+      "hubLinkLabel": "Label",
+      "hubLinkUrl": "Link",
+      "hubAddLink": "Add a link",
+      "hubWidgetHome": "Home tab in the chat widget",
+      "hubWidgetHomeHint": "The chat opens on Home with what is new, top feedback and onboarding flows, next to Messages. Works without the public page.",
+      "hubHome": {
+        "changelog": "What is new",
+        "feedback": "Feedback",
+        "onboarding": "Onboarding flows to start"
+      },
       "notifications": "Notifications",
       "notificationsHint": "Who hears about new chats.",
       "sidebar": "Sidebar",
@@ -3503,7 +3712,8 @@
       "connectError": "Could not connect Stripe",
       "syncError": "Could not start the sync",
       "disconnectConfirm": "Disconnect Stripe? The key and the payments synced from Stripe are forgotten. Contacts keep their Stripe attributes.",
-      "disconnectError": "Could not disconnect"
+      "disconnectError": "Could not disconnect",
+      "openContact": "Open this person"
     },
     "projectList": {
       "emptyTitle": "No projects yet",
@@ -5085,6 +5295,11 @@
       "connectName": "Connect {name}",
       "loadFailed": "Could not load error tracking servers",
       "connectFailed": "Could not connect error tracking"
+    },
+    "board": {
+      "file": "File on board",
+      "onBoard": "On the board: #{number} {title}",
+      "failed": "Could not file this error on the board."
     }
   },
   "translations": {
@@ -5138,6 +5353,46 @@
     "backToPanel": "Back to HelpBites",
     "failed": "Could not approve the connection",
     "redirecting": "Taking you back to {client}…"
+  },
+  "webhookEndpoints": {
+    "title": "Webhook endpoints",
+    "intro": "Send the events you pick to your own server, each endpoint with its own signing secret.",
+    "docs": "Event reference",
+    "add": "Add endpoint",
+    "copySecret": "Copy the signing secret now",
+    "copySecretHint": "It is shown once. Verify the x-helpbites-signature header with it.",
+    "secret": "Signing secret",
+    "copy": "Copy",
+    "copied": "Copied",
+    "done": "Done",
+    "url": "Endpoint URL",
+    "description": "Description",
+    "events": "Events",
+    "everything": "Everything",
+    "enabled": "Send events to this endpoint",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "test": "Send a test event",
+    "rotate": "New signing secret",
+    "rotateConfirm": "The old secret stops working at once. Continue?",
+    "deleteConfirm": "Remove {url}?",
+    "empty": "No endpoints yet. Add one to get events as they happen.",
+    "recent": "Recent deliveries",
+    "off": "Switched off",
+    "failing": "Last delivery failed",
+    "working": "Last delivery worked",
+    "noDeliveries": "No deliveries yet",
+    "loadFailed": "Could not load webhook endpoints",
+    "saveFailed": "Could not save the endpoint",
+    "pickEvents": "Pick at least one event, or choose Everything"
+  },
+  "github": {
+    "linkedWork": "Commits and pull requests",
+    "pullRequest": "Pull request",
+    "commit": "Commit",
+    "closes": "closes",
+    "closesTitle": "A closing keyword (like “fixes #12”) came with it"
   },
   "emailSettings": {
     "sender": "Sender",

@@ -38,6 +38,30 @@
           <dt class="text-muted">{{ $t('inbox.id') }}</dt>
           <dd class="min-w-0 truncate font-mono text-xs leading-5 text-toned" :title="user.externalId">{{ user.externalId }}</dd>
         </dl>
+        <NuxtLink v-if="project && context" :to="`/projects/${project.id}/contacts?contact=${context.contact.id}`" class="-mx-1 flex h-8 items-center gap-2 rounded-lg px-1 text-[13px] text-default transition-colors hover:bg-elevated">
+          <UIcon name="i-lucide-user-round" class="size-3.5 shrink-0 text-muted" />{{ $t('inbox.hub.openContact') }}<UIcon name="i-lucide-arrow-up-right" class="ml-auto size-3.5 shrink-0 text-dimmed" />
+        </NuxtLink>
+      </section>
+
+      <!-- Only when the Stripe sync found this person: plan, what they pay a month, and where the subscription stands. -->
+      <section v-if="context?.billing" class="space-y-1.5 px-2">
+        <p class="section-label">{{ $t('inbox.hub.billing') }}</p>
+        <div class="rounded-lg border border-default px-2.5 py-2 text-[13px]">
+          <div class="flex items-center justify-between gap-2">
+            <span class="min-w-0 truncate font-medium text-highlighted">{{ context.billing.plan || $t('inbox.hub.noPlan') }}</span>
+            <UBadge v-if="context.billing.status !== 'none'" :label="stripeStatus(context.billing.status)" :color="SUB_COLOR[context.billing.status] || 'neutral'" variant="subtle" size="sm" />
+          </div>
+          <p class="mt-1 flex items-baseline justify-between text-muted"><span>{{ $t('inbox.hub.mrr') }}</span><span class="tabular-nums text-default">{{ mrrText }}</span></p>
+        </div>
+      </section>
+
+      <section v-if="context?.pastConversations.length" class="space-y-px">
+        <p class="section-label px-2 pb-1">{{ $t('inbox.hub.pastConversations') }}</p>
+        <button v-for="past in context.pastConversations" :key="past.id" type="button" class="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[13px] transition-colors hover:bg-elevated" @click="emit('open', past.id)">
+          <StatusIcon :category="past.statusCategory" />
+          <span class="min-w-0 flex-1 truncate text-default">{{ past.subject || past.lastMessagePreview || $t('inbox.conversation') }}</span>
+          <span class="shrink-0 text-xs tabular-nums text-dimmed">{{ shortDate(past.lastMessageAt || past.createdAt) }}</span>
+        </button>
       </section>
 
       <section v-if="type?.fields.length" class="space-y-3 px-2">
@@ -50,6 +74,11 @@
             <UInput v-else :model-value="String(fieldValues[field.key] || '')" :type="field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'" size="sm" class="w-full" @blur="saveField(field.key, ($event.target as HTMLInputElement).value)" />
           </UFormField>
         </template>
+      </section>
+
+      <section v-if="project && context" class="space-y-1.5 px-2">
+        <p class="section-label">{{ $t('sections.feedback') }}</p>
+        <FeedbackLinks :posts="context.feedbackPosts" :project-id="project.id" :conversation-id="conversation.id" :contact="context.contact" :title="conversation.subject" :description="lastUserMessage" @update:posts="emit('feedback', $event)" />
       </section>
 
       <section v-if="project" class="space-y-1.5 px-2">
@@ -95,14 +124,17 @@
 
 <script setup lang="ts">
 import { actionWebhookReady, type Conversation, type ConversationAction, type ConversationPriority, type ConversationType, type StatusCategory } from '#shared/support'
+import type { ConversationContextResponse, HubFeedbackPost } from '#shared/conversationHub'
+import { formatMoney } from '#shared/stripe'
 import type { AdminProject } from '~~/server/utils/projects'
 
 export type InboxEndUser = { id: string, externalId: string, name: string, email: string }
 type HumanAgent = { id: string, username: string, email: string, name: string }
 
-// `lastUserMessage` prefills a board item filed from here.
-const props = defineProps<{ conversation: Conversation, user: InboxEndUser, project: AdminProject | null, type: ConversationType | null, agents: HumanAgent[], lastUserMessage?: string }>()
-const emit = defineEmits<{ triage: [body: Record<string, unknown>], action: [action: ConversationAction] }>()
+// `lastUserMessage` prefills a board item or a feedback post filed from here. `context` is the
+// hub read (GET …/context), loaded once per open conversation by the inbox page.
+const props = defineProps<{ conversation: Conversation, user: InboxEndUser, project: AdminProject | null, type: ConversationType | null, agents: HumanAgent[], lastUserMessage?: string, context?: ConversationContextResponse | null }>()
+const emit = defineEmits<{ triage: [body: Record<string, unknown>], action: [action: ConversationAction], open: [conversationId: string], feedback: [posts: HubFeedbackPost[]] }>()
 
 // A property row: the value reads as plain text until you hover it.
 const property = { base: 'h-8 w-full rounded-md ps-8 text-[13px] text-default', trailing: 'opacity-0 transition-opacity group-hover:opacity-100' }
@@ -114,7 +146,14 @@ const tags = ref<string[]>([])
 const fieldValues = ref<Record<string, unknown>>({})
 const recentErrors = ref<{ id: string, title: string, url: string, conversationId: string }[]>([])
 const { api } = useAgent()
-const { t } = useI18n()
+const { t, te } = useI18n()
+
+const SUB_COLOR: Record<string, 'success' | 'info' | 'warning' | 'error' | 'neutral'> = { active: 'success', trialing: 'info', past_due: 'warning', unpaid: 'error', canceled: 'neutral' }
+// Stripe's status comes from outside the panel; one we have no word for shows as sent.
+const stripeStatus = (status: string) => (te(`contacts.stripeStatus.${status}`) ? t(`contacts.stripeStatus.${status}`) : status.replace('_', ' '))
+// A project that disconnected Stripe keeps the synced numbers but no longer knows their currency.
+const mrrText = computed(() => (props.context?.billing?.currency ? formatMoney(props.context.billing.mrr, props.context.billing.currency) : String(props.context?.billing?.mrr ?? 0)))
+const shortDate = (value: string | null) => (value ? new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '')
 
 const initialsOf = (name: string) => (name || '?').trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase()
 const statusItems = computed(() => (props.type?.statuses || [{ key: 'open', label: t('inbox.open') }, { key: 'done', label: t('inbox.done') }]).map(item => ({ label: item.label, value: item.key })))

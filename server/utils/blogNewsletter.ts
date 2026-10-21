@@ -4,6 +4,7 @@ import { blogPostUrl } from './blog'
 import { blogEmailHtml, literalBraceText } from './blogRender'
 import type { CampaignSnapshot } from './campaigns'
 import { escapeHtml } from './messageEmail'
+import { lookOf } from './projects'
 import { MASTER, useParse, type ParseObject } from './parse'
 
 // A blog post as a campaign's email. Campaigns usually send a designed
@@ -19,9 +20,10 @@ function literalBraces(html: string): string {
 const pad = (top: number, bottom: number) => ({ top, right: 32, bottom, left: 32 })
 
 export function blogNewsletterDocument(project: ParseObject, post: ParseObject): EmailDocument {
-  const name = String(project.get('name') || '')
-  const accent = /^#[0-9a-f]{6}$/i.test(String((project.get('theme') as { accent?: string } | undefined)?.accent || '')) ? String((project.get('theme') as { accent: string }).accent) : '#4f46e5'
-  const logo = [String(project.get('brandLogoUrl') || ''), String(project.get('iconUrl') || '')].find(url => /^https?:\/\//.test(url)) || ''
+  const look = lookOf(project)
+  const name = look.name
+  const accent = look.accent
+  const logo = look.logoUrl || look.iconUrl
   const title = literalBraceText(String(post.get('title') || ''))
   const cover = String(post.get('coverImageUrl') || '')
   const url = blogPostUrl(project, post)

@@ -1,12 +1,14 @@
 import { createError, getQuery, getRouterParam, type H3Event } from 'h3'
 import { aiTldr, applySectionEdits, checkCoverage, composeDocument, humanTldr, mergeRecomposed, newSectionId, sectionsToMarkdown, type SectionEdit } from '#shared/legal/compose'
-import { normalizeLegalConfig, validateLegalConfig, withEntityDefaults } from '#shared/legal/config'
+import { companyEntity } from '#shared/company'
+import { normalizeLegalConfig, withEntityDefaults } from '#shared/legal/config'
 import { LEGAL_IMPORT_FORMATS, parseImported, type LegalImportFormat } from '#shared/legal/import'
 import { normalizeLocale } from '#shared/locales'
 import { LEGAL_DOC_TYPES, type LegalAnswers, type LegalDocType, type LegalSection, type LegalTldr } from '#shared/legal/types'
 import { validateAnswers } from '#shared/legal/wizard'
 import { answeredRegions } from '#shared/legal/when'
 import { nextChangelogSlug } from './changelogRender'
+import { applyCompany, companyOf } from './company'
 import { renderLegalHtml } from './legalRender'
 
 // Hosted legal documents: the store behind /v1/admin/legal and the public pages.
@@ -297,34 +299,46 @@ export function sharedAnswersOf(project: ParseObject): LegalAnswers {
   return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as LegalAnswers : {}
 }
 
-/** The answers a project's saved identity and shared answers already supply, so a wizard can start pre-filled. */
-export function legalDefaults(project: ParseObject): LegalAnswers {
-  return withEntityDefaults({ ...sharedAnswersOf(project) }, normalizeLegalConfig(project.get('legal')), { name: String(project.get('name') || ''), siteUrl: String(project.get('siteUrl') || '') })
+/** The legal settings with the operator's identity taken from the company profile (the one place it is edited). */
+function legalConfigOf(project: ParseObject) {
+  const config = normalizeLegalConfig(project.get('legal'))
+  return { ...config, entity: companyEntity(companyOf(project)) }
 }
 
-const ENTITY_ANSWERS = { entity_name: 'name', entity_address: 'address', contact_email: 'email', dpo_contact: 'dpo' } as const
+/** The answers a project's company profile and shared answers already supply, so a wizard can start pre-filled. */
+export function legalDefaults(project: ParseObject): LegalAnswers {
+  return withEntityDefaults({ ...sharedAnswersOf(project) }, legalConfigOf(project), { name: String(project.get('name') || ''), siteUrl: String(project.get('siteUrl') || '') })
+}
+
+const ENTITY_ANSWERS = { entity_name: 'legalName', entity_address: 'address', contact_email: 'email', dpo_contact: 'dpo' } as const
 
 /**
  * Remembers a document's (already cleaned) answers for the project's next ones.
- * Who you are goes to the identity, which "Identity and look" edits; the app name
- * and website stay the project's own. A document keeps its own copy either way.
+ * Who you are goes to the company profile (Project settings → Company, also what
+ * campaigns print); the app name and website stay the project's own. A document
+ * keeps its own copy either way.
  */
 export async function saveSharedAnswers(project: ParseObject, answers: LegalAnswers): Promise<void> {
   const shared = { ...sharedAnswersOf(project) }
-  const entity: Record<string, string> = {}
+  const company: Record<string, string> = {}
   for (const [key, value] of Object.entries(answers)) {
     if (key in ENTITY_ANSWERS) {
-      if (typeof value === 'string' && value) entity[ENTITY_ANSWERS[key as keyof typeof ENTITY_ANSWERS]] = value
+      if (typeof value === 'string' && value) company[ENTITY_ANSWERS[key as keyof typeof ENTITY_ANSWERS]] = value
     } else if (key !== 'app_name' && key !== 'website_url') shared[key] = value
   }
   project.set('legalAnswers', shared)
-  if (Object.keys(entity).length) project.set('legal', validateLegalConfig({ entity }, normalizeLegalConfig(project.get('legal'))).config)
+  // A wizard answer that does not fit the profile (a long address) is dropped rather than failing the document that was just saved.
+  for (const [key, value] of Object.entries(company)) {
+    try {
+      applyCompany(project, { [key]: value })
+    } catch {}
+  }
   await project.save(null, MASTER)
 }
 
 /** Raw wizard answers → cleaned answers, with the project's saved identity filling gaps. 400 when a required answer is missing. */
 export function prepareAnswers(project: ParseObject, type: LegalDocType, raw: unknown): LegalAnswers {
-  const config = normalizeLegalConfig(project.get('legal'))
+  const config = legalConfigOf(project)
   const merged = withEntityDefaults({ ...sharedAnswersOf(project), ...(raw && typeof raw === 'object' ? raw : {}) } as LegalAnswers, config, { name: String(project.get('name') || ''), siteUrl: String(project.get('siteUrl') || '') })
   const { answers, errors } = validateAnswers(type, merged)
   if (errors.length) badRequest(errors.join('; '))

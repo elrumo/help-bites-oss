@@ -230,6 +230,14 @@ const SCHEMAS = {
       legalAnswers: { type: 'Object' },
       // The brand kit: words, colours, fonts, guidelines and the public page's look (shared/brand.ts). Files are BrandAsset rows.
       brand: { type: 'Object' },
+      // The kit's own logo and icon files { logoUrl, logoDarkUrl, iconUrl }, kept here so pages that wear the project's look need no file query (shared/projectLook.ts).
+      brandLook: { type: 'Object' },
+      // Who is behind the product, written once: { name, legalName, address, email, phone, website, dpo }. Legal and campaigns read it (shared/company.ts).
+      company: { type: 'Object' },
+      // The public pages of the published legal documents { privacyUrl, termsUrl, cookiesUrl, refundUrl }, kept here so email reads them without a query (server/utils/legalLinks.ts).
+      legalLinks: { type: 'Object' },
+      // The public hub page and the chat widget's Home tab { enabled, title, tagline, sections, links, widgetHome } (shared/hub.ts).
+      hub: { type: 'Object' },
       // Pages and CMS settings { previewUrl, brief } (shared/cms/content.ts).
       cms: { type: 'Object' },
       flags: { type: 'Array' },
@@ -308,6 +316,8 @@ const SCHEMAS = {
       // From the identity token: what feedback boards show and mention by.
       username: { type: 'String' },
       avatarUrl: { type: 'String' },
+      // The language to write to them in, a tag such as 'es' or 'pt-BR' (shared/locales.ts).
+      language: { type: 'String' },
       // false = opted out of feedback email (status changes, comments, mentions).
       feedbackEmails: { type: 'Boolean' },
       lastSeenAt: { type: 'Date' },
@@ -484,11 +494,31 @@ const SCHEMAS = {
       status_scheduled: { status: 1, scheduledAt: 1 }
     }
   },
-  // The event webhook's outbox (server/utils/webhooks.ts): one row per event,
+  // A webhook destination with its own signing secret and event filter
+  // (server/utils/webhooks.ts): `events` holds `*`, `group.*` or exact types
+  // from shared/domainEvents.ts. The project's original single URL stays on Project.
+  WebhookEndpoint: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      url: { type: 'String' },
+      secret: { type: 'String' },
+      description: { type: 'String' },
+      events: { type: 'Array' },
+      enabled: { type: 'Boolean' },
+      lastStatus: { type: 'String' },
+      lastDeliveryAt: { type: 'Date' }
+    },
+    indexes: {
+      project_created: { _p_project: 1, _created_at: 1 }
+    }
+  },
+  // The event webhook's outbox (server/utils/webhooks.ts): one row per event
+  // and destination (`endpoint`, or none for the project's original URL),
   // retried with backoff until delivered or given up on.
   WebhookDelivery: {
     fields: {
       project: { type: 'Pointer', targetClass: 'Project' },
+      endpoint: { type: 'Pointer', targetClass: 'WebhookEndpoint' },
       type: { type: 'String' },
       payload: { type: 'Object' },
       status: { type: 'String' },
@@ -580,7 +610,9 @@ const SCHEMAS = {
       unreadByUser: { type: 'Number' },
       userReadAt: { type: 'Date' },
       agentReadAt: { type: 'Date' },
-      archivedAt: { type: 'Date' }
+      archivedAt: { type: 'Date' },
+      // Feedback posts the team linked to it (ids), changed with $addToSet / $pull; ids that no longer resolve are skipped on read.
+      feedbackPostIds: { type: 'Array' }
     },
     indexes: {
       project_status_last: { _p_project: 1, status: 1, lastMessageAt: -1 },
@@ -601,6 +633,18 @@ const SCHEMAS = {
       assignable: { type: 'Boolean' }, userCanReopen: { type: 'Boolean' }, defaultPriority: { type: 'String' }
     },
     indexes: { project_key: { _p_project: 1, key: 1 } }
+  },
+  // Canned replies an operator inserts into the reply box; `{{firstName}}` and `{{name}}` are filled from the customer.
+  SavedReply: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      title: { type: 'String' },
+      body: { type: 'String' },
+      // Lowercase handle without a slash; '' when none.
+      shortcut: { type: 'String' },
+      createdBy: { type: 'Pointer', targetClass: '_User' }
+    },
+    indexes: { project_title: { _p_project: 1, title: 1 } }
   },
   // --- Knowledge: models, the path tree, FAQs and their source documents. ---
   // Ordered before Message so Message.supportAgent's target exists on a fresh
@@ -689,7 +733,9 @@ const SCHEMAS = {
       indexedAt: { type: 'Date' },
       metadata: { type: 'Object' },
       createdBy: { type: 'Pointer', targetClass: '_User' },
-      lastProcessedAt: { type: 'Date' }
+      lastProcessedAt: { type: 'Date' },
+      // The conversation an FAQ was saved from (origin `conversation`).
+      conversationId: { type: 'String' }
     },
     indexes: {
       model_status: { _p_knowledgeModel: 1, status: 1 },
@@ -891,9 +937,14 @@ const SCHEMAS = {
       public: { type: 'Boolean' },
       feedbackPostIds: { type: 'Array' },
       conversationIds: { type: 'Array' },
+      // Errors this item was filed from: [{ provider, issueId, linkId, title, url }], and the same issues as
+      // "provider:issueId" strings, which is what filing again looks up (Parse cannot query inside the objects).
+      errorRefs: { type: 'Array' },
+      errorKeys: { type: 'Array' },
       completedAt: { type: 'Date' }
     },
     indexes: {
+      project_error_keys: { _p_project: 1, errorKeys: 1 },
       project_status_rank: { _p_project: 1, status: 1, rank: 1 },
       project_number: { _p_project: 1, number: 1 },
       project_posts: { _p_project: 1, feedbackPostIds: 1 },
@@ -970,7 +1021,10 @@ const SCHEMAS = {
       // Subscribers' mail: stamped when an entry is published (never from an import), cleared
       // by stamping `notifiedAt` once the sweep has told them. Not `publishedAt`: that can be backdated.
       notifyPendingSince: { type: 'Date' },
-      notifiedAt: { type: 'Date' }
+      notifiedAt: { type: 'Date' },
+      // The followers of the posts it answers were mailed (or it was too old to mail): claimed under a lock before sending,
+      // so they hear at most once (server/utils/changelogFollowers.ts).
+      followersNotifiedAt: { type: 'Date' }
     },
     indexes: {
       project_notify: { _p_project: 1, status: 1, notifyPendingSince: 1 },
@@ -1054,6 +1108,23 @@ const SCHEMAS = {
     },
     indexes: {
       project_key: { _p_project: 1, key: 1 }
+    }
+  },
+  // Who finished (or skipped) an onboarding flow, reported by the client with the person's identity
+  // token (POST /v1/onboarding/<pk>/<key>/complete). One row per person and flow; the latest outcome wins.
+  OnboardingCompletion: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      endUser: { type: 'Pointer', targetClass: 'EndUser' },
+      flow: { type: 'String' },
+      // completed | skipped
+      outcome: { type: 'String' },
+      version: { type: 'Number' },
+      at: { type: 'Date' }
+    },
+    indexes: {
+      project_user_flow: { _p_project: 1, _p_endUser: 1, flow: 1 },
+      project_outcome: { _p_project: 1, outcome: 1 }
     }
   },
   // A pricing table (server/utils/pricing.ts), read at /v1/pricing/<publicKey>/<key> and hosted at
@@ -1414,6 +1485,31 @@ const SCHEMAS = {
     indexes: {
       project_kind_status: { _p_project: 1, kind: 1, status: 1 },
       project_window: { _p_project: 1, kind: 1, windowEnd: -1 }
+    }
+  },
+  // --- GitHub activity that names a project's items: a commit pushed to the default branch or a pull
+  // request merged into it that mentions `#12` (server/utils/githubRefs.ts). One row per
+  // (target, kind, ref), checked on write. `targetId` is a BoardItem or FeedbackPost id per `targetKind`. ---
+  GithubRef: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      // board | feedback
+      targetKind: { type: 'String' },
+      targetId: { type: 'String' },
+      // commit | pull_request
+      kind: { type: 'String' },
+      // The commit sha, or the pull request number.
+      ref: { type: 'String' },
+      repo: { type: 'String' },
+      title: { type: 'String' },
+      url: { type: 'String' },
+      // A closing keyword (fixes #12) came with it.
+      closes: { type: 'Boolean' },
+      at: { type: 'Date' }
+    },
+    indexes: {
+      project_target: { _p_project: 1, targetKind: 1, targetId: 1, at: -1 },
+      project_target_ref: { _p_project: 1, targetKind: 1, targetId: 1, kind: 1, ref: 1 }
     }
   },
   // --- Email templates. No project = a master; `master` set = a project's

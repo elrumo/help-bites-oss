@@ -75,7 +75,8 @@ with that one document.
 Reuse only fills what a document asks. A question only one kind of document has,
 like the refund window or the governing law, is asked for that document and
 never leaks into the others. Who you are (name, address, contact, DPO) is saved
-to **Identity and look** instead, and answers you send always win over saved
+to the project's **company profile** instead (Project settings → Company, also
+what campaigns print), and answers you send always win over saved
 ones. `GET /v1/admin/legal/wizard/:type?project=ID` returns the pre-filled
 `defaults` and `shared: true` once anything is remembered.
 
@@ -253,10 +254,26 @@ curl -s -X PATCH $HOST/v1/admin/projects/PROJECT_ID -H "authorization: Bearer $K
 }'
 ```
 
-`entity` pre-fills the wizard for every document. `accent` falls back to the
-project's theme colour, `logoUrl` to its brand logo, and `font` is one of
-`system`, `serif` or `mono`. Pages follow the reader's light or dark setting and
-print cleanly.
+`entity` pre-fills the wizard for every document. It is the project's
+**company profile** (`company` on the project: `name`, `legalName`, `address`,
+`email`, `phone`, `website`, `dpo`), the one place those details live: legal
+documents, campaign footers (`{{project.address}}`) and email templates
+(`{{project.company}}`, `{{project.email}}`) all read it. Sending `legal.entity`
+still works and updates it; `PATCH` `company` to set the rest. A project that
+predates it keeps what it had, and the profile starts from it.
+
+`accent` and `logoUrl` are optional overrides for these pages only. Left empty
+they follow the project's [Brand kit](BRAND.md), like every other public page;
+`font` is one of `system`, `serif` or `mono`. Pages follow the reader's light or
+dark setting and print cleanly.
+
+### Links to your documents in email
+
+Once a document is published, `{{project.privacyUrl}}`, `{{project.termsUrl}}`,
+`{{project.cookiesUrl}}` and `{{project.refundUrl}}` in any email template fill in
+with its public page (blank when there is none). They are kept on the project and
+refreshed whenever a document is published, unpublished, renamed (its slug) or
+deleted; see [Email](EMAIL.md#variables).
 
 ## API reference
 

@@ -11,6 +11,8 @@ struct SegmentsList: View {
   @State private var error = ""
   @State private var editing: SegmentEditorTarget?
   @State private var deleting: ContactSegment?
+  /// The segment whose members are being put on a sequence.
+  @State private var sequenceFor: ContactSegment?
 
   var body: some View {
     List {
@@ -39,8 +41,12 @@ struct SegmentsList: View {
         }
         .buttonStyle(.plain)
         .linearRow()
-        .contextMenu { Button("Delete", role: .destructive) { deleting = segment } }
+        .contextMenu {
+          Button { sequenceFor = segment } label: { Label("Add everyone to a sequence", systemImage: "text.badge.plus") }
+          Button("Delete", role: .destructive) { deleting = segment }
+        }
         .swipeActions { Button("Delete", role: .destructive) { deleting = segment } }
+        .swipeActions(edge: .leading) { Button { sequenceFor = segment } label: { Label("Add to sequence", systemImage: "text.badge.plus") }.tint(Theme.accent) }
       }
     }
     .linearList()
@@ -50,6 +56,7 @@ struct SegmentsList: View {
     .sheet(item: $editing) { target in
       SegmentEditor(projectId: projectId, segment: target.segment) { Task { await load() } }
     }
+    .sheet(item: $sequenceFor) { segment in AddToSequenceSheet(projectId: projectId, segment: segment) }
     .confirmationDialog("Delete “\(deleting?.name ?? "")”?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible, presenting: deleting) { segment in
       Button("Delete segment", role: .destructive) { Task { await remove(segment) } }
     } message: { _ in Text("Campaigns that target it will send to all subscribers until you pick another.") }
@@ -188,6 +195,11 @@ struct SegmentEditor: View {
         Picker("Value", selection: textBinding(rule)) {
           ForEach(ContactOriginKind.allCases) { Text($0.label).tag($0.rawValue) }
         }
+      } else if kind == .flag {
+        Picker("Value", selection: textBinding(rule)) {
+          Text("Yes").tag("yes")
+          Text("No").tag("no")
+        }
       } else if rule.wrappedValue.field == "leadForms", !forms.isEmpty {
         Picker("Form", selection: textBinding(rule)) {
           Text("Pick a form").tag("")
@@ -230,7 +242,7 @@ struct SegmentEditor: View {
     rule.wrappedValue.field = token == Self.attributeToken ? SegmentSpec.attributePrefix : token
     let ops = SegmentSpec.ops(SegmentSpec.kind(rule.wrappedValue.field))
     if !ops.contains(rule.wrappedValue.op) { rule.wrappedValue.op = ops[0] }
-    rule.wrappedValue.value = .string(rule.wrappedValue.field == "subscription" ? "subscribed" : rule.wrappedValue.field == "origin" ? "lead_form" : "")
+    rule.wrappedValue.value = .string(rule.wrappedValue.field == "subscription" ? "subscribed" : rule.wrappedValue.field == "origin" ? "lead_form" : SegmentSpec.kind(rule.wrappedValue.field) == .flag ? "yes" : "")
   }
 
   /// Rules still waiting for their value don't count yet, as on the web.

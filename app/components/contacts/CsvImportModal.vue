@@ -22,7 +22,7 @@ const BATCH = 1000
 const fileName = ref('')
 const columns = ref<string[]>([])
 const records = ref<Record<string, string>[]>([])
-const mapping = reactive<Required<Pick<ContactFieldMapping, 'email' | 'externalId' | 'name' | 'tags' | 'subscribed'>>>({ email: '', externalId: '', name: '', tags: '', subscribed: '' })
+const mapping = reactive<Required<Pick<ContactFieldMapping, 'email' | 'externalId' | 'name' | 'language' | 'tags' | 'subscribed'>>>({ email: '', externalId: '', name: '', language: '', tags: '', subscribed: '' })
 const asAttributes = ref<string[]>([])
 const optedIn = ref(false)
 const fillOnly = ref(true)
@@ -37,7 +37,7 @@ function reset() {
   fileName.value = ''
   columns.value = []
   records.value = []
-  Object.assign(mapping, { email: '', externalId: '', name: '', tags: '', subscribed: '' })
+  Object.assign(mapping, { email: '', externalId: '', name: '', language: '', tags: '', subscribed: '' })
   asAttributes.value = []
   optedIn.value = false
   fillOnly.value = true
@@ -55,7 +55,7 @@ async function pick(event: Event) {
   columns.value = parsed.columns
   records.value = parsed.records
   const guess = guessMapping(parsed.columns)
-  Object.assign(mapping, { email: guess.email || '', externalId: guess.externalId || '', name: guess.name || '', tags: guess.tags || '', subscribed: guess.subscribed || '' })
+  Object.assign(mapping, { email: guess.email || '', externalId: guess.externalId || '', name: guess.name || '', language: guess.language || '', tags: guess.tags || '', subscribed: guess.subscribed || '' })
   const used = new Set(Object.values(guess).filter(Boolean))
   asAttributes.value = parsed.columns.filter(c => !used.has(c))
 }
@@ -65,6 +65,7 @@ const fieldMapping = computed<ContactFieldMapping>(() => ({
   email: mapping.email || undefined,
   externalId: mapping.externalId || undefined,
   name: mapping.name || undefined,
+  language: mapping.language || undefined,
   tags: mapping.tags || undefined,
   subscribed: mapping.subscribed || undefined,
   attributes: Object.fromEntries(asAttributes.value.filter(c => !Object.values(mapping).includes(c)).map(c => [attributeKeyFor(c), c]))
@@ -140,6 +141,7 @@ async function run() {
           <UFormField :label="$t('contacts.form.email')"><OptionalSelect v-model="mapping.email" :items="columnItems" class="w-full" /></UFormField>
           <UFormField :label="$t('contacts.form.userId')" :hint="$t('contacts.form.userIdHint')"><OptionalSelect v-model="mapping.externalId" :items="columnItems" class="w-full" /></UFormField>
           <UFormField :label="$t('common.name')"><OptionalSelect v-model="mapping.name" :items="columnItems" class="w-full" /></UFormField>
+          <UFormField :label="$t('contacts.csv.language')" :hint="$t('contacts.csv.languageHint')"><OptionalSelect v-model="mapping.language" :items="columnItems" class="w-full" /></UFormField>
           <UFormField :label="$t('contacts.form.tags')" :hint="$t('contacts.csv.tagsHint')"><OptionalSelect v-model="mapping.tags" :items="columnItems" class="w-full" /></UFormField>
           <UFormField :label="$t('contacts.csv.optedIn')" :hint="$t('contacts.csv.optedInHint')"><OptionalSelect v-model="mapping.subscribed" :items="columnItems" class="w-full" /></UFormField>
         </div>

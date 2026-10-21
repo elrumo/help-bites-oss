@@ -5,6 +5,7 @@ import {
   type RevenueRange, type RevenueReport, type StripeConnection, type StripeCustomerDto, type StripePaymentDto, type StripeSubscriptionDto, type StripeSubscriptionStatus
 } from '#shared/stripe'
 import { contactQuery, upsertContacts } from './contacts'
+import { billingContactId, contactIdsForBilling } from './contactJoins'
 import { MASTER, iso, useParse, type ParseObject } from './parse'
 import { runExclusive, useRedis } from './redis'
 import { readCredential, storeCredential } from './secrets'
@@ -398,6 +399,10 @@ export async function revenueReport(project: ParseObject, account: ParseObject, 
   const mrr = fromMinor((Number(sub('active')?.mrr) || 0) + (Number(sub('past_due')?.mrr) || 0), currency)
   const byMonth = new Map(monthly.map(m => [String(m.objectId), m]))
   const mrrs = mrrByMonth(months, spans.map(s => ({ ...s.objectId, mrr: Number(s.mrr) || 0, monthly: Number(s.monthly) || 0 })))
+  // Rows name a Stripe customer; the people behind them are looked up once for the page.
+  const topRows = top.map(t => ({ customerId: String(t.objectId), email: String(t.email || '') }))
+  const recentRows = recent.map(serializePayment)
+  const joins = await contactIdsForBilling(project, [...topRows, ...recentRows])
   return {
     currency, range, gross, refunds, net: Math.round((gross - refunds) * 100) / 100,
     payments: Number(period[0]?.payments) || 0,
@@ -408,8 +413,8 @@ export async function revenueReport(project: ParseObject, account: ParseObject, 
     newSubscribers: started, churned: canceled,
     months: months.map((month, i) => ({ month, net: fromMinor(Number(byMonth.get(month)?.net) || 0, currency), payments: Number(byMonth.get(month)?.payments) || 0, mrr: fromMinor(mrrs[i] || 0, currency) })),
     plans: plans.map(p => ({ plan: String(p.objectId || 'Subscription'), subscribers: Number(p.n) || 0, mrr: fromMinor(Number(p.mrr) || 0, currency) })),
-    topCustomers: top.map(t => ({ customerId: String(t.objectId), email: String(t.email || ''), net: fromMinor(Number(t.net) || 0, currency), payments: Number(t.payments) || 0 })),
-    recent: recent.map(serializePayment),
+    topCustomers: top.map((t, i) => ({ customerId: String(t.objectId), contactId: billingContactId(joins, topRows[i]!), email: String(t.email || ''), net: fromMinor(Number(t.net) || 0, currency), payments: Number(t.payments) || 0 })),
+    recent: recentRows.map(p => ({ ...p, contactId: billingContactId(joins, p) })),
     otherCurrencies: currencies.filter(c => c.objectId !== currency && Number(c.net) > 0).map(c => ({ currency: String(c.objectId), net: fromMinor(Number(c.net), String(c.objectId)) }))
   }
 }

@@ -22,6 +22,9 @@ struct ProjectsAdminProject: Decodable, Sendable {
   let board: BoardConfig?
   /// When the chat widget last loaded on a host page; nil until it ever has (or from an older server).
   let widgetSeenAt: String?
+  /// Who is behind the product, and the public hub (shared/company.ts, shared/hub.ts); nil from an older server.
+  let company: CompanyProfile?
+  let hub: HubConfig?
   /// When a signed identity token last arrived from the host's backend; nil until one has (or from an older server).
   let identitySeenAt: String?
   /// Web paths of the sections hidden from the sidebar; nil from an older server.

@@ -1,6 +1,7 @@
 import { blogTitle, type BlogConfig, type BlogSocialNetwork, type PublicBlogPost } from '#shared/blog'
 import { poweredByHtml, type PoweredBy } from './branding'
 import { escapeHtml } from './messageEmail'
+import { lookOf } from './projects'
 
 // The hosted blog at /blog/<pk>, as plain server-rendered HTML in the style of
 // legalPage.ts: readable without JavaScript and by crawlers, and meant to be
@@ -16,13 +17,12 @@ export type BlogPageView = BlogListItem & Pick<PublicBlogPost, 'type' | 'slug' |
 
 /** The project's look, with the blog's own accent and logo over it. */
 export function blogPageProject(project: ParseObject, config: BlogConfig): BlogPageProject {
-  const theme = (project.get('theme') || {}) as { accent?: string }
-  const accent = config.design.accent || String(theme.accent || '')
+  const look = lookOf(project)
   return {
-    name: String(project.get('name') || ''),
+    name: look.name,
     publicKey: String(project.get('publicKey') || ''),
-    accent: /^#[0-9a-f]{6}$/i.test(accent) ? accent : '#4f46e5',
-    logo: [config.design.logoUrl, String(project.get('brandLogoUrl') || ''), String(project.get('iconUrl') || '')].find(url => /^https?:\/\//.test(url)) || ''
+    accent: /^#[0-9a-f]{6}$/i.test(config.design.accent) ? config.design.accent : look.accent,
+    logo: [config.design.logoUrl, look.logoUrl, look.iconUrl].find(url => /^https?:\/\//.test(url)) || ''
   }
 }
 

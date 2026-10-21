@@ -101,6 +101,8 @@ private struct PeopleList: View {
   @State private var open: Contact?
   @State private var importing = false
   @State private var adding = false
+  /// Everyone in the segment being looked at, put on a sequence.
+  @State private var sequencing = false
 
   var body: some View {
     @Bindable var filters = store
@@ -147,6 +149,9 @@ private struct PeopleList: View {
     }
     .toolbar {
       ToolbarItemGroup(placement: .primaryAction) {
+        if let segment = segments.first(where: { $0.id == store.segment }) {
+          Button { sequencing = true } label: { Label("Add everyone in “\(segment.name)” to a sequence", systemImage: "text.badge.plus") }
+        }
         Button { importing = true } label: { Label("Import CSV", systemImage: "square.and.arrow.down") }
         Button { adding = true } label: { Label("Add contact", systemImage: "plus") }
       }
@@ -156,6 +161,7 @@ private struct PeopleList: View {
         if let changed { store.replace(changed) } else { store.remove(contact.id) }
       }
     }
+    .sheet(isPresented: $sequencing) { AddToSequenceSheet(projectId: projectId, segment: segments.first { $0.id == store.segment }) }
     .sheet(isPresented: $importing) { CsvImportSheet(projectId: projectId) { Task { await store.load(projectId, session: session) } } }
     .sheet(isPresented: $adding) { AddContactSheet(projectId: projectId) { contact in
       Task { await store.load(projectId, session: session); open = contact }

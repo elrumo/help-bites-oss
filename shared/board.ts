@@ -65,6 +65,28 @@ export const DEFAULT_BOARD_CONFIG: BoardConfig = {
 
 export type BoardItemPriority = '' | ConversationPriority
 
+/** An error from the project's tracker that this item was filed from (POST /v1/admin/errors/:id/board). */
+export type BoardErrorRef = { provider: string, issueId: string, linkId: string, title: string, url: string }
+
+/** An item files at most this many errors (the same bug reported twice is merged by hand). */
+export const BOARD_ERROR_REFS_MAX = 20
+
+/** What identifies a tracker issue across rows: the same key the error's conversation uses. */
+export function errorRefKey(provider: string, issueId: string): string {
+  return `${provider}:${issueId}`
+}
+
+/** Stored refs, leniently: anything malformed is dropped. */
+export function readErrorRefs(value: unknown): BoardErrorRef[] {
+  if (!Array.isArray(value)) return []
+  const text = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '')
+  return value.flatMap((entry) => {
+    const raw = record(entry)
+    const ref = { provider: text(raw.provider, 40), issueId: text(raw.issueId, 100), linkId: text(raw.linkId, 40), title: text(raw.title, 200), url: text(raw.url, 1000) }
+    return ref.provider && ref.issueId ? [ref] : []
+  }).slice(0, BOARD_ERROR_REFS_MAX)
+}
+
 export type BoardLinkedPost = FeedbackPostRef & { voteCount: number, hidden: boolean }
 export type BoardLinkedConversation = { id: string, subject: string, status: string, endUserName: string }
 
@@ -88,6 +110,8 @@ export type BoardItem = {
   public: boolean
   feedbackPostIds: string[]
   conversationIds: string[]
+  /** Errors from the tracker this item was filed from; empty for an ordinary item. */
+  errorRefs: BoardErrorRef[]
   /** Σ of the linked, non-hidden posts' votes. */
   voteCount: number
   /** Linked posts that still exist, hidden ones included (flagged). */

@@ -191,6 +191,7 @@ export function emailSystemPrompt(state: EmailAiState, ctx: EmailAiContext): str
           '## This is a MASTER template',
           'It is designed once and used by many projects, each with its own brand. Never hardcode a product name, logo or website:',
           '- {{project.name}} for the product name, {{project.logoUrl}} as the logo image src, {{project.url}} for links to the product.',
+          '- Footers: {{project.company}} (company name), {{project.address}} (postal address), {{project.email}} (contact address). Legal links: {{project.privacyUrl}}, {{project.termsUrl}}, {{project.cookiesUrl}}, {{project.refundUrl}} are the project\'s published legal pages and are blank when it has none, so wrap them in a link only when the email must link them.',
           '- Primary buttons use the theme brand colour; each project swaps that colour for its own accent automatically, on buttons and on components\' colour fields.',
           '- Copy that differs per project (sign-off, address, support email) goes in variables such as {{footer}} or {{supportEmail}}, with neutral sample values.',
           '- Components you save here are shared with every project.',
@@ -199,7 +200,7 @@ export function emailSystemPrompt(state: EmailAiState, ctx: EmailAiContext): str
       : [
           '## This template belongs to one project',
           `Project: ${brand?.name || 'unnamed'}${brand?.siteUrl ? ` (${brand.siteUrl})` : ''}${brand?.theme?.accent ? `, brand accent ${brand.theme.accent}` : ''}.`,
-          '{{project.name}}, {{project.logoUrl}} and {{project.url}} still work and fill in from the project settings.',
+          '{{project.name}}, {{project.logoUrl}} and {{project.url}} still work and fill in from the project settings, and so do {{project.company}}, {{project.address}}, {{project.email}} and the legal page links {{project.privacyUrl}}, {{project.termsUrl}}, {{project.cookiesUrl}}, {{project.refundUrl}} (blank when the project has no such document).',
           'Components you save here belong to this project unless you pass shared: true (only for parts with nothing project-specific in them).'
         ].join('\n'),
     '',

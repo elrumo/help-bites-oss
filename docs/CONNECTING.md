@@ -27,6 +27,7 @@ JWT for the signed-in user. Claims:
 | `email` | optional; enables email notifications for that user |
 | `username` | optional; the public handle feedback boards show and `@mention` by — never an email address |
 | `avatar` | optional; an http(s) image URL for feedback boards |
+| `locale` | optional; the person's language, a tag such as `es` or `pt-BR`. It fills the contact's language the first time (one set in the panel or over the API is never replaced), and campaigns and sequences then send the matching translation of a template. See [Languages](LANGUAGES.md#a-contacts-language) |
 | `role` | optional; `admin` lets one of your staff moderate the feedback board |
 | `iat`, `exp` | issued-at and expiry (an hour is plenty) |
 
@@ -76,6 +77,23 @@ tokens minted with the old one stop verifying immediately.
 
 Only origins listed on the project can host the widget; anything else sees an
 error inside the frame and never gets a token.
+
+### One tag for everything
+
+Instead of a script per feature, `helpbites.js` asks the project what it has and
+adds the chat, the feedback board, the changelog and onboarding that are set up:
+
+```html
+<script src="https://YOUR-SUPPORT-HOST/helpbites.js" data-project="pk_…" async></script>
+```
+
+It adds the chat by default; name more with `data-features="chat,feedback"` or
+give one its own setting (`data-changelog-target="#changelog"`, `data-flow="welcome"`).
+`data-position`, `data-accent`, `data-mode`, `data-token` and `data-locale` pass
+through to the scripts, `HelpBites.push([...])` keeps working, and a script
+already on the page is never added twice. The project can also turn on a Home
+tab in the chat (what's new, top feedback, onboarding) and a public page at
+`/hub/<pk>`. All of it is in [Public hub and the one-tag loader](HUB.md).
 
 ### Your own UI
 
