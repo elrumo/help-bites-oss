@@ -239,6 +239,7 @@ private struct InboxTranscript: View {
   @Environment(Workspace.self) private var workspace
   @State private var preview: PreviewItem?
   @State private var unsending: Message?
+  @State private var savingFaq: Message?
   // Only messages that arrive while the transcript is open pop in; the backlog is already there.
   @State private var openedAt = Date().ISO8601Format()
 
@@ -288,6 +289,7 @@ private struct InboxTranscript: View {
       }
     }
     .fullScreenCover(item: $preview) { ImagePreview(url: $0.url) }
+    .sheet(item: $savingFaq) { InboxFaqSheet(message: $0, messages: messages).environment(workspace) }
     .confirmationDialog("Delete this message?", isPresented: Binding(get: { unsending != nil }, set: { if !$0 { unsending = nil } }), titleVisibility: .visible, presenting: unsending) { message in
       Button("Delete", role: .destructive) { Task { await store.unsend(message) } }
     } message: { _ in
@@ -376,6 +378,9 @@ private struct InboxTranscript: View {
       Button { withAnimation(.snappy) { threadId = threads.rootOf[message.id] ?? message.id } } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
       if !message.body.isEmpty {
         Button { Clipboard.copy(message.body) } label: { Label("Copy", systemImage: "doc.on.doc") }
+      }
+      if message.sender == "agent", !note, !message.body.isEmpty {
+        Button { savingFaq = message } label: { Label("Save as FAQ", systemImage: "text.badge.plus") }
       }
       if message.sender == "agent" {
         Button(role: .destructive) { unsending = message } label: { Label("Delete", systemImage: "trash") }
@@ -551,6 +556,11 @@ private struct InboxTranscript: View {
       let title = event["title"]?.inboxText ?? ""
       let item = "\(number.isEmpty ? "" : "#\(number) ")\(title.isEmpty ? "an item" : title)"
       return event["type"]?.inboxText == "board.linked" ? "Linked to board item \(item)" : "Unlinked from board item \(item)"
+    case "feedback.linked", "feedback.unlinked":
+      let number = event["number"]?.inboxText ?? ""
+      let title = event["title"]?.inboxText ?? ""
+      let post = "\(number.isEmpty ? "" : "#\(number) ")\(title.isEmpty ? "a post" : title)"
+      return event["type"]?.inboxText == "feedback.linked" ? "Linked to feedback post \(post)" : "Unlinked from feedback post \(post)"
     default:
       return "Ticket updated"
     }
@@ -579,6 +589,9 @@ private struct InboxComposer: View {
   @State private var picks: [PhotosPickerItem] = []
   @State private var images: [InboxPickedImage] = []
   @State private var sending = false
+  @State private var picking = false
+  @State private var drafting = false
+  @State private var draftNote = ""
   // Kept until a send succeeds, so retrying the same draft can't post it twice.
   @State private var clientId = InboxComposer.newClientId()
   @FocusState private var focused: Bool
@@ -596,6 +609,7 @@ private struct InboxComposer: View {
       if let replyTarget { banner(replyTarget) }
       if !note, !images.isEmpty { thumbnails }
       card(allowsImages: allowsImages)
+      if !draftNote.isEmpty { Text(draftNote).font(.lnCaption).foregroundStyle(Theme.warning).padding(.horizontal, 4) }
       footer(email: email)
     }
     .padding(.horizontal, 16)
@@ -606,6 +620,10 @@ private struct InboxComposer: View {
     .onAppear { notify = !email.isEmpty }
     .onChange(of: email) { _, value in notify = !value.isEmpty }
     .onChange(of: threadId) { _, id in if !id.isEmpty { focused = true } }
+    .sheet(isPresented: $picking) {
+      InboxReplyPicker(conversationId: conversation.id, projectId: conversation.projectId, customerName: customerName(store)) { insert($0) }
+        .environment(workspace)
+    }
     .onChange(of: picks) { _, items in
       guard !items.isEmpty else { return }
       picks = []
@@ -668,6 +686,22 @@ private struct InboxComposer: View {
         .disabled(images.count >= 4)
         .accessibilityLabel("Attach images")
       }
+      Button { picking = true } label: {
+        Image(systemName: "text.bubble").font(.system(size: 16)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Circle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("Insert a saved reply or FAQ")
+      Button { Task { await writeDraft() } } label: {
+        ZStack {
+          if drafting { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles").font(.system(size: 16)).foregroundStyle(Theme.textMuted) }
+        }
+        .frame(width: 32, height: 32)
+        .contentShape(Circle())
+      }
+      .buttonStyle(.plain)
+      .disabled(note || drafting)
+      .opacity(note ? 0.4 : 1)
+      .accessibilityLabel("Draft a reply with AI")
       TextField(note ? "Add an internal note…" : replyTarget == nil ? "Reply to the customer…" : "Reply…", text: $draft, axis: .vertical)
         .font(.lnBody)
         .lineLimit(1...6)
@@ -732,7 +766,35 @@ private struct InboxComposer: View {
       if draft == sentDraft { draft = "" }
       images.removeAll { image in sent.contains { $0.id == image.id } }
       clientId = Self.newClientId()
+      draftNote = ""
       if asNote { note = false }
+    }
+  }
+
+  /// The saved reply or FAQ goes after what is already typed, never over it.
+  private func insert(_ text: String) {
+    let typed = draft.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
+    draft = typed.isEmpty ? text : "\(typed)\n\n\(text)"
+    focused = true
+  }
+
+  private func customerName(_ store: InboxStore) -> String {
+    if store.selectedId == conversation.id, let name = store.context?.contact.name, !name.isEmpty { return name }
+    return store.endUsers[conversation.endUserId]?.name ?? ""
+  }
+
+  /// An AI draft for the box, from the assistant's knowledge and the public thread. Nothing is sent.
+  private func writeDraft() async {
+    let store = workspace.inbox
+    drafting = true
+    draftNote = ""
+    defer { drafting = false }
+    do {
+      let result = try await store.draftReply()
+      insert(result.draft)
+      if result.sources.isEmpty { draftNote = "No FAQ matched this question, so check the facts." }
+    } catch {
+      store.threadError = error.localizedDescription
     }
   }
 
