@@ -652,6 +652,10 @@
       "intro": "Llegeix els teus repos de GitHub connectats i aquesta entrada, i proposa text. No canvia res fins que l'apliquis.",
       "mode": "Què fer",
       "modes": { "write": "Escriure l'entrada", "continue": "Continuar-la", "improve": "Millorar el text", "meta": "Títol, extracte i etiquetes" },
+      "selectionInstruction": "Com hauria de canviar aquest text?",
+      "selectionPlaceholder": "Fes-lo més curt i proper. Deixa-ho buit per només polir-lo.",
+      "applyInsert": "Insereix el passatge",
+      "applySelection": "Substitueix la selecció",
       "needsText": "Escriu alguna cosa primer.",
       "instruction": "De què hauria de tractar?",
       "instructionPlaceholder": "Anuncia el nostre nou mode sense connexió, per a un públic tècnic.",
@@ -735,7 +739,9 @@
       "link": "Enllaç",
       "image": "Imatge",
       "blocks": "Blocs",
-      "insert": "Insereix"
+      "insert": "Insereix",
+      "ai": "Escriu amb IA",
+      "aiImprove": "Millora amb IA"
     },
     "pages": "Pàgines",
     "newPage": "Nova pàgina",

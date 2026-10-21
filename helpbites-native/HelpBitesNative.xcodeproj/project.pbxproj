@@ -147,6 +147,7 @@
 		C2322DFFB48E44A542D5654A /* ChangelogEntryEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E68E181C52F67F219EECDEB /* ChangelogEntryEditor.swift */; };
 		C3601F91CAAF0CC00C9EA1B3 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6286A8CE54C5D1233C199F9F /* Models.swift */; };
 		C3AB72C554AAE1AC966F6548 /* AIScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C2D92B16E6CF9C9184F1044 /* AIScreen.swift */; };
+		C5A288817C3E9FF83DAA3BDA /* PagesComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49F16D1153129E6D1007F980 /* PagesComponents.swift */; };
 		C6B47F98D4D88BB4599B245E /* ChangelogReplySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6988379E368102A04A8D1C04 /* ChangelogReplySheet.swift */; };
 		CDCC2AA4BF8FDA70CF0BC21C /* ContactsSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = D61B0BFA0A47DAB2DFC0D635 /* ContactsSequence.swift */; };
 		CEC57D705FEAE927D1454A73 /* EmailDesignPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C03509436E1534D77E37EFA /* EmailDesignPanel.swift */; };
@@ -227,6 +228,7 @@
 		4711D007B64E1D08792D8CF0 /* EmailSuppressionsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSuppressionsScreen.swift; sourceTree = "<group>"; };
 		484BE6DDC11D882CA0DFDC64 /* PageEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEntryScreen.swift; sourceTree = "<group>"; };
 		492597D2F640632C745656D6 /* WebhookEndpoints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookEndpoints.swift; sourceTree = "<group>"; };
+		49F16D1153129E6D1007F980 /* PagesComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagesComponents.swift; sourceTree = "<group>"; };
 		4A3174D3E5958969F61FE70C /* PricingTableScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingTableScreen.swift; sourceTree = "<group>"; };
 		4A5C11CF6FAA42F97D74ECB7 /* OnboardingLanguages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLanguages.swift; sourceTree = "<group>"; };
 		4B1B16B79FC4E958C1C0B767 /* InboxChangelogLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxChangelogLinks.swift; sourceTree = "<group>"; };
@@ -771,6 +773,7 @@
 				484BE6DDC11D882CA0DFDC64 /* PageEntryScreen.swift */,
 				CB34A5FCAC463A62FA1A2C45 /* PageFieldInput.swift */,
 				FC04908756B97943FC69EB56 /* PageInspector.swift */,
+				49F16D1153129E6D1007F980 /* PagesComponents.swift */,
 				24B8F292646B302068F6AC60 /* PagesFilesView.swift */,
 				9F8A51F2C508C688A0646E36 /* PagesModels.swift */,
 				22F77869C0FA9669A91CA4F1 /* PagesScreen.swift */,
@@ -978,6 +981,7 @@
 				E7367895A8150077E874F6F2 /* PageEntryScreen.swift in Sources */,
 				54ECEC718EF9BE091D6FC83C /* PageFieldInput.swift in Sources */,
 				8600C6AA7705CD2A9FB5CC6F /* PageInspector.swift in Sources */,
+				C5A288817C3E9FF83DAA3BDA /* PagesComponents.swift in Sources */,
 				7FEF211367A8975198FCF215 /* PagesFilesView.swift in Sources */,
 				1B2A678B377B11BC44500765 /* PagesModels.swift in Sources */,
 				9BF78D6A3E12AA7982DE6BB7 /* PagesScreen.swift in Sources */,

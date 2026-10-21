@@ -652,6 +652,10 @@
       "intro": "接続済みの GitHub リポジトリとこの投稿を読み、文章を提案します。適用するまで何も変更されません。",
       "mode": "やること",
       "modes": { "write": "投稿を書く", "continue": "続きを書く", "improve": "文章を改善", "meta": "タイトル・抜粋・タグ" },
+      "selectionInstruction": "このテキストをどう変えますか？",
+      "selectionPlaceholder": "もっと短く、親しみやすく。空欄なら整えるだけです。",
+      "applyInsert": "この文章を挿入",
+      "applySelection": "選択範囲を置き換える",
       "needsText": "先に何か書いてください。",
       "instruction": "何について書きますか？",
       "instructionPlaceholder": "新しいオフラインモードを、技術者向けに告知する。",
@@ -735,7 +739,9 @@
       "link": "リンク",
       "image": "画像",
       "blocks": "ブロック",
-      "insert": "挿入"
+      "insert": "挿入",
+      "ai": "AI で書く",
+      "aiImprove": "AI で改善"
     },
     "pages": "ページ",
     "newPage": "新規ページ",

@@ -53,7 +53,9 @@ storage.
   **write** a whole post from a one-line brief, **continue** it, **improve** its
   text, or suggest a **title, excerpt, search description and tags**. Nothing is
   saved until you apply the proposal to the editor, where it saves like any
-  edit. It runs on the workspace's AI provider (or the server's gateway, in AI
+  edit. In the web editor it is also a block: type `/` and pick **Write with AI**
+  to describe a passage for the cursor, or select text and press the sparkle in
+  the formatting bubble to rewrite just that (say how, or leave it empty to tidy it). It runs on the workspace's AI provider (or the server's gateway, in AI
   credits), is told not to invent features the repos do not show, and is not
   offered for a post kept as HTML. See [over the API](#write-with-ai-over-the-api).
 - **Settings beside the editor**: status, publish date, address (`slug`),
@@ -538,7 +540,10 @@ curl -X POST https://your-helpbites.example/v1/admin/blog/ai \
 ```
 
 - `mode`: `write` (needs `instruction` or `title`), `continue`, `improve` and `meta`
-  (these need `body`, the Markdown so far). `continue` returns only the text to add.
+  (these need `body`, the Markdown so far) and `insert` (needs `instruction`: a
+  passage for the cursor). `continue` and `insert` return only the text to add.
+  Send `selection` (Markdown) with `improve` to rewrite only that passage; `body` is
+  then its replacement and `instruction` says how.
 - `repos`: `owner/name` of linked repos to read; all of the project's when left out.
   `GET /v1/admin/cms/repos?project=…` lists them.
 - Fields a mode does not produce are empty. Errors: `400` nothing to go on, `501`

@@ -23,12 +23,16 @@ describe('blog AI reply', () => {
     expect(readBlogAiReply('meta', 'just words')).toBeNull()
   })
 
+  test('insert keeps its body', () => {
+    expect(readBlogAiReply('insert', '{"body":"A passage."}')!.body).toBe('A passage.')
+  })
+
   test('plain text from a writing mode is taken as the body', () => {
     expect(readBlogAiReply('continue', '## More\n\nText')!.body).toBe('## More\n\nText')
   })
 
-  test('the native app offers the same modes', () => {
+  test('the native app offers the same modes (insert is the rich editor\'s)', () => {
     const swift = readFileSync(join(import.meta.dir, '../helpbites-native/App/Features/Blog/BlogAi.swift'), 'utf8')
-    expect(swift).toContain(`case ${BLOG_AI_MODES.map(m => (m === 'continue' ? '`continue`' : m)).join(', ')}`)
+    expect(swift).toContain(`case ${BLOG_AI_MODES.filter(m => m !== 'insert').map(m => (m === 'continue' ? '`continue`' : m)).join(', ')}`)
   })
 })

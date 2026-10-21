@@ -7,8 +7,8 @@
       </template>
       <template #actions>
         <UButton v-if="post?.live" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="post.url" target="_blank" :aria-label="$t('blog.viewPost')" />
-        <UButton v-if="draft.bodyFormat !== 'html'" :label="$t('blog.ai.button')" icon="i-lucide-sparkles" color="neutral" variant="soft" size="sm" class="max-sm:hidden" @click="aiOpen = true" />
-        <UButton v-if="draft.bodyFormat !== 'html'" icon="i-lucide-sparkles" color="neutral" variant="ghost" size="sm" square class="sm:hidden" :aria-label="$t('blog.ai.button')" @click="aiOpen = true" />
+        <UButton v-if="aiAllowed" :label="$t('blog.ai.button')" icon="i-lucide-sparkles" color="neutral" variant="soft" size="sm" class="max-sm:hidden" @click="openAi()" />
+        <UButton v-if="aiAllowed" icon="i-lucide-sparkles" color="neutral" variant="ghost" size="sm" square class="sm:hidden" :aria-label="$t('blog.ai.button')" @click="openAi()" />
         <UButton icon="i-lucide-panel-right" color="neutral" variant="ghost" size="sm" square class="lg:hidden" :aria-label="$t('blog.postSettings')" @click="settingsOpen = true" />
         <UDropdownMenu v-if="post" :items="moreItems" :content="{ align: 'end' }">
           <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" size="sm" square :aria-label="$t('blog.more')" />
@@ -73,7 +73,7 @@
       </template>
     </USlideover>
 
-    <BlogAiModal v-model:open="aiOpen" :project-id="id" :title="draft.title" :body="draft.body" @apply="applyAi" />
+    <BlogAiModal v-model:open="aiOpen" :scope="aiScope" :selection="aiSelection" :project-id="id" :title="draft.title" :body="draft.body" @apply="applyAi" />
 
     <BlogNewsletterModal v-if="post" v-model:open="newsletterOpen" :post="post" :project-id="id" :topics="project?.marketing.topics || []" :default-topic="blogConfig.newsletterTopic" :postal-address="project?.marketing.postalAddress || ''" @sent="onNewsletter" />
   </div>
@@ -124,6 +124,12 @@ const savedAt = ref<number | null>(null)
 const settingsOpen = ref(false)
 const newsletterOpen = ref(false)
 const aiOpen = ref(false)
+/** The AI writes Markdown, so a post kept as HTML (imported from Ghost) does not get it. */
+const aiAllowed = computed(() => draft.value.bodyFormat !== 'html')
+const aiScope = ref<'post' | 'insert' | 'selection'>('post')
+const aiSelection = ref('')
+/** Where the editor's AI blocks put their text: the cursor, or the range that was selected. */
+let aiRange: { from: number, to: number } | null = null
 
 // ---- state ----
 type PostState = 'live' | 'scheduled' | 'draft'
@@ -234,16 +240,29 @@ function onNewsletter(next: BlogPost) {
 }
 
 // ---- write with AI ----
+function openAi(scope: 'post' | 'insert' | 'selection' = 'post', range: { from: number, to: number } | null = null, selection = '') {
+  aiScope.value = scope
+  aiRange = range
+  aiSelection.value = selection
+  aiOpen.value = true
+}
+
 /** The proposal goes into the draft: the text replaces or follows what is there, the rest fills what it offers. */
-function applyAi(mode: 'write' | 'continue' | 'improve' | 'meta', result: BlogAiResult) {
+function applyAi(mode: 'write' | 'continue' | 'improve' | 'meta' | 'insert', result: BlogAiResult) {
   const d = draft.value
-  if (mode === 'continue') d.body = `${d.body.trimEnd()}\n\n${result.body}`
-  else if (result.body) d.body = result.body
-  if (mode === 'write' || mode === 'meta') {
-    if (result.title && (mode === 'write' || !d.title.trim())) d.title = result.title
-    if (result.excerpt) d.excerpt = result.excerpt
-    if (result.metaDescription) d.metaDescription = result.metaDescription
-    if (result.tags.length) d.tags = result.tags
+  const editor = editorRef.value?.editor
+  if (aiScope.value !== 'post' && aiRange && editor && result.body) {
+    // From the `/` menu or the bubble: just this passage, at the cursor or over the selection.
+    editor.chain().focus().insertContentAt(aiScope.value === 'selection' ? aiRange : aiRange.from, result.body, { contentType: 'markdown' }).run()
+  } else {
+    if (mode === 'continue') d.body = `${d.body.trimEnd()}\n\n${result.body}`
+    else if (result.body) d.body = result.body
+    if (mode === 'write' || mode === 'meta') {
+      if (result.title && (mode === 'write' || !d.title.trim())) d.title = result.title
+      if (result.excerpt) d.excerpt = result.excerpt
+      if (result.metaDescription) d.metaDescription = result.metaDescription
+      if (result.tags.length) d.tags = result.tags
+    }
   }
   toast.add({ title: t('blog.ai.applied'), icon: 'i-lucide-sparkles' })
 }
@@ -275,6 +294,26 @@ const handlers: EditorCustomHandlers = {
     execute: (editor) => {
       imageTarget = editor
       imageInput.value?.click()
+      return editor.chain()
+    },
+    isActive: () => false
+  },
+  // Write with AI: a new passage at the cursor (the `/` menu), or a rewrite of the selected text (the bubble).
+  aiWrite: {
+    canExecute: () => true,
+    execute: (editor) => {
+      openAi('insert', { from: editor.state.selection.from, to: editor.state.selection.from })
+      return editor.chain()
+    },
+    isActive: () => false
+  },
+  aiImprove: {
+    canExecute: editor => !editor.state.selection.empty,
+    execute: (editor) => {
+      const { from, to } = editor.state.selection
+      const slice = editor.state.doc.slice(from, to)
+      const text = editor.markdown?.serialize({ type: 'doc', content: slice.content.toJSON() }) || editor.state.doc.textBetween(from, to, '\n')
+      openAi('selection', { from, to }, text)
       return editor.chain()
     },
     isActive: () => false
@@ -338,7 +377,7 @@ const bubbleItems = computed<EditorToolbarItem[][]>(() => [[
   { kind: 'mark', mark: 'strike', icon: 'i-lucide-strikethrough' },
   { kind: 'mark', mark: 'code', icon: 'i-lucide-code' },
   { kind: 'link', icon: 'i-lucide-link' }
-]])
+], ...(aiAllowed.value ? [[{ kind: 'aiImprove' as const, icon: 'i-lucide-sparkles', label: t('blog.editor.aiImprove') }]] : [])])
 
 const suggestionItems = computed<EditorSuggestionMenuItem[][]>(() => [[
   { type: 'label', label: t('blog.editor.blocks') },
@@ -351,6 +390,7 @@ const suggestionItems = computed<EditorSuggestionMenuItem[][]>(() => [[
   { kind: 'codeBlock', label: t('blog.editor.codeBlock'), icon: 'i-lucide-square-code' }
 ], [
   { type: 'label', label: t('blog.editor.insert') },
+  ...(aiAllowed.value ? [{ kind: 'aiWrite' as const, label: t('blog.editor.ai'), icon: 'i-lucide-sparkles' }] : []),
   { kind: 'imageUpload', label: t('blog.editor.image'), icon: 'i-lucide-image-plus' },
   { kind: 'horizontalRule', label: t('blog.editor.divider'), icon: 'i-lucide-separator-horizontal' }
 ]])

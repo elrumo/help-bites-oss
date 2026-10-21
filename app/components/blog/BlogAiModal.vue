@@ -2,14 +2,15 @@
   <UModal v-model:open="open" :title="$t('blog.ai.title')" :description="$t('blog.ai.intro')" :ui="{ content: 'sm:max-w-2xl' }">
     <template #body>
       <div class="space-y-4">
-        <UFormField :label="$t('blog.ai.mode')">
+        <UFormField v-if="scope === 'post'" :label="$t('blog.ai.mode')">
           <div class="flex flex-wrap gap-2">
-            <UButton v-for="item in BLOG_AI_MODES" :key="item" :label="$t(`blog.ai.modes.${item}`)" size="sm" :color="mode === item ? 'primary' : 'neutral'" :variant="mode === item ? 'solid' : 'outline'" :disabled="item !== 'write' && !hasText" @click="pick(item)" />
+            <UButton v-for="item in POST_MODES" :key="item" :label="$t(`blog.ai.modes.${item}`)" size="sm" :color="mode === item ? 'primary' : 'neutral'" :variant="mode === item ? 'solid' : 'outline'" :disabled="item !== 'write' && !hasText" @click="pick(item)" />
           </div>
           <p v-if="!hasText" class="mt-1 text-xs text-muted">{{ $t('blog.ai.needsText') }}</p>
         </UFormField>
-        <UFormField :label="$t('blog.ai.instruction')" :hint="`${instruction.length} / 2000`">
-          <UTextarea v-model="instruction" :maxlength="2000" :placeholder="$t('blog.ai.instructionPlaceholder')" autoresize :rows="2" :maxrows="6" class="w-full" />
+        <blockquote v-if="scope === 'selection'" class="max-h-28 overflow-auto whitespace-pre-wrap border-l-2 border-default pl-3 text-xs text-muted">{{ selection }}</blockquote>
+        <UFormField :label="scope === 'selection' ? $t('blog.ai.selectionInstruction') : $t('blog.ai.instruction')" :hint="`${instruction.length} / 2000`">
+          <UTextarea v-model="instruction" :maxlength="2000" :placeholder="scope === 'selection' ? $t('blog.ai.selectionPlaceholder') : $t('blog.ai.instructionPlaceholder')" autoresize :rows="2" :maxrows="6" class="w-full" />
         </UFormField>
         <UFormField :label="$t('blog.ai.repos')" :help="repos.length ? undefined : $t('blog.ai.noRepos')">
           <USelectMenu v-model="chosen" :items="repos" multiple :disabled="!repos.length" :placeholder="$t('blog.ai.allRepos')" class="w-full" />
@@ -32,8 +33,8 @@
     <template #footer>
       <div class="flex w-full justify-end gap-2">
         <UButton :label="$t('common.cancel')" color="neutral" variant="ghost" @click="open = false" />
-        <UButton :label="result ? $t('blog.ai.again') : $t('blog.ai.run')" icon="i-lucide-sparkles" :color="result ? 'neutral' : 'primary'" :variant="result ? 'soft' : 'solid'" :loading="busy" :disabled="mode !== 'write' && !hasText" @click="run" />
-        <UButton v-if="result" :label="$t(`blog.ai.apply${mode[0]!.toUpperCase()}${mode.slice(1)}`)" icon="i-lucide-check" @click="apply" />
+        <UButton :label="result ? $t('blog.ai.again') : $t('blog.ai.run')" icon="i-lucide-sparkles" :color="result ? 'neutral' : 'primary'" :variant="result ? 'soft' : 'solid'" :loading="busy" :disabled="!canRun" @click="run" />
+        <UButton v-if="result" :label="$t(`blog.ai.apply${applyKey[0]!.toUpperCase()}${applyKey.slice(1)}`)" icon="i-lucide-check" @click="apply" />
       </div>
     </template>
   </UModal>
@@ -45,10 +46,12 @@ import type { BlogAiResult } from '~/utils/blogDraft'
 // "Write with AI" (native: BlogAiSheet in Blog/BlogAi.swift). The server reads the
 // project's GitHub repos and the post as it is in the editor, unsaved edits
 // included; the proposal is applied to the editor, where it saves like any edit.
-const BLOG_AI_MODES = ['write', 'continue', 'improve', 'meta'] as const
-type Mode = typeof BLOG_AI_MODES[number]
+const POST_MODES = ['write', 'continue', 'improve', 'meta'] as const
+type Mode = typeof POST_MODES[number] | 'insert'
+/** Where the proposal goes: the whole post (the button), a new passage at the cursor (the `/` menu) or over the selected text (the bubble). */
+type Scope = 'post' | 'insert' | 'selection'
 
-const props = defineProps<{ projectId: string, title: string, body: string }>()
+const props = withDefaults(defineProps<{ projectId: string, title: string, body: string, scope?: Scope, selection?: string }>(), { scope: 'post', selection: '' })
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ apply: [mode: Mode, result: BlogAiResult] }>()
 const { api } = useAgent()
@@ -56,6 +59,10 @@ const { t } = useI18n()
 
 const hasText = computed(() => !!props.body.trim())
 const mode = ref<Mode>('write')
+/** The mode the server gets: the editor's two blocks are fixed. */
+const sendMode = computed<Mode>(() => (props.scope === 'insert' ? 'insert' : props.scope === 'selection' ? 'improve' : mode.value))
+const applyKey = computed(() => (props.scope === 'selection' ? 'selection' : sendMode.value))
+const canRun = computed(() => (props.scope === 'insert' ? !!instruction.value.trim() : props.scope === 'selection' || mode.value === 'write' || hasText.value))
 const instruction = ref('')
 const repos = ref<string[]>([])
 const chosen = ref<string[]>([])
@@ -70,6 +77,8 @@ function pick(next: Mode) {
 
 watch(open, async (value) => {
   if (!value) return
+  result.value = null
+  error.value = ''
   if (!hasText.value) pick('write')
   if (repos.value.length) return
   try {
@@ -81,7 +90,7 @@ async function run() {
   busy.value = true
   error.value = ''
   try {
-    result.value = (await api<{ result: BlogAiResult }>('/admin/blog/ai', { method: 'POST', body: { project: props.projectId, mode: mode.value, instruction: instruction.value, title: props.title, body: props.body, repos: chosen.value } })).result
+    result.value = (await api<{ result: BlogAiResult }>('/admin/blog/ai', { method: 'POST', body: { project: props.projectId, mode: sendMode.value, instruction: instruction.value, title: props.title, body: props.body, selection: props.scope === 'selection' ? props.selection : undefined, repos: chosen.value } })).result
   } catch (e: any) {
     error.value = e?.message || t('blog.ai.error')
   } finally {
@@ -91,7 +100,7 @@ async function run() {
 
 function apply() {
   if (!result.value) return
-  emit('apply', mode.value, result.value)
+  emit('apply', sendMode.value, result.value)
   open.value = false
   result.value = null
 }

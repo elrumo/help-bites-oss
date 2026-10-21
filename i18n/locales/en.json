@@ -731,6 +731,10 @@
       "intro": "Reads your connected GitHub repos and this post, then proposes text. Nothing changes until you apply it.",
       "mode": "What to do",
       "modes": { "write": "Write the post", "continue": "Continue it", "improve": "Improve the text", "meta": "Title, excerpt and tags" },
+      "selectionInstruction": "How should it change this text?",
+      "selectionPlaceholder": "Make it shorter and friendlier. Leave empty to just tidy it.",
+      "applyInsert": "Insert the passage",
+      "applySelection": "Replace the selection",
       "needsText": "Write something first.",
       "instruction": "What should it be about?",
       "instructionPlaceholder": "Announce our new offline mode, for a technical audience.",
@@ -814,7 +818,9 @@
       "link": "Link",
       "image": "Image",
       "blocks": "Blocks",
-      "insert": "Insert"
+      "insert": "Insert",
+      "ai": "Write with AI",
+      "aiImprove": "Improve with AI"
     },
     "pages": "Pages",
     "newPage": "New page",

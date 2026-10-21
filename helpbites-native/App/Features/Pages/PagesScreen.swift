@@ -1,13 +1,13 @@
 import SwiftUI
 
 /// A project's pages and content (web: projects/[id]/pages/index.vue): its entries, files and
-/// settings. Components are written in the web panel; here an entry uses the ones that exist.
+/// settings, plus the component library and its editor.
 struct PagesScreen: View {
   let projectId: String
   @State private var tab: PagesTab = .pages
 
   private enum PagesTab: String, CaseIterable, Identifiable {
-    case pages, files, settings
+    case pages, components, files, settings
     var id: String { rawValue }
     var label: String { rawValue.capitalized }
   }
@@ -22,6 +22,7 @@ struct PagesScreen: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       switch tab {
       case .pages: PagesEntriesView(projectId: projectId)
+      case .components: PagesComponentsView(projectId: projectId)
       case .files: PagesFilesView(projectId: projectId)
       case .settings: PagesSettingsView(projectId: projectId)
       }

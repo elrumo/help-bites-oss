@@ -652,6 +652,10 @@
       "intro": "Lee tus repos de GitHub conectados y esta entrada, y propone texto. No cambia nada hasta que lo apliques.",
       "mode": "Qué hacer",
       "modes": { "write": "Escribir la entrada", "continue": "Continuarla", "improve": "Mejorar el texto", "meta": "Título, extracto y etiquetas" },
+      "selectionInstruction": "¿Cómo debería cambiar este texto?",
+      "selectionPlaceholder": "Hazlo más corto y cercano. Déjalo vacío para solo pulirlo.",
+      "applyInsert": "Insertar el pasaje",
+      "applySelection": "Reemplazar la selección",
       "needsText": "Escribe algo primero.",
       "instruction": "¿Sobre qué debería tratar?",
       "instructionPlaceholder": "Anuncia nuestro nuevo modo sin conexión, para un público técnico.",
@@ -735,7 +739,9 @@
       "link": "Enlace",
       "image": "Imagen",
       "blocks": "Bloques",
-      "insert": "Insertar"
+      "insert": "Insertar",
+      "ai": "Escribir con IA",
+      "aiImprove": "Mejorar con IA"
     },
     "pages": "Páginas",
     "newPage": "Nueva página",

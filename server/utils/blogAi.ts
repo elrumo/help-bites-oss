@@ -9,7 +9,8 @@ import { projectRepos } from './github'
 // Markdown. Nothing is saved: the editor shows the proposal and the operator
 // applies it, where it saves like any edit.
 
-export const BLOG_AI_MODES = ['write', 'continue', 'improve', 'meta'] as const
+/** `insert` is the rich editor's: a passage for the cursor; `improve` with a `selection` rewrites only that. The native app has no cursor, so no `insert`. */
+export const BLOG_AI_MODES = ['write', 'continue', 'improve', 'meta', 'insert'] as const
 export type BlogAiMode = (typeof BLOG_AI_MODES)[number]
 
 export type BlogAiResult = {
@@ -26,11 +27,13 @@ export type BlogAiResult = {
 
 const MAX_REPO_TEXT = 30_000
 const MAX_CONTEXT_BODY = 30_000
+const MAX_SELECTION = 20_000
 
 const TASK: Record<BlogAiMode, string> = {
   write: 'Write the whole post: a title, a one-or-two sentence excerpt, a meta description, up to five tags and the body.',
   continue: 'Continue the post from where its text ends. Return only the new text to add after it (no title, no repeat of what is there).',
   improve: 'Rewrite the post\'s text to be clearer and tighter, keeping its meaning, facts, links and images. Return the whole improved body.',
+  insert: 'Write a passage for the author to insert into the post at the cursor, following their instruction and fitting the text around it. Return only that passage as the body (no title, no repeat of the post).',
   meta: 'Suggest a title, a one-or-two sentence excerpt, a meta description and up to five tags for the post as written. Leave the body empty.'
 }
 
@@ -59,7 +62,10 @@ export async function suggestBlogText(ctx: MemberContext, project: ParseObject, 
   const instruction = clean(body.instruction, 2000)
   const title = clean(body.title, BLOG_TITLE_MAX_LENGTH)
   const text = clean(body.body, BLOG_BODY_MAX_LENGTH)
-  if ((mode === 'continue' || mode === 'improve' || mode === 'meta') && !text) throw createError({ statusCode: 400, statusMessage: 'There is no text yet: write something first, or use mode "write".' })
+  // improve with a selection rewrites that passage only; the instruction says how.
+  const selection = mode === 'improve' ? clean(body.selection, MAX_SELECTION) : ''
+  if ((mode === 'continue' || mode === 'improve' || mode === 'meta') && !text && !selection) throw createError({ statusCode: 400, statusMessage: 'There is no text yet: write something first, or use mode "write".' })
+  if (mode === 'insert' && !instruction) throw createError({ statusCode: 400, statusMessage: 'Say what to write in `instruction`.' })
   if (mode === 'write' && !instruction && !title) throw createError({ statusCode: 400, statusMessage: 'Say what the post is about in `instruction`, or give it a `title`.' })
   const route = await resolveAi(ctx.workspace)
   if (!route) throw createError({ statusCode: 501, statusMessage: 'No AI provider is configured. Add one in the workspace AI settings, or set LITELLM_API_BASE_URL on the server.' })
@@ -87,10 +93,11 @@ export async function suggestBlogText(ctx: MemberContext, project: ParseObject, 
       },
       {
         role: 'user',
-        content: `${TASK[mode]}\n\nProject: ${clean(project.get('name'), 120)}\n`
+        content: `${selection ? 'Rewrite only the SELECTED PASSAGE below, following the author\'s instruction (tidy it if there is none), and return just its replacement as the body, in Markdown, without the rest of the post.' : TASK[mode]}\n\nProject: ${clean(project.get('name'), 120)}\n`
           + `Instruction from the author: ${instruction || '(none)'}\n`
           + `Post title: ${title || '(none)'}\n`
-          + `Post text so far:\n${text.slice(-MAX_CONTEXT_BODY) || '(empty)'}\n\n`
+          + (selection ? `Selected passage:\n${selection}\n` : '')
+          + `Post text${mode === 'insert' ? ' (the passage goes where the author is working)' : ' so far'}:\n${text.slice(-MAX_CONTEXT_BODY) || '(empty)'}\n\n`
           + `Repositories:\n${repoText.join('\n\n=====\n\n') || '(none connected)'}\n\n`
           + 'Reply with JSON: { "title": "", "excerpt": "", "metaDescription": "", "tags": [""], "body": "Markdown", "notes": "one sentence on what to check" }.'
       }

@@ -652,6 +652,10 @@
       "intro": "读取已连接的 GitHub 仓库和这篇文章，并提出文字建议。你应用之前不会有任何改动。",
       "mode": "要做什么",
       "modes": { "write": "撰写文章", "continue": "继续写", "improve": "改进文字", "meta": "标题、摘要和标签" },
+      "selectionInstruction": "要如何修改这段文字？",
+      "selectionPlaceholder": "更简短、更亲切。留空则只做润色。",
+      "applyInsert": "插入这段文字",
+      "applySelection": "替换所选内容",
       "needsText": "请先写一些内容。",
       "instruction": "文章要写什么？",
       "instructionPlaceholder": "面向技术读者，介绍我们新的离线模式。",
@@ -735,7 +739,9 @@
       "link": "链接",
       "image": "图片",
       "blocks": "模块",
-      "insert": "插入"
+      "insert": "插入",
+      "ai": "用 AI 写作",
+      "aiImprove": "用 AI 改进"
     },
     "pages": "页面",
     "newPage": "新建页面",
