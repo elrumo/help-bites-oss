@@ -11,6 +11,14 @@ All notable changes to the community edition. Versions are Docker image tags
   imported rows, set `PARSE_SERVER_MAINTENANCE_KEY` and `PARSE_SERVER_MAINTENANCE_KEY_IPS` on Parse and the same value
   as `PARSE_MAINTENANCE_KEY` on the app; without it rows get the import time. Importing a file needs `S3_*`. The
   workspace export file now starts with `version: 2` and a `scope`; version 1 files still import.
+- Onboarding: per-project flows of welcome screens, edited in the panel and the native app and published as versions
+  at `GET /v1/onboarding/<public key>/<key>`. Show them with `/onboarding.js` or the SwiftUI snippet in
+  `docs/ONBOARDING.md`; both keep a copy so a flow still shows when HelpBites is down. New class `OnboardingFlow`.
+- Brand kit: logos, icons, screenshots, colours, fonts and guidelines per project, with a public page at
+  `/brand/<public key>` (three templates), downloads, `/brand.js` and `GET /v1/brand/<public key>`. Files go to the S3
+  bucket under `<projectId>/brand/` and count against storage. New class `BrandAsset` and field `Project.brand`. The
+  brand page is framed by other sites, so `/brand` joins `/embed` and `/s` as frameable. Needs `schema:apply` (the
+  container does it on boot).
 - Inbox conversations can be archived and deleted, on the web and in the native app. Archived threads leave the queue and
   live under a new **Archived** view; they come back when the customer writes again. Deleting removes the conversation
   and all its messages for good. Needs `schema:apply` (the container does it on boot).

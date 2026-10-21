@@ -67,6 +67,20 @@ export const DOCS: readonly DocPage[] = [
     file: 'LEGAL.md'
   },
   {
+    slug: 'onboarding',
+    title: 'Onboarding',
+    description: 'Write welcome screens in the panel and show them once in your web or Swift app, from a copy your app keeps, so they still show when HelpBites is unreachable.',
+    group: 'Guides',
+    file: 'ONBOARDING.md'
+  },
+  {
+    slug: 'brand',
+    title: 'Brand kit',
+    description: 'Keep logos, icons, screenshots, colours, fonts and guidelines in one place, and share them on a public press page, an embed for your site, or the API.',
+    group: 'Guides',
+    file: 'BRAND.md'
+  },
+  {
     slug: 'errors',
     title: 'Error tracking',
     description: 'Connect GlitchTip or Bugsink to browse errors, get alert emails when one spikes, and fix them with AI that reads your GitHub repos.',

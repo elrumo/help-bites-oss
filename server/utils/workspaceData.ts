@@ -94,6 +94,9 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   ChangelogNotifyRun: { scope: 'project' },
   LegalDocument: { scope: 'project' },
   LegalDocumentVersion: { scope: 'parent', parent: { field: 'document', className: 'LegalDocument' } },
+  OnboardingFlow: { scope: 'project' },
+  // Its file goes with the project's `<projectId>/` prefix.
+  BrandAsset: { scope: 'project' },
   EmailFolder: { scope: 'workspace' },
   EmailComponent: { scope: 'workspace' },
   EmailTemplate: { scope: 'workspace' },

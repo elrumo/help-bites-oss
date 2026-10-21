@@ -1,10 +1,11 @@
 // Baseline headers for every response. Only the embed (framed by connected
-// sites) and the hosted sign-up page (link to it or iframe it) may be framed
+// sites), the hosted sign-up page (link to it or iframe it) and the public
+// brand page (brand.js frames it into any site) may be framed
 // cross-origin; the panel must never be, or a hostile page can clickjack an
 // operator's session. SAMEORIGIN rather than DENY keeps any same-origin frame
 // working. A route that sets its own header later still wins.
 // event.path keeps the query string: the widget frames `/embed?pk=…`.
-const FRAMEABLE = /^\/(embed|s)([/?]|$)/
+const FRAMEABLE = /^\/(embed|s|brand)([/?]|$)/
 
 export default defineEventHandler((event) => {
   setResponseHeaders(event, {

@@ -456,6 +456,7 @@ const features = computed(() => [
     items: [
       { term: t('landing.features.app.bubble.term'), desc: t('landing.features.app.bubble.desc') },
       { term: t('landing.features.app.context.term'), desc: t('landing.features.app.context.desc') },
+      { term: t('landing.features.app.onboarding.term'), desc: t('landing.features.app.onboarding.desc') },
       { term: t('landing.features.app.media.term'), desc: t('landing.features.app.media.desc') },
       { term: t('landing.features.app.colours.term'), desc: t('landing.features.app.colours.desc') },
       { term: t('landing.features.app.none.term'), desc: t('landing.features.app.none.desc') }
@@ -509,6 +510,7 @@ const features = computed(() => [
       { term: t('landing.features.team.errors.term'), desc: t('landing.features.team.errors.desc') },
       { term: t('landing.more.stripe.title'), desc: t('landing.more.stripe.body') },
       { term: t('landing.features.team.legal.term'), desc: t('landing.features.team.legal.desc') },
+      { term: t('landing.features.team.brand.term'), desc: t('landing.features.team.brand.desc') },
       { term: t('landing.features.team.flags.term'), desc: t('landing.features.team.flags.desc') },
       { term: t('landing.features.team.types.term'), desc: t('landing.features.team.types.desc') },
       { term: t('landing.features.team.roles.term'), desc: t('landing.features.team.roles.desc') }

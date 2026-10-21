@@ -226,6 +226,8 @@ const SCHEMAS = {
       legal: { type: 'Object' },
       // Wizard answers saved for reuse by the next legal document (server/utils/legal.ts saveSharedAnswers).
       legalAnswers: { type: 'Object' },
+      // The brand kit: words, colours, fonts, guidelines and the public page's look (shared/brand.ts). Files are BrandAsset rows.
+      brand: { type: 'Object' },
       flags: { type: 'Array' },
       errors: { type: 'Object' },
       // Error alert rules { rules, emails } (shared/errorAlerts.ts).
@@ -1000,6 +1002,53 @@ const SCHEMAS = {
     },
     indexes: {
       document_version: { _p_document: 1, version: -1 }
+    }
+  },
+  // An onboarding flow an app shows new users, read at /v1/onboarding/<publicKey>/<key>.
+  // `steps`, `style` and `options` are the working copy; `published` is the copy apps get
+  // ({ name, steps, style, options }), frozen at each publish, and `version` counts publishes.
+  OnboardingFlow: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      // Unique within the project (checked on write).
+      key: { type: 'String' },
+      name: { type: 'String' },
+      // draft | published
+      status: { type: 'String' },
+      steps: { type: 'Array' },
+      style: { type: 'Object' },
+      options: { type: 'Object' },
+      published: { type: 'Object' },
+      publishedAt: { type: 'Date' },
+      version: { type: 'Number' }
+    },
+    indexes: {
+      project_key: { _p_project: 1, key: 1 }
+    }
+  },
+  // A file in a project's brand kit (logo, icon, screenshot, PDF…), stored in the bucket at
+  // `storageKey` (`<projectId>/brand/<uuid>.<ext>`) and public at `url`. `public: false` keeps it
+  // off the public page.
+  BrandAsset: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      // logo | icon | favicon | screenshot | social | other
+      kind: { type: 'String' },
+      name: { type: 'String' },
+      description: { type: 'String' },
+      // light | dark | any: what a logo is drawn to sit on.
+      background: { type: 'String' },
+      public: { type: 'Boolean' },
+      order: { type: 'Number' },
+      storageKey: { type: 'String' },
+      url: { type: 'String' },
+      mime: { type: 'String' },
+      size: { type: 'Number' },
+      width: { type: 'Number' },
+      height: { type: 'Number' }
+    },
+    indexes: {
+      project_order: { _p_project: 1, order: 1 }
     }
   },
   // Readers' comments on a published entry. Authored by the host's own user id (the identity

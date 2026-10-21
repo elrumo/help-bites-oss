@@ -28,6 +28,8 @@ enum AppRoute: Hashable {
   case connections
   /// One legal document (project id, document id).
   case legalDocument(String, String)
+  /// One onboarding flow (project id, flow id).
+  case onboardingFlow(String, String)
 }
 
 /// The tab bar's tabs (iPhone), which become the sidebar on iPad and Mac. The
@@ -39,7 +41,7 @@ enum AppTab: Hashable {
 
 /// A project's sections, nested under it in the sidebar like a Linear team's.
 enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
-  case overview, conversations, contacts, revenue, knowledge, assistants, tickets, feedback, board, changelog, legal, email, campaigns, flags, errors, dev, settings
+  case overview, conversations, contacts, revenue, knowledge, assistants, tickets, feedback, board, changelog, onboarding, legal, brand, email, campaigns, flags, errors, dev, settings
   var id: String { rawValue }
   var label: String {
     switch self {
@@ -53,7 +55,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .feedback: "Feedback"
     case .board: "Board"
     case .changelog: "Changelog"
+    case .onboarding: "Onboarding"
     case .legal: "Legal"
+    case .brand: "Brand"
     case .email: "Email"
     case .campaigns: "Campaigns"
     case .flags: "Flags"
@@ -76,7 +80,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .campaigns: "megaphone"
     case .revenue: "dollarsign.circle"
     case .changelog: "scroll"
+    case .onboarding: "rectangle.stack"
     case .legal: "scale.3d"
+    case .brand: "paintpalette"
     case .settings: "gearshape"
     case .flags: "switch.2"
     case .errors: "ladybug"
@@ -153,6 +159,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .legalDocument(let id, _):
       if sidebar { tab = .section(id, .legal); return }
       go(.project(id, .legal)); projectsPath.append(route)
+    case .onboardingFlow(let id, _):
+      if sidebar { tab = .section(id, .onboarding); return }
+      go(.project(id, .onboarding)); projectsPath.append(route)
     }
     #endif
   }
@@ -165,6 +174,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
       macPath = route == .developer ? [] : [route]
     case .legalDocument(let id, _):
       macSelection = .project(id, .legal)
+      macPath = [route]
+    case .onboardingFlow(let id, _):
+      macSelection = .project(id, .onboarding)
       macPath = [route]
     default:
       macSelection = route

@@ -87,6 +87,19 @@ export async function storeAttachment(data: Buffer, projectId: string, ownerId: 
   return { url: `${base}/${key}`, mime, size: data.length }
 }
 
+/** Store a public file under `key` (a brand kit's logo, PDF or favicon), counting its bytes against the workspace's storage. Returns its public URL. */
+export async function storePublicFile(key: string, data: Buffer, mime: string, workspaceId: string): Promise<string> {
+  await reserveUsage(workspaceId, 'storageBytes', data.length)
+  try {
+    await ensureBucket()
+    await useS3().putObject(bucket(), key, data, data.length, { 'Content-Type': mime, 'Cache-Control': 'public, max-age=31536000, immutable' })
+  } catch (error) {
+    await chargeUsage(workspaceId, 'storageBytes', -data.length)
+    throw error
+  }
+  return `${String(process.env.S3_PUBLIC_URL || '').replace(/\/+$/, '')}/${key}`
+}
+
 export async function readUploadedImage(event: Parameters<typeof readMultipartFormData>[0]): Promise<Buffer> {
   const parts = await readMultipartFormData(event)
   const file = parts?.find(part => part.name === 'file' && part.data?.length)

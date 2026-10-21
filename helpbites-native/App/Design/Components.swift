@@ -324,6 +324,48 @@ struct CodeBlock: View {
   }
 }
 
+/// Move up, move down and remove, for one item of an ordered list (steps, colours, guidelines).
+struct ReorderControls: View {
+  let index: Int
+  let count: Int
+  let move: (Int) -> Void
+  var remove: (() -> Void)? = nil
+  var body: some View {
+    HStack(spacing: 0) {
+      IconButton(systemImage: "arrow.up", label: "Move up") { move(-1) }.disabled(index == 0).opacity(index == 0 ? 0.35 : 1)
+      IconButton(systemImage: "arrow.down", label: "Move down") { move(1) }.disabled(index >= count - 1).opacity(index >= count - 1 ? 0.35 : 1)
+      if let remove { IconButton(systemImage: "trash", label: "Remove", action: remove) }
+    }
+  }
+}
+
+/// A `#rrggbb` setting with a colour picker; empty means the default, which `empty` names.
+struct OptionalColorField: View {
+  let label: String
+  @Binding var hex: String
+  /// What the picker shows while the value is empty.
+  var fallback: Color = Theme.accent
+  let empty: String
+  var body: some View {
+    LabeledField(label: label) {
+      HStack(spacing: 10) {
+        ColorPicker(label, selection: Binding(get: { Color(hexString: hex) ?? fallback }, set: { hex = $0.hexString }), supportsOpacity: false).labelsHidden()
+        Text(hex.isEmpty ? empty : hex).font(hex.isEmpty ? .lnMeta : .lnMono).foregroundStyle(hex.isEmpty ? Theme.textMuted : Theme.text)
+        Spacer(minLength: 0)
+        if !hex.isEmpty { Button("Clear") { hex = "" }.buttonStyle(.lnGhost) }
+      }
+    }
+  }
+}
+
+extension Array {
+  /// Swaps the item at `index` with its neighbour `offset` away, when there is one.
+  mutating func move(_ index: Int, by offset: Int) {
+    guard indices.contains(index), indices.contains(index + offset) else { return }
+    swapAt(index, index + offset)
+  }
+}
+
 // MARK: - Screen chrome
 
 extension View {

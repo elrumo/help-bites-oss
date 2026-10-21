@@ -57,6 +57,19 @@ function check(cond, label) {
   }
 }
 
+/** A multipart upload (brand kit files, onboarding pictures): `fields` plus a tiny PNG as `file`. */
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64')
+async function upload(path, fields, { token, workspace } = {}) {
+  const form = new FormData()
+  for (const [key, value] of Object.entries(fields)) form.append(key, value)
+  form.append('file', new Blob([PNG], { type: 'image/png' }), `${MARK}.png`)
+  const res = await fetch(`${BASE}${path}`, { method: 'POST', body: form, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(workspace ? { 'X-Workspace': workspace } : {}) } })
+  const text = await res.text()
+  let json = {}
+  try { json = JSON.parse(text) } catch {}
+  return { status: res.status, json, text }
+}
+
 /** Run a creation that may not apply on this stack (no Mailgun, no secret…). */
 async function maybe(label, fn) {
   try {
@@ -98,6 +111,13 @@ const { entry } = await api(`/v1/admin/changelog/entries?project=${project.id}`,
 await api(`/v1/admin/projects/${project.id}`, { ...A, method: 'PATCH', body: { feedback: { enabled: true } } })
 const { post } = await api('/v1/feedback', { token: userToken, method: 'POST', body: { title: `${MARK} idea` } })
 const keyA = await api('/v1/admin/api-keys', { ...A, method: 'POST', body: { name: `${MARK} key` } })
+const { flow } = await api('/v1/admin/onboarding/flows', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} flow` } })
+await api(`/v1/admin/brand?project=${project.id}`, { ...A, method: 'PATCH', body: { tagline: `${MARK} tagline` } })
+const brandUpload = await maybe('brand file (needs S3)', async () => {
+  const res = await upload('/v1/admin/brand/assets', { project: project.id, name: `${MARK} logo` }, A)
+  if (res.status >= 300) throw new Error(`${res.status} ${res.json.statusMessage || ''}`)
+  return res.json.asset
+})
 
 // ---- workspace B: the attacker -------------------------------------------------
 
@@ -200,6 +220,25 @@ await attempt('send as A\'s project', '/v1/emails/send', { method: 'POST', body:
 await attempt('list A\'s contact sources', `/v1/admin/contact-sources?project=${project.id}`)
 await attempt('list A\'s error issues', `/v1/admin/errors?project=${project.id}`)
 await attempt('watch A\'s project live', `/v1/admin/events?project=${project.id}`)
+await attempt('list A\'s onboarding flows', `/v1/admin/onboarding/flows?project=${project.id}`)
+await attempt('read A\'s onboarding flow', `/v1/admin/onboarding/flows/${flow.id}`)
+await attempt('edit A\'s onboarding flow', `/v1/admin/onboarding/flows/${flow.id}`, { method: 'PATCH', body: { name: 'pwned' } })
+await attempt('publish A\'s onboarding flow', `/v1/admin/onboarding/flows/${flow.id}/publish`, { method: 'POST' })
+await attempt('create a flow in A\'s project', '/v1/admin/onboarding/flows', { method: 'POST', body: { project: project.id, name: 'pwned' } })
+await attempt('delete A\'s onboarding flow', `/v1/admin/onboarding/flows/${flow.id}`, { method: 'DELETE' })
+await attempt('read A\'s brand kit', `/v1/admin/brand?project=${project.id}`)
+await attempt('edit A\'s brand kit', `/v1/admin/brand?project=${project.id}`, { method: 'PATCH', body: { tagline: 'pwned', page: { public: true } } })
+await attempt('preview A\'s brand page', `/v1/admin/brand/preview?project=${project.id}`, { method: 'POST', body: {} })
+for (const [label, path] of [['upload into A\'s brand kit', '/v1/admin/brand/assets'], ['upload an onboarding picture to A\'s project', '/v1/admin/onboarding/images']]) {
+  for (const who of [{ name: 'session', auth: B }, { name: 'api key', auth: { token: keyB } }]) {
+    const res = await upload(path, { project: project.id }, who.auth)
+    check(refused(res.status) && !res.text.includes(MARK), `${label} (${who.name}) → ${res.status}`)
+  }
+}
+if (brandUpload) {
+  await attempt('edit A\'s brand file', `/v1/admin/brand/assets/${brandUpload.id}`, { method: 'PATCH', body: { name: 'pwned' } })
+  await attempt('delete A\'s brand file', `/v1/admin/brand/assets/${brandUpload.id}`, { method: 'DELETE' })
+}
 await attempt('revoke A\'s API key', `/v1/admin/api-keys/${keyA.apiKey.id}`, { method: 'DELETE' })
 await attempt('demote A\'s owner', `/v1/admin/agents/${me.agent.id}`, { method: 'PATCH', body: { role: 'agent' } })
 
@@ -242,6 +281,11 @@ check((await call(`/v1/admin/projects/${project.id}/secret`, A)).json.secret ===
 check((await call(`/v1/admin/emails/${master.template.id}`, A)).json.template?.name === `${MARK} master`, 'A\'s master template is untouched')
 check((await call(`/v1/admin/support-agents/${assistant.id}`, A)).status === 200, 'A\'s assistant still exists')
 check((await call(`/v1/admin/knowledge/models/${model.id}`, A)).json.model?.name === `${MARK} model`, 'A\'s knowledge model is untouched')
+const flowAfter = (await call(`/v1/admin/onboarding/flows/${flow.id}`, A)).json.flow
+check(flowAfter?.name === `${MARK} flow` && flowAfter.status === 'draft', 'A\'s onboarding flow is untouched')
+const kitAfter = (await call(`/v1/admin/brand?project=${project.id}`, A)).json
+check(kitAfter.brand?.tagline === `${MARK} tagline` && kitAfter.brand.page.public === false, 'A\'s brand kit is untouched')
+if (brandUpload) check(kitAfter.assets?.some(a => a.id === brandUpload.id && a.name === `${MARK} logo`), 'A\'s brand file is untouched')
 
 if (failures) {
   console.log(`\n${failures} isolation check(s) FAILED`)

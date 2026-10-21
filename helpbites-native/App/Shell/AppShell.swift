@@ -111,7 +111,9 @@ struct RouteView: View {
       case .overview: ProjectOverviewScreen(projectId: id)
       case .revenue: RevenueScreen(projectId: id)
       case .changelog: ChangelogScreen(projectId: id)
+      case .onboarding: OnboardingScreen(projectId: id)
       case .legal: LegalScreen(projectId: id)
+      case .brand: BrandScreen(projectId: id)
       case .settings: ProjectSettingsScreen(projectId: id)
       case .conversations: ProjectConversationsScreen(projectId: id)
       case .contacts: ContactsScreen(projectId: id)
@@ -136,6 +138,7 @@ struct RouteView: View {
     case .ai: AIScreen()
     case .connections: ConnectionsScreen()
     case .legalDocument(let projectId, let documentId): LegalDocumentScreen(projectId: projectId, documentId: documentId)
+    case .onboardingFlow(let projectId, let flowId): OnboardingFlowScreen(projectId: projectId, flowId: flowId)
     }
   }
 }

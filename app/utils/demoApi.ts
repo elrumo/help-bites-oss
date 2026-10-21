@@ -2,6 +2,7 @@ import { DEFAULT_FEEDBACK_CONFIG, type FeedbackPost } from '#shared/feedback'
 import { DEFAULT_BOARD_CONFIG, ROADMAP_CATEGORIES, type BoardItem } from '#shared/board'
 import { DEFAULT_MARKETING_CONFIG } from '#shared/marketing'
 import { DEFAULT_CHANGELOG_CONFIG, type ChangelogEntry, type ChangelogRelease } from '#shared/changelog'
+import { normalizeBrandConfig } from '#shared/brand'
 import type { FeatureFlag } from '#shared/flags'
 import { cloneBlankEmailDocument, cloneEmailTemplateDocument } from '#shared/email/templates'
 import { extractTemplateVariables } from '#shared/email/placeholders'
@@ -773,7 +774,9 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   // sections the demo leaves empty: their pages show their own empty states
   ['GET', /^\/admin\/support-agents$/, () => ({ agents: [] })],
   ['GET', /^\/admin\/knowledge\/models$/, () => ({ models: [] })],
-  ['GET', /^\/admin\/api-keys$/, () => ({ keys: [] })]
+  ['GET', /^\/admin\/api-keys$/, () => ({ keys: [] })],
+  ['GET', /^\/admin\/onboarding\/flows$/, () => ({ flows: [] })],
+  ['GET', /^\/admin\/brand$/, () => ({ brand: normalizeBrandConfig(undefined), assets: [], url: '/brand/pk_demo' })]
 ]
 
 export async function demoApi<T>(path: string, options: { method?: string, body?: unknown, query?: Record<string, unknown> } = {}): Promise<T> {

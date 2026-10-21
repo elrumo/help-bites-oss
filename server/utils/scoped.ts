@@ -88,7 +88,9 @@ export const scoped = {
   },
   changelogRelease: async (ctx: MemberContext, id: string) => pinned(ctx, await loadChangelogRelease(id), 'Release not found'),
 
-  legalDocument: async (ctx: MemberContext, id: string) => viaProject(ctx, await getLegalDocument(id), 'Document not found')
+  legalDocument: async (ctx: MemberContext, id: string) => viaProject(ctx, await getLegalDocument(id), 'Document not found'),
+  onboardingFlow: async (ctx: MemberContext, id: string) => viaProject(ctx, await getOnboardingFlow(id), 'Flow not found'),
+  brandAsset: async (ctx: MemberContext, id: string) => viaProject(ctx, await getBrandAsset(id), 'File not found')
 }
 
 /** For tests: forget cached model → workspace answers. */

@@ -31,7 +31,9 @@ export default defineNuxtConfig({
       { code: 'ja', language: 'ja-JP', name: '日本語', file: 'ja.json' },
       { code: 'ko', language: 'ko-KR', name: '한국어', file: 'ko.json' }
     ],
-    detectBrowserLanguage: { useCookie: true, cookieKey: 'hb_locale', fallbackLocale: 'en' }
+    detectBrowserLanguage: { useCookie: true, cookieKey: 'hb_locale', fallbackLocale: 'en' },
+    // A few messages quote HTML for the operator to read (emailEditor.htmlHelp); none is rendered as HTML.
+    compilation: { strictMessage: false }
   },
   css: ['~/assets/css/main.css'],
   // Rendered on the server, but only where it buys something: the route rules
@@ -78,6 +80,9 @@ export default defineNuxtConfig({
     '/widget.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/feedback.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/changelog.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
+    '/brand.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
+    // Onboarding must still show while HelpBites is unreachable, so a cached copy may be used for a week then.
+    '/onboarding.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400, stale-if-error=604800' } },
     '/v1/**': { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Workspace', 'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS' } }
   },
 

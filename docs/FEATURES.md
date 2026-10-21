@@ -8,7 +8,9 @@ every feature change must update (see [CLAUDE.md](../CLAUDE.md)).
 Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 [EDITIONS.md](EDITIONS.md). Section 14 lists what is not built yet.
 
-## 1. Chat widget in your app
+## 1. Chat widget and onboarding in your app
+
+**Chat widget** [CONNECTING.md](CONNECTING.md)
 
 - **Floating bubble or a page of your app.** One script tag. Give it a container
   with `data-mode="inline"` and the same chat sits in your layout. [CONNECTING.md](CONNECTING.md)
@@ -27,6 +29,23 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   in the OpenAPI docs at `/_docs/scalar`.
 - **Feedback board embed.** One script (`feedback.js`) renders the board,
   roadmap, changelog, post pages and composer. [FEEDBACK.md](FEEDBACK.md)
+
+**Onboarding** [ONBOARDING.md](ONBOARDING.md)
+
+- **Welcome screens from the panel.** Flows of up to 12 steps (title, text, a
+  picture, a button label) under a key your app asks for. Edit without shipping a
+  release; nothing changes for users until you publish the next version.
+- **One script tag or one Swift file.** `onboarding.js` (MIT) shows a flow once
+  per browser, again after each publish, every time, or only when you call it;
+  as a dialog or inline in a page. A copy-paste SwiftUI file does the same in an
+  app.
+- **Shows when HelpBites is down.** Both keep the last copy they got and fall
+  back to an offline copy you ship with the app (**Download offline copy**).
+  The public read carries an ETag and `stale-if-error` caching.
+- **Your look.** Accent, background, text, corner radius and font per flow;
+  the web script also takes CSS variables and `::part()` styles, and calls you
+  back on each step, completion and skip.
+- **A live preview** in the panel, drawn by the same script your site loads.
 
 ## 2. Operator inbox
 
@@ -100,7 +119,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **AI elsewhere.** The email designer (section 6), a cause-and-fix note on new
   errors (section 8), and the changelog CLI (section 11).
 
-## 5. Feedback, roadmap and changelog
+## 5. Feedback, roadmap, changelog and brand kit
 
 **Feedback board** [FEEDBACK.md](FEEDBACK.md)
 
@@ -152,6 +171,24 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Writable by script.** Batch, import and release-publish endpoints, plus the
   `helpbites changelog` CLI, which writes entries from git history
   ([cli/README.md](../cli/README.md)).
+
+**Brand kit** [BRAND.md](BRAND.md)
+
+- **Every brand file in one place.** Logos, app icons, favicons, store
+  screenshots, social images and PDFs (PNG, JPEG, GIF, WebP, SVG, ICO, PDF; up to
+  20 MB each). Kinds and sizes are read from the files. Private files stay in the
+  kit for the team.
+- **Colours, fonts and guidelines.** Named colours with usage notes, fonts with
+  roles, weights and Google Fonts links, and Markdown guideline sections.
+- **A public press page.** `/brand/pk_…` in one of three templates (minimal,
+  editorial, split), light, dark or automatic, set in your own fonts, with a
+  download button on every file and click-to-copy colours. Choose which sections
+  show and in which order. No account needed to view it.
+- **On your site or in your app.** `brand.js` (MIT) frames the page into yours,
+  with the template, theme, accent and sections as options; `GET /v1/brand/pk_…`
+  for your own press page; a SwiftUI snippet for an in-app kit.
+- **Feeds the rest of HelpBites.** Make any logo the project's logo or icon, and
+  use kit images in onboarding steps.
 
 ## 6. Email
 
@@ -260,6 +297,11 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Workspaces.** Several per account, switchable from the sidebar.
 - **Workspace settings.** AI provider, data export (a download link), and
   workspace deletion for owners.
+- **Moving between instances.** Download a workspace, or one project, as a portable
+  file; import a file; or pull straight from another HelpBites (self-hosted or
+  cloud) with an API key or a login. Runs in the background, adds new projects,
+  keeps public keys, and is all-or-nothing. Credentials, team members and uploaded
+  files stay behind. [TRANSFER.md](TRANSFER.md)
 - **Accounts.** Edit your name and email, reset your password by email, choose
   light, dark or system theme, and sign out.
 - **Admin API keys.** Create, rename and revoke `ak_…` keys for scripts and tools.
@@ -275,8 +317,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Inbox.** Conversations, replies with images, status, deleting a message, and
   starting a new conversation.
 - **Most of the panel.** Projects and their settings, team, API keys, the developer
-  page, contacts, knowledge, assistants, tickets, feedback, board, the email editor
-  with its AI designer, email log and suppressions, campaigns, flags, and errors.
+  page, contacts, knowledge, assistants, tickets, feedback, board, changelog, legal,
+  onboarding (with a live preview), the brand kit, the email editor with its AI
+  designer, email log and suppressions, campaigns, flags, and errors.
 - **Push notifications.** A new customer message can notify the device. This needs
   Apple push (APNs) credentials on the server.
 - **Keyboard shortcuts** on iPad and Mac, and a ⌘K palette.
@@ -294,14 +337,11 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   webhooks.
 - **Idempotency.** Message sends and email sends accept idempotency keys.
 - **Health checks.** `/v1/health` and `/v1/health/live`.
-- **Embed scripts.** `widget.js` and `feedback.js`, both MIT-licensed, so the site
-  that embeds them carries no copyleft obligations.
+- **Embed scripts.** `widget.js`, `feedback.js`, `changelog.js`, `onboarding.js`
+  and `brand.js`, all MIT-licensed, so the site that embeds them carries no
+  copyleft obligations. Onboarding and the brand kit also have copy-paste SwiftUI
+  snippets.
 - **CLI.** `helpbites changelog` turns git changes into changelog entries. It never
-- **Moving between instances.** Download a workspace, or one project, as a portable
-  file; import a file; or pull straight from another HelpBites (self-hosted or
-  cloud) with an API key or a login. Runs in the background, adds new projects,
-  keeps public keys, and is all-or-nothing. Credentials, team members and uploaded
-  files stay behind. [TRANSFER.md](TRANSFER.md)
   pushes. [cli/README.md](../cli/README.md)
 - **Scripts.** Backfills for feedback, changelog and contacts; a reindex; a demo
   knowledge seed; and a workspace migration.
@@ -343,4 +383,9 @@ See [EDITIONS.md](EDITIONS.md).
   counts twice in that item's total. [FEEDBACK.md](FEEDBACK.md)
 - **Bugsink.** Its issues cannot be searched by customer, so a customer's errors do
   not appear in their conversation. [ERRORS.md](ERRORS.md)
+- **Onboarding.** HelpBites keeps no completion statistics; your app learns who
+  finished or skipped from the web script's callbacks or the Swift `onFinish`.
+  [ONBOARDING.md](ONBOARDING.md)
+- **Brand kit.** No download-everything archive yet; files download one by one.
+  [BRAND.md](BRAND.md)
 - **Language.** The panel is translated into Spanish, Catalan, Chinese, Japanese and Korean; the widgets are English only.

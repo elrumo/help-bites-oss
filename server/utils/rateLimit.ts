@@ -80,5 +80,8 @@ export const LIMITS = {
   legalReadsPerIp: { limit: 600, window: 60 },
   legalAiPerAgent: { limit: 10, window: 60 },
   // Each scan reads up to ten repos from GitHub.
-  legalScanPerAgent: { limit: 6, window: 60 }
+  legalScanPerAgent: { limit: 6, window: 60 },
+  // Every first launch of an app reads its onboarding; carrier NAT puts many phones behind one address.
+  onboardingReadsPerIp: { limit: 1200, window: 60 },
+  brandReadsPerIp: { limit: 600, window: 60 }
 } as const

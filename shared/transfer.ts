@@ -34,6 +34,7 @@ export const IMPORT_ORDER = [
   'ChangelogNotifyRun',
   'LegalDocument',
   'LegalDocumentVersion',
+  'OnboardingFlow',
   'EmailFolder',
   'EmailComponent',
   'EmailTemplate',
@@ -61,6 +62,7 @@ export const NOT_PORTABLE: Record<string, string> = {
   StripePayment: 'comes from the Stripe account',
   StripeSubscription: 'comes from the Stripe account',
   WebhookDelivery: 'the old instance\'s outbox',
+  BrandAsset: 'a file in the old bucket',
   Campaign: 'could send again; recreate it from the template',
   SequenceEnrollment: 'would send the next step again',
   DataTransfer: 'the old instance\'s own bookkeeping'

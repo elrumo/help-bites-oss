@@ -1,18 +1,20 @@
 import type { DocPage } from '#shared/docs'
 import { renderDoc, type RenderedDoc } from './docsRender'
+import brand from '../../docs/BRAND.md'
 import connecting from '../../docs/CONNECTING.md'
 import deployment from '../../docs/DEPLOYMENT.md'
 import errors from '../../docs/ERRORS.md'
 import feedback from '../../docs/FEEDBACK.md'
 import flags from '../../docs/FLAGS.md'
 import legal from '../../docs/LEGAL.md'
-
 import onboarding from '../../docs/ONBOARDING.md'
 import transfer from '../../docs/TRANSFER.md'
+
 // The text of each published guide, bundled into the server at build time (the
 // image ships .output only, never docs/). One import per entry in
 // shared/docs.ts; tests/docs.test.ts fails if one is missing.
 const SOURCES: Record<string, string> = {
+  'BRAND.md': brand,
   'CONNECTING.md': connecting,
   'DEPLOYMENT.md': deployment,
   'ERRORS.md': errors,
