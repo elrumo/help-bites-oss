@@ -95,6 +95,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'PAGES.md'
   },
   {
+    slug: 'mcp',
+    title: 'AI assistants (MCP)',
+    description: 'Connect Claude, ChatGPT, Cursor or any MCP client to your workspace to read the inbox, draft replies, triage feedback and write changelog entries, signed in with your browser or an API key.',
+    group: 'Guides',
+    file: 'MCP.md'
+  },
+  {
     slug: 'errors',
     title: 'Error tracking',
     description: 'Connect GlitchTip or Bugsink to browse errors, get alert emails when one spikes, and fix them with AI that reads your GitHub repos.',

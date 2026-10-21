@@ -7,6 +7,21 @@
       </i18n-t>
     </div>
 
+    <div class="space-y-3 rounded-xl border border-default p-4">
+      <div class="flex items-start gap-3">
+        <UIcon name="i-lucide-plug-zap" class="mt-0.5 size-4 shrink-0 text-muted" />
+        <div class="min-w-0">
+          <h3 class="text-[13px] font-medium text-highlighted">{{ $t('workspaceSettings.apiKeys.mcpTitle') }}</h3>
+          <p class="mt-0.5 text-xs text-muted">{{ $t('workspaceSettings.apiKeys.mcpDescription') }}</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <UInput :model-value="mcpUrl" readonly class="min-w-0 flex-1 font-mono text-xs" :aria-label="$t('workspaceSettings.apiKeys.mcpAddress')" />
+        <UButton icon="i-lucide-clipboard" color="neutral" variant="outline" @click="copyMcp">{{ mcpCopied ? $t('workspaceSettings.copied') : $t('workspaceSettings.copy') }}</UButton>
+        <UButton to="/docs/mcp" target="_blank" icon="i-lucide-book-open" color="neutral" variant="ghost">{{ $t('workspaceSettings.apiKeys.mcpDocs') }}</UButton>
+      </div>
+    </div>
+
     <form class="space-y-3" @submit.prevent="create">
       <div class="flex gap-2">
         <UInput v-model="newName" class="flex-1" :placeholder="$t('workspaceSettings.apiKeys.namePlaceholder')" required maxlength="80" :aria-label="$t('workspaceSettings.apiKeys.newKeyName')" />
@@ -67,6 +82,9 @@
 type ApiKey = { id: string, name: string, prefix: string, createdAt: string | null, expiresAt: string | null, lastUsedAt: string | null, projectIds: string[] | null }
 const { api, projects, loadProjects } = useAgent()
 const { t } = useI18n()
+const appUrl = useAppUrl()
+const mcpUrl = computed(() => `${appUrl.value}/mcp`)
+const mcpCopied = ref(false)
 const scope = ref<'all' | 'projects'>('all')
 const pickedProjects = ref<string[]>([])
 const expiry = ref('90')
@@ -139,6 +157,12 @@ async function revoke(key: ApiKey) {
   } catch (e: any) {
     error.value = e?.message || t('workspaceSettings.apiKeys.revokeFailed')
   }
+}
+
+async function copyMcp() {
+  await navigator.clipboard.writeText(mcpUrl.value)
+  mcpCopied.value = true
+  setTimeout(() => { mcpCopied.value = false }, 2000)
 }
 
 async function copy() {

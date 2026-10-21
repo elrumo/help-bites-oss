@@ -2431,6 +2431,10 @@
         "roles": {
           "term": "团队角色",
           "desc": "客服人员负责回复，管理员负责项目和团队，所有者负责账单。可通过邮件邀请成员。可导出整个工作区或单个项目，也可一键在自托管与云端之间迁移。"
+        },
+        "mcp": {
+          "term": "用 Claude 或 ChatGPT 操作",
+          "desc": "用一个地址连接任何 MCP 助手。它以你的身份、按你的角色读取收件箱、回复、整理反馈并撰写更新日志，一键即可撤销。"
         }
       }
     },
@@ -3556,7 +3560,11 @@
       "createFailed": "无法创建 API 密钥",
       "renameFailed": "无法重命名 API 密钥",
       "revokeFailed": "无法撤销 API 密钥",
-      "loadFailed": "无法加载 API 密钥"
+      "loadFailed": "无法加载 API 密钥",
+      "mcpTitle": "连接 AI 助手",
+      "mcpDescription": "让 Claude、ChatGPT 或 Cursor 以你的身份在此工作区中工作。把这个地址添加到助手的连接器并登录，或把下面的某个密钥交给它。",
+      "mcpAddress": "MCP 服务器地址",
+      "mcpDocs": "如何连接"
     },
     "team": {
       "description": "这里的每个人都可以登录此工作区，并处理其中的所有项目。",
@@ -3941,5 +3949,24 @@
       "linked": "关联模板会发送其主模板的翻译。请翻译主模板的设计。",
       "sendHint": "选择一种语言进行编辑。可在发送 API 中用 \"locale\" 指定语言,或为每个收件人设置语言。"
     }
+  },
+  "oauth": {
+    "title": "将 {client} 连接到 HelpBites",
+    "description": "{client} 将能以你的身份、按你的角色读取和更改此工作区中的内容。你可随时在 设置 → API 密钥 中断开连接。",
+    "workspace": "工作区",
+    "scopeAll": "此工作区的全部内容",
+    "scopeAllDescription": "所有项目以及工作区本身（以你的角色允许的范围为限）。",
+    "scopeProjects": "仅限特定项目",
+    "scopeProjectsDescription": "仅限你所选项目内的操作。",
+    "projects": "要连接的项目",
+    "redirectsTo": "你做出决定后将返回 {host}。",
+    "approve": "批准",
+    "deny": "拒绝",
+    "notAllowed": "你在此工作区的角色不能创建 API 密钥，因此无法连接助手。请联系所有者或管理员。",
+    "invalidTitle": "此链接无法使用",
+    "invalid": "连接请求不完整，或来自未知的助手。请从助手重新开始。",
+    "backToPanel": "返回 HelpBites",
+    "failed": "无法批准连接",
+    "redirecting": "正在返回 {client}…"
   }
 }

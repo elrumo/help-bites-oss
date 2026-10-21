@@ -515,7 +515,8 @@ const features = computed(() => [
       { term: t('landing.features.team.pages.term'), desc: t('landing.features.team.pages.desc') },
       { term: t('landing.features.team.flags.term'), desc: t('landing.features.team.flags.desc') },
       { term: t('landing.features.team.types.term'), desc: t('landing.features.team.types.desc') },
-      { term: t('landing.features.team.roles.term'), desc: t('landing.features.team.roles.desc') }
+      { term: t('landing.features.team.roles.term'), desc: t('landing.features.team.roles.desc') },
+      { term: t('landing.features.team.mcp.term'), desc: t('landing.features.team.mcp.desc') }
     ]
   }
 ])

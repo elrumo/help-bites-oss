@@ -39,6 +39,8 @@ describe('features.json', () => {
         const dir = join(root, 'server/routes', ...parts.slice(0, -1))
         return existsSync(dir) && readdirSync(dir).some(n => n === parts.at(-1) || n.startsWith(parts.at(-1) + '.'))
       }
+      // A top-level route such as /mcp has no second segment.
+      if (!a) return under([v1]) ? null : `${f.id}: ${p}`
       return under([v1, a]) || (a === 'admin' && b && !b.startsWith(':') && under([v1, a, b])) ? null : `${f.id}: ${p}`
     }).filter(Boolean))
     expect(missing).toEqual([])

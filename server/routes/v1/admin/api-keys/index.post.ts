@@ -13,24 +13,9 @@ export default defineEventHandler(async (event) => {
   const body = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   const name = String(body.name || '').trim().slice(0, 80)
   if (!name) throw createError({ statusCode: 400, statusMessage: 'Name is required' })
-  let projectIds: string[] | null = null
-  if (body.projectIds !== undefined && body.projectIds !== null) {
-    const own = await workspaceProjectIds(ctx.workspaceId)
-    projectIds = Array.isArray(body.projectIds) ? [...new Set(body.projectIds.map(String))] : []
-    if (!projectIds.length || projectIds.some(id => !own.includes(id))) throw createError({ statusCode: 400, statusMessage: 'Pick at least one project of this workspace' })
-  }
+  const projectIds = await readKeyProjectIds(body.projectIds, ctx.workspaceId)
   const expiresAt = readKeyExpiry(body.expiresInDays)
   await checkGauge(ctx.workspace, 'apiKeys')
-  const Parse = useParse()
-  const value = newAdminApiKey()
-  const row = new (Parse.Object.extend('AdminApiKey'))()
-  row.set('agent', ctx.agent)
-  row.set('workspace', ctx.workspace)
-  row.set('name', name)
-  row.set('hash', value.hash)
-  row.set('prefix', value.prefix)
-  if (projectIds) row.set('projectIds', projectIds)
-  if (expiresAt) row.set('expiresAt', expiresAt)
-  await row.save(null, MASTER)
-  return { apiKey: serializeAdminApiKey(row), key: value.token }
+  const { row, token } = await saveAdminApiKey({ agent: ctx.agent, workspace: ctx.workspace, name, projectIds, expiresAt })
+  return { apiKey: serializeAdminApiKey(row), key: token }
 })

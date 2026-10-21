@@ -2431,6 +2431,10 @@
         "roles": {
           "term": "Roles para tu equipo",
           "desc": "Los agentes responden, los administradores gestionan proyectos y el equipo, y los propietarios se ocupan de la facturación. Invita a personas por correo. Exporta un espacio de trabajo o un proyecto, o muévelo entre autoalojado y nube con un clic."
+        },
+        "mcp": {
+          "term": "Contrólalo desde Claude o ChatGPT",
+          "desc": "Conecta cualquier asistente MCP con una sola dirección. Lee la bandeja, responde, clasifica comentarios y escribe entradas del registro de cambios como tú, con tu rol. Revócalo con un clic."
         }
       }
     },
@@ -3556,7 +3560,11 @@
       "createFailed": "No se pudo crear la clave de API",
       "renameFailed": "No se pudo renombrar la clave de API",
       "revokeFailed": "No se pudo revocar la clave de API",
-      "loadFailed": "No se pudieron cargar las claves de API"
+      "loadFailed": "No se pudieron cargar las claves de API",
+      "mcpTitle": "Conectar un asistente de IA",
+      "mcpDescription": "Deja que Claude, ChatGPT o Cursor trabajen en este espacio de trabajo como tú. Añade esta dirección a los conectores del asistente e inicia sesión, o dale una de las claves de abajo.",
+      "mcpAddress": "Dirección del servidor MCP",
+      "mcpDocs": "Cómo conectar"
     },
     "team": {
       "description": "Todas las personas de aquí inician sesión en este espacio de trabajo y pueden trabajar en todos sus proyectos.",
@@ -3941,5 +3949,24 @@
       "linked": "Una plantilla enlazada envía las traducciones de su plantilla maestra. Traduce el diseño maestro.",
       "sendHint": "Elige un idioma para editarlo. Envía en un idioma con \"locale\" en la API de envío, o fija el idioma de cada destinatario."
     }
+  },
+  "oauth": {
+    "title": "Conectar {client} a HelpBites",
+    "description": "{client} podrá leer y cambiar cosas en este espacio de trabajo como tú, con tu rol. Desconéctalo cuando quieras en Ajustes → Claves de API.",
+    "workspace": "Espacio de trabajo",
+    "scopeAll": "Todo el espacio de trabajo",
+    "scopeAllDescription": "Todos los proyectos y el propio espacio de trabajo, hasta donde permita tu rol.",
+    "scopeProjects": "Solo proyectos concretos",
+    "scopeProjectsDescription": "Solo lo que ocurre dentro de los proyectos que elijas.",
+    "projects": "Proyectos a conectar",
+    "redirectsTo": "Cuando decidas, volverás a {host}.",
+    "approve": "Aprobar",
+    "deny": "Rechazar",
+    "notAllowed": "Tu rol en este espacio de trabajo no puede crear claves de API, así que no puede conectar un asistente. Pídeselo a un propietario o administrador.",
+    "invalidTitle": "No se puede usar este enlace",
+    "invalid": "La solicitud de conexión está incompleta o es de un asistente desconocido. Empieza de nuevo desde el asistente.",
+    "backToPanel": "Volver a HelpBites",
+    "failed": "No se pudo aprobar la conexión",
+    "redirecting": "Volviendo a {client}…"
   }
 }

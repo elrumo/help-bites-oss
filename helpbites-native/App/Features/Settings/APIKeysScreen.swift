@@ -16,9 +16,12 @@ struct APIKeysScreen: View {
   @State private var error = ""
   @State private var created: CreatedKey?
   @State private var copied = false
+  @State private var copiedAddress = false
   @State private var editingId = ""
   @State private var editingName = ""
   @State private var revoking: APIKey?
+
+  private var mcpAddress: String { session.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/mcp" }
 
   private enum Scope { case all, projects }
   private struct APIKey: Decodable, Identifiable, Sendable {
@@ -51,6 +54,34 @@ struct APIKeysScreen: View {
             .font(.lnMeta)
             .foregroundStyle(Theme.textMuted)
         }
+
+        // The same address the panel shows (components/settings/ApiKeys.vue): paste it into an assistant's connectors.
+        VStack(alignment: .leading, spacing: 10) {
+          Label("Connect an AI assistant", systemImage: "bolt.horizontal").font(.lnRow).foregroundStyle(Theme.textHighlighted)
+          Text("Let Claude, ChatGPT or Cursor work in this workspace as you. Add this address to the assistant's connectors and sign in, or give it one of the keys below.")
+            .font(.lnCaption)
+            .foregroundStyle(Theme.textMuted)
+          HStack(spacing: 8) {
+            Text(mcpAddress)
+              .font(.lnMono)
+              .foregroundStyle(Theme.textHighlighted)
+              .textSelection(.enabled)
+              .lineLimit(1)
+              .truncationMode(.middle)
+              .padding(10)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .background(Theme.field, in: RoundedRectangle(cornerRadius: Metrics.radius))
+              .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
+              .accessibilityLabel("MCP server address")
+            Button {
+              Clipboard.copy(mcpAddress)
+              copiedAddress = true
+            } label: { Label(copiedAddress ? "Copied" : "Copy", systemImage: copiedAddress ? "checkmark" : "doc.on.clipboard") }
+              .buttonStyle(.lnGhost)
+          }
+        }
+        .padding(16)
+        .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
 
         VStack(alignment: .leading, spacing: 8) {
           HStack(spacing: 8) {

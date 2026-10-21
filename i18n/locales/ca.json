@@ -2431,6 +2431,10 @@
         "roles": {
           "term": "Rols per al teu equip",
           "desc": "Els agents responen, els administradors gestionen projectes i l'equip, i els propietaris s'encarreguen de la facturació. Convida persones per correu. Exporta un espai de treball o un projecte, o mou-lo entre autoallotjat i núvol amb un clic."
+        },
+        "mcp": {
+          "term": "Controla'l des de Claude o ChatGPT",
+          "desc": "Connecta qualsevol assistent MCP amb una sola adreça. Llegeix la safata, respon, classifica comentaris i escriu entrades del registre de canvis com tu, amb el teu rol. Revoca'l amb un clic."
         }
       }
     },
@@ -3556,7 +3560,11 @@
       "createFailed": "No s'ha pogut crear la clau d'API",
       "renameFailed": "No s'ha pogut canviar el nom de la clau d'API",
       "revokeFailed": "No s'ha pogut revocar la clau d'API",
-      "loadFailed": "No s'han pogut carregar les claus d'API"
+      "loadFailed": "No s'han pogut carregar les claus d'API",
+      "mcpTitle": "Connectar un assistent d'IA",
+      "mcpDescription": "Deixa que Claude, ChatGPT o Cursor treballin en aquest espai de treball com tu. Afegeix aquesta adreça als connectors de l'assistent i inicia la sessió, o dona-li una de les claus de sota.",
+      "mcpAddress": "Adreça del servidor MCP",
+      "mcpDocs": "Com connectar"
     },
     "team": {
       "description": "Tothom aquí inicia sessió en aquest espai de treball i pot treballar en tots els seus projectes.",
@@ -3941,5 +3949,24 @@
       "linked": "Una plantilla enllaçada envia les traduccions de la seva plantilla mestra. Tradueix el disseny mestre.",
       "sendHint": "Tria un idioma per editar-lo. Envia en un idioma amb \"locale\" a l'API d'enviament, o fixa l'idioma de cada destinatari."
     }
+  },
+  "oauth": {
+    "title": "Connectar {client} a HelpBites",
+    "description": "{client} podrà llegir i canviar coses en aquest espai de treball com tu, amb el teu rol. Desconnecta'l quan vulguis a Configuració → Claus d'API.",
+    "workspace": "Espai de treball",
+    "scopeAll": "Tot l'espai de treball",
+    "scopeAllDescription": "Tots els projectes i l'espai de treball mateix, tant com permeti el teu rol.",
+    "scopeProjects": "Només projectes concrets",
+    "scopeProjectsDescription": "Només el que passa dins dels projectes que triïs.",
+    "projects": "Projectes a connectar",
+    "redirectsTo": "Quan decideixis, tornaràs a {host}.",
+    "approve": "Aprovar",
+    "deny": "Rebutjar",
+    "notAllowed": "El teu rol en aquest espai de treball no pot crear claus d'API, així que no pot connectar un assistent. Demana-ho a un propietari o administrador.",
+    "invalidTitle": "Aquest enllaç no es pot fer servir",
+    "invalid": "La sol·licitud de connexió està incompleta o és d'un assistent desconegut. Torna a començar des de l'assistent.",
+    "backToPanel": "Tornar a HelpBites",
+    "failed": "No s'ha pogut aprovar la connexió",
+    "redirecting": "Tornant a {client}…"
   }
 }

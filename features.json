@@ -378,6 +378,20 @@
       "landing": { "listed": true, "key": "landing.endpoints" }
     },
     {
+      "id": "mcp",
+      "name": "AI assistants (MCP)",
+      "category": "platform",
+      "summary": "An MCP server at /mcp lets Claude, ChatGPT, Cursor or any MCP client read the inbox, reply, triage feedback, move board items, write changelog entries and look into errors as the operator who connected it. Signs in with the browser (OAuth, for claude.ai and ChatGPT) or an admin API key; every tool is a /v1 call, so roles, workspaces and a key's project limit apply.",
+      "editions": ["community", "cloud"],
+      "plan": "all",
+      "status": "stable",
+      "web": { "panel": ["app/components/settings/ApiKeys.vue", "app/pages/oauth/authorize.vue"], "public": ["/mcp", "/oauth/authorize"] },
+      "native": { "folders": ["helpbites-native/App/Features/Settings"] },
+      "api": { "prefixes": ["/mcp", "/.well-known/oauth-protected-resource", "/.well-known/oauth-authorization-server", "/v1/oauth", "/v1/admin/oauth"], "docs": "docs/MCP.md" },
+      "embed": null,
+      "landing": { "listed": true, "key": "landing.features.team.mcp" }
+    },
+    {
       "id": "native-app",
       "name": "Native app (iPhone, iPad, Mac)",
       "category": "platform",
@@ -423,6 +437,7 @@
   ],
   "notBuilt": [
     "Contact sync does not notice rows deleted upstream.",
+    "The MCP server offers tools only (no prompts, resources or live notifications), has no tools yet for email, campaigns, legal documents, flags or knowledge base editing, and issues no refresh tokens: an OAuth-connected assistant signs in again after a year.",
     "No Swift package. Onboarding and the brand kit have copy-paste Swift snippets; the chat, feedback and changelog embeds are web-only (widget.js, feedback.js, changelog.js).",
     "Onboarding keeps no completion statistics; apps learn outcomes from the web script's callbacks and events or the Swift onFinish.",
     "The brand kit has no download-everything archive; each file downloads on its own.",
