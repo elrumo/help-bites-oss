@@ -187,7 +187,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   func count(_ queue: InboxQueue) -> Int {
     if let count = viewCounts[queue.rawValue] { return count }
     // An older server: its facets, which ignore the list's filters.
-    switch queue {
+    return switch queue {
     case .all: conversations.count
     case .unassigned: counts.assignee["unassigned"] ?? 0
     case .mine: counts.assignee[myAgentId] ?? 0

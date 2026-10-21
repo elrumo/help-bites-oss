@@ -33,7 +33,7 @@ struct ActivityItem: Decodable, Equatable, Identifiable, Sendable {
     switch ref?.kind {
     case "feedback_post": .project(projectId, .feedback)
     case "email_log": .project(projectId, .email)
-    case "sequence": .project(projectId, .campaigns)
+    case "sequence": .project(projectId, .email)
     case "onboarding_flow": .project(projectId, .onboarding)
     case "stripe": .project(projectId, .revenue)
     default: nil
