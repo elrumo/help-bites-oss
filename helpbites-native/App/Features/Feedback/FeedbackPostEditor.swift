@@ -43,6 +43,7 @@ struct FeedbackPostEditor: View {
             if let current {
               boardLinks(current)
               changelogLinks(current)
+              GithubRefsSection(projectId: store.projectId, kind: "feedback", targetId: current.id)
               thread(current)
             }
           }

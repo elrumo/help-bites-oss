@@ -53,6 +53,10 @@ does not have is sent in the template's own. `POST /v1/emails/render` and
 `GET /v1/emails/:key?locale=es` preview it. Your own `html`, `document` and `message`
 emails are not translated: write them in the language you send.
 
+Campaigns, sequence steps and a lead form's welcome email choose the language
+themselves: each recipient gets the translation closest to their contact's `language`
+(see [Languages](LANGUAGES.md#a-contacts-language)).
+
 ## Variables
 
 `{{name}}` placeholders work anywhere in a template: subject, preheader, text,

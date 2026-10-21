@@ -2,6 +2,9 @@ import { DEFAULT_FEEDBACK_CONFIG, type FeedbackPost } from '#shared/feedback'
 import { billingFromAttributes, type ConversationContextResponse } from '#shared/conversationHub'
 import { DEFAULT_BOARD_CONFIG, ROADMAP_CATEGORIES, type BoardItem } from '#shared/board'
 import { DEFAULT_MARKETING_CONFIG } from '#shared/marketing'
+import { DEFAULT_COMPANY } from '#shared/company'
+import { DEFAULT_HUB_CONFIG } from '#shared/hub'
+import { projectLook } from '#shared/projectLook'
 import { presetForm } from '#shared/leadForms'
 import { ALL_LEADS_SEGMENT, leadFormSegmentFilter } from '#shared/segments'
 import { DEFAULT_CHANGELOG_CONFIG, type ChangelogEntry, type ChangelogRelease } from '#shared/changelog'
@@ -80,7 +83,8 @@ const bugType = (projectId: string): ConversationType => ({
 
 function project(id: string, name: string, siteUrl: string, accent: string, flags: FeatureFlag[]): AdminProject {
   return {
-    id, slug: slug(name), publicKey: `pk_demo_${id}`, name, siteUrl, allowedOrigins: [siteUrl], theme: { accent },
+    id, slug: slug(name), publicKey: `pk_demo_${id}`, name, siteUrl, allowedOrigins: [siteUrl], theme: { accent }, look: projectLook({ name, theme: { accent } }), widgetHome: false,
+    company: { ...DEFAULT_COMPANY, name, address: '1 Demo Street, Lisbon, Portugal', email: `hello@${new URL(siteUrl).host}` }, legalLinks: { privacyUrl: '', termsUrl: '', cookiesUrl: '', refundUrl: '' }, hub: DEFAULT_HUB_CONFIG,
     allowAttachments: true, allowAnonymousUsers: false, chatNotice: '', brandLogoUrl: '', iconUrl: '', assistantLogoUrl: '', letUsersChooseType: false, allowOtherType: false,
     feedback: { ...DEFAULT_FEEDBACK_CONFIG, enabled: true, title: `${name} feedback` },
     board: DEFAULT_BOARD_CONFIG,

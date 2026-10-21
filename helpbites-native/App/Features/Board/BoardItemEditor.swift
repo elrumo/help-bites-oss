@@ -16,6 +16,7 @@ struct BoardItemEditor: View {
   @State private var error = ""
   @Environment(Workspace.self) private var workspace
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.openURL) private var openURL
   @Environment(\.horizontalSizeClass) private var sizeClass
 
   init(store: BoardStore, itemId: String?) {
@@ -237,12 +238,41 @@ struct BoardItemEditor: View {
         }
       }
 
+      if let errors = item.errorRefs, !errors.isEmpty {
+        VStack(alignment: .leading, spacing: 8) {
+          HStack(spacing: 6) {
+            Text("Filed from errors").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+            Text("\(errors.count)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
+          }
+          Card {
+            ForEach(Array(errors.enumerated()), id: \.element.id) { index, ref in
+              CardRow(divider: index < errors.count - 1) { errorRow(ref) }
+            }
+          }
+        }
+      }
+
+      GithubRefsSection(projectId: store.projectId, kind: "board", targetId: item.id)
+
       VStack(alignment: .leading, spacing: 8) {
         Text("Changelog").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
         ChangelogLinksSection(projectId: store.projectId, kind: "board", targetId: item.id, source: ["title": item.title, "publicDescription": item.publicDescription])
       }
 
       Button { confirmDelete = true } label: { Label("Delete item", systemImage: "trash") }.buttonStyle(GhostButtonStyle(tint: Theme.error))
+    }
+  }
+
+  /// An error this item was filed from, with the way back to the tracker.
+  private func errorRow(_ ref: BoardErrorRef) -> some View {
+    HStack(spacing: 8) {
+      Image(systemName: "ladybug").font(.system(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 16)
+      Text(ref.title.isEmpty ? ref.issueId : ref.title).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
+      Spacer(minLength: 4)
+      if let url = URL(string: ref.url), !ref.url.isEmpty {
+        Button { openURL(url) } label: { Label("Open in \(ref.providerName)", systemImage: "arrow.up.right") }
+          .buttonStyle(.lnGhost)
+      }
     }
   }
 

@@ -27,6 +27,7 @@ JWT for the signed-in user. Claims:
 | `email` | optional; enables email notifications for that user |
 | `username` | optional; the public handle feedback boards show and `@mention` by — never an email address |
 | `avatar` | optional; an http(s) image URL for feedback boards |
+| `locale` | optional; the person's language, a tag such as `es` or `pt-BR`. It fills the contact's language the first time (one set in the panel or over the API is never replaced), and campaigns and sequences then send the matching translation of a template. See [Languages](LANGUAGES.md#a-contacts-language) |
 | `role` | optional; `admin` lets one of your staff moderate the feedback board |
 | `iat`, `exp` | issued-at and expiry (an hour is plenty) |
 

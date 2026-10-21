@@ -10,6 +10,7 @@ a half-translated screen never goes blank.
 | [Onboarding](ONBOARDING.md#languages) | One flow, a translation per language of its name, titles, bodies, button labels and image descriptions. Apps ask for one with `?locale=`. |
 | [Legal documents](LEGAL.md#other-languages) | One linked document per language, each with its own page, versions and publish state. |
 | [Emails](EMAIL.md#languages) | One template, a translation per language of its words. A send names the language with `locale`. |
+| [Campaigns, sequences and welcome emails](#a-contacts-language) | Each contact has a language; every recipient gets the translation of the template closest to it. |
 
 A language is a tag in the usual form: `es`, `fr`, `pt-BR`, `zh-Hant`. HelpBites
 writes them in one spelling (`pt_br` becomes `pt-BR`) and matches the nearest one:
@@ -100,12 +101,49 @@ Build your own screens on these when the drop-in script and snippet are not what
 you want; the answers say which language you got (`locale`), so you can pick your
 own words around them.
 
+## A contact's language
+
+Every [contact](CONTACTS.md) can have a `language` (`es`, `pt-BR`): the language to write
+to them in. It is filled in, in this order of trust:
+
+- by your app, with the `locale` claim of the [identity token](CONNECTING.md#2-mint-identity-tokens-on-your-server).
+  It only fills a gap: a language you set by hand stays;
+- by you: in the contact's page (**Language**), over the API (`language` on
+  `POST /v1/contacts` and `PATCH /v1/contacts/:id`, empty clears it), or from a CSV
+  column or a synced column (the **Language** mapping; a value that is not a language
+  tag is left out, not an error);
+- by a [lead form](FORMS.md): the first language of the visitor's browser
+  (`Accept-Language`), when the contact has none yet.
+
+Campaigns, sequence steps and a lead form's welcome email are one design with the
+translations its template has. Each recipient gets the best match for their language:
+the exact tag, then the same language (`es-MX` gets `es`), then the template's own
+language, which is also what contacts without a language get. People are grouped by the
+language they receive, so one campaign sends one message per person in as many
+languages as the audience needs.
+
+- The campaign's own **Subject** is written in the template's language, so a translation
+  that has its own subject replaces it for those recipients. A translation without one
+  keeps the campaign's subject.
+- A language is only offered once it has words: an empty language added in the editor
+  is skipped.
+- Every translation must keep the unsubscribe link and your postal address in its
+  footer. A campaign (or a sequence being activated) with a translation that lost
+  either is refused, with the language named.
+- The design is frozen with its translations when a campaign starts sending, like the
+  rest of it, so translating the template later changes nothing already going out.
+- `{{contact.language}}` is a placeholder in any template.
+- Segments can ask for it: `language is es` (**Language** in the segment builder). A
+  segment of `language is es` that you send to a template without Spanish still receives
+  the template's own language.
+
 ## What is not translated
 
 - Emails you send as your own `html`, a `document` or a `message`: write them in the
   language you send.
-- Campaigns and sequences send the design as it was when they were set up; they are
-  not translated yet.
+- Blog posts sent as a newsletter: a post is written in one language, so everyone
+  gets it as written.
 - Mail HelpBites sends by itself (verification codes, conversation replies, digests)
   and the chat, feedback and changelog embeds are in the project's one language.
-- A contact has no language of its own yet: pass `locale` on each send.
+- The send API does not read a contact's language: pass `locale` on the request or on
+  each recipient (campaigns and sequences do read it).
