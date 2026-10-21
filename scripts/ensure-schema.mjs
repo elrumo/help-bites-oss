@@ -232,6 +232,12 @@ const SCHEMAS = {
       brand: { type: 'Object' },
       // The kit's own logo and icon files { logoUrl, logoDarkUrl, iconUrl }, kept here so pages that wear the project's look need no file query (shared/projectLook.ts).
       brandLook: { type: 'Object' },
+      // Who is behind the product, written once: { name, legalName, address, email, phone, website, dpo }. Legal and campaigns read it (shared/company.ts).
+      company: { type: 'Object' },
+      // The public pages of the published legal documents { privacyUrl, termsUrl, cookiesUrl, refundUrl }, kept here so email reads them without a query (server/utils/legalLinks.ts).
+      legalLinks: { type: 'Object' },
+      // The public hub page and the chat widget's Home tab { enabled, title, tagline, sections, links, widgetHome } (shared/hub.ts).
+      hub: { type: 'Object' },
       // Pages and CMS settings { previewUrl, brief } (shared/cms/content.ts).
       cms: { type: 'Object' },
       flags: { type: 'Array' },
@@ -600,7 +606,9 @@ const SCHEMAS = {
       unreadByUser: { type: 'Number' },
       userReadAt: { type: 'Date' },
       agentReadAt: { type: 'Date' },
-      archivedAt: { type: 'Date' }
+      archivedAt: { type: 'Date' },
+      // Feedback posts the team linked to it (ids), changed with $addToSet / $pull; ids that no longer resolve are skipped on read.
+      feedbackPostIds: { type: 'Array' }
     },
     indexes: {
       project_status_last: { _p_project: 1, status: 1, lastMessageAt: -1 },
@@ -621,6 +629,18 @@ const SCHEMAS = {
       assignable: { type: 'Boolean' }, userCanReopen: { type: 'Boolean' }, defaultPriority: { type: 'String' }
     },
     indexes: { project_key: { _p_project: 1, key: 1 } }
+  },
+  // Canned replies an operator inserts into the reply box; `{{firstName}}` and `{{name}}` are filled from the customer.
+  SavedReply: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      title: { type: 'String' },
+      body: { type: 'String' },
+      // Lowercase handle without a slash; '' when none.
+      shortcut: { type: 'String' },
+      createdBy: { type: 'Pointer', targetClass: '_User' }
+    },
+    indexes: { project_title: { _p_project: 1, title: 1 } }
   },
   // --- Knowledge: models, the path tree, FAQs and their source documents. ---
   // Ordered before Message so Message.supportAgent's target exists on a fresh
@@ -709,7 +729,9 @@ const SCHEMAS = {
       indexedAt: { type: 'Date' },
       metadata: { type: 'Object' },
       createdBy: { type: 'Pointer', targetClass: '_User' },
-      lastProcessedAt: { type: 'Date' }
+      lastProcessedAt: { type: 'Date' },
+      // The conversation an FAQ was saved from (origin `conversation`).
+      conversationId: { type: 'String' }
     },
     indexes: {
       model_status: { _p_knowledgeModel: 1, status: 1 },
@@ -911,9 +933,14 @@ const SCHEMAS = {
       public: { type: 'Boolean' },
       feedbackPostIds: { type: 'Array' },
       conversationIds: { type: 'Array' },
+      // Errors this item was filed from: [{ provider, issueId, linkId, title, url }], and the same issues as
+      // "provider:issueId" strings, which is what filing again looks up (Parse cannot query inside the objects).
+      errorRefs: { type: 'Array' },
+      errorKeys: { type: 'Array' },
       completedAt: { type: 'Date' }
     },
     indexes: {
+      project_error_keys: { _p_project: 1, errorKeys: 1 },
       project_status_rank: { _p_project: 1, status: 1, rank: 1 },
       project_number: { _p_project: 1, number: 1 },
       project_posts: { _p_project: 1, feedbackPostIds: 1 },

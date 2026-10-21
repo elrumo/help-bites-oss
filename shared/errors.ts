@@ -187,3 +187,40 @@ export function flattenEvent(event: unknown): unknown {
   const entry = (type: string) => data.entries.find((e: any) => e?.type === type)?.data
   return { ...data, exception: entry('exception') ?? data.exception, breadcrumbs: entry('breadcrumbs') ?? data.breadcrumbs, request: entry('request') ?? data.request, tags: Array.isArray(data.tags) ? data.tags.map((t: any) => (t?.key ? [t.key, t.value] : t)) : data.tags }
 }
+
+// ---- filing an error on the project board -------------------------------------------
+
+/** The tracker's own page for an issue, from the link's issues list address (`issuesUrl`). */
+export function trackerIssueUrl(providerId: string, issuesUrl: string, issueId: string): string {
+  const base = String(issuesUrl || '').trim().replace(/\/+$/, '')
+  if (!base || !issueId) return ''
+  const id = encodeURIComponent(issueId)
+  // GlitchTip lists at <url>/<org>/issues; Bugsink at <url>/issues/<project>/.
+  return providerId === 'bugsink' ? `${base.replace(/\/issues\/[^/]+$/, '')}/issues/issue/${id}/event/last/` : `${base}/${id}`
+}
+
+export type ErrorBoardDraft = { title: string, description: string, culprit: string, count: number }
+
+/**
+ * What a board item filed from an error says: the issue's own title (GlitchTip
+ * `title`, Bugsink type and value, else the latest event's exception), and an
+ * internal description with its culprit, how often it happened and the link to
+ * the tracker. `issue` is the tracker's raw record, `detail` errorDetailOf's.
+ */
+export function errorBoardDraft(rawIssue: unknown, detail: ErrorDetail, input: { providerName: string, url: string }): ErrorBoardDraft {
+  const issue = (rawIssue || {}) as Record<string, any>
+  const fromBugsink = [issue.calculated_type, issue.calculated_value].filter(Boolean).join(': ')
+  const fromEvent = [detail.exception.type, detail.exception.value].filter(Boolean).join(': ')
+  const title = text(issue.title || fromBugsink || fromEvent || 'Error', 200).replace(/\s+/g, ' ').trim() || 'Error'
+  const culprit = text(issue.culprit || issue.transaction, 300)
+  const count = detail.issue.count
+  const lines = [
+    `Filed from ${input.providerName}${detail.issue.shortId ? ` issue ${detail.issue.shortId}` : ''}.`,
+    '',
+    ...(culprit ? [`- Where: \`${culprit.replace(/`/g, "'")}\``] : []),
+    `- Seen: ${count} ${count === 1 ? 'time' : 'times'}${detail.issue.lastSeen ? `, last at ${detail.issue.lastSeen}` : ''}`,
+    ...(detail.exception.value ? [`- Message: ${detail.exception.value.replace(/\s+/g, ' ').slice(0, 300)}`] : []),
+    ...(input.url ? ['', `[Open the issue in ${input.providerName}](${input.url})`] : [])
+  ]
+  return { title, description: lines.join('\n'), culprit, count }
+}

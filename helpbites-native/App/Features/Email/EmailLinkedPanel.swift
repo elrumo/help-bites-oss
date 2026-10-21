@@ -88,7 +88,7 @@ struct EmailLinkedPanel: View {
     VStack(alignment: .leading, spacing: 8) {
       heading("Brand")
       markdown((usesBrand ? "Filled in from this project: " : "This master does not use the project brand placeholders yet. Available: ")
-        + "`{{project.name}}`, `{{project.logoUrl}}`, `{{project.url}}`. Buttons in the master's brand colour take the project accent.")
+        + "`{{project.name}}`, `{{project.logoUrl}}`, `{{project.url}}`, `{{project.company}}`, `{{project.address}}`, `{{project.email}}`, `{{project.privacyUrl}}`, `{{project.termsUrl}}`. Buttons in the master's brand colour take the project accent.")
       if let brand {
         FlowLayout(spacing: 6) {
           Tag(text: brand.name)

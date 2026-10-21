@@ -16,15 +16,17 @@ export const IMPORT_ORDER = [
   'EndUser',
   'ContactSegment',
   'ConversationType',
+  'SavedReply',
   'KnowledgeModel',
   'KnowledgeNode',
   'KnowledgeDocument',
   'Faq',
   'SupportAgent',
   'AgentKnowledgeAssignment',
+  // Before the conversations that link it (Conversation.feedbackPostIds).
+  'FeedbackPost',
   'Conversation',
   'Message',
-  'FeedbackPost',
   'FeedbackComment',
   'FeedbackVote',
   'FeedbackSubscription',
@@ -87,7 +89,8 @@ export const PROJECT_PINNED = ['KnowledgeModel', 'SupportAgent', 'EmailFolder', 
  * replaced with the new ones; any other value stays as it was.
  */
 export const ID_PATHS: Record<string, Record<string, string>> = {
-  Conversation: { assistantId: 'SupportAgent' },
+  Conversation: { assistantId: 'SupportAgent', feedbackPostIds: 'FeedbackPost' },
+  Faq: { conversationId: 'Conversation' },
   Message: { replyToId: 'Message' },
   FeedbackPost: { pinnedCommentId: 'FeedbackComment' },
   FeedbackComment: { parentId: 'FeedbackComment', replyToId: 'FeedbackComment' },
@@ -103,7 +106,8 @@ export const ID_PATHS: Record<string, Record<string, string>> = {
 
 /** Fields that mean something only on the instance they came from. */
 export const DROP_FIELDS: Record<string, string[]> = {
-  Project: ['repos', 'repoIds', 'telegram', 'changelogRun'],
+  // legalLinks holds absolute URLs on the source instance; the next legal publish rebuilds them here.
+  Project: ['repos', 'repoIds', 'telegram', 'changelogRun', 'legalLinks'],
   EmailTemplate: ['lastActorId'],
   EmailLog: ['actorId']
 }

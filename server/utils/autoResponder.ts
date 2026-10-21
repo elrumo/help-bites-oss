@@ -14,7 +14,7 @@ import { matchAgentRules } from '#shared/knowledge'
  *  (stored on the conversation at creation), else the project's first active
  *  auto-reply assistant, so conversations opened before assistant selection —
  *  and hosts that don't pass one — still work. */
-async function resolveConversationAssistant(conversation: ParseObject, projectId: string): Promise<ParseObject | null> {
+export async function resolveConversationAssistant(conversation: ParseObject, projectId: string): Promise<ParseObject | null> {
   const Parse = useParse()
   const assistantId = String(conversation.get('assistantId') || '')
   if (assistantId) {
@@ -24,6 +24,18 @@ async function resolveConversationAssistant(conversation: ParseObject, projectId
   const project = Parse.Object.extend('Project').createWithoutData(projectId)
   return await new Parse.Query('SupportAgent')
     .equalTo('project', project).equalTo('autoReply', true).equalTo('status', 'active').first(MASTER)
+}
+
+/**
+ * The assistant that drafts a reply for an operator (conversationHub.ts): the same
+ * one that would auto-reply, else any active assistant of the project. A draft is
+ * asked for by a person, so an assistant with auto-reply off still writes it.
+ */
+export async function resolveDraftAssistant(conversation: ParseObject, projectId: string): Promise<ParseObject | null> {
+  const answering = await resolveConversationAssistant(conversation, projectId)
+  if (answering) return answering
+  const project = useParse().Object.extend('Project').createWithoutData(projectId)
+  return await new (useParse()).Query('SupportAgent').equalTo('project', project).equalTo('status', 'active').ascending('createdAt').first(MASTER) || null
 }
 
 /** Queue an answer to the user's message when an assistant would give one. */

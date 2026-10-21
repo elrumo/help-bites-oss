@@ -75,6 +75,7 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   ContactSegment: { scope: 'project' },
   Conversation: { scope: 'project' },
   ConversationType: { scope: 'project' },
+  SavedReply: { scope: 'project' },
   KnowledgeModel: { scope: 'workspace' },
   KnowledgeNode: { scope: 'parent', parent: KNOWLEDGE },
   KnowledgeDocument: { scope: 'parent', parent: KNOWLEDGE },
