@@ -73,6 +73,17 @@ struct UsageScreen: View {
   }
 }
 
+/// The features a plan can include, with their labels (shared/entitlements.ts FEATURES and FEATURE_LABELS).
+enum PlanFeature {
+  static let labels: [(key: String, label: String)] = [
+    ("campaigns", "Campaigns"), ("sequences", "Sequences"), ("contactSources", "Database sync"), ("eventWebhooks", "Event webhooks"),
+    ("customSendingDomain", "A custom sending domain"), ("removeBranding", "Removing the HelpBites branding"), ("byoLlm", "Your own AI provider"),
+    ("emailAiUltra", "The Ultra AI designer"), ("multiWorkspace", "More workspaces"), ("legalDocs", "Hosted legal documents")
+  ]
+
+  static func label(_ key: String) -> String { labels.first { $0.key == key }?.label ?? key }
+}
+
 private struct UsageBar: View {
   let percent: Int
   let tint: Color
@@ -108,12 +119,6 @@ struct UsageSnapshot: Decodable, Sendable {
     ("projects", "Projects"), ("seats", "Teammates"), ("apiKeys", "API keys"), ("knowledgeModels", "Knowledge models"),
     ("assistants", "Assistants"), ("faqs", "FAQs"), ("contacts", "Contacts"), ("storageBytes", "Storage")
   ]
-  private static let featureLabels: [(key: String, label: String)] = [
-    ("campaigns", "Campaigns"), ("sequences", "Sequences"), ("contactSources", "Database sync"), ("eventWebhooks", "Event webhooks"),
-    ("customSendingDomain", "A custom sending domain"), ("removeBranding", "Removing the HelpBites branding"), ("byoLlm", "Your own AI provider"),
-    ("emailAiUltra", "The Ultra AI designer"), ("multiWorkspace", "More workspaces"), ("legalDocs", "Hosted legal documents")
-  ]
-
   var rows: [Row] {
     Self.metrics.compactMap { key, label in
       guard let entry = limits[key], let limit = entry else { return nil }
@@ -123,7 +128,7 @@ struct UsageSnapshot: Decodable, Sendable {
   }
 
   var included: [Included] {
-    Self.featureLabels.map { Included(label: $0.label, on: features[$0.key] ?? false) }
+    PlanFeature.labels.map { Included(label: $0.label, on: features[$0.key] ?? false) }
       + (apiPerMinute.map { [Included(label: "Admin API: \($0.formatted()) requests a minute", on: true)] } ?? [])
       + (emailLogDays.map { [Included(label: "Email log kept for \($0) days", on: true)] } ?? [])
   }

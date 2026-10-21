@@ -295,6 +295,20 @@ struct ErrorText: View {
   }
 }
 
+/// What a screen's plan leaves out (web: PlanLock.vue); show it when `session.isLocked(feature)`.
+/// What is already there stays; the server refuses anything new.
+struct PlanLockNotice: View {
+  let feature: String
+  @Environment(SessionStore.self) private var session
+  var body: some View {
+    Label("\(PlanFeature.label(feature)) is not part of the \(session.plan?.name ?? "current") plan. Anything already here is kept.", systemImage: "lock")
+      .font(.lnMeta).foregroundStyle(Theme.textMuted)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, 12).padding(.vertical, 8)
+      .background(Theme.elevated, in: RoundedRectangle(cornerRadius: 8))
+  }
+}
+
 /// Placeholder rows while a list loads.
 struct SkeletonRows: View {
   var count = 5

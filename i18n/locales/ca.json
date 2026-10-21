@@ -2103,7 +2103,8 @@
       "features": "Funcions",
       "docs": "Docs",
       "source": "Codi",
-      "demo": "Demo"
+      "demo": "Demo",
+      "signUp": "Registra't"
     },
     "hero": {
       "title": "La navalla suïssa per als desenvolupadors indie.",
@@ -3753,6 +3754,9 @@
       "dailyReset": "Aquest recompte es reinicia a mitjanit UTC.",
       "byoAi": "El teu propi proveïdor d'IA (Configuració → IA) no consumeix crèdits.",
       "close": "Tanca"
+    },
+    "planLock": {
+      "notInPlan": "{feature} no forma part del pla {plan}. Tot el que ja hi ha es conserva, i millorar el pla ho activa."
     },
     "transfer": {
       "title": "Porta-ho a un altre HelpBites",

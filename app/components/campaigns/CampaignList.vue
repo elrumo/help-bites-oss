@@ -50,6 +50,7 @@ const when = (c: Campaign) => logTime(c.finishedAt || c.startedAt || c.scheduled
         <UButton icon="i-lucide-plus" :label="$t('campaigns.new')" size="sm" :loading="creating" @click="create" />
       </template>
     </PageHeader>
+    <PlanLock feature="campaigns" />
 
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div v-if="loading" class="space-y-1 p-4"><USkeleton v-for="i in 5" :key="i" class="h-11" /></div>
