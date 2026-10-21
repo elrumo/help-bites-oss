@@ -2784,7 +2784,7 @@
     "fallbackHuman": "상담원에게 넘기기",
     "fallbackSilent": "응답하지 않기",
     "autoReply": "이 프로젝트의 사용자에게 자동 답장",
-    "autoReplyHint": "— 기본값은 꺼짐. 근거 있는 답변을 이 어시스턴트 이름으로 보냅니다",
+    "autoReplyHint": "— 기본값은 꺼짐이며 상태가 활성일 때만 작동합니다. 근거 있는 답변을 이 어시스턴트 이름으로 보냅니다",
     "whenAi": "AI로 답변할 때",
     "minConfidence": "최소 신뢰도",
     "minConfidenceHint": "가장 좋은 지식 일치 결과의 확신도가 이 값 이상일 때만 AI 답변을 보냅니다. 0% = 항상 시도.",

@@ -2784,7 +2784,7 @@
     "fallbackHuman": "转交人工",
     "fallbackSilent": "保持沉默",
     "autoReply": "自动回复此项目的用户",
-    "autoReplyHint": "— 默认关闭；以此助手的身份发送有依据的回答",
+    "autoReplyHint": "— 默认关闭，且仅在状态为“启用”时生效；以此助手的身份发送有依据的回答",
     "whenAi": "何时使用 AI 回答",
     "minConfidence": "最低置信度",
     "minConfidenceHint": "仅当最佳知识匹配的把握至少达到此值时才发送 AI 回答。0% = 始终尝试。",

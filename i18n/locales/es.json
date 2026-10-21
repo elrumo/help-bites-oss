@@ -2784,7 +2784,7 @@
     "fallbackHuman": "Pasar a una persona",
     "fallbackSilent": "Permanecer en silencio",
     "autoReply": "Responder automáticamente a los usuarios de este proyecto",
-    "autoReplyHint": "— desactivado por defecto; envía respuestas fundamentadas como este asistente",
+    "autoReplyHint": "— desactivado por defecto, y solo mientras el estado sea Activo; envía respuestas fundamentadas como este asistente",
     "whenAi": "Cuándo responder con IA",
     "minConfidence": "Confianza mínima",
     "minConfidenceHint": "Solo envía una respuesta de IA cuando la mejor coincidencia de conocimiento tenga al menos esta seguridad. 0% = intentarlo siempre.",

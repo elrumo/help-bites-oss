@@ -2809,7 +2809,7 @@
     "fallbackHuman": "Hand to a human",
     "fallbackSilent": "Stay silent",
     "autoReply": "Automatically reply to this project's users",
-    "autoReplyHint": "— off by default; sends grounded answers as this assistant",
+    "autoReplyHint": "— off by default, and only while the status is Active; sends grounded answers as this assistant",
     "whenAi": "When to answer with AI",
     "minConfidence": "Minimum confidence",
     "minConfidenceHint": "Only send an AI answer when the best knowledge match is at least this sure. 0% = always try.",

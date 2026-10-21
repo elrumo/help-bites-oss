@@ -91,7 +91,7 @@ struct AssistantDetailScreen: View {
       Toggle(isOn: $draft.autoReply.animation(.snappy)) {
         VStack(alignment: .leading, spacing: 2) {
           Text("Automatically reply to this project's users").font(.lnCallout).foregroundStyle(Theme.text)
-          Text("Off by default; sends grounded answers as this assistant").font(.lnCaption).foregroundStyle(Theme.textMuted)
+          Text("Off by default, and only while the status is Active; sends grounded answers as this assistant").font(.lnCaption).foregroundStyle(Theme.textMuted)
         }
       }
       .tint(Theme.accent)
