@@ -32,6 +32,8 @@ enum AppRoute: Hashable {
   case legalDocument(String, String)
   /// One onboarding flow (project id, flow id).
   case onboardingFlow(String, String)
+  /// One page or other CMS entry (project id, entry id).
+  case pageEntry(String, String)
 }
 
 /// The tab bar's tabs (iPhone), which become the sidebar on iPad and Mac. The
@@ -43,7 +45,7 @@ enum AppTab: Hashable {
 
 /// A project's sections, nested under it in the sidebar like a Linear team's.
 enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
-  case overview, conversations, contacts, revenue, knowledge, assistants, tickets, feedback, board, changelog, onboarding, legal, brand, email, campaigns, flags, errors, dev, settings
+  case overview, conversations, contacts, revenue, knowledge, assistants, tickets, feedback, board, changelog, onboarding, legal, brand, pages, email, campaigns, flags, errors, dev, settings
   var id: String { rawValue }
   var label: String {
     switch self {
@@ -60,6 +62,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .onboarding: "Onboarding"
     case .legal: "Legal"
     case .brand: "Brand"
+    case .pages: "Pages"
     case .email: "Email"
     case .campaigns: "Campaigns"
     case .flags: "Flags"
@@ -85,6 +88,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .onboarding: "rectangle.stack"
     case .legal: "scale.3d"
     case .brand: "paintpalette"
+    case .pages: "doc.richtext"
     case .settings: "gearshape"
     case .flags: "switch.2"
     case .errors: "ladybug"
@@ -165,6 +169,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .onboardingFlow(let id, _):
       if sidebar { tab = .section(id, .onboarding); return }
       go(.project(id, .onboarding)); projectsPath.append(route)
+    case .pageEntry(let id, _):
+      if sidebar { tab = .section(id, .pages); return }
+      go(.project(id, .pages)); projectsPath.append(route)
     }
     #endif
   }
@@ -180,6 +187,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
       macPath = [route]
     case .onboardingFlow(let id, _):
       macSelection = .project(id, .onboarding)
+      macPath = [route]
+    case .pageEntry(let id, _):
+      macSelection = .project(id, .pages)
       macPath = [route]
     default:
       macSelection = route

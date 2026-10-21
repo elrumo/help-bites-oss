@@ -22,7 +22,7 @@ device registration routes, and the event-bus APNs fan-out. Push stays disabled
 until APNs credentials are present in the server environment.
 
 The app covers every page of the web panel (inbox, projects and all their
-sections including Changelog, Onboarding, Legal, Brand and Revenue, Knowledge, Email, workspace
+sections including Changelog, Onboarding, Legal, Brand, Pages and Revenue, Knowledge, Email, workspace
 settings, AI, connections, team and invitations). It wears the web panel's
 Linear-style design, and gets around the way each platform does. iPhone has a tab bar (Inbox, Projects, Templates, Settings), with
 each tab's pages pushed beneath it: Projects › project › section. On iPad the
@@ -37,7 +37,7 @@ App/
   Design/     Theme (the web panel's tokens, light/dark), glyphs, components
   Shell/      RootView, sign in, AppShell (tabs/sidebar, routes, menu bar), Workspace, ⌘K palette
   Features/   one folder per area of the panel: Inbox, Projects, Contacts, Knowledge,
-              Assistants, Tickets, Feedback, Board, Changelog, Onboarding, Legal, Brand, Email,
+              Assistants, Tickets, Feedback, Board, Changelog, Onboarding, Legal, Brand, Pages, Email,
               Campaigns, Flags, Settings
 ```
 

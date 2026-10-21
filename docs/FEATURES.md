@@ -454,9 +454,13 @@ See [EDITIONS.md](EDITIONS.md).
   [ONBOARDING.md](ONBOARDING.md)
 - **Brand kit.** No download-everything archive yet; files download one by one.
   [BRAND.md](BRAND.md)
-- **Pages and CMS.** Web-only for now: no native screens. No custom domains for
-  hosted pages, no scripts in components, no per-field translations, scheduled
-  publishing, version history or generated TypeScript types yet. [PAGES.md](PAGES.md)
+- **Pages and CMS.** The native app lists, creates, edits, publishes and deletes
+  entries (a block outline with each block's fields and animation), manages files
+  and settings; the assistant and wizard, the live preview, undo, writing
+  components (HTML and CSS) and moving a block between lists are web-only. No custom
+  domains for hosted pages, no scripts in components, no per-field translations,
+  scheduled publishing, version history or generated TypeScript types yet.
+  [PAGES.md](PAGES.md)
 - **Translations.** Onboarding, legal documents and template emails have them;
   campaigns, sequences, the mail HelpBites sends itself, the chat, feedback and
   changelog embeds and CMS pages do not yet, and a contact has no language of its

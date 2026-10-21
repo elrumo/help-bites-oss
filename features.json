@@ -287,7 +287,7 @@
       "plan": "all",
       "status": "stable",
       "web": { "panel": ["app/pages/projects/[id]/pages/index.vue", "app/pages/projects/[id]/pages/[entryId].vue", "app/pages/projects/[id]/pages/components/[componentId].vue"], "public": ["/p/:pk", "/p/:pk/:slug"] },
-      "native": { "folders": [] },
+      "native": { "folders": ["helpbites-native/App/Features/Pages"], "parity": "tests/cmsNativeParity.test.ts" },
       "api": { "prefixes": ["/v1/cms", "/v1/admin/cms"], "docs": "docs/PAGES.md" },
       "embed": { "web": "public/pages.js", "swift": "docs/PAGES.md#in-a-swift-app", "customize": ["data-page", "data-target", "data-height", "data-title", "HelpBitesPages.push(['init', …])", "the page's own style (accent, mode, radius, fonts, width)", "CSS variables and .hb-* classes in components", "cms.mjs client, editable() and bridge() for your own UI", "Swift accent, titleFont and cornerRadius"] },
       "landing": { "listed": true, "key": "landing.features.team.pages" }
@@ -442,7 +442,7 @@
     "Onboarding keeps no completion statistics; apps learn outcomes from the web script's callbacks and events or the Swift onFinish.",
     "The brand kit has no download-everything archive; each file downloads on its own.",
     "Bugsink issues cannot be searched by customer.",
-    "Pages and the CMS are web-only: the native app has no screens for them yet.",
+    "The native Pages screens list, create, edit (the block outline and each block's fields and animation), publish and delete entries, and manage files and settings. The AI assistant and wizard, the live preview, undo and writing components (HTML and CSS) are web-only; moving a block to another list is too (the native outline moves within a list).",
     "Native translations: the legal screen lists and opens a document's other languages but cannot link an existing document as a translation (PATCH translationOf works on the API and the web); the email editor shows translation edits made elsewhere after a reload, since the live stream does not carry them; the onboarding offline copy is the flow's own language only.",
     "Translations cover onboarding, legal documents and emails sent from a template. Campaigns, sequences, the mail HelpBites sends by itself, the chat, feedback and changelog embeds and CMS pages have no translations yet, and a contact has no language of its own.",
     "Hosted pages have no custom domains yet; they live at /p/<public key> on the HelpBites host.",
