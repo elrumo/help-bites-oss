@@ -156,3 +156,38 @@ struct ContactDetailSheet: View {
     } catch { self.error = error.localizedDescription }
   }
 }
+
+/// A person opened by id, for places that only know the id (a revenue row): loads the contact, then shows the same sheet.
+struct ContactSheetByID: View {
+  let projectId: String
+  let contactId: String
+  @Environment(SessionStore.self) private var session
+  @Environment(\.dismiss) private var dismiss
+  @State private var contact: Contact?
+  @State private var error = ""
+
+  var body: some View {
+    Group {
+      if let contact {
+        ContactDetailSheet(projectId: projectId, contact: contact) { changed in if changed == nil { dismiss() } }
+      } else {
+        NavigationStack {
+          VStack(spacing: 12) {
+            if error.isEmpty { ProgressView() } else { ErrorText(message: error) }
+          }
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .navigationTitle("Contact")
+          .navigationBarTitleDisplayMode(.inline)
+          .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+        }
+      }
+    }
+    .task(id: contactId) {
+      struct Output: Decodable, Sendable { let contact: Contact }
+      do {
+        let output: Output = try await session.get("/v1/contacts/\(contactId)", query: ["project": projectId])
+        contact = output.contact
+      } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
+    }
+  }
+}
