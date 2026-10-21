@@ -13,7 +13,7 @@ contacts ([CONTACTS.md](CONTACTS.md)).
 |---|---|
 | `HELPBITES_SECRET` | Required. Signs unsubscribe and confirm links, seals source credentials. 32+ random characters (`openssl rand -base64 48`). Never rotate it casually: old unsubscribe links must keep working (CAN-SPAM: 30 days at least). |
 | `APP_URL` | Required. The public origin unsubscribe and preference links point at. |
-| `MAILGUN_*` | As for all email. Optionally a separate sending domain for marketing (Settings → Sender), which must belong to the same Mailgun account. |
+| `MAILGUN_*` | As for all email. Optionally a separate sending domain for marketing (Settings → Sender), which must belong to the same Mailgun account. Without a mailer a campaign cannot be scheduled nor a sequence activated; a due sequence step waits an hour and tries again. |
 
 In **Settings**: the **postal address** (required in every campaign), the
 **topics**, double opt-in, the thank-you URL, the marketing sender, and the
