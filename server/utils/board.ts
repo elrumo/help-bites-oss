@@ -4,6 +4,7 @@ import {
   ROADMAP_CATEGORIES,
   normalizeBoardConfig,
   readBoardItemInput,
+  readErrorRefs,
   toRoadmapItem,
   type BoardConfig,
   type BoardItem,
@@ -15,6 +16,7 @@ import {
 } from '#shared/board'
 import { defaultFeedbackStatus, feedbackStatusCategory, parsePostRef, type FeedbackStatusCategory } from '#shared/feedback'
 import type { FeedbackContext } from './feedback'
+import { emitDomainEventLater } from './domainEvents'
 
 // Project boards: Linear-style items an operator triages on a kanban, linked to
 // the feedback posts and support conversations they answer. Operators only —
@@ -112,6 +114,7 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
       public: row.get('public') === true,
       feedbackPostIds: stringList(row.get('feedbackPostIds')),
       conversationIds: stringList(row.get('conversationIds')),
+      errorRefs: readErrorRefs(row.get('errorRefs')),
       voteCount: linkedPosts.filter(post => !post.hidden).reduce((sum, post) => sum + post.voteCount, 0),
       posts: linkedPosts,
       conversations: stringList(row.get('conversationIds')).map(id => conversations.get(id)).filter((c): c is BoardLinkedConversation => Boolean(c)),
@@ -226,6 +229,7 @@ export async function createBoardItem(project: ParseObject, agent: ParseObject, 
   row.set('number', await allocateProjectNumber(project, 'boardItemSeq', 'BoardItem'))
   await row.save(null, MASTER)
   for (const target of targets) await applyLink(row, target, true, agent)
+  emitDomainEventLater(project, 'board.item.created', { itemId: row.id, number: row.get('number') ?? null })
   return row
 }
 
@@ -246,6 +250,7 @@ export async function updateBoardItem(project: ParseObject, agent: ParseObject, 
   const transition = statusTransition(board, from, to, row.get('completedAt') as Date | undefined, new Date())
   if (transition.completedAt) row.set('completedAt', transition.completedAt)
   await row.save(null, MASTER)
+  if (transition.changed) emitDomainEventLater(project, 'board.item.status_changed', { itemId: row.id, number: row.get('number') ?? null, from, to })
 
   const category = feedbackStatusCategory(board, to)
   // An item that has just shipped may get a draft changelog entry. Before the sync below, so

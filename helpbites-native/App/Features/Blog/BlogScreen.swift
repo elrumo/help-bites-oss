@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// A project's blog (pages/projects/[id]/blog/index.vue): its posts, the comments
-/// readers leave on them, and the settings. Nothing is public until the blog is on
-/// and a post is published; a scheduled post goes live on its own.
+/// A project's blog (pages/projects/[id]/blog/index.vue): its posts and pages, the
+/// comments readers leave on them, the settings, the hosted blog's design and an
+/// import from Ghost. Nothing is public until the blog is on and a post is
+/// published; a scheduled post goes live on its own.
 struct BlogScreen: View {
   let projectId: String
   @Environment(Workspace.self) private var workspace
@@ -13,19 +14,36 @@ struct BlogScreen: View {
 }
 
 private enum BlogSheet: Identifiable {
-  case post(String?), settings
+  /// An existing post or page by id, or a new one of a kind.
+  case post(String?, BlogKind), settings, design, importGhost
   var id: String {
     switch self {
-    case .post(let id): "post-\(id ?? "new")"
+    case .post(let id, let kind): "post-\(id ?? "new-\(kind.rawValue)")"
     case .settings: "settings"
+    case .design: "design"
+    case .importGhost: "import"
     }
   }
 }
 
 private enum BlogTab: String, CaseIterable, Identifiable {
-  case posts, comments
+  case posts, pages, comments
   var id: String { rawValue }
-  var label: String { self == .posts ? "Posts" : "Comments" }
+  var label: String {
+    switch self {
+    case .posts: "Posts"
+    case .pages: "Pages"
+    case .comments: "Comments"
+    }
+  }
+  /// What a list tab shows; nil for the comments.
+  var kind: BlogKind? {
+    switch self {
+    case .posts: .post
+    case .pages: .page
+    case .comments: nil
+    }
+  }
 }
 
 private struct BlogView: View {
@@ -44,15 +62,17 @@ private struct BlogView: View {
       .toolbar { toolbar }
       .sheet(item: $sheet) { route in
         switch route {
-        case .post(let id): BlogPostEditor(store: store, postId: id)
+        case .post(let id, let kind): BlogPostEditor(store: store, postId: id, kind: kind)
         case .settings: BlogSettingsSheet(store: store)
+        case .design: BlogDesignSheet(store: store)
+        case .importGhost: BlogImportSheet(store: store)
         }
       }
       .feedbackErrorAlert($store.alert)
-      .confirmationDialog("Delete this post?", isPresented: binding($deleting), titleVisibility: .visible, presenting: deleting) { post in
-        Button("Delete post", role: .destructive) { Task { await delete(post) } }
+      .confirmationDialog(deleting?.isPage == true ? "Delete this page?" : "Delete this post?", isPresented: binding($deleting), titleVisibility: .visible, presenting: deleting) { post in
+        Button(post.isPage ? "Delete page" : "Delete post", role: .destructive) { Task { await delete(post) } }
       } message: { _ in
-        Text("Its comments and reactions go with it. A newsletter it went out as stays under Campaigns.")
+        Text("Its comments and reactions go with it. A newsletter it went out as stays under Email → Campaigns.")
       }
       .confirmationDialog("Delete this comment?", isPresented: binding($deletingComment), titleVisibility: .visible, presenting: deletingComment) { comment in
         Button("Delete comment", role: .destructive) { Task { await store.deleteComment(comment) } }
@@ -69,6 +89,7 @@ private struct BlogView: View {
         if phase == .active { Task { await store.refresh() } }
       }
       .onChange(of: tab) { _, tab in
+        if let kind = tab.kind { store.kind = kind }
         if tab == .comments { Task { await store.loadComments() } }
       }
       .onChange(of: store.commentFilter) { _, _ in Task { await store.loadComments() } }
@@ -104,9 +125,9 @@ private struct BlogView: View {
         Picker("View", selection: $tab) {
           ForEach(BlogTab.allCases) { Text($0.label).tag($0) }
         }
-        .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 320)
+        .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 360)
         .padding(.horizontal, Metrics.gutter).padding(.top, 10)
-        if tab == .posts { posts } else { comments }
+        if tab == .comments { comments } else { posts }
       }
     }
   }
@@ -135,14 +156,18 @@ private struct BlogView: View {
           }
           Divider()
           Button { sheet = .settings } label: { Label("Settings", systemImage: "slider.horizontal.3") }
+          Button { sheet = .design } label: { Label("Design", systemImage: "paintpalette") }
+          Button { sheet = .importGhost } label: { Label("Import from Ghost", systemImage: "square.and.arrow.down") }
         } label: { Label("More", systemImage: "ellipsis.circle") }
-        Button { sheet = .post(nil) } label: { Label("New post", systemImage: "plus") }
+        Button { sheet = .post(nil, store.kind) } label: { Label(newLabel, systemImage: "plus") }
           .keyboardShortcut("n", modifiers: .command)
       }
     }
   }
 
   // MARK: Posts
+
+  private var newLabel: String { store.kind == .page ? "New page" : "New post" }
 
   @ViewBuilder private var posts: some View {
     VStack(spacing: 10) {
@@ -158,10 +183,17 @@ private struct BlogView: View {
     }
     .padding(.vertical, 10)
     Rectangle().fill(Theme.border).frame(height: 1)
-    if store.posts.isEmpty {
+    if store.ofKind.isEmpty {
       ScrollView {
-        EmptyState(systemImage: "newspaper", title: "No posts yet", message: "Write release notes, tutorials or stories. Published posts appear on your hosted blog, in the embed, in the RSS feed and, if you like, in your subscribers' inboxes.") {
-          Button { sheet = .post(nil) } label: { Label("New post", systemImage: "plus") }.buttonStyle(.lnPrimary)
+        if store.kind == .page {
+          EmptyState(systemImage: "doc.text", title: "No pages yet", message: "Pages stand on their own (About, Contact, a reading list): they stay out of the list, the feed and the newsletter. Link them from the blog's navigation under Design.") {
+            Button { sheet = .post(nil, .page) } label: { Label("New page", systemImage: "plus") }.buttonStyle(.lnPrimary)
+          }
+        } else {
+          EmptyState(systemImage: "newspaper", title: "No posts yet", message: "Write release notes, tutorials or stories. Published posts appear on your hosted blog, in the embed, in the RSS feed and, if you like, in your subscribers' inboxes.") {
+            Button { sheet = .post(nil, .post) } label: { Label("New post", systemImage: "plus") }.buttonStyle(.lnPrimary)
+            Button { sheet = .importGhost } label: { Label("Import from Ghost", systemImage: "square.and.arrow.down") }.buttonStyle(.lnSecondary)
+          }
         }
       }
     } else {
@@ -192,19 +224,23 @@ private struct BlogView: View {
   }
 
   private func row(_ post: BlogPost) -> some View {
-    Button { sheet = .post(post.id) } label: {
+    Button { sheet = .post(post.id, post.isPage ? .page : .post) } label: {
       HStack(spacing: 10) {
         Group {
           if let url = URL(string: post.coverImageUrl), !post.coverImageUrl.isEmpty {
             CachedAsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
           } else {
-            Image(systemName: "newspaper").foregroundStyle(Theme.textDimmed).frame(maxWidth: .infinity, maxHeight: .infinity).background(Theme.elevated)
+            Image(systemName: post.isPage ? "doc.text" : "newspaper").foregroundStyle(Theme.textDimmed).frame(maxWidth: .infinity, maxHeight: .infinity).background(Theme.elevated)
           }
         }
         .frame(width: 44, height: 44).clipShape(RoundedRectangle(cornerRadius: Metrics.radiusSmall))
         .accessibilityHidden(true)
         VStack(alignment: .leading, spacing: 5) {
-          Text(post.title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(2).multilineTextAlignment(.leading)
+          HStack(alignment: .firstTextBaseline, spacing: 5) {
+            Text(post.title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(2).multilineTextAlignment(.leading)
+            if post.featured { Image(systemName: "star.fill").font(.system(size: 11)).foregroundStyle(Theme.warning).accessibilityLabel("Featured") }
+            if post.membersOnly { Image(systemName: "lock.fill").font(.system(size: 11)).foregroundStyle(Theme.textMuted).accessibilityLabel("Members only") }
+          }
           HStack(spacing: 6) {
             BlogChip(text: post.state.label, tint: post.state.tint)
             if post.publishedAt != nil { Text(DateText.day(post.publishedAt)).font(.lnCaption).foregroundStyle(Theme.textMuted) }
@@ -213,11 +249,13 @@ private struct BlogView: View {
           }
         }
         Spacer(minLength: 0)
-        VStack(alignment: .trailing, spacing: 3) {
-          Label("\(post.commentCount)", systemImage: "bubble.left")
-          Label("\(post.reactionTotal)", systemImage: "heart")
+        if !post.isPage {
+          VStack(alignment: .trailing, spacing: 3) {
+            Label("\(post.commentCount)", systemImage: "bubble.left")
+            Label("\(post.reactionTotal)", systemImage: "heart")
+          }
+          .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted).labelStyle(.titleAndIcon)
         }
-        .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted).labelStyle(.titleAndIcon)
       }
       .padding(.vertical, 8)
       .frame(maxWidth: .infinity, minHeight: Metrics.rowHeight, alignment: .leading)
@@ -226,9 +264,9 @@ private struct BlogView: View {
     .buttonStyle(.plain)
     .linearRow()
     .contextMenu {
-      Button { sheet = .post(post.id) } label: { Label("Open", systemImage: "square.and.pencil") }
+      Button { sheet = .post(post.id, post.isPage ? .page : .post) } label: { Label("Open", systemImage: "square.and.pencil") }
       if post.live, let url = URL(string: post.url) {
-        Link(destination: url) { Label("View the post", systemImage: "safari") }
+        Link(destination: url) { Label(post.isPage ? "View the page" : "View the post", systemImage: "safari") }
       }
       Divider()
       Button(role: .destructive) { deleting = post } label: { Label("Delete", systemImage: "trash") }

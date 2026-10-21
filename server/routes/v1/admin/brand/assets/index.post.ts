@@ -15,5 +15,6 @@ export default defineEventHandler(async (event) => {
   if (!file) throw createError({ statusCode: 400, statusMessage: 'Send the file as multipart field "file"' })
   const project = await brandProject(ctx, event, fields)
   const row = await createBrandAsset(project, ctx.workspaceId, { filename: String(file.filename || 'file'), mime: String(file.type || ''), data: Buffer.from(file.data) }, fields)
+  await refreshBrandLook(project)
   return { asset: serializeBrandAsset(project, row) }
 })

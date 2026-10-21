@@ -35,7 +35,15 @@
               </div>
 
               <div class="row">
-                <div class="row-label"><p class="row-title">{{ $t('projectPages.settings.colour') }}</p><p class="section-hint">{{ $t('projectPages.settings.colourHint') }}</p></div>
+                <div class="row-label">
+                  <p class="row-title">{{ $t('projectPages.settings.colour') }}</p>
+                  <p class="section-hint">{{ $t('projectPages.settings.colourHint') }}</p>
+                  <p class="section-hint">
+                    <i18n-t keypath="projectPages.settings.colourKit" tag="span">
+                      <template #brand><NuxtLink :to="`/projects/${id}/brand`" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('projectPages.settings.colourKitLink') }}</NuxtLink></template>
+                    </i18n-t>
+                  </p>
+                </div>
                 <div class="space-y-2.5">
                   <div class="flex flex-wrap gap-2" role="radiogroup" :aria-label="$t('projectPages.settings.accentColour')">
                     <button
@@ -102,6 +110,12 @@
             <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/gif,image/webp" class="hidden" @change="upload">
           </section>
 
+          <!-- Company -->
+          <section id="company" class="section">
+            <header><h2 class="section-title">{{ $t('projectPages.settings.company') }}</h2><p class="section-hint">{{ $t('projectPages.settings.companyHint') }}</p></header>
+            <div class="card"><SettingsProjectCompany v-model="form.company" /></div>
+          </section>
+
           <!-- Chat widget -->
           <section id="widget" class="section">
             <header><h2 class="section-title">{{ $t('projectPages.settings.chatWidget') }}</h2><p class="section-hint">{{ $t('projectPages.settings.chatWidgetHint') }}</p></header>
@@ -118,19 +132,31 @@
             </div>
           </section>
 
-          <!-- Email -->
-          <section id="email" class="section">
-            <header><h2 class="section-title">{{ $t('sections.email') }}</h2><p class="section-hint">{{ $t('projectPages.settings.emailHint') }}</p></header>
+          <!-- Public hub -->
+          <section id="hub" class="section">
+            <header><h2 class="section-title">{{ $t('projectPages.settings.hub') }}</h2><p class="section-hint">{{ $t('projectPages.settings.hubHint') }}</p></header>
+            <div class="card"><SettingsProjectHub v-model="form.hub" :public-key="project.publicKey" :project-name="project.name" /></div>
+          </section>
+
+          <!-- Notifications -->
+          <section id="notifications" class="section">
+            <header><h2 class="section-title">{{ $t('projectPages.settings.notifications') }}</h2><p class="section-hint">{{ $t('projectPages.settings.notificationsHint') }}</p></header>
             <div class="card">
-              <div class="grid gap-4 sm:grid-cols-2">
-                <UFormField :label="$t('projectPages.settings.replyAs')" :hint="$t('projectPages.settings.replyAsHint')"><UInput v-model="form.fromName" placeholder="Elías" class="w-full" /></UFormField>
-                <UFormField :label="$t('projectPages.settings.notifyWhenWrites')" :hint="$t('projectPages.settings.notifyHint')"><UInput v-model="form.notifyEmailsText" placeholder="you@example.com" class="w-full" /></UFormField>
-                <UFormField :label="$t('projectPages.settings.fromAddress')"><UInput v-model="form.fromEmail" type="email" :placeholder="emailSettings?.fromEmail || 'hello@mail.example.com'" class="w-full" /></UFormField>
-                <UFormField :label="$t('projectPages.settings.sendingDomain')"><UInput v-model="form.mailDomain" :placeholder="emailSettings?.domain || 'mail.example.com'" class="w-full font-mono text-xs" /></UFormField>
-                <UFormField :label="$t('projectPages.settings.replyTo')"><UInput v-model="form.replyTo" type="email" :placeholder="$t('projectPages.settings.replyToPlaceholder')" class="w-full" /></UFormField>
+              <UFormField :label="$t('projectPages.settings.notifyWhenWrites')" :hint="$t('projectPages.settings.notifyHint')"><UInput v-model="form.notifyEmailsText" placeholder="you@example.com" class="w-full" /></UFormField>
+              <p class="text-xs text-muted">{{ $t('projectPages.settings.senderMoved') }} <NuxtLink :to="`/projects/${id}/email?view=settings`" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('projectPages.settings.senderMovedLink') }}</NuxtLink></p>
+            </div>
+          </section>
+
+          <!-- Sidebar -->
+          <section id="sidebar" class="section">
+            <header><h2 class="section-title">{{ $t('projectPages.settings.sidebar') }}</h2><p class="section-hint">{{ $t('projectPages.settings.sidebarHint') }}</p></header>
+            <div class="divide-y divide-default overflow-hidden rounded-xl border border-default">
+              <div v-for="entry in sectionGroups" :key="entry.group" class="row">
+                <div class="row-label"><p class="row-title">{{ $t('nav.groups.' + entry.group) }}</p></div>
+                <div class="flex flex-wrap gap-x-5 gap-y-2">
+                  <UCheckbox v-for="item in entry.sections" :key="item.path" :model-value="!form.hiddenSections.includes(item.path)" :label="$t('sections.' + item.path)" @update:model-value="showSection(item.path, $event === true)" />
+                </div>
               </div>
-              <UCheckbox v-model="form.emailLogContent" :label="$t('projectPages.settings.keepLog')" :description="$t('projectPages.settings.keepLogDescription')" />
-              <p class="text-xs text-muted">{{ $t('projectPages.settings.emailDefaultsNote') }}</p>
             </div>
           </section>
 
@@ -170,6 +196,7 @@
           <nav class="sticky top-8 space-y-1.5 text-sm" :aria-label="$t('projectPages.settings.onThisPage')">
             <a v-for="s in sections" :key="s.id" :href="`#${s.id}`" class="block text-muted hover:text-highlighted">{{ s.label }}</a>
             <NuxtLink :to="`/projects/${id}/dev`" class="!mt-4 flex items-center gap-1.5 border-t border-default pt-3 text-muted hover:text-highlighted"><UIcon name="i-lucide-code-xml" class="size-3.5" />{{ $t('projectPages.settings.keysAndWebhooks') }}</NuxtLink>
+            <NuxtLink :to="`/projects/${id}/email?view=settings`" class="flex items-center gap-1.5 text-muted hover:text-highlighted"><UIcon name="i-lucide-mail" class="size-3.5" />{{ $t('projectPages.settings.senderMovedLink') }}</NuxtLink>
           </nav>
         </aside>
       </div>
@@ -183,6 +210,9 @@
 import type { AdminProject } from '~~/server/utils/projects'
 import { projectColor } from '~/utils/projectColor'
 import { can } from '#shared/roles'
+import { normalizeCompany } from '#shared/company'
+import { normalizeHubConfig } from '#shared/hub'
+import { groupSections } from '#shared/projectSections'
 
 definePageMeta({ middleware: 'agent' })
 
@@ -202,14 +232,16 @@ const saving = ref(false)
 const saveError = ref('')
 const uploading = ref<ImageField | ''>('')
 const fileInput = ref<HTMLInputElement | null>(null)
-const emailSettings = ref<{ fromEmail: string, domain: string } | null>(null)
 let uploadTarget: ImageField = 'iconUrl'
 
 const sections = computed(() => [
   { id: 'general', label: t('projectPages.settings.general') },
   { id: 'branding', label: t('projectPages.settings.branding') },
+  { id: 'company', label: t('projectPages.settings.company') },
   { id: 'widget', label: t('projectPages.settings.chatWidget') },
-  { id: 'email', label: t('sections.email') },
+  { id: 'hub', label: t('projectPages.settings.hub') },
+  { id: 'notifications', label: t('projectPages.settings.notifications') },
+  { id: 'sidebar', label: t('projectPages.settings.sidebar') },
   { id: 'collaborators', label: t('projectPages.settings.collaborators') },
   { id: 'github', label: t('projectPages.settings.githubRepos') },
   ...(canExport.value ? [{ id: 'data', label: t('projectPages.settings.data') }] : [])
@@ -221,14 +253,19 @@ const widgetImages = computed(() => [
 // Linear's indigo, then the colours projects without one are given.
 const swatches = ['#5e6ad2', '#0f766e', '#0369a1', '#0e7490', '#4d7c0f', '#b45309', '#c2410c', '#be123c', '#7c3aed']
 
-const blank = () => ({ name: '', siteUrl: '', inboxPath: '', iconUrl: '', brandLogoUrl: '', assistantLogoUrl: '', accent: '', chatNotice: '', allowAttachments: true, allowAnonymousUsers: false, letUsersChooseType: false, allowOtherType: false, fromName: '', notifyEmailsText: '', fromEmail: '', replyTo: '', mailDomain: '', emailLogContent: false })
+const blank = () => ({ name: '', siteUrl: '', inboxPath: '', iconUrl: '', brandLogoUrl: '', assistantLogoUrl: '', accent: '', chatNotice: '', allowAttachments: true, allowAnonymousUsers: false, letUsersChooseType: false, allowOtherType: false, company: normalizeCompany(null), hub: normalizeHubConfig(null), notifyEmailsText: '', hiddenSections: [] as string[] })
 const form = reactive(blank())
 const snapshot = ref('')
 const dirty = computed(() => !!snapshot.value && JSON.stringify(form) !== snapshot.value)
 const validAccent = computed(() => !form.accent || /^#[0-9a-f]{6}$/i.test(form.accent.trim()))
 const fallbackColor = computed(() => projectColor(id))
+// Every section a project can show or hide, by group. Overview and Settings are always there.
+const sectionGroups = groupSections(projectSections).groups
+function showSection(path: string, show: boolean) {
+  form.hiddenSections = show ? form.hiddenSections.filter(item => item !== path) : [...form.hiddenSections, path]
+}
 // The widget falls back to the panel's indigo, not the sidebar's hashed colour.
-const widgetAccent = computed(() => (validAccent.value && form.accent) || '#5e6ad2')
+const widgetAccent = computed(() => (validAccent.value && form.accent) || '#4f46e5')
 
 function fill(p: AdminProject) {
   project.value = p
@@ -245,12 +282,10 @@ function fill(p: AdminProject) {
     allowAnonymousUsers: p.allowAnonymousUsers === true,
     letUsersChooseType: p.letUsersChooseType,
     allowOtherType: p.allowOtherType,
-    fromName: p.fromName,
+    company: normalizeCompany(p.company),
+    hub: normalizeHubConfig(p.hub),
     notifyEmailsText: p.notifyEmails.join(', '),
-    fromEmail: p.fromEmail || '',
-    replyTo: p.replyTo || '',
-    mailDomain: p.mailDomain || '',
-    emailLogContent: p.emailLogContent === true
+    hiddenSections: [...(p.hiddenSections || [])]
   })
   snapshot.value = JSON.stringify(form)
 }
@@ -291,10 +326,13 @@ async function save() {
   saveError.value = ''
   try {
     const { accent, notifyEmailsText, ...rest } = form
+    // The accent is the Brand kit's: send it only when it changed here, so saving something else never pins it.
+    const accentChanged = accent.trim() !== (project.value?.theme?.accent || '')
     const result = await api<{ project: AdminProject }>(`/admin/projects/${id}`, {
       method: 'PATCH',
       // The server replaces theme wholesale; keep the keys this page doesn't edit.
-      body: { ...rest, notifyEmails: notifyEmailsText, theme: { ...project.value?.theme, accent: accent.trim() } }
+      // A link row left blank is dropped rather than rejected.
+      body: { ...rest, hub: { ...rest.hub, links: rest.hub.links.filter(link => link.label.trim() || link.url.trim()) }, notifyEmails: notifyEmailsText, ...(accentChanged ? { theme: { ...project.value?.theme, accent: accent.trim() } } : {}) }
     })
     fill(result.project)
     await loadProjects()
@@ -310,7 +348,6 @@ defineShortcuts({ meta_s: { usingInput: true, handler: save } })
 onBeforeRouteLeave(() => !dirty.value || confirm(t('projectPages.settings.leaveConfirm')))
 
 onMounted(async () => {
-  api<{ fromEmail: string, domain: string }>('/admin/email-settings').then((s) => { emailSettings.value = s }).catch(() => {})
   try {
     const found = (await loadProjects()).find(p => p.id === id)
     if (!found) throw new Error(t('projectPages.settings.projectNotFound'))

@@ -16,9 +16,16 @@ describe('native plan parity', () => {
   })
 
   test('every section the web marks as locked has its notice in the native screen', () => {
-    const screens: Record<string, string> = { campaigns: 'Features/Campaigns/CampaignsScreen.swift', legal: 'Features/Legal/LegalScreen.swift' }
+    const screens: Record<string, string> = { legal: 'Features/Legal/LegalScreen.swift' }
     const gated = projectSections.filter(section => section.feature)
     expect(gated.map(section => section.path).sort()).toEqual(Object.keys(screens).sort())
     for (const section of gated) expect(swift(screens[section.path]!)).toContain(JSON.stringify(section.feature))
+  })
+
+  // Campaigns and sequences are tabs of Email now, so the lock sits on those tabs in both apps.
+  test('the campaigns and sequences tabs are locked in the web bar and the native screen', () => {
+    const tabs = readFileSync(join(import.meta.dir, '../app/components/email/EmailTabs.vue'), 'utf8')
+    expect(tabs.match(/locked\('campaigns'\)/g)).toHaveLength(2)
+    expect(swift('Features/Campaigns/CampaignsScreen.swift')).toContain(JSON.stringify('campaigns'))
   })
 })

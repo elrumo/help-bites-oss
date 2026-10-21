@@ -11,6 +11,15 @@
       <div class="mx-auto max-w-5xl space-y-10 px-6 py-8">
         <UAlert v-if="error" color="error" variant="subtle" icon="i-lucide-circle-alert" :title="error" />
 
+        <!-- Drafts to approve, syncs that failed, mail that bounced, alerts that fired: one list for every project. -->
+        <section v-if="attention?.items.length" class="space-y-3" aria-labelledby="overview-attention">
+          <div class="flex items-center gap-2">
+            <h2 id="overview-attention" class="text-[15px] font-semibold text-highlighted">{{ $t('overview.needsAttention') }}</h2>
+            <span class="text-xs tabular-nums text-muted">{{ attention.total }}</span>
+          </div>
+          <AttentionList :items="attention.items" with-project />
+        </section>
+
         <!-- One card per project, in the sidebar's order. -->
         <section class="space-y-3" aria-labelledby="overview-projects">
           <div class="flex items-center gap-2">
@@ -175,8 +184,9 @@ const NuxtLink = resolveComponent('NuxtLink')
 const { api, projects, loadProjects, token } = useAgent()
 const { t } = useI18n()
 const newProjectOpen = useState('new-project-open', () => false)
-// The sidebar's inbox badge, which the inbox page keeps once it has been opened.
-const totalUnread = useState<number>('inbox-total-unread', () => 0)
+
+// What needs attention, kept live by the layout; this page asks again whenever it reloads.
+const { attention, reloadAttention } = useCounts()
 
 const overview = ref<WorkspaceOverview | null>(null)
 const range = ref<RevenueRange>('30d')
@@ -252,8 +262,8 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    overview.value = await api<WorkspaceOverview>('/admin/overview', { query: { range: range.value } })
-    totalUnread.value = overview.value.totals.unreadMessages
+    const [result] = await Promise.all([api<WorkspaceOverview>('/admin/overview', { query: { range: range.value } }), reloadAttention(true)])
+    overview.value = result
   } catch (e: any) {
     error.value = e?.message || t('overview.loadError')
   } finally {

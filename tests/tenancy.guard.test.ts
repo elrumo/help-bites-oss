@@ -25,7 +25,7 @@ const PUBLIC = new Set(['login.post.ts', 'logout.post.ts', 'setup.get.ts', 'setu
 // Account-level: who you are and which workspaces you are in, not what is in one.
 const IDENTITY = new Set(['me.get.ts', 'me.patch.ts', 'workspaces/index.get.ts', 'workspaces/index.post.ts', 'devices/index.post.ts', 'devices/[token].delete.ts'])
 const SCOPING_HELPERS = /requireMember\(|requireChangelogWriter\(|resolveFeedbackContext\(|loadFeedbackPost\(|resolveCommentContext\(|authenticateEmailCaller\(|findEmailForApi\(|requireSuperAdmin\(/
-const UNSCOPED_LOADERS = /\b(loadProjectUnscoped|getConversation|getMessage|getEmailTemplate|getEmailFolder|getEmailComponent|getEmailLog|getKnowledgeModelById|getKnowledgeNodeById|getFaqById|getKnowledgeDocumentById|getSupportAgentById|loadBoardItem|loadChangelogEntry|loadChangelogRelease|getLegalDocument|getBlogPost|getBlogComment|getOnboardingFlow|getLeadForm|getLeadFile|getBrandAsset|getCmsComponent|getCmsEntry|getCmsAsset)\(/
+const UNSCOPED_LOADERS = /\b(loadProjectUnscoped|getConversation|getMessage|getSavedReply|getEmailTemplate|getEmailFolder|getEmailComponent|getEmailLog|getKnowledgeModelById|getKnowledgeNodeById|getFaqById|getKnowledgeDocumentById|getSupportAgentById|loadBoardItem|loadChangelogEntry|loadChangelogRelease|getLegalDocument|getBlogPost|getBlogComment|getOnboardingFlow|getLeadForm|getLeadFile|getPricingTable|getBrandAsset|getCmsComponent|getCmsEntry|getCmsAsset)\(/
 
 const adminName = (file: string) => rel(file).replace(/^(ee\/)?server\/routes\/v1\/admin\//, '')
 

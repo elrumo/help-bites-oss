@@ -87,7 +87,7 @@ async function remove() {
       <h3 class="text-sm font-semibold">{{ $t('emailLibrary.linked.brand') }}</h3>
       <p class="text-xs text-muted">
         <i18n-t :keypath="usesBrand ? 'emailLibrary.linked.brandUsed' : 'emailLibrary.linked.brandAvailable'" tag="span">
-          <template #tokens><code class="font-mono">{{ '{' + '{project.name}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.logoUrl}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.url}' + '}' }}</code></template>
+          <template #tokens><code class="font-mono">{{ '{' + '{project.name}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.logoUrl}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.url}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.company}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.address}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.email}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.privacyUrl}' + '}' }}</code>, <code class="font-mono">{{ '{' + '{project.termsUrl}' + '}' }}</code></template>
         </i18n-t>
         {{ $t('emailLibrary.linked.brandAccent') }}
       </p>

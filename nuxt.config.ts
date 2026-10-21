@@ -77,6 +77,7 @@ export default defineNuxtConfig({
     // The loaders talk to /embed from the same deploy, so a stale one must not
     // outlive a release by long: public/ otherwise gets no Cache-Control and
     // browsers guess a freshness of days.
+    '/helpbites.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/widget.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/feedback.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/changelog.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
@@ -86,6 +87,7 @@ export default defineNuxtConfig({
     '/onboarding.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400, stale-if-error=604800' } },
     '/pages.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/forms.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
+    '/pricing.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/cms.mjs': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     // Versioned file names: a new version is a new path.
     '/vendor/**': { headers: { 'Cache-Control': 'public, max-age=31536000, immutable' } },

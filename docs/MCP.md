@@ -106,9 +106,43 @@ a key's project limit apply exactly as they do in the panel and the native app.
 | `update_changelog_entry` | Edit an entry, or publish a draft. |
 | `list_errors` | Issues from the connected error tracker. |
 | `get_error` | One issue with its latest event and stack trace. |
+| `list_contacts` | A project's people: filter by segment, tag, subscription, billing or search. |
+| `get_contact` | One person, with their plan, MRR, language and tags. |
+| `get_contact_activity` | Everything one person has done in one list: conversations, posts, votes, emails, payments, onboarding. |
+| `update_contact` | Name, language, tags and attributes. |
+| `list_segments` | Saved segments. |
+| `list_sequences` | Automated email sequences. |
+| `enroll_in_sequence` | Put people (or a whole segment) on an active sequence. |
+| `list_automation_recipes` | Ready-made sequences started by an event. |
+| `install_automation_recipe` | Add a recipe as a draft sequence. |
+| `get_conversation_context` | Who the customer is: plan, MRR, past conversations, linked posts. |
+| `link_feedback_post` | Link a feedback post to a conversation, or file one for the customer. |
+| `draft_conversation_reply` | A draft reply from the project's assistant. Nothing is sent. |
+| `save_conversation_faq` | Save an answer from a conversation to the knowledge base. |
+| `list_saved_replies` | Reusable replies. |
+| `create_saved_reply` | Add one. |
+| `changelog_linked_conversations` | The conversations a changelog entry answers. |
+| `reply_to_changelog_conversations` | Tell all of them it shipped. |
+| `file_error_on_board` | Turn an error into a board item. |
+| `list_github_refs` | Commits and merged pull requests that mention an item as #12. |
+| `list_webhook_endpoints` | A project's webhook endpoints. |
+| `create_webhook_endpoint` | Add one, choosing the events. |
+| `update_project_settings` | The company profile and the public hub page. |
+| `list_pricing_tables` | A project's pricing tables. |
+| `get_pricing_table` | One table's plans, features, words, look and A/B test. |
+| `create_pricing_table` | Start a draft from a template. |
+| `update_pricing_table` | Edit plans, features, prices, words, look or translations. |
+| `publish_pricing_table` | Make the table live: asks first. |
+| `get_stripe_catalog` | Stripe products, prices and payment links to link plans to. |
+| `get_pricing_stats` | Views, clicks, purchases and revenue, and the A/B test result. |
+| `suggest_pricing` | AI proposal for plans, features and prices, from the repos and Stripe. |
+| `add_pricing_variant` | Copy a table to test against it. |
+| `start_pricing_experiment` | Start an A/B test: asks first. |
+| `stop_pricing_experiment` | End it, optionally keeping the winner. |
 
 Try: *"Which conversations are unread? Draft a reply to the one about the failed
-export, and show it to me before sending."*
+export, and show it to me before sending."* Or: *"Suggest plans for our pricing
+table from the repo, and show me before you change anything."*
 
 ## Safe by design
 

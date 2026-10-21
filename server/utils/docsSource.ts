@@ -6,13 +6,17 @@ import connecting from '../../docs/CONNECTING.md'
 import deployment from '../../docs/DEPLOYMENT.md'
 import errors from '../../docs/ERRORS.md'
 import feedback from '../../docs/FEEDBACK.md'
+import events from '../../docs/EVENTS.md'
 import flags from '../../docs/FLAGS.md'
 import forms from '../../docs/FORMS.md'
+import hub from '../../docs/HUB.md'
 import languages from '../../docs/LANGUAGES.md'
 import legal from '../../docs/LEGAL.md'
 import mcp from '../../docs/MCP.md'
 import onboarding from '../../docs/ONBOARDING.md'
 import pages from '../../docs/PAGES.md'
+import support from '../../docs/SUPPORT.md'
+import pricing from '../../docs/PRICING.md'
 import transfer from '../../docs/TRANSFER.md'
 
 // The text of each published guide, bundled into the server at build time (the
@@ -25,13 +29,17 @@ const SOURCES: Record<string, string> = {
   'DEPLOYMENT.md': deployment,
   'ERRORS.md': errors,
   'FEEDBACK.md': feedback,
+  'EVENTS.md': events,
   'FLAGS.md': flags,
   'FORMS.md': forms,
+  'HUB.md': hub,
   'LANGUAGES.md': languages,
   'LEGAL.md': legal,
   'MCP.md': mcp,
   'ONBOARDING.md': onboarding,
   'PAGES.md': pages,
+  'SUPPORT.md': support,
+  'PRICING.md': pricing,
   'TRANSFER.md': transfer
 }
 

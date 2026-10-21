@@ -12,5 +12,6 @@ export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'content' })
   const { project, row } = await scopedLegalDocument(ctx, event)
   await unpublishLegalDocument(row)
+  await refreshLegalLinks(project)
   return { document: serializeLegalDocument(project, row) }
 })

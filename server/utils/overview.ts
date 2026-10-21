@@ -1,44 +1,41 @@
-// A project's Overview page: headline numbers, setup health, what needs
+// A project's Overview page: headline numbers, the setup checklist, what needs
 // attention and the latest activity, all derived from rows that already exist.
-// `section` is a web section path (optionally with a query) both apps link to.
-// `label`, `detail` and `title` are English; the panel translates by `key`,
-// `detailKey` and `titleKey` with `params`, and keeps the English for a key it
-// does not know.
+// `section` is a web section path both apps link to, optionally with a `?query`
+// or `#anchor`. `title` is English; the panel translates the activity by `titleKey`
+// with `params`, and keeps the English for a key it does not know.
 // Below it, the workspace overview (shared/overview.ts): every project at once.
 
 import { OVERVIEW_UNREAD_LIMIT, revenueChange, type WorkspaceOverview, type WorkspaceRevenue } from '#shared/overview'
 import { can } from '#shared/roles'
 import { PAYING_STATUSES, REVENUE_RANGES, fromMinor, type RevenueRange } from '#shared/stripe'
+import { sortAttention, type AttentionItem } from '#shared/attention'
+import type { ProjectSetup } from '#shared/setup'
 
-export type OverviewTone = 'ok' | 'warn' | 'off'
 export type ProjectOverview = {
   stats: { key: string, label: string, value: number, section: string }[]
-  health: { key: string, label: string, state: OverviewTone, detail: string, detailKey?: string, params?: Record<string, string | number>, section: string }[]
-  /** Only what has a non-zero count. */
-  attention: { key: string, label: string, count: number, section: string }[]
+  /** What is wired up, and what is not: see shared/setup.ts. */
+  setup: ProjectSetup
+  /** What waits on someone (see shared/attention.ts), with the unread conversations first. */
+  attention: AttentionItem[]
   activity: { id: string, title: string, titleKey?: string, params?: Record<string, string | number>, detail: string, at: string, section: string, conversationId?: string }[]
 }
 
 const OPEN_CATEGORIES = ['open', 'pending']
 
-export async function projectOverview(project: ParseObject): Promise<ProjectOverview> {
+export async function projectOverview(ctx: MemberContext, project: ParseObject): Promise<ProjectOverview> {
   const Parse = useParse()
   const p = serializeAdminProject(project)
   const week = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const q = (className: string) => new Parse.Query(className).equalTo('project', project)
-  const triageKeys = p.feedback.enabled ? p.feedback.statuses.filter(s => s.category === 'open').map(s => s.key) : []
-  const models = q('KnowledgeModel')
 
-  const [open, newThisWeek, emailsSent, feedbackPosts, unread, openErrors, failedEmails, failedDocs, toTriage, conversations, posts, completed] = await Promise.all([
+  const [open, newThisWeek, emailsSent, feedbackPosts, unread, waiting, setup, conversations, posts, completed] = await Promise.all([
     q('Conversation').containedIn('statusCategory', OPEN_CATEGORIES).count(MASTER),
     q('Conversation').greaterThanOrEqualTo('createdAt', week).count(MASTER),
     q('EmailLog').greaterThanOrEqualTo('createdAt', week).count(MASTER),
     p.feedback.enabled ? q('FeedbackPost').notEqualTo('hidden', true).greaterThanOrEqualTo('postedAt', week).count(MASTER) : 0,
     q('Conversation').greaterThan('unreadByAgent', 0).count(MASTER),
-    q('Conversation').equalTo('type', 'error').containedIn('statusCategory', OPEN_CATEGORIES).count(MASTER),
-    q('EmailLog').containedIn('status', [...FAILED_STATUSES]).greaterThanOrEqualTo('createdAt', week).count(MASTER),
-    new Parse.Query('KnowledgeDocument').matchesQuery('knowledgeModel', models).equalTo('isCurrent', true).equalTo('status', 'failed').count(MASTER),
-    triageKeys.length ? q('FeedbackPost').notEqualTo('hidden', true).containedIn('status', triageKeys).count(MASTER) : 0,
+    projectAttention(project),
+    projectSetup(ctx, project),
     q('Conversation').exists('lastMessageAt').descending('lastMessageAt').include('endUser').limit(10).find(MASTER),
     q('FeedbackPost').notEqualTo('hidden', true).exists('postedAt').descending('postedAt').limit(5).find(MASTER),
     q('BoardItem').exists('completedAt').descending('completedAt').limit(5).find(MASTER)
@@ -51,24 +48,11 @@ export async function projectOverview(project: ParseObject): Promise<ProjectOver
   ]
   if (p.feedback.enabled) stats.push({ key: 'feedback', label: 'Feedback · 7d', value: feedbackPosts, section: 'feedback' })
 
-  const origins = p.allowedOrigins.length
-  const mail = isMailerConfigured({ fromEmail: p.fromEmail, domain: p.mailDomain })
-  const health: ProjectOverview['health'] = [
-    // Green only once the widget has loaded on a host page: allowing an origin is not installing it.
-    { key: 'chat', label: 'Chat widget', state: origins && p.widgetSeenAt ? 'ok' : 'warn', ...(!origins ? { detail: 'No allowed origins', detailKey: 'noOrigins' } : p.widgetSeenAt ? { detail: `${origins} allowed origin${origins === 1 ? '' : 's'}`, detailKey: 'origins', params: { count: origins } } : { detail: 'Not loaded on your site yet', detailKey: 'notLoaded' }), section: 'dev' },
-    { key: 'email', label: 'Email sending', state: mail ? 'ok' : 'warn', ...(mail ? (p.fromEmail ? { detail: p.fromEmail } : { detail: 'Default sender', detailKey: 'defaultSender' }) : { detail: 'Not configured', detailKey: 'notConfigured' }), section: 'settings' },
-    { key: 'notify', label: 'Team notifications', state: p.notifyEmails.length ? 'ok' : 'off', ...(p.notifyEmails.length ? { detail: p.notifyEmails.join(', ') } : { detail: 'Nobody is emailed', detailKey: 'nobodyEmailed' }), section: 'settings' },
-    { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', ...(p.feedback.enabled ? { detail: 'On', detailKey: 'on' } : { detail: 'Off', detailKey: 'off' }), section: 'feedback' },
-    { key: 'errors', label: 'Error tracking', state: p.errors.connected ? 'ok' : 'off', ...(p.errors.connected ? { detail: p.errors.providerName } : { detail: 'Not connected', detailKey: 'notConnected' }), section: 'errors' }
+  // Unread conversations are this list's own row (the workspace list leaves them to the inbox badge).
+  const attention: AttentionItem[] = [
+    ...(unread ? [{ key: `unread:${project.id}`, kind: 'unread' as const, projectId: project.id || '', count: unread, value: '', detail: '', section: 'conversations', at: null }] : []),
+    ...sortAttention(waiting)
   ]
-
-  const attention: ProjectOverview['attention'] = [
-    { key: 'unread', label: 'Unread conversations', count: unread, section: 'conversations' },
-    { key: 'errors', label: 'Open error reports', count: openErrors, section: 'errors' },
-    { key: 'emails', label: 'Failed emails · 7d', count: failedEmails, section: 'email?view=log' },
-    { key: 'documents', label: 'Knowledge documents failed to process', count: failedDocs, section: 'knowledge' },
-    { key: 'feedback', label: 'Feedback awaiting triage', count: toTriage, section: 'feedback' }
-  ].filter(item => item.count > 0)
 
   // ponytail: a timeline from each row's latest timestamp, not an audit log; add an Activity class if full history is needed.
   const activity: ProjectOverview['activity'] = [
@@ -83,7 +67,7 @@ export async function projectOverview(project: ParseObject): Promise<ProjectOver
     })
   ].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 20)
 
-  return { stats, health, attention, activity }
+  return { stats, setup, attention, activity }
 }
 
 // ---- the workspace overview -------------------------------------------------------

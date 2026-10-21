@@ -10,6 +10,7 @@ struct InboxPropertiesPanel: View {
   let compact: Bool
   @Environment(Workspace.self) private var workspace
   @Environment(\.dismiss) private var dismiss
+  @State private var openContact: InboxOpenContact?
 
   var body: some View {
     if compact {
@@ -37,11 +38,21 @@ struct InboxPropertiesPanel: View {
         }
         section("Labels") { InboxLabels(tags: conversation.tags ?? []) }
         section("Customer") { customer(store) }
+        // Only when the Stripe sync found this person.
+        if let billing = hub(store)?.billing {
+          section("Billing") { billingCard(billing) }
+        }
+        if let past = hub(store)?.pastConversations, !past.isEmpty {
+          section("Past conversations") { ForEach(past) { pastRow($0, store: store) } }
+        }
         if let type, !type.fields.isEmpty {
           section("\(type.name) fields") { InboxFieldEditors(fields: type.fields) }
         }
+        section("Feedback") {
+          FeedbackLinksSection(projectId: conversation.projectId, conversationId: conversation.id, title: conversation.subject, description: lastCustomerMessage(store))
+        }
         if workspace.project(conversation.projectId)?.board != nil {
-          section("Board") {
+          section("Planning") {
             BoardLinksSection(projectId: conversation.projectId, kind: "conversation", targetId: conversation.id, title: conversation.subject, description: lastCustomerMessage(store))
           }
         }
@@ -51,7 +62,7 @@ struct InboxPropertiesPanel: View {
         }
         InboxRecentErrors(conversation: conversation, externalId: store.endUsers[conversation.endUserId]?.externalId ?? "")
         if let type, !type.actions.isEmpty {
-          section("Actions") { InboxActions(actions: type.actions) }
+          section("Actions") { InboxActions(actions: type.actions, projectId: conversation.projectId) }
         }
       }
       .padding(.horizontal, 12)
@@ -59,9 +70,15 @@ struct InboxPropertiesPanel: View {
     }
     .scrollDismissesKeyboard(.interactively)
     .background(Theme.panel)
+    .sheet(item: $openContact) { ContactSheetByID(projectId: conversation.projectId, contactId: $0.id).environment(workspace).environment(workspace.session) }
   }
 
-  /// What a board item filed from here starts with: the customer's latest words.
+  /// The customer panel's read, once it is for this conversation.
+  private func hub(_ store: InboxStore) -> ConversationHubContext? {
+    store.selectedId == conversation.id ? store.context : nil
+  }
+
+  /// What a planning item filed from here starts with: the customer's latest words.
   private func lastCustomerMessage(_ store: InboxStore) -> String {
     guard store.selectedId == conversation.id else { return "" }
     return store.messages.last { $0.sender == "user" && $0.kind != "event" && !$0.body.isEmpty }?.body ?? ""
@@ -156,8 +173,61 @@ struct InboxPropertiesPanel: View {
         }
       }
       .font(.lnMeta)
+      if let contact = hub(store)?.contact {
+        Button { openContact = InboxOpenContact(id: contact.id) } label: {
+          HStack(spacing: 8) {
+            Image(systemName: "person.crop.circle").font(.system(size: 13)).foregroundStyle(Theme.textMuted)
+            Text("Open contact").foregroundStyle(Theme.text)
+            Spacer(minLength: 0)
+            Image(systemName: "arrow.up.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+          }
+          .font(.lnMeta)
+          .frame(height: 32)
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+      }
     }
     .padding(.horizontal, 8)
+  }
+
+  /// Plan, what they pay a month and where the subscription stands (web: the billing card in ConversationContext.vue).
+  private func billingCard(_ billing: HubBilling) -> some View {
+    let mrr = billing.currency.isEmpty ? billing.mrr.formatted() : Money.format(billing.mrr, billing.currency)
+    return VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 8) {
+        Text(billing.plan.isEmpty ? "No plan" : billing.plan).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+        Spacer(minLength: 0)
+        if billing.status != "none" { Tag(text: billing.status.replacingOccurrences(of: "_", with: " ").capitalized) }
+      }
+      HStack {
+        Text("MRR").foregroundStyle(Theme.textMuted)
+        Spacer(minLength: 0)
+        Text(mrr).monospacedDigit().foregroundStyle(Theme.text)
+      }
+      .font(.lnMeta)
+    }
+    .padding(10)
+    .overlay(RoundedRectangle(cornerRadius: Metrics.radius, style: .continuous).strokeBorder(Theme.border))
+    .padding(.horizontal, 8)
+  }
+
+  private func pastRow(_ past: HubPastConversation, store: InboxStore) -> some View {
+    Button {
+      Task { await store.select(past.id) }
+      if compact { dismiss() }
+    } label: {
+      HStack(spacing: 8) {
+        StatusIcon(category: past.statusCategory)
+        Text(past.subject.isEmpty ? (past.lastMessagePreview.isEmpty ? "Conversation" : past.lastMessagePreview) : past.subject).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
+        Spacer(minLength: 0)
+        Text(DateText.short(past.lastMessageAt ?? past.createdAt)).font(.lnCaption).foregroundStyle(Theme.textDimmed)
+      }
+      .padding(.horizontal, 8)
+      .frame(height: 32)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
   }
 
   @ViewBuilder
@@ -183,6 +253,8 @@ struct InboxPropertiesPanel: View {
     if let raw = ref.url, let url = URL(string: raw) { Link(destination: url) { row } } else { row }
   }
 }
+
+private struct InboxOpenContact: Identifiable { let id: String }
 
 /// The customer's latest errors from the project's tracker, matched by the
 /// Sentry user id the host app sets to the same identity id. Hidden when the
@@ -395,9 +467,11 @@ private struct InboxFieldEditors: View {
 // MARK: - Host actions
 
 /// The type's host actions: confirm text first, a required internal note via a
-/// prompt, destructive ones in red. The webhook's verdict lands on the timeline.
+/// prompt, destructive ones in red. The webhook's verdict lands on the timeline. Without an
+/// action webhook on the project they would fail, so a warning with a link to set it up sits above.
 private struct InboxActions: View {
   let actions: [ConversationAction]
+  let projectId: String
   @Environment(Workspace.self) private var workspace
   @State private var confirming: ConversationAction?
   @State private var noting: ConversationAction?
@@ -405,16 +479,19 @@ private struct InboxActions: View {
   @State private var running = ""
 
   var body: some View {
-    FlowLayout(spacing: 6) {
-      ForEach(actions) { action in
-        Button { start(action) } label: {
-          HStack(spacing: 6) {
-            if running == action.key { ProgressView().controlSize(.mini) }
-            Text(title(action))
+    VStack(alignment: .leading, spacing: 8) {
+      if noWebhook { noWebhookWarning }
+      FlowLayout(spacing: 6) {
+        ForEach(actions) { action in
+          Button { start(action) } label: {
+            HStack(spacing: 6) {
+              if running == action.key { ProgressView().controlSize(.mini) }
+              Text(title(action))
+            }
           }
+          .buttonStyle(InboxActionStyle(destructive: action.destructive == true))
+          .disabled(!running.isEmpty)
         }
-        .buttonStyle(InboxActionStyle(destructive: action.destructive == true))
-        .disabled(!running.isEmpty)
       }
     }
     .padding(.horizontal, 8)
@@ -431,6 +508,24 @@ private struct InboxActions: View {
   }
 
   private func title(_ action: ConversationAction) -> String { action.label.isEmpty ? action.key : action.label }
+
+  /// The project has no action webhook (URL and secret, shared/support.ts actionWebhookReady). A project not loaded yet stays quiet.
+  private var noWebhook: Bool {
+    guard let project = workspace.project(projectId) else { return false }
+    return (project.actionWebhookUrl ?? "").isEmpty || project.hasActionWebhookSecret != true
+  }
+
+  private var noWebhookWarning: some View {
+    HStack(alignment: .top, spacing: 6) {
+      Image(systemName: "exclamationmark.triangle").font(.system(size: 11, weight: .medium)).padding(.top, 2)
+      VStack(alignment: .leading, spacing: 2) {
+        Text("This project has no action webhook, so these will fail.")
+        Button("Set it up") { workspace.go(.project(projectId, .dev)) }.buttonStyle(.plain).font(.lnCaptionMedium)
+      }
+    }
+    .font(.lnCaption)
+    .foregroundStyle(Theme.warning)
+  }
 
   private func start(_ action: ConversationAction) {
     if action.requiresNote == true {

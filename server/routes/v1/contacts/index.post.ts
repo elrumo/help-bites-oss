@@ -7,6 +7,7 @@ defineRouteMeta({
     description: 'One contact (`identify`), or up to 1000 as `{ contacts: [...] }`. A contact is matched by `externalId` (your user id — the `sub` of their identity tokens), then by `email`; anything unmatched is created. Attributes merge (`null` removes one), tags are added.\n\nConsent: anyone can be unsubscribed. `subscription: "subscribed"` only applies to people who have not chosen yet; to subscribe someone who unsubscribed, they must have asked again — pass `resubscribe: true`.',
     requestBody: { content: { 'application/json': { schema: { type: 'object', properties: {
       externalId: { type: 'string' }, email: { type: 'string' }, name: { type: 'string' },
+      language: { type: 'string', description: 'The language to write to them in, a tag such as `es` or `pt-BR`. Campaigns and sequences use the matching translation of a template. Empty clears it (never on a batch with `fillOnly`).' },
       attributes: { type: 'object', description: 'Up to 50 keys (letters, digits, `_`); string, number or boolean values.' },
       tags: { type: 'array', items: { type: 'string' } },
       subscription: { type: 'string', enum: ['none', 'subscribed', 'unsubscribed'] },

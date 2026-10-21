@@ -78,8 +78,8 @@ describe('due campaigns', () => {
 
 describe('personalisation', () => {
   test('a contact fills contact.*, their attributes and firstName; nothing is left as {{...}}', () => {
-    const contact = fake({ name: 'Ada Lovelace', email: 'ada@x.io', externalId: 'u1', attributes: { plan: 'pro', seats: 3 } })
-    expect(contactVariables(contact)).toEqual({ firstName: 'Ada', 'contact.name': 'Ada Lovelace', 'contact.firstName': 'Ada', 'contact.email': 'ada@x.io', 'contact.externalId': 'u1', plan: 'pro', 'contact.plan': 'pro', seats: '3', 'contact.seats': '3' })
+    const contact = fake({ name: 'Ada Lovelace', email: 'ada@x.io', externalId: 'u1', language: 'es', attributes: { plan: 'pro', seats: 3 } })
+    expect(contactVariables(contact)).toEqual({ firstName: 'Ada', 'contact.name': 'Ada Lovelace', 'contact.firstName': 'Ada', 'contact.email': 'ada@x.io', 'contact.language': 'es', 'contact.externalId': 'u1', plan: 'pro', 'contact.plan': 'pro', seats: '3', 'contact.seats': '3' })
     const doc = { settings: { title: 'Hi {{firstName}}' }, blocks: [{ id: 'a', type: 'text', html: '{{contact.plan}} {{project.name}} {{unsubscribeUrl}}' }] } as any
     expect(blankValues(doc, '{{ season }} news')).toEqual({ firstName: '', 'contact.plan': '', unsubscribeUrl: '', season: '' })
   })

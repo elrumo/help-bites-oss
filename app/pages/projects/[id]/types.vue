@@ -25,6 +25,10 @@
         <UFormField :label="$t('projectTools.types.statuses')" :hint="$t('projectTools.types.statusesHint')"><UTextarea v-model="form.statuses" :rows="7" class="w-full font-mono text-xs" /></UFormField>
         <UFormField :label="$t('projectTools.types.fields')" :hint="$t('projectTools.types.fieldsHint')"><UTextarea v-model="form.fields" :rows="7" class="w-full font-mono text-xs" /></UFormField>
         <UFormField :label="$t('projectTools.types.actions')" :hint="$t('projectTools.types.actionsHint')"><UTextarea v-model="form.actions" :rows="6" class="w-full font-mono text-xs" /></UFormField>
+        <!-- An action is signed to the project's webhook; with none, running it fails. -->
+        <UAlert v-if="actionsWithoutWebhook" color="warning" variant="subtle" icon="i-lucide-webhook" :title="$t('projectTools.types.noWebhookTitle')" :description="$t('projectTools.types.noWebhookDescription')">
+          <template #actions><UButton :to="`/projects/${id}/dev#security`" size="xs" color="warning" variant="outline" :label="$t('projectTools.types.noWebhookFix')" /></template>
+        </UAlert>
         <div class="flex flex-wrap gap-x-6 gap-y-2"><UCheckbox v-model="form.assignable" :label="$t('projectTools.types.assignable')" /><UCheckbox v-model="form.userCanReopen" :label="$t('projectTools.types.userCanReopen')" /></div>
         <p v-if="error" class="text-[13px] text-error">{{ error }}</p>
         <div class="flex items-center gap-2 border-t border-default pt-5">
@@ -37,17 +41,24 @@
 </template>
 
 <script setup lang="ts">
-import type { ConversationType } from '#shared/support'
+import { actionWebhookReady, type ConversationType } from '#shared/support'
 
 definePageMeta({ middleware: 'agent' })
-const { api } = useAgent()
+const { api, projects, loadProjects } = useAgent()
 const { t } = useI18n()
 const id = String(useRoute().params.id)
+const project = computed(() => projects.value.find(p => p.id === id) || null)
 const types = ref<ConversationType[]>([])
 const selected = ref<ConversationType | null>(null)
 const error = ref('')
 const saving = ref(false)
 const form = reactive({ key: '', name: '', description: '', statuses: '[]', fields: '[]', actions: '[]', assignable: true, userCanReopen: true })
+
+// Whether the actions being edited (as typed, not only as saved) have no webhook to go to.
+const actionsWithoutWebhook = computed(() => {
+  if (!project.value || actionWebhookReady(project.value)) return false
+  try { const actions = JSON.parse(form.actions); return Array.isArray(actions) && actions.length > 0 } catch { return false }
+})
 
 function edit(type: ConversationType) {
   selected.value = type
@@ -78,5 +89,8 @@ async function remove() {
   if (!selected.value?.id || !confirm(t('projectTools.types.deleteConfirm', { name: selected.value.name }))) return
   try { await api(`/admin/projects/${id}/types/${selected.value.id}`, { method: 'DELETE' }); selected.value = null; await load() } catch (e: any) { error.value = e?.message || t('projectTools.types.deleteError') }
 }
-onMounted(() => { void load().catch(e => { error.value = e?.message || t('projectTools.types.loadError') }) })
+onMounted(() => {
+  if (!project.value) loadProjects().catch(() => {})
+  void load().catch(e => { error.value = e?.message || t('projectTools.types.loadError') })
+})
 </script>

@@ -13,6 +13,7 @@ import type { AdminProject } from '~~/server/utils/projects'
 import ContactsTabs from '~/components/contacts/ContactsTabs.vue'
 import ContactDrawer from '~/components/contacts/ContactDrawer.vue'
 import CsvImportModal from '~/components/contacts/CsvImportModal.vue'
+import AddToSequenceModal from '~/components/contacts/AddToSequenceModal.vue'
 import { SUBSCRIPTION_STATUS } from '~/utils/contactStatus'
 import { ORIGIN_ICONS, originText } from '~/utils/contactOrigin'
 import { logTime } from '~/utils/emailStatus'
@@ -119,8 +120,16 @@ watchDebounced(query, load, { debounce: 300, deep: true })
 watch(segment, (value) => { router.replace({ query: { ...route.query, segment: value === 'all' ? undefined : value } }) })
 watch(origin, (value) => { router.replace({ query: { ...route.query, origin: value === 'all' ? undefined : value } }) })
 
-const openId = ref('')
+// `?contact=<id>` opens that person (the revenue report and other pages link here); opening someone puts it in the address.
+const openId = ref(String(route.query.contact || ''))
+watch(() => route.query.contact, (value) => { openId.value = String(value || '') })
+watch(openId, (value) => { if (String(route.query.contact || '') !== value) router.replace({ query: { ...route.query, contact: value || undefined } }) })
 const importOpen = ref(false)
+// Everyone in the segment being looked at can be put on a sequence in one go.
+const sequenceOpen = ref(false)
+const segmentName = computed(() => segments.value.find(s => s.id === segment.value)?.name || '')
+// The language column shows once anyone in the list has one.
+const showLanguage = computed(() => contacts.value.some(c => c.language))
 
 // ---- adding one by hand ---------------------------------------------------------
 const addOpen = ref(false)
@@ -163,6 +172,7 @@ const displayName = (c: Contact) => c.name || c.email || c.externalId || t('cont
           <USelect v-model="billing" :items="billingItems" value-key="value" size="sm" class="hidden w-36 xl:flex" :aria-label="$t('contacts.filter.billing')" />
           <UInput v-model="minRevenue" type="number" min="0" :placeholder="$t('contacts.filter.spentOver')" size="sm" class="hidden w-28 xl:block" :aria-label="$t('contacts.filter.spentMoreThan')" />
         </template>
+        <UTooltip v-if="segment !== 'all'" :text="$t('contacts.segments.addToSequence')"><UButton icon="i-lucide-list-plus" size="sm" color="neutral" variant="outline" square :aria-label="$t('contacts.segments.addToSequence')" @click="sequenceOpen = true" /></UTooltip>
         <UButton icon="i-lucide-file-up" :label="$t('contacts.import')" size="sm" color="neutral" variant="outline" @click="importOpen = true" />
         <UButton icon="i-lucide-plus" :label="$t('contacts.add')" size="sm" @click="addOpen = true" />
       </template>
@@ -190,6 +200,7 @@ const displayName = (c: Contact) => c.name || c.email || c.externalId || t('cont
               <template v-if="c.origin"><UIcon :name="ORIGIN_ICONS[c.origin.type]" class="size-3.5 shrink-0" /><span class="truncate">{{ originLabel(c) }}</span></template>
             </span>
             <span v-if="stripe" class="hidden w-20 shrink-0 text-right text-xs tabular-nums text-muted xl:block" :title="$t('contacts.revenueTitle')">{{ revenueOf(c) ? formatMoney(revenueOf(c), stripe.currency) : '' }}</span>
+            <span v-if="showLanguage" class="hidden w-10 shrink-0 text-xs uppercase text-muted lg:block" :title="$t('contacts.drawer.language')">{{ c.language }}</span>
             <UTooltip :text="$t(`contacts.subscription.${c.subscription}.hint`)">
               <UBadge :icon="SUBSCRIPTION_STATUS[c.subscription].icon" :label="subscriptionLabel(c.subscription)" :color="SUBSCRIPTION_STATUS[c.subscription].color" variant="subtle" size="sm" class="w-32 shrink-0 justify-start" />
             </UTooltip>
@@ -202,6 +213,7 @@ const displayName = (c: Contact) => c.name || c.email || c.externalId || t('cont
 
     <ContactDrawer v-model:id="openId" :project="project" @changed="changed" />
     <CsvImportModal v-model:open="importOpen" :project="project" @imported="load" />
+    <AddToSequenceModal v-model:open="sequenceOpen" :project="project" :segment-id="segment === 'all' ? undefined : segment" :segment-name="segmentName" />
 
     <UModal v-model:open="addOpen" :title="$t('contacts.addModal.title')" :description="$t('contacts.addModal.description')">
       <template #body>

@@ -14,5 +14,7 @@ export default defineEventHandler(async (event) => {
   const { project, row } = await scopedLegalDocument(ctx, event)
   await applyLegalInput(project, row, (await readBody(event).catch(() => ({}))) || {})
   await row.save(null, MASTER)
+  // A new slug moves the public address.
+  await refreshLegalLinks(project)
   return { document: serializeLegalDocument(project, row), coverage: legalCoverage(row) }
 })

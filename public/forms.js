@@ -125,7 +125,7 @@
 
   function css(form, o, host) {
     var style = form.style || {}
-    var accent = /^#[0-9a-f]{6}$/i.test(pick(o, 'accent') || '') ? pick(o, 'accent') : style.accent || '#5e6ad2'
+    var accent = /^#[0-9a-f]{6}$/i.test(pick(o, 'accent') || '') ? pick(o, 'accent') : style.accent || '#4f46e5'
     var r = pick(o, 'radius')
     var radius = r !== undefined && r !== '' && !isNaN(+r) ? +r : (typeof style.radius === 'number' ? style.radius : 12)
     // No background of its own: the form sits on your page, without a card, in its light or dark.

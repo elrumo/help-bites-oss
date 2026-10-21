@@ -3,6 +3,8 @@
 // from the developer's database or signed up through a form. Shared by the
 // server and the panel; the native app mirrors the DTO.
 
+import { normalizeLocale } from './locales'
+
 export type ContactSubscription = 'none' | 'pending' | 'subscribed' | 'unsubscribed'
 export const CONTACT_SUBSCRIPTIONS: ContactSubscription[] = ['none', 'pending', 'subscribed', 'unsubscribed']
 
@@ -28,6 +30,8 @@ export type Contact = {
   name: string
   username: string
   avatarUrl: string
+  /** The language to write to them in ("es", "pt-BR"); '' until known. Set by the app's identity token (`locale`), the API or the panel. */
+  language: string
   attributes: Record<string, ContactAttributeValue>
   tags: string[]
   subscription: ContactSubscription
@@ -134,6 +138,8 @@ export type ContactInput = {
   externalId?: string
   email?: string
   name?: string
+  /** A language tag; '' clears it. */
+  language?: string
   attributes?: Record<string, ContactAttributeValue | null>
   tags?: string[]
   subscription?: ContactSubscription
@@ -158,6 +164,11 @@ export function readContactInput(value: unknown): { input: ContactInput, errors:
     else input.email = email
   }
   if (typeof raw.name === 'string') input.name = raw.name.trim().slice(0, CONTACT_LIMITS.name)
+  if (raw.language !== undefined && raw.language !== null) {
+    const language = raw.language === '' ? '' : normalizeLocale(raw.language)
+    if (language === null) errors.push('language must be a language tag such as "es" or "pt-BR"')
+    else input.language = language
+  }
   if (raw.attributes !== undefined) {
     if (!raw.attributes || typeof raw.attributes !== 'object' || Array.isArray(raw.attributes)) errors.push('attributes must be an object')
     else {
@@ -184,6 +195,7 @@ export type ContactFieldMapping = {
   externalId?: string
   email?: string
   name?: string
+  language?: string
   tags?: string
   /** A truthy value means opted in, a falsy one opted out; blank leaves consent alone. */
   subscribed?: string
@@ -229,6 +241,8 @@ export function mapSourceRow(row: unknown, mapping: ContactFieldMapping): Contac
   if (!externalId && !email) return null
   const name = text(mapping.name).slice(0, CONTACT_LIMITS.name)
   if (name) input.name = name
+  const language = normalizeLocale(text(mapping.language))
+  if (language) input.language = language
   if (mapping.tags) input.tags = cleanTags(readPath(row, mapping.tags))
   if (mapping.subscribed) {
     const flag = readFlag(readPath(row, mapping.subscribed))
@@ -251,7 +265,7 @@ export function validateMapping(value: unknown): { mapping: ContactFieldMapping,
   const raw = (value && typeof value === 'object' && !Array.isArray(value) ? value : {}) as Record<string, unknown>
   const path = (v: unknown) => (typeof v === 'string' && /^[\w$-]+(\.[\w$-]+)*$/.test(v.trim()) ? v.trim().slice(0, 120) : '')
   const mapping: ContactFieldMapping = {}
-  for (const key of ['externalId', 'email', 'name', 'tags', 'subscribed'] as const) {
+  for (const key of ['externalId', 'email', 'name', 'language', 'tags', 'subscribed'] as const) {
     const p = path(raw[key])
     if (p) mapping[key] = p
   }
@@ -271,7 +285,7 @@ export function validateMapping(value: unknown): { mapping: ContactFieldMapping,
 
 /** Every source column the mapping reads, so a sync fetches only those (never a password hash). */
 export function mappedColumns(mapping: ContactFieldMapping): string[] {
-  const paths = [mapping.externalId, mapping.email, mapping.name, mapping.tags, mapping.subscribed, ...Object.values(mapping.attributes || {})]
+  const paths = [mapping.externalId, mapping.email, mapping.name, mapping.language, mapping.tags, mapping.subscribed, ...Object.values(mapping.attributes || {})]
   return [...new Set(paths.filter((p): p is string => Boolean(p)).map(p => p.split('.')[0]!))]
 }
 
@@ -320,7 +334,9 @@ export function guessMapping(columns: string[]): ContactFieldMapping {
     email: find(/^(e?mail|emailaddress)$/) || find(/mail/),
     externalId: find(/^(id|userid|externalid|uid|objectid)$/),
     name: find(/^(name|fullname|displayname)$/),
-    tags: find(/^tags?$/),
-    subscribed: find(/^(subscribed|optin|marketing|newsletter|consent)$/)
+    language: find(/^(language|lang|locale|preferredlanguage)$/),
+    tags: find(/^(tags?|labels?)$/),
+    // subscribed_to_emails: Ghost's members export.
+    subscribed: find(/^(subscribed|subscribedtoemails|optin|marketing|newsletter|consent)$/)
   }
 }

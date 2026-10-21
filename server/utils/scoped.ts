@@ -57,6 +57,7 @@ function pinned<T extends { project: ParseObject }>(ctx: MemberContext, found: T
 export const scoped = {
   conversation: async (ctx: MemberContext, id: string) => viaProject(ctx, await getConversation(id), 'Conversation not found'),
   message: async (ctx: MemberContext, id: string) => viaProject(ctx, await getMessage(id), 'Message not found'),
+  savedReply: async (ctx: MemberContext, id: string) => viaProject(ctx, await getSavedReply(id), 'Saved reply not found'),
 
   emailTemplate: async (ctx: MemberContext, id: string) => viaWorkspace(ctx, await getEmailTemplate(id), 'Email template not found'),
   emailFolder: async (ctx: MemberContext, id: string) => viaWorkspace(ctx, await getEmailFolder(id), 'Folder not found'),
@@ -100,6 +101,7 @@ export const scoped = {
   onboardingFlow: async (ctx: MemberContext, id: string) => viaProject(ctx, await getOnboardingFlow(id), 'Flow not found'),
   leadForm: async (ctx: MemberContext, id: string) => viaProject(ctx, await getLeadForm(id), 'Form not found'),
   leadFile: async (ctx: MemberContext, id: string) => viaProject(ctx, await getLeadFile(id), 'File not found'),
+  pricingTable: async (ctx: MemberContext, id: string) => viaProject(ctx, await getPricingTable(id), 'Pricing table not found'),
   brandAsset: async (ctx: MemberContext, id: string) => viaProject(ctx, await getBrandAsset(id), 'File not found'),
   cmsComponent: async (ctx: MemberContext, id: string) => viaProject(ctx, await getCmsComponent(id), 'Component not found'),
   cmsEntry: async (ctx: MemberContext, id: string) => viaProject(ctx, await getCmsEntry(id), 'Entry not found'),

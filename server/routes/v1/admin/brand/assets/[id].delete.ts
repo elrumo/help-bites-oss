@@ -10,7 +10,8 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'content' })
-  const { row } = await scopedBrandAsset(ctx, event)
+  const { project, row } = await scopedBrandAsset(ctx, event)
   await deleteBrandAsset(row, ctx.workspaceId)
+  await refreshBrandLook(project)
   return { ok: true }
 })

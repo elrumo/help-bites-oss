@@ -6,7 +6,9 @@ import {
   validateOnboardingOptions, validateOnboardingStyle, validateOnboardingSteps, validateOnboardingTranslations,
   type OnboardingOptions, type OnboardingStep, type OnboardingStyle, type OnboardingTranslations, type PublicOnboardingFlow
 } from '#shared/onboarding'
+import { findPricingTableByKey, publishedPricingTableByKey, readVisitor } from './pricing'
 import { readTargetLocales, translateMissing } from './translate'
+import { lookOf } from './projects'
 
 // Onboarding flows: the store behind /v1/admin/onboarding and the public read.
 // A flow keeps a working copy (steps, style, options) and, once published, a
@@ -64,21 +66,17 @@ const contentOf = (row: ParseObject) => ({
   translations: onboardingTranslationsOf(row.get('translations'))
 })
 
-/** The project's accent and logo fill what a flow leaves to them. */
-function projectLook(project: ParseObject) {
-  const theme = (project.get('theme') || {}) as { accent?: string }
-  return {
-    name: String(project.get('name') || ''),
-    accent: /^#[0-9a-f]{6}$/i.test(String(theme.accent || '')) ? String(theme.accent).toLowerCase() : '#5e6ad2',
-    logoUrl: [String(project.get('iconUrl') || ''), String(project.get('brandLogoUrl') || '')].find(url => /^https?:\/\//.test(url)) || ''
-  }
+/** The project's look (Brand kit) fills what a flow leaves to it. */
+export function flowProjectLook(project: ParseObject) {
+  const look = lookOf(project)
+  return { name: look.name, accent: look.accent, logoUrl: look.logoUrl || look.iconUrl }
 }
 
 type Snapshot = { name: string, steps: OnboardingStep[], style: OnboardingStyle, options: OnboardingOptions, locale: string, translations: OnboardingTranslations }
 
 /** What an app receives for a published snapshot, in the first of `wanted` the flow has (its own language otherwise). */
 function toPublicFlow(project: ParseObject, row: ParseObject, snapshot: Snapshot, wanted: unknown[] = []): PublicOnboardingFlow {
-  const look = projectLook(project)
+  const look = flowProjectLook(project)
   // A language added but not yet written has nothing to show: it is not offered.
   const locales = [snapshot.locale, ...Object.entries(snapshot.translations).filter(([, t]) => t.name || Object.keys(t.steps).length).map(([tag]) => tag)]
   const locale = matchLocale(wanted, locales) || snapshot.locale
@@ -140,7 +138,11 @@ async function applyInput(project: ParseObject, row: ParseObject, body: Record<s
   if (body.steps !== undefined) {
     const result = validateOnboardingSteps(body.steps)
     errors.push(...result.errors)
-    if (!result.errors.length) row.set('steps', result.steps)
+    // A step's pricing table must be one of this project's (it may still be a draft: it shows once published).
+    for (const [i, step] of result.steps.entries()) {
+      if (step.pricingTable && !(await findPricingTableByKey(project, step.pricingTable))) errors.push(`Step ${i + 1}: the project has no pricing table "${step.pricingTable}"`)
+    }
+    if (!errors.length) row.set('steps', result.steps)
   }
   if (body.style !== undefined) {
     const result = validateOnboardingStyle(body.style, normalizeOnboardingStyle(row.get('style')))
@@ -240,5 +242,29 @@ export async function publicOnboardingFlow(event: H3Event): Promise<PublicOnboar
   setResponseHeader(event, 'Vary', 'Accept-Language')
   // ?locale=es wins over the browser's Accept-Language; a language the flow lacks gets the flow's own.
   const wanted = [getQuery(event).locale, ...parseAcceptLanguage(getHeader(event, 'accept-language'))]
-  return toPublicFlow(project, row, published, wanted)
+  const flow = toPublicFlow(project, row, published, wanted)
+  // A step with a pricing table carries it, in the flow's language, so one answer (and the copy an app keeps) has everything.
+  const tables = new Map<string, Awaited<ReturnType<typeof publishedPricingTableByKey>>>()
+  const visitor = readVisitor(getQuery(event).visitor)
+  for (const key of new Set(flow.steps.map(s => s.pricingTable).filter(Boolean))) tables.set(key, await publishedPricingTableByKey(project, key, [flow.locale], event, visitor).catch(() => null))
+  return { ...flow, steps: flow.steps.map(step => (step.pricingTable ? { ...step, pricing: tables.get(step.pricingTable) || null } : step)) }
+}
+
+// ---- who finished it ---------------------------------------------------------------
+
+/** Remember that a person finished or skipped a published flow; the latest outcome replaces the one before. */
+export async function recordOnboardingOutcome(project: ParseObject, endUser: ParseObject, flowKey: string, outcome: 'completed' | 'skipped'): Promise<void> {
+  const flow = ONBOARDING_KEY.test(flowKey) ? await findFlowByKey(project, flowKey) : null
+  // Only a flow people can see: a draft's key is not confirmed to anyone.
+  if (!flow || flow.get('status') !== 'published') throw createError({ statusCode: 404, statusMessage: 'Flow not found' })
+  const Parse = useParse()
+  const row = (await new Parse.Query('OnboardingCompletion').equalTo('project', project).equalTo('endUser', endUser).equalTo('flow', flowKey).first(MASTER)) || new (Parse.Object.extend('OnboardingCompletion'))() as ParseObject
+  row.set('project', project)
+  row.set('endUser', endUser)
+  row.set('flow', flowKey)
+  row.set('outcome', outcome)
+  row.set('version', Number(flow.get('version') || 0))
+  row.set('at', new Date())
+  await row.save(null, MASTER)
+  await emitDomainEvent(project, 'onboarding.completed', { flow: flowKey, outcome, contact: { id: endUser.id, externalId: endUser.get('externalId') || '', email: endUser.get('email') || '' } })
 }

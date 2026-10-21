@@ -1,9 +1,10 @@
-import { createHmac, randomBytes } from 'node:crypto'
+import { createHmac } from 'node:crypto'
 import { MASTER, useParse, type ParseObject } from './parse'
 import { runExclusive } from './redis'
 import { safeFetch } from './outbound'
 import { workspaceIsActive } from './tenancy'
 import { hasFeature, projectWorkspaceId } from './usage'
+import { LEGACY_WEBHOOK_EVENTS, matchesEventFilter, type DomainEvent, type WebhookEndpointDto } from '#shared/domainEvents'
 
 // Event webhooks: how HelpBites tells the developer's app about changes it
 // owns — someone unsubscribed, an address bounced — without ever writing to
@@ -11,17 +12,22 @@ import { hasFeature, projectWorkspaceId } from './usage'
 // worker posts it, and failures retry with backoff for about a day, so a lost
 // unsubscribe never happens just because their server was down for a minute.
 //
+// Who receives what: the project's original single URL (Settings → Event
+// webhook) keeps the four events it always got; WebhookEndpoint rows each
+// choose their own filter over the domain events (server/utils/domainEvents.ts).
+//
 // Signed exactly like the action webhook (`x-helpbites-signature:
 // sha256=<hmac of the body>`), so one verifier serves both. The body carries
 // an `id` (dedupe on it: a retry after a timeout can arrive twice) and
 // `createdAt` (reject old ones to stop replays).
 
-export type WebhookEventType = 'contact.subscription_changed' | 'email.suppressed' | 'cms.entry.published' | 'cms.entry.unpublished'
+export type WebhookEventType = string
 
 // Minutes to wait after each failed attempt; after the last, the delivery is marked failed.
 export const WEBHOOK_BACKOFF_MINUTES = [1, 5, 30, 120, 720]
 // A suspended workspace's events wait (without using up attempts) and are looked at again this much later.
 const INACTIVE_RETRY_MS = 60 * 60_000
+const DELIVERY_BUDGET_MS = 90_000
 
 export function webhookSignature(secret: string, body: string): string {
   return `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`
@@ -33,16 +39,36 @@ export function nextWebhookAttempt(attempts: number, now = new Date()): Date | n
   return wait === undefined ? null : new Date(now.getTime() + wait * 60_000)
 }
 
-/** Queue an event for the project's webhook; nothing when it has none, or when its workspace's plan does not include them. */
-export async function emitWebhooks(project: ParseObject, events: { type: WebhookEventType, data: Record<string, unknown> }[]): Promise<void> {
-  if (!events.length || !project.get('eventWebhookUrl') || !project.get('eventWebhookSecret')) return
-  if (!(await hasFeature(await projectWorkspaceId(project), 'eventWebhooks'))) return
+export function serializeWebhookEndpoint(row: ParseObject, secret = false): WebhookEndpointDto {
+  const status = String(row.get('lastStatus') || '')
+  return {
+    id: row.id || '',
+    projectId: (row.get('project') as ParseObject | undefined)?.id || '',
+    url: String(row.get('url') || ''),
+    description: String(row.get('description') || ''),
+    events: ((row.get('events') as string[] | undefined) || ['*']).map(String),
+    enabled: row.get('enabled') !== false,
+    ...(secret ? { secret: String(row.get('secret') || '') } : {}),
+    lastDeliveryAt: row.get('lastDeliveryAt') ? new Date(row.get('lastDeliveryAt') as Date).toISOString() : null,
+    lastStatus: status === 'delivered' || status === 'failed' || status === 'pending' ? status : null,
+    createdAt: row.createdAt ? row.createdAt.toISOString() : null
+  }
+}
+
+/** Queue a domain event for every destination that wants it: the legacy URL, then each matching endpoint. Nothing when the plan has no event webhooks. */
+export async function queueWebhooks(project: ParseObject, event: DomainEvent): Promise<number> {
   const Parse = useParse()
-  const rows = events.map(({ type, data }) => {
+  const legacy = Boolean(project.get('eventWebhookUrl') && project.get('eventWebhookSecret') && LEGACY_WEBHOOK_EVENTS.includes(event.type))
+  const endpoints = (await new Parse.Query('WebhookEndpoint').equalTo('project', project).notEqualTo('enabled', false).limit(50).find(MASTER))
+    .filter(row => matchesEventFilter(event.type, (row.get('events') as string[] | undefined) || ['*']))
+  if (!legacy && !endpoints.length) return 0
+  if (!(await hasFeature(await projectWorkspaceId(project), 'eventWebhooks'))) return 0
+  const rows = [...(legacy ? [null] : []), ...endpoints].map((endpoint) => {
     const row = new (Parse.Object.extend('WebhookDelivery'))() as ParseObject
     row.set('project', project)
-    row.set('type', type)
-    row.set('payload', { id: `evt_${randomBytes(12).toString('hex')}`, type, createdAt: new Date().toISOString(), projectId: project.id || '', data })
+    if (endpoint) row.set('endpoint', endpoint)
+    row.set('type', event.type)
+    row.set('payload', event)
     row.set('status', 'pending')
     row.set('attempts', 0)
     row.set('nextAt', new Date())
@@ -52,16 +78,23 @@ export async function emitWebhooks(project: ParseObject, events: { type: Webhook
     await Parse.Object.saveAll(rows, MASTER)
   } catch (error) {
     console.error('[webhooks] could not queue events:', (error as Error).message)
+    return 0
   }
+  return rows.length
 }
 
 async function deliver(row: ParseObject): Promise<void> {
   const project = row.get('project') as ParseObject
-  const url = String(project.get('eventWebhookUrl') || '')
-  const secret = String(project.get('eventWebhookSecret') || '')
-  if (!url || !secret) {
+  const endpoint = row.get('endpoint') as ParseObject | undefined
+  // A row with no endpoint belongs to the project's original webhook, which only ever got its own events:
+  // one whose endpoint was deleted must not fall through to it.
+  const orphaned = !endpoint && !LEGACY_WEBHOOK_EVENTS.includes(String(row.get('type')))
+  const url = String(orphaned ? '' : endpoint ? endpoint.get('url') || '' : project.get('eventWebhookUrl') || '')
+  const secret = String(orphaned ? '' : endpoint ? endpoint.get('secret') || '' : project.get('eventWebhookSecret') || '')
+  if (!url || !secret || (endpoint && endpoint.get('enabled') === false)) {
     row.set('status', 'failed')
-    row.set('lastError', 'The project has no event webhook any more')
+    row.set('lastError', endpoint || orphaned ? 'The endpoint was deleted or switched off' : 'The project has no event webhook any more')
+    row.unset('nextAt')
     await row.save(null, MASTER)
     return
   }
@@ -86,12 +119,19 @@ async function deliver(row: ParseObject): Promise<void> {
     else { row.set('status', 'failed'); row.unset('nextAt') }
   }
   await row.save(null, MASTER)
+  // The endpoint list shows how the last delivery went.
+  if (endpoint && (row.get('status') !== 'pending')) {
+    endpoint.set('lastStatus', row.get('status'))
+    endpoint.set('lastDeliveryAt', new Date())
+    await endpoint.save(null, MASTER).catch(() => {})
+  }
 }
 
 /** Post what is due, oldest first. One process at a time. */
 export async function deliverDueWebhooks(limit = 50): Promise<void> {
+  const started = Date.now()
   await runExclusive('sb:webhooks:deliver', 120, async () => {
-    const rows = await new (useParse()).Query('WebhookDelivery').equalTo('status', 'pending').lessThanOrEqualTo('nextAt', new Date()).ascending('nextAt').include('project').limit(limit).find(MASTER)
+    const rows = await new (useParse()).Query('WebhookDelivery').equalTo('status', 'pending').lessThanOrEqualTo('nextAt', new Date()).ascending('nextAt').include('project').include('endpoint').limit(limit).find(MASTER)
     // Per project in order, a few projects at a time: one slow endpoint does not hold up the rest.
     const byProject = new Map<string, ParseObject[]>()
     for (const row of rows) {
@@ -104,7 +144,11 @@ export async function deliverDueWebhooks(limit = 50): Promise<void> {
         await useParse().Object.saveAll(list, MASTER)
         return
       }
-      for (const row of list) await deliver(row)
+      // The lock below lasts 120 s and is not renewed: stop starting deliveries well before it ends.
+      for (const row of list) {
+        if (Date.now() - started > DELIVERY_BUDGET_MS) break
+        await deliver(row)
+      }
     }))
   })
 }

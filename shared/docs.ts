@@ -39,11 +39,25 @@ export const DOCS: readonly DocPage[] = [
     file: 'CONNECTING.md'
   },
   {
+    slug: 'support',
+    title: 'The conversation panel',
+    description: 'Everything about the customer beside a conversation: plan and MRR, past conversations, linked feedback, saved replies, FAQ suggestions, AI drafts and saving an answer as an FAQ.',
+    group: 'Guides',
+    file: 'SUPPORT.md'
+  },
+  {
     slug: 'feedback',
-    title: 'Feedback boards',
-    description: 'A public board per project with posts, votes, comments, a roadmap and a changelog: drop it into your site or build on the API.',
+    title: 'Feedback and roadmap',
+    description: 'A public feedback page per project with posts, votes, comments, a roadmap and a changelog, and a private planning board behind it: drop it into your site or build on the API.',
     group: 'Guides',
     file: 'FEEDBACK.md'
+  },
+  {
+    slug: 'events',
+    title: 'Events and webhooks',
+    description: 'Every change in a project is an event: receive the ones you pick on your own server as signed webhooks, or start a sequence from one.',
+    group: 'Guides',
+    file: 'EVENTS.md'
   },
   {
     slug: 'flags',
@@ -74,6 +88,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'ONBOARDING.md'
   },
   {
+    slug: 'pricing',
+    title: 'Pricing tables',
+    description: 'Plan cards, paywalls and comparison tables for your site, your Swift app and your onboarding, with prices and checkout from Stripe, currencies, translations, A/B tests and AI suggestions.',
+    group: 'Guides',
+    file: 'PRICING.md'
+  },
+  {
     slug: 'forms',
     title: 'Lead forms',
     description: 'Waitlists, "notify me" boxes and interest forms on your site, in your app or on a hosted page: every sign-up becomes a contact, with double opt-in, a welcome email and a sequence.',
@@ -93,6 +114,13 @@ export const DOCS: readonly DocPage[] = [
     description: 'Keep logos, icons, screenshots, colours, fonts and guidelines in one place, and share them on a public press page, an embed for your site, or the API.',
     group: 'Guides',
     file: 'BRAND.md'
+  },
+  {
+    slug: 'hub',
+    title: 'Public hub and one-tag loader',
+    description: 'One public page per project, a Home tab in the chat widget and a single script tag that adds the chat, feedback, changelog and onboarding. Web and Swift snippets.',
+    group: 'Guides',
+    file: 'HUB.md'
   },
   {
     slug: 'blog',

@@ -57,7 +57,7 @@ private struct ChangelogView: View {
       .confirmationDialog("Delete this entry?", isPresented: binding($deleting), titleVisibility: .visible, presenting: deleting) { entry in
         Button("Delete entry", role: .destructive) { Task { await delete(entry) } }
       } message: { _ in
-        Text("Its links go with it; the posts, board items and conversations stay.")
+        Text("Its links go with it; the posts, planning items and conversations stay.")
       }
       .confirmationDialog("Publish this release?", isPresented: binding($publishing), titleVisibility: .visible, presenting: publishing) { release in
         Button("Publish \(release.version)") { Task { await store.publishRelease(release) } }
@@ -232,7 +232,7 @@ private struct ChangelogView: View {
       EmptyState(
         systemImage: "scroll",
         title: "Nothing here yet",
-        message: "Write what shipped, in your own words, and group it into releases. Entries stay private until you publish them; link the posts, board items, tickets and errors they come from so you can see what is done."
+        message: "Write what shipped, in your own words, and group it into releases. Entries stay private until you publish them; link the posts, planning items, tickets and errors they come from so you can see what is done."
       ) {
         Button { sheet = .entry(nil) } label: { Label("New entry", systemImage: "plus") }.buttonStyle(.lnPrimary)
       }
@@ -241,7 +241,7 @@ private struct ChangelogView: View {
 
   private var offBanner: some View {
     Button { sheet = .settings } label: {
-      (Text("The public changelog is off. Turn on ") + Text("Public changelog").bold() + Text(" in Settings to serve its page, JSON and RSS; it does not need the feedback board."))
+      (Text("The public changelog is off. Turn on ") + Text("Public changelog").bold() + Text(" in Settings to serve its page, JSON and RSS; it does not depend on Feedback."))
         .font(.lnMeta).foregroundStyle(Theme.textMuted).multilineTextAlignment(.leading)
         .padding(.horizontal, 12).padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)

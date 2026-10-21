@@ -1,26 +1,26 @@
 import SwiftUI
 
 /// One person (web: components/contacts/ContactDrawer.vue): marketing consent
-/// and its proof, how they got here, name, tags and attributes, and erasing them.
+/// and its proof, how they got here, name, language, tags and attributes, their activity
+/// (one timeline, GET /v1/contacts/:id/activity), billing, putting them on a sequence, and erasing them.
 struct ContactDetailSheet: View {
   let projectId: String
   @State var contact: Contact
   /// The saved contact, or nil once it is erased.
   var onChange: (Contact?) -> Void
   @Environment(SessionStore.self) private var session
-  @Environment(Workspace.self) private var workspace
   @Environment(\.dismiss) private var dismiss
   @State private var name = ""
+  @State private var language = ""
   @State private var tags = ""
   @State private var attributes: [(key: String, value: String)] = []
   @State private var saving = false
   @State private var error = ""
   @State private var confirmResubscribe = false
   @State private var confirmErase = false
-  @State private var conversations: [Conversation] = []
   /// Lead forms and syncs by id, for "Added via" and "Lead forms".
   @State private var names: [String: String] = [:]
-  @State private var emails: [EmailLogEntry] = []
+  @State private var addingToSequence = false
 
   var body: some View {
     NavigationStack {
@@ -40,10 +40,14 @@ struct ContactDetailSheet: View {
           }
         } footer: { Text(SubscriptionStatus.of(contact.subscription).hint) }
 
-        Section("Profile") {
+        Section {
           TextField("Name", text: $name)
+          Picker("Language", selection: $language) {
+            Text("Not set").tag("")
+            ForEach(ContentLocale.choices(including: language.isEmpty ? [] : [language]), id: \.self) { Text(ContentLocale.label($0)).tag($0) }
+          }
           TextField("Tags, comma-separated", text: $tags)
-        }
+        } header: { Text("Profile") } footer: { Text("The language we write to them in. Campaigns and sequences send the matching translation of a template.") }
 
         Section {
           ForEach(attributes.indices, id: \.self) { i in
@@ -75,39 +79,7 @@ struct ContactDetailSheet: View {
           }
         }
 
-        Section("Conversations") {
-          if conversations.isEmpty { Text("None yet.").font(.lnMeta).foregroundStyle(Theme.textMuted) }
-          ForEach(conversations) { conversation in
-            Button {
-              workspace.go(.inbox)
-              Task { await workspace.inbox.select(conversation.id) }
-              dismiss()
-            } label: {
-              HStack {
-                Text(conversation.subject.isEmpty ? (conversation.lastMessagePreview.isEmpty ? "Conversation" : conversation.lastMessagePreview) : conversation.subject).lineLimit(1)
-                Spacer(minLength: 8)
-                Tag(text: conversation.status.capitalized)
-                Text(DateText.short(conversation.lastMessageAt ?? conversation.createdAt)).font(.lnCaption).foregroundStyle(Theme.textMuted)
-              }
-              .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-          }
-        }
-
-        if !contact.email.isEmpty {
-          Section("Email") {
-            if emails.isEmpty { Text("Nothing sent yet.").font(.lnMeta).foregroundStyle(Theme.textMuted) }
-            ForEach(emails) { entry in
-              HStack {
-                Text(entry.subject ?? "").lineLimit(1)
-                Spacer(minLength: 8)
-                Text(EmailStatusText.style(entry.status ?? "").label).font(.lnCaption).foregroundStyle(Theme.textMuted)
-                Text(DateText.short(entry.createdAt)).font(.lnCaption).foregroundStyle(Theme.textMuted)
-              }
-            }
-          }
-        }
+        ContactActivitySection(projectId: projectId, contactId: contact.id) { dismiss() }
 
         Section("Billing") {
           ContactBillingSection(projectId: projectId, contactId: contact.id, revenue: contact.attributes["stripe_revenue"].flatMap { if case .number(let value) = $0 { value } else { nil } }, customerId: contact.attributes["stripe_customer"].flatMap { if case .string(let value) = $0 { value } else { nil } })
@@ -115,6 +87,7 @@ struct ContactDetailSheet: View {
 
         Section {
           ErrorText(message: error)
+          Button { addingToSequence = true } label: { Label("Add to sequence", systemImage: "text.badge.plus") }
           Button("Erase this person", role: .destructive) { confirmErase = true }
         }
       }
@@ -132,16 +105,10 @@ struct ContactDetailSheet: View {
       }
     }
     .task { names = await ContactOriginNames.load(projectId, session: session) }
-    .task {
-      // Their conversations (open one in the inbox) and the email we sent them.
-      if let result: InboxResponse = try? await session.get("/v1/admin/conversations", query: ["project": projectId, "endUser": contact.id, "limit": "20"]) { conversations = result.conversations }
-      if !contact.email.isEmpty {
-        struct Logs: Decodable, Sendable { let logs: [EmailLogEntry] }
-        if let result: Logs = try? await session.get("/v1/admin/email-logs", query: ["project": projectId, "to": contact.email, "limit": "20"]) { emails = result.logs.filter { $0.to == contact.email } }
-      }
-    }
+    .sheet(isPresented: $addingToSequence) { AddToSequenceSheet(projectId: projectId, contactId: contact.id) }
     .onAppear {
       name = contact.name
+      language = contact.language ?? ""
       tags = contact.tags.joined(separator: ", ")
       attributes = contact.attributes.sorted { $0.key < $1.key }.map { (key: $0.key, value: $0.value.display) }
     }
@@ -164,7 +131,7 @@ struct ContactDetailSheet: View {
   private func save(subscription: String? = nil, resubscribe: Bool = false) async {
     struct Input: Encodable, Sendable {
       let project: String
-      let name: String?, tags: [String]?, attributes: [String: JSONValue]?, subscription: String?, resubscribe: Bool?
+      let name: String?, language: String?, tags: [String]?, attributes: [String: JSONValue]?, subscription: String?, resubscribe: Bool?
     }
     struct Output: Decodable, Sendable { let contact: Contact }
     saving = true
@@ -177,8 +144,8 @@ struct ContactDetailSheet: View {
       changes = next
     }
     let input = subscription == nil
-      ? Input(project: projectId, name: name, tags: tags.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }, attributes: changes, subscription: nil, resubscribe: nil)
-      : Input(project: projectId, name: nil, tags: nil, attributes: nil, subscription: subscription, resubscribe: resubscribe ? true : nil)
+      ? Input(project: projectId, name: name, language: language, tags: tags.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }, attributes: changes, subscription: nil, resubscribe: nil)
+      : Input(project: projectId, name: nil, language: nil, tags: nil, attributes: nil, subscription: subscription, resubscribe: resubscribe ? true : nil)
     do {
       let output: Output = try await session.send("/v1/contacts/\(contact.id)", method: "PATCH", body: input)
       contact = output.contact
@@ -193,5 +160,40 @@ struct ContactDetailSheet: View {
       onChange(nil)
       dismiss()
     } catch { self.error = error.localizedDescription }
+  }
+}
+
+/// A person opened by id, for places that only know the id (a revenue row): loads the contact, then shows the same sheet.
+struct ContactSheetByID: View {
+  let projectId: String
+  let contactId: String
+  @Environment(SessionStore.self) private var session
+  @Environment(\.dismiss) private var dismiss
+  @State private var contact: Contact?
+  @State private var error = ""
+
+  var body: some View {
+    Group {
+      if let contact {
+        ContactDetailSheet(projectId: projectId, contact: contact) { changed in if changed == nil { dismiss() } }
+      } else {
+        NavigationStack {
+          VStack(spacing: 12) {
+            if error.isEmpty { ProgressView() } else { ErrorText(message: error) }
+          }
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .navigationTitle("Contact")
+          .navigationBarTitleDisplayMode(.inline)
+          .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+        }
+      }
+    }
+    .task(id: contactId) {
+      struct Output: Decodable, Sendable { let contact: Contact }
+      do {
+        let output: Output = try await session.get("/v1/contacts/\(contactId)", query: ["project": projectId])
+        contact = output.contact
+      } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
+    }
   }
 }

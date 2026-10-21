@@ -17,3 +17,4 @@ coverage
 .claude/settings.local.json
 .claude/worktrees
 /helpbites-native/build-device
+dump.rdb

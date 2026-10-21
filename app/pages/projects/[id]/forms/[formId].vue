@@ -173,7 +173,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
               <UButton icon="i-lucide-mail-plus" :label="$t('projectTools.forms.newTemplate')" size="xs" color="neutral" variant="ghost" :to="`/projects/${id}/email`" />
-              <UButton icon="i-lucide-workflow" :label="$t('projectTools.forms.manageSequences')" size="xs" color="neutral" variant="ghost" :to="`/projects/${id}/campaigns?view=sequences`" />
+              <UButton icon="i-lucide-workflow" :label="$t('projectTools.forms.manageSequences')" size="xs" color="neutral" variant="ghost" :to="`/projects/${id}/email?view=sequences`" />
             </div>
           </section>
 
@@ -213,7 +213,7 @@
             </LeadFileList>
             <div class="flex flex-wrap gap-2">
               <UButton v-if="segmentId" icon="i-lucide-users" :label="$t('projectTools.forms.showAll')" size="xs" color="neutral" variant="soft" :to="`/projects/${id}/contacts?segment=${segmentId}`" />
-              <UButton v-if="segmentId" icon="i-lucide-megaphone" :label="$t('projectTools.forms.emailThem')" size="xs" color="neutral" variant="ghost" :to="`/projects/${id}/campaigns`" />
+              <UButton v-if="segmentId" icon="i-lucide-megaphone" :label="$t('projectTools.forms.emailThem')" size="xs" color="neutral" variant="ghost" :to="`/projects/${id}/email?view=campaigns`" />
             </div>
           </section>
         </div>
@@ -445,7 +445,7 @@ async function translate(locales: string[], overwrite: boolean) {
 }
 
 // ---- look ----
-const projectAccent = computed(() => project.value?.theme?.accent || '#5e6ad2')
+const projectAccent = computed(() => project.value?.theme?.accent || '#4f46e5')
 const colourFields = computed(() => [
   { key: 'accent' as const, label: t('projectTools.forms.accent'), empty: t('projectTools.forms.projectAccent'), fallback: projectAccent.value },
   { key: 'background' as const, label: t('projectTools.forms.background'), empty: t('projectTools.forms.noBackground'), fallback: previewTheme.value === 'dark' ? '#18181b' : '#ffffff' },

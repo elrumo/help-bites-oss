@@ -16,6 +16,8 @@ export type IdentityClaims = {
   username?: string
   /** Optional. An http(s) avatar image URL. */
   avatar?: string
+  /** Optional. The person's language, a tag such as `es` or `pt-BR`. It fills the contact's language when that is empty. */
+  locale?: string
   /** Optional. `admin` marks one of the host's own staff: they moderate the
    * project's feedback board (statuses, visibility, changelog, any post or
    * comment). The host decides who gets it; the signature makes it unforgeable. */

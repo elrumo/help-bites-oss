@@ -12,7 +12,7 @@ describe('onboarding flows', () => {
       { id: 'a', title: 'Second' },
       { title: '', body: '' }
     ])
-    expect(steps[0]).toEqual({ id: 'a', title: 'Hello', body: 'World', imageUrl: 'https://cdn.test/a.png', imageAlt: '', buttonLabel: '' })
+    expect(steps[0]).toEqual({ id: 'a', title: 'Hello', body: 'World', imageUrl: 'https://cdn.test/a.png', imageAlt: '', buttonLabel: '', pricingTable: '' })
     expect(steps[1]!.id).not.toBe('a')
     expect(errors).toEqual(['Step 3 is empty'])
 
@@ -49,5 +49,18 @@ describe('onboarding flows', () => {
     expect(source.startsWith('/* SPDX-License-Identifier: MIT')).toBe(true)
     expect(source).not.toMatch(/\bimport\s|require\(/)
     expect(() => new Function(source)).not.toThrow()
+  })
+
+  test('the web script reports who finished or skipped with the identity token, best effort', () => {
+    const source = readFileSync(join(import.meta.dir, '../public/onboarding.js'), 'utf8')
+    // data-token or init({ token }), a string or a function; one POST to the flow's /complete with the token as a bearer.
+    expect(source).toContain("token: attr('token')")
+    expect(source).toContain("typeof given === 'function' ? given() : given")
+    expect(source).toContain("'/complete'")
+    expect(source).toContain("authorization: 'Bearer ' + token")
+    expect(source).toContain("result === 'complete' ? 'completed' : 'skipped'")
+    // A failed or missing report changes nothing for the visitor: every path ends in a catch, and it runs after the outcome is remembered.
+    expect(source).toMatch(/\.catch\(function \(\) \{\}\)\s*\} catch \(e\) \{\}/)
+    expect(source.indexOf("store(seenKey(), { version")).toBeLessThan(source.lastIndexOf('report(flow, result)'))
   })
 })

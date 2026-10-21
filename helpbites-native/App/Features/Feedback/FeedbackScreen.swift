@@ -354,7 +354,7 @@ private struct FeedbackBoardView: View {
         notEnabled
       }
     } else if !store.error.isEmpty {
-      EmptyState(systemImage: "exclamationmark.triangle", title: "Could not load the board", message: store.error) {
+      EmptyState(systemImage: "exclamationmark.triangle", title: "Could not load feedback", message: store.error) {
         Button("Try again") { Task { await store.load() } }.buttonStyle(.lnSecondary)
       }
       .frame(maxHeight: .infinity)
@@ -372,7 +372,7 @@ private struct FeedbackBoardView: View {
             Text("\(store.posts.count) \(store.posts.count == 1 ? "post" : "posts"), \(store.totalVotes) \(store.totalVotes == 1 ? "vote" : "votes")")
               .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
           } else {
-            Text("Board is off").font(.lnCaption).foregroundStyle(Theme.warning)
+            Text("Feedback is off").font(.lnCaption).foregroundStyle(Theme.warning)
           }
         }
       }
@@ -387,7 +387,7 @@ private struct FeedbackBoardView: View {
   }
 
   /// The public changelog (/changelog/<public key>): copy its link or open it. It has its own
-  /// switch (Changelog → Settings) and does not need the feedback board.
+  /// switch (Changelog → Settings) and does not depend on Feedback.
   @ViewBuilder private var changelogMenu: some View {
     let key = workspace.project(store.projectId)?.publicKey ?? ""
     let base = store.session.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
@@ -395,22 +395,22 @@ private struct FeedbackBoardView: View {
     let ready = store.changelogPublic && url != nil && !key.isEmpty
     Menu {
       Button {
-        if ready { Clipboard.copy(url?.absoluteString) } else { store.alert = "Turn on the changelog first: switch on “Public changelog” in Project → Changelog → Settings. It does not need the feedback board." }
+        if ready { Clipboard.copy(url?.absoluteString) } else { store.alert = "Turn on the changelog first: switch on “Public changelog” in Project → Changelog → Settings. It does not depend on Feedback." }
       } label: { Label("Copy changelog link", systemImage: "link") }
       if ready, let url { Link(destination: url) { Label("Open public changelog", systemImage: "arrow.up.right.square") } }
     } label: { Label("Public changelog", systemImage: "sparkles") }
   }
 
-  // Not set up yet: what the board is, and the two ways in.
+  // Not set up yet: what public feedback is, and the two ways in.
   private var notEnabled: some View {
     ScrollView {
       EmptyState(
         systemImage: "lightbulb",
-        title: "A public feedback board for \(store.projectName.isEmpty ? "this project" : store.projectName)",
-        message: "Users post ideas and bugs, vote on what matters and follow progress through a roadmap and changelog. Embed the ready-made board with one script tag, or build your own UI on the API."
+        title: "Public feedback for \(store.projectName.isEmpty ? "this project" : store.projectName)",
+        message: "Users post ideas and bugs, vote on what matters and follow progress through a roadmap and changelog. Embed the ready-made page with one script tag, or build your own UI on the API."
       ) {
         Button("Customize first") { showSettings = true }.buttonStyle(.lnSecondary)
-        Button("Turn on the board") { Task { await store.enable() } }.buttonStyle(.lnPrimary).disabled(store.saving)
+        Button("Turn on feedback") { Task { await store.enable() } }.buttonStyle(.lnPrimary).disabled(store.saving)
       }
       ErrorText(message: showSettings ? "" : store.saveError)
     }
@@ -425,7 +425,7 @@ private struct FeedbackBoardView: View {
         typeMenu(config)
         Picker("Layout", selection: $store.layout) {
           Image(systemName: "list.bullet").accessibilityLabel("List").tag(FeedbackBoardStore.Layout.list)
-          Image(systemName: "rectangle.split.3x1").accessibilityLabel("Board").tag(FeedbackBoardStore.Layout.board)
+          Image(systemName: "rectangle.split.3x1").accessibilityLabel("Columns").tag(FeedbackBoardStore.Layout.board)
         }
         .pickerStyle(.segmented)
         .frame(width: 88)
@@ -494,7 +494,7 @@ private struct FeedbackBoardView: View {
     if visible.isEmpty {
       ScrollView {
         if store.posts.isEmpty {
-          EmptyState(systemImage: "lightbulb", title: "No posts yet", message: "Share the board, or start it off with a post of your own.") {
+          EmptyState(systemImage: "lightbulb", title: "No posts yet", message: "Share the feedback page, or start it off with a post of your own.") {
             Button { editor = FeedbackEditorRoute(postId: nil) } label: { Label("New post", systemImage: "plus") }.buttonStyle(.lnPrimary)
           }
         } else {
@@ -559,7 +559,7 @@ private struct FeedbackPostRow: View {
           title.font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(2).multilineTextAlignment(.leading)
           Spacer(minLength: 0)
           if post.locked { Image(systemName: "lock").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Locked") }
-          if post.hidden { Image(systemName: "eye.slash").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Hidden from the public board") }
+          if post.hidden { Image(systemName: "eye.slash").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Hidden from the public feedback page") }
         }
         let excerpt = FeedbackFormat.plainText(post.body, limit: 220)
         if !excerpt.isEmpty {

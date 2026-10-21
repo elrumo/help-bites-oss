@@ -22,6 +22,8 @@ export type Faq = {
   sourceDocumentId: string
   sourceSection: string
   sourceVersion: number
+  /** The conversation it was saved from (origin `conversation`); '' otherwise. */
+  conversationId: string
   importKey: string
   normalizedQuestion: string
   detached: boolean
@@ -110,6 +112,7 @@ export function serializeFaq(faq: ParseObject): Faq {
     sourceDocumentId: pointerId(faq.get('sourceDocument')),
     sourceSection: String(faq.get('sourceSection') || ''),
     sourceVersion: Number(faq.get('sourceVersion') || 0),
+    conversationId: String(faq.get('conversationId') || ''),
     importKey: String(faq.get('importKey') || ''),
     normalizedQuestion: String(faq.get('normalizedQuestion') || ''),
     detached: faq.get('detached') === true,

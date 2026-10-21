@@ -1,5 +1,6 @@
 import { Marked } from 'marked'
 import { readableOn } from '../brand'
+import { DEFAULT_ACCENT } from '../projectLook'
 import { CMS_ICONS } from './icons'
 import { DEFAULT_STYLE, SAFE_COLOR, normalizeAsset, type CmsBlock, type CmsComponentDef, type CmsField, type CmsLibrary, type CmsStyle } from './content'
 
@@ -357,7 +358,7 @@ export type PageInput = {
 /** A whole page: meta from the root's `title`, `description` and `ogImage` fields, fonts, styles, body, runtime. */
 export function renderPage(input: PageInput, ctx: RenderContext): string {
   const style = { ...DEFAULT_STYLE, ...input.style }
-  const accent = style.accent || input.projectAccent || '#5e6ad2'
+  const accent = style.accent || input.projectAccent || DEFAULT_ACCENT
   const { html, css } = renderBlocks(input.content, style, accent, ctx)
   const root = input.content
   const title = typeof root.title === 'string' && root.title.trim() ? root.title.trim() : input.name

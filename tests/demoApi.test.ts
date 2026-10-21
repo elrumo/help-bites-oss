@@ -58,10 +58,33 @@ test('the demo answers lead forms, their leads and where each contact came from'
 test('the demo answers a project overview, the page a project lands on', async () => {
   const overview = await demoApi<any>('/admin/projects/acme/overview')
   expect(overview.stats.length).toBeGreaterThan(0)
-  expect(overview.health.length).toBeGreaterThan(0)
+  expect(overview.health).toBeUndefined()
+  expect(overview.setup.total).toBeGreaterThan(0)
+  expect(overview.setup.done).toBe(overview.setup.items.filter((item: any) => item.state === 'done').length)
   expect(overview.activity.length).toBeGreaterThan(0)
   expect(overview.activity.every((item: any) => item.conversationId)).toBe(true)
   expect(overview.attention.every((item: any) => item.count > 0)).toBe(true)
+})
+
+test('the demo answers the setup checklist, the email setup, the unread badge and what needs attention', async () => {
+  const setup = await demoApi<any>('/admin/projects/acme/setup')
+  expect(setup).toEqual((await demoApi<any>('/admin/projects/acme/overview')).setup)
+  expect(setup.items.find((item: any) => item.key === 'widget').state).toBe('done')
+  expect(setup.items.find((item: any) => item.key === 'stripe').state).toBe('done')
+  // Fieldnotes has no error tracker yet, and the checklist says so.
+  expect((await demoApi<any>('/admin/projects/fieldnotes/setup')).items.find((item: any) => item.key === 'errors').state).toBe('todo')
+
+  const email = await demoApi<any>('/admin/projects/acme/email-setup')
+  expect(email).toMatchObject({ sending: true, bulk: true })
+
+  const { unreadMessages } = await demoApi<any>('/admin/unread')
+  const attention = await demoApi<any>('/admin/attention')
+  expect(unreadMessages).toBeGreaterThan(0)
+  expect(attention.unreadMessages).toBe(unreadMessages)
+  expect(attention.total).toBe(attention.items.reduce((sum: number, item: any) => sum + item.count, 0))
+  expect(attention.items.every((item: any) => item.projectId && item.count > 0)).toBe(true)
+  // The bounced address in the demo's log is something to look at.
+  expect(attention.items.some((item: any) => item.kind === 'bounces')).toBe(true)
 })
 
 test('the demo answers the workspace overview, the page the panel opens on', async () => {
@@ -93,7 +116,7 @@ test('the demo answers the Revenue tab with the overview\'s numbers', async () =
 
 test('the demo blog has Acme\'s posts, opens one, and refuses writes', async () => {
   const { posts } = await demoApi<any>('/admin/blog/posts', { query: { project: 'acme' } })
-  expect(posts.map((post: any) => post.status)).toEqual(['published', 'draft'])
+  expect(posts.map((post: any) => `${post.type}:${post.status}`)).toEqual(['post:published', 'post:draft', 'page:published'])
   const { post } = await demoApi<any>(`/admin/blog/posts/${posts[0].id}`)
   expect(post.title).toBe(posts[0].title)
   expect(await demoApi<any>('/admin/blog/comments', { query: { project: 'acme' } })).toEqual({ comments: [], total: 0, hasMore: false })
@@ -123,4 +146,35 @@ test('the demo is on the unlimited plan, so the panel shows no plan or limits', 
 
   expect(await demoApi<any>('/admin/workspace/ai')).toEqual({ ai: null, platform: { available: true, metered: false }, allowed: true })
   await expect(demoApi('/admin/workspace/ai', { method: 'PUT', body: { endpoint: 'https://api.openai.com/v1' } })).rejects.toMatchObject({ statusCode: 403 })
+})
+
+test('the demo answers the customer panel and the reply picker, so the inbox page loads', async () => {
+  const { conversations } = await demoApi<any>('/admin/conversations', { query: { project: 'acme' } })
+  for (const { id } of conversations) {
+    const context = await demoApi<any>(`/admin/conversations/${id}/context`)
+    expect(context.contact.id).toBeTruthy()
+    expect(context.pastConversations.every((c: any) => c.id !== id)).toBe(true)
+    expect(context.faqModels).toEqual({ models: [], defaultModelId: '' })
+    if (context.billing) expect(context.billing).toMatchObject({ currency: 'usd', customerId: expect.stringMatching(/^cus_/) })
+  }
+  // At least one demo customer pays, so the billing card shows somewhere.
+  const all = await Promise.all(conversations.map((c: any) => demoApi<any>(`/admin/conversations/${c.id}/context`)))
+  expect(all.some(context => context.billing)).toBe(true)
+  const { savedReplies, faqs } = await demoApi<any>(`/admin/conversations/${conversations[0].id}/suggestions`)
+  expect(savedReplies.length).toBeGreaterThan(0)
+  expect(faqs).toEqual([])
+  expect((await demoApi<any>('/admin/saved-replies', { query: { project: 'acme' } })).replies.length).toBe(savedReplies.length)
+  await expect(demoApi(`/admin/conversations/${conversations[0].id}/draft`, { method: 'POST' })).rejects.toMatchObject({ statusCode: 403 })
+})
+
+test('the demo shows a published pricing table with written prices', async () => {
+  const { tables } = await demoApi<any>('/admin/pricing-tables', { query: { project: 'acme' } })
+  expect(tables).toHaveLength(1)
+  const { table } = await demoApi<any>(`/admin/pricing-tables/${tables[0].id}`)
+  expect(table.published.plans.map((p: any) => p.key)).toEqual(['starter', 'pro', 'team'])
+  expect(table.published.plans[1].prices.year.amount).toBe(120)
+  expect((await demoApi<any>('/admin/stripe/catalog', { query: { project: 'acme' } })).connected).toBe(false)
+  const stats = await demoApi<any>(`/admin/pricing-tables/${tables[0].id}/stats`, { query: { days: 30 } })
+  expect(stats.total.visitors).toBe(stats.days.reduce((sum: number, d: any) => sum + d.visitors, 0))
+  expect(stats.total.revenue.usd).toBeGreaterThan(0)
 })

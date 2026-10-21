@@ -9,10 +9,10 @@ export type LegalFont = (typeof LEGAL_FONTS)[number]
 
 export type LegalConfig = {
   entity: { name: string, address: string, email: string, dpo: string }
-  /** '#rrggbb', or '' to use the project's theme accent. */
+  /** '#rrggbb', or '' to use the project's look (the Brand kit's accent): an override for the legal pages only. */
   accent: string
   font: LegalFont
-  /** '' falls back to the project's brand logo. */
+  /** '' falls back to the project's look (the Brand kit's logo): an override for the legal pages only. */
   logoUrl: string
   footerText: string
 }

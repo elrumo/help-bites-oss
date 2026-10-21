@@ -22,6 +22,13 @@ struct ProjectsAdminProject: Decodable, Sendable {
   let board: BoardConfig?
   /// When the chat widget last loaded on a host page; nil until it ever has (or from an older server).
   let widgetSeenAt: String?
+  /// Who is behind the product, and the public hub (shared/company.ts, shared/hub.ts); nil from an older server.
+  let company: CompanyProfile?
+  let hub: HubConfig?
+  /// When a signed identity token last arrived from the host's backend; nil until one has (or from an older server).
+  let identitySeenAt: String?
+  /// Web paths of the sections hidden from the sidebar; nil from an older server.
+  let hiddenSections: [String]?
 
   /// `ErrorLinkView` (server/utils/errorTracking.ts): one tracker project of this project.
   struct ErrorLink: Decodable, Identifiable, Sendable, Equatable {
@@ -67,3 +74,80 @@ struct ProjectsFlag: Codable, Sendable, Equatable {
   var targets, allow: [String]
 }
 
+// MARK: - Setup
+
+// shared/setup.ts and server/utils/setup.ts: a project's setup checklist, judged from what
+// HelpBites has seen. Rows carry a `reason` code and a `value`; `setup.<key>.<reason>` in
+// en.json words them, and `SetupItem.text` words them the same here.
+
+/// One row. `state` is done | todo | attention; `section` is the web section path that fixes it
+/// (`email?view=settings`, `settings#github`); `isOptional` rows never read as a failure.
+struct SetupItem: Decodable, Identifiable, Sendable {
+  let key, state, reason, value, section: String
+  let isOptional: Bool
+  var id: String { key }
+  enum CodingKeys: String, CodingKey {
+    case key, state, reason, value, section
+    case isOptional = "optional"
+  }
+
+  /// `setup.<key>.title`.
+  var title: String {
+    switch key {
+    case "widget": "Chat widget on your site"
+    case "identity": "Users identified"
+    case "notified": "Someone is told about new chats"
+    case "sender": "Email sender"
+    case "assistant": "AI assistant ready"
+    case "stripe": "Stripe"
+    case "github": "GitHub"
+    case "errors": "Error tracking"
+    default: key
+    }
+  }
+
+  /// `setup.<key>.<reason>`: a time value shows as a medium date and short time, and a numeric one picks the plural.
+  @MainActor var text: String {
+    let words: PluralText
+    switch "\(key).\(reason)" {
+    case "widget.seen": words = PluralText("Last loaded on your site {value}.")
+    case "widget.noOrigins": words = PluralText("Allow your site's address, then add the script.")
+    case "widget.waiting": words = PluralText("Waiting for the widget to load on your site.")
+    case "identity.seen": words = PluralText("Your backend signed an identity token {value}.")
+    case "identity.missing": words = PluralText("No signed identity token yet: your backend signs one per user so conversations are theirs.")
+    case "identity.anonymous": words = PluralText("Nobody signed in with a token yet. Email-only sign-in is on, so this may be fine.")
+    case "notified.email": words = PluralText("Emailed to {value} address", "Emailed to {value} addresses")
+    case "notified.push": words = PluralText("Pushed to {value} device", "Pushed to {value} devices")
+    case "notified.noMailer": words = PluralText("Addresses are set, but this server cannot send email yet.")
+    case "notified.nobody": words = PluralText("Nobody is emailed or pushed when a customer writes.")
+    case "sender.ready": words = PluralText("Mail goes out from {value}.")
+    case "sender.default": words = PluralText("Mail goes out from the server's default address.")
+    case "sender.missing": words = PluralText("No sender or no mail server yet: email cannot go out.")
+    case "assistant.live": words = PluralText("{value} answers customers by itself.")
+    case "assistant.notLive": words = PluralText("{value} is not answering yet: it needs a provider, knowledge, to be active and auto-reply on.")
+    case "assistant.none": words = PluralText("No assistant yet. Humans answer everything until you add one.")
+    case "stripe.synced": words = PluralText("Connected and synced.")
+    case "stripe.waiting": words = PluralText("Connected; waiting for the first sync.")
+    case "stripe.error": words = PluralText("The last sync failed: {value}")
+    case "stripe.none": words = PluralText("Not connected: no revenue on the Overview.")
+    case "github.linked": words = PluralText("{value} repository linked", "{value} repositories linked")
+    case "github.none": words = PluralText("No repository linked: no drafts from commits.")
+    case "errors.connected": words = PluralText("Reporting to {value}.")
+    case "errors.none": words = PluralText("Not connected: errors never reach the inbox.")
+    default: return value
+    }
+    var shown = value
+    if value.range(of: #"^\d{4}-\d\d-\d\dT"#, options: .regularExpression) != nil, let date = DateText.date(value) {
+      shown = date.formatted(date: .abbreviated, time: .shortened)
+    }
+    // vue-i18n picks the form by the value when it is a number; anything else reads as one.
+    let isCount = !value.isEmpty && value.allSatisfy({ $0.isASCII && $0.isNumber })
+    return words.text(isCount ? (Int(value) ?? 1) : 1, ["value": shown])
+  }
+}
+
+/// `setup` of the project overview: the rows, and how many are done of how many.
+struct ProjectSetup: Decodable, Sendable {
+  let items: [SetupItem]
+  let done, total: Int
+}

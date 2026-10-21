@@ -223,7 +223,7 @@ export function validateBrandConfig(value: unknown, base: BrandConfig = DEFAULT_
   return { config, errors }
 }
 
-/** The page's accent: the one picked, else the first brand colour, else the project's. */
+/** The page's accent: the one picked, else the first brand colour, else the project's, else the default. Same order as projectLook() (shared/projectLook.ts, which builds on this file, so the default is repeated here). */
 export function brandAccent(config: BrandConfig, projectAccent = ''): string {
-  return config.page.accent || config.colors[0]?.hex || (HEX.test(projectAccent) ? projectAccent.toLowerCase() : '') || '#18181b'
+  return config.page.accent || config.colors[0]?.hex || (HEX.test(projectAccent) ? projectAccent.toLowerCase() : '') || '#4f46e5'
 }

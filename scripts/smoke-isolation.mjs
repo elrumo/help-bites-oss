@@ -113,6 +113,7 @@ const { post } = await api('/v1/feedback', { token: userToken, method: 'POST', b
 const keyA = await api('/v1/admin/api-keys', { ...A, method: 'POST', body: { name: `${MARK} key` } })
 const { flow } = await api('/v1/admin/onboarding/flows', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} flow` } })
 const { form: leadForm } = await api('/v1/admin/lead-forms', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} form` } })
+const { reply: savedReply } = await api('/v1/admin/saved-replies', { ...A, method: 'POST', body: { project: project.id, title: `${MARK} reply`, body: `${MARK} text`, shortcut: MARK } })
 const leadFile = await maybe('lead form file (needs S3)', async () => {
   const { form } = await api(`/v1/admin/lead-forms/${leadForm.id}`, { ...A, method: 'PATCH', body: { fields: [...leadForm.fields, { type: 'file', key: 'shot', label: 'Shot', accept: 'images' }] } })
   const body = new FormData()
@@ -122,6 +123,7 @@ const leadFile = await maybe('lead form file (needs S3)', async () => {
   if (res.status !== 202) throw new Error(`${res.status} ${await res.text()}`)
   return (await api(`/v1/admin/lead-files?project=${project.id}&form=${leadForm.id}`, A)).files[0]
 })
+const { table: pricingTable } = await api('/v1/admin/pricing-tables', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} pricing` } })
 await api(`/v1/admin/brand?project=${project.id}`, { ...A, method: 'PATCH', body: { tagline: `${MARK} tagline` } })
 const brandUpload = await maybe('brand file (needs S3)', async () => {
   const res = await upload('/v1/admin/brand/assets', { project: project.id, name: `${MARK} logo` }, A)
@@ -175,10 +177,28 @@ await attempt('mark A\'s conversation read', `/v1/admin/conversations/${conversa
 await attempt('close A\'s conversation', `/v1/admin/conversations/${conversationId}/status`, { method: 'POST', body: { status: 'done' } })
 await attempt('delete A\'s message', `/v1/admin/messages/${messageId}`, { method: 'DELETE' })
 await attempt('react to A\'s message', `/v1/admin/messages/${messageId}/reactions`, { method: 'POST', body: { emoji: '👍' } })
+// The customer panel and what hangs off it.
+await attempt('read the customer panel of A\'s conversation', `/v1/admin/conversations/${conversationId}/context`)
+await attempt('search replies and FAQs for A\'s conversation', `/v1/admin/conversations/${conversationId}/suggestions?q=${MARK}`)
+await attempt('draft a reply in A\'s conversation', `/v1/admin/conversations/${conversationId}/draft`, { method: 'POST' })
+await attempt('link a post to A\'s conversation', `/v1/admin/conversations/${conversationId}/feedback-posts`, { method: 'POST', body: { postId: post.id } })
+await attempt('file a post from A\'s conversation', `/v1/admin/conversations/${conversationId}/feedback-posts`, { method: 'POST', body: { create: { title: 'pwned' } } })
+await attempt('save A\'s conversation as an FAQ', `/v1/admin/conversations/${conversationId}/faq`, { method: 'POST', body: { question: 'pwned?', answer: 'pwned' } })
+await attempt('list A\'s saved replies', `/v1/admin/saved-replies?project=${project.id}`)
+await attempt('add a saved reply to A\'s project', '/v1/admin/saved-replies', { method: 'POST', body: { project: project.id, title: 'pwned', body: 'pwned' } })
+await attempt('edit A\'s saved reply', `/v1/admin/saved-replies/${savedReply.id}`, { method: 'PATCH', body: { body: 'pwned' } })
+await attempt('delete A\'s saved reply', `/v1/admin/saved-replies/${savedReply.id}`, { method: 'DELETE' })
+await attempt('list A\'s webhook endpoints', `/v1/admin/projects/${project.id}/webhooks`)
+await attempt('add a webhook endpoint to A\'s project', `/v1/admin/projects/${project.id}/webhooks`, { method: 'POST', body: { url: 'https://example.com/pwned' } })
+await attempt('read A\'s webhook deliveries', `/v1/admin/projects/${project.id}/webhooks/deliveries`)
+await attempt('install a recipe into A\'s project', `/v1/automations/recipes/welcome-subscribers/install?project=${project.id}`, { method: 'POST', body: {} })
 await attempt('rename A\'s project', `/v1/admin/projects/${project.id}`, { method: 'PATCH', body: { name: 'pwned' } })
 await attempt('read A\'s project secret', `/v1/admin/projects/${project.id}/secret`)
 await attempt('rotate A\'s project secret', `/v1/admin/projects/${project.id}/rotate-secret`, { method: 'POST' })
 await attempt('read A\'s project overview', `/v1/admin/projects/${project.id}/overview`)
+await attempt('read A\'s project setup checklist', `/v1/admin/projects/${project.id}/setup`)
+await attempt('read A\'s project email setup', `/v1/admin/projects/${project.id}/email-setup`)
+await attempt('hide sections on A\'s project', `/v1/admin/projects/${project.id}`, { method: 'PATCH', body: { hiddenSections: ['revenue'] } })
 await attempt('read A\'s conversation types', `/v1/admin/projects/${project.id}/types`)
 for (const [label, id] of [['A\'s master template', master.template.id], ['A\'s project template', projectTemplate.template.id]]) {
   await attempt(`read ${label}`, `/v1/admin/emails/${id}`)
@@ -216,6 +236,7 @@ if (faq?.faq) {
   await attempt('delete A\'s FAQ', `/v1/admin/knowledge/faqs/${faq.faq.id}`, { method: 'DELETE' })
 }
 await attempt('read A\'s assistant', `/v1/admin/support-agents/${assistant.id}`)
+await attempt('test A\'s assistant\'s answer', `/v1/admin/support-agents/${assistant.id}/test-answer`, { method: 'POST', body: { query: 'hello' } })
 await attempt('edit A\'s assistant', `/v1/admin/support-agents/${assistant.id}`, { method: 'PATCH', body: { name: 'pwned' } })
 await attempt('read A\'s assistant knowledge', `/v1/admin/support-agents/${assistant.id}/knowledge`)
 await attempt('read A\'s assistant assignments', `/v1/admin/support-agents/${assistant.id}/assignments`)
@@ -228,6 +249,10 @@ await attempt('delete A\'s board item', `/v1/admin/board-items/${item.id}`, { me
 await attempt('list A\'s changelog', `/v1/admin/changelog/entries?project=${project.id}`)
 await attempt('edit A\'s changelog entry', `/v1/admin/changelog/entries/${entry.id}`, { method: 'PATCH', body: { title: 'pwned' } })
 await attempt('publish A\'s release', `/v1/admin/changelog/releases/${release.id}/publish`, { method: 'POST' })
+await attempt('list the conversations A\'s entry answers', `/v1/admin/changelog/entries/${entry.id}/linked-conversations?project=${project.id}`)
+await attempt('reply through A\'s entry', `/v1/admin/changelog/entries/${entry.id}/reply-conversations?project=${project.id}`, { method: 'POST', body: { body: 'pwned' } })
+await attempt('list GitHub links on A\'s board item', `/v1/admin/github-refs?project=${project.id}&kind=board&id=${item.id}`)
+await attempt('file A\'s error on the board', '/v1/admin/errors/1/board', { method: 'POST', body: { project: project.id } })
 await attempt('read A\'s feedback board', `/v1/feedback?project=${project.id}`)
 await attempt('edit A\'s feedback post', `/v1/feedback/${post.id}`, { method: 'PATCH', body: { status: 'done' } })
 await attempt('list A\'s contacts', `/v1/contacts?project=${project.id}`)
@@ -266,11 +291,27 @@ await attempt('read A\'s blog post', `/v1/admin/blog/posts/${blogPost.id}`)
 await attempt('edit A\'s blog post', `/v1/admin/blog/posts/${blogPost.id}`, { method: 'PATCH', body: { title: 'pwned', status: 'draft' } })
 await attempt('send A\'s post as a newsletter', `/v1/admin/blog/posts/${blogPost.id}/newsletter`, { method: 'POST', body: { send: 'draft' } })
 await attempt('write a post in A\'s project', '/v1/admin/blog/posts', { method: 'POST', body: { project: project.id, title: 'pwned' } })
+await attempt('import a Ghost blog into A\'s project', '/v1/admin/blog/import', { method: 'POST', body: { project: project.id, export: { db: [{ data: { posts: [{ id: 'pwn', title: 'pwned', html: '<p>pwned</p>', status: 'published' }] } }] } } })
+await attempt('restyle A\'s blog', `/v1/admin/projects/${project.id}`, { method: 'PATCH', body: { blog: { design: { footer: 'pwned' } } } })
 await attempt('list A\'s blog comments', `/v1/admin/blog/comments?project=${project.id}`)
 await attempt('hide A\'s blog comment', `/v1/blog/comments/${blogComment.id}`, { method: 'PATCH', body: { status: 'hidden' } })
 await attempt('reply on A\'s blog as A\'s team', `/v1/blog/${blogPost.id}/comments?project=${project.id}`, { method: 'POST', body: { body: 'pwned' } })
 await attempt('delete A\'s blog comment', `/v1/blog/comments/${blogComment.id}`, { method: 'DELETE' })
 await attempt('delete A\'s blog post', `/v1/admin/blog/posts/${blogPost.id}`, { method: 'DELETE' })
+await attempt('list A\'s pricing tables', `/v1/admin/pricing-tables?project=${project.id}`)
+await attempt('read A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}`)
+await attempt('edit A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}`, { method: 'PATCH', body: { name: 'pwned', checkout: { successUrl: 'https://evil.test/' } } })
+await attempt('preview A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/preview`, { method: 'POST', body: {} })
+await attempt('publish A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/publish`, { method: 'POST' })
+await attempt('translate A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/translate`, { method: 'POST', body: { locales: ['es'] } })
+await attempt('create a pricing table in A\'s project', '/v1/admin/pricing-tables', { method: 'POST', body: { project: project.id, name: 'pwned' } })
+await attempt('read A\'s pricing numbers', `/v1/admin/pricing-tables/${pricingTable.id}/stats?refresh=1`)
+await attempt('add a variant to A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/variants`, { method: 'POST', body: {} })
+await attempt('start an A/B test on A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/experiment/start`, { method: 'POST' })
+await attempt('stop an A/B test on A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/experiment/stop`, { method: 'POST', body: {} })
+await attempt('ask AI about A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/suggest`, { method: 'POST', body: { notes: 'x' } })
+await attempt('read A\'s Stripe catalog', `/v1/admin/stripe/catalog?project=${project.id}`)
+await attempt('delete A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}`, { method: 'DELETE' })
 await attempt('read A\'s brand kit', `/v1/admin/brand?project=${project.id}`)
 await attempt('edit A\'s brand kit', `/v1/admin/brand?project=${project.id}`, { method: 'PATCH', body: { tagline: 'pwned', page: { public: true } } })
 await attempt('preview A\'s brand page', `/v1/admin/brand/preview?project=${project.id}`, { method: 'POST', body: {} })
@@ -320,7 +361,7 @@ const viaSecret = await call(`/v1/contacts?project=${projectB.id}`, { token: sec
 check((refused(viaSecret.status) || viaSecret.status < 300) && !viaSecret.text.includes(TAG_B) && !viaSecret.text.includes(projectB.id), 'A\'s project secret cannot reach B\'s project')
 
 // Lists and search: nothing of A's, anywhere.
-for (const path of ['/v1/admin/projects', '/v1/admin/conversations', `/v1/admin/end-users?q=${MARK}`, '/v1/admin/emails', '/v1/admin/email-folders', '/v1/admin/email-components', '/v1/admin/email-logs', '/v1/admin/email-suppressions', '/v1/admin/knowledge/models', '/v1/admin/support-agents', '/v1/admin/agents', '/v1/admin/api-keys', '/v1/admin/invitations', `/v1/admin/search?q=${MARK}`, '/v1/admin/errors/providers', '/v1/admin/overview?range=all']) {
+for (const path of ['/v1/admin/projects', '/v1/admin/conversations', `/v1/admin/end-users?q=${MARK}`, '/v1/admin/emails', '/v1/admin/email-folders', '/v1/admin/email-components', '/v1/admin/email-logs', '/v1/admin/email-suppressions', '/v1/admin/knowledge/models', '/v1/admin/support-agents', '/v1/admin/agents', '/v1/admin/api-keys', '/v1/admin/invitations', `/v1/admin/search?q=${MARK}`, '/v1/admin/errors/providers', '/v1/admin/overview?range=all', '/v1/admin/attention', '/v1/admin/unread']) {
   const res = await call(path, B)
   check(res.status < 300 && !res.text.includes(MARK) && !res.text.includes(project.id), `B's ${path} shows nothing of A's`)
 }
@@ -350,10 +391,13 @@ check((await call(`/v1/admin/conversations/${conversationId}`, A)).json.conversa
 check((await call(`/v1/admin/projects/${project.id}/secret`, A)).json.secret === secret, 'A\'s project secret is unchanged')
 check((await call(`/v1/admin/emails/${master.template.id}`, A)).json.template?.name === `${MARK} master`, 'A\'s master template is untouched')
 check((await call(`/v1/admin/support-agents/${assistant.id}`, A)).status === 200, 'A\'s assistant still exists')
+check((await call(`/v1/admin/saved-replies?project=${project.id}`, A)).json.replies?.some(reply => reply.id === savedReply.id && reply.body === `${MARK} text`), 'A\'s saved reply is untouched')
 check((await call(`/v1/admin/knowledge/models/${model.id}`, A)).json.model?.name === `${MARK} model`, 'A\'s knowledge model is untouched')
 const flowAfter = (await call(`/v1/admin/onboarding/flows/${flow.id}`, A)).json.flow
 check(flowAfter?.name === `${MARK} flow` && flowAfter.status === 'draft', 'A\'s onboarding flow is untouched')
 const formAfter = (await call(`/v1/admin/lead-forms/${leadForm.id}`, A)).json.form
+const pricingAfter = (await call(`/v1/admin/pricing-tables/${pricingTable.id}`, A)).json.table
+check(pricingAfter?.name === `${MARK} pricing` && pricingAfter.status === 'draft' && pricingAfter.checkout.successUrl === '' && !pricingAfter.experiment.variants.length, 'A\'s pricing table is untouched')
 check(formAfter?.name === `${MARK} form` && formAfter.settings.doubleOptIn === true, 'A\'s lead form is untouched')
 if (leadFile) check((await call(`/v1/admin/lead-files/${leadFile.id}/download`, A)).status === 200, 'A\'s lead file is untouched')
 const kitAfter = (await call(`/v1/admin/brand?project=${project.id}`, A)).json
@@ -361,6 +405,9 @@ check(kitAfter.brand?.tagline === `${MARK} tagline` && kitAfter.brand.page.publi
 if (brandUpload) check(kitAfter.assets?.some(a => a.id === brandUpload.id && a.name === `${MARK} logo`), 'A\'s brand file is untouched')
 const blogAfter = (await call(`/v1/admin/blog/posts/${blogPost.id}`, A)).json.post
 check(blogAfter?.title === `${MARK} story` && blogAfter.status === 'published', 'A\'s blog post is untouched')
+const blogPosts = (await call(`/v1/admin/blog/posts?project=${project.id}`, A)).json.posts || []
+check(blogPosts.every(p => p.title !== 'pwned'), 'nothing was imported into A\'s blog')
+check((await call(`/v1/admin/projects`, A)).json.projects?.find(p => p.id === project.id)?.blog?.design?.footer !== 'pwned', 'A\'s blog design is untouched')
 const blogThread = (await call(`/v1/blog/${blogPost.slug}/comments?pk=${project.publicKey}`)).json
 check(blogThread.comments?.length === 1 && blogThread.comments[0].body === `${MARK} reader comment`, 'A\'s blog comment is untouched')
 const pageAfter = (await call(`/v1/admin/cms/entries/${cmsEntry.id}`, A)).json.entry
