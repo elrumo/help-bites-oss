@@ -1,10 +1,12 @@
 import SwiftUI
 
 /// Which knowledge an assistant may use: grants (or exclusions) of a whole model, a
-/// path inside it, or a single FAQ.
+/// path inside it, or a single FAQ. `onChange` runs after an access is added or removed,
+/// so the readiness strip can read again.
 struct AssistantKnowledgeAccess: View {
   let assistantId: String
   let projectId: String
+  var onChange: () -> Void = {}
   @Environment(SessionStore.self) private var session
   @State private var assignments: [AssistantAssignment] = []
   @State private var models: [KnowledgeModel] = []
@@ -146,6 +148,7 @@ struct AssistantKnowledgeAccess: View {
       let _: EmptyBody = try await session.send("/v1/admin/support-agents/\(assistantId)/assignments", body: Input(scope: scope, modelId: modelId, nodeId: nodeId, faqId: faqId, exclude: exclude))
       nodeId = ""; faqId = ""; exclude = false
       await loadAssignments()
+      onChange()
     } catch { self.error = error.localizedDescription }
   }
 
@@ -154,107 +157,141 @@ struct AssistantKnowledgeAccess: View {
     do {
       try await session.delete("/v1/admin/support-agents/\(assistantId)/assignments/\(assignment.id)")
       assignments.removeAll { $0.id == assignment.id }
+      onChange()
     } catch { self.error = error.localizedDescription }
   }
 }
 
-/// What knowledge the assistant would be handed for a question: the same retrieval the
-/// support runtime runs, respecting its assignments and FAQ status.
-struct AssistantRetrievalTest: View {
+/// Asks the assistant a question the way a customer would and shows what it would do, and why
+/// (web: AssistantTestAnswer.vue): hand it to the team, stay silent, or answer, with the
+/// knowledge it found and, when it has an AI provider, the reply it would send. The decision is
+/// the server's, the one the support runtime makes; nothing is sent or added to the inbox.
+struct AssistantTestAnswer: View {
   let assistantId: String
+  let types: [AssistantTicketType]
   @Environment(SessionStore.self) private var session
-  @State private var query = ""
-  @State private var testing = false
-  @State private var results: [AssistantRetrievedFaq]?  // nil until the first run
-  @State private var generating = false
-  @State private var answer: (text: String, model: String)?
+  @Environment(Workspace.self) private var workspace
+  @State private var question = ""
+  @State private var type = "support"
+  @State private var running = false
+  @State private var result: AssistantTestResult?
   @State private var error = ""
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("Test retrieval").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
-      Text("See exactly what knowledge this assistant would be given for a question — the same retrieval the support runtime uses.")
+      Text("Test answer").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+      Text("Ask what a customer would. This runs the same decision as a real message: your routing rules first, then the knowledge it may read and its confidence bar. Nothing is sent, and nothing is added to the inbox.")
         .font(.lnCaption).foregroundStyle(Theme.textMuted)
-      HStack(spacing: 8) {
-        TextField("How do I delete my account?", text: $query)
-          .textFieldStyle(.linear)
-          .submitLabel(.search)
-          .onSubmit { Task { await run() } }
-        Button(testing ? "Retrieving…" : "Retrieve") { Task { await run() } }
+      TextField("How do I delete my account?", text: $question)
+        .textFieldStyle(.linear)
+        .submitLabel(.go)
+        .onSubmit { Task { await run() } }
+      HStack(alignment: .bottom, spacing: 8) {
+        LabeledField(label: "Ticket type") { AssistantSelectField(selection: $type, options: typeOptions) }
+          .frame(maxWidth: 220)
+        Button(running ? "Testing…" : "Test answer") { Task { await run() } }
           .buttonStyle(.lnSecondaryCompact)
-          .disabled(testing || trimmedQuery.isEmpty)
-        Button(generating ? "Generating…" : "Generate answer") { Task { await generate() } }
-          .buttonStyle(.lnSecondaryCompact)
-          .disabled(generating || trimmedQuery.isEmpty)
+          .disabled(running || trimmedQuestion.isEmpty)
+          .padding(.bottom, 5)
       }
       ErrorText(message: error)
-      if let answer {
-        VStack(alignment: .leading, spacing: 4) {
-          Text("Generated answer · \(answer.model)").font(.lnCaption).foregroundStyle(Theme.textDimmed)
-          Text(answer.text).font(.lnMeta).foregroundStyle(Theme.text).textSelection(.enabled)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.elevated.opacity(0.6), in: RoundedRectangle(cornerRadius: Metrics.radius))
-      }
-      if let results {
-        if results.isEmpty {
-          Text("No knowledge matched — check the assignments above and that FAQs are active.").font(.lnMeta).foregroundStyle(Theme.textMuted)
-        } else {
-          ForEach(Array(results.enumerated()), id: \.offset) { _, result in card(result) }
-        }
-      }
+      if let result { card(result) }
     }
   }
 
-  private var trimmedQuery: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
+  private var trimmedQuestion: String { question.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-  private func card(_ result: AssistantRetrievedFaq) -> some View {
-    VStack(alignment: .leading, spacing: 4) {
-      HStack(spacing: 8) {
-        Text(result.question).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-        Spacer(minLength: 8)
-        Text("\(Int((result.score * 100).rounded()))%").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textDimmed)
+  /// The project's ticket types, or the built-in one when they have not loaded.
+  private var typeOptions: [AssistantOption] {
+    types.isEmpty ? [AssistantOption(value: "support", label: "Support")] : types.map { AssistantOption(value: $0.key, label: $0.name) }
+  }
+
+  // MARK: Result
+
+  private func card(_ result: AssistantTestResult) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      VStack(alignment: .leading, spacing: 6) {
+        outcomeBadge(result.decision.outcome, result.outcomeLabel)
+        if !result.live {
+          Text("It is not answering customers by itself yet; see Readiness above.").font(.lnCaption).foregroundStyle(Theme.textMuted)
+        }
       }
-      Text(location(result)).font(.lnCaption).foregroundStyle(Theme.textDimmed).lineLimit(1)
-      // Inline Markdown (bold, links, code) clipped to three lines like the web's line-clamp-3.
-      Text((try? AttributedString(markdown: result.answer, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(result.answer))
-        .font(.lnMeta).foregroundStyle(Theme.text).lineLimit(3)
-        .padding(.top, 2)
+      Text(result.reasonText).font(.lnMeta).foregroundStyle(Theme.text)
+      if let answer = result.answer, !answer.isEmpty {
+        VStack(alignment: .leading, spacing: 6) {
+          Text("It would send, from \(result.model):").font(.lnCaptionMedium).foregroundStyle(Theme.textMuted)
+          // Inline Markdown (bold, links, code), as the web renders the reply.
+          Text((try? AttributedString(markdown: answer, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(answer))
+            .font(.lnMeta).foregroundStyle(Theme.text).textSelection(.enabled)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.elevated.opacity(0.6), in: RoundedRectangle(cornerRadius: Metrics.radius))
+        }
+      } else if result.decision.outcome == "answer" {
+        VStack(alignment: .leading, spacing: 2) {
+          Text("It would answer, but there is no AI provider to write the reply.").font(.lnCaption).foregroundStyle(Theme.warning)
+          Button("Settings → AI") { workspace.go(.ai) }.buttonStyle(.plain).font(.lnCaptionMedium).foregroundStyle(Theme.accentText)
+        }
+      }
+      if !result.knowledge.isEmpty {
+        VStack(alignment: .leading, spacing: 6) {
+          Text("Knowledge it found").font(.lnCaptionMedium).foregroundStyle(Theme.textMuted)
+          ForEach(Array(result.knowledge.enumerated()), id: \.offset) { _, item in knowledgeRow(item) }
+        }
+      }
     }
-    .padding(12)
+    .padding(16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
+    .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
+    .accessibilityElement(children: .contain)
   }
 
-  private func location(_ result: AssistantRetrievedFaq) -> String {
-    let path = result.pathCache.isEmpty ? "(root)" : result.pathCache
-    guard let section = result.source?.section, !section.isEmpty else { return path }
-    return "\(path) · \(section)"
+  /// Answer is green, a hand-off amber, silence grey; the icon says it without the colour.
+  private func outcomeBadge(_ outcome: String, _ label: String) -> some View {
+    let (icon, tint) = outcomeStyle(outcome)
+    return HStack(spacing: 5) {
+      Image(systemName: icon).font(.system(size: 10, weight: .semibold))
+      Text(label).lineLimit(1)
+    }
+    .font(.lnCaptionMedium)
+    .foregroundStyle(tint)
+    .padding(.horizontal, 8)
+    .frame(height: 22)
+    .background(tint.opacity(0.12), in: Capsule())
   }
 
+  private func outcomeStyle(_ outcome: String) -> (String, Color) {
+    switch outcome {
+    case "answer": return ("arrowshape.turn.up.left", Theme.success)
+    case "handoff": return ("hand.raised", Theme.warning)
+    default: return ("speaker.slash", Theme.textMuted)
+    }
+  }
+
+  private func knowledgeRow(_ item: AssistantTestResult.Knowledge) -> some View {
+    HStack(spacing: 8) {
+      (Text(item.question).foregroundStyle(Theme.text) + Text(item.pathCache.map { $0.isEmpty ? "" : " · \($0)" } ?? "").foregroundStyle(Theme.textDimmed))
+        .font(.lnCaption).lineLimit(1)
+      Spacer(minLength: 8)
+      Text(AssistantTestResult.percent(item.score)).font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
+    }
+  }
+
+  // MARK: Request
+
+  /// POST …/test-answer for the question as the chosen ticket type. The last result stays until the next one arrives or the call fails.
   private func run() async {
-    struct Input: Encodable, Sendable { let query: String }
-    struct Response: Decodable, Sendable { let results: [AssistantRetrievedFaq] }
-    guard !trimmedQuery.isEmpty, !testing else { return }
-    testing = true; error = ""
-    defer { testing = false }
+    struct Input: Encodable, Sendable { let query, conversationType: String }
+    guard !trimmedQuestion.isEmpty, !running else { return }
+    running = true; error = ""
+    defer { running = false }
     do {
-      let response: Response = try await session.send("/v1/admin/support-agents/\(assistantId)/retrieve", body: Input(query: trimmedQuery))
-      results = response.results
-    } catch { self.error = error.localizedDescription }
-  }
-
-  /// POST …/generate: retrieval plus the grounded LLM answer, without touching a conversation.
-  private func generate() async {
-    struct Input: Encodable, Sendable { let query: String }
-    struct Response: Decodable, Sendable { let answer, model: String }
-    guard !trimmedQuery.isEmpty, !generating else { return }
-    generating = true; error = ""; answer = nil
-    defer { generating = false }
-    do {
-      let response: Response = try await session.send("/v1/admin/support-agents/\(assistantId)/generate", body: Input(query: trimmedQuery))
-      answer = (response.answer, response.model)
-    } catch { self.error = error.localizedDescription }
+      let response: AssistantTestResult = try await session.send("/v1/admin/support-agents/\(assistantId)/test-answer", body: Input(query: trimmedQuestion, conversationType: type))
+      result = response
+    } catch {
+      result = nil
+      let message = error.localizedDescription
+      self.error = message.isEmpty ? "Could not run the test" : message
+    }
   }
 }

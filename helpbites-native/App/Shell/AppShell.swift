@@ -21,6 +21,7 @@ struct AppShell: View {
       Tab("Overview", systemImage: "house", value: AppTab.overview) {
         NavigationStack { OverviewScreen().routes() }
       }
+      .badge(workspace.attention.total)
 
       Tab("Inbox", systemImage: "tray", value: AppTab.inbox) {
         NavigationStack { InboxScreen() }
@@ -63,10 +64,17 @@ struct AppShell: View {
     .task {
       async let projects: Void = workspace.loadProjects()
       async let inbox: Void = workspace.inbox.start()
+      workspace.startAttention()
       _ = await (projects, inbox)
     }
     .onChange(of: scenePhase) { _, phase in
-      if phase == .active { Task { await workspace.inbox.start() } } else { workspace.inbox.stop() }
+      if phase == .active {
+        Task { await workspace.inbox.start() }
+        workspace.startAttention()
+      } else {
+        workspace.inbox.stop()
+        workspace.stopAttention()
+      }
     }
     .onChange(of: PushRegistration.shared.pendingConversationID) { _, id in
       guard !id.isEmpty else { return }
@@ -75,11 +83,18 @@ struct AppShell: View {
     }
   }
 
+  /// The section of this project on screen: it stays in the sidebar even when the project hid it.
+  private func shownSection(_ projectId: String) -> ProjectSection? {
+    if case .section(let id, let section) = workspace.tab, id == projectId { return section }
+    return nil
+  }
+
   /// A project and its sections in the sidebar, closed until opened as on the web
-  /// (the OS keeps sections open before iOS 27).
+  /// (the OS keeps sections open before iOS 27). Sections run in the web's group order, Overview
+  /// first and Settings last, without the ones the project hid: a tab section has no sub-headings.
   @TabContentBuilder<AppTab> private func projectSection(_ project: Project) -> some TabContent<AppTab> {
     let section = TabSection {
-      ForEach(ProjectSection.allCases) { section in
+      ForEach(workspace.layout(project.id, keeping: shownSection(project.id)).all) { section in
         Tab(section.label, systemImage: section.systemImage, value: AppTab.section(project.id, section)) {
           NavigationStack { RouteView(route: .project(project.id, section)).routes() }
         }
@@ -130,8 +145,7 @@ struct RouteView: View {
       case .tickets: TicketTypesScreen(projectId: id)
       case .feedback: FeedbackScreen(projectId: id)
       case .board: BoardScreen(projectId: id)
-      case .email: EmailLibraryScreen(projectId: id, initialTab: .log)
-      case .campaigns: CampaignsScreen(projectId: id)
+      case .email: EmailLibraryScreen(projectId: id)
       case .flags: FlagsScreen(projectId: id)
       case .errors: ErrorsScreen(projectId: id)
       case .dev: ProjectDevScreen(projectId: id)
@@ -212,7 +226,7 @@ struct CommandPalette: View {
     var all: [Entry] = [
       Entry(id: "overview", title: "Overview", detail: nil, systemImage: "house", route: .overview),
       Entry(id: "inbox", title: "Inbox", detail: nil, systemImage: "tray", route: .inbox),
-      Entry(id: "emails", title: "Email templates", detail: nil, systemImage: "envelope", route: .emailTemplates),
+      Entry(id: "emails", title: "Shared templates", detail: nil, systemImage: "envelope", route: .emailTemplates),
       Entry(id: "email-log", title: "Email log", detail: nil, systemImage: "list.bullet.rectangle", route: .emailLog),
       Entry(id: "knowledge", title: "Knowledge", detail: nil, systemImage: "book", route: .knowledge),
       Entry(id: "projects", title: "Projects", detail: nil, systemImage: "square.stack", route: .projects),
@@ -222,7 +236,8 @@ struct CommandPalette: View {
       Entry(id: "account", title: "Account", detail: nil, systemImage: "person.crop.circle", route: .account)
     ]
     for project in workspace.projects {
-      for section in ProjectSection.allCases {
+      // Only what the project shows in its sidebar.
+      for section in workspace.layout(project.id).all {
         all.append(Entry(id: "\(project.id)-\(section.rawValue)", title: section == .overview ? project.name : "\(project.name) › \(section.label)", detail: section == .overview ? project.siteUrl : nil, systemImage: section.systemImage, route: .project(project.id, section)))
       }
     }

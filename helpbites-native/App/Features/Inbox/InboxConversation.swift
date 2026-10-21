@@ -555,7 +555,7 @@ private struct InboxTranscript: View {
       let number = event["number"]?.inboxText ?? ""
       let title = event["title"]?.inboxText ?? ""
       let item = "\(number.isEmpty ? "" : "#\(number) ")\(title.isEmpty ? "an item" : title)"
-      return event["type"]?.inboxText == "board.linked" ? "Linked to board item \(item)" : "Unlinked from board item \(item)"
+      return event["type"]?.inboxText == "board.linked" ? "Linked to planning item \(item)" : "Unlinked from planning item \(item)"
     case "feedback.linked", "feedback.unlinked":
       let number = event["number"]?.inboxText ?? ""
       let title = event["title"]?.inboxText ?? ""

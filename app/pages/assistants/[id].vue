@@ -8,8 +8,10 @@
     </PageHeader>
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div class="mx-auto max-w-2xl space-y-12 px-6 py-8">
+        <AssistantReadiness v-if="readiness" :readiness="readiness" />
+
         <!-- config -->
-        <form class="space-y-4" @submit.prevent="save">
+        <form id="assistant-form" class="scroll-mt-6 space-y-4" @submit.prevent="save">
           <h2 class="text-[15px] font-semibold text-highlighted">{{ $t('assistants.configuration') }}</h2>
           <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
             <span>{{ $t('assistants.assistantId') }}</span>
@@ -86,7 +88,7 @@
         </form>
 
         <!-- knowledge assignments -->
-        <div class="space-y-3">
+        <div id="knowledge-access" class="scroll-mt-6 space-y-3">
           <h2 class="text-[15px] font-semibold text-highlighted">{{ $t('assistants.knowledgeAccess') }}</h2>
           <p v-if="!assignments.length" class="text-sm text-muted border border-dashed border-accented rounded-xl p-6 text-center">
             {{ $t('assistants.noAccess') }}
@@ -112,33 +114,15 @@
           <p v-if="assignError" class="text-sm text-error">{{ assignError }}</p>
         </div>
 
-        <!-- test retrieval -->
-        <div class="space-y-3">
-          <h2 class="text-[15px] font-semibold text-highlighted">{{ $t('assistants.testRetrieval') }}</h2>
-          <p class="text-xs text-muted">{{ $t('assistants.testHint') }}</p>
-          <form class="flex gap-2" @submit.prevent="test">
-            <UInput v-model="testQuery" class="flex-1" :placeholder="$t('assistants.testPlaceholder')" />
-            <UButton type="submit" color="neutral" variant="soft" :loading="testing">{{ $t('assistants.retrieve') }}</UButton>
-          </form>
-          <p v-if="tested && !results.length" class="text-sm text-muted">{{ $t('assistants.noMatch') }}</p>
-          <ul v-else-if="results.length" class="space-y-2">
-            <li v-for="r in results" :key="r.faqId" class="rounded-lg border border-default p-3">
-              <div class="flex items-center gap-2">
-                <span class="text-sm font-medium truncate">{{ r.question }}</span>
-                <span class="ml-auto text-xs text-dimmed">{{ (r.score * 100).toFixed(0) }}%</span>
-              </div>
-              <p class="text-xs text-dimmed">{{ r.pathCache || '(root)' }}<span v-if="r.source.section"> · {{ r.source.section }}</span></p>
-              <div class="mt-1 line-clamp-3"><MarkdownBlock :text="r.answer" /></div>
-            </li>
-          </ul>
-        </div>
+        <!-- test answer -->
+        <AssistantTestAnswer :assistant-id="id" :types="types" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { SUPPORT_AGENT_STATUSES, AGENT_FALLBACKS, AGENT_RULE_ACTIONS, ASSIGNMENT_SCOPES, DEFAULT_LLM_MODEL } from '#shared/knowledge'
+import { SUPPORT_AGENT_STATUSES, AGENT_FALLBACKS, AGENT_RULE_ACTIONS, ASSIGNMENT_SCOPES, DEFAULT_LLM_MODEL, type AssistantReadiness } from '#shared/knowledge'
 import type { ConversationType } from '#shared/support'
 import type { SupportAgent } from '~~/server/utils/supportAgents'
 import type { KnowledgeAssignment } from '~~/server/utils/agentKnowledge'
@@ -156,6 +140,7 @@ const projectId = ref('')
 const form = reactive({ name: '', description: '', status: 'draft', systemPrompt: '', model: '', endpoint: '', apiKey: '', temperature: 0.2, autoReply: false, fallbackBehavior: 'human', minConfidence: 0, defaultAction: 'auto' })
 const hasApiKey = ref(false)
 const llm = ref<{ configured: boolean, model: string, usingDefaultEndpoint: boolean } | null>(null)
+const readiness = ref<AssistantReadiness | null>(null)
 const saving = ref(false)
 const saved = ref(false)
 const error = ref('')
@@ -179,7 +164,8 @@ function removeRule(index: number) { rules.value.splice(index, 1) }
 async function copyId() { await navigator.clipboard?.writeText(id).catch(() => {}); idCopied.value = true; setTimeout(() => { idCopied.value = false }, 1500) }
 
 async function load() {
-  const res = await api<{ agent: SupportAgent, llm: typeof llm.value }>(`/admin/support-agents/${id}`)
+  const res = await api<{ agent: SupportAgent, llm: typeof llm.value, readiness: AssistantReadiness }>(`/admin/support-agents/${id}`)
+  readiness.value = res.readiness
   const a = res.agent
   Object.assign(form, { name: a.name, description: a.description, status: a.status, systemPrompt: a.systemPrompt, model: a.model, endpoint: a.endpoint, apiKey: '', temperature: a.temperature, autoReply: a.autoReply, fallbackBehavior: a.fallbackBehavior, minConfidence: a.minConfidence, defaultAction: a.defaultAction })
   rules.value = (a.rules || []).map(r => ({ conversationType: r.conversationType || '', keywordsText: (r.keywords || []).join(', '), action: r.action }))
@@ -249,25 +235,17 @@ async function addAssignment() {
   try {
     await api(`/admin/support-agents/${id}/assignments`, { method: 'POST', body: { scope: assignForm.scope, modelId: assignForm.modelId, nodeId: assignForm.nodeId, faqId: assignForm.faqId, exclude: assignForm.exclude } })
     Object.assign(assignForm, { nodeId: '', faqId: '', exclude: false })
-    await loadAssignments()
+    await Promise.all([loadAssignments(), refreshReadiness()])
   } catch (e: any) { assignError.value = e?.message || t('assistants.couldNotAddAccess') } finally { addingAssign.value = false }
 }
 async function removeAssignment(assignmentId: string) {
   await api(`/admin/support-agents/${id}/assignments/${assignmentId}`, { method: 'DELETE' })
-  await loadAssignments()
+  await Promise.all([loadAssignments(), refreshReadiness()])
 }
 
-// --- test retrieval ---
-const testQuery = ref('')
-const testing = ref(false)
-const tested = ref(false)
-const results = ref<{ faqId: string, question: string, answer: string, pathCache: string, score: number, source: { section: string } }[]>([])
-async function test() {
-  testing.value = true
-  try {
-    results.value = (await api<{ results: typeof results.value }>(`/admin/support-agents/${id}/retrieve`, { method: 'POST', body: { query: testQuery.value } })).results
-    tested.value = true
-  } finally { testing.value = false }
+// What the strip says depends on the knowledge assigned, so it reads again when that changes.
+async function refreshReadiness() {
+  readiness.value = (await api<{ readiness: AssistantReadiness }>(`/admin/support-agents/${id}`)).readiness
 }
 
 async function loadTypes() { if (!projectId.value) return; try { types.value = (await api<{ types: ConversationType[] }>(`/admin/projects/${projectId.value}/types`)).types } catch { /* built-in support type still selectable as Any */ } }

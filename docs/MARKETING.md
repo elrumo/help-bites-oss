@@ -3,8 +3,8 @@
 Newsletters and announcements to a project's subscribers: broadcast
 **campaigns**, automated **sequences**, a hosted **sign-up** form with double
 opt-in, **topics** with a preferences page, and an **event webhook** that tells
-your app about unsubscribes. Panel: **Project → Campaigns** (Campaigns,
-Sequences, Settings). Built on the email stack ([EMAIL.md](EMAIL.md)) and on
+your app about unsubscribes. Panel: **Project → Email**, tabs
+*Campaigns*, *Sequences* and *Settings*. Built on the email stack ([EMAIL.md](EMAIL.md)) and on
 contacts ([CONTACTS.md](CONTACTS.md)).
 
 ## Setup
@@ -13,9 +13,9 @@ contacts ([CONTACTS.md](CONTACTS.md)).
 |---|---|
 | `HELPBITES_SECRET` | Required. Signs unsubscribe and confirm links, seals source credentials. 32+ random characters (`openssl rand -base64 48`). Never rotate it casually: old unsubscribe links must keep working (CAN-SPAM: 30 days at least). |
 | `APP_URL` | Required. The public origin unsubscribe and preference links point at. |
-| `MAILGUN_*` | As for all email. Optionally a separate sending domain for marketing (Settings → Sender), which must belong to the same Mailgun account. Without a mailer a campaign cannot be scheduled nor a sequence activated; a due sequence step waits an hour and tries again. |
+| `MAILGUN_*` | As for all email. Optionally a separate sending domain for marketing (Email → Settings → Sender → "Send campaigns and sequences from a different address"), which must belong to the same Mailgun account. Without a mailer a campaign cannot be scheduled nor a sequence activated; a due sequence step waits an hour and tries again. |
 
-In **Settings**: the **postal address** (required in every campaign; it is the
+In **Email → Settings**: the **postal address** (required in every campaign; it is the
 address of the project's company profile, Project settings → Company, which legal
 documents use too, and `{{project.address}}` in a template), the
 **topics**, double opt-in, the thank-you URL, the marketing sender, and the
@@ -203,7 +203,7 @@ include both).
 
 ## Event webhook
 
-Settings → Event webhook: a URL and a signing secret. HelpBites posts:
+Email → Settings → Event webhook: a URL and a signing secret. HelpBites posts:
 
 | `type` | `data` |
 |---|---|

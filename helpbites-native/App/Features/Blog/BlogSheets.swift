@@ -526,7 +526,7 @@ struct BlogImportSheet: View {
 // MARK: - Newsletter
 
 /// Email a published post to subscribers. It becomes a campaign (test sends,
-/// pause, numbers under Campaigns); "Save as a draft" stops there. A scheduled
+/// pause, numbers under Email → Campaigns); "Save as a draft" stops there. A scheduled
 /// post's newsletter waits for it: "Send" then means when it goes live.
 struct BlogNewsletterSheet: View {
   let store: BlogStore
@@ -566,7 +566,7 @@ struct BlogNewsletterSheet: View {
         notice("The post goes live \(date.formatted(date: .abbreviated, time: .shortened)). The newsletter goes out then, not before.")
       }
       if (store.project?.marketing?.postalAddress ?? "").isEmpty {
-        hint("Campaigns must carry your postal address. Add it under Campaigns → Settings first.")
+        hint("Campaigns must carry your postal address. Add it under Email → Settings first.")
       }
       if store.campaignsLocked {
         PlanLockNotice(feature: "campaigns")

@@ -1,21 +1,9 @@
-<template>
-  <template v-if="project">
-    <MarketingSettings v-if="view === 'settings'" :key="`settings-${project.id}`" :project="project" />
-    <SequenceList v-else-if="view === 'sequences'" :key="`sequences-${project.id}`" :project="project" />
-    <CampaignList v-else :key="project.id" :project="project" />
-  </template>
-</template>
+<template><div /></template>
 
 <script setup lang="ts">
-import CampaignList from '~/components/campaigns/CampaignList.vue'
-import MarketingSettings from '~/components/campaigns/MarketingSettings.vue'
-import SequenceList from '~/components/campaigns/SequenceList.vue'
-
+// Campaigns, sequences and their settings are tabs of the project's Email section now.
 definePageMeta({ middleware: 'agent' })
-
 const route = useRoute()
-const { projects, loadProjects } = useAgent()
-const project = computed(() => projects.value.find(p => p.id === String(route.params.id)) || null)
-const view = computed(() => String(route.query.view || 'campaigns'))
-onMounted(() => { if (!project.value) loadProjects().catch(() => {}) })
+const view = route.query.view === 'sequences' || route.query.view === 'settings' ? route.query.view : 'campaigns'
+await navigateTo({ path: `/projects/${route.params.id}/email`, query: { view } }, { replace: true })
 </script>

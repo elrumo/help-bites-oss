@@ -18,10 +18,13 @@
 
     <nav class="min-h-0 flex-1 space-y-5 overflow-y-auto px-2 pb-3" :aria-label="$t('nav.main')">
       <div class="space-y-px">
-        <NuxtLink to="/overview" class="nav-item" active-class="nav-item-active"><UIcon name="i-lucide-house" class="size-4 shrink-0 text-muted" />{{ $t('nav.overview') }}</NuxtLink>
+        <NuxtLink to="/overview" class="nav-item" active-class="nav-item-active">
+          <UIcon name="i-lucide-house" class="size-4 shrink-0 text-muted" />{{ $t('nav.overview') }}
+          <span v-if="attention?.total" class="ml-auto text-xs tabular-nums text-muted" :title="$t('nav.needsAttention', attention.total)">{{ attention.total }}</span>
+        </NuxtLink>
         <NuxtLink to="/inbox" class="nav-item" active-class="nav-item-active">
           <UIcon name="i-lucide-inbox" class="size-4 shrink-0 text-muted" />{{ $t('nav.inbox') }}
-          <span v-if="totalUnread" class="ml-auto text-xs tabular-nums text-muted">{{ totalUnread }}</span>
+          <span v-if="totalUnread" class="ml-auto text-xs tabular-nums text-muted" :title="$t('nav.unreadMessages', totalUnread)">{{ totalUnread }}</span>
         </NuxtLink>
         <NuxtLink to="/emails" class="nav-item" active-class="nav-item-active"><UIcon name="i-lucide-mail" class="size-4 shrink-0 text-muted" />{{ $t('nav.email') }}</NuxtLink>
       </div>
@@ -41,10 +44,13 @@
           </button>
           <template #content>
             <div class="space-y-px pt-px pb-1 pl-5">
-              <NuxtLink v-for="s in projectSections" :key="s.path" :to="`/projects/${p.id}/${s.path}`" class="nav-item pl-7" active-class="nav-item-active">
-                <UIcon :name="s.icon" class="size-4 shrink-0 text-muted" />{{ $t('sections.' + s.path) }}
-                <UIcon v-if="locked(s.feature)" name="i-lucide-lock" class="ml-auto size-3 shrink-0 text-dimmed" :title="$t('workspaceSettings.planLimit.notInPlan')" />
-              </NuxtLink>
+              <template v-for="part in layoutOf(p)" :key="part.id">
+                <p v-if="part.group" class="px-2 pb-0.5 pl-7 pt-2.5 text-[11px] font-medium text-dimmed">{{ $t('nav.groups.' + part.group) }}</p>
+                <NuxtLink v-for="s in part.sections" :key="s.path" :to="`/projects/${p.id}/${s.path}`" class="nav-item pl-7" active-class="nav-item-active">
+                  <UIcon :name="s.icon" class="size-4 shrink-0 text-muted" />{{ $t('sections.' + s.path) }}
+                  <UIcon v-if="locked(s.feature)" name="i-lucide-lock" class="ml-auto size-3 shrink-0 text-dimmed" :title="$t('workspaceSettings.planLimit.notInPlan')" />
+                </NuxtLink>
+              </template>
             </div>
           </template>
         </UCollapsible>
@@ -77,13 +83,18 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useLocalStorage } from '@vueuse/core'
+import type { AdminProject } from '~~/server/utils/projects'
+import type { WorkspaceAttention } from '#shared/attention'
+import { groupSections, type SectionGroup } from '#shared/projectSections'
 
 // The layout owns the modals these open (this renders twice on phones: here
 // and in the slide-over), so the sidebar only flips shared flags.
 const paletteOpen = useState('palette-open', () => false)
 const newProjectOpen = useState('new-project-open', () => false)
 const composeOpen = useState('compose-open', () => false)
+// Both are kept live by the default layout (useLiveCounts).
 const totalUnread = useState<number>('inbox-total-unread', () => 0)
+const attention = useState<WorkspaceAttention | null>('attention', () => null)
 const settingsTab = useState('settings-tab', () => '')
 const { locked } = usePlanLocks()
 
@@ -106,6 +117,12 @@ function compose() {
 // Projects open and close like Linear's teams; walking into one opens it.
 const opened = useLocalStorage<string[]>('hb-sidebar-projects', [])
 const currentProject = computed(() => route.path.startsWith('/projects/') ? String(route.params.id || '') : '')
+// Overview, then each group, then Settings. A project's hidden sections are left out, except the one you are on.
+function layoutOf(project: AdminProject): { id: string, group: SectionGroup | null, sections: typeof projectSections }[] {
+  const here = currentProject.value === project.id ? String(route.path.split('/')[3] || '') : ''
+  const { top, groups, bottom } = groupSections(projectSections, (project.hiddenSections || []).filter(path => path !== here))
+  return [{ id: 'top', group: null, sections: top }, ...groups.map(entry => ({ id: entry.group, ...entry })), { id: 'bottom', group: null, sections: bottom }]
+}
 function isOpen(id: string) { return opened.value.includes(id) }
 function setOpen(id: string, open: boolean) {
   opened.value = open ? [...new Set([...opened.value, id])] : opened.value.filter(item => item !== id)

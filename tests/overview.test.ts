@@ -32,16 +32,13 @@ describe('project overview', () => {
   test('every key the project overview sends has words in every panel language', () => {
     const source = readFileSync(join(import.meta.dir, '..', 'server/utils/overview.ts'), 'utf8')
     const body = source.slice(source.indexOf('export async function projectOverview'), source.indexOf('// ---- the workspace overview'))
-    const section = (name: string) => body.slice(body.indexOf(`const ${name}: ProjectOverview`), body.indexOf('\n  ]', body.indexOf(`const ${name}: ProjectOverview`)))
     const keysIn = (text: string, field: string) => [...text.matchAll(new RegExp(`\\b${field}: '(\\w+)'`, 'g'))].map(m => m[1]!)
+    // The setup rows and attention items carry codes the clients word themselves (tests/setup.test.ts, tests/attention.test.ts).
     const keys = [
-      ...keysIn(body.slice(body.indexOf('const stats'), body.indexOf('const origins')), 'key').map(key => `stats.${key}`),
-      ...keysIn(section('health'), 'key').map(key => `health.${key}`),
-      ...keysIn(section('attention'), 'key').map(key => `attention.${key}`),
-      ...keysIn(body, 'detailKey').map(key => `healthDetail.${key}`),
+      ...keysIn(body.slice(body.indexOf('const stats'), body.indexOf('const activity')), 'key').map(key => `stats.${key}`),
       ...keysIn(body, 'titleKey').map(key => `activityTitle.${key}`)
     ]
-    expect(keys.length).toBeGreaterThan(20)
+    expect(keys.length).toBeGreaterThan(5)
     for (const locale of ['en', 'es', 'ca', 'ja', 'ko', 'zh']) {
       const words = JSON.parse(readFileSync(join(import.meta.dir, '..', `i18n/locales/${locale}.json`), 'utf8')).projectPages.overview
       expect(keys.filter(key => typeof key.split('.').reduce((node: any, part) => node?.[part], words) !== 'string').map(key => `${locale}: ${key}`)).toEqual([])

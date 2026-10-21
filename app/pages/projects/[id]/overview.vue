@@ -21,27 +21,16 @@
 
         <section v-if="overview" class="space-y-3">
           <h2 class="text-[15px] font-semibold text-highlighted">{{ $t('projectPages.overview.needsAttention') }}</h2>
-          <div v-if="overview.attention.length" class="divide-y divide-default overflow-hidden rounded-xl border border-default">
-            <NuxtLink v-for="item in overview.attention" :key="item.key" :to="link(item.section)" class="flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-elevated/60">
-              <UIcon name="i-lucide-circle-alert" class="size-4 shrink-0 text-warning" />
-              <span class="min-w-0 flex-1 truncate text-highlighted">{{ said(`attention.${item.key}`, item.label) }}</span>
-              <span class="tabular-nums text-muted">{{ item.count }}</span>
-              <UIcon name="i-lucide-chevron-right" class="size-4 shrink-0 text-dimmed" />
-            </NuxtLink>
-          </div>
+          <AttentionList v-if="overview.attention.length" :items="overview.attention" />
           <p v-else class="flex items-center gap-2 text-sm text-muted"><UIcon name="i-lucide-circle-check" class="size-4 text-success" />{{ $t('projectPages.overview.allClear') }}</p>
         </section>
 
         <section v-if="overview" class="space-y-3">
-          <h2 class="text-[15px] font-semibold text-highlighted">{{ $t('projectPages.overview.status') }}</h2>
-          <div class="divide-y divide-default overflow-hidden rounded-xl border border-default">
-            <NuxtLink v-for="row in overview.health" :key="row.key" :to="link(row.section)" class="flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-elevated/60">
-              <span class="size-2 shrink-0 rounded-full" :class="dots[row.state]" />
-              <span class="shrink-0 text-highlighted">{{ said(`health.${row.key}`, row.label) }}</span>
-              <span class="ml-auto min-w-0 truncate text-muted">{{ row.detailKey ? said(`healthDetail.${row.detailKey}`, row.detail, row.params) : row.detail }}</span>
-              <UIcon name="i-lucide-chevron-right" class="size-4 shrink-0 text-dimmed" />
-            </NuxtLink>
+          <div class="flex items-baseline gap-2">
+            <h2 class="text-[15px] font-semibold text-highlighted">{{ $t('setup.title') }}</h2>
+            <span class="text-xs tabular-nums text-muted">{{ $t('setup.progress', { done: overview.setup.done, total: overview.setup.total }) }}</span>
           </div>
+          <SetupChecklist :project-id="id" :setup="overview.setup" />
         </section>
 
         <section v-if="overview" class="space-y-3">
@@ -64,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import type { OverviewTone, ProjectOverview } from '~~/server/utils/overview'
+import type { ProjectOverview } from '~~/server/utils/overview'
 import { compactCount } from '~/utils/emailStatus'
 
 definePageMeta({ middleware: 'agent' })
@@ -77,7 +66,6 @@ const overview = ref<ProjectOverview | null>(null)
 const loading = ref(false)
 const error = ref('')
 
-const dots: Record<OverviewTone, string> = { ok: 'bg-success', warn: 'bg-warning', off: 'bg-(--ui-text-dimmed)' }
 const link = (section: string) => `/projects/${id}/${section}`
 const iconOf = (section: string) => projectSections.find(s => s.path === section)?.icon || 'i-lucide-activity'
 /** The server's words in this language, by key; its English for a key this panel does not know yet. */

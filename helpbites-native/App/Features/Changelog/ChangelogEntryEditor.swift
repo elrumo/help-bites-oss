@@ -126,7 +126,7 @@ struct ChangelogEntryEditor: View {
       .confirmationDialog("Delete this entry?", isPresented: $confirmDelete, titleVisibility: .visible) {
         Button("Delete entry", role: .destructive) { Task { await deleteEntry() } }
       } message: {
-        Text("Its links go with it; the posts, board items and conversations stay.")
+        Text("Its links go with it; the posts, planning items and conversations stay.")
       }
       .task {
         await store.ensureLoaded()
@@ -312,7 +312,7 @@ struct ChangelogEntryEditor: View {
       HStack(spacing: 8) {
         Picker("Kind", selection: $linkKind) {
           Text("Feedback post").tag("feedback")
-          Text("Board item").tag("board")
+          Text("Planning item").tag("board")
         }
         .labelsHidden()
         .fixedSize()

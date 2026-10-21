@@ -115,12 +115,51 @@ struct EmailStarter: Identifiable, Sendable {
 
 // MARK: - Sections
 
-/// The email page's sections (EmailTabs.vue): templates (masters on the
-/// global page), the component library, the log of everything sent, and the
-/// suppressed addresses.
+/// The email page's sections (EmailTabs.vue). A project's Email bar is Templates, Campaigns,
+/// Sequences, Log and Settings; the component library sits behind Templates and the suppressed
+/// addresses behind the Log. The shared templates' page has no campaigns or sender of its own, so
+/// its bar is Shared templates, Components, Log and Suppressed.
 enum EmailTab: String, CaseIterable, Identifiable, Hashable, Sendable {
-  case templates, components, log, suppressed
+  case templates, components, campaigns, sequences, log, suppressed, settings
   var id: String { rawValue }
+
+  /// The tabs of the bar, in order.
+  static func bar(shared: Bool) -> [EmailTab] {
+    shared ? [.templates, .components, .log, .suppressed] : [.templates, .campaigns, .sequences, .log, .settings]
+  }
+
+  /// The tab lit in a project's bar: Components sit under Templates, Suppressed under the Log.
+  var inProjectBar: EmailTab {
+    switch self {
+    case .components: .templates
+    case .suppressed: .log
+    default: self
+    }
+  }
+
+  /// Campaigns, Sequences and Settings exist only on a project's Email.
+  var projectOnly: Bool { self == .campaigns || self == .sequences || self == .settings }
+}
+
+// MARK: - Setup (shared/emailSetup.ts)
+
+/// One thing a project's email needs. `state` is ok | todo | warn; `scope` is `all`, or `bulk` when
+/// only campaigns and sequences care (a postal address, a sender that is not paused).
+struct EmailSetupCheck: Decodable, Identifiable, Equatable, Sendable {
+  let key, state, scope: String
+  /// The address mail goes out from, or the reason a pause gives.
+  let value: String?
+  var id: String { key }
+}
+
+/// `GET /v1/admin/projects/:id/email-setup`: judged by the server, worded by `EmailSetupStrip`.
+struct EmailSetup: Decodable, Equatable, Sendable {
+  let checks: [EmailSetupCheck]
+
+  /// Nil when it cannot be read: the strip then stays out of the way, as on the web.
+  @MainActor static func load(_ projectId: String, session: SessionStore) async -> EmailSetup? {
+    try? await session.get("/v1/admin/projects/\(projectId)/email-setup")
+  }
 }
 
 // MARK: - Sending settings

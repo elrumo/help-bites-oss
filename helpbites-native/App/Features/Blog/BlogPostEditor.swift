@@ -197,7 +197,7 @@ struct BlogPostEditor: View {
       .confirmationDialog(isPage ? "Delete this page?" : "Delete this post?", isPresented: $confirmDelete, titleVisibility: .visible) {
         Button(isPage ? "Delete page" : "Delete post", role: .destructive) { Task { await deletePost() } }
       } message: {
-        Text("Its comments and reactions go with it. A newsletter it went out as stays under Campaigns.")
+        Text("Its comments and reactions go with it. A newsletter it went out as stays under Email → Campaigns.")
       }
       .sheet(isPresented: $newsletter) {
         if let current { BlogNewsletterSheet(store: store, post: current) }
@@ -443,7 +443,7 @@ struct BlogPostEditor: View {
     VStack(alignment: .leading, spacing: 8) {
       Label("Newsletter", systemImage: "envelope").font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
       if let sent = post?.newsletter, sent.status != "draft", sent.status != "canceled" {
-        Text("Went out as a campaign (\(sent.status)). Its numbers are under Campaigns.").font(.lnCaption).foregroundStyle(Theme.textMuted)
+        Text("Went out as a campaign (\(sent.status)). Its numbers are under Email → Campaigns.").font(.lnCaption).foregroundStyle(Theme.textMuted)
       } else if let post, post.status == "published" {
         Text(post.live ? "Email this post to your subscribers, as a campaign." : "Email it to your subscribers when it goes live.").font(.lnCaption).foregroundStyle(Theme.textMuted)
         if store.campaignsLocked {

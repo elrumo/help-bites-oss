@@ -4,6 +4,7 @@ import SwiftUI
 struct TicketTypesScreen: View {
   let projectId: String
   @Environment(SessionStore.self) private var session
+  @Environment(Workspace.self) private var workspace
   @Environment(\.horizontalSizeClass) private var sizeClass
   @State private var types: [TicketsType] = []
   @State private var selected: TicketsType?
@@ -45,7 +46,7 @@ struct TicketTypesScreen: View {
       }
       .scrollDismissesKeyboard(.interactively)
     }
-    .projectScreen(projectId, "Tickets")
+    .projectScreen(projectId, "Ticket types")
     .toolbar {
       ToolbarItem(placement: .primaryAction) {
         Button { newType() } label: { Label("New type", systemImage: "plus") }
@@ -55,6 +56,8 @@ struct TicketTypesScreen: View {
       Button("Delete type", role: .destructive) { Task { await remove() } }
     }
     .task { await load() }
+    // The webhook warning needs the project; the shell has usually loaded it already.
+    .task { if workspace.project(projectId) == nil { await workspace.loadProjects() } }
   }
 
   private func editor(_ type: TicketsType) -> some View {
@@ -76,6 +79,7 @@ struct TicketTypesScreen: View {
       json("Statuses", hint: "JSON array; one entry must have isDefault.", text: $form.statuses, minHeight: 170)
       json("Intake fields", hint: "JSON array. Types: text, longtext, select, url, number, bool.", text: $form.fields, minHeight: 170)
       json("Host actions", hint: "JSON array. Each action is signed to the project webhook.", text: $form.actions, minHeight: 150)
+      if actionsWithoutWebhook { noWebhookWarning }
       VStack(alignment: .leading, spacing: 10) {
         toggle("Assignable", isOn: $form.assignable)
         toggle("Users may reopen terminal tickets", isOn: $form.userCanReopen)
@@ -101,6 +105,38 @@ struct TicketTypesScreen: View {
         .textInputAutocapitalization(.never).autocorrectionDisabled()
       if let problem = Self.problem(text.wrappedValue) { ErrorText(message: problem) }
     }
+  }
+
+  /// An action is signed to the project's webhook; with none, running it fails.
+  private var noWebhookWarning: some View {
+    HStack(alignment: .top, spacing: 10) {
+      Image(systemName: "exclamationmark.triangle").font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.warning).padding(.top, 1)
+      VStack(alignment: .leading, spacing: 4) {
+        Text("These actions have nowhere to go").font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
+        Text("An action is signed and sent to the project's action webhook. This project has no webhook URL and secret yet, so running an action will fail.")
+          .font(.lnCaption).foregroundStyle(Theme.textMuted)
+        Button("Set up the webhook") { workspace.go(.project(projectId, .dev)) }
+          .buttonStyle(.lnSecondaryCompact)
+          .padding(.top, 6)
+      }
+    }
+    .padding(12)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(Theme.warning.opacity(0.08), in: RoundedRectangle(cornerRadius: Metrics.radius))
+    .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.warning.opacity(0.4)))
+  }
+
+  /// The project can send a type's actions only with both a webhook URL and its secret (shared/support.ts
+  /// actionWebhookReady). A project not loaded yet stays quiet, as on the web.
+  private var actionWebhookReady: Bool {
+    guard let project = workspace.project(projectId) else { return true }
+    return !(project.actionWebhookUrl ?? "").isEmpty && project.hasActionWebhookSecret == true
+  }
+
+  /// The actions as typed in the editor, not only as saved: there are some, and nowhere to send them.
+  private var actionsWithoutWebhook: Bool {
+    guard !actionWebhookReady, let actions = try? Self.parse(form.actions) else { return false }
+    return !actions.isEmpty
   }
 
   private func toggle(_ label: String, isOn: Binding<Bool>) -> some View {

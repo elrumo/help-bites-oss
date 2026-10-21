@@ -186,14 +186,15 @@ struct EmailLogScreen: View {
           ForEach(0..<4, id: \.self) { _ in RoundedRectangle(cornerRadius: Metrics.radiusLarge).fill(Theme.elevated).frame(height: 74) }
         }
       }
-      if let settings, !settings.configured {
+      // A project's own log leaves these to the setup strip above, as on the web.
+      if projectId == nil, let settings, !settings.configured {
         EmailNotice(
           systemImage: "exclamationmark.triangle",
           title: "Email sending is not configured",
           message: "Set MAILGUN_API_KEY, MAILGUN_DOMAIN and MAILGUN_FROM_EMAIL on the server; until then sends fail with 503.",
           tone: .warning
         )
-      } else if let settings, !settings.webhook.configured {
+      } else if projectId == nil, let settings, !settings.webhook.configured {
         EmailNotice(
           systemImage: "point.3.connected.trianglepath.dotted",
           title: "Delivery status needs the Mailgun webhook",
@@ -621,7 +622,7 @@ struct EmailLogDetailSheet: View {
             .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
         }
       } else if loaded {
-        Text((try? AttributedString(markdown: "This project doesn't keep message content. Turn on **Keep a copy of each email** under Project → Dev → Email sending to see future messages here.")) ?? AttributedString(""))
+        Text((try? AttributedString(markdown: "This project doesn't keep message content. Turn on **Keep a copy of each email in the log** under Email → Settings to see future messages here.")) ?? AttributedString(""))
           .font(.lnCaption)
           .foregroundStyle(Theme.textMuted)
       }

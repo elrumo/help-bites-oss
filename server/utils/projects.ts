@@ -17,6 +17,7 @@ import { companyEntity, type CompanyProfile } from '#shared/company'
 import { applyCompany, companyOf } from './company'
 import { legalLinksOf, type LegalLinks } from './legalLinks'
 import { legacyTheme, projectLook, type ProjectLook, type ProjectLookInput } from '#shared/projectLook'
+import { normalizeHiddenSections, validateHiddenSections } from '#shared/projectSections'
 
 export type ProjectTheme = { accent?: string, dark?: boolean }
 
@@ -97,6 +98,10 @@ export type AdminProject = PublicProject & {
   hasEventWebhookSecret: boolean
   /** When the chat widget last loaded inside a host page (to the hour); null until it ever has. */
   widgetSeenAt: string | null
+  /** When a host-signed identity token was last accepted for this project (to the hour); null until one has. */
+  identitySeenAt: string | null
+  /** Sections the project left out of its sidebar (shared/projectSections.ts); their pages and API still work. */
+  hiddenSections: string[]
   createdAt: string | null
 }
 
@@ -213,6 +218,11 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     project.set('mailDomain', domain)
   }
   if ('emailLogContent' in input) project.set('emailLogContent', Boolean(input.emailLogContent))
+  if ('hiddenSections' in input) {
+    const { hidden, errors } = validateHiddenSections(input.hiddenSections)
+    if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
+    project.set('hiddenSections', hidden)
+  }
   if ('chatNotice' in input) project.set('chatNotice', String(input.chatNotice || '').trim().slice(0, 500))
   if ('brandLogoUrl' in input) project.set('brandLogoUrl', safeHttpUrl(input.brandLogoUrl))
   if ('iconUrl' in input) project.set('iconUrl', safeHttpUrl(input.iconUrl))
@@ -348,9 +358,18 @@ export function serializePublicProject(project: ParseObject): PublicProject {
 
 /** The chat widget loaded inside a host page. One write an hour at most: this runs on every page view. */
 export async function markWidgetSeen(project: ParseObject): Promise<void> {
-  const seen = project.get('widgetSeenAt') as Date | undefined
+  await stampSeen(project, 'widgetSeenAt')
+}
+
+/** The host's backend signed an identity token we accepted. One write an hour at most: this runs on every signed request. */
+export async function markIdentitySeen(project: ParseObject): Promise<void> {
+  await stampSeen(project, 'identitySeenAt')
+}
+
+async function stampSeen(project: ParseObject, field: 'widgetSeenAt' | 'identitySeenAt'): Promise<void> {
+  const seen = project.get(field) as Date | undefined
   if (seen && Date.now() - seen.getTime() < 60 * 60 * 1000) return
-  project.set('widgetSeenAt', new Date())
+  project.set(field, new Date())
   await project.save(null, MASTER)
 }
 
@@ -389,6 +408,8 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
     eventWebhookUrl: String(project.get('eventWebhookUrl') || ''),
     hasEventWebhookSecret: Boolean(project.get('eventWebhookSecret')),
     widgetSeenAt: iso(project.get('widgetSeenAt')),
+    identitySeenAt: iso(project.get('identitySeenAt')),
+    hiddenSections: normalizeHiddenSections(project.get('hiddenSections')),
     createdAt: iso(project.createdAt)
   }
 }

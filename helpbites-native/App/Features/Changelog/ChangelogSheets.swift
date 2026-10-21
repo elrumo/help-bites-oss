@@ -128,20 +128,20 @@ struct ChangelogSettingsSheet: View {
     ChangelogSheetFrame(title: "Changelog settings") {
       hint("How entries get started, and who can see and follow the changelog. Switches save as you change them.")
       Card {
-        CardRow { toggle("Draft entries automatically", "A feedback post or board item reaching a done status gets a draft entry, unless one already links it. Drafts are never published for you. Tickets and errors are always added by hand.", \.autoDraft) { ["autoDraft": .bool($0)] } }
+        CardRow { toggle("Draft entries automatically", "A feedback post or planning item reaching a done status gets a draft entry, unless one already links it. Drafts are never published for you. Tickets and errors are always added by hand.", \.autoDraft) { ["autoDraft": .bool($0)] } }
         CardRow { toggle("Write entries from new commits", "A push to a connected repo's default branch has the AI draft entries from its new commits (only the messages are read). They wait for your review. Needs GitHub repos in Settings and the app's webhook.", \.onPush) { ["commitAi": .object(["onPush": .bool($0)])] } }
         if settings.onPush {
           CardRow { toggle("Publish them without review", "What a push drafts goes public immediately, with no one reading it first. Entries made with From commits are always drafts.", \.autoPublish) { ["commitAi": .object(["autoPublish": .bool($0)])] } }
         }
         CardRow { toggle("Comments", "Signed-in readers can comment on published entries. Your site sends their identity token; admins can hide or delete any comment.", \.comments) { ["comments": .bool($0)] } }
         CardRow { toggle("Email subscribers", "Readers can ask for an email when something ships (as it happens, or weekly on Monday). Needs CHANGELOG_LINK_SECRET or HELPBITES_SECRET (either 32+ characters) on the server, and ENABLE_CHANGELOG_NOTIFY=true for the scheduler to send.", \.notify) { ["notify": .bool($0)] } }
-        CardRow(divider: false) { toggle("Public changelog", "Serve the changelog page, embed, JSON and RSS to everyone. Independent of the feedback board, whose Changelog tab also needs this on.", \.enabled) { ["enabled": .bool($0)] } }
+        CardRow(divider: false) { toggle("Public changelog", "Serve the changelog page, embed, JSON and RSS to everyone. Independent of Feedback, whose Changelog tab also needs this on.", \.enabled) { ["enabled": .bool($0)] } }
       }
       HStack {
         if saving { ProgressView().controlSize(.small) }
         Text(saving ? "Saving…" : saved ? "Saved" : "Saves as you change it").font(.lnCaption).foregroundStyle(Theme.textMuted)
       }
-      hint("Unless you turn on Public changelog, whether the changelog is public, and its page and RSS feed, follow the feedback board's Changelog option.")
+      hint("Unless you turn on Public changelog, whether the changelog is public, and its page and RSS feed, follow Feedback's Changelog option.")
 
       SectionLabel("Addresses and emails")
       LabeledField(label: "Areas", hint: "Entries may name one of these (lowercase, comma-separated). Empty allows any.") {

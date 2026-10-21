@@ -110,6 +110,10 @@
 
       <section v-if="type?.actions.length" class="space-y-1.5 px-2">
         <p class="section-label">{{ $t('inbox.actions') }}</p>
+        <p v-if="project && !actionWebhookReady(project)" class="flex items-start gap-1.5 text-xs text-warning">
+          <UIcon name="i-lucide-webhook" class="mt-0.5 size-3.5 shrink-0" />
+          <span>{{ $t('inbox.actionsNoWebhook') }} <NuxtLink :to="`/projects/${project.id}/dev#security`" class="font-medium underline-offset-2 hover:underline">{{ $t('inbox.actionsNoWebhookFix') }}</NuxtLink></span>
+        </p>
         <div class="flex flex-wrap gap-1.5">
           <UButton v-for="action in type.actions" :key="action.key" :label="action.label" :color="action.destructive ? 'error' : 'neutral'" :variant="action.destructive ? 'soft' : 'outline'" size="sm" @click="emit('action', action)" />
         </div>
@@ -119,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Conversation, ConversationAction, ConversationPriority, ConversationType, StatusCategory } from '#shared/support'
+import { actionWebhookReady, type Conversation, type ConversationAction, type ConversationPriority, type ConversationType, type StatusCategory } from '#shared/support'
 import type { ConversationContextResponse, HubFeedbackPost } from '#shared/conversationHub'
 import { formatMoney } from '#shared/stripe'
 import type { AdminProject } from '~~/server/utils/projects'

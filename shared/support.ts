@@ -76,6 +76,14 @@ export type ConversationType = {
   defaultPriority: ConversationPriority
 }
 
+/**
+ * A ticket action calls back to the host app through the project's action webhook, signed with its secret;
+ * without both, running one answers 409. The type editor and the conversation's action buttons warn on this.
+ */
+export function actionWebhookReady(project: { actionWebhookUrl?: string | null, hasActionWebhookSecret?: boolean | null }): boolean {
+  return Boolean(project.actionWebhookUrl) && project.hasActionWebhookSecret === true
+}
+
 export type Attachment = {
   url: string
   mime: string

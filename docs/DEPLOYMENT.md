@@ -462,7 +462,7 @@ API answers 503).
 | Variable | Required | Default | Notes |
 |---|---|---|---|
 | `MAILGUN_API_KEY` | Optional | _(off)_ | — |
-| `MAILGUN_DOMAIN` | Optional | _(off)_ | Your Mailgun sending domain. A project can send through another domain of the same account (Project → Dev → Email sending). |
+| `MAILGUN_DOMAIN` | Optional | _(off)_ | Your Mailgun sending domain. A project can send through another domain of the same account (Project → Email → Settings). |
 | `MAILGUN_API_BASE_URL` | No | `https://api.eu.mailgun.net` | Use `https://api.mailgun.net` for US region. |
 | `MAILGUN_FROM_EMAIL` | Optional | `support@example.com` | The default from-address. Projects can set their own address and from name. |
 | `MAILGUN_WEBHOOK_SIGNING_KEY` | Optional | _(off)_ | Turns on `/v1/webhooks/mailgun`: delivery status in the email log, and automatic suppression of bounces, complaints and unsubscribes. |

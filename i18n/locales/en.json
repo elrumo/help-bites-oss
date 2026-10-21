@@ -33,7 +33,16 @@
     "switchToLight": "Switch to light theme",
     "switchToDark": "Switch to dark theme",
     "signOut": "Sign out",
-    "exitDemo": "Exit demo"
+    "exitDemo": "Exit demo",
+    "groups": {
+      "support": "Support",
+      "product": "Product",
+      "grow": "Grow",
+      "site": "Site",
+      "build": "Build"
+    },
+    "unreadMessages": "{count} unread message | {count} unread messages",
+    "needsAttention": "{count} thing needs attention | {count} things need attention"
   },
   "sections": {
     "overview": "Overview",
@@ -42,18 +51,17 @@
     "revenue": "Revenue",
     "knowledge": "Knowledge base",
     "assistants": "Assistants",
-    "types": "Tickets",
+    "types": "Ticket types",
     "feedback": "Feedback",
-    "board": "Board",
+    "board": "Planning",
     "changelog": "Changelog",
     "onboarding": "Onboarding",
     "legal": "Legal",
     "brand": "Brand",
     "email": "Email",
-    "campaigns": "Campaigns",
     "flags": "Flags",
     "errors": "Errors",
-    "dev": "Dev",
+    "dev": "Install & API",
     "settings": "Settings",
     "pages": "Pages",
     "blog": "Blog",
@@ -97,15 +105,16 @@
     "connectStripe": "Connect Stripe",
     "waitingTitle": "Waiting for the first sync",
     "waitingDescription": "Payments show up here as soon as the first stretch has been read.",
-    "totalsIn": "Totals are in {currency}. Not included: {others}."
+    "totalsIn": "Totals are in {currency}. Not included: {others}.",
+    "needsAttention": "Needs attention"
   },
   "layout": {
     "demoBanner": "Demo with sample data. Nothing you do here is saved.",
     "suspended": "This workspace is suspended. Its data is safe; you can still export it from Settings → Workspace.",
     "deleting": "This workspace is being deleted.",
-    "palettePlaceholder": "Go to a page or project…",
+    "palettePlaceholder": "Go to a page, or search conversations and answers…",
     "pages": "Pages",
-    "emailTemplates": "Email templates",
+    "emailTemplates": "Shared templates",
     "emailLog": "Email log",
     "account": "Account",
     "appearance": "Appearance",
@@ -122,7 +131,9 @@
     "newWorkspaceTitle": "New workspace",
     "newWorkspaceDescription": "A separate space with its own projects, inbox and team. You'll be its owner.",
     "createWorkspace": "Create workspace",
-    "createWorkspaceError": "Could not create the workspace"
+    "createWorkspaceError": "Could not create the workspace",
+    "searchConversations": "Conversations",
+    "searchKnowledge": "Knowledge"
   },
   "login": {
     "resetTitle": "Set a new password",
@@ -334,20 +345,22 @@
       "faqSave": "Save FAQ",
       "faqSaved": "Saved as an FAQ",
       "faqSaveError": "Could not save the FAQ"
-    }
+    },
+    "actionsNoWebhook": "This project has no action webhook, so these will fail.",
+    "actionsNoWebhookFix": "Set it up"
   },
   "board": {
     "itemCount": "{count} item | {count} items",
     "onRoadmap": "{count} on the roadmap",
-    "boardOff": "Board is off",
+    "boardOff": "Planning is off",
     "publicRoadmap": "Public roadmap",
     "openRoadmap": "Open the public roadmap",
     "newItem": "New item",
-    "boardFor": "A board for {name}",
+    "boardFor": "Planning for {name}",
     "thisProject": "this project",
     "setupDescription": "Plan the work behind your feedback and support: items on a kanban, linked to the posts and conversations they answer. Pick which ones go on a public roadmap.",
     "customizeFirst": "Customize first",
-    "turnOn": "Turn on the board",
+    "turnOn": "Turn on planning",
     "roadmapChip": "On roadmap",
     "labels": "Labels",
     "assignee": "Assignee",
@@ -378,7 +391,7 @@
     "publicDescription": "Public description",
     "publicDescriptionHint": "Markdown. The roadmap never shows the internal description.",
     "publicDescriptionPlaceholder": "What this means for users",
-    "roadmapNeedsFeedback": "The roadmap is published through the feedback board: turn it on, with its Roadmap view, under Feedback → Settings.",
+    "roadmapNeedsFeedback": "The public roadmap is published through public feedback: turn it on, with its Roadmap view, under Feedback → Settings.",
     "notOnRoadmap": "Not on the roadmap yet: {status} stays private.",
     "thisStatus": "this status",
     "feedback": "Feedback",
@@ -391,16 +404,16 @@
     "conversations": "Conversations",
     "conversation": "Conversation",
     "unlinkConversation": "Unlink conversation",
-    "linkFromInbox": "Link conversations from the inbox: open one and use the Board section.",
+    "linkFromInbox": "Link conversations from the inbox: open one and use the Planning section.",
     "clickAgainDelete": "Click again to delete",
     "delete": "Delete",
     "saving": "Saving…",
     "changesSave": "Changes save as you go",
     "createItem": "Create item",
-    "settingsTitle": "Board settings",
-    "settingsDescription": "The board, its statuses and labels, and the public roadmap.",
+    "settingsTitle": "Planning settings",
+    "settingsDescription": "Planning items, their statuses and labels, and the public roadmap.",
     "savesAsChange": "Saves as you change it",
-    "boardOn": "Board is on",
+    "boardOn": "Planning is on",
     "boardOnDescription": "Items, links from the inbox and feedback, and the roadmap. The public roadmap keeps listing feedback posts until an item is on it.",
     "syncFeedback": "Sync linked feedback",
     "syncFeedbackDescription": "When an item moves to another status category, its linked posts follow — and their followers get the usual emails.",
@@ -420,10 +433,10 @@
     "urgent": "Urgent",
     "unassigned": "Unassigned",
     "anyone": "Anyone",
-    "turnOnFeedbackTitle": "Turn on the feedback board first",
+    "turnOnFeedbackTitle": "Turn on feedback first",
     "roadmapLinkCopied": "Roadmap link copied",
     "yourRoadmap": "Your public roadmap",
-    "loadError": "Could not load the board",
+    "loadError": "Could not load planning",
     "moveError": "Could not move the item",
     "saveError": "Could not save",
     "createError": "Could not create the item",
@@ -433,7 +446,7 @@
     "linkItemError": "Could not link the item",
     "unlinkItemError": "Could not unlink the item",
     "untitled": "Untitled",
-    "setUpBoard": "Set up the project board",
+    "setUpBoard": "Set up Planning",
     "addToExisting": "Add to existing…",
     "unlinkItem": "Unlink #{number} {title}",
     "filedFromErrors": "Filed from errors",
@@ -448,9 +461,9 @@
     "newRelease": "New release",
     "newEntry": "New entry",
     "offBefore": "The public changelog is off. Turn on",
-    "offAfter": "in Settings to serve its page, JSON and RSS; it does not need the feedback board.",
+    "offAfter": "in Settings to serve its page, JSON and RSS; it does not depend on Feedback.",
     "nothingYet": "Nothing here yet",
-    "emptyDescription": "Write what shipped, in your own words, and group it into releases. Entries stay private until you publish them; link the posts, board items, tickets and errors they come from so you can see what is done.",
+    "emptyDescription": "Write what shipped, in your own words, and group it into releases. Entries stay private until you publish them; link the posts, planning items, tickets and errors they come from so you can see what is done.",
     "aiWaiting": "{count} AI-written draft is waiting for your review. | {count} AI-written drafts are waiting for your review.",
     "nothingPublic": "Nothing is public until you approve it.",
     "selected": "{count} selected",
@@ -513,7 +526,7 @@
     "settingsTitle": "Changelog settings",
     "settingsDescription": "How entries get started.",
     "autoDraft": "Draft entries automatically",
-    "autoDraftDescription": "A feedback post or board item reaching a done status gets a draft entry, unless one already links it. Drafts are never published for you. Tickets and errors are always added by hand.",
+    "autoDraftDescription": "A feedback post or planning item reaching a done status gets a draft entry, unless one already links it. Drafts are never published for you. Tickets and errors are always added by hand.",
     "commitAi": "Write entries from new commits",
     "commitAiDescription": "A push to a connected repo's default branch has the AI draft entries from its new commits (only the messages are read). They wait for your review. Needs GitHub repos in Settings and the app's webhook (see docs/GITHUB.md).",
     "autoPublish": "Publish them without review",
@@ -522,9 +535,9 @@
     "commentsDescription": "Signed-in readers can comment on published entries. Your site sends their identity token; admins can hide or delete any comment.",
     "emailSubscribers": "Email subscribers",
     "emailSubscribersDescription": "Readers can ask for an email when something ships (as it happens, or weekly on Monday). Needs CHANGELOG_LINK_SECRET or HELPBITES_SECRET (either 32+ characters) on the server, and ENABLE_CHANGELOG_NOTIFY=true for the scheduler to send.",
-    "publicChangelogDescription": "Serve the changelog page, embed, JSON and RSS to everyone. Independent of the feedback board, whose Changelog tab also needs this on.",
+    "publicChangelogDescription": "Serve the changelog page, embed, JSON and RSS to everyone. Independent of Feedback, whose Changelog tab also needs this on.",
     "savesAsChange": "Saves as you change it",
-    "followsFeedback": "Unless you turn that on, whether the changelog is public, and its page and RSS feed, follow the feedback board's",
+    "followsFeedback": "Unless you turn that on, whether the changelog is public, and its page and RSS feed, follow Feedback's",
     "followsFeedbackEnd": ".",
     "changelogOption": "Changelog option",
     "writeFromCommits": "Write from commits",
@@ -554,7 +567,7 @@
     "save": "Save",
     "createRelease": "Create release",
     "turnOnFirst": "Turn on the public changelog first",
-    "turnOnFirstDescription": "Switch on “Public changelog” in the Changelog settings. It does not need the feedback board.",
+    "turnOnFirstDescription": "Switch on “Public changelog” in the Changelog settings. It does not depend on Feedback.",
     "linkCopied": "Changelog link copied",
     "yourPublic": "Your public changelog",
     "loadError": "Could not load the changelog",
@@ -578,7 +591,7 @@
     "publishReleaseError": "Could not publish the release",
     "releaseDeleteError": "Could not delete the release",
     "feedbackPost": "Feedback post",
-    "boardItem": "Board item",
+    "boardItem": "Planning item",
     "conversation": "Conversation",
     "tagNew": "New",
     "tagImproved": "Improved",
@@ -702,7 +715,7 @@
     "schedule": "Schedule",
     "unpublish": "Unpublish",
     "deletePost": "Delete post",
-    "confirmDelete": "Delete this post with its comments and reactions? A newsletter it went out as stays under Campaigns.",
+    "confirmDelete": "Delete this post with its comments and reactions? A newsletter it went out as stays under Email → Campaigns.",
     "deleteError": "Could not delete the post",
     "unsaved": "Unsaved",
     "unsavedLive": "Unsaved: press Update to change the live post",
@@ -1313,7 +1326,6 @@
     }
   },
   "campaigns": {
-    "title": "Campaigns",
     "new": "New campaign",
     "save": "Save",
     "listLabel": "Campaigns",
@@ -1333,10 +1345,8 @@
       "canceled": "Canceled"
     },
     "tabs": {
-      "label": "Campaign sections",
       "campaigns": "Campaigns",
-      "sequences": "Sequences",
-      "settings": "Settings"
+      "sequences": "Sequences"
     },
     "sequences": {
       "new": "New sequence",
@@ -1421,8 +1431,6 @@
       "redirectHint": "Optional; otherwise a HelpBites thank-you page",
       "hostedPage": "Hosted sign-up page",
       "siteForm": "Or a form on your site",
-      "sender": "Sender",
-      "senderIntro": "Optional. A separate domain keeps newsletter reputation apart from support and account email. It must be a sending domain of the same Mailgun account.",
       "fromName": "From name",
       "fromAddress": "From address",
       "mailDomain": "Mailgun domain",
@@ -1439,7 +1447,7 @@
     }
   },
   "emailEditor": {
-    "masters": "Masters",
+    "masters": "Shared templates",
     "templates": "Templates",
     "components": "Components",
     "log": "Log",
@@ -1460,7 +1468,7 @@
     "newComponent": "New component",
     "newComponentMore": "New component…",
     "projectComponentsNote": "This project's components and the shared ones.",
-    "sharedComponentsNote": "Shared with every project and master.",
+    "sharedComponentsNote": "Shared with every project and shared template.",
     "componentsHelp": "Insert them from Add in the editor; the AI designer uses them and saves new ones. Each email keeps its own copy.",
     "nothingMatches": "Nothing matches",
     "noComponents": "No components yet",
@@ -1637,7 +1645,7 @@
     "newChat": "New chat",
     "greeting": "What should this email do?",
     "describeIt": "Describe it, or start from one of these.",
-    "masterHint": "As a master it uses each project's logo, name and accent, so write it once for all of them.",
+    "masterHint": "As a shared template it uses each project's logo, name and accent, so write it once for all of them.",
     "clickBlockHint": "Click any block to point at it.",
     "copyReply": "Copy reply",
     "copy": "Copy",
@@ -1716,15 +1724,16 @@
     "aiDesigner": "AI designer",
     "resizeSplit": "Resize the AI designer and Layers",
     "replacesDesign": "Replaces this design. Undo brings it back.",
-    "brandHeader": "Brand header"
+    "brandHeader": "Brand header",
+    "settings": "Settings"
   },
   "emailLibrary": {
     "api": {
       "apiDocs": "API docs",
       "copyUrl": "Copy URL",
       "defaultsTo": "defaults to “{value}”",
-      "descriptionMaster": "Masters are read by id with an admin API key. Projects that link this master fetch and send it by their own key.",
-      "descriptionProject": "From your server, with this project's secret (Project → Dev). Never from a browser.",
+      "descriptionMaster": "Shared templates are read by id with an admin API key. Projects that link this template fetch and send it by their own key.",
+      "descriptionProject": "From your server, with this project's secret (Project → Install & API). Never from a browser.",
       "fetchNote": "Variables are query parameters. Without {format} you get JSON: {json}, ready for any mail provider.",
       "fetchTitle": "Fetch it rendered",
       "fullReference": "Full reference: {link}.",
@@ -1749,7 +1758,7 @@
       "duplicate": "Duplicate",
       "edit": "Edit",
       "loadMore": "Load more",
-      "master": "Master",
+      "master": "Shared template",
       "open": "Open",
       "project": "Project",
       "remove": "Remove",
@@ -1760,17 +1769,17 @@
       "openError": "Could not open this template"
     },
     "library": {
-      "addMaster": "Add master",
-      "addMasterDescription": "The project uses the master's design with its own brand and values. Edits to the master reach it too.",
-      "addMasterTitle": "Add a master",
+      "addMaster": "Add shared template",
+      "addMasterDescription": "The project uses the shared template's design with its own brand and values. Edits to the shared template reach it too.",
+      "addMasterTitle": "Add a shared template",
       "all": "All",
-      "copiedToMasters": "Copied “{name}” to masters",
-      "copyToMasters": "Copy to masters",
+      "copiedToMasters": "Copied “{name}” to shared templates",
+      "copyToMasters": "Copy to shared templates",
       "createOne": "Create one",
       "deleteConfirm": "Delete “{name}”? This cannot be undone.",
       "deleteFolderConfirm": "Delete “{name}”? What is inside moves up a level.",
-      "emptyMasterDescription": "A master is designed once and reused by every project, each with its own logo, colours and copy.",
-      "emptyProjectDescription": "Start one from scratch, or add a master so this project shares its design.",
+      "emptyMasterDescription": "A shared template is designed once and reused by every project, each with its own logo, colours and copy.",
+      "emptyProjectDescription": "Start one from scratch, or add a shared template so this project shares its design.",
       "export": "Export",
       "exportAll": "Export all as JSON",
       "folder": "Folder",
@@ -1786,25 +1795,25 @@
       "importPlanErrors": ", {failed} with errors:\n{errors}",
       "importedToast": "{created} created, {updated} updated",
       "inUse": "In use",
-      "linkedDescription": "Linked master: its design, this project's brand and values.",
-      "masterSubtitle": "Masters: design once, link into any project. Each project fills in its brand and values.",
+      "linkedDescription": "Linked shared template: its design, this project's brand and values.",
+      "masterSubtitle": "Shared templates: design once, link into any project. Each project fills in its brand and values.",
       "moveTo": "Move to",
       "newFolder": "New folder",
-      "newMaster": "New master",
+      "newMaster": "New shared template",
       "newTemplate": "New template",
-      "noMastersYet": "No masters yet. {link} first.",
+      "noMastersYet": "No shared templates yet. {link} first.",
       "noMatch": "No templates match",
       "noMatchDescription": "Try another name.",
       "noTemplatesInFile": "No templates in that file",
       "noTemplatesInFolder": "No templates in this folder.",
       "noTemplatesYet": "No templates here yet",
       "notUsed": "Not used yet",
-      "openMaster": "Open master",
+      "openMaster": "Open shared template",
       "openTemplate": "Open {name}",
       "pickerDescription": "Start from a ready-made structure, then make it yours.",
-      "projectSubtitle": "This project's templates, plus masters it uses with its own brand and values.",
+      "projectSubtitle": "This project's templates, plus shared templates it uses with its own brand and values.",
       "removeFromProject": "Remove from project",
-      "removeMasterConfirm": "Remove “{name}” from this project? The master stays.",
+      "removeMasterConfirm": "Remove “{name}” from this project? The shared template stays.",
       "renameFolder": "Rename folder",
       "sendTest": "Send test…",
       "templateActions": "Template actions",
@@ -1813,16 +1822,16 @@
     },
     "linked": {
       "brand": "Brand",
-      "brandAccent": "Buttons in the master's brand colour take the project accent.",
-      "brandAvailable": "This master does not use the project brand placeholders yet. Available: {tokens}.",
+      "brandAccent": "Buttons in the shared template's brand colour take the project accent.",
+      "brandAvailable": "This shared template does not use the project brand placeholders yet. Available: {tokens}.",
       "brandUsed": "Filled in from this project: {tokens}.",
       "detach": "Detach",
-      "detachConfirm": "Detach from the master? This project gets its own editable copy, and later edits to the master no longer reach it.",
-      "editMaster": "Edit master",
+      "detachConfirm": "Detach from the shared template? This project gets its own editable copy, and later edits to the shared template no longer reach it.",
+      "editMaster": "Edit shared template",
       "empty": "Empty",
       "logo": "Logo",
-      "noVariables": "The master has no variables of its own.",
-      "removeConfirm": "Remove this master from the project? The master itself stays.",
+      "noVariables": "The shared template has no variables of its own.",
+      "removeConfirm": "Remove this shared template from the project? The template itself stays.",
       "saveError": "Could not save",
       "sendIt": "Send it",
       "sendKeyDescription": "What your server passes as template to POST /v1/emails/send.",
@@ -1863,7 +1872,7 @@
       "messageError": "Could not load the message",
       "messageId": "Message id",
       "metadata": "Metadata",
-      "noContent": "This project doesn't keep message content. Turn on {setting} under Project → Dev → Email sending to see future messages here.",
+      "noContent": "This project doesn't keep message content. Turn on {setting} under Project → Email → Settings to see future messages here.",
       "noMatch": "Nothing matches",
       "noMatchDescription": "Try another filter.",
       "notConfiguredDescription": "Set MAILGUN_API_KEY, MAILGUN_DOMAIN and MAILGUN_FROM_EMAIL on the server; until then sends fail with 503.",
@@ -1985,7 +1994,7 @@
     },
     "test": {
       "brandSender": "Brand and sender",
-      "brandSenderHelp": "A master has no project of its own; borrow one's logo, colours and from-address.",
+      "brandSenderHelp": "A shared template has no project of its own; borrow one's logo, colours and from-address.",
       "description": "{name}, with “[Test]” in the subject. It shows up in the email log.",
       "error": "Could not send the test",
       "noneLabel": "None: sample values only",
@@ -2056,7 +2065,7 @@
       "sort": "Sort",
       "sortTop": "Top",
       "sortNew": "New",
-      "views": "Board views",
+      "views": "Views",
       "mine": "Mine",
       "nothingMatches": "Nothing matches",
       "noPostsYet": "No posts yet",
@@ -2081,8 +2090,8 @@
       "saved": "Saved.",
       "postedThanks": "Posted — thanks!",
       "missingKey": "Missing project key. Check the data-project attribute on the feedback script.",
-      "noBoard": "This project has no feedback board yet.",
-      "loadFailed": "The feedback board could not be loaded.",
+      "noBoard": "This project has no feedback page yet.",
+      "loadFailed": "The feedback page could not be loaded.",
       "manage": "Manage",
       "status": "Status",
       "featured": "Featured",
@@ -2159,7 +2168,7 @@
     "commentCount": "{count} comment | {count} comments",
     "requestCount": "{count} request | {count} requests",
     "votesClosedAria": "{count} vote, voting closed | {count} votes, voting closed",
-    "boardOff": "Board is off",
+    "boardOff": "Feedback is off",
     "publicChangelog": "Public changelog",
     "openChangelog": "Open the public changelog",
     "newPost": "New post",
@@ -2167,22 +2176,22 @@
     "postHeading": "Post",
     "postNumber": "Post #{number}",
     "postedAsTeam": "Posted as the team",
-    "setupTitle": "A public feedback board for {name}",
+    "setupTitle": "Public feedback for {name}",
     "thisProject": "this project",
-    "setupDescription": "Users post ideas and bugs, vote on what matters and follow progress through a roadmap and changelog. Embed the ready-made board with one script tag, or build your own UI on the API.",
+    "setupDescription": "Users post ideas and bugs, vote on what matters and follow progress through a roadmap and changelog. Embed the ready-made page with one script tag, or build your own UI on the API.",
     "customizeFirst": "Customize first",
-    "turnOn": "Turn on the board",
+    "turnOn": "Turn on feedback",
     "hidden": "Hidden",
     "type": "Type",
     "allTypes": "All types",
     "layout": "Layout",
     "listView": "List",
-    "boardView": "Board",
+    "boardView": "Columns",
     "loading": "Loading…",
     "noMatches": "Nothing matches these filters",
     "noMatchesHint": "Turn a status back on, or clear the search.",
     "noPosts": "No posts yet",
-    "noPostsHint": "Share the board, or start it off with a post of your own.",
+    "noPostsHint": "Share the feedback page, or start it off with a post of your own.",
     "posted": "Posted {time}",
     "by": "by",
     "teamAuthor": "{name} (team)",
@@ -2233,10 +2242,10 @@
     "delete": "Delete",
     "openOnSite": "Open on site",
     "save": "Save",
-    "boardSettings": "Board settings",
+    "boardSettings": "Feedback settings",
     "boardSettingsDescription": "Statuses, post types and platforms are yours to define.",
     "changelogFirstTitle": "Turn on the changelog first",
-    "changelogFirstDescription": "Switch on “Public changelog” in Project → Changelog → Settings. It does not need the feedback board.",
+    "changelogFirstDescription": "Switch on “Public changelog” in Project → Changelog → Settings. It does not depend on Feedback.",
     "changelogLinkCopied": "Changelog link copied",
     "yourChangelog": "Your public changelog",
     "saveError": "Could not save",
@@ -2248,9 +2257,9 @@
     "commentChangeError": "Could not change the comment",
     "pinError": "Could not pin the comment",
     "commentDeleteError": "Could not delete the comment",
-    "loadBoardError": "Could not load the board",
+    "loadBoardError": "Could not load feedback",
     "deleteCommentConfirm": "Delete this comment?",
-    "boardLive": "Board is live",
+    "boardLive": "Feedback is live",
     "boardLiveDescription": "Visitors can read it with the project's public key; signed-in users can post, vote and comment.",
     "titleHint": "Defaults to “{'{'}project{'}'} feedback”",
     "titlePlaceholder": "Feature requests & bug reports",
@@ -2268,10 +2277,10 @@
     "emailNotificationsDescription": "Status changes and new comments to a post's followers, mentions to whoever is mentioned.",
     "roadmapView": "Roadmap view",
     "roadmapViewDescription": "Planned, in-progress and done columns in the embed.",
-    "changelogDescription": "A Changelog tab in the board. Needs Public changelog on in Project → Changelog → Settings.",
+    "changelogDescription": "A Changelog tab on the feedback page. Needs Public changelog on in Project → Changelog → Settings.",
     "statuses": "Statuses",
     "statusesHelpBoard": "The category is what a status means: public items in a planned, active or done status show on the roadmap; the rest stay private.",
-    "statusesHelpFeedback": "The category is what a status means everywhere: open, planned and active show on the board by default; done feeds the changelog and closes voting.",
+    "statusesHelpFeedback": "The category is what a status means everywhere: open, planned and active show on the feedback page by default; done feeds the changelog and closes voting.",
     "label": "Label",
     "statusLabel": "Status label",
     "statusKey": "Status key",
@@ -2324,8 +2333,8 @@
     "removeTag": "Remove tag",
     "addLabel": "Add label",
     "addTag": "Add tag",
-    "saveBoardSettings": "Save board settings",
-    "hiddenFromBoard": "Hidden from the public board",
+    "saveBoardSettings": "Save feedback settings",
+    "hiddenFromBoard": "Hidden from the public feedback page",
     "you": "You",
     "roadmapEmpty": "Nothing on the roadmap yet",
     "roadmapEmptyHint": "Planned, in-progress and shipped work shows up here.",
@@ -2622,7 +2631,7 @@
         "body": "Reply as the team, leave notes the customer never sees, and see who they are and what broke for them without leaving the thread.",
         "b1": "Colour-coded projects, one unread count, live updates",
         "b2": "Assign, prioritise, label and close, with custom fields per ticket type",
-        "b3": "Their recent errors and linked board items sit beside the chat",
+        "b3": "Their recent errors and linked planning items sit beside the chat",
         "b4": "Replies also go out by email when they are away",
         "alt": "The HelpBites inbox: a conversation list, a thread with an internal note, and the customer panel."
       },
@@ -2638,12 +2647,12 @@
       "board": {
         "eyebrow": "Feedback & roadmap",
         "title": "Users say what to build. You decide what ships.",
-        "body": "A public feedback board per project, and a private kanban behind it. Votes from linked posts add up on each card.",
+        "body": "A public feedback page per project, and a private planning board behind it. Votes from linked posts add up on each card.",
         "b1": "Votes, comments, reactions and {'@'}mentions, with duplicates merged",
         "b2": "Link cards to feedback posts and inbox conversations",
         "b3": "Publish only the items you pick as a public roadmap",
         "b4": "Moving a card updates its linked posts, and emails their followers",
-        "alt": "The project board: backlog, planned, in progress and done columns with vote counts on each card."
+        "alt": "Planning: backlog, planned, in progress and done columns with vote counts on each card."
       },
       "changelog": {
         "eyebrow": "Changelog",
@@ -2657,7 +2666,7 @@
       "email": {
         "title": "Design once. Brand it per project.",
         "body": "A block designer that renders for Gmail, Apple Mail and Outlook, with an AI that turns pasted HTML into editable blocks.",
-        "b1": "One master design linked into every project, each with its own brand",
+        "b1": "One shared template linked into every project, each with its own brand",
         "b2": "Checks for missing alt text, low contrast and placeholder links",
         "b3": "Send from your server with one API call, scheduled or per recipient",
         "b4": "Reusable components, share links, test sends, import and export",
@@ -2775,11 +2784,11 @@
         },
         "overview": {
           "term": "Every app at a glance",
-          "desc": "The panel opens on an overview: a card per app with its unread and open conversations and revenue, the latest unread messages, and revenue by app."
+          "desc": "The panel opens on an overview: a card per app with its unread and open conversations and revenue, one list of what needs attention (drafts to approve, failed syncs, bounces, fired alerts), the latest unread messages, and revenue by app. Each app has a setup checklist that turns green only when things really connect."
         },
         "notes": {
           "term": "Notes, context and errors",
-          "desc": "Internal notes your customer never sees. Their recent errors and linked board items sit beside the conversation."
+          "desc": "Internal notes your customer never sees. Their recent errors and linked planning items sit beside the conversation."
         },
         "away": {
           "term": "Email when you are away",
@@ -2802,13 +2811,12 @@
         "title": "Feedback, roadmap, changelog and blog",
         "hint": "Users tell you what to build. You tell them what shipped.",
         "board": {
-          "term": "A public board",
+          "term": "A public feedback page",
           "desc": "Users post ideas and bugs, vote, comment and react. You set the types, tags and statuses, and merge duplicates."
         },
         "roadmap": {
-          "term": "A roadmap from your own board",
-          "desc": "Plan internal work on a kanban, link it to posts and conversations, and publish only the items you pick. File an error on it in one click, and see the GitHub commits and pull requests that finished each item."
-        },
+          "term": "A roadmap from your own planning",
+          "desc": "Plan internal work on a kanban, link it to posts and conversations, and publish only the items you pick. File an error on it in one click, and see the GitHub commits and pull requests that finished each item."        },
         "changelog": {
           "term": "A changelog from what shipped",
           "desc": "Entries grouped into releases, drafted from finished work and reviewed before they go public. Includes RSS and digest emails."
@@ -2831,7 +2839,7 @@
         },
         "assistants": {
           "term": "Assistants answer from it",
-          "desc": "Each one has its own instructions, your choice of OpenAI, Anthropic, Gemini and others (or any compatible endpoint), and routing rules that send a conversation to AI or to a person."
+          "desc": "Each one has its own instructions, your choice of OpenAI, Anthropic, Gemini and others (or any compatible endpoint), and routing rules that send a conversation to AI or to a person. Test a question first and see why it answers or hands over."
         },
         "scope": {
           "term": "You choose what it sees",
@@ -3093,11 +3101,6 @@
     "path": "Path",
     "faq": "FAQ",
     "add": "Add",
-    "testRetrieval": "Test retrieval",
-    "testHint": "See exactly what knowledge this assistant would be given for a question — the same retrieval the support runtime uses.",
-    "testPlaceholder": "How do I delete my account?",
-    "retrieve": "Retrieve",
-    "noMatch": "No knowledge matched — check the assignments above and that FAQs are active.",
     "couldNotSave": "Could not save",
     "couldNotAddAccess": "Could not add access",
     "deleteConfirm": "Delete “{name}”? Its knowledge assignments are removed too.",
@@ -3109,6 +3112,58 @@
       "active": "Active",
       "disabled": "Disabled",
       "draft": "Draft"
+    },
+    "readiness": {
+      "title": "Readiness",
+      "live": "Answering customers by itself",
+      "notLive": "Not answering customers by itself yet",
+      "llm": {
+        "ok": "An AI provider is set up.",
+        "todo": "No AI provider.",
+        "fix": "Settings → AI"
+      },
+      "knowledge": {
+        "ok": "It can read {count} answer | It can read {count} answers",
+        "todo": "No knowledge to read: nothing is assigned, or what is has no active answers.",
+        "fix": "Assign knowledge"
+      },
+      "active": {
+        "ok": "Status is active.",
+        "todo": "Status is not active.",
+        "fix": "Set it to active"
+      },
+      "autoReply": {
+        "ok": "Auto-reply is on.",
+        "todo": "Auto-reply is off, so it only answers when asked here.",
+        "fix": "Turn it on"
+      }
+    },
+    "test": {
+      "title": "Test answer",
+      "hint": "Ask what a customer would. This runs the same decision as a real message: your routing rules first, then the knowledge it may read and its confidence bar. Nothing is sent, and nothing is added to the inbox.",
+      "placeholder": "How do I delete my account?",
+      "supportType": "Support",
+      "run": "Test answer",
+      "error": "Could not run the test",
+      "notLive": "It is not answering customers by itself yet; see Readiness above.",
+      "outcome": {
+        "answer": "Would answer",
+        "handoff": "Would hand it to the team",
+        "silent": "Would stay silent"
+      },
+      "reason": {
+        "rule": "Rule {rule} sends messages like this to the team{conditions}.",
+        "default": "No rule matched, and the default for messages no rule matches is the team.",
+        "noKnowledge": "Nothing it may read matched the question.",
+        "lowConfidence": "The best match scored {best}, under its confidence bar of {bar}.",
+        "confident": "The best match scored {best}, enough to answer."
+      },
+      "ruleLetThrough": "Rule {rule}{conditions} let it through.",
+      "ruleType": "ticket type {type}",
+      "ruleKeywords": "keywords {keywords}",
+      "wouldSend": "It would send, from {model}:",
+      "noProvider": "It would answer, but there is no AI provider to write the reply.",
+      "found": "Knowledge it found"
     }
   },
   "admin": {
@@ -3249,41 +3304,15 @@
       "atAGlance": "At a glance",
       "needsAttention": "Needs attention",
       "allClear": "All clear. Nothing needs you right now.",
-      "status": "Status",
       "latestActivity": "Latest activity",
       "nothingYet": "Nothing yet",
-      "activityEmpty": "Conversations, feedback and finished board items will show up here.",
+      "activityEmpty": "Conversations, feedback and finished planning items will show up here.",
       "loadError": "Could not load the overview",
       "stats": {
         "open": "Open conversations",
         "new": "New this week",
         "emails": "Emails sent · 7d",
         "feedback": "Feedback · 7d"
-      },
-      "health": {
-        "chat": "Chat widget",
-        "email": "Email sending",
-        "notify": "Team notifications",
-        "feedback": "Feedback board",
-        "errors": "Error tracking"
-      },
-      "healthDetail": {
-        "noOrigins": "No allowed origins",
-        "notLoaded": "Not loaded on your site yet",
-        "origins": "{count} allowed origin | {count} allowed origins",
-        "defaultSender": "Default sender",
-        "notConfigured": "Not configured",
-        "nobodyEmailed": "Nobody is emailed",
-        "on": "On",
-        "off": "Off",
-        "notConnected": "Not connected"
-      },
-      "attention": {
-        "unread": "Unread conversations",
-        "errors": "Open error reports",
-        "emails": "Failed emails · 7d",
-        "documents": "Knowledge documents failed to process",
-        "feedback": "Feedback awaiting triage"
       },
       "activityTitle": {
         "newFeedback": "New feedback: {title}",
@@ -3331,18 +3360,8 @@
       "letUsersChooseDescription": "Only takes effect once the project has more than one ticket type.",
       "offerOther": "Offer an “Other” option",
       "offerOtherDescription": "Creates a plain support ticket.",
-      "emailHint": "Who this project's email comes from — the send API, notifications and feedback updates — and who hears about new chats.",
-      "replyAs": "Reply as",
-      "replyAsHint": "Signs your replies and their emails",
       "notifyWhenWrites": "Notify when a user writes",
       "notifyHint": "Comma separated, up to 5",
-      "fromAddress": "From address",
-      "sendingDomain": "Sending domain",
-      "replyTo": "Reply-to",
-      "replyToPlaceholder": "Replies go to the from address",
-      "keepLog": "Keep a copy of each email in the log",
-      "keepLogDescription": "Shows the message itself in the log. It can include sign-in and reset links.",
-      "emailDefaultsNote": "Blank fields use the server's defaults, shown greyed out. The sending domain must be in the same Mailgun account as the server's API key, and the from address should be on it.",
       "collaborators": "Collaborators",
       "collaboratorsHint": "The people who answer {name}'s chats.",
       "thisProject": "this project",
@@ -3416,7 +3435,13 @@
         "changelog": "What is new",
         "feedback": "Feedback",
         "onboarding": "Onboarding flows to start"
-      }
+      },
+      "notifications": "Notifications",
+      "notificationsHint": "Who hears about new chats.",
+      "sidebar": "Sidebar",
+      "sidebarHint": "Untick what this project does not use to take it out of the sidebar and the ⌘K list. Nothing is deleted, and its pages still open from a link. Overview and Settings are always there.",
+      "senderMoved": "The sender and the rest of the project's email settings are in",
+      "senderMovedLink": "Email → Settings"
     },
     "dev": {
       "guide": "Guide",
@@ -3460,11 +3485,11 @@
       "withToken": "with",
       "passAssistant": ". Pass",
       "assistantRoute": "when opening a conversation to route it to a specific assistant (copy the ID from the Assistants tab).",
-      "feedbackIntro": "A public board where users post ideas, vote and comment.",
+      "feedbackIntro": "A public feedback page where users post ideas, vote and comment.",
       "feedbackOn": "It is on.",
       "feedbackOff": "Turn it on from the Feedback page.",
       "manage": "Manage",
-      "dropTitle": "Drop the board into any page",
+      "dropTitle": "Add feedback to any page",
       "dropText": "Anyone can read it; pass the same token as the chat so signed-in users can post, vote and comment.",
       "useThe": "Use the",
       "feedbackRead": ": read with",
@@ -3511,7 +3536,7 @@
       "originsCount": "{count} allowed origin | {count} allowed origins",
       "noOrigins": "No allowed origins",
       "widgetNotSeen": "Not loaded on your site yet",
-      "boardOn": "Board on",
+      "boardOn": "Feedback on",
       "off": "Off",
       "flagsCount": "{count} flag | {count} flags",
       "noneYet": "None yet",
@@ -3616,7 +3641,10 @@
       "saveError": "Could not save type. Check the JSON.",
       "deleteError": "Could not delete type",
       "loadError": "Could not load types",
-      "openStatus": "Open"
+      "openStatus": "Open",
+      "noWebhookTitle": "These actions have nowhere to go",
+      "noWebhookDescription": "An action is signed and sent to the project's action webhook. This project has no webhook URL and secret yet, so running an action will fail.",
+      "noWebhookFix": "Set up the webhook"
     },
     "assistants": {
       "newAssistant": "New assistant",
@@ -5303,7 +5331,7 @@
       "button": "Button label",
       "imageAlt": "Image description",
       "component": "Component: {field}",
-      "linked": "A linked template sends its master's translations. Translate the master design instead.",
+      "linked": "A linked template sends its shared template's translations. Translate the shared template design instead.",
       "sendHint": "Pick a language to edit it. Send in a language with \"locale\" on the send API, or set a recipient's own language."
     }
   },
@@ -5365,5 +5393,109 @@
     "commit": "Commit",
     "closes": "closes",
     "closesTitle": "A closing keyword (like “fixes #12”) came with it"
+  },
+  "emailSettings": {
+    "sender": "Sender",
+    "senderIntro": "Who this project's email comes from: the send API, notifications, feedback updates, and campaigns and sequences too, unless they have an address of their own below.",
+    "fromName": "From name",
+    "separate": "Send campaigns and sequences from a different address",
+    "separateDescription": "A separate domain keeps newsletter reputation apart from support and account email. It must be a sending domain of the same Mailgun account.",
+    "fromNameHint": "Signs your replies and their emails",
+    "replyTo": "Reply-to",
+    "replyToPlaceholder": "Replies go to the from address",
+    "fromAddress": "From address",
+    "sendingDomain": "Sending domain",
+    "keepLog": "Keep a copy of each email in the log",
+    "keepLogDescription": "Shows the message itself in the log. It can include sign-in and reset links.",
+    "defaultsNote": "Blank fields use the server's defaults, shown greyed out. The sending domain must be in the same Mailgun account as the server's API key, and the from address should be on it."
+  },
+  "emailSetup": {
+    "blocked": "Email cannot go out yet",
+    "nudge": "Email works; one thing is worth fixing",
+    "openSettings": "Open settings",
+    "mailer": {
+      "title": "Mail server.",
+      "todo": "This server has no Mailgun API key, so it cannot send any email. Set MAILGUN_API_KEY."
+    },
+    "sender": {
+      "title": "Sender.",
+      "todo": "Neither this project nor the server has a from address and sending domain. Set them in Email → Settings."
+    },
+    "webhook": {
+      "title": "Delivery events.",
+      "warn": "Mailgun's webhook is not set up, so the log never learns about deliveries, opens or bounces and bounced addresses are not suppressed."
+    },
+    "postalAddress": {
+      "title": "Postal address.",
+      "todo": "Every campaign must carry one. Add it in Email → Settings."
+    },
+    "paused": {
+      "title": "Bulk mail is paused.",
+      "todo": "{reason}."
+    }
+  },
+  "setup": {
+    "title": "Setup",
+    "progress": "{done} of {total} done",
+    "optional": "Optional",
+    "widget": {
+      "title": "Chat widget on your site",
+      "seen": "Last loaded on your site {value}.",
+      "noOrigins": "Allow your site's address, then add the script.",
+      "waiting": "Waiting for the widget to load on your site."
+    },
+    "identity": {
+      "title": "Users identified",
+      "seen": "Your backend signed an identity token {value}.",
+      "missing": "No signed identity token yet: your backend signs one per user so conversations are theirs.",
+      "anonymous": "Nobody signed in with a token yet. Email-only sign-in is on, so this may be fine."
+    },
+    "notified": {
+      "title": "Someone is told about new chats",
+      "email": "Emailed to {value} address | Emailed to {value} addresses",
+      "push": "Pushed to {value} device | Pushed to {value} devices",
+      "noMailer": "Addresses are set, but this server cannot send email yet.",
+      "nobody": "Nobody is emailed or pushed when a customer writes."
+    },
+    "sender": {
+      "title": "Email sender",
+      "ready": "Mail goes out from {value}.",
+      "missing": "No sender or no mail server yet: email cannot go out.",
+      "default": "Mail goes out from the server's default address."
+    },
+    "assistant": {
+      "title": "AI assistant ready",
+      "live": "{value} answers customers by itself.",
+      "notLive": "{value} is not answering yet: it needs a provider, knowledge, to be active and auto-reply on.",
+      "none": "No assistant yet. Humans answer everything until you add one."
+    },
+    "stripe": {
+      "title": "Stripe",
+      "synced": "Connected and synced.",
+      "waiting": "Connected; waiting for the first sync.",
+      "error": "The last sync failed: {value}",
+      "none": "Not connected: no revenue on the Overview."
+    },
+    "github": {
+      "title": "GitHub",
+      "linked": "{value} repository linked | {value} repositories linked",
+      "none": "No repository linked: no drafts from commits."
+    },
+    "errors": {
+      "title": "Error tracking",
+      "connected": "Reporting to {value}.",
+      "none": "Not connected: errors never reach the inbox."
+    }
+  },
+  "attention": {
+    "unread": "{count} unread conversation | {count} unread conversations",
+    "drafts": "{count} changelog draft waiting for approval | {count} changelog drafts waiting for approval",
+    "sync": "{value} sync is failing",
+    "bounces": "{count} email bounced or failed this week | {count} emails bounced or failed this week",
+    "alerts": "{count} error alert fired today | {count} error alerts fired today",
+    "paused": "Campaigns and sequences are paused",
+    "errors": "{count} open error report | {count} open error reports",
+    "documents": "{count} knowledge document failed to process | {count} knowledge documents failed to process",
+    "triage": "{count} feedback post to triage | {count} feedback posts to triage"
   }
 }

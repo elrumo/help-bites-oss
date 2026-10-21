@@ -26,6 +26,10 @@ struct Project: Codable, Identifiable, Equatable, Sendable {
   let errors: ProjectErrors?
   /// The project board's settings; nil from a server without boards.
   let board: BoardConfig?
+  /// Web paths (`revenue`, `types`) of the sections this project hid from its sidebar; nil from an older server.
+  let hiddenSections: [String]?
+  /// When a signed identity token last arrived from the host's backend; nil until one has (or from an older server).
+  let identitySeenAt: String?
 }
 
 struct Attachment: Codable, Equatable, Identifiable, Sendable {

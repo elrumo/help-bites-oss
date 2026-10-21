@@ -99,7 +99,7 @@ export function lintEmail(doc: EmailDocument, options: { master?: boolean } = {}
   visit(doc.blocks, s.contentBackground)
 
   if (options.master && !extractTemplateVariables(doc).some(k => k.startsWith('project.'))) {
-    issues.push({ level: 'warning', message: 'This master does not use the project brand', fix: 'Use {{project.name}} for the product name, {{project.logoUrl}} as the logo image src and {{project.url}} for links, {{project.company}} and {{project.address}} in the footer, and {{project.privacyUrl}} / {{project.termsUrl}} for the legal pages, instead of hardcoded values.' })
+    issues.push({ level: 'warning', message: 'This shared template does not use the project brand', fix: 'Use {{project.name}} for the product name, {{project.logoUrl}} as the logo image src and {{project.url}} for links, {{project.company}} and {{project.address}} in the footer, and {{project.privacyUrl}} / {{project.termsUrl}} for the legal pages, instead of hardcoded values.' })
   }
   return issues
 }

@@ -2,9 +2,9 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// A project's name, branding, chat widget and email sender, its collaborators
-/// and GitHub repos (web: projects/[id]/settings.vue). Keys, snippets and
-/// webhooks are on Dev.
+/// A project's name, branding, chat widget, notifications and sidebar, its
+/// collaborators and GitHub repos (web: projects/[id]/settings.vue). The email
+/// sender is on Email; keys, snippets and webhooks are on Install & API.
 struct ProjectSettingsScreen: View {
   let projectId: String
   @Environment(Workspace.self) private var workspace
@@ -19,8 +19,6 @@ struct ProjectSettingsScreen: View {
   @State private var saved = false
   @State private var saveError = ""
   @State private var uploading: SettingsImage?
-  /// The server's sender, greyed out behind blank email fields (`GET /v1/admin/email-settings`).
-  @State private var emailDefaults: EmailDefaults?
   @State private var people: [Agent] = []
 
   /// Linear's indigo, then the colours projects without one are given (settings.vue `swatches`).
@@ -39,7 +37,8 @@ struct ProjectSettingsScreen: View {
             companyCard
             widget
             hubCard(project)
-            email
+            notifications
+            sidebar
             collaborators
             section("GitHub repos", "The code behind \(form.name.isEmpty ? "this project" : form.name). AI error notes and legal documents read these; HelpBites never writes to them.") {
               ProjectReposSection(projectId: projectId)
@@ -182,31 +181,35 @@ struct ProjectSettingsScreen: View {
     }
   }
 
-  private var email: some View {
-    section("Email", "Who this project's email comes from — the send API, notifications and feedback updates — and who hears about new chats.") {
+  private var notifications: some View {
+    section("Notifications", "Who hears about new chats.") {
       cardBody {
-        pair {
-          LabeledField(label: "Reply as", hint: "Signs your replies and their emails") { TextField("Elías", text: $form.fromName).textFieldStyle(.linear) }
-        } _: {
-          LabeledField(label: "Notify when a user writes", hint: "Comma separated, up to 5") {
-            TextField("you@example.com", text: $form.notifyEmails).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
+        LabeledField(label: "Notify when a user writes", hint: "Comma separated, up to 5") {
+          TextField("you@example.com", text: $form.notifyEmails).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
+        }
+        VStack(alignment: .leading, spacing: 8) {
+          Text("The sender and the rest of the project's email settings are in").font(.lnCaption).foregroundStyle(Theme.textMuted)
+          Button { workspace.go(.project(projectId, .email)) } label: { Label("Email → Settings", systemImage: "envelope") }.buttonStyle(.lnSecondaryCompact)
+        }
+      }
+    }
+  }
+
+  /// Per group, a switch per section: on is shown. What is hidden leaves the sidebar, the project's
+  /// section list and ⌘K; its pages still open from a link.
+  private var sidebar: some View {
+    section("Sidebar", "Untick what this project does not use to take it out of the sidebar and the ⌘K list. Nothing is deleted, and its pages still open from a link. Overview and Settings are always there.") {
+      Card {
+        ForEach(SectionGroup.allCases, id: \.self) { group in
+          CardRow(divider: group != SectionGroup.allCases.last) {
+            VStack(alignment: .leading, spacing: 12) {
+              Text(group.label).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
+              ForEach(ProjectSection.allCases.filter { $0.group == group }) { item in
+                toggle(item.label, isOn: shown(item))
+              }
+            }
           }
         }
-        pair {
-          LabeledField(label: "From address") {
-            TextField(emailDefaults?.fromEmail.nonEmpty ?? "hello@mail.example.com", text: $form.fromEmail).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
-          }
-        } _: {
-          LabeledField(label: "Sending domain") {
-            TextField(emailDefaults?.domain.nonEmpty ?? "mail.example.com", text: $form.mailDomain).textFieldStyle(.linear).font(.lnMono).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-          }
-        }
-        LabeledField(label: "Reply-to") {
-          TextField("Replies go to the from address", text: $form.replyTo).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
-        }
-        toggle("Keep a copy of each email in the log", detail: "Shows the message itself in the log. It can include sign-in and reset links.", isOn: $form.emailLogContent)
-        Text("Blank fields use the server's defaults, shown greyed out. The sending domain must be in the same Mailgun account as the server's API key, and the from address should be on it.")
-          .font(.lnCaption).foregroundStyle(Theme.textMuted)
       }
     }
   }
@@ -377,6 +380,14 @@ struct ProjectSettingsScreen: View {
     .tint(Theme.accent)
   }
 
+  /// A section's switch: on while it is not in the hidden set.
+  private func shown(_ section: ProjectSection) -> Binding<Bool> {
+    Binding(
+      get: { !form.hidden.contains(section.path) },
+      set: { if $0 { form.hidden.remove(section.path) } else { form.hidden.insert(section.path) } }
+    )
+  }
+
   private func urlField(_ prompt: String, text: Binding<String>) -> some View {
     TextField(prompt, text: text).textFieldStyle(.linear).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
   }
@@ -422,7 +433,6 @@ struct ProjectSettingsScreen: View {
       let loaded = try await ProjectsAdminProject.load(projectId, session: session)
       fill(loaded)
     } catch { loadError = error.localizedDescription }
-    emailDefaults = try? await session.get("/v1/admin/email-settings")
     struct People: Decodable, Sendable { let agents: [Agent] }
     if let response: People = try? await session.get("/v1/admin/agents") { people = response.agents }
   }
@@ -462,10 +472,10 @@ struct ProjectSettingsScreen: View {
       iconUrl: form.iconUrl, brandLogoUrl: form.brandLogoUrl, assistantLogoUrl: form.assistantLogoUrl,
       chatNotice: form.chatNotice, allowAttachments: form.allowAttachments, allowAnonymousUsers: form.allowAnonymousUsers,
       letUsersChooseType: form.letUsersChooseType, allowOtherType: form.allowOtherType,
-      fromName: form.fromName, notifyEmails: form.notifyEmails,
-      fromEmail: form.fromEmail.trimmingCharacters(in: .whitespaces), replyTo: form.replyTo.trimmingCharacters(in: .whitespaces), mailDomain: form.mailDomain.trimmingCharacters(in: .whitespaces),
-      emailLogContent: form.emailLogContent,
+      notifyEmails: form.notifyEmails,
       company: form.company, hub: form.hub.droppingBlankLinks,
+      // The whole set goes back, so a section only the web has (Pages) stays hidden.
+      hiddenSections: form.hidden.sorted(),
       // The accent is the Brand kit's: send it only when it changed here, so saving something else never pins it.
       // `theme` is replaced whole on the server: send `dark` back so saving here keeps it.
       theme: accent == (project?.theme.accent ?? "") ? nil : ProjectTheme(accent: accent.isEmpty ? nil : accent, dark: project?.theme.dark)
@@ -534,22 +544,15 @@ private struct ImageSourceButtons: View {
 
 // MARK: - Form
 
-/// The server's default sender, from `GET /v1/admin/email-settings`.
-private struct EmailDefaults: Decodable, Sendable {
-  let fromEmail, domain: String
-}
-
-private extension String {
-  var nonEmpty: String? { isEmpty ? nil : self }
-}
-
 /// The settings form, filled from the project like the web's `fill()`. Equatable: dirty means it differs from the saved copy.
 private struct SettingsForm: Equatable {
   var name = "", siteUrl = "", inboxPath = "", iconUrl = "", brandLogoUrl = "", assistantLogoUrl = "", accent = "", chatNotice = ""
-  var fromName = "", notifyEmails = "", fromEmail = "", replyTo = "", mailDomain = ""
-  var allowAttachments = true, allowAnonymousUsers = false, letUsersChooseType = false, allowOtherType = false, emailLogContent = false
+  var notifyEmails = ""
+  var allowAttachments = true, allowAnonymousUsers = false, letUsersChooseType = false, allowOtherType = false
   var company = CompanyProfile()
   var hub = HubConfig()
+  /// Web paths of the sections left out of the sidebar. A set, so ticking and unticking back reads as unchanged.
+  var hidden: Set<String> = []
 
   init() {}
   init(_ project: ProjectsAdminProject) {
@@ -565,14 +568,10 @@ private struct SettingsForm: Equatable {
     allowAnonymousUsers = project.allowAnonymousUsers ?? false
     letUsersChooseType = project.letUsersChooseType ?? false
     allowOtherType = project.allowOtherType ?? false
-    fromName = project.fromName
     notifyEmails = project.notifyEmails.joined(separator: ", ")
-    fromEmail = project.fromEmail ?? ""
-    replyTo = project.replyTo ?? ""
-    mailDomain = project.mailDomain ?? ""
-    emailLogContent = project.emailLogContent ?? false
     company = project.company ?? CompanyProfile()
     hub = project.hub ?? HubConfig()
+    hidden = Set(project.hiddenSections ?? [])
   }
 }
 
@@ -580,10 +579,10 @@ private struct SettingsForm: Equatable {
 private struct SettingsInput: Encodable, Sendable {
   let name, siteUrl, inboxPath, iconUrl, brandLogoUrl, assistantLogoUrl, chatNotice: String
   let allowAttachments, allowAnonymousUsers, letUsersChooseType, allowOtherType: Bool
-  let fromName, notifyEmails, fromEmail, replyTo, mailDomain: String
-  let emailLogContent: Bool
+  let notifyEmails: String
   let company: CompanyProfile
   let hub: HubConfig
+  let hiddenSections: [String]
   /// Sent only when the accent changed (it is the Brand kit's).
   let theme: ProjectTheme?
 }

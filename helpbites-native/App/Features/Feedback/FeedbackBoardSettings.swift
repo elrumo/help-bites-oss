@@ -4,9 +4,9 @@ import SwiftUI
 private let feedbackCategoryOptions = [("open", "Open"), ("planned", "Planned"), ("active", "Active"), ("done", "Done"), ("closed", "Closed")].map { FeedbackOption(value: $0.0, label: $0.1) }
 private let feedbackColorOptions = ["neutral", "primary", "info", "success", "warning", "error"].map { FeedbackOption(value: $0, label: $0.capitalized, color: $0) }
 
-/// Board settings (FeedbackBoardSettings.vue): the board's switch and copy, its options,
+/// Feedback settings (FeedbackBoardSettings.vue): the feedback page's switch and copy, its options,
 /// and the statuses, post types, platforms and tags posts are filed under. With
-/// `boardOnly` it edits a project board's statuses and labels (the tag list,
+/// `boardOnly` it edits the planning board's statuses and labels (the tag list,
 /// renamed) under a `header` of the caller's own.
 struct FeedbackBoardSettingsSheet<Header: View>: View {
   private let boardOnly: Bool
@@ -50,7 +50,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
         .frame(maxWidth: .infinity)
       }
       .scrollDismissesKeyboard(.interactively)
-      .panelScreen("Board settings")
+      .panelScreen(boardOnly ? "Planning settings" : "Feedback settings")
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
         ToolbarItem(placement: .confirmationAction) {
@@ -68,7 +68,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
     VStack(alignment: .leading, spacing: 16) {
       Card {
         CardRow(divider: false) {
-          FeedbackToggleRow(title: "Board is live", detail: "Visitors can read it with the project's public key; signed-in users can post, vote and comment.", isOn: $draft.board.enabled)
+          FeedbackToggleRow(title: "Feedback is live", detail: "Visitors can read it with the project's public key; signed-in users can post, vote and comment.", isOn: $draft.board.enabled)
         }
       }
       LabeledField(label: "Title", hint: "Defaults to “{project} feedback”") {
@@ -96,7 +96,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
         CardRow { FeedbackToggleRow(title: "Show author names", detail: "Admins always see them.", isOn: $draft.board.showAuthorNames) }
         CardRow { FeedbackToggleRow(title: "Email notifications", detail: "Status changes and new comments to a post's followers, mentions to whoever is mentioned.", isOn: $draft.board.emailNotifications) }
         CardRow { FeedbackToggleRow(title: "Roadmap view", detail: "Planned, in-progress and done columns in the embed.", isOn: $draft.board.roadmap) }
-        CardRow(divider: false) { FeedbackToggleRow(title: "Changelog", detail: "A Changelog tab in the board. Needs Public changelog on in Project → Changelog → Settings.", isOn: $draft.board.changelog) }
+        CardRow(divider: false) { FeedbackToggleRow(title: "Changelog", detail: "A Changelog tab on the feedback page. Needs Public changelog on in Project → Changelog → Settings.", isOn: $draft.board.changelog) }
       }
     }
   }
@@ -105,7 +105,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
     VStack(alignment: .leading, spacing: 10) {
       heading("Statuses", boardOnly
         ? "The category is what a status means: public items in a planned, active or done status show on the roadmap; the rest stay private."
-        : "The category is what a status means everywhere: open, planned and active show on the board by default; done feeds the changelog and closes voting.")
+        : "The category is what a status means everywhere: open, planned and active show on the feedback page by default; done feeds the changelog and closes voting.")
       ForEach($draft.statuses) { $row in
         let id = row.id
         rowCard {
@@ -268,7 +268,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
 }
 
 extension FeedbackBoardSettingsSheet where Header == EmptyView {
-  /// The feedback board's own settings, saved with the project through its store.
+  /// The feedback page's own settings, saved with the project through its store.
   init(store: FeedbackBoardStore, config: FeedbackBoardConfig) {
     self.init(config: config, boardOnly: false, intro: "Statuses, post types and platforms are yours to define.", save: { next in
       guard await store.saveConfig(next), let saved = store.config else {

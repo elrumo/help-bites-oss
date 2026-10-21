@@ -47,8 +47,8 @@ export const DOCS: readonly DocPage[] = [
   },
   {
     slug: 'feedback',
-    title: 'Feedback boards',
-    description: 'A public board per project with posts, votes, comments, a roadmap and a changelog: drop it into your site or build on the API.',
+    title: 'Feedback and roadmap',
+    description: 'A public feedback page per project with posts, votes, comments, a roadmap and a changelog, and a private planning board behind it: drop it into your site or build on the API.',
     group: 'Guides',
     file: 'FEEDBACK.md'
   },

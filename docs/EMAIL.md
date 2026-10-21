@@ -7,29 +7,29 @@ to table-based, inline-styled HTML that holds up in Gmail, Apple Mail and
 Outlook. You can also send your
 own HTML, uploaded as a file or in the request, without making a template.
 
-- **Masters**: sidebar → *Email*. A master belongs to no project. Every project that links it gets its design, and edits to the master reach all of them.
-- **Project templates**: project → *Email*. These are the project's own templates, plus the masters it links.
+- **Shared templates** (called *Masters* before): sidebar → *Email* → *Shared templates*. A shared template belongs to no project. Every project that links it gets its design, and edits to it reach all of them. The API still calls them `master`s (`masterId`, `master`).
+- **One Email section per project**: project → *Email* has five tabs: *Templates* (the project's own templates, plus the shared templates it links; *Components* sits behind it), *Campaigns* and *Sequences* ([MARKETING.md](MARKETING.md)), *Log* (*Suppressed* sits behind it) and *Settings* (the sender, and the newsletter's settings).
 - **Send API**: `POST /v1/emails/send` with the project secret. The email is a template (by send key or id), your own HTML, a block document, or a plain-text message in the project's layout.
-- **Log**: the *Log* tab of the email page. One entry per recipient for every message HelpBites sends: API sends, test sends, conversation and feedback notifications, operator password resets. Mailgun's delivery webhook keeps each entry's status current.
-- **Suppressions**: the *Suppressed* tab. Addresses a project no longer mails: hard bounces and spam reports (added by the webhook), unsubscribes, and addresses added by hand or through the API.
+- **Log**: the *Log* tab. One entry per recipient for every message HelpBites sends: API sends, test sends, conversation and feedback notifications, operator password resets. Mailgun's delivery webhook keeps each entry's status current.
+- **Suppressions**: *Log* → *Suppressed*. Addresses a project no longer mails: hard bounces and spam reports (added by the webhook), unsubscribes, and addresses added by hand or through the API.
 
-## Masters and projects
+## Shared templates and projects
 
-A project that links a master stores no design of its own. It keeps:
+A project that links a shared template stores no design of its own. It keeps:
 
 | Per project | Where it comes from |
 |---|---|
-| Brand | The project's Brand kit and settings. `{{project.name}}`, `{{project.logoUrl}}` (the kit's logo URL) and `{{project.url}}` (site URL) fill in automatically, and so do the company and legal-page placeholders under [Variables](#variables). The project accent (the kit's) replaces the master's brand colour on buttons; buttons in any other colour keep it. |
-| Values | One value per master variable (`{{footer}}`, `{{supportEmail}}`…). A blank value falls back to the master's default. |
+| Brand | The project's Brand kit and settings. `{{project.name}}`, `{{project.logoUrl}}` (the kit's logo URL) and `{{project.url}}` (site URL) fill in automatically, and so do the company and legal-page placeholders under [Variables](#variables). The project accent (the kit's) replaces the shared template's brand colour on buttons; buttons in any other colour keep it. |
+| Values | One value per variable of the shared template (`{{footer}}`, `{{supportEmail}}`…). A blank value falls back to the shared template's default. |
 | Send key | The name your server sends it by, e.g. `welcome`. It is unique within the project. |
 
-Variables resolve in this order, last wins: master defaults, project brand,
+Variables resolve in this order, last wins: the shared template's defaults, project brand,
 the project's values, the variables in the send call.
 
 **Detach** turns a link into the project's own editable copy. The project's
 accent and values are baked into the copy, so it looks the same, and later
-master edits no longer reach it. You can't delete a master while projects
-still link it.
+edits to the shared template no longer reach it. You can't delete a shared
+template while projects still link it.
 
 ## Languages
 
@@ -44,7 +44,7 @@ Open the **Languages** tab of the editor (or `POST /v1/admin/emails/:id/translat
 with `{ "locales": ["es", "fr"] }`) to translate with AI. `{{placeholders}}`, links and
 HTML tags are kept; a string whose translation lost one stays in the original
 language. Strings you already translated or edited are kept unless `overwrite: true`.
-A linked template sends its master's translations, so translate the master.
+A linked template sends its shared template's translations, so translate the shared template.
 
 Send in a language with `locale` on the request (`"locale": "es"`) or per recipient
 (`"to": [{ "email": "ada@example.com", "locale": "es-MX" }]`); a recipient's wins.
@@ -88,12 +88,12 @@ Layers to share the left side (arrow keys work on it too; double-click resets);
 both sections fold away from their headers.
 
 - **Blocks**: *Add* inserts after the selected block, in the same section or column; with a section selected, inside it. A **section** puts blocks on one surface (a card with rounded corners and a shadow, a coloured or gradient band, a callout, or a plain padded group) and sections nest. Clicking a block inside a section selects it; the inspector moves it up and down within its section, and *In section: select it* climbs to the parent. When the card has rounded corners or something sits outside it, set the card colour to the page colour and draw the card as a section. Headings take their own size, font and letter spacing; buttons their size and shadow; an image sized only by height keeps its shape; links in text keep their colour and weight.
-- **Checks**: the top-bar badge lists what will hurt in an inbox, such as a missing subject or preheader, missing alt text, low contrast, placeholder links or images, or tags mail clients strip. For a master it also flags a hardcoded brand.
+- **Checks**: the top-bar badge lists what will hurt in an inbox, such as a missing subject or preheader, missing alt text, low contrast, placeholder links or images, or tags mail clients strip. For a shared template it also flags a hardcoded brand.
 - **Plain-text version**: under *Email settings*. Sent alongside the HTML; leave it blank and HelpBites generates one from the design (hidden preheaders and HTML comments left out).
-- **Send test**: sends the template to you (or up to five addresses) with its sample values, editable, and "[Test]" in front of the subject. A master can borrow a project's brand and sender for the test. Also on every card's menu.
-- **Share**: *view* gives anyone with the link a rendered preview; *edit* lets them change the design too, with no sign-in. Links expire (edit after 7 days, view after 30, or 1–90 days as chosen); *Renew* keeps the same link. Masters, linked masters and the mail the server sends itself (`confirm-subscription`, `changelog-confirm`, `changelog`) can only be shared view-only, since an edit would reach every project or real sign-ups. The last edit made through a link shows with its time and IP. Turning sharing off revokes the link. Links shared before expiry existed count as expired until renewed.
+- **Send test**: sends the template to you (or up to five addresses) with its sample values, editable, and "[Test]" in front of the subject. A shared template can borrow a project's brand and sender for the test. Also on every card's menu.
+- **Share**: *view* gives anyone with the link a rendered preview; *edit* lets them change the design too, with no sign-in. Links expire (edit after 7 days, view after 30, or 1–90 days as chosen); *Renew* keeps the same link. Shared templates, linked shared templates and the mail the server sends itself (`confirm-subscription`, `changelog-confirm`, `changelog`) can only be shared view-only, since an edit would reach every project or real sign-ups. The last edit made through a link shows with its time and IP. Turning sharing off revokes the link. Links shared before expiry existed count as expired until renewed.
 - **Import**: the upload menu on the template list. *Import HTML* turns an HTML file into one custom-HTML block, with its `<title>` as the subject, its hidden preview text as the preheader and its page colour kept. *Import JSON* brings back an export, showing what will be created and updated first.
-- **Export**: *Download HTML*, *Copy HTML* (the email as it goes out, brand and sample values filled in), *Export JSON* (the design, placeholders intact) and *Use via API* (copy-ready requests, plus the send key) on every card and in the editor. *Export all as JSON* on the upload menu saves every template of the project, or every master, in one file.
+- **Export**: *Download HTML*, *Copy HTML* (the email as it goes out, brand and sample values filled in), *Export JSON* (the design, placeholders intact) and *Use via API* (copy-ready requests, plus the send key) on every card and in the editor. *Export all as JSON* on the upload menu saves every template of the project, or every shared template, in one file.
 
 ## Components
 
@@ -102,9 +102,9 @@ receipt row. The *Components* tab of the email page lists them; *Add* in the
 editor inserts them.
 
 - **Fields**: write `{{@name}}` wherever an email gets its own value: `href="{{@link}}"`, `color:{{@tint}}`, `font-size:{{@size}}px`, `{{@title}}`. Each field has a label, a type (text, rich text, link, image, colour, number) and a default, and is **content** (copy, links, images) or **style** (colours, sizes). The dialog guesses the type from where the field sits, and the preview shows the component with its defaults.
-- **In an email** the inspector shows the fields, content and style apart. Values belong to that email, so restyling one instance never changes the library or other emails. A value can hold `{{variables}}` (a link with `{{userName}}`, a colour from `{{accentColor}}` that each project linking a master sets for itself), and in a linked master a colour field in the master's brand colour follows the project accent, like buttons do.
+- **In an email** the inspector shows the fields, content and style apart. Values belong to that email, so restyling one instance never changes the library or other emails. A value can hold `{{variables}}` (a link with `{{userName}}`, a colour from `{{accentColor}}` that each project linking a shared template sets for itself), and in a linked shared template a colour field in the template's brand colour follows the project accent, like buttons do.
 - **Copies**: inserting a component copies it into the email, so sending, exporting and the send API never depend on the library. Editing a component changes new insertions; an email that uses an older version shows *Update* on that component. *Detach to HTML* turns an instance into a plain custom-HTML block.
-- **Scope**: components saved on the masters page are shared with every project and master. A project's own components only show in its templates; *Use in every project* shares one. Deleting a component leaves the emails that use it as they are.
+- **Scope**: components saved on the shared templates page are shared with every project and shared template. A project's own components only show in its templates; *Use in every project* shares one. Deleting a component leaves the emails that use it as they are.
 - **Making one**: *New component* (paste HTML), *Save as component* on a custom-HTML block or a section, or ask the AI designer (*Make reusable* on a selected block).
 
 ## AI designer
@@ -116,7 +116,7 @@ It edits the document through tools, the same operations as the inspector, so ev
 - **Watching it build**: new and converted emails go in top to bottom, part by part, and each part appears in the preview as soon as it's written. With a model that streams tool calls, a part also fills in while it's being written (a draft the preview shows and never saves).
 
 - **High** uses `mimo-v2.6`: fast, good for edits and copy. **Ultra** uses `mimo-v2.6-pro`: strongest, for new designs and big rewrites. The choice is remembered on each device.
-- It knows whether it is shaping a master (brand placeholders, no hardcoded names) or one project's template (that project's name, site and accent).
+- It knows whether it is shaping a shared template (brand placeholders, no hardcoded names) or one project's template (that project's name, site and accent).
 - It sees the checks, can run them itself, and *Fix with AI* hands it the list.
 - Each turn is one undo step: *Undo changes* reverts a turn, and *Try again* reruns the last one from the design it started with. Each reply lists its edits; click one to select the block it touched. Follow-up suggestions sit under the newest reply, and long messages fold away under *Show more*.
 - A template keeps any number of chats. The newest opens with the editor; *History* (in the section header) switches between them or deletes one, and *New chat* starts another. Deleting a chat leaves the email alone.
@@ -136,11 +136,13 @@ HelpBites sends through Mailgun. The server needs `MAILGUN_API_KEY`,
 `MAILGUN_DOMAIN` and `MAILGUN_FROM_EMAIL` (and `MAILGUN_API_BASE_URL` for the
 US region); without them sends answer 503 and notifications are skipped.
 
-Each project can send as itself: project → *Dev* → *Email sending*.
+Each project can send as itself, in one form: project → *Email* → *Settings* →
+*Sender*. A switch there gives campaigns and sequences an address of their own
+(`marketing.fromName`, `fromEmail`, `mailDomain`); without it they use this one.
 
 | Setting | API field | Default |
 |---|---|---|
-| From name | `fromName` (*Reply as*) | The project name |
+| From name | `fromName` (also signs your replies in the chat) | The project name |
 | From address | `fromEmail` | `MAILGUN_FROM_EMAIL` |
 | Sending domain | `mailDomain` | `MAILGUN_DOMAIN` |
 | Reply-to | `replyTo` | none |
@@ -151,6 +153,32 @@ The sending domain must be a domain of the same Mailgun account as
 address should be on it (so SPF and DKIM line up). A send may change the from
 name and the reply-to; a different from address must stay on the project's
 domain.
+
+A strip across the top of the project's Email tabs says what is still missing:
+the mailer key on the server, a sender, Mailgun's delivery webhook (mail goes
+out without it, but the log never learns about deliveries, opens and bounces),
+and, on Campaigns, Sequences and Settings, a postal address and a sender the
+reputation guard has not paused. It shows nothing once there is nothing to say.
+`GET /v1/admin/projects/:id/email-setup` returns the same checks:
+
+```bash
+curl https://YOUR-SUPPORT-HOST/v1/admin/projects/proj_123/email-setup \
+  -H "Authorization: Bearer ak_…"
+```
+
+```json
+{ "sending": true, "bulk": false, "checks": [
+  { "key": "mailer", "state": "ok", "scope": "all", "value": "" },
+  { "key": "sender", "state": "ok", "scope": "all", "value": "hello@mail.acme.app" },
+  { "key": "webhook", "state": "warn", "scope": "all", "value": "" },
+  { "key": "postalAddress", "state": "todo", "scope": "bulk", "value": "" },
+  { "key": "paused", "state": "ok", "scope": "bulk", "value": "" }
+] }
+```
+
+`sending` says mail can go out; `bulk` that campaigns and sequences can start.
+A `state` is `ok`, `todo` (it blocks) or `warn` (it works, less well); `scope`
+`bulk` marks what only campaigns and sequences need.
 
 ### Delivery webhooks
 
@@ -171,7 +199,7 @@ off for messages that carry sign-in or reset links.
 ## API
 
 Everything is in the OpenAPI docs at `/_docs/scalar`. With the project secret
-(`sk_…`, under project → *Dev*) a call acts for its own project. With an
+(`sk_…`, under project → *Install & API*) a call acts for its own project. With an
 operator session or admin key (`ak_…`) it can act for any project by passing
 `project`, and sends are logged as that operator's.
 
@@ -259,8 +287,8 @@ curl "https://help.example.com/v1/emails/welcome?format=html&firstName=Ada" \
 ```
 
 - `format=html` returns the HTML document itself, `format=text` the plain-text part. `locale=es` renders that translation (the `locale` in the answer says which language you got; `Accept-Language` is used when it is left out). Without `format` you get `{ id, key, name, subject, locale, html, text, variables }`, where `variables` lists what you can pass and what each falls back to.
-- `GET /v1/emails` lists every template the project can use (its own and linked masters), with keys and variables.
-- With the project secret, `:key` is the send key or the template id. An operator session or admin key reads any template by id, masters included; a master renders with its sample values.
+- `GET /v1/emails` lists every template the project can use (its own and linked shared templates), with keys and variables.
+- With the project secret, `:key` is the send key or the template id. An operator session or admin key reads any template by id, shared templates included; a shared template renders with its sample values.
 
 ### Read the log
 
@@ -288,11 +316,11 @@ With an operator session or admin key:
 
 | Route | |
 |---|---|
-| `GET/POST /v1/admin/emails`, `GET/PATCH/DELETE /v1/admin/emails/:id` | Templates and masters, plus `duplicate`, `detach`, `share`, `chat` and `events` under `:id`. |
+| `GET/POST /v1/admin/emails`, `GET/PATCH/DELETE /v1/admin/emails/:id` | Templates and shared templates, plus `duplicate`, `detach`, `share`, `chat` and `events` under `:id`. |
 | `POST /v1/admin/emails/:id/translate` | Translate with AI: `{ locales: ["es"], overwrite? }`. Translations are also read and written with `PATCH`: `locale`, and `translations: { es: { subject: "…", "<blockId>#label": "…" }, fr: null }` (a language present replaces that language, `null` removes it). |
 | `POST /v1/admin/emails/:id/test` | Send a test: `{ to?, variables?, project? }`. |
 | `POST /v1/admin/emails/import` | Up to 100 templates by send key: `{ project?, mode: "create" \| "upsert", dryRun?, templates: [{ key, name?, description?, folder?, document? \| html? (+ subject, preheader, text, settings) \| master? (+ variableValues), variables? }] }`. `create` keeps existing keys; `dryRun` reports and writes nothing. |
-| `GET /v1/admin/emails/export` | Every template of `?project=` (or every master) in the import format. |
+| `GET /v1/admin/emails/export` | Every template of `?project=` (or every shared template) in the import format. |
 | `GET/POST/PATCH/DELETE /v1/admin/email-folders…` | Folders. |
 | `GET /v1/admin/email-components`, `POST`, `PATCH/DELETE /v1/admin/email-components/:id` | The component library: the shared components, plus a project's own with `?project=`. A component is `{ name, description, html, fields: [{ key, label, type, group, default }], project? }`; `project: null` shares it. |
 | `GET /v1/admin/email-logs`, `GET /v1/admin/email-logs/:id` | The log, for one project (`?project=`) or all, same filters as above. |
@@ -300,7 +328,8 @@ With an operator session or admin key:
 | `DELETE /v1/admin/email-logs` | Delete entries `before` a date or `olderThanDays`, for one project or all; up to 20,000 per call (`more: true` means call again). |
 | `GET/POST /v1/admin/email-suppressions`, `DELETE /v1/admin/email-suppressions/:id` | Suppressions of any project. |
 | `GET /v1/admin/email-settings` | Whether sending is configured, the default sender, the webhook URL and the log retention. |
-| `PATCH /v1/admin/projects/:id` | A project's sender: `fromName`, `fromEmail`, `mailDomain`, `replyTo`, `emailLogContent`. |
+| `GET /v1/admin/projects/:id/email-setup` | What the project's email still needs (above). |
+| `PATCH /v1/admin/projects/:id` | A project's sender: `fromName`, `fromEmail`, `mailDomain`, `replyTo`, `emailLogContent` (and `marketing` for the campaigns sender). |
 
 ## The log
 

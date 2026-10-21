@@ -9,6 +9,7 @@
 import { watchDebounced } from '@vueuse/core'
 import type { EmailLogEntry, EmailLogStats, EmailLogStatus } from '~~/server/utils/emailLogs'
 import type { AdminProject } from '~~/server/utils/projects'
+import EmailSetupStrip from '~/components/email/EmailSetupStrip.vue'
 import EmailTabs from '~/components/email/EmailTabs.vue'
 import { compactCount, EMAIL_SOURCE_LABELS, EMAIL_STATUS, logTime } from '~/utils/emailStatus'
 
@@ -189,9 +190,11 @@ const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).t
         <USelect v-model="status" :items="statusItems" value-key="value" size="sm" class="hidden w-36 md:flex" :aria-label="$t('emailLibrary.log.status')" />
         <USelect v-model="source" :items="sourceItems" value-key="value" size="sm" class="hidden w-32 lg:flex" :aria-label="$t('emailLibrary.log.source')" />
         <USelect v-model="template" :items="templateItems" value-key="value" size="sm" class="hidden w-44 lg:flex" :ui="{ content: 'min-w-48' }" :aria-label="$t('emailLibrary.log.template')" />
+        <UTooltip v-if="project" :text="$t('emailEditor.suppressed')"><UButton icon="i-lucide-mail-x" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('emailEditor.suppressed')" :to="{ query: { view: 'suppressions' } }" /></UTooltip>
         <UTooltip :text="$t('emailLibrary.log.refresh')"><UButton icon="i-lucide-refresh-cw" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('emailLibrary.log.refresh')" @click="refresh" /></UTooltip>
       </template>
     </PageHeader>
+    <EmailSetupStrip v-if="project" :project-id="project.id" />
 
     <div class="min-h-0 flex-1 overflow-y-auto">
       <section class="border-b border-default px-4 py-4 md:px-6" :aria-label="$t('emailLibrary.log.last30Days')">
@@ -204,7 +207,7 @@ const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).t
           </div>
         </div>
         <UAlert
-          v-if="settings && !settings.configured"
+          v-if="!project && settings && !settings.configured"
           class="mt-3"
           icon="i-lucide-mail-warning"
           color="warning"
@@ -213,7 +216,7 @@ const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).t
           :description="$t('emailLibrary.log.notConfiguredDescription')"
         />
         <UAlert
-          v-else-if="settings && !settings.webhook.configured"
+          v-else-if="!project && settings && !settings.webhook.configured"
           class="mt-3"
           icon="i-lucide-webhook"
           color="neutral"

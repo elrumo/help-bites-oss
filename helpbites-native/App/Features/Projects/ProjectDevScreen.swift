@@ -74,7 +74,7 @@ struct ProjectDevScreen: View {
       .frame(maxWidth: .infinity)
     }
     .scrollDismissesKeyboard(.interactively)
-    .projectScreen(projectId, "Dev")
+    .projectScreen(projectId, "Install & API")
     .toolbar {
       ToolbarItemGroup(placement: .primaryAction) {
         Button { workspace.go(.developer) } label: { Label("Guide", systemImage: "book") }
@@ -196,7 +196,7 @@ struct ProjectDevScreen: View {
       return seen ? (.ok, "\(origins) allowed origin\(origins == 1 ? "" : "s")") : (.warn, "Not loaded on your site yet")
     case .feedback:
       let on = project.feedback?.enabled == true
-      return (on ? .ok : .off, on ? "Board on" : "Off")
+      return (on ? .ok : .off, on ? "Feedback on" : "Off")
     case .flags:
       let flags = project.flags?.count ?? 0
       return (flags > 0 ? .ok : .off, flags > 0 ? "\(flags) flag\(flags == 1 ? "" : "s")" : "None yet")
@@ -248,10 +248,10 @@ struct ProjectDevScreen: View {
 
   private func feedbackPanel(_ project: ProjectsAdminProject) -> some View {
     VStack(alignment: .leading, spacing: 18) {
-      panelHead("A public board where users post ideas, vote and comment. \(project.feedback?.enabled == true ? "It is on." : "Turn it on from the Feedback page.")") {
+      panelHead("A public feedback page where users post ideas, vote and comment. \(project.feedback?.enabled == true ? "It is on." : "Turn it on from the Feedback page.")") {
         manage(.feedback)
       }
-      step(1, "Drop the board into any page", "Anyone can read it; pass the same token as the chat so signed-in users can post, vote and comment.", snippet: feedbackSnippet(project.publicKey))
+      step(1, "Add feedback to any page", "Anyone can read it; pass the same token as the chat so signed-in users can post, vote and comment.", snippet: feedbackSnippet(project.publicKey))
       step(2, "Or build your own UI", "Use `/v1/feedback` ([API](\(appURL)/_docs/scalar)): read with `?pk=\(project.publicKey)`, write with the identity token. Add `role: \"admin\"` to a token to let one of your staff moderate. Bring old feedback over with `POST /v1/feedback/import` and the secret.")
     }
   }
@@ -306,8 +306,8 @@ struct ProjectDevScreen: View {
         }
         .buttonStyle(.lnGhost)
       }
-      paragraph("Send one of this project's templates by its send key, your own HTML (in the body, or uploaded as an `html` file), or a plain message in the project's layout. Each recipient gets their own message and a row in the log; `GET /v1/email-logs` reads it back. The sender is set in project settings.")
-      Button("Email settings") { workspace.go(.project(projectId, .settings)) }.buttonStyle(.lnGhost).padding(.leading, -10)
+      paragraph("Send one of this project's templates by its send key, your own HTML (in the body, or uploaded as an `html` file), or a plain message in the project's layout. Each recipient gets their own message and a row in the log; `GET /v1/email-logs` reads it back. The sender is set in Email → Settings.")
+      Button("Email settings") { workspace.go(.project(projectId, .email)) }.buttonStyle(.lnGhost).padding(.leading, -10)
       CodeBlock(code: emailSnippet)
     }
   }

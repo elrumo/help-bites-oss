@@ -100,7 +100,7 @@
   function mountInline() {
     var host = typeof options.target === 'string' ? document.querySelector(options.target) : options.target
     if (!host) { console.warn('[help-bites] no element matches the feedback target ' + options.target); return }
-    frame = el('iframe', 'display:block;width:100%;height:560px;border:0;background:transparent;color-scheme:normal;transition:height .2s ease;', { src: frameSrc(), title: 'Feedback board', allow: 'clipboard-write' })
+    frame = el('iframe', 'display:block;width:100%;height:560px;border:0;background:transparent;color-scheme:normal;transition:height .2s ease;', { src: frameSrc(), title: 'Feedback', allow: 'clipboard-write' })
     host.appendChild(frame)
     open = true
   }
@@ -114,7 +114,7 @@
     launcher.onmouseleave = function () { launcher.style.transform = '' }
     launcher.onclick = function () { toggle(!open) }
 
-    frame = el('iframe', 'position:fixed;bottom:76px;' + side + 'z-index:2147483000;width:min(440px,calc(100vw - 40px));height:min(680px,calc(100vh - 100px));border:0;border-radius:14px;box-shadow:0 0 0 1px rgba(0,0,0,.06),0 16px 48px rgba(0,0,0,.18);background:transparent;display:none;opacity:0;transform:scale(.9) translateY(14px);transform-origin:bottom ' + options.position + ';transition:transform .34s ' + SPRING + ',opacity .2s ease;', { src: frameSrc(), title: 'Feedback board', allow: 'clipboard-write' })
+    frame = el('iframe', 'position:fixed;bottom:76px;' + side + 'z-index:2147483000;width:min(440px,calc(100vw - 40px));height:min(680px,calc(100vh - 100px));border:0;border-radius:14px;box-shadow:0 0 0 1px rgba(0,0,0,.06),0 16px 48px rgba(0,0,0,.18);background:transparent;display:none;opacity:0;transform:scale(.9) translateY(14px);transform-origin:bottom ' + options.position + ';transition:transform .34s ' + SPRING + ',opacity .2s ease;', { src: frameSrc(), title: 'Feedback', allow: 'clipboard-write' })
     if (still) frame.style.transition = 'none'
     document.body.appendChild(frame)
     document.body.appendChild(launcher)
