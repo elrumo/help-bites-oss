@@ -101,6 +101,8 @@ export const LIMITS = {
   pricingEventsPerIp: { limit: 600, window: 60 },
   // Each suggestion reads up to three repos and makes one long model call.
   pricingAiPerAgent: { limit: 6, window: 60 },
+  // Each draft reads up to three repos and makes one long model call.
+  blogAiPerAgent: { limit: 6, window: 60 },
   brandReadsPerIp: { limit: 600, window: 60 },
   // The hub page, its JSON twin and the loader: helpbites.js reads the loader on every page view of a site.
   hubReadsPerIp: { limit: 1200, window: 60 },

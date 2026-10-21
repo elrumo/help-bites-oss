@@ -49,6 +49,7 @@
 		2827718F6057616D2ABEDF5B /* AssistantsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4399D8D3565E838D22F753CC /* AssistantsScreen.swift */; };
 		2911B6390733C75BD7A233DB /* PlatformCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF87469FAE0800C32242EBBB /* PlatformCompat.swift */; };
 		2B423285C34BFEE3AC6F7B84 /* ChangelogSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3355C6487BA31EDD842C76AB /* ChangelogSheets.swift */; };
+		2D5ED03AA24BD179C4BC7765 /* BlogAi.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14C75C869EEB0060C212DB3B /* BlogAi.swift */; };
 		2D70EA12A7AABCFF6D83E124 /* ProjectSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 914029ADB1B3705EC808570B /* ProjectSettingsScreen.swift */; };
 		2EA93723ED49101C990BBF57 /* OnboardingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D00C4CB1FC0123527793FBE /* OnboardingModels.swift */; };
 		2FBE9E1F91BCCBD0C01B1758 /* EmailStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8862529C877EF137DE9E84 /* EmailStatus.swift */; };
@@ -195,6 +196,7 @@
 		0F13F42091095DA123C48694 /* ContactsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactsScreen.swift; sourceTree = "<group>"; };
 		0F2DF44EE451F96493D8BF78 /* RevenueScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueScreen.swift; sourceTree = "<group>"; };
 		0F905E50C72366A6B9C549B3 /* ConnectionsGithub.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionsGithub.swift; sourceTree = "<group>"; };
+		14C75C869EEB0060C212DB3B /* BlogAi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlogAi.swift; sourceTree = "<group>"; };
 		19D1594D7BD0E5AB18C737A2 /* NewWorkspaceSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewWorkspaceSheet.swift; sourceTree = "<group>"; };
 		1C220ADDA19CCE281A9EE36B /* LegalWizardSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalWizardSheet.swift; sourceTree = "<group>"; };
 		2013823A91A8691A6FA6E992 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
@@ -423,6 +425,7 @@
 		26157AC95E718E320752660E /* Blog */ = {
 			isa = PBXGroup;
 			children = (
+				14C75C869EEB0060C212DB3B /* BlogAi.swift */,
 				7119627BEEC60A69B83402E5 /* BlogModels.swift */,
 				EC469116222264ACFB654B92 /* BlogPostEditor.swift */,
 				8BFD412BBA29C501D225EF19 /* BlogScreen.swift */,
@@ -853,6 +856,7 @@
 				B9D55CD86EE83CAC23EAA59D /* AssistantModels.swift in Sources */,
 				2827718F6057616D2ABEDF5B /* AssistantsScreen.swift in Sources */,
 				119B51204F3B252E01242478 /* AuthView.swift in Sources */,
+				2D5ED03AA24BD179C4BC7765 /* BlogAi.swift in Sources */,
 				1D246F02996C616ED1FB9E26 /* BlogModels.swift in Sources */,
 				5F778D92BF3BD949D990CAFA /* BlogPostEditor.swift in Sources */,
 				2116E4885BBA056DE66B19BA /* BlogScreen.swift in Sources */,

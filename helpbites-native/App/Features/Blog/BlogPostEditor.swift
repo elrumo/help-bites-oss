@@ -133,6 +133,7 @@ struct BlogPostEditor: View {
   @State private var confirmDelete = false
   @State private var confirmClose = false
   @State private var newsletter = false
+  @State private var aiOpen = false
   @State private var error = ""
   @Environment(\.dismiss) private var dismiss
   @Environment(\.openURL) private var openURL
@@ -199,6 +200,9 @@ struct BlogPostEditor: View {
       } message: {
         Text("Its comments and reactions go with it. A newsletter it went out as stays under Email → Campaigns.")
       }
+      .sheet(isPresented: $aiOpen) {
+        BlogAiSheet(projectId: store.projectId, title: draft.title, bodyText: draft.body) { mode, result in applyAi(mode, result) }
+      }
       .sheet(isPresented: $newsletter) {
         if let current { BlogNewsletterSheet(store: store, post: current) }
       }
@@ -238,6 +242,9 @@ struct BlogPostEditor: View {
       HStack {
         Text("Text").font(.lnMetaMedium).foregroundStyle(Theme.textToned)
         Spacer(minLength: 0)
+        if !isHTML {
+          Button { aiOpen = true } label: { Label("Write with AI", systemImage: "sparkles") }.buttonStyle(.lnGhost)
+        }
         PhotosPicker(selection: $bodyPhoto, matching: .images, preferredItemEncoding: .compatible) {
           if uploading == "body" { ProgressView().controlSize(.small) } else { Label("Image", systemImage: "photo.badge.plus") }
         }
@@ -528,6 +535,17 @@ struct BlogPostEditor: View {
   }
 
   /// The HTML body as a page the preview can draw at the device's width.
+  /// The proposal goes into the draft: the text replaces or follows what is there, the rest fills what it offers.
+  private func applyAi(_ mode: BlogAiMode, _ result: BlogAiResult) {
+    if mode == .continue { draft.body = draft.body.trimmingCharacters(in: .whitespacesAndNewlines) + "\n\n" + result.body }
+    else if !result.body.isEmpty { draft.body = result.body }
+    guard mode == .write || mode == .meta else { return }
+    if !result.title.isEmpty, mode == .write || !hasTitle { draft.title = result.title }
+    if !result.excerpt.isEmpty { draft.excerpt = result.excerpt }
+    if !result.metaDescription.isEmpty { draft.metaDescription = result.metaDescription }
+    if !result.tags.isEmpty { draft.tags = result.tags.joined(separator: ", ") }
+  }
+
   private func htmlPreview(_ body: String) -> String {
     "<!doctype html><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><style>:root{color-scheme:light dark}body{font:-apple-system-body;font-family:-apple-system,system-ui,sans-serif;margin:12px;line-height:1.5}img,video,iframe{max-width:100%;height:auto}pre{overflow-x:auto}</style>\(body)"
   }
