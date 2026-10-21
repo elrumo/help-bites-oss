@@ -2,6 +2,7 @@ import { createError, getQuery, getRouterParam, type H3Event } from 'h3'
 import { aiTldr, applySectionEdits, checkCoverage, composeDocument, humanTldr, mergeRecomposed, newSectionId, sectionsToMarkdown, type SectionEdit } from '#shared/legal/compose'
 import { normalizeLegalConfig, validateLegalConfig, withEntityDefaults } from '#shared/legal/config'
 import { LEGAL_IMPORT_FORMATS, parseImported, type LegalImportFormat } from '#shared/legal/import'
+import { normalizeLocale } from '#shared/locales'
 import { LEGAL_DOC_TYPES, type LegalAnswers, type LegalDocType, type LegalSection, type LegalTldr } from '#shared/legal/types'
 import { validateAnswers } from '#shared/legal/wizard'
 import { answeredRegions } from '#shared/legal/when'
@@ -98,6 +99,8 @@ export function serializeLegalDocument(project: ParseObject, row: ParseObject) {
     type: typeOf(row),
     slug: String(row.get('slug') || ''),
     locale: String(row.get('locale') || 'en'),
+    /** The document this one translates (null for an original). Documents sharing one are the same text in different languages. */
+    translationOf: String(row.get('translationOf') || '') || null,
     title: String(row.get('title') || ''),
     status: row.get('status') === 'published' ? 'published' : 'draft',
     sections: sectionsOf(row),
@@ -112,8 +115,19 @@ export function serializeLegalDocument(project: ParseObject, row: ParseObject) {
   }
 }
 
-/** What a reader may see: published text only, no wizard answers, no provenance. */
-export function toPublicLegalDocument(project: ParseObject, row: ParseObject) {
+/** The id every language of one document shares: the original's. */
+export const legalGroupOf = (row: ParseObject): string => String(row.get('translationOf') || row.id || '')
+
+/** The published documents that are `row` in another language, by language. */
+export function publicLegalTranslations(project: ParseObject, row: ParseObject, published: ParseObject[]) {
+  return published
+    .filter(other => other.id !== row.id && legalGroupOf(other) === legalGroupOf(row))
+    .map(other => ({ locale: String(other.get('locale') || 'en'), title: String(other.get('title') || ''), path: legalPath(project, other) }))
+    .sort((a, b) => a.locale.localeCompare(b.locale))
+}
+
+/** What a reader may see: published text only, no wizard answers, no provenance. `published` adds the other languages. */
+export function toPublicLegalDocument(project: ParseObject, row: ParseObject, published?: ParseObject[]) {
   const sections = sectionsOf(row)
   return {
     type: typeOf(row),
@@ -127,7 +141,8 @@ export function toPublicLegalDocument(project: ParseObject, row: ParseObject) {
     sections: sections.map(s => ({ heading: s.heading, body: s.body })),
     markdown: sectionsToMarkdown(sections),
     html: String(row.get('bodyHtml') || renderLegalHtml(sections)),
-    url: legalPath(project, row)
+    url: legalPath(project, row),
+    ...(published ? { translations: publicLegalTranslations(project, row, published) } : {})
   }
 }
 
@@ -181,6 +196,22 @@ function readDate(value: unknown): Date | null {
 }
 
 /** Applies the fields of a PATCH body; only the keys present change. */
+/** A language tag, "en" when empty; 400 when it is not one. */
+function readLocale(value: unknown): string {
+  if (value === undefined || value === null || value === '') return 'en'
+  return normalizeLocale(value) || badRequest('locale must be a language tag such as "en" or "pt-BR"')
+}
+
+/** The id of another document of this project that this one translates, or '' to unlink. */
+async function readTranslationOf(project: ParseObject, row: ParseObject, value: unknown): Promise<string> {
+  if (value === null || value === '') return ''
+  if (typeof value !== 'string') badRequest('translationOf must be a document id or null')
+  const original = value === row.id ? null : await getLegalDocument(value).catch(() => null)
+  if (!original || pointerId(original.get('project')) !== project.id) badRequest('translationOf must be another document of this project')
+  // Always the root, so a chain of translations stays one group.
+  return legalGroupOf(original)
+}
+
 export async function applyLegalInput(project: ParseObject, row: ParseObject, body: Record<string, unknown>): Promise<void> {
   if (typeof body.title === 'string') {
     const title = body.title.trim().slice(0, TITLE_MAX)
@@ -190,7 +221,8 @@ export async function applyLegalInput(project: ParseObject, row: ParseObject, bo
   if (typeof body.slug === 'string') {
     row.set('slug', await nextChangelogSlug(body.slug, slug => slugTaken(project, slug, row.id)))
   }
-  if (typeof body.locale === 'string') row.set('locale', body.locale.trim().slice(0, 12) || 'en')
+  if (typeof body.locale === 'string') row.set('locale', readLocale(body.locale))
+  if ('translationOf' in body) row.set('translationOf', await readTranslationOf(project, row, body.translationOf))
   if ('effectiveDate' in body) row.set('effectiveDate', readDate(body.effectiveDate))
   if ('tldr' in body) {
     // A person writing the summary always wins; clearing it removes it.
@@ -217,7 +249,7 @@ export async function createLegalDocument(project: ParseObject, input: CreateLeg
   row.set('type', input.type)
   row.set('status', 'draft')
   row.set('version', 0)
-  row.set('locale', (input.locale || 'en').slice(0, 12))
+  row.set('locale', readLocale(input.locale))
 
   let sections: LegalSection[] = []
   let title = ''

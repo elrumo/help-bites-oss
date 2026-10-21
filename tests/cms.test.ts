@@ -71,6 +71,15 @@ describe('content', () => {
     expect(findBlock(removeBlock(root, lib, hero!._uid).content, hero!._uid, lib)).toBeNull()
   })
 
+  test('tree operations take the editor\'s reactive proxies', () => {
+    const lib = libraryOf()
+    const root = normalizeContent({ component: 'page', body: [newBlock(lib.get('hero')!)] }, lib, 'page').content
+    const hero = (root.body as CmsBlock[])[0]!
+    const proxied = new Proxy(root, {})
+    expect(addBlock(proxied, lib, root._uid, 'body', newBlock(lib.get('cta')!)).ok).toBe(true)
+    expect(duplicateBlock(proxied, lib, hero._uid).ok).toBe(true)
+  })
+
   test('a new feature grid comes with example cards', () => {
     const grid = newBlock(libraryOf().get('features')!)
     expect((grid.items as CmsBlock[]).length).toBe(3)

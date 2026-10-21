@@ -11,15 +11,6 @@
       "port": 3100
     },
     {
-      "name": "dev-local-3102",
-      "runtimeExecutable": "sh",
-      "runtimeArgs": [
-        "-c",
-        "PARSE_URL=http://localhost:1337/parse MEILI_URL= bunx nuxt dev --port 3102"
-      ],
-      "port": 3102
-    },
-    {
       "name": "attach-3100",
       "url": "http://localhost:3100"
     }

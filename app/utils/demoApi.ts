@@ -16,7 +16,7 @@ import type { EmailLogEntry, EmailLogStatus, EmailSuppression } from '~~/server/
 import type { AdminProject } from '~~/server/utils/projects'
 import type { ProjectOverview } from '~~/server/utils/overview'
 import { OVERVIEW_UNREAD_LIMIT, revenueChange, type WorkspaceOverview, type WorkspaceRevenue } from '#shared/overview'
-import { REVENUE_RANGES, type RevenueRange } from '#shared/stripe'
+import { REVENUE_RANGES, STRIPE_ATTR, type RevenueRange, type RevenueReport, type StripeConnection, type StripePaymentDto } from '#shared/stripe'
 
 // The landing page's demo: the real panel, answered from memory instead of the
 // API. Nothing leaves the tab and a reload starts over from these fixtures.
@@ -112,9 +112,12 @@ const demoCampaigns = [{
 function asContact(u: EndUser) {
   const n = Number(u.id.replace(/\D/g, '')) || 0
   const extra = contactExtras[u.id] || {}
+  // What a Stripe sync writes on a paying customer's contact.
+  const paid = DEMO_REVENUE[u.projectId]?.customers.find(([email]) => email === u.email)
+  const stripe = paid ? { [STRIPE_ATTR.customer]: customerId(paid[0]), [STRIPE_ATTR.revenue]: paid[1], [STRIPE_ATTR.payments]: paid[2], [STRIPE_ATTR.status]: 'active' } : {}
   return {
     id: u.id, externalId: u.externalId, email: u.email, name: u.name, username: '', avatarUrl: '',
-    attributes: { plan: DEMO_PLANS[n % 3]!, seats: (n % 5) + 1 }, tags: extra.tags || (n % 2 ? ['beta'] : []),
+    attributes: { plan: DEMO_PLANS[n % 3]!, seats: (n % 5) + 1, ...stripe }, tags: extra.tags || (n % 2 ? ['beta'] : []),
     subscription: extra.subscription || (n % 3 === 0 ? 'none' : 'subscribed'), unsubscribedTopics: [],
     consent: n % 3 === 0 ? null : { source: 'form', at: ago(60 * 24 * 20) }, sources: [], feedbackEmails: true,
     lastSeenAt: ago(n * 37), createdAt: ago(60 * 24 * 30 + n), updatedAt: ago(n)
@@ -264,29 +267,90 @@ const find = <T extends { id: string }>(list: T[], id: string | undefined, what:
 const typeOf = (c: Conversation) => types[c.projectId]?.find(t => t.key === c.type) || supportType(c.projectId)
 const userOf = (c: Conversation) => endUsers.find(u => u.id === c.endUserId)!
 
-// The overview's revenue: net by month for the last 12 months, oldest first, in dollars.
-const DEMO_REVENUE: Record<string, { months: number[], mrr: number, subscribers: number }> = {
-  acme: { months: [1840, 2010, 2150, 2380, 2290, 2620, 2870, 3010, 3260, 3490, 3720, 3980], mrr: 3980, subscribers: 211 },
-  fieldnotes: { months: [310, 340, 395, 420, 480, 455, 530, 610, 640, 705, 760, 820], mrr: 790, subscribers: 96 }
+// Stripe, for the overview and the Revenue tab: net and MRR (at each month end) for the last
+// 12 months, oldest first, in dollars; today's paying plans (name, subscribers, MRR), top
+// customers (email, net, payments) and latest charges.
+const customerId = (email: string) => email ? `cus_${slug(email)}` : ''
+const charge = (email: string, dollars: number, minutes: number, description: string, extra: Partial<StripePaymentDto> = {}): StripePaymentDto => ({
+  id: newId('ch'), customerId: customerId(email), email, amount: dollars * 100, refunded: 0, currency: 'usd', status: 'succeeded', description, receiptUrl: '', paidAt: ago(minutes), ...extra
+})
+const DEMO_REVENUE: Record<string, { months: number[], mrrs: number[], subscribers: number, plans: [string, number, number][], customers: [string, number, number][], recent: StripePaymentDto[] }> = {
+  acme: {
+    months: [1840, 2010, 2150, 2380, 2290, 2620, 2870, 3010, 3260, 3490, 3720, 3980],
+    mrrs: [1720, 1890, 2040, 2210, 2260, 2480, 2700, 2890, 3120, 3370, 3640, 3980],
+    subscribers: 211,
+    plans: [['Pro', 151, 2114], ['Team', 30, 1470], ['Pro (yearly)', 30, 396]],
+    customers: [['priya@example.com', 1176, 24], ['maya@example.com', 588, 12], ['lucas@example.com', 343, 7], ['jonas@example.com', 168, 12]],
+    recent: [
+      charge('maya@example.com', 49, 60 * 3, 'Team · monthly'),
+      charge('lucas@example.com', 49, 60 * 9, 'Team · monthly'),
+      charge('jonas@example.com', 14, 60 * 26, 'Pro · monthly', { status: 'failed' }),
+      charge('priya@example.com', 49, 60 * 30, 'Team · monthly'),
+      charge('sam.k@example.com', 156, 60 * 52, 'Pro · yearly', { refunded: 15600 })
+    ]
+  },
+  fieldnotes: {
+    months: [310, 340, 395, 420, 480, 455, 530, 610, 640, 705, 760, 820],
+    mrrs: [280, 310, 350, 390, 430, 445, 490, 560, 600, 660, 720, 790],
+    subscribers: 96,
+    plans: [['Plus', 58, 464], ['Plus (yearly)', 38, 326]],
+    customers: [['ana@example.com', 206, 2], ['tom@example.com', 96, 12]],
+    recent: [
+      charge('ana@example.com', 103, 60 * 2, 'Plus · yearly'),
+      charge('tom@example.com', 8, 60 * 14, 'Plus · monthly'),
+      charge('', 8, 60 * 40, 'Plus · monthly')
+    ]
+  }
 }
+const sum = (values: number[]) => values.reduce((total, n) => total + n, 0)
+const MONTHS = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(new Date(start).getUTCFullYear(), new Date(start).getUTCMonth() - 11 + i, 1)).toISOString().slice(0, 7))
+const stripeSyncedAt: Record<string, string> = {}
+
 function demoRevenue(range: RevenueRange): WorkspaceRevenue {
-  const sum = (values: number[]) => values.reduce((total, n) => total + n, 0)
   // A month stands in for 30 days; all time is the year and a bit before it.
   const span = { '30d': 1, '90d': 3, '12m': 12, all: 0 }[range]
   const rows = projects.filter(p => DEMO_REVENUE[p.id]).map((p) => {
     const r = DEMO_REVENUE[p.id]!
     const net = span ? sum(r.months.slice(-span)) : Math.round(sum(r.months) * 1.6)
     const previousNet = !span ? null : span < 12 ? sum(r.months.slice(-2 * span, -span)) : Math.round(net * 0.62)
-    return { projectId: p.id, currency: 'usd', net, previousNet, change: revenueChange(net, previousNet), mrr: r.mrr, subscribers: r.subscribers, payments: Math.round(net / 19) }
+    return { projectId: p.id, currency: 'usd', net, previousNet, change: revenueChange(net, previousNet), mrr: r.mrrs.at(-1)!, subscribers: r.subscribers, payments: Math.round(net / 19) }
   })
-  const now = new Date(start)
-  const months = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11 + i, 1)).toISOString().slice(0, 7))
   const net = sum(rows.map(r => r.net))
   const previousNet = span ? sum(rows.map(r => r.previousNet || 0)) : null
   return {
     range, connected: rows.length,
-    totals: [{ currency: 'usd', net, previousNet, change: revenueChange(net, previousNet), mrr: sum(rows.map(r => r.mrr)), subscribers: sum(rows.map(r => r.subscribers)), months: months.map((month, i) => ({ month, net: sum(rows.map(r => DEMO_REVENUE[r.projectId]!.months[i]!)) })) }],
+    totals: [{ currency: 'usd', net, previousNet, change: revenueChange(net, previousNet), mrr: sum(rows.map(r => r.mrr)), subscribers: sum(rows.map(r => r.subscribers)), months: MONTHS.map((month, i) => ({ month, net: sum(rows.map(r => DEMO_REVENUE[r.projectId]!.months[i]!)) })) }],
     projects: rows.sort((a, b) => b.net - a.net)
+  }
+}
+
+function demoStripe(projectId: string): StripeConnection {
+  const r = DEMO_REVENUE[projectId]
+  if (!r) return { connected: false, accountName: '', currency: '', livemode: false, status: 'idle', lastRunAt: null, lastError: '', stats: { payments: 0, subscriptions: 0, contacts: 0 } }
+  return {
+    connected: true, accountName: projects.find(p => p.id === projectId)?.name || 'Stripe', currency: 'usd', livemode: true, status: 'idle',
+    lastRunAt: (stripeSyncedAt[projectId] ||= ago(42)), lastError: '', stats: { payments: Math.round((sum(r.months) * 1.6) / 19), subscriptions: r.subscribers + 64, contacts: r.subscribers }
+  }
+}
+
+// The same numbers as the overview, for one project.
+function demoRevenueReport(projectId: string, range: RevenueRange): RevenueReport {
+  const r = DEMO_REVENUE[projectId] || fail(404, 'Stripe is not connected.')
+  const row = demoRevenue(range).projects.find(p => p.projectId === projectId)!
+  const refunds = Math.round(row.net * 0.015)
+  const mrr = r.mrrs.at(-1)!
+  return {
+    currency: 'usd', range, net: row.net, gross: row.net + refunds, refunds, payments: row.payments,
+    customers: Math.min(row.payments, Math.round(r.subscribers * 1.1)),
+    allTimeNet: demoRevenue('all').projects.find(p => p.projectId === projectId)!.net,
+    mrr, arr: mrr * 12,
+    subscribers: { active: r.subscribers - 3, trialing: 9, pastDue: 3 },
+    newSubscribers: Math.round(row.payments / 6), churned: Math.round(row.payments / 20),
+    months: MONTHS.map((month, i) => ({ month, net: r.months[i]!, payments: Math.round(r.months[i]! / 19), mrr: r.mrrs[i]! })),
+    plans: r.plans.map(([plan, subscribers, planMrr]) => ({ plan, subscribers, mrr: planMrr })),
+    topCustomers: r.customers.map(([email, net, payments]) => ({ customerId: customerId(email), email, net, payments })),
+    recent: r.recent,
+    otherCurrencies: []
   }
 }
 const serializeUser = ({ projectId: _, ...user }: EndUser) => user
@@ -463,6 +527,12 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
       unread: waiting.slice(0, OVERVIEW_UNREAD_LIMIT).map(c => ({ conversationId: c.id, projectId: c.projectId, name: userOf(c).name, email: userOf(c).email, subject: c.subject, preview: c.lastMessagePreview, unread: c.unreadByAgent, at: String(c.lastMessageAt || c.createdAt) })),
       revenue: demoRevenue(REVENUE_RANGES.find(r => r.value === query.range)?.value || '30d')
     }
+  }],
+  ['GET', /^\/admin\/stripe$/, ({ query }) => ({ connection: demoStripe(query.project || '') })],
+  ['GET', /^\/admin\/stripe\/report$/, ({ query }) => ({ report: demoRevenueReport(query.project || '', REVENUE_RANGES.find(r => r.value === query.range)?.value || '30d') })],
+  ['POST', /^\/admin\/stripe\/sync$/, ({ body }) => {
+    if (DEMO_REVENUE[body.project]) stripeSyncedAt[body.project] = now()
+    return { connection: demoStripe(body.project) }
   }],
   ['GET', /^\/admin\/projects\/([^/]+)\/secret$/, ({ params }) => ({ secret: (secrets[params[0]!] ||= `sk_demo_${newId('secret')}`) })],
   ['POST', /^\/admin\/projects\/([^/]+)\/rotate-secret$/, ({ params }) => ({ secret: (secrets[params[0]!] = `sk_demo_${newId('secret')}`) })],

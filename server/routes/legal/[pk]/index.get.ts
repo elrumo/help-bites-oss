@@ -9,5 +9,5 @@ export default defineEventHandler(async (event) => {
   }
   setResponseHeader(event, 'Cache-Control', 'public, max-age=60')
   const docs = (await listLegalDocuments(project, true)).map(row => toPublicLegalDocument(project, row))
-  return renderLegalIndex(project, docs.map(d => ({ title: d.title, path: d.url, effectiveDate: d.effectiveDate })), await poweredByFor(project))
+  return renderLegalIndex(project, docs.map(d => ({ title: d.title, path: d.url, effectiveDate: d.effectiveDate, locale: d.locale })), await poweredByFor(project))
 })

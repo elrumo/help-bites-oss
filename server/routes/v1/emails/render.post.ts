@@ -30,6 +30,7 @@ export default defineEventHandler(async (event) => {
   }
   return {
     subject: composed.subject,
+    locale: composed.locale,
     html: composed.html,
     text: composed.text,
     from: formatMailbox(sender.fromName, sender.fromEmail),

@@ -978,6 +978,8 @@ const SCHEMAS = {
       // The URL key: unique within the project (checked on write, Parse can't index that).
       slug: { type: 'String' },
       locale: { type: 'String' },
+      // The id of the document this one translates; documents sharing it are one text in several languages.
+      translationOf: { type: 'String' },
       title: { type: 'String' },
       // draft | published
       status: { type: 'String' },
@@ -1012,7 +1014,7 @@ const SCHEMAS = {
   },
   // An onboarding flow an app shows new users, read at /v1/onboarding/<publicKey>/<key>.
   // `steps`, `style` and `options` are the working copy; `published` is the copy apps get
-  // ({ name, steps, style, options }), frozen at each publish, and `version` counts publishes.
+  // ({ name, steps, style, options, locale, translations }), frozen at each publish, and `version` counts publishes.
   OnboardingFlow: {
     fields: {
       project: { type: 'Pointer', targetClass: 'Project' },
@@ -1024,6 +1026,10 @@ const SCHEMAS = {
       steps: { type: 'Array' },
       style: { type: 'Object' },
       options: { type: 'Object' },
+      // The language the steps are written in (default en), and their translations:
+      // { <locale>: { name, steps: { <stepId>: { title, body, imageAlt, buttonLabel } } } }.
+      locale: { type: 'String' },
+      translations: { type: 'Object' },
       published: { type: 'Object' },
       publishedAt: { type: 'Date' },
       version: { type: 'Number' }
@@ -1242,6 +1248,10 @@ const SCHEMAS = {
       variables: { type: 'Array' },
       // [{ key, value }]: variable keys may contain dots, which Parse refuses as object keys.
       values: { type: 'Array' },
+      // The language the design is written in (default en), and its translations:
+      // { <locale>: [{ key, value }] } (keys are in shared/email/translate.ts).
+      locale: { type: 'String' },
+      translations: { type: 'Object' },
       shareToken: { type: 'String' },
       shareMode: { type: 'String' },
       // A share link without one (shared before links expired) counts as expired.

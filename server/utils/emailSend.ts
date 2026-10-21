@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { createError, getHeader, getQuery, readBody, readMultipartFormData, type H3Event } from 'h3'
+import { normalizeLocale } from '#shared/locales'
 import type { EmailDocument } from '#shared/email/blocks'
 import { can, type Action } from '#shared/roles'
 import { normalizeDocument } from '#shared/email/ops'
@@ -40,7 +41,8 @@ export const EMAIL_SEND_LIMITS = {
   variableLength: 100_000
 } as const
 
-export type SendRecipient = EmailRecipient & { variables: Record<string, string> }
+/** `locale` picks the template's translation for this recipient; it wins over the request's. */
+export type SendRecipient = EmailRecipient & { variables: Record<string, string>, locale?: string }
 
 export type EmailContent =
   | { type: 'template', ref: string }
@@ -55,6 +57,8 @@ export type EmailSendRequest = {
   bcc: string[]
   subject: string
   text: string
+  /** The language to send in when a template has a translation for it. */
+  locale?: string
   variables: Record<string, string>
   from: { name?: string, email?: string }
   replyTo: string
@@ -96,6 +100,14 @@ function asList(value: unknown): unknown[] {
  * `to` as one address, a list, or objects `{ email, name?, variables? }` for
  * per-recipient values. Duplicates (by address, any case) are sent once.
  */
+/** `{ locale }` for a language tag, nothing when it is left out; 400 for something that is not one. */
+function readLocale(value: unknown, label: string): { locale?: string } {
+  if (value === undefined || value === null || value === '') return {}
+  const locale = normalizeLocale(value)
+  if (!locale) bad(`${label} must be a language tag such as "en" or "pt-BR"`)
+  return { locale }
+}
+
 export function parseEmailRecipients(value: unknown, max: number = EMAIL_SEND_LIMITS.recipients): SendRecipient[] {
   const out: SendRecipient[] = []
   const seen = new Set<string>()
@@ -105,7 +117,7 @@ export function parseEmailRecipients(value: unknown, max: number = EMAIL_SEND_LI
       const obj = entry as Record<string, unknown>
       const box = parseMailbox(obj.email)
       if (!box) bad(`"${String(obj.email ?? '').slice(0, 100)}" is not an email address`)
-      recipient = { email: box.email, name: String(obj.name ?? box.name ?? '').trim().slice(0, 120), variables: cleanVariableValues(obj.variables, EMAIL_SEND_LIMITS.variableLength) }
+      recipient = { email: box.email, name: String(obj.name ?? box.name ?? '').trim().slice(0, 120), variables: cleanVariableValues(obj.variables, EMAIL_SEND_LIMITS.variableLength), ...readLocale(obj.locale, `"locale" of ${box.email}`) }
     } else {
       const box = parseMailbox(entry)
       if (!box) bad(`"${String(entry ?? '').slice(0, 100)}" is not an email address`)
@@ -337,6 +349,7 @@ export function parseEmailSendRequest(body: Record<string, unknown>, files: Mail
     bcc: parseAddressList(body.bcc, 'bcc'),
     subject: String(body.subject ?? '').replace(/[\r\n]+/g, ' ').trim().slice(0, 300),
     text: typeof body.text === 'string' ? body.text : '',
+    ...readLocale(body.locale, '"locale"'),
     variables: cleanVariableValues(body.variables, EMAIL_SEND_LIMITS.variableLength),
     from: parseFrom(body),
     replyTo: replyToBox ? formatMailbox(replyToBox.name, replyToBox.email) : '',
@@ -412,7 +425,7 @@ function wrapHtml(html: string, subject: string): string {
   return `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${escapeHtmlValue(subject)}</title>\n</head>\n<body style="margin:0;padding:0;">\n${body}\n</body>\n</html>`
 }
 
-export type ComposedEmail = { subject: string, html: string, text: string, headers: Record<string, string>, variables: Record<string, string>, kind: EmailKind, template: { row: ParseObject, key: string, name: string } | null }
+export type ComposedEmail = { subject: string, locale: string | null, html: string, text: string, headers: Record<string, string>, variables: Record<string, string>, kind: EmailKind, template: { row: ParseObject, key: string, name: string } | null }
 
 /** One recipient's message, exactly as it will be sent. `poweredBy` (poweredByFor) adds the "Powered by HelpBites" line. */
 export function composeEmail(project: ParseObject, content: ResolvedContent, request: EmailSendRequest, recipient: SendRecipient, sender: EmailSender, poweredBy: PoweredBy | null = null): ComposedEmail {
@@ -425,10 +438,12 @@ export function composeEmail(project: ParseObject, content: ResolvedContent, req
   let subject: string
   let html: string
   let text: string
+  let locale: string | null = null
   let template: ComposedEmail['template'] = null
 
   if (content.type === 'template') {
-    const rendered = renderEmailTemplate(content.row, project, values)
+    const rendered = renderEmailTemplate(content.row, project, values, [recipient.locale, request.locale])
+    locale = rendered.locale
     const t = serializeEmailTemplate(content.row)
     template = { row: content.row, key: t.key, name: t.master?.name || t.name }
     subject = subjectOverride || rendered.subject
@@ -469,7 +484,7 @@ export function composeEmail(project: ParseObject, content: ResolvedContent, req
   subject = subject.replace(/[\r\n]+/g, ' ').trim()
   if (!subject) bad(content.type === 'html' ? 'Pass a "subject" (or give the HTML a <title>)' : 'This email has no subject: set one on the template or pass "subject"')
   const kind: EmailKind = content.type
-  return { subject, html, text, headers, variables: values, kind, template }
+  return { subject, locale, html, text, headers, variables: values, kind, template }
 }
 
 /** Every recipient's message for a send request. */

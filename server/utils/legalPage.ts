@@ -1,4 +1,6 @@
 import { LEGAL_FONTS, normalizeLegalConfig, type LegalFont } from '#shared/legal/config'
+import { fillLabel, legalLabels } from '#shared/legal/labels'
+import { localeName, normalizeLocale } from '#shared/locales'
 import { poweredByHtml, type PoweredBy } from './branding'
 import { legalToc } from './legalRender'
 import { escapeHtml } from './messageEmail'
@@ -15,7 +17,9 @@ const FONT_STACKS: Record<LegalFont, string> = {
   mono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
 }
 
-type Doc = { type: string, slug: string, title: string, tldr: string, effectiveDate: string | null, version: number, html: string, sections: LegalSection[] }
+/** The same document in another language, published: where it lives. */
+export type LegalTranslationLink = { locale: string, title: string, path: string }
+type Doc = { type: string, slug: string, title: string, tldr: string, effectiveDate: string | null, version: number, html: string, sections: LegalSection[], locale?: string, translations?: LegalTranslationLink[], /** This page's own path, and the site's origin: both needed for hreflang links. */ path?: string, origin?: string }
 
 function look(project: ParseObject) {
   const config = normalizeLegalConfig(project.get('legal'))
@@ -30,10 +34,15 @@ function look(project: ParseObject) {
   }
 }
 
-function formatDate(value: string | null): string {
+function formatDate(value: string | null, locale = 'en'): string {
   if (!value) return ''
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('en', { dateStyle: 'long', timeZone: 'UTC' }).format(date)
+  if (Number.isNaN(date.getTime())) return ''
+  try {
+    return new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(date)
+  } catch {
+    return new Intl.DateTimeFormat('en', { dateStyle: 'long', timeZone: 'UTC' }).format(date)
+  }
 }
 
 const CSS = `
@@ -76,11 +85,11 @@ footer.legal-foot { margin-top: 28px; text-align: center; color: var(--muted); f
 @media print { body { background: #fff; color: #000; } article { border: 0; padding: 0; } details.toc, .top a[href]::after { display: none; } a { color: inherit; } }
 `
 
-function shell(project: ParseObject, title: string, description: string, body: string, poweredBy: PoweredBy | null): string {
+function shell(project: ParseObject, title: string, description: string, body: string, poweredBy: PoweredBy | null, page: { lang?: string, head?: string } = {}): string {
   const l = look(project)
   const logo = l.logo ? `<img src="${escapeHtml(l.logo)}" alt="" width="36" height="36">` : ''
   return `<!doctype html>
-<html lang="en">
+<html lang="${escapeHtml(normalizeLocale(page.lang) || 'en')}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -88,6 +97,7 @@ function shell(project: ParseObject, title: string, description: string, body: s
 ${description ? `<meta name="description" content="${escapeHtml(description)}">` : ''}
 <meta property="og:title" content="${escapeHtml(title)} · ${escapeHtml(l.name)}">
 <meta name="robots" content="index,follow">
+${page.head || ''}
 <style>:root { --brand: ${l.accent}; --font: ${l.font}; }${CSS}</style>
 </head>
 <body>
@@ -101,19 +111,31 @@ ${body}
 }
 
 export function renderLegalPage(project: ParseObject, doc: Doc, others: { title: string, path: string }[], poweredBy: PoweredBy | null): string {
-  const date = formatDate(doc.effectiveDate)
-  const meta = [date && `Effective ${date}`, doc.version > 0 && `Version ${doc.version}`].filter(Boolean).join(' · ')
+  const locale = normalizeLocale(doc.locale) || 'en'
+  const t = legalLabels(locale)
+  const date = formatDate(doc.effectiveDate, locale)
+  const meta = [date && fillLabel(t.effective, { date }), doc.version > 0 && fillLabel(t.version, { n: doc.version })].filter(Boolean).join(' · ')
   const toc = doc.sections.length > 3
-    ? `<details class="toc"><summary>Contents</summary><ol>${legalToc(doc.sections).map(t => `<li><a href="#${t.id}">${escapeHtml(t.title)}</a></li>`).join('')}</ol></details>`
+    ? `<details class="toc"><summary>${escapeHtml(t.contents)}</summary><ol>${legalToc(doc.sections).map(t => `<li><a href="#${t.id}">${escapeHtml(t.title)}</a></li>`).join('')}</ol></details>`
     : ''
-  const tldr = doc.tldr ? `<div class="tldr"><strong>In short</strong><p>${escapeHtml(doc.tldr)}</p></div>` : ''
+  const tldr = doc.tldr ? `<div class="tldr"><strong>${escapeHtml(t.inShort)}</strong><p>${escapeHtml(doc.tldr)}</p></div>` : ''
+  const translations = doc.translations || []
   const more = others.length
     ? `<footer class="legal-foot"><p>${others.map(o => `<a href="${escapeHtml(o.path)}">${escapeHtml(o.title)}</a>`).join(' · ')}</p></footer>`
     : ''
-  return shell(project, doc.title, doc.tldr, `<article><h1>${escapeHtml(doc.title)}</h1>${meta ? `<p class="meta">${escapeHtml(meta)}</p>` : ''}${tldr}${toc}${doc.html}</article>${more}`, poweredBy)
+  // A way to the same document in its other languages, and the same for search engines.
+  const langs = translations.length
+    ? `<footer class="legal-foot"><p>${escapeHtml(t.languages)}: ${translations.map(o => `<a href="${escapeHtml(o.path)}" hreflang="${escapeHtml(o.locale)}" lang="${escapeHtml(o.locale)}">${escapeHtml(localeName(o.locale))}</a>`).join(' · ')}</p></footer>`
+    : ''
+  const alternates = translations.length && doc.origin && doc.path
+    ? [{ locale, path: doc.path }, ...translations].map(o => `<link rel="alternate" hreflang="${escapeHtml(o.locale)}" href="${escapeHtml(doc.origin + o.path)}">`).join('\n')
+    : ''
+  return shell(project, doc.title, doc.tldr, `<article><h1>${escapeHtml(doc.title)}</h1>${meta ? `<p class="meta">${escapeHtml(meta)}</p>` : ''}${tldr}${toc}${doc.html}</article>${langs}${more}`, poweredBy, { lang: locale, head: alternates })
 }
 
-export function renderLegalIndex(project: ParseObject, docs: { title: string, path: string, effectiveDate: string | null }[], poweredBy: PoweredBy | null): string {
-  const items = docs.map(d => `<li><a href="${escapeHtml(d.path)}">${escapeHtml(d.title)}<span>${escapeHtml(formatDate(d.effectiveDate))}</span></a></li>`).join('')
-  return shell(project, 'Legal', '', `<article><h1>Legal</h1><ul class="list">${items || '<li><span>Nothing published yet.</span></li>'}</ul></article>`, poweredBy)
+export function renderLegalIndex(project: ParseObject, docs: { title: string, path: string, effectiveDate: string | null, locale?: string }[], poweredBy: PoweredBy | null): string {
+  const locales = new Set(docs.map(d => normalizeLocale(d.locale) || 'en'))
+  const t = legalLabels(locales.size === 1 ? [...locales][0] : 'en')
+  const items = docs.map(d => `<li><a href="${escapeHtml(d.path)}" lang="${escapeHtml(normalizeLocale(d.locale) || 'en')}">${escapeHtml(d.title)}<span>${escapeHtml(formatDate(d.effectiveDate, d.locale))}</span></a></li>`).join('')
+  return shell(project, t.legal, '', `<article><h1>${escapeHtml(t.legal)}</h1><ul class="list">${items || `<li><span>${escapeHtml(t.empty)}</span></li>`}</ul></article>`, poweredBy)
 }

@@ -1,9 +1,12 @@
-import { createError, getQuery, getRouterParam, type H3Event } from 'h3'
+import { createError, getHeader, getQuery, getRouterParam, setResponseHeader, type H3Event } from 'h3'
+import { matchLocale, normalizeLocale, parseAcceptLanguage } from '#shared/locales'
 import {
-  DEFAULT_ONBOARDING_OPTIONS, DEFAULT_ONBOARDING_STYLE, ONBOARDING_KEY, ONBOARDING_LIMITS, normalizeOnboardingOptions, normalizeOnboardingStyle,
-  onboardingKeyFrom, onboardingStepsOf, starterSteps, validateOnboardingOptions, validateOnboardingStyle, validateOnboardingSteps,
-  type OnboardingOptions, type OnboardingStep, type OnboardingStyle, type PublicOnboardingFlow
+  DEFAULT_ONBOARDING_OPTIONS, DEFAULT_ONBOARDING_STYLE, ONBOARDING_KEY, ONBOARDING_LIMITS, localizeOnboarding, normalizeOnboardingOptions, normalizeOnboardingStyle,
+  onboardingKeyFrom, onboardingLocaleOf, onboardingStepsOf, onboardingTexts, onboardingTranslationsOf, starterSteps, translationFromTexts, translationTexts,
+  validateOnboardingOptions, validateOnboardingStyle, validateOnboardingSteps, validateOnboardingTranslations,
+  type OnboardingOptions, type OnboardingStep, type OnboardingStyle, type OnboardingTranslations, type PublicOnboardingFlow
 } from '#shared/onboarding'
+import { readTargetLocales, translateMissing } from './translate'
 
 // Onboarding flows: the store behind /v1/admin/onboarding and the public read.
 // A flow keeps a working copy (steps, style, options) and, once published, a
@@ -56,7 +59,9 @@ async function assertKeyFree(project: ParseObject, key: string, exceptId?: strin
 const contentOf = (row: ParseObject) => ({
   steps: onboardingStepsOf(row.get('steps')),
   style: normalizeOnboardingStyle(row.get('style')),
-  options: normalizeOnboardingOptions(row.get('options'))
+  options: normalizeOnboardingOptions(row.get('options')),
+  locale: onboardingLocaleOf(row.get('locale')),
+  translations: onboardingTranslationsOf(row.get('translations'))
 })
 
 /** The project's accent and logo fill what a flow leaves to them. */
@@ -69,27 +74,33 @@ function projectLook(project: ParseObject) {
   }
 }
 
-type Snapshot = { name: string, steps: OnboardingStep[], style: OnboardingStyle, options: OnboardingOptions }
+type Snapshot = { name: string, steps: OnboardingStep[], style: OnboardingStyle, options: OnboardingOptions, locale: string, translations: OnboardingTranslations }
 
-/** What an app receives for a published snapshot. */
-function toPublicFlow(project: ParseObject, row: ParseObject, snapshot: Snapshot): PublicOnboardingFlow {
+/** What an app receives for a published snapshot, in the first of `wanted` the flow has (its own language otherwise). */
+function toPublicFlow(project: ParseObject, row: ParseObject, snapshot: Snapshot, wanted: unknown[] = []): PublicOnboardingFlow {
   const look = projectLook(project)
+  // A language added but not yet written has nothing to show: it is not offered.
+  const locales = [snapshot.locale, ...Object.entries(snapshot.translations).filter(([, t]) => t.name || Object.keys(t.steps).length).map(([tag]) => tag)]
+  const locale = matchLocale(wanted, locales) || snapshot.locale
+  const { name, steps } = localizeOnboarding(snapshot.name, snapshot.steps, snapshot.translations[locale])
   return {
     key: String(row.get('key') || ''),
-    name: snapshot.name,
+    name,
+    locale,
+    locales,
     version: typeof row.get('version') === 'number' ? row.get('version') as number : 0,
     publishedAt: iso(row.get('publishedAt')),
     project: { name: look.name, logoUrl: look.logoUrl },
     style: { ...snapshot.style, accent: snapshot.style.accent || look.accent },
     options: snapshot.options,
-    steps: snapshot.steps
+    steps
   }
 }
 
 function publishedOf(row: ParseObject): Snapshot | null {
   const raw = row.get('published') as Record<string, unknown> | undefined
   if (!raw || typeof raw !== 'object') return null
-  return { name: String(raw.name || ''), steps: onboardingStepsOf(raw.steps), style: normalizeOnboardingStyle(raw.style), options: normalizeOnboardingOptions(raw.options) }
+  return { name: String(raw.name || ''), steps: onboardingStepsOf(raw.steps), style: normalizeOnboardingStyle(raw.style), options: normalizeOnboardingOptions(raw.options), locale: onboardingLocaleOf(raw.locale), translations: onboardingTranslationsOf(raw.translations) }
 }
 
 export function serializeOnboardingFlow(project: ParseObject, row: ParseObject) {
@@ -141,6 +152,17 @@ async function applyInput(project: ParseObject, row: ParseObject, body: Record<s
     errors.push(...result.errors)
     if (!result.errors.length) row.set('options', result.options)
   }
+  if (body.locale !== undefined) {
+    const locale = normalizeLocale(body.locale)
+    if (!locale) errors.push('locale must be a language tag such as "en" or "pt-BR"')
+    else row.set('locale', locale)
+  }
+  if (body.translations !== undefined) {
+    const steps = body.steps !== undefined ? validateOnboardingSteps(body.steps).steps : onboardingStepsOf(row.get('steps'))
+    const result = validateOnboardingTranslations(body.translations, steps, onboardingLocaleOf(row.get('locale')), onboardingTranslationsOf(row.get('translations')))
+    errors.push(...result.errors)
+    if (!result.errors.length) row.set('translations', result.translations)
+  }
   if (errors.length) badRequest(errors.join('; '))
 }
 
@@ -172,6 +194,23 @@ export async function updateOnboardingFlow(project: ParseObject, row: ParseObjec
   await row.save(null, MASTER)
 }
 
+/**
+ * Machine-translates the working copy into each language (saved as a translation the operator can edit).
+ * Strings already translated are kept unless `overwrite`. Nothing reaches apps until the next publish.
+ */
+export async function translateOnboardingFlow(ctx: MemberContext, row: ParseObject, body: Record<string, unknown>): Promise<void> {
+  const { steps, locale, translations } = contentOf(row)
+  const source = onboardingTexts(String(row.get('name') || ''), steps)
+  if (!Object.keys(source).length) badRequest('The flow has no text to translate')
+  const next = { ...translations }
+  for (const to of readTargetLocales(body.locales, locale)) {
+    const texts = await translateMissing(ctx, source, translationTexts(translations[to]), { from: locale, to, context: 'onboarding', overwrite: body.overwrite === true })
+    next[to] = translationFromTexts(texts, steps)
+  }
+  row.set('translations', next)
+  await row.save(null, MASTER)
+}
+
 export async function publishOnboardingFlow(row: ParseObject): Promise<void> {
   const content = contentOf(row)
   if (!content.steps.length) badRequest('A flow with no steps cannot be published')
@@ -198,5 +237,8 @@ export async function publicOnboardingFlow(event: H3Event): Promise<PublicOnboar
   const row = ONBOARDING_KEY.test(key) ? await findFlowByKey(project, key) : null
   const published = row && row.get('status') === 'published' ? publishedOf(row) : null
   if (!row || !published) throw createError({ statusCode: 404, statusMessage: 'Flow not found' })
-  return toPublicFlow(project, row, published)
+  setResponseHeader(event, 'Vary', 'Accept-Language')
+  // ?locale=es wins over the browser's Accept-Language; a language the flow lacks gets the flow's own.
+  const wanted = [getQuery(event).locale, ...parseAcceptLanguage(getHeader(event, 'accept-language'))]
+  return toPublicFlow(project, row, published, wanted)
 }

@@ -1,3 +1,4 @@
+import { DEFAULT_CONTENT_LOCALE, normalizeLocale } from './locales'
 import { safeHttpUrl } from './support'
 
 // Onboarding flows: a few screens an app shows a new user. The operator edits a
@@ -10,6 +11,8 @@ import { safeHttpUrl } from './support'
 export const ONBOARDING_LIMITS = { flows: 50, steps: 12, name: 80, title: 120, body: 600, label: 40, alt: 200, radius: 32 } as const
 /** A flow's key, the name an app asks for it by: lowercase letters, digits and dashes. */
 export const ONBOARDING_KEY = /^[a-z0-9][a-z0-9-]{0,39}$/
+/** Languages a flow can be translated into, besides the one it is written in. */
+export const ONBOARDING_MAX_LOCALES = 20
 export const ONBOARDING_FONTS = ['system', 'rounded', 'serif', 'mono'] as const
 export const ONBOARDING_PROGRESS = ['bar', 'dots', 'none'] as const
 
@@ -40,10 +43,20 @@ export type OnboardingStyle = {
 
 export type OnboardingOptions = { skippable: boolean, progress: OnboardingProgress }
 
+/** The words of a step a translation replaces; a missing or empty one falls back to the flow's own language. */
+export type OnboardingStepText = Pick<OnboardingStep, 'title' | 'body' | 'imageAlt' | 'buttonLabel'>
+/** One language of a flow: its name and, by step id, the words of each step. */
+export type OnboardingTranslation = { name: string, steps: Record<string, Partial<OnboardingStepText>> }
+export type OnboardingTranslations = Record<string, OnboardingTranslation>
+
 /** What an app receives, and the shape of the copy it can bundle. */
 export type PublicOnboardingFlow = {
   key: string
   name: string
+  /** The language of this copy: the one asked for when the flow has it, else the flow's own. */
+  locale: string
+  /** Every language the flow has (its own first). */
+  locales: string[]
   version: number
   publishedAt: string | null
   project: { name: string, logoUrl: string }
@@ -167,4 +180,98 @@ export function onboardingStepsOf(value: unknown): OnboardingStep[] {
     const s = record(item)
     return { id: String(s.id || ''), title: String(s.title || ''), body: String(s.body || ''), imageUrl: String(s.imageUrl || ''), imageAlt: String(s.imageAlt || ''), buttonLabel: String(s.buttonLabel || '') }
   })
+}
+
+// ---- translations ---------------------------------------------------------------
+
+const STEP_TEXT_LIMITS = { title: ONBOARDING_LIMITS.title, body: ONBOARDING_LIMITS.body, imageAlt: ONBOARDING_LIMITS.alt, buttonLabel: ONBOARDING_LIMITS.label } as const
+const STEP_TEXT_KEYS = Object.keys(STEP_TEXT_LIMITS) as Array<keyof OnboardingStepText>
+
+/** A flow's own language: a valid tag, else English. */
+export const onboardingLocaleOf = (value: unknown): string => normalizeLocale(value) || DEFAULT_CONTENT_LOCALE
+
+/**
+ * Translations as sent by an operator, on top of `base`: a language that is present replaces
+ * that language, `null` removes it. Step ids that no step has are dropped.
+ */
+export function validateOnboardingTranslations(value: unknown, steps: OnboardingStep[], source: string, base: OnboardingTranslations = {}): { translations: OnboardingTranslations, errors: string[] } {
+  const errors: string[] = []
+  const out: OnboardingTranslations = { ...base }
+  const ids = new Set(steps.map(s => s.id))
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return { translations: out, errors: ['translations must be an object keyed by language'] }
+  for (const [rawTag, raw] of Object.entries(value as Record<string, unknown>)) {
+    const tag = normalizeLocale(rawTag)
+    if (!tag) { errors.push(`"${rawTag.slice(0, 20)}" is not a language tag`); continue }
+    if (tag.toLowerCase() === source.toLowerCase()) { errors.push(`${tag} is the flow's own language`); continue }
+    if (raw === null) { delete out[tag]; continue }
+    const entry = record(raw)
+    const stepsIn = record(entry.steps)
+    const translation: OnboardingTranslation = { name: text(entry, 'name', ONBOARDING_LIMITS.name, errors, `${tag}: name`), steps: {} }
+    for (const [id, stepRaw] of Object.entries(stepsIn)) {
+      if (!ids.has(id)) continue
+      const s = record(stepRaw)
+      const words: Partial<OnboardingStepText> = {}
+      for (const key of STEP_TEXT_KEYS) {
+        const word = text(s, key, STEP_TEXT_LIMITS[key], errors, `${tag}: ${key}`)
+        if (word) words[key] = word
+      }
+      if (Object.keys(words).length) translation.steps[id] = words
+    }
+    out[tag] = translation
+  }
+  if (Object.keys(out).length > ONBOARDING_MAX_LOCALES) errors.push(`A flow has at most ${ONBOARDING_MAX_LOCALES} translations`)
+  return { translations: out, errors }
+}
+
+/** Saved translations as they are, without re-checking (they were checked on write). */
+export function onboardingTranslationsOf(value: unknown): OnboardingTranslations {
+  const out: OnboardingTranslations = {}
+  for (const [tag, raw] of Object.entries(record(value))) {
+    const entry = record(raw)
+    const steps: OnboardingTranslation['steps'] = {}
+    for (const [id, s] of Object.entries(record(entry.steps))) {
+      const words: Partial<OnboardingStepText> = {}
+      for (const key of STEP_TEXT_KEYS) if (typeof record(s)[key] === 'string' && record(s)[key]) words[key] = record(s)[key] as string
+      steps[id] = words
+    }
+    out[tag] = { name: String(entry.name || ''), steps }
+  }
+  return out
+}
+
+/** Every string of a flow that a translator works on, by a flat key: `name` and `<stepId>.<field>`. Empty ones are left out. */
+export function onboardingTexts(name: string, steps: OnboardingStep[]): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (name.trim()) out.name = name
+  for (const step of steps) for (const key of STEP_TEXT_KEYS) if (step[key].trim()) out[`${step.id}.${key}`] = step[key]
+  return out
+}
+
+/** The flat texts of an existing translation, in the shape onboardingTexts uses. */
+export function translationTexts(translation: OnboardingTranslation | undefined): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (!translation) return out
+  if (translation.name) out.name = translation.name
+  for (const [id, words] of Object.entries(translation.steps)) for (const key of STEP_TEXT_KEYS) if (words[key]) out[`${id}.${key}`] = words[key]!
+  return out
+}
+
+/** Flat texts (as translateStrings returns them) back into a translation. */
+export function translationFromTexts(texts: Record<string, string>, steps: OnboardingStep[]): OnboardingTranslation {
+  const translation: OnboardingTranslation = { name: texts.name || '', steps: {} }
+  for (const step of steps) {
+    const words: Partial<OnboardingStepText> = {}
+    for (const key of STEP_TEXT_KEYS) if (texts[`${step.id}.${key}`]) words[key] = texts[`${step.id}.${key}`]
+    if (Object.keys(words).length) translation.steps[step.id] = words
+  }
+  return translation
+}
+
+/** A flow's name and steps in one language: each translated word replaces the original, anything missing stays in the flow's own language. */
+export function localizeOnboarding(name: string, steps: OnboardingStep[], translation: OnboardingTranslation | undefined): { name: string, steps: OnboardingStep[] } {
+  if (!translation) return { name, steps }
+  return {
+    name: translation.name || name,
+    steps: steps.map(step => ({ ...step, ...translation.steps[step.id] }))
+  }
 }

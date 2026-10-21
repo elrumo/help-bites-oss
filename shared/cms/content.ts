@@ -127,6 +127,9 @@ export const UNSAFE_CSS = /<\/style|@import|expression\s*\(|javascript:|-moz-bin
 
 export const uid = (): string => globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 12)
 
+/** A deep copy of plain JSON content. Not structuredClone: the editor's content is a Vue proxy, which it refuses. */
+export const clone = <T>(value: T): T => (value === undefined ? value : JSON.parse(JSON.stringify(value)))
+
 /** `buttonLabel` / `button_label` → "Button label". */
 export function fieldLabel(key: string): string {
   const words = key.replace(/_/g, ' ').replace(/([a-z0-9])([A-Z])/g, '$1 $2').trim().toLowerCase()
@@ -389,7 +392,7 @@ export function newBlock(def: CmsComponentDef, values: Record<string, unknown> =
     if (f.type === 'blocks') block[f.key] = []
     else if (f.default !== undefined) block[f.key] = f.default
   }
-  return reuid({ ...block, ...structuredClone(def.example || {}), ...structuredClone(values), _uid: block._uid, component: def.key })
+  return reuid({ ...block, ...clone(def.example || {}), ...clone(values), _uid: block._uid, component: def.key })
 }
 
 /** Fresh `_uid`s through a whole subtree (a duplicate, an example, a template). */
@@ -446,7 +449,7 @@ function placeable(parent: CmsBlock, field: string, child: CmsBlock, library: Cm
 }
 
 export function addBlock(root: CmsBlock, library: CmsLibrary, parentId: string, field: string, block: CmsBlock, index?: number): OpResult {
-  const content = structuredClone(root)
+  const content = clone(root)
   const at = findBlock(content, parentId, library)
   if (!at) return fail(root, `No block with _uid ${parentId}`)
   const why = placeable(at.block, field, block, library)
@@ -459,7 +462,7 @@ export function addBlock(root: CmsBlock, library: CmsLibrary, parentId: string, 
 }
 
 export function updateBlock(root: CmsBlock, library: CmsLibrary, id: string, values: Record<string, unknown>): OpResult {
-  const content = structuredClone(root)
+  const content = clone(root)
   const at = findBlock(content, id, library)
   if (!at) return fail(root, `No block with _uid ${id}`)
   for (const [k, v] of Object.entries(values || {})) {
@@ -471,7 +474,7 @@ export function updateBlock(root: CmsBlock, library: CmsLibrary, id: string, val
 }
 
 export function removeBlock(root: CmsBlock, library: CmsLibrary, id: string): OpResult {
-  const content = structuredClone(root)
+  const content = clone(root)
   const at = findBlock(content, id, library)
   if (!at || !at.parent) return fail(root, at ? 'The root cannot be removed' : `No block with _uid ${id}`)
   ;(at.parent[at.field] as CmsBlock[]).splice(at.index, 1)
@@ -492,7 +495,7 @@ export function moveBlock(root: CmsBlock, library: CmsLibrary, id: string, paren
 export function duplicateBlock(root: CmsBlock, library: CmsLibrary, id: string): OpResult {
   const at = findBlock(root, id, library)
   if (!at || !at.parent) return fail(root, at ? 'The root cannot be duplicated' : `No block with _uid ${id}`)
-  return addBlock(root, library, at.parent._uid, at.field, reuid(structuredClone(at.block)), at.index + 1)
+  return addBlock(root, library, at.parent._uid, at.field, reuid(clone(at.block)), at.index + 1)
 }
 
 /** One line per block, indented: the AI reads the page this way. */

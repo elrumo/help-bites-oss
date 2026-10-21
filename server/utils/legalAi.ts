@@ -4,7 +4,8 @@ import { LEGAL_DOC_LABELS, type LegalAnswers, type LegalDocType, type LegalFindi
 import { validateAnswers } from '#shared/legal/wizard'
 import { answeredRegions } from '#shared/legal/when'
 import { sanitizeServices } from '#shared/legal/detect'
-import { createLegalDocument, LEGAL_BODY_MAX, LEGAL_SECTIONS_MAX, prepareAnswers, sectionsOf, tldrOf, type CreateLegalInput } from './legal'
+import { createLegalDocument, legalGroupOf, LEGAL_BODY_MAX, LEGAL_SECTIONS_MAX, listLegalDocuments, prepareAnswers, sectionsOf, tldrOf, type CreateLegalInput } from './legal'
+import { readTargetLocales, translateStrings } from './translate'
 
 // The AI side of legal documents. Everything here is opt-in: the clause
 // composer produces documents without it. What keeps the model honest:
@@ -177,4 +178,48 @@ export async function suggestExtraServices(ctx: MemberContext, names: string[], 
   const raw = extractJson(reply)
   if (raw === null) badReply()
   return sanitizeServices(raw, new Set(names))
+}
+
+// ---- another language --------------------------------------------------------------
+
+/**
+ * A new draft that is `row` translated into `locale`: same sections (ids, clauses and
+ * locked flags carry over, text marked `ai`), the title and summary translated, linked
+ * to the original with `translationOf`. Nothing is published. A language the document
+ * already has is a 409: edit that copy, or delete it first.
+ */
+export async function translateLegalDocument(ctx: MemberContext, project: ParseObject, row: ParseObject, body: Record<string, unknown>): Promise<ParseObject> {
+  const from = String(row.get('locale') || 'en')
+  const [to] = readTargetLocales([body.locale], from)
+  const group = legalGroupOf(row)
+  const siblings = (await listLegalDocuments(project)).filter(d => legalGroupOf(d) === group)
+  const taken = siblings.find(d => String(d.get('locale') || 'en').toLowerCase() === to!.toLowerCase())
+  if (taken) throw createError({ statusCode: 409, statusMessage: `This document already has a ${to} copy ("${String(taken.get('title'))}"). Edit it, or delete it to translate again.` })
+
+  const sections = sectionsOf(row)
+  const tldr = tldrOf(row)
+  const source: Record<string, string> = { title: String(row.get('title') || '') }
+  if (tldr) source.tldr = tldr.text
+  for (const s of sections) {
+    if (s.heading.trim()) source[`${s.id}.heading`] = s.heading
+    if (s.body.trim()) source[`${s.id}.body`] = s.body
+  }
+  const done = await translateStrings(ctx, source, { from, to: to!, context: 'legal' })
+  // A section whose text could not be translated safely keeps its own language: the draft shows it for a person to fix.
+  const translated: LegalSection[] = sections.map(s => ({ ...s, heading: done[`${s.id}.heading`] || s.heading, body: done[`${s.id}.body`] || s.body, source: 'ai' }))
+  if (!translated.some(s => done[`${s.id}.body`])) badReply()
+
+  const answers = (row.get('answers') || {}) as LegalAnswers
+  const copy = await createLegalDocument(project, {
+    type: (row.get('type') as LegalDocType) || 'privacy',
+    mode: 'blank',
+    title: done.title || String(row.get('title') || ''),
+    slug: `${String(row.get('slug') || 'document')}-${to!.toLowerCase()}`.slice(0, 80),
+    locale: to,
+    prepared: { answers, jurisdictions: Array.isArray(row.get('jurisdictions')) ? row.get('jurisdictions').map(String) : [], sections: translated }
+  })
+  copy.set('translationOf', group)
+  if (done.tldr) copy.set('tldr', aiTldr(done.tldr))
+  await copy.save(null, MASTER)
+  return copy
 }

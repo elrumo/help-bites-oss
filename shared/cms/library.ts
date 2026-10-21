@@ -1,4 +1,4 @@
-import { fieldLabel, reuid, type CmsBlock, type CmsComponentDef, type CmsField, type CmsFieldType, type CmsLibrary, type CmsStyle } from './content'
+import { clone, fieldLabel, reuid, type CmsBlock, type CmsComponentDef, type CmsField, type CmsFieldType, type CmsLibrary, type CmsStyle } from './content'
 
 // The components every project starts with, the page templates made of them,
 // and the questions the AI page wizard asks. Built-ins use the same template
@@ -927,7 +927,7 @@ function personalise<T>(value: T, project: string): T {
 export function templateContent(id: string, projectName: string): { content: CmsBlock, style: Partial<CmsStyle> } | null {
   const t = CMS_TEMPLATES.find(x => x.id === id)
   if (!t) return null
-  return { content: reuid(personalise(structuredClone(t.content), projectName.trim() || 'Acme')) as CmsBlock, style: { ...t.style } }
+  return { content: reuid(personalise(clone(t.content), projectName.trim() || 'Acme')) as CmsBlock, style: { ...t.style } }
 }
 
 // ---- the AI wizard ---------------------------------------------------------------

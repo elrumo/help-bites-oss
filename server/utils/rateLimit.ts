@@ -79,6 +79,8 @@ export const LIMITS = {
   // Hosted legal pages are read by crawlers and every app launch that links to them.
   legalReadsPerIp: { limit: 600, window: 60 },
   legalAiPerAgent: { limit: 10, window: 60 },
+  // Auto-translation: each request is a few model calls per language.
+  translatePerAgent: { limit: 10, window: 60 },
   // Each scan reads up to ten repos from GitHub.
   legalScanPerAgent: { limit: 6, window: 60 },
   // Every first launch of an app reads its onboarding; carrier NAT puts many phones behind one address.

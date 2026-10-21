@@ -1,6 +1,6 @@
 defineRouteMeta({ openAPI: { tags: ['Agent'], summary: 'Duplicate an email template', operationId: 'duplicateEmailTemplate', security: [{ AgentSession: [] }, { AdminApiKey: [] }], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: '`{ template }`' } } } })
 
-const COPIED = ['workspace', 'project', 'master', 'folder', 'description', 'document', 'variables', 'values']
+const COPIED = ['workspace', 'project', 'master', 'folder', 'description', 'document', 'variables', 'values', 'locale', 'translations']
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'content' })

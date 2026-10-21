@@ -68,6 +68,19 @@ test('the demo answers the workspace overview, the page the panel opens on', asy
   expect((await demoApi<any>('/admin/overview', { query: { range: 'all' } })).revenue.totals[0].change).toBeNull()
 })
 
+test('the demo answers the Revenue tab with the overview\'s numbers', async () => {
+  const { connection } = await demoApi<any>('/admin/stripe', { query: { project: 'acme' } })
+  expect(connection).toMatchObject({ connected: true, currency: 'usd' })
+  const { report } = await demoApi<any>('/admin/stripe/report', { query: { project: 'acme', range: '90d' } })
+  const { revenue } = await demoApi<any>('/admin/overview', { query: { range: '90d' } })
+  expect(report.net).toBe(revenue.projects.find((p: any) => p.projectId === 'acme').net)
+  expect(report.months).toHaveLength(12)
+  expect(report.months.at(-1).mrr).toBe(report.mrr)
+  expect(report.plans.reduce((sum: number, p: any) => sum + p.mrr, 0)).toBe(report.mrr)
+  const { contacts } = await demoApi<any>('/contacts', { query: { project: 'acme' } })
+  expect(contacts.find((c: any) => c.email === 'priya@example.com').attributes.stripe_revenue).toBe(1176)
+})
+
 test('the demo changelog has Acme\'s release and drafts, and refuses writes', async () => {
   const { entries } = await demoApi<any>('/admin/changelog/entries', { query: { project: 'acme' } })
   expect(entries.some((e: any) => e.status === 'published')).toBe(true)

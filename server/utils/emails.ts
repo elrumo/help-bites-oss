@@ -1,6 +1,8 @@
 import { randomBytes } from 'node:crypto'
 import { createError, type H3Event } from 'h3'
 import type { EmailDocument } from '#shared/email/blocks'
+import { localizeEmail, type EmailStrings } from '#shared/email/translate'
+import { DEFAULT_CONTENT_LOCALE, matchLocale, normalizeLocale } from '#shared/locales'
 import { MAX_DOCUMENT_CHARS } from '#shared/email/ops'
 import { extractTemplateVariables } from '#shared/email/placeholders'
 import { renderEmailHtml } from '#shared/email/render'
@@ -20,7 +22,12 @@ import { applyProjectAccent, BRAND_VARIABLE_PREFIX, plainTextFor, RECIPIENT_VARI
 
 export type ShareMode = 'view' | 'edit'
 
-export type EmailMasterSummary = { id: string, name: string, document: EmailDocument | null, variables: TemplateVariable[], updatedAt: number }
+export type EmailMasterSummary = { id: string, name: string, document: EmailDocument | null, variables: TemplateVariable[], locale: string, translations: EmailTranslations, updatedAt: number }
+
+/** A template's other languages: `{ es: { subject: '…', '<blockId>#label': '…' } }` (keys in shared/email/translate.ts). */
+export type EmailTranslations = Record<string, EmailStrings>
+
+export const EMAIL_MAX_TRANSLATIONS = 20
 
 export type EmailTemplate = {
   id: string
@@ -34,6 +41,9 @@ export type EmailTemplate = {
   document: EmailDocument | null
   variables: TemplateVariable[]
   variableValues: Record<string, string>
+  /** The language the design is written in. */
+  locale: string
+  translations: EmailTranslations
   shareMode: ShareMode | null
   shareToken: string | null
   /** When the share link stops working; null when it has no date (not shared, or shared before links expired). */
@@ -65,6 +75,19 @@ export function storeValues(row: ParseObject, values: Record<string, string>): v
   row.set('values', Object.entries(values).map(([key, value]) => ({ key, value })))
 }
 
+/** Stored as { <locale>: [{ key, value }] } for the same reason as `values`: block ids and field keys are arbitrary. */
+export function readTranslations(value: unknown): EmailTranslations {
+  const out: EmailTranslations = {}
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    for (const [tag, pairs] of Object.entries(value as Record<string, unknown>)) out[tag] = readValues(pairs)
+  }
+  return out
+}
+
+export function storeTranslations(row: ParseObject, translations: EmailTranslations): void {
+  row.set('translations', Object.fromEntries(Object.entries(translations).map(([tag, strings]) => [tag, Object.entries(strings).map(([key, value]) => ({ key, value }))])))
+}
+
 function readVariables(value: unknown): TemplateVariable[] {
   return Array.isArray(value) ? value.filter(v => v && typeof v.key === 'string') : []
 }
@@ -82,6 +105,8 @@ export function serializeEmailTemplate(row: ParseObject): EmailTemplate {
     document: (row.get('document') as EmailDocument) || null,
     variables: readVariables(row.get('variables')),
     variableValues: readValues(row.get('values')),
+    locale: normalizeLocale(row.get('locale')) || DEFAULT_CONTENT_LOCALE,
+    translations: readTranslations(row.get('translations')),
     shareMode: (row.get('shareMode') as ShareMode) || null,
     shareToken: (row.get('shareToken') as string) || null,
     shareExpiresAt: millis(row.get('shareExpiresAt')) || null,
@@ -90,7 +115,7 @@ export function serializeEmailTemplate(row: ParseObject): EmailTemplate {
     updatedAt: millis(row.updatedAt),
     // `include('master')` fetched it; a bare pointer has no name yet.
     master: master?.get('name') !== undefined
-      ? { id: master.id || '', name: String(master.get('name') || ''), document: (master.get('document') as EmailDocument) || null, variables: readVariables(master.get('variables')), updatedAt: millis(master.updatedAt) }
+      ? { id: master.id || '', name: String(master.get('name') || ''), document: (master.get('document') as EmailDocument) || null, variables: readVariables(master.get('variables')), locale: normalizeLocale(master.get('locale')) || DEFAULT_CONTENT_LOCALE, translations: readTranslations(master.get('translations')), updatedAt: millis(master.updatedAt) }
       : null
   }
 }
@@ -192,6 +217,30 @@ async function assertFolderScope(folderId: string, projectId: string | null, wor
 }
 
 /**
+ * `locale` (the language the design is written in) and `translations`: a language that is
+ * present replaces that language's strings, `null` removes it. A linked row has neither:
+ * it renders the master's.
+ */
+function applyEmailLanguages(row: ParseObject, input: Record<string, unknown>): void {
+  const bad = (message: string): never => { throw createError({ statusCode: 400, statusMessage: message }) }
+  if (input.locale !== undefined) row.set('locale', normalizeLocale(input.locale) || bad('locale must be a language tag such as "en" or "pt-BR"'))
+  if (input.translations === undefined) return
+  if (!input.translations || typeof input.translations !== 'object' || Array.isArray(input.translations)) bad('translations must be an object keyed by language')
+  const source = normalizeLocale(row.get('locale')) || DEFAULT_CONTENT_LOCALE
+  const next = readTranslations(row.get('translations'))
+  for (const [rawTag, raw] of Object.entries(input.translations as Record<string, unknown>)) {
+    const tag = normalizeLocale(rawTag) || bad(`"${rawTag.slice(0, 20)}" is not a language tag`)
+    if (tag.toLowerCase() === source.toLowerCase()) bad(`${tag} is the template's own language`)
+    if (raw === null) { delete next[tag]; continue }
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) bad(`${tag}: pass an object of key → text`)
+    next[tag] = Object.fromEntries(Object.entries(raw as Record<string, unknown>).filter(([, v]) => typeof v === 'string' && v).map(([k, v]) => [k.slice(0, 120), String(v)]))
+  }
+  if (Object.keys(next).length > EMAIL_MAX_TRANSLATIONS) bad(`A template has at most ${EMAIL_MAX_TRANSLATIONS} translations`)
+  if (JSON.stringify(next).length > MAX_DOCUMENT_CHARS) throw createError({ statusCode: 413, statusMessage: 'The translations are too large' })
+  storeTranslations(row, next)
+}
+
+/**
  * Apply a PATCH body. A share-link editor may change the design and nothing
  * else; a linked row's design is the master's, so it only takes values.
  */
@@ -217,6 +266,7 @@ export async function applyEmailInput(row: ParseObject, input: Record<string, un
       else row.unset('folder')
     }
     if (linked && input.variableValues !== undefined) storeValues(row, cleanVariableValues(input.variableValues))
+    if (!linked) applyEmailLanguages(row, input)
   }
 
   if (!linked && (input.document !== undefined || input.variables !== undefined)) {
@@ -234,6 +284,8 @@ export function detachEmailTemplate(row: ParseObject, project: ParseObject): voi
   const values = readValues(row.get('values'))
   const doc = applyProjectAccent(master.get('document') as EmailDocument, brandOf(project).theme?.accent)
   row.set('document', doc)
+  row.set('locale', master.get('locale') || DEFAULT_CONTENT_LOCALE)
+  if (master.get('translations')) row.set('translations', master.get('translations'))
   row.set('variables', readVariables(master.get('variables')).map(v => (values[v.key] !== undefined ? { ...v, defaultValue: values[v.key] } : v)))
   row.set('values', [])
   row.unset('master')
@@ -251,13 +303,26 @@ export function brandOf(project: ParseObject): EmailBrand {
   }
 }
 
-/** Subject, HTML and text exactly as the send API delivers them. */
-export function renderEmailTemplate(row: ParseObject, project: ParseObject | null, values: Record<string, string> = {}) {
+/** The language an email goes out in: the first of `wanted` the template has (its own language otherwise). */
+export function emailLocaleFor(source: { locale: string, translations: EmailTranslations }, wanted: unknown[]): string {
+  return matchLocale(wanted, [source.locale, ...Object.keys(source.translations)]) || source.locale
+}
+
+/** Subject, HTML and text exactly as the send API delivers them, in the first of `wanted` the template has. */
+export function renderEmailTemplate(row: ParseObject, project: ParseObject | null, values: Record<string, string> = {}, wanted: unknown[] = []) {
   const template = serializeEmailTemplate(row)
   if (template.masterId && !template.master) throw new Error('renderEmailTemplate needs the master included')
-  const { subject, document } = resolveTemplate(template, { master: template.master, brand: project ? brandOf(project) : null, values })
+  // A linked row's words are the master's, so are its translations.
+  const owner = template.master || template
+  const locale = emailLocaleFor(owner, wanted)
+  const words = locale === owner.locale ? null : owner.translations[locale] || null
+  const localized = words && owner.document ? localizeEmail(owner.document, words) : null
+  const { subject, document } = resolveTemplate(
+    localized && !template.master ? { ...template, document: localized } : template,
+    { master: localized && template.master ? { ...template.master, document: localized } : template.master, brand: project ? brandOf(project) : null, values }
+  )
   const html = renderEmailHtml(document)
-  return { subject, html, text: plainTextFor(document, html) }
+  return { subject, html, text: plainTextFor(document, html), locale }
 }
 
 // ---- public API ------------------------------------------------------------
