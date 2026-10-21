@@ -1,4 +1,4 @@
-import { createError, getHeader, getRequestURL, getRouterParam, type H3Event } from 'h3'
+import { createError, getRequestURL, getRouterParam, type H3Event } from 'h3'
 import { composeHubSections, hubTitle, HUB_SECTION_TITLES, normalizeHubConfig, type HubHome, type HubHomeSection, type HubItem, type HubLink, type HubLoader, type HubSectionContent, type HubSectionView } from '#shared/hub'
 import type { ProjectLook } from '#shared/projectLook'
 import { brandConfigOf } from './brand'
@@ -34,8 +34,7 @@ export type HubData = {
 export function hubOrigin(event: H3Event): string {
   const configured = String(process.env.APP_URL || '').trim().replace(/\/+$/, '')
   if (configured) return configured
-  const host = getHeader(event, 'x-forwarded-host') || getHeader(event, 'host')
-  return host ? `${getRequestURL(event, { xForwardedProto: true }).protocol}//${host}` : getRequestURL(event).origin
+  return getRequestURL(event, { xForwardedHost: true, xForwardedProto: true }).origin
 }
 
 const date = (value: string | null | undefined) => (value ? new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(value)) : '')

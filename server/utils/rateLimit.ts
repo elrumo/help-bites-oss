@@ -92,6 +92,8 @@ export const LIMITS = {
   // Lead forms load on every page view of the site they sit on.
   leadFormReadsPerIp: { limit: 1200, window: 60 },
   brandReadsPerIp: { limit: 600, window: 60 },
+  // The hub page, its JSON twin and the loader: helpbites.js reads the loader on every page view of a site.
+  hubReadsPerIp: { limit: 1200, window: 60 },
   // Pages and the CMS delivery API: a site build can read many entries at once.
   cmsReadsPerIp: { limit: 1200, window: 60 }
 } as const
