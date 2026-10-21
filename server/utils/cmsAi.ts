@@ -135,7 +135,7 @@ const HOW = [
   'Pictures: asset fields take { "url", "alt" } with an https URL; you cannot upload, so leave them empty unless the user gave a URL, and say which pictures they should add.',
   'When no component fits a part, write one with save_component (see "Writing components"), then use it. Prefer built-ins: they follow the page style and stay editable.',
   `Animations: any block may have "_anim": { "effect": ${CMS_ANIM_EFFECTS.join('|')}, "trigger": ${CMS_ANIM_TRIGGERS.join('|')}, "duration": ms, "delay": ms, "stagger": ms between its children (0 animates the block itself), "once": true, "distance": px }. Use them sparingly: a fade-up on sections as they scroll in, a stagger on grids, a load animation on the hero. Set "_anim": null to remove one.`,
-  'Facts: never invent numbers, customers, quotes, prices or features. Take them from the brief, the user, or the repositories (read_repo). Where a fact is missing, write a clearly marked placeholder such as [number of users] and say so.'
+  'Facts: never invent numbers, customers, quotes, prices, free tiers, limits, trial lengths or features, not even in small print. Take them from the brief, the user, or the repositories (read_repo). Where a fact is missing, write a clearly marked placeholder such as [number of users] or [free plan limit] and say so.'
 ]
 
 const COPY = [

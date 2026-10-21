@@ -142,6 +142,6 @@ func translationProgress(_ filled: Int, of total: Int) -> String {
 }
 
 /// A language picked for editing, for `.sheet(item:)`.
-struct LanguageSelection: Identifiable, Equatable {
+struct LanguageSelection: Identifiable, Hashable {
   let id: String
 }

@@ -40,6 +40,8 @@ import UniformTypeIdentifiers
   private(set) var saveState = SaveState.saved
 
   var selectedId: String?
+  /// A language of `translations` the preview shows; nil shows the design's own.
+  var previewLocale: String?
   var mode = Mode.edit
   var device = Device.desktop
   /// A problem to show briefly (an upload that failed, a starter that didn't load).
@@ -84,6 +86,16 @@ import UniformTypeIdentifiers
 
   /// The exact email, for Preview and exports (the AI's draft while it writes one, as on the web).
   var previewHTML: String { EmailRender.html((resolvedDraft ?? resolved).json) }
+
+  /// The language the design is written in, and its translations by language.
+  var locale: String { template?.contentLocale ?? ContentLocale.defaultTag }
+  var translations: [String: [String: String]] { template?.languages ?? [:] }
+
+  /// What the preview pane shows: the exact email, in `previewLocale` when it has that translation (never the AI's draft).
+  var stageHTML: String {
+    guard resolvedDraft == nil, let tag = previewLocale, let words = translations[tag] else { return previewHTML }
+    return EmailRender.html(EmailRender.resolve(document: EmailTexts.localize(design, words).json, variables: variables, values: [:], linked: false, brand: brand))
+  }
 
   /// The template as it stands right now, for the test, share, export and API sheets.
   var currentItem: EmailTemplateItem? {
@@ -530,6 +542,41 @@ import UniformTypeIdentifiers
       saveAgain = false
       await save()
     }
+  }
+
+  // MARK: Languages
+
+  /// PATCH `locale` and/or `translations`: a language that is present replaces that language, nil removes it.
+  /// The design is saved first, so what the AI translates is what is on screen.
+  private func patchLanguages(locale: String? = nil, translations: [String: [String: String]?]? = nil) async throws {
+    struct Input: Encodable, Sendable { let locale: String?; let translations: [String: [String: String]?]?; let actorId: String }
+    await flush()
+    let response: EmailTemplateResponse = try await session.send("/v1/admin/emails/\(id)", method: "PATCH", body: Input(locale: locale, translations: translations, actorId: actorId))
+    adoptLanguages(response.template)
+  }
+
+  private func adoptLanguages(_ saved: EmailTemplateItem) {
+    template?.locale = saved.locale
+    template?.translations = saved.translations
+    if let tag = previewLocale, saved.languages[tag] == nil { previewLocale = nil }
+  }
+
+  func saveTranslations(_ next: [String: [String: String]?]) async throws {
+    try await patchLanguages(translations: next)
+  }
+
+  /// The language of the design. A translation into that same language would be redundant, so it is dropped.
+  func setLocale(_ tag: String) async throws {
+    let same = translations.keys.filter { ContentLocale.same($0, tag) }
+    try await patchLanguages(locale: tag, translations: same.isEmpty ? nil : Dictionary(uniqueKeysWithValues: same.map { ($0, nil as [String: String]?) }))
+  }
+
+  /// `POST …/translate`: the AI fills the saved design's translations (strings already translated are kept unless `overwrite`).
+  func translate(_ locales: [String], overwrite: Bool) async throws {
+    struct Body: Encodable, Sendable { let locales: [String]; let overwrite: Bool }
+    await flush()
+    let response: EmailTemplateResponse = try await LegalAPI.slow(session, "/v1/admin/emails/\(id)/translate", Body(locales: locales, overwrite: overwrite))
+    adoptLanguages(response.template)
   }
 
   var hasUnsavedChanges: Bool { revision != savedRevision }

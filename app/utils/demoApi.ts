@@ -3,6 +3,8 @@ import { DEFAULT_BOARD_CONFIG, ROADMAP_CATEGORIES, type BoardItem } from '#share
 import { DEFAULT_MARKETING_CONFIG } from '#shared/marketing'
 import { DEFAULT_CHANGELOG_CONFIG, type ChangelogEntry, type ChangelogRelease } from '#shared/changelog'
 import { normalizeBrandConfig } from '#shared/brand'
+import { normalizeSettings } from '#shared/cms/content'
+import { BUILTIN_COMPONENTS } from '#shared/cms/library'
 import type { FeatureFlag } from '#shared/flags'
 import { cloneBlankEmailDocument, cloneEmailTemplateDocument } from '#shared/email/templates'
 import { extractTemplateVariables } from '#shared/email/placeholders'
@@ -888,7 +890,12 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/admin\/knowledge\/models$/, () => ({ models: [] })],
   ['GET', /^\/admin\/api-keys$/, () => ({ keys: [] })],
   ['GET', /^\/admin\/onboarding\/flows$/, () => ({ flows: [] })],
-  ['GET', /^\/admin\/brand$/, () => ({ brand: normalizeBrandConfig(undefined), assets: [], url: '/brand/pk_demo' })]
+  ['GET', /^\/admin\/brand$/, () => ({ brand: normalizeBrandConfig(undefined), assets: [], url: '/brand/pk_demo' })],
+  ['GET', /^\/admin\/cms\/entries$/, () => ({ entries: [] })],
+  ['GET', /^\/admin\/cms\/components$/, () => ({ components: BUILTIN_COMPONENTS })],
+  ['GET', /^\/admin\/cms\/assets$/, () => ({ assets: [] })],
+  ['GET', /^\/admin\/cms\/settings$/, () => ({ settings: normalizeSettings(undefined) })],
+  ['GET', /^\/admin\/cms\/repos$/, () => ({ repos: [] })]
 ]
 
 export async function demoApi<T>(path: string, options: { method?: string, body?: unknown, query?: Record<string, unknown> } = {}): Promise<T> {

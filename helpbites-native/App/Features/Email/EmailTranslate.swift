@@ -15,7 +15,7 @@ enum EmailTexts {
     let text: String
     var id: String { key }
     /// Long or HTML copy gets a multi-line field.
-    var multiline: Bool { key == "text" || key.hasSuffix("#html") || key.hasSuffix("#values.body") }
+    var multiline: Bool { key == "text" || key.hasSuffix("#html") || text.count > 80 }
   }
 
   /// Every translatable string of the design, in reading order. Empty ones are left out.
@@ -246,6 +246,6 @@ private struct EmailTranslationEditor: View {
     do {
       try await store.saveTranslations([tag: nil])
       dismiss()
-    } catch { error = error.localizedDescription }
+    } catch { self.error = error.localizedDescription }
   }
 }

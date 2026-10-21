@@ -21,7 +21,8 @@
         </UDropdownMenu>
       </div>
 
-      <USelectMenu v-if="addable.length" :model-value="undefined" :items="addable" value-key="value" :placeholder="$t('translations.add')" create-item="always" size="xs" class="w-44" @update:model-value="add($event as string)" @create="add($event)">
+      <!-- The key remounts it after each add, so it never keeps showing the language just added. -->
+      <USelectMenu v-if="addable.length" :key="languages.length" :model-value="undefined" :items="addable" value-key="value" :placeholder="$t('translations.add')" create-item="always" size="xs" class="w-44" @update:model-value="add($event as string)" @create="add($event)">
         <template #create-item-label="{ item }">{{ $t('translations.addTag', { tag: item }) }}</template>
       </USelectMenu>
     </div>

@@ -1,9 +1,13 @@
 import SwiftUI
 
 /// The working copy as an app draws it: `HelpBitesOnboardingView` from
-/// docs/ONBOARDING.md inside a phone-sized frame, with a pager and a light/dark switch.
+/// docs/ONBOARDING.md inside a phone-sized frame, with a pager, a light/dark switch and, once the flow has translations, a language picker.
 struct OnboardingPreview: View {
-  let steps: [OnboardingStep]
+  /// The steps in the flow's own language.
+  let source: [OnboardingStep]
+  /// The flow's own language, and its translations by language (a translated word replaces the original, a missing one stays).
+  var locale = ContentLocale.defaultTag
+  var translations: [String: OnboardingTranslation] = [:]
   let style: OnboardingStyle
   let options: OnboardingOptions
   /// The project's accent, for a flow that leaves `style.accent` empty.

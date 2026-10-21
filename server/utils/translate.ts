@@ -21,7 +21,7 @@ async function routeFor(ctx: MemberContext) {
 export function readTargetLocales(value: unknown, source: string): string[] {
   const list = Array.isArray(value) ? value : []
   const out = [...new Set(list.map(normalizeLocale).filter((tag): tag is string => !!tag && tag.toLowerCase() !== source.toLowerCase()))]
-  if (!out.length) throw createError({ statusCode: 400, statusMessage: `Pass "locales": a list of language tags other than ${source}, such as ["es", "fr"]` })
+  if (!out.length) throw createError({ statusCode: 400, statusMessage: `Pass a language tag other than ${source}, such as "es" or "pt-BR" ("locales" takes a list of them)` })
   if (out.length > TRANSLATE_LIMITS.locales) throw createError({ statusCode: 400, statusMessage: `At most ${TRANSLATE_LIMITS.locales} languages per request` })
   return out
 }

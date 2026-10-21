@@ -24,10 +24,11 @@ private struct EmailEditorRoot: View {
   enum Panel: String, Identifiable { case design, variables, ai, layers; var id: String { rawValue } }
   /// Everything else that opens over the editor.
   enum Modal: Identifiable, Sendable {
-    case starters, test(EmailTemplateItem), share(EmailTemplateItem), api(EmailTemplateItem), file(URL), checks
+    case starters, test(EmailTemplateItem), share(EmailTemplateItem), api(EmailTemplateItem), file(URL), checks, languages
     var id: String {
       switch self {
       case .starters: "starters"
+      case .languages: "languages"
       case .test: "test"
       case .share: "share"
       case .api: "api"
@@ -260,6 +261,13 @@ private struct EmailEditorRoot: View {
       }
       .pickerStyle(.segmented)
       .frame(maxWidth: 96)
+      if store.mode == .preview, !store.translations.isEmpty {
+        Picker("Language", selection: $store.previewLocale) {
+          Text(ContentLocale.name(store.locale)).tag(String?.none)
+          ForEach(store.translations.keys.sorted(), id: \.self) { Text(ContentLocale.name($0)).tag(Optional($0)) }
+        }
+        .pickerStyle(.menu).labelsHidden()
+      }
       Spacer(minLength: 0)
       checksButton
     }
@@ -272,7 +280,7 @@ private struct EmailEditorRoot: View {
     case .edit:
       EmailCanvas(store: store) { id in askAI(about: id) }
     case .preview:
-      EmailPreviewPane(html: store.previewHTML, device: store.device)
+      EmailPreviewPane(html: store.stageHTML, device: store.device)
     }
   }
 
@@ -349,6 +357,7 @@ private struct EmailEditorRoot: View {
     Menu {
       Button { open(.starters) } label: { Label("Start from a template", systemImage: "square.grid.2x2") }
       Button { renameText = store.name; renaming = true } label: { Label("Rename", systemImage: "pencil") }
+      Button { open(.languages) } label: { Label("Languages", systemImage: "globe") }
       Divider()
       Button { withSaved { .test($0) } } label: { Label("Send test", systemImage: "paperplane") }
       Button { withSaved { .share($0) } } label: { Label("Share", systemImage: "link") }
@@ -385,6 +394,8 @@ private struct EmailEditorRoot: View {
       EmailAPISheet(template: item) { key in store.updateKey(key) }
     case .file(let url):
       ShareSheet(url: url).presentationDetents([.medium, .large])
+    case .languages:
+      EmailLanguagesPanel(store: store)
     case .checks:
       NavigationStack {
         EmailChecksList(store: store, onSelect: { self.modal = nil }, onFix: { self.modal = nil; fixWithAI() })

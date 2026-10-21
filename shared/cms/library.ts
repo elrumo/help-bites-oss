@@ -541,13 +541,14 @@ export const BUILTIN_COMPONENTS: CmsComponentDef[] = [
     key: 'image_tab', name: 'Image tab', description: 'One tab of an image tabs block: its label, its picture and a line under it.',
     fields: [f('label', 'text', { default: 'Tab' }), f('image', 'asset'), f('note', 'text'), f('selected', 'boolean', { label: 'Selected at first' })],
     html: '<label class="hb-itab"><input type="radio" name="hb-tabs-{{$parent}}"{{#selected}} checked{{/selected}}><span class="hb-itab__label">{{@label}}</span><span class="hb-itab__panel">{{#image}}<img src="{{@image}}" alt="{{@image.alt}}" loading="lazy">{{/image}}</span>{{#note}}<span class="hb-itab__note">{{@note}}</span>{{/note}}</label>',
-    css: `.hb-itab { position: static; z-index: 1; cursor: pointer; margin-bottom: -56px; }
+    css: `/* No z-index here: a flex item with one stacks on its own, and the next tab's picture would cover this label. */
+.hb-itab { cursor: pointer; margin-bottom: -56px; }
 .hb-itab input { position: absolute; opacity: 0; pointer-events: none; }
 .hb-itab__label { position: relative; z-index: 2; display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #525252; transition: background .2s, color .2s; }
 .hb-itab:has(input:checked) .hb-itab__label, .hb-itabs__stage:not(:has(input:checked)) .hb-itab:first-child .hb-itab__label { background: var(--hb-accent); color: var(--hb-on-accent); box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--hb-accent) 50%, transparent); }
 .hb-itab input:focus-visible + .hb-itab__label { outline: 2px solid var(--hb-accent); outline-offset: 2px; }
-.hb-itab__panel { position: absolute; inset: 8% 10% 84px; display: grid; place-items: center; opacity: 0; transition: opacity .35s ease; pointer-events: none; }
-.hb-itab__panel img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 30px 40px rgb(76 29 149 / .22)); }
+.hb-itab__panel { position: absolute; inset: 8% 12% 92px; opacity: 0; transition: opacity .35s ease; pointer-events: none; }
+.hb-itab__panel img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 30px 40px rgb(76 29 149 / .22)); }
 .hb-itab__note { position: absolute; left: 24px; right: 24px; bottom: 6px; z-index: 2; text-align: center; font-size: 12px; color: #525252; opacity: 0; transition: opacity .35s; pointer-events: none; }
 .hb-itab:has(input:checked) .hb-itab__panel, .hb-itab:has(input:checked) .hb-itab__note, .hb-itabs__stage:not(:has(input:checked)) .hb-itab:first-child .hb-itab__panel { opacity: 1; }`
   }),
@@ -595,7 +596,7 @@ export const BUILTIN_COMPONENTS: CmsComponentDef[] = [
 .hb-spanel--center .hb-spanel__copy { max-width: 44rem; margin: 0 auto; }
 .hb-spanel--center .hb-lead { margin-left: auto; margin-right: auto; }
 .hb-spanel--center .hb-actions { justify-content: center; }
-.hb-spanel--center .hb-spanel__media { margin: clamp(40px, 6vw, 56px) auto 0; max-width: 720px; }
+.hb-spanel--center .hb-spanel__media { margin: clamp(40px, 6vw, 56px) auto 0; max-width: min(100%, 22rem); }
 .hb-spanel .hb-lead { margin-top: 16px; font-size: 17px; }
 .hb-spanel__media img { width: 100%; border-radius: 1.5rem; box-shadow: 0 24px 60px -28px rgb(76 29 149 / .4); }
 .hb-spanel__note { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 48px 0 0; font-size: .875rem; opacity: .65; }
