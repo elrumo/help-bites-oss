@@ -22,6 +22,8 @@ export default defineEventHandler(async (event) => {
   if (!config.enabled && !config.widgetHome.enabled) throw createError({ statusCode: 404, statusMessage: 'This project has no public hub' })
   const body = await buildHub(project, hubOrigin(event))
   const etag = `"${createHash('sha1').update(JSON.stringify(body)).digest('hex')}"`
+  // Links are absolute: without APP_URL they follow the forwarded host, so a shared cache must key on it.
+  setResponseHeader(event, 'Vary', 'X-Forwarded-Host, X-Forwarded-Proto')
   if (handleCacheHeaders(event, { etag, maxAge: 60, cacheControls: ['public', 'stale-while-revalidate=86400', 'stale-if-error=604800'] })) return
   return body
 })

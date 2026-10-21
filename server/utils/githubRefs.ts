@@ -62,9 +62,9 @@ async function resolveTargets(project: ParseObject, mentions: GithubRefMention[]
 /** Store one commit or PR against one target. `created` is false when it was already there. */
 async function upsertRef(project: ParseObject, target: Target, source: GithubRefSource, closes: boolean): Promise<{ created: boolean }> {
   const Parse = useParse()
-  const key = `sb:ghref:${project.id}:${target.kind}:${target.id}:${source.kind}:${source.ref}`
+  const key = `sb:ghref:${project.id}:${target.kind}:${target.id}:${source.kind}:${source.repo}:${source.ref}`
   const held = await runExclusive(key, 20, async () => {
-    const existing = await new Parse.Query('GithubRef').equalTo('project', project).equalTo('targetKind', target.kind).equalTo('targetId', target.id).equalTo('kind', source.kind).equalTo('ref', source.ref).first(MASTER)
+    const existing = await new Parse.Query('GithubRef').equalTo('project', project).equalTo('targetKind', target.kind).equalTo('targetId', target.id).equalTo('kind', source.kind).equalTo('ref', source.ref).equalTo('repo', source.repo).first(MASTER)
     if (existing) {
       // A later delivery that carries the keyword (a PR edited before merging) upgrades the link.
       if (closes && existing.get('closes') !== true) { existing.set('closes', true); await existing.save(null, MASTER) }

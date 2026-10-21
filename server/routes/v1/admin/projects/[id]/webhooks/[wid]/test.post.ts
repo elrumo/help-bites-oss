@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'marketing' })
   const project = await requireProject(ctx, getRouterParam(event, 'id') || '')
   const row = await getProjectEndpoint(project, getRouterParam(event, 'wid') || '')
+  await rateLimit(`sb:rl:whtest:${row.id}`, 10, 60)
   await queueTestDelivery(project, row)
   return { ok: true }
 })

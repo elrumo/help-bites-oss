@@ -17,6 +17,8 @@ export default defineEventHandler(async (event) => {
   }
   setResponseHeader(event, 'Content-Security-Policy', HUB_PAGE_CSP)
   const html = renderHubPage(await buildHub(project, hubOrigin(event)), await poweredByFor(project))
+  // Links are absolute: without APP_URL they follow the forwarded host, so a shared cache must key on it.
+  setResponseHeader(event, 'Vary', 'X-Forwarded-Host, X-Forwarded-Proto')
   if (handleCacheHeaders(event, { etag: `"${createHash('sha1').update(html).digest('hex')}"`, maxAge: 60, cacheControls: ['public', 'must-revalidate'] })) return
   return html
 })

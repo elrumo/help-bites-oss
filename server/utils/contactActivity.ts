@@ -111,11 +111,11 @@ const KINDS: Record<ActivityType, Kind> = {
   }
 }
 
-export async function contactActivity(project: ParseObject, contact: ParseObject, options: { types?: ActivityType[], before?: string, limit?: number } = {}): Promise<ContactActivity> {
+export async function contactActivity(project: ParseObject, contact: ParseObject, options: { types?: ActivityType[], before?: string, limit?: number, /** false leaves out Stripe payments and subscriptions (a caller who may not read billing). Default true. */ billing?: boolean } = {}): Promise<ContactActivity> {
   const limit = Math.min(Math.max(Number(options.limit) || ACTIVITY_LIMITS.default, 1), ACTIVITY_LIMITS.max)
   const before = options.before ? new Date(options.before) : null
   const who = identityOf(contact)
-  const kinds = (Object.keys(KINDS) as ActivityType[]).filter(type => !options.types?.length || options.types.includes(type))
+  const kinds = (Object.keys(KINDS) as ActivityType[]).filter(type => (!options.types?.length || options.types.includes(type)) && (options.billing !== false || (type !== 'payment' && type !== 'subscription')))
   // One kind failing (a table that is down) does not blank the whole feed.
   const lists = await Promise.all(kinds.map(type => KINDS[type](project, who, contact, before && !Number.isNaN(before.getTime()) ? before : null, limit + 1).catch((error) => {
     console.warn(`[activity] ${type} failed:`, (error as Error).message)

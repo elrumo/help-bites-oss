@@ -245,7 +245,8 @@ export async function publicOnboardingFlow(event: H3Event): Promise<PublicOnboar
 /** Remember that a person finished or skipped a published flow; the latest outcome replaces the one before. */
 export async function recordOnboardingOutcome(project: ParseObject, endUser: ParseObject, flowKey: string, outcome: 'completed' | 'skipped'): Promise<void> {
   const flow = ONBOARDING_KEY.test(flowKey) ? await findFlowByKey(project, flowKey) : null
-  if (!flow) throw createError({ statusCode: 404, statusMessage: 'Flow not found' })
+  // Only a flow people can see: a draft's key is not confirmed to anyone.
+  if (!flow || flow.get('status') !== 'published') throw createError({ statusCode: 404, statusMessage: 'Flow not found' })
   const Parse = useParse()
   const row = (await new Parse.Query('OnboardingCompletion').equalTo('project', project).equalTo('endUser', endUser).equalTo('flow', flowKey).first(MASTER)) || new (Parse.Object.extend('OnboardingCompletion'))() as ParseObject
   row.set('project', project)

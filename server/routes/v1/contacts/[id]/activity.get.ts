@@ -1,3 +1,4 @@
+import { can } from '#shared/roles'
 import { readActivityTypes } from '#shared/activity'
 
 defineRouteMeta({
@@ -21,5 +22,7 @@ export default defineEventHandler(async (event) => {
   const project = await callerProject(event, caller)
   const contact = await getProjectContact(project, getRouterParam(event, 'id') || '')
   const query = getQuery(event)
-  return contactActivity(project, contact, { types: readActivityTypes(query.types), before: String(query.before || '') || undefined, limit: Number(query.limit) || undefined })
+  // Payments are what the Stripe tab shows, which needs the marketing role: an agent gets the rest.
+  const billing = !caller.member || can(caller.member.role, 'marketing')
+  return contactActivity(project, contact, { billing, types: readActivityTypes(query.types), before: String(query.before || '') || undefined, limit: Number(query.limit) || undefined })
 })

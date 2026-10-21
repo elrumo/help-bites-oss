@@ -12,6 +12,6 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
   const body = await readBody(event).catch(() => ({})) as Record<string, unknown>
-  const project = await callerProject(event, caller, body?.project)
+  const project = await callerProject(event, caller, body?.project, { can: 'marketing' })
   return { sequence: await installRecipe(project, requireRecipe(getRouterParam(event, 'id') || '')) }
 })
