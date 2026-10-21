@@ -2960,6 +2960,7 @@
       "projectNotFound": "プロジェクトが見つかりません",
       "originsCount": "許可されたオリジン {count} 件",
       "noOrigins": "許可されたオリジンはありません",
+      "widgetNotSeen": "まだサイトで読み込まれていません",
       "boardOn": "ボードはオン",
       "off": "オフ",
       "flagsCount": "{count} 件のフラグ",

@@ -2960,6 +2960,7 @@
       "projectNotFound": "Proyecto no encontrado",
       "originsCount": "{count} origen permitido | {count} orígenes permitidos",
       "noOrigins": "Ningún origen permitido",
+      "widgetNotSeen": "Aún no se ha cargado en tu sitio",
       "boardOn": "Tablero activado",
       "off": "Desactivado",
       "flagsCount": "{count} flag | {count} flags",

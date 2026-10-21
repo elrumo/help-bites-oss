@@ -253,7 +253,9 @@ const SCHEMAS = {
       // Newsletter settings (shared/marketing.ts) and the signed event webhook.
       marketing: { type: 'Object' },
       eventWebhookUrl: { type: 'String' },
-      eventWebhookSecret: { type: 'String' }
+      eventWebhookSecret: { type: 'String' },
+      // When the chat widget last loaded on a host page (stamped at most hourly); setup is green only after it has.
+      widgetSeenAt: { type: 'Date' }
     },
     indexes: {
       publicKey_1: { publicKey: 1 },

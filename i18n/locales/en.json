@@ -2985,6 +2985,7 @@
       "projectNotFound": "Project not found",
       "originsCount": "{count} allowed origin | {count} allowed origins",
       "noOrigins": "No allowed origins",
+      "widgetNotSeen": "Not loaded on your site yet",
       "boardOn": "Board on",
       "off": "Off",
       "flagsCount": "{count} flag | {count} flags",

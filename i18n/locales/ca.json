@@ -2960,6 +2960,7 @@
       "projectNotFound": "Projecte no trobat",
       "originsCount": "{count} origen permès | {count} orígens permesos",
       "noOrigins": "Cap origen permès",
+      "widgetNotSeen": "Encara no s'ha carregat al teu lloc",
       "boardOn": "Tauler activat",
       "off": "Desactivat",
       "flagsCount": "{count} flag | {count} flags",

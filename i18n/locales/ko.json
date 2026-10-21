@@ -2960,6 +2960,7 @@
       "projectNotFound": "프로젝트를 찾을 수 없습니다",
       "originsCount": "허용된 출처 {count}개",
       "noOrigins": "허용된 출처 없음",
+      "widgetNotSeen": "아직 사이트에서 로드되지 않음",
       "boardOn": "보드 켜짐",
       "off": "꺼짐",
       "flagsCount": "플래그 {count}개",

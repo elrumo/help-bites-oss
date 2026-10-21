@@ -2960,6 +2960,7 @@
       "projectNotFound": "未找到项目",
       "originsCount": "{count} 个允许的来源",
       "noOrigins": "没有允许的来源",
+      "widgetNotSeen": "尚未在你的网站上加载",
       "boardOn": "看板已开启",
       "off": "关闭",
       "flagsCount": "{count} 个功能开关",

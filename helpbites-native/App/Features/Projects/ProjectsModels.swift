@@ -20,6 +20,8 @@ struct ProjectsAdminProject: Decodable, Sendable {
   let flags: [ProjectsFlag]?
   /// The project board's settings; nil from a server without boards.
   let board: BoardConfig?
+  /// When the chat widget last loaded on a host page; nil until it ever has (or from an older server).
+  let widgetSeenAt: String?
 
   /// `ErrorLinkView` (server/utils/errorTracking.ts): one tracker project of this project.
   struct ErrorLink: Decodable, Identifiable, Sendable, Equatable {
