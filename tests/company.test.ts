@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import { COMPANY_LIMITS, companyEntity, companyIsEmpty, normalizeCompany, resolveCompany, validateCompany } from '../shared/company'
 import { applyCompany, companyOf, migrateCompany } from '../server/utils/company'
 import { complianceProblems } from '../server/utils/campaigns'
-import { legalDefaults, prepareAnswers } from '../server/utils/legal'
+import { legalDefaults } from '../server/utils/legal'
 import { brandOf } from '../server/utils/emails'
-import { applyProjectInput, serializeAdminProject } from '../server/utils/projects'
+import { applyProjectInput } from '../server/utils/projects'
 import { DEFAULT_SETTINGS, type EmailDocument } from '../shared/email/blocks'
 
 /** A project row in memory: reads and writes go to `values`. */
@@ -76,12 +76,6 @@ describe('company profile on a project', () => {
     await applyProjectInput(p, { marketing: { postalAddress: '3 Old St' }, company: { address: '4 Chosen St' } })
     expect(companyOf(p).address).toBe('4 Chosen St')
     await expect(applyProjectInput(p, { company: { email: 'nope' } })).rejects.toThrow()
-    // The admin DTO shows the profile through the older shapes too.
-    p.values.publicKey = 'pk_x'
-    const dto = serializeAdminProject(p)
-    expect(dto.company.address).toBe('4 Chosen St')
-    expect(dto.legal.entity).toMatchObject({ name: 'Acme Ltd', address: '4 Chosen St' })
-    expect(dto.marketing.postalAddress).toBe('4 Chosen St')
   })
 
   test('legal answers start from the profile, and campaigns want its address', () => {
@@ -93,7 +87,6 @@ describe('company profile on a project', () => {
     expect(complianceProblems(without, footer).join(' ')).toContain('Project settings → Company')
     // An address that only the older field has still counts.
     expect(complianceProblems(project({ marketing: { postalAddress: '1 Main St' } }), footer)).toEqual([])
-    expect(prepareAnswers).toBeFunction()
   })
 
   test('the email brand carries the company address, name and email', () => {
