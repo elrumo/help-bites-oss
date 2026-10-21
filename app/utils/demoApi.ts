@@ -111,7 +111,7 @@ const segments: { id: string, projectId: string, name: string, filter: unknown, 
   { id: 'seg_demo_leads', projectId: 'acme', name: 'Leads · Launch waitlist', filter: leadFormSegmentFilter('lf_demo1'), auto: true, createdAt: ago(60 * 24 * 40), updatedAt: ago(60 * 24 * 40) },
   { id: 'seg_demo_all_leads', projectId: 'acme', name: 'All leads', filter: ALL_LEADS_SEGMENT, auto: true, createdAt: ago(60 * 24 * 40), updatedAt: ago(60 * 24 * 40) }
 ]
-const contactExtras: Record<string, { tags?: string[], subscription?: string }> = {}
+const contactExtras: Record<string, { tags?: string[], subscription?: string, language?: string }> = {}
 const DEMO_PLANS = ['free', 'pro', 'team']
 const demoCampaigns = [{
   id: 'cmp_demo1', projectId: 'acme', name: 'September product update', status: 'sent', template: 'newsletter', templateName: 'Editorial digest', blogPostId: '', subject: 'What shipped in September, {{firstName}}',
@@ -128,7 +128,7 @@ function asContact(u: EndUser) {
   const paid = DEMO_REVENUE[u.projectId]?.customers.find(([email]) => email === u.email)
   const stripe = paid ? { [STRIPE_ATTR.customer]: customerId(paid[0]), [STRIPE_ATTR.revenue]: paid[1], [STRIPE_ATTR.payments]: paid[2], [STRIPE_ATTR.status]: 'active' } : {}
   return {
-    id: u.id, externalId: u.externalId, email: u.email, name: u.name, username: '', avatarUrl: '',
+    id: u.id, externalId: u.externalId, email: u.email, name: u.name, username: '', avatarUrl: '', language: extra.language ?? (n % 5 === 0 ? 'es' : 'en'),
     attributes: { plan: DEMO_PLANS[n % 3]!, seats: (n % 5) + 1, ...stripe }, tags: extra.tags || (n % 2 ? ['beta'] : []),
     subscription: extra.subscription || (n % 3 === 0 ? 'none' : 'subscribed'), unsubscribedTopics: [],
     consent: n % 3 === 0 ? null : { source: lead ? 'lead_form' : 'form', at: ago(60 * 24 * 20) }, sources: [], feedbackEmails: true,
@@ -902,8 +902,19 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['PATCH', /^\/contacts\/([^/]+)$/, ({ params, body }) => {
     const user = find(endUsers, params[0], 'Contact')
     if (typeof body.name === 'string') user.name = body.name
-    contactExtras[user.id] = { ...contactExtras[user.id], ...(body.tags ? { tags: body.tags } : {}), ...(body.subscription ? { subscription: body.subscription } : {}) }
+    contactExtras[user.id] = { ...contactExtras[user.id], ...(body.tags ? { tags: body.tags } : {}), ...(body.subscription ? { subscription: body.subscription } : {}), ...(typeof body.language === 'string' ? { language: body.language } : {}) }
     return { contact: asContact(user) }
+  }],
+  // One timeline from the demo's conversations and mail (the real one also merges feedback, votes, sequences and onboarding).
+  ['GET', /^\/contacts\/([^/]+)\/activity$/, ({ params, query }) => {
+    const user = find(endUsers, params[0], 'Contact')
+    const before = query.before ? new Date(query.before).getTime() : Infinity
+    const items = [
+      ...conversations.filter(c => c.endUserId === user.id).map(c => ({ id: `conversation:${c.id}`, type: 'conversation', at: c.createdAt, title: c.subject || 'Conversation', detail: c.status, ref: { kind: 'conversation', id: c.id } })),
+      ...emailLogs.filter(l => l.to === user.email).map(l => ({ id: `email:${l.id}`, type: 'email', at: l.createdAt, title: l.subject, detail: `${l.source} · ${l.status}`, ref: { kind: 'email_log', id: l.id } })),
+      { id: `joined:${user.id}`, type: 'joined', at: asContact(user).createdAt, title: 'Added as a contact', detail: '', ref: null }
+    ].filter(item => new Date(item.at).getTime() < before).sort((a, b) => b.at.localeCompare(a.at))
+    return { items: items.slice(0, Number(query.limit) || 50), nextBefore: null }
   }],
   ['GET', /^\/segments$/, ({ query }) => ({ segments: segments.filter(s => s.projectId === query.project) })],
   ['POST', /^\/segments$/, ({ body }) => {
