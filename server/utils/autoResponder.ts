@@ -6,7 +6,9 @@ import { matchAgentRules } from '#shared/knowledge'
 // The generated reply lands through the normal appendMessage path (and its
 // SSE event). A no-op unless the conversation's assistant has autoReply on,
 // its rules allow an AI answer for this message, and an LLM is configured —
-// the product stays human-first by default.
+// the product stays human-first by default. When the rules or the knowledge say
+// "a human", the conversation is handed off (see handOffToHuman) and the
+// assistant stays out of it.
 
 /** The assistant handling this conversation: the one the developer chose
  *  (stored on the conversation at creation), else the project's first active
@@ -33,6 +35,27 @@ export function maybeAutoRespond(conversation: ParseObject, message: ParseObject
     if (agent?.get('autoReply') !== true || agent.get('status') !== 'active') return
     await enqueueJob('ai.autoReply', { conversationId: conversation.id, messageId: message.id }, { workspaceId: await workspaceIdOfProject(projectId) })
   })().catch(error => console.warn('[auto-responder] not queued:', (error as Error).message))
+}
+
+/**
+ * The label on a conversation an assistant handed to the team. While it is on,
+ * the assistant stays out of that conversation; a teammate removing it (web or
+ * native, like any label) gives the conversation back. The inbox filters by it.
+ */
+export const HANDOFF_TAG = 'needs-human'
+
+function conversationTags(conversation: ParseObject): string[] {
+  const tags = conversation.get('tags')
+  return Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === 'string') : []
+}
+
+/** Leave a message to the team: label the conversation and say why in an internal note, once. */
+async function handOffToHuman(conversation: ParseObject, agent: ParseObject, asked: ParseObject, reason: string): Promise<void> {
+  // The note first: it is idempotent, and a retry after the label is on would not get this far.
+  const name = String(agent.get('name') || '') || 'The assistant'
+  await appendMessage({ conversation, sender: 'agent', senderName: 'HelpBites', visibility: 'internal', input: { body: `${name} handed this to a human: ${reason}. It will not answer here while the "${HANDOFF_TAG}" label is on.`, replyToId: '', clientId: `handoff-${asked.id}`, attachments: [], context: null } })
+  conversation.set('tags', [...conversationTags(conversation), HANDOFF_TAG].slice(-20))
+  await conversation.save(null, MASTER)
 }
 
 const OUT_OF_CREDITS_NOTE = 'The AI assistant did not answer: this workspace has used this month\'s AI credits. A teammate needs to reply. (Add your own AI provider in Settings → AI, or upgrade, to turn auto-replies back on.)'
@@ -79,9 +102,15 @@ export async function runAutoReply(conversationId: string, messageId: string): P
   // AI is off by default: only an active assistant with autoReply answers.
   if (agent.get('autoReply') !== true || agent.get('status') !== 'active') return
 
+  // Handed to the team earlier: the assistant stays out until someone takes the label off.
+  if (conversationTags(conversation).includes(HANDOFF_TAG)) return
+
   // Rules decide whether this message gets an AI answer or waits for a human.
   const action = matchAgentRules(readAgentRules(agent), { conversationType: String(conversation.get('type') || ''), text: query }, readDefaultAction(agent))
-  if (action === 'human') return
+  if (action === 'human') {
+    await handOffToHuman(conversation, agent, asked, 'a rule sends messages like this one to the team')
+    return
+  }
 
   // Public messages only: the reply goes to the end user, so an internal
   // note in the model's context could be repeated back to them.
@@ -100,11 +129,19 @@ export async function runAutoReply(conversationId: string, messageId: string): P
   }
 
   const knowledge = await retrieveKnowledge(agent.id || '', query, { limit: 6 })
-  // Confidence gate: leave it to a human unless the best match clears the
-  // assistant's threshold.
+  // Unsure (nothing matched, or the best match is under the assistant's
+  // confidence bar): no AI answer. "Hand to a human" (the default) labels the
+  // conversation for the team; "Stay silent" leaves it as it is.
   const minConfidence = readMinConfidence(agent)
-  if (minConfidence > 0 && knowledge.reduce((m, k) => Math.max(m, k.score || 0), 0) < minConfidence) return
-  if (!knowledge.length && agent.get('fallbackBehavior') === 'silent') return
+  const unsure = !knowledge.length
+    ? 'no knowledge matched the question'
+    : minConfidence > 0 && knowledge.reduce((m, k) => Math.max(m, k.score || 0), 0) < minConfidence
+      ? `no knowledge matched with at least ${Math.round(minConfidence * 100)}% confidence`
+      : ''
+  if (unsure) {
+    if (agent.get('fallbackBehavior') !== 'silent') await handOffToHuman(conversation, agent, asked, unsure)
+    return
+  }
 
   const transcript = recent.map(m => ({ sender: String(m.get('sender') || 'user'), body: String(m.get('body') || '') }))
   const { text } = await generateAnswer({ agent, query, knowledge, transcript })

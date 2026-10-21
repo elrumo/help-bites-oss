@@ -85,7 +85,7 @@ struct AssistantDetailScreen: View {
         LinearTextEditor(text: $draft.systemPrompt, placeholder: "You are the WebBites support assistant. Be concise and friendly.", minHeight: 110)
       }
       connection
-      LabeledField(label: "Fallback when unsure", hint: "What to do when no knowledge matches") {
+      LabeledField(label: "Fallback when unsure", hint: "When no knowledge matches well enough. Hand to a human labels the conversation needs-human, and the assistant stays out of it until the label is removed.") {
         AssistantSelectField(selection: $draft.fallbackBehavior, options: AssistantVocabulary.fallbacks)
       }
       Toggle(isOn: $draft.autoReply.animation(.snappy)) {

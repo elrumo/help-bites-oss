@@ -1497,10 +1497,16 @@ export async function importFeedbackPost(project: ParseObject, config: FeedbackB
 export async function eraseEndUserData(project: ParseObject, who: string | ParseObject): Promise<Record<string, number>> {
   const Parse = useParse()
   const externalId = typeof who === 'string' ? who : String(who.get('externalId') || '')
-  const counts = { posts: 0, comments: 0, votes: 0, reactions: 0, subscriptions: 0, conversations: 0, messages: 0, emailLogs: 0, enrollments: 0, endUsers: 0 }
+  const counts = { posts: 0, comments: 0, votes: 0, reactions: 0, subscriptions: 0, changelogSubscriptions: 0, conversations: 0, messages: 0, emailLogs: 0, enrollments: 0, endUsers: 0 }
   if (externalId) await eraseFeedbackData(project, externalId, counts)
 
   const endUser = typeof who === 'string' ? await findEndUser(project, externalId) : who
+  // Changelog subscriptions are keyed by address as often as by user id: one made
+  // signed out (or by a newsletter-only contact) carries no id at all.
+  counts.changelogSubscriptions = await eraseChangelogSubscriptions(project, {
+    externalId,
+    emails: endUser ? [String(endUser.get('email') || ''), String(endUser.get('pendingEmail') || '')] : []
+  })
   if (endUser) {
     // A page at a time until none are left: an erasure must not stop at the first thousand.
     for (;;) {
@@ -1581,7 +1587,6 @@ async function eraseFeedbackData(project: ParseObject, externalId: string, count
   }
 
   counts.changelogComments = await eraseChangelogComments(project, externalId)
-  counts.changelogSubscriptions = await eraseChangelogSubscriptions(project, externalId)
   // The EndUser row and its conversations are eraseEndUserData's: removing
   // them here would hide the row from it, and with it the mail log,
   // enrollments and opt-out suppression it clears.

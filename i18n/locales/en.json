@@ -2620,7 +2620,7 @@
     "customEndpoint": "custom endpoint",
     "notConfigured": "No LLM endpoint configured. Retrieval still works for answer suggestions; auto-reply will not run.",
     "fallback": "Fallback when unsure",
-    "fallbackHint": "What to do when no knowledge matches",
+    "fallbackHint": "When no knowledge matches well enough. Hand to a human labels the conversation needs-human, and the assistant stays out of it until the label is removed.",
     "fallbackHuman": "Hand to a human",
     "fallbackSilent": "Stay silent",
     "autoReply": "Automatically reply to this project's users",

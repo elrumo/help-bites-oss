@@ -8,6 +8,7 @@ import { contactQuery, getProjectSegment, serializeSegment } from './contacts'
 import { compileSegmentFilter } from '#shared/segments'
 import { deliverEmails, projectEmailSender, type DeliveryResult, type EmailActor, type EmailSender, type OutgoingEmail } from './emailDelivery'
 import { emailSendingPaused } from './emailReputation'
+import { isMailerConfigured } from './mailer'
 import { buildOutgoingEmails, type EmailSendRequest } from './emailSend'
 import { brandOf, findProjectEmail, serializeEmailTemplate } from './emails'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
@@ -28,7 +29,8 @@ import { planFeatureError, projectWorkspaceId, workspacePlan } from './usage'
 
 const CHUNK = 100
 const RUN_BUDGET_MS = 25_000
-// Mailgun is down or throttling: stop, keep the cursor, try again later.
+// Mailgun is down or throttling: stop, keep the cursor, try again later. With no
+// mailer at all the campaign pauses instead (see CAMPAIGN_NO_MAILER): waiting fixes nothing.
 const PROVIDER_DOWN_RE = /Mailgun (429|5\d\d)|not configured|timed? ?out|fetch failed|ECONN/i
 const PROVIDER_RETRY_MS = 5 * 60_000
 // A suspended workspace's campaign waits where it is, and is looked at again this much later.
@@ -163,6 +165,13 @@ export function complianceProblems(project: ParseObject, document: EmailDocument
 }
 
 /** Marketing mail's own sender when the project has one, else the project's. */
+export const CAMPAIGN_NO_MAILER = 'Email sending is not configured on this server (set MAILGUN_API_KEY, MAILGUN_DOMAIN and MAILGUN_FROM_EMAIL, or the project\'s own sending domain)'
+
+/** Whether this project's campaigns have anything to send through. */
+export function campaignMailerReady(project: ParseObject): boolean {
+  return isMailerConfigured(marketingSender(project))
+}
+
 export function marketingSender(project: ParseObject): EmailSender {
   const marketing = normalizeMarketingConfig(project.get('marketing'))
   const sender = projectEmailSender(project)
@@ -280,6 +289,7 @@ async function startCampaign(project: ParseObject, row: ParseObject): Promise<bo
     const problems = complianceProblems(project, snapshot.document)
     if (problems.length) throw createError({ statusCode: 400, statusMessage: problems.join('; ') })
     publicBaseUrl()
+    if (!campaignMailerReady(project)) throw createError({ statusCode: 503, statusMessage: CAMPAIGN_NO_MAILER })
     const audience = (row.get('audience') || {}) as { segment?: string, topic?: string }
     const count = await (await campaignAudience(project, audience)).count(MASTER)
     row.set('snapshot', snapshot)
@@ -346,6 +356,11 @@ async function sendCampaign(row: ParseObject, workspaceId: string, budgetMs: num
   const paused = await emailSendingPaused(workspaceId)
   if (paused) {
     await stopCampaign(row, 'paused', `Paused: ${paused}`)
+    return
+  }
+  // The mailer went away mid-send: pause where it is, rather than retrying every few minutes for ever. Resuming carries on from the cursor.
+  if (!campaignMailerReady(project)) {
+    await stopCampaign(row, 'paused', `Paused: ${CAMPAIGN_NO_MAILER}`)
     return
   }
 
@@ -451,6 +466,7 @@ export async function moveCampaign(project: ParseObject, row: ParseObject, to: s
     const problems = complianceProblems(project, snapshot.document)
     if (problems.length) throw createError({ statusCode: 400, statusMessage: problems.join('; ') })
     publicBaseUrl()
+    if (!campaignMailerReady(project)) throw createError({ statusCode: 503, statusMessage: CAMPAIGN_NO_MAILER })
     let at = new Date()
     if (to === 'scheduled') {
       at = new Date(String(scheduledAt || ''))
@@ -465,6 +481,9 @@ export async function moveCampaign(project: ParseObject, row: ParseObject, to: s
     row.unset('nextAt')
     return
   }
-  if (to === 'sending') row.set('nextAt', new Date()) // resume
+  if (to === 'sending') {
+    if (!campaignMailerReady(project)) throw createError({ statusCode: 503, statusMessage: CAMPAIGN_NO_MAILER })
+    row.set('nextAt', new Date()) // resume
+  }
   row.set('status', to)
 }

@@ -129,10 +129,14 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Per-project assistants.** A system prompt, a model, your own LLM endpoint,
   temperature, and a fallback behaviour. The API key is write-only.
 - **Off by default.** Auto-reply is a switch on each assistant. When it is on,
-  the assistant answers only from the knowledge it was given, and says so when it
-  does not know.
+  the assistant answers only from the knowledge it was given.
 - **Routing rules.** For each conversation type or keyword, decide AI or a human.
   Set a default action and a minimum confidence.
+- **Hand-off.** When a rule says "a human", or no knowledge matches well enough
+  and the fallback is "Hand to a human", the assistant does not answer: it labels
+  the conversation `needs-human`, leaves an internal note saying why, and stays
+  out of that conversation until a teammate removes the label. "Stay silent" just
+  does not answer.
 - **You decide what it sees.** Assign knowledge to an assistant by model, by
   path, or by single FAQ, with exclusions.
 - **Test before you turn it on.** Test retrieval in the panel, or test answers
@@ -298,8 +302,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   paying customers for a period, charts the last twelve months of net revenue with
   MRR at the end of each month (hover, focus or touch a month for its numbers), and
   lists plans, top customers and recent payments. Read-only. Web and native.
-- **Erasure.** Deleting a person removes their conversations, feedback and email
-  history.
+- **Erasure.** Deleting a person removes their conversations, feedback, email
+  history and changelog subscriptions, including ones made by address alone.
 
 **Lead forms** [FORMS.md](FORMS.md)
 

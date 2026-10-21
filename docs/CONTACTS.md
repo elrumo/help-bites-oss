@@ -62,8 +62,9 @@ at your app (see [MARKETING.md](MARKETING.md#event-webhook)) or poll
 `GET /v1/contacts?updatedSince=<last poll>`.
 
 Erasing (`DELETE /v1/contacts/:id`, or `DELETE /v1/end-users/:externalId`)
-removes the person, their conversations, feedback, email log rows and sequence
-enrollments. If they had unsubscribed, the address stays on the suppression
+removes the person, their conversations, feedback, email log rows, sequence
+enrollments and changelog subscriptions (including ones made with just their
+address, signed out). If they had unsubscribed, the address stays on the suppression
 list so a later import can never mail them.
 
 ## Segments

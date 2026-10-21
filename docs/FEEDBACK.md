@@ -388,9 +388,12 @@ everyone but admins until the post is on the changelog.
   The answer is always `{ ok: true }`, whether or not the address is already subscribed;
   a repeat inside a day sends no second mail; ten requests an hour per IP and thirty
   confirm mails an hour per project.
-- **Your pages** take the links. `changelog.confirmUrl` and `changelog.unsubscribeUrl`
-  (default `{siteUrl}/changelog/confirm?token={token}` and `…/unsubscribe?token={token}`) are
-  where the mails point. Those pages `POST` the token (from a click or button, never on load:
+- **Hosted pages** take the links by default: `/u/changelog/confirm/<token>` and
+  `/u/changelog/unsubscribe/<token>` on this server (it needs `APP_URL`), in the project's accent
+  and logo. Each shows one button, so a mail scanner opening the link changes nothing.
+- **Or your own pages.** Set `changelog.confirmUrl` and `changelog.unsubscribeUrl` (an http(s)
+  URL or `{siteUrl}/…`, containing `{token}`; `''` goes back to the hosted pages) and the mails
+  point there instead. Your pages `POST` the token (from a click or button, never on load:
   mail scanners prefetch links) to `/v1/changelog/subscribe/confirm` and
   `/v1/changelog/subscribe/unsubscribe`. Every digest also carries an RFC 8058 `List-Unsubscribe`
   header pointing at the unsubscribe route on this server, which a mail provider POSTs with no
@@ -419,7 +422,8 @@ templates carry the design, in your project's email templates: `changelog` (vari
 `subjectLine`, `preheader`, `firstName`, `intro`, `entriesHtml`, `changelogUrl`, `footerNote`,
 `unsubscribeUrl`, `oneClickUnsubscribeUrl`) and `changelog-confirm` (`cadence`, `confirmUrl`). The
 words (`changelog.siteName`, `changelog.copy`) are yours to change; the defaults are neutral
-("We just shipped…"). Erasing an end user deletes their subscriptions too.
+("We just shipped…"). Erasing an end user deletes their subscriptions too: the ones tied to their
+user id and the ones made with their address alone.
 
 ### Moving a changelog over
 

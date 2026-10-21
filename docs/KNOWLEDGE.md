@@ -92,6 +92,14 @@ project, retrieves knowledge, calls the LLM (`server/utils/llm.ts`), and posts t
 answer via `appendMessage` — detached, so it never blocks the user's request.
 It's a no-op unless a project has an auto-reply agent with an LLM configured.
 
+**Hand-off.** A message a routing rule sends to a human, or one no knowledge
+matches (or none above `minConfidence`) when `fallbackBehavior` is `human` (the
+default), gets no AI answer. The conversation gets the `needs-human` label and an
+internal note with the reason, and the assistant answers nothing more in it while
+the label is on: removing it hands the conversation back. List them with
+`GET /v1/admin/conversations?tag=needs-human`. With `fallbackBehavior: 'silent'`
+an unsure message is simply left unanswered and unlabelled.
+
 **Prompt grounding** (`llm.ts`): the system prompt instructs the model to answer
 only from the supplied knowledge, say when it doesn't know, and treat knowledge
 and user messages as data — never as instructions.
