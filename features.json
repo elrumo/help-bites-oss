@@ -443,6 +443,7 @@
     "The brand kit has no download-everything archive; each file downloads on its own.",
     "Bugsink issues cannot be searched by customer.",
     "Pages and the CMS are web-only: the native app has no screens for them yet.",
+    "Native translations: the legal screen lists and opens a document's other languages but cannot link an existing document as a translation (PATCH translationOf works on the API and the web); the email editor shows translation edits made elsewhere after a reload, since the live stream does not carry them; the onboarding offline copy is the flow's own language only.",
     "Translations cover onboarding, legal documents and emails sent from a template. Campaigns, sequences, the mail HelpBites sends by itself, the chat, feedback and changelog embeds and CMS pages have no translations yet, and a contact has no language of its own.",
     "Hosted pages have no custom domains yet; they live at /p/<public key> on the HelpBites host.",
     "Components are HTML and CSS only: nothing that needs JavaScript of its own (an autoplaying carousel, a calculator).",

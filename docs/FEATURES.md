@@ -464,4 +464,8 @@ See [EDITIONS.md](EDITIONS.md).
 - **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
   email, campaigns, legal documents, flags or knowledge base editing, and it issues no refresh tokens, so an
   OAuth-connected assistant signs in again after a year. [MCP.md](MCP.md)
+- **Native translations.** The legal screen cannot yet link an existing document as
+  a translation of another (the API and web can); the email editor shows translation
+  edits made elsewhere after a reload; the onboarding offline copy holds only the
+  flow's own language. [LANGUAGES.md](LANGUAGES.md)
 - **Language.** The panel is translated into Spanish, Catalan, Chinese, Japanese and Korean; the widgets are English only.
