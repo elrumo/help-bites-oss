@@ -646,6 +646,28 @@
     "scheduledToast": "Programada",
     "unpublishedToast": "Torna a ser un esborrany",
     "blogOffToast": "Activa el blog a la seva configuració perquè els lectors la vegin.",
+    "ai": {
+      "button": "Escriu amb IA",
+      "title": "Escriu amb IA",
+      "intro": "Llegeix els teus repos de GitHub connectats i aquesta entrada, i proposa text. No canvia res fins que l'apliquis.",
+      "mode": "Què fer",
+      "modes": { "write": "Escriure l'entrada", "continue": "Continuar-la", "improve": "Millorar el text", "meta": "Títol, extracte i etiquetes" },
+      "needsText": "Escriu alguna cosa primer.",
+      "instruction": "De què hauria de tractar?",
+      "instructionPlaceholder": "Anuncia el nostre nou mode sense connexió, per a un públic tècnic.",
+      "repos": "Repos que llegir",
+      "allRepos": "Tots els repos connectats, tres com a màxim",
+      "noRepos": "Aquest projecte no té repos de GitHub connectats. Connecta'ls a Configuració, o descriu l'entrada a dalt.",
+      "run": "Escriure",
+      "again": "Torna-ho a provar",
+      "applyWrite": "Fes-ho servir com a entrada",
+      "applyContinue": "Afegeix a l'entrada",
+      "applyImprove": "Substitueix el text",
+      "applyMeta": "Fes servir això",
+      "reposRead": "Llegits: {repos}",
+      "error": "No s'ha pogut escriure amb IA",
+      "applied": "Aplicat. Revisa'l abans de publicar."
+    },
     "uploadingImage": "Pujant la imatge…",
     "uploadError": "No s'ha pogut pujar la imatge",
     "status": "Estat",
@@ -2670,7 +2692,7 @@
         },
         "blog": {
           "term": "Un blog amb butlletí",
-          "desc": "Escriu entrades i pàgines en un editor enriquit i publica-les en un blog allotjat amb el teu propi disseny, al teu propi lloc o per RSS, i envia-les per correu als teus subscriptors. Entrades només per a membres, camps SEO, un sitemap i una importació des de Ghost. Els lectors reaccionen i comenten."
+          "desc": "Escriu entrades i pàgines en un editor enriquit i publica-les en un blog allotjat amb el teu propi disseny, al teu propi lloc o per RSS, i envia-les per correu als teus subscriptors. Un assistent d'IA redacta o millora entrades a partir dels teus repos de GitHub. Entrades només per a membres, camps SEO, un sitemap i una importació des de Ghost. Els lectors reaccionen i comenten."
         },
         "followers": {
           "term": "Els seguidors reben les novetats",

@@ -646,6 +646,28 @@
     "scheduledToast": "已排期",
     "unpublishedToast": "已转回草稿",
     "blogOffToast": "请在博客设置中开启博客，读者才能看到它。",
+    "ai": {
+      "button": "用 AI 写作",
+      "title": "用 AI 写作",
+      "intro": "读取已连接的 GitHub 仓库和这篇文章，并提出文字建议。你应用之前不会有任何改动。",
+      "mode": "要做什么",
+      "modes": { "write": "撰写文章", "continue": "继续写", "improve": "改进文字", "meta": "标题、摘要和标签" },
+      "needsText": "请先写一些内容。",
+      "instruction": "文章要写什么？",
+      "instructionPlaceholder": "面向技术读者，介绍我们新的离线模式。",
+      "repos": "要读取的仓库",
+      "allRepos": "所有已连接的仓库，最多三个",
+      "noRepos": "此项目尚未连接 GitHub 仓库。请在设置中连接，或在上方描述文章内容。",
+      "run": "撰写",
+      "again": "重试",
+      "applyWrite": "用作文章",
+      "applyContinue": "添加到文章",
+      "applyImprove": "替换文字",
+      "applyMeta": "使用这些",
+      "reposRead": "已读取：{repos}",
+      "error": "无法用 AI 写作",
+      "applied": "已应用。发布前请检查。"
+    },
     "uploadingImage": "正在上传图片…",
     "uploadError": "无法上传图片",
     "status": "状态",
@@ -2670,7 +2692,7 @@
         },
         "blog": {
           "term": "带邮件通讯的博客",
-          "desc": "在富文本编辑器中撰写文章和页面，发布到采用你自己设计的托管博客、你自己的网站或 RSS，并通过邮件发送给订阅者。支持仅限会员的文章、SEO 字段、站点地图以及从 Ghost 导入。读者可以添加表情反应和评论。"
+          "desc": "在富文本编辑器中撰写文章和页面，发布到采用你自己设计的托管博客、你自己的网站或 RSS，并通过邮件发送给订阅者。AI 写作助手可根据你的 GitHub 仓库起草或改进文章。支持仅限会员的文章、SEO 字段、站点地图以及从 Ghost 导入。读者可以添加表情反应和评论。"
         },
         "followers": {
           "term": "关注者会收到消息",
