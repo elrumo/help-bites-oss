@@ -922,7 +922,8 @@
       "optional": "Optional",
       "tags": "Tags",
       "userId": "User id",
-      "userIdHint": "Your app's id"
+      "userIdHint": "Your app's id",
+      "language": "Language"
     },
     "drawer": {
       "loadError": "Could not load the contact",
@@ -968,7 +969,14 @@
       "erase": "Erase this person",
       "addedVia": "Added via",
       "leadForms": "Lead forms",
-      "deletedForm": "A deleted form"
+      "deletedForm": "A deleted form",
+      "language": "Language",
+      "languageHint": "The language we write to them in. Campaigns and sequences send the matching translation of a template.",
+      "activity": "Activity",
+      "activityNone": "Nothing yet.",
+      "activityError": "Could not load their activity",
+      "showOlder": "Show older",
+      "addToSequence": "Add to sequence"
     },
     "empty": {
       "title": "No contacts yet",
@@ -1005,7 +1013,9 @@
       "everyoneOptedIn": "Everyone in this file asked for marketing email",
       "everyoneOptedInDescription": "Only if you have their consent. Nobody who unsubscribed is subscribed again.",
       "fillBlanks": "Fill blanks only",
-      "fillBlanksDescription": "Keep names and attributes you already have."
+      "fillBlanksDescription": "Keep names and attributes you already have.",
+      "language": "Language",
+      "languageHint": "A language tag such as es or pt-BR"
     },
     "segments": {
       "new": "New segment",
@@ -1023,7 +1033,8 @@
       "ruleCount": "{count} rule | {count} rules",
       "peopleCount": "{count} people",
       "auto": "Auto",
-      "autoHint": "Made for a lead form. Rename, edit or delete it like any other segment."
+      "autoHint": "Made for a lead form. Rename, edit or delete it like any other segment.",
+      "addToSequence": "Add everyone to a sequence"
     },
     "sources": {
       "connect": "Connect a database",
@@ -1106,6 +1117,26 @@
       "api": "API",
       "panel": "Added by hand",
       "feedback": "Feedback import"
+    },
+    "sequence": {
+      "title": "Add to a sequence",
+      "descriptionOne": "Start this person on one of your active sequences.",
+      "descriptionSegment": "Start everyone in “{name}” on one of your active sequences.",
+      "pick": "Sequence",
+      "none": "No sequence is active. Activate one first.",
+      "openSequences": "Open sequences",
+      "rule": "Only people who are subscribed to marketing email are added. Anyone already on the sequence is left alone.",
+      "loadError": "Could not load sequences",
+      "addError": "Could not add them",
+      "add": "Add",
+      "addMore": "Add the next batch",
+      "added": "{count} added to the sequence.",
+      "skipped": "Left out:",
+      "alreadyOn": "{count} already on it",
+      "notSubscribed": "{count} not subscribed",
+      "optedOut": "{count} opted out of its topic",
+      "notFound": "{count} not found",
+      "truncated": "That was the most one call adds. Add the next batch to carry on."
     }
   },
   "campaigns": {
@@ -3361,7 +3392,8 @@
       "connectError": "Could not connect Stripe",
       "syncError": "Could not start the sync",
       "disconnectConfirm": "Disconnect Stripe? The key and the payments synced from Stripe are forgotten. Contacts keep their Stripe attributes.",
-      "disconnectError": "Could not disconnect"
+      "disconnectError": "Could not disconnect",
+      "openContact": "Open this person"
     },
     "projectList": {
       "emptyTitle": "No projects yet",

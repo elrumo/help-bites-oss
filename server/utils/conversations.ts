@@ -516,7 +516,8 @@ export async function appendEvent(conversation: ParseObject, event: Record<strin
   row.set('conversation', conversation)
   row.set('sender', 'agent')
   row.set('senderName', 'System')
-  if (agent) row.set('agent', agent)
+  // An automated actor (a webhook's stand-in, see githubRefs.ts) is not a saved operator: nothing to point at.
+  if (agent?.id) row.set('agent', agent)
   row.set('body', '')
   row.set('attachments', [])
   row.set('context', null)
