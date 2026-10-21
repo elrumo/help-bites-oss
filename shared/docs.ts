@@ -53,6 +53,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'FLAGS.md'
   },
   {
+    slug: 'transfer',
+    title: 'Moving between instances',
+    description: 'Export a workspace or one project and import it into another HelpBites, from a file or straight from the other instance: self-hosted to cloud and back.',
+    group: 'Guides',
+    file: 'TRANSFER.md'
+  },
+  {
     slug: 'legal',
     title: 'Legal documents',
     description: 'Host your privacy policy, terms, cookie and refund policies on HelpBites: build them from reviewed clauses or with AI, check them against the rules, and link to a styled public page.',

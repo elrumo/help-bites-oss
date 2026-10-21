@@ -297,6 +297,11 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Embed scripts.** `widget.js` and `feedback.js`, both MIT-licensed, so the site
   that embeds them carries no copyleft obligations.
 - **CLI.** `helpbites changelog` turns git changes into changelog entries. It never
+- **Moving between instances.** Download a workspace, or one project, as a portable
+  file; import a file; or pull straight from another HelpBites (self-hosted or
+  cloud) with an API key or a login. Runs in the background, adds new projects,
+  keeps public keys, and is all-or-nothing. Credentials, team members and uploaded
+  files stay behind. [TRANSFER.md](TRANSFER.md)
   pushes. [cli/README.md](../cli/README.md)
 - **Scripts.** Backfills for feedback, changelog and contacts; a reindex; a demo
   knowledge seed; and a workspace migration.

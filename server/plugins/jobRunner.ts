@@ -23,6 +23,8 @@ export default defineNitroPlugin(() => {
   registerJobHandler('knowledge.index', payload => runKnowledgeIndex({ modelId: String(payload.modelId || ''), documentId: String(payload.documentId || ''), all: payload.all === true }))
   // Both walk all of a workspace's data.
   registerJobHandler('workspace.export', payload => runWorkspaceExport(String(payload.workspaceId || ''), String(payload.requestedBy || '')), { maxAttempts: 3, leaseSeconds: 30 * 60 })
+  // An import runs once: a failed one rolls itself back, and the person starts it again.
+  registerJobHandler('workspace.transfer', payload => runTransfer(String(payload.transferId || '')), { maxAttempts: 1, leaseSeconds: 6 * 3600 })
   registerJobHandler('workspace.purge', payload => purgeWorkspace(String(payload.workspaceId || '')), { leaseSeconds: 30 * 60 })
   // Every role knows the handlers, so enqueueJob's run-it-here fallback still works on a web replica; only workers poll.
   if (!runsWorkers()) return

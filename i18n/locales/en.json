@@ -2372,7 +2372,7 @@
         },
         "roles": {
           "term": "Roles for your team",
-          "desc": "Agents answer, admins run projects and the team, owners handle billing. Invite people by email."
+          "desc": "Agents answer, admins run projects and the team, owners handle billing. Invite people by email. Export a workspace or one project, or move it between self-hosted and cloud in one click."
         }
       }
     },
@@ -2797,7 +2797,9 @@
       "saveError": "Could not save",
       "projectNotFound": "Project not found",
       "loadError": "Could not load the project",
-      "leaveConfirm": "Leave without saving your changes?"
+      "leaveConfirm": "Leave without saving your changes?",
+      "data": "Data",
+      "dataHint": "Take this project to another HelpBites."
     },
     "dev": {
       "guide": "Guide",
@@ -3546,3 +3548,51 @@
     }
   }
 }
+    },
+    "transfer": {
+      "title": "Move to another HelpBites",
+      "projectTitle": "Move this project",
+      "downloadWorkspace": "Download everything, ready to import elsewhere",
+      "downloadProject": "Download this project, ready to import elsewhere",
+      "downloadHint": "Conversations, contacts, knowledge, email, changelog and settings as one file another HelpBites can import. Passwords, API keys, Stripe and GitHub connections and uploaded files stay behind.",
+      "download": "Download",
+      "downloadFailed": "Could not download the export",
+      "importTitle": "Import into this workspace",
+      "importHint": "From a file, or straight from another HelpBites (self-hosted or cloud). Everything comes in as new projects; nothing here is overwritten and nothing is changed on the other side.",
+      "fromFile": "From a file",
+      "fromInstance": "From another HelpBites",
+      "aFile": "A file",
+      "aHost": "{host}",
+      "oneProject": "One project",
+      "wholeWorkspace": "Whole workspace",
+      "queued": "Waiting to start…",
+      "running": "Importing…",
+      "runningOn": "Importing {class}: {count} rows so far",
+      "done": "Imported {rows} rows into {projects} projects.",
+      "nothingKept": "Nothing was kept; fix it and start again.",
+      "newKey": "{name}: its key was already used here, so it now has {key}. Update the embed on your site.",
+      "secrets": "Each project has a new secret (rotate it in the project's keys). Connections that hold credentials, such as Stripe, GitHub, Telegram, error trackers and webhook secrets, need setting up again.",
+      "sequencesPaused": "Sequences that were running are paused here. Turn them on when you are ready.",
+      "skipped": "{count} {class} left out: {reason}",
+      "started": "Import started",
+      "importFailed": "Could not start the import",
+      "connectTitle": "Import from another HelpBites",
+      "connectHint": "Sign in to the other HelpBites with an owner or admin. We read it once, in the background, and sign out again.",
+      "address": "Its address",
+      "auth": {
+        "key": "Admin API key",
+        "login": "Username and password"
+      },
+      "apiKey": "Admin API key",
+      "apiKeyHint": "Made under API keys there",
+      "login": "Username or email",
+      "password": "Password",
+      "connect": "Connect",
+      "connectFailed": "Could not connect",
+      "connected": "Connected to {host}, workspace {workspace}.",
+      "sourceWorkspace": "Workspace there",
+      "whatToImport": "What to import",
+      "everything": "Everything in the workspace",
+      "willCreate": "It is created here as new projects, and keeps running over there until you switch your sites over.",
+      "back": "Back",
+      "startImport": "Start import"

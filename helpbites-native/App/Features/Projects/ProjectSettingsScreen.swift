@@ -42,6 +42,9 @@ struct ProjectSettingsScreen: View {
             section("GitHub repos", "The code behind \(form.name.isEmpty ? "this project" : form.name). AI error notes and legal documents read these; HelpBites never writes to them.") {
               ProjectReposSection(projectId: projectId)
             }
+            if session.canManage {
+              section("Data", "Take this project to another HelpBites.") { TransferSection(projectId: projectId) }
+            }
             devLink
           }
         } else if !loadError.isEmpty {

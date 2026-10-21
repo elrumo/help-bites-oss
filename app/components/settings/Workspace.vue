@@ -26,6 +26,8 @@
       </div>
     </div>
 
+    <SettingsTransfer v-if="canExport" />
+
     <div v-if="canDelete" class="space-y-2">
       <p class="section-label">{{ $t('workspaceSettings.workspace.dangerZone') }}</p>
       <div class="flex items-center gap-3 rounded-xl border border-error/30 px-4 py-3">

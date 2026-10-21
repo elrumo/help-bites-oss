@@ -160,6 +160,11 @@ enum SessionPhase { case loading, signedOut, signedIn }
     try await guarded { try await api.upload(path, token: token, fields: fields, file: file, filename: filename, mimeType: mimeType, fileField: fileField) }
   }
 
+  /// POST with the file itself as the body.
+  func uploadRaw<Value: Decodable & Sendable>(_ path: String, file: Data) async throws -> Value {
+    try await guarded { try await api.uploadRaw(path, token: token, file: file) }
+  }
+
   /// Raw bytes, for downloads such as a knowledge document's source file.
   func download(_ path: String) async throws -> Data {
     try await guarded { try await api.data(path, token: token) }

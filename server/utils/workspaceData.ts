@@ -7,6 +7,7 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { createGzip } from 'node:zlib'
 import { createError } from 'h3'
+import { IMPORT_ORDER, NOT_PORTABLE, PROJECT_PINNED, EXPORT_FORMAT } from '#shared/transfer'
 
 // Everything a workspace owns, in one map: what its export reads and what
 // deleting it removes. It follows scripts/ensure-schema.mjs class by class,
@@ -35,7 +36,7 @@ export type DataRule = {
 }
 
 type ParseQuery = InstanceType<ReturnType<typeof useParse>['Query']>
-type Holdings = { workspaceId: string, projectIds: string[] }
+type Holdings = { workspaceId: string, projectIds: string[], /** A project export: only this project and what is pinned to it. */ onlyProject?: string }
 
 const KNOWLEDGE = { field: 'knowledgeModel', className: 'KnowledgeModel' }
 
@@ -52,6 +53,8 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   WorkspaceUsage: { scope: 'workspace' },
   // The queue's own bookkeeping.
   Job: { scope: 'workspace', exported: false },
+  // Imports into the workspace, with their summary: the transfer's own bookkeeping.
+  DataTransfer: { scope: 'workspace', exported: false },
   WorkspaceMember: { scope: 'workspace' },
   WorkspaceInvite: { scope: 'workspace' },
   // The cloud edition's sending domains (removed at Mailgun by its onWorkspaceDeleting hook).
@@ -108,7 +111,7 @@ function pointer(className: string, id: string): ParseObject {
 }
 
 /** A query's rows a page at a time, by objectId (safe to delete each page as it comes). */
-async function* pages(make: () => ParseQuery, keys?: string[]): AsyncGenerator<ParseObject[]> {
+export async function* pagedRows(make: () => ParseQuery, keys?: string[]): AsyncGenerator<ParseObject[]> {
   let after = ''
   for (;;) {
     const query = make()
@@ -127,17 +130,26 @@ async function* classPages(className: string, holdings: Holdings, keys?: string[
   if (!rule || rule.scope === 'none') return
   const Parse = useParse()
   const workspace = pointer('Workspace', holdings.workspaceId)
-  if (rule.scope === 'workspace') yield* pages(() => new Parse.Query(className).equalTo('workspace', workspace), keys)
+  if (rule.scope === 'workspace') {
+    const only = holdings.onlyProject
+    // A project export takes the project itself and the workspace-level rows pinned to it, nothing else.
+    if (only && className !== 'Project' && !(PROJECT_PINNED as readonly string[]).includes(className)) return
+    yield* pagedRows(() => {
+      const query = new Parse.Query(className).equalTo('workspace', workspace)
+      if (only) className === 'Project' ? query.equalTo('objectId', only) : query.equalTo('project', pointer('Project', only))
+      return query
+    }, keys)
+  }
   if (rule.scope === 'project') {
-    for (const projectId of holdings.projectIds) yield* pages(() => new Parse.Query(className).equalTo('project', pointer('Project', projectId)), keys)
-    if (rule.orWorkspace) yield* pages(() => new Parse.Query(className).equalTo('workspace', workspace).doesNotExist('project'), keys)
+    for (const projectId of holdings.projectIds) yield* pagedRows(() => new Parse.Query(className).equalTo('project', pointer('Project', projectId)), keys)
+    if (rule.orWorkspace && !holdings.onlyProject) yield* pagedRows(() => new Parse.Query(className).equalTo('workspace', workspace).doesNotExist('project'), keys)
   }
   const parent = rule.parent
   if (!parent) return
   // A project-scoped class takes only its rows without a project here (the rest came above); the parents pin the workspace.
   const ownProject = rule.scope === 'project' ? 'project' : ''
   for await (const parents of classPages(parent.className, holdings, ['objectId'])) {
-    yield* pages(() => {
+    yield* pagedRows(() => {
       const query = new Parse.Query(className).containedIn(parent.field, parents)
       if (ownProject) query.doesNotExist(ownProject)
       return query
@@ -145,17 +157,21 @@ async function* classPages(className: string, holdings: Holdings, keys?: string[
   }
 }
 
-async function holdingsOf(workspaceId: string): Promise<Holdings> {
-  const holdings: Holdings = { workspaceId, projectIds: [] }
+async function holdingsOf(workspaceId: string, onlyProject = ''): Promise<Holdings> {
+  const holdings: Holdings = { workspaceId, projectIds: [], ...(onlyProject ? { onlyProject } : {}) }
   for await (const rows of classPages('Project', holdings, ['objectId'])) holdings.projectIds.push(...rows.map(row => row.id || ''))
   return holdings
 }
 
-const EXPORTED = Object.keys(WORKSPACE_DATA).filter(name => WORKSPACE_DATA[name]!.scope !== 'none' && WORKSPACE_DATA[name]!.exported !== false)
+// In import order (shared/transfer.ts), so a file can be read once from top to bottom; the classes that never travel come last.
+const rank = (name: string) => { const at = (IMPORT_ORDER as readonly string[]).indexOf(name); return at < 0 ? IMPORT_ORDER.length : at }
+const EXPORTED = Object.keys(WORKSPACE_DATA).filter(name => WORKSPACE_DATA[name]!.scope !== 'none' && WORKSPACE_DATA[name]!.exported !== false).sort((a, b) => rank(a) - rank(b))
+/** What another instance can take in. */
+const PORTABLE = EXPORTED.filter(name => !NOT_PORTABLE[name])
 
-/** Everything a workspace owns, a class at a time, in batches of at most 500 rows. */
-export async function* workspaceRows(workspaceId: string, classes: string[] = EXPORTED): AsyncGenerator<{ className: string, rows: ParseObject[] }> {
-  const holdings = await holdingsOf(workspaceId)
+/** Everything a workspace owns (or one of its projects), a class at a time, in batches of at most 500 rows. */
+export async function* workspaceRows(workspaceId: string, classes: string[] = EXPORTED, onlyProject = ''): AsyncGenerator<{ className: string, rows: ParseObject[] }> {
+  const holdings = await holdingsOf(workspaceId, onlyProject)
   for (const className of classes) {
     for await (const rows of classPages(className, holdings)) yield { className, rows }
   }
@@ -216,8 +232,9 @@ function dropPath(value: unknown, path: string[]): void {
   }
 }
 
-export function exportHeader(workspaceId: string, exportedAt: Date) {
-  return { format: 'helpbites-export', version: 1, workspaceId, exportedAt: exportedAt.toISOString() }
+export function exportHeader(workspaceId: string, exportedAt: Date, projectId = '') {
+  // Version 2 adds `scope`; an importer reads 1 the same way (a workspace).
+  return { format: EXPORT_FORMAT, version: 2, scope: projectId ? 'project' : 'workspace', workspaceId, ...(projectId ? { projectId } : {}), exportedAt: exportedAt.toISOString() }
 }
 
 /** One row of the export, its credentials taken out. The row's own JSON is left as it was. */
@@ -232,11 +249,23 @@ export function exportKey(workspaceId: string, at: Date, nonce = randomBytes(8).
   return `exports/${workspaceId}/${at.toISOString().replace(/[:.]/g, '-')}-${nonce}.jsonl.gz`
 }
 
-async function* exportLines(workspaceId: string, exportedAt: Date): AsyncGenerator<string> {
-  yield `${JSON.stringify(exportHeader(workspaceId, exportedAt))}\n`
-  for await (const { className, rows } of workspaceRows(workspaceId)) {
+async function* exportLines(workspaceId: string, exportedAt: Date, options: { classes?: string[], projectId?: string } = {}): AsyncGenerator<string> {
+  yield `${JSON.stringify(exportHeader(workspaceId, exportedAt, options.projectId))}\n`
+  for await (const { className, rows } of workspaceRows(workspaceId, options.classes, options.projectId)) {
     yield rows.map(row => `${JSON.stringify(exportLine(className, row.toJSON() as Record<string, unknown>))}\n`).join('')
   }
+}
+
+/**
+ * What another instance can import, as a gzipped JSON Lines stream: the whole
+ * workspace, or one project. Credentials are left out and so is everything in
+ * NOT_PORTABLE. Served to a download and to an importing instance alike.
+ */
+export function portableExport(workspaceId: string, projectId = ''): Readable {
+  const gzip = createGzip()
+  const lines = Readable.from(exportLines(workspaceId, new Date(), { classes: PORTABLE, projectId }))
+  lines.on('error', error => gzip.destroy(error))
+  return lines.pipe(gzip)
 }
 
 /** Queue an export of the caller's workspace; the link is mailed to them. */
@@ -413,7 +442,7 @@ export async function purgeWorkspace(workspaceId: string): Promise<void> {
     }
   }
 
-  for await (const users of pages(() => new Parse.Query(Parse.User).equalTo('defaultWorkspace', pointer('Workspace', workspaceId)), ['objectId'])) {
+  for await (const users of pagedRows(() => new Parse.Query(Parse.User).equalTo('defaultWorkspace', pointer('Workspace', workspaceId)), ['objectId'])) {
     for (const user of users) user.unset('defaultWorkspace')
     await Parse.Object.saveAll(users, MASTER)
   }

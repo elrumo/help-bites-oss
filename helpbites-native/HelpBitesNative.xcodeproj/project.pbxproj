@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		01696599A0D056E75D2AAC96 /* BoardItemEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB2B0E6FF0E0040293D49B9 /* BoardItemEditor.swift */; };
 		01C093A3256DD469F2321DCD /* TeamScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD712106360DDAD1CC21355 /* TeamScreen.swift */; };
+		B17B5CBDA2CD9865109C5836 /* TransferSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D5F0E3917C589E81B418ED1 /* TransferSection.swift */; };
 		052563DC69285E2D41E41F0E /* ProjectsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581A501E3BCB44922E5AA6CD /* ProjectsScreen.swift */; };
 		0573E44A3AB85F823F0EED97 /* WorkspaceScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFFA789E61CDCAB8BF82EC97 /* WorkspaceScreen.swift */; };
 		062F84C214CB0A188AFAE608 /* ContactsSources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7844D4D50218620BE7F5602F /* ContactsSources.swift */; };
@@ -177,6 +178,7 @@
 		54980534EE0B68CF0ED125B9 /* ProjectScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectScreen.swift; sourceTree = "<group>"; };
 		581A501E3BCB44922E5AA6CD /* ProjectsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsScreen.swift; sourceTree = "<group>"; };
 		5BD712106360DDAD1CC21355 /* TeamScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamScreen.swift; sourceTree = "<group>"; };
+		5D5F0E3917C589E81B418ED1 /* TransferSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferSection.swift; sourceTree = "<group>"; };
 		5D85E56A5924EFCF147316F6 /* ProjectChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectChrome.swift; sourceTree = "<group>"; };
 		601798B799E5F51D6D54DC67 /* ConnectionsErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionsErrors.swift; sourceTree = "<group>"; };
 		601EE5315E319C541FE5D323 /* EmailLinkedPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailLinkedPanel.swift; sourceTree = "<group>"; };
@@ -570,6 +572,7 @@
 				750EFCF0C58463B07E6B9049 /* SettingsScreen.swift */,
 				DF18B11604FF36C21831DAA9 /* TeamInvite.swift */,
 				5BD712106360DDAD1CC21355 /* TeamScreen.swift */,
+				5D5F0E3917C589E81B418ED1 /* TransferSection.swift */,
 				BE4DB7348D8A793EC7B5DD0C /* UsageScreen.swift */,
 				EFFA789E61CDCAB8BF82EC97 /* WorkspaceScreen.swift */,
 			);
@@ -757,6 +760,7 @@
 				4F008105786F4BB1CD645E69 /* SnapshotCache.swift in Sources */,
 				741F75DC9DBF70BDBABAB4F0 /* TeamInvite.swift in Sources */,
 				01C093A3256DD469F2321DCD /* TeamScreen.swift in Sources */,
+				B17B5CBDA2CD9865109C5836 /* TransferSection.swift in Sources */,
 				3007F5A5D41727F257769438 /* Theme.swift in Sources */,
 				225E89A3EA05823FE6FCBBA3 /* TicketTypesScreen.swift in Sources */,
 				BBCDD521CEB807AE0C8DFA7C /* UsageScreen.swift in Sources */,

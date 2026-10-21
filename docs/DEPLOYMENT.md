@@ -358,6 +358,7 @@ for you.
 |---|---|---|---|
 | `PARSE_ID` | **Yes** | `helpbites` | Parse application id. Must match the `sb-parse` service. |
 | `PARSE_MASTER_KEY` | **Yes** | `change-me-master` | **Change this.** The master key; grants full data access. Only the app should have it. |
+| `PARSE_MAINTENANCE_KEY` | No | unset | Keeps the original dates of rows imported from another HelpBites; must equal `PARSE_SERVER_MAINTENANCE_KEY` on Parse. See [TRANSFER.md](TRANSFER.md). |
 | `PARSE_URL` | **Yes** | `http://localhost:1337/parse` (compose overrides to `http://sb-parse:1337/parse`) | Where the app reaches Parse. Don't set in prod. |
 | `PARSE_SERVER_DATABASE_URI` | **Yes** | `mongodb://sb-mongo:27017/helpbites` | Mongo connection string the `sb-parse` container reads. Point at an external Mongo/Atlas here if you don't run `sb-mongo`. |
 

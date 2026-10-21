@@ -7,6 +7,8 @@ import feedback from '../../docs/FEEDBACK.md'
 import flags from '../../docs/FLAGS.md'
 import legal from '../../docs/LEGAL.md'
 
+import onboarding from '../../docs/ONBOARDING.md'
+import transfer from '../../docs/TRANSFER.md'
 // The text of each published guide, bundled into the server at build time (the
 // image ships .output only, never docs/). One import per entry in
 // shared/docs.ts; tests/docs.test.ts fails if one is missing.
@@ -16,7 +18,9 @@ const SOURCES: Record<string, string> = {
   'ERRORS.md': errors,
   'FEEDBACK.md': feedback,
   'FLAGS.md': flags,
-  'LEGAL.md': legal
+  'LEGAL.md': legal,
+  'ONBOARDING.md': onboarding,
+  'TRANSFER.md': transfer
 }
 
 const rendered = new Map<string, Promise<RenderedDoc>>()

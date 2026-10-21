@@ -128,6 +128,38 @@ const SCHEMAS = {
       status_finished: { status: 1, finishedAt: 1 }
     }
   },
+  // One import into a workspace (server/utils/transfer.ts), from an uploaded file or pulled
+  // from another instance. `summary` is shared/transfer.ts's TransferSummary; `credential` is
+  // the other instance's login, sealed, and is removed as soon as the import ends.
+  DataTransfer: {
+    fields: {
+      workspace: { type: 'Pointer', targetClass: 'Workspace' },
+      createdBy: { type: 'String' },
+      // file | instance
+      source: { type: 'String' },
+      // The other instance's host, for the list.
+      host: { type: 'String' },
+      // workspace | project
+      scope: { type: 'String' },
+      // A pull of one project: its id on the other instance.
+      sourceProjectId: { type: 'String' },
+      sourceWorkspaceId: { type: 'String' },
+      credential: { type: 'String' },
+      // The uploaded file's key in the bucket.
+      uploadKey: { type: 'String' },
+      // queued | running | done | failed
+      status: { type: 'String' },
+      // The class being imported, and rows created so far.
+      progress: { type: 'Object' },
+      summary: { type: 'Object' },
+      error: { type: 'String' },
+      startedAt: { type: 'Date' },
+      finishedAt: { type: 'Date' }
+    },
+    indexes: {
+      workspace_created: { _p_workspace: 1, _created_at: -1 }
+    }
+  },
   // Who is in a workspace, and as what (shared/roles.ts). Unique per
   // (workspace, user) by convention: writers hold a Redis lock.
   WorkspaceMember: {

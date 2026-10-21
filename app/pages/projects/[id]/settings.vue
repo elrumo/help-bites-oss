@@ -150,6 +150,12 @@
             <div class="card"><SettingsProjectRepos :project-id="id" /></div>
           </section>
 
+          <!-- Data -->
+          <section v-if="canExport" id="data" class="section">
+            <header><h2 class="section-title">{{ $t('projectPages.settings.data') }}</h2><p class="section-hint">{{ $t('projectPages.settings.dataHint') }}</p></header>
+            <SettingsTransfer :project-id="id" />
+          </section>
+
           <!-- Save bar: rides the bottom of the page while there is something to save. -->
           <div v-if="dirty || saveError" class="sticky bottom-4 z-10 flex justify-center">
             <div class="flex items-center gap-3 rounded-full border border-default bg-default/95 py-1.5 pr-1.5 pl-4 shadow-lg backdrop-blur" role="status">
@@ -176,16 +182,19 @@
 <script setup lang="ts">
 import type { AdminProject } from '~~/server/utils/projects'
 import { projectColor } from '~/utils/projectColor'
+import { can } from '#shared/roles'
 
 definePageMeta({ middleware: 'agent' })
 
 type ImageField = 'iconUrl' | 'brandLogoUrl' | 'assistantLogoUrl'
 
-const { api, loadProjects, agentHeaders } = useAgent()
+const { api, loadProjects, agentHeaders, context } = useAgent()
 const { t } = useI18n()
 const route = useRoute()
 const id = String(route.params.id)
 const settingsTab = useState('settings-tab', () => '')
+// Exporting a project is the workspace's export action (an owner or admin).
+const canExport = computed(() => can(context.value?.role, 'workspace.export'))
 
 const project = ref<AdminProject | null>(null)
 const error = ref('')
@@ -202,7 +211,8 @@ const sections = computed(() => [
   { id: 'widget', label: t('projectPages.settings.chatWidget') },
   { id: 'email', label: t('sections.email') },
   { id: 'collaborators', label: t('projectPages.settings.collaborators') },
-  { id: 'github', label: t('projectPages.settings.githubRepos') }
+  { id: 'github', label: t('projectPages.settings.githubRepos') },
+  ...(canExport.value ? [{ id: 'data', label: t('projectPages.settings.data') }] : [])
 ])
 const widgetImages = computed(() => [
   { field: 'brandLogoUrl' as const, label: t('projectPages.settings.brandLogo'), icon: 'i-lucide-image' },

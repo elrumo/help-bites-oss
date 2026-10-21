@@ -294,6 +294,20 @@
       "landing": { "listed": true, "key": "landing.features.team.roles" }
     },
     {
+      "id": "data-transfer",
+      "name": "Export and import between instances",
+      "category": "platform",
+      "summary": "Download a whole workspace or one project as a portable file, import a file, or pull straight from another HelpBites (self-hosted or cloud) with an API key or login, in the background and all-or-nothing.",
+      "editions": ["community", "cloud"],
+      "plan": "all",
+      "status": "stable",
+      "web": { "panel": ["app/components/settings/Transfer.vue", "app/components/settings/Workspace.vue", "app/pages/projects/[id]/settings.vue"] },
+      "native": { "folders": ["helpbites-native/App/Features/Settings"] },
+      "api": { "prefixes": ["/v1/admin/transfers"], "docs": "docs/TRANSFER.md" },
+      "embed": null,
+      "landing": { "listed": true, "key": "landing.features.team.roles" }
+    },
+    {
       "id": "projects",
       "name": "Projects",
       "category": "platform",

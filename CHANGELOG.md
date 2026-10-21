@@ -5,6 +5,12 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- Export and import between instances: **Settings → Workspace → Move to another HelpBites** (and **Settings → Data** in a
+  project) downloads a workspace or one project, imports a file, or pulls straight from another HelpBites with an API key
+  or login. See `docs/TRANSFER.md`. Needs `schema:apply` (the container does it on boot). To keep the original dates of
+  imported rows, set `PARSE_SERVER_MAINTENANCE_KEY` and `PARSE_SERVER_MAINTENANCE_KEY_IPS` on Parse and the same value
+  as `PARSE_MAINTENANCE_KEY` on the app; without it rows get the import time. Importing a file needs `S3_*`. The
+  workspace export file now starts with `version: 2` and a `scope`; version 1 files still import.
 - Inbox conversations can be archived and deleted, on the web and in the native app. Archived threads leave the queue and
   live under a new **Archived** view; they come back when the customer writes again. Deleting removes the conversation
   and all its messages for good. Needs `schema:apply` (the container does it on boot).

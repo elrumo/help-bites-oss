@@ -38,7 +38,7 @@ class Query {
   tests: ((fields: Fields, id: string) => boolean)[] = []
   max = 100
   constructor(className: string) { this.className = className }
-  equalTo(key: string, value: unknown) { this.tests.push(f => same(f[key], value)); return this }
+  equalTo(key: string, value: unknown) { this.tests.push((f, id) => key === 'objectId' ? id === value : same(f[key], value)); return this }
   containedIn(key: string, values: unknown[]) { this.tests.push(f => values.some(v => same(f[key], v))); return this }
   doesNotExist(key: string) { this.tests.push(f => f[key] === undefined); return this }
   greaterThan(key: string, value: string) { this.tests.push((_f, id) => key === 'objectId' && id > value); return this }
@@ -165,7 +165,8 @@ describe('what a workspace owns', () => {
 
 describe('export lines', () => {
   test('the first line names the format', () => {
-    expect(exportHeader('ws1', new Date('2026-10-07T12:00:00Z'))).toEqual({ format: 'helpbites-export', version: 1, workspaceId: 'ws1', exportedAt: '2026-10-07T12:00:00.000Z' })
+    expect(exportHeader('ws1', new Date('2026-10-07T12:00:00Z'))).toEqual({ format: 'helpbites-export', version: 2, scope: 'workspace', workspaceId: 'ws1', exportedAt: '2026-10-07T12:00:00.000Z' })
+    expect(exportHeader('ws1', new Date('2026-10-07T12:00:00Z'), 'p1')).toMatchObject({ scope: 'project', projectId: 'p1' })
     expect(exportKey('ws1', new Date('2026-10-07T12:00:00Z'))).toMatch(/^exports\/ws1\/2026-10-07T12-00-00-000Z-[0-9a-f]{16}\.jsonl\.gz$/)
   })
 
@@ -415,5 +416,28 @@ describe('export download links', () => {
     expect(data.readExportDownload('not-a-token')).toBeNull()
     expect(data.readExportDownload(tokenOf(data.exportDownloadUrl('knowledge/m1/doc.md', 3600)))).toBeNull()
     expect(data.readExportDownload(tokenOf(data.exportDownloadUrl('exports/../secret.jsonl.gz', 3600)))).toBeNull()
+  })
+})
+
+describe('exporting one project', () => {
+  beforeEach(seed)
+
+  test('is that project and what hangs off it or is pinned to it, nothing else of the workspace', async () => {
+    const seen: Record<string, string[]> = {}
+    const classes = ['Project', 'EndUser', 'Conversation', 'Message', 'KnowledgeModel', 'KnowledgeNode', 'Faq', 'SupportAgent', 'EmailTemplate', 'EmailLog', 'WorkspaceMember']
+    for await (const { className, rows } of workspaceRows('A', classes, 'pA1')) seen[className] = [...(seen[className] || []), ...rows.map(row => row.id)]
+    expect(seen.Project).toEqual(['pA1'])
+    expect(seen.Conversation).toEqual(['cA'])
+    // Including the messages from before they carried their project.
+    expect(seen.Message).toHaveLength(1203)
+    expect(seen.KnowledgeModel).toEqual(['kA'])
+    expect(seen.KnowledgeNode).toEqual(['nA'])
+    expect(seen.Faq).toEqual(['fA1', 'fA2'])
+    expect(seen.EmailTemplate).toEqual(['tA2'])
+    expect(seen.EmailLog).toEqual(['elA'])
+    // Another project's contacts, the workspace's assistants, its people.
+    expect(seen.EndUser).toBeUndefined()
+    expect(seen.SupportAgent).toBeUndefined()
+    expect(seen.WorkspaceMember).toBeUndefined()
   })
 })

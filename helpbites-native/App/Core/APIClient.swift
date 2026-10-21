@@ -67,6 +67,14 @@ actor APIClient {
     return try await decode(request)
   }
 
+  /// POST with the file itself as the body (an export to import).
+  func uploadRaw<Value: Decodable & Sendable>(_ path: String, token: String, file: Data) async throws -> Value {
+    var request = try makeRequest(path, method: "POST", token: token)
+    request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+    request.httpBody = file
+    return try await decode(request)
+  }
+
   /// Raw response bytes (downloads).
   func data(_ path: String, token: String) async throws -> Data {
     let request = try makeRequest(path, method: "GET", token: token)

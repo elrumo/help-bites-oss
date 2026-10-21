@@ -67,6 +67,8 @@ struct WorkspaceScreen: View {
           }
         }
 
+        if session.canManage { TransferSection() }
+
         if session.isOwner {
           VStack(alignment: .leading, spacing: 8) {
             SectionLabel("Danger zone")
