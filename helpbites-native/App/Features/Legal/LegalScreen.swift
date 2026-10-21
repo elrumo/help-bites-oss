@@ -25,6 +25,7 @@ struct LegalScreen: View {
           Text("Host your privacy policy, terms and more without running a page. Publish a document and link to its public page from your app. These are drafts to review, not legal advice.")
             .font(.lnMeta).foregroundStyle(Theme.textMuted)
         }
+        if session.isLocked("legalDocs") { PlanLockNotice(feature: "legalDocs") }
         ErrorText(message: error)
         if loading && documents.isEmpty {
           SkeletonRows(count: 3)

@@ -88,6 +88,7 @@ const what = (s: ContactSourceDto) => s.config.className || s.config.table || s.
         <UButton icon="i-lucide-plus" :label="$t('contacts.sources.connect')" size="sm" @click="openForm(null)" />
       </template>
     </PageHeader>
+    <PlanLock feature="contactSources" />
 
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div v-if="loading" class="space-y-1 p-4"><USkeleton v-for="i in 3" :key="i" class="h-16" /></div>

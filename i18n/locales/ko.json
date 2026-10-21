@@ -2105,7 +2105,8 @@
       "features": "기능",
       "docs": "문서",
       "source": "소스",
-      "demo": "데모"
+      "demo": "데모",
+      "signUp": "가입하기"
     },
     "hero": {
       "title": "인디 개발자를 위한 만능 도구.",
@@ -3756,6 +3757,9 @@
       "dailyReset": "이 집계는 UTC 자정에 초기화됩니다.",
       "byoAi": "자체 AI 프로바이더(설정 → AI)는 크레딧을 사용하지 않습니다.",
       "close": "닫기"
+    },
+    "planLock": {
+      "notInPlan": "{feature}은(는) {plan} 플랜에 포함되어 있지 않습니다. 이미 있는 항목은 그대로 유지되며, 업그레이드하면 사용할 수 있습니다."
     },
     "transfer": {
       "title": "다른 HelpBites로 이동",

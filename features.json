@@ -437,13 +437,13 @@
       "id": "cloud-accounts-billing",
       "name": "Cloud sign-up, plans and billing",
       "category": "cloud",
-      "summary": "Open sign-up, Free and Pro plans with usage limits, Stripe billing, email verification, verified sending domains, super-admin console, AI credits, 'Powered by HelpBites' branding on Free.",
+      "summary": "Open sign-up, a public pricing page, Free and Pro plans with usage limits, locks on the features a plan leaves out (web and native), Stripe billing with optional Stripe Tax, email verification, verified sending domains, super-admin console, AI credits, 'Powered by HelpBites' branding on Free.",
       "editions": ["cloud"],
       "plan": "all",
       "entitlement": "removeBranding",
       "status": "stable",
-      "web": { "panel": ["../help-bites-cloud/ee/app/pages/signup.vue", "../help-bites-cloud/ee/app/pages/superadmin/index.vue"] },
-      "native": null,
+      "web": { "panel": ["../help-bites-cloud/ee/app/pages/signup.vue", "../help-bites-cloud/ee/app/pages/superadmin/index.vue"], "public": ["/pricing"] },
+      "native": { "folders": ["helpbites-native/App/Features/Settings"], "parity": "tests/planNativeParity.test.ts" },
       "api": { "prefixes": ["/v1/admin/usage"], "docs": "docs/EDITIONS.md" },
       "embed": null,
       "landing": { "listed": false, "key": null }
@@ -463,6 +463,7 @@
     "Components are HTML and CSS only: nothing that needs JavaScript of its own (an autoplaying carousel, a calculator).",
     "CMS content has no per-field translations, scheduled publishing or version history; folders such as es/… stand in for languages.",
     "The CMS generates no TypeScript types from component schemas.",
+    "The native app shows the plan, usage and plan locks but has no billing: subscribing and managing the subscription happen in the web panel's Settings → Billing.",
     "Lead forms have no CAPTCHA (a honeypot and rate limits only), no file uploads, no translations and no A/B tests; answers are saved on the contact rather than kept as separate submissions, and never overwrite an answer the contact already has."
   ]
 }

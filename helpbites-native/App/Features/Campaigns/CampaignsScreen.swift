@@ -4,7 +4,11 @@ import SwiftUI
 /// (web: projects/[id]/campaigns).
 struct CampaignsScreen: View {
   let projectId: String
+  @Environment(SessionStore.self) private var session
   @State private var tab = "campaigns"
+
+  /// What the open tab needs from the plan: campaigns, sequences, or the settings' event webhooks.
+  private var feature: String { tab == "sequences" ? "sequences" : tab == "settings" ? "eventWebhooks" : "campaigns" }
 
   var body: some View {
     VStack(spacing: 0) {
@@ -15,6 +19,9 @@ struct CampaignsScreen: View {
       }
       .pickerStyle(.segmented)
       .padding(.horizontal, Metrics.gutter).padding(.vertical, 8)
+      if session.isLocked(feature) {
+        PlanLockNotice(feature: feature).padding(.horizontal, Metrics.gutter).padding(.bottom, 8)
+      }
       switch tab {
       case "sequences": SequencesList(projectId: projectId)
       case "settings": MarketingSettingsView(projectId: projectId)

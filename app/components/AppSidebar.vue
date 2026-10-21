@@ -43,6 +43,7 @@
             <div class="space-y-px pt-px pb-1 pl-5">
               <NuxtLink v-for="s in projectSections" :key="s.path" :to="`/projects/${p.id}/${s.path}`" class="nav-item pl-7" active-class="nav-item-active">
                 <UIcon :name="s.icon" class="size-4 shrink-0 text-muted" />{{ $t('sections.' + s.path) }}
+                <UIcon v-if="locked(s.feature)" name="i-lucide-lock" class="ml-auto size-3 shrink-0 text-dimmed" :title="$t('workspaceSettings.planLimit.notInPlan')" />
               </NuxtLink>
             </div>
           </template>
@@ -84,6 +85,7 @@ const newProjectOpen = useState('new-project-open', () => false)
 const composeOpen = useState('compose-open', () => false)
 const totalUnread = useState<number>('inbox-total-unread', () => 0)
 const settingsTab = useState('settings-tab', () => '')
+const { locked } = usePlanLocks()
 
 const { agent, projects, demo, context, logout, switchWorkspace } = useAgent()
 const { t } = useI18n()
