@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { compileSegmentFilter, validateSegmentFilter } from '../shared/segments'
 import { billingRules, fromMinor, monthlyMinor, rollupAttributes } from '../shared/stripe'
-import { chargeRow, lastMonths, subscriptionRow } from '../server/utils/stripe'
+import { chargeRow, customerDto, lastMonths, mrrByMonth, subscriptionRow } from '../server/utils/stripe'
 
 describe('stripe amounts', () => {
   test('minor units become currency units; zero-decimal currencies stay whole', () => {
@@ -34,11 +34,26 @@ describe('charges and subscriptions', () => {
     expect(subscriptionRow(sub('canceled'), products).mrr).toBe(0)
   })
 
+  test('a live customer keeps its credit as a negative balance; a deleted one is nobody', () => {
+    expect(customerDto({ id: 'cus_1', email: 'Ada@X.io', created: 1_700_000_000, address: { country: 'ES' }, balance: -500, currency: 'EUR', delinquent: true, livemode: false }))
+      .toEqual({ id: 'cus_1', name: '', email: 'ada@x.io', createdAt: '2023-11-14T22:13:20.000Z', country: 'ES', delinquent: true, balance: -500, currency: 'eur', livemode: false })
+    expect(customerDto({ id: 'cus_2', deleted: true })).toBeNull()
+    expect(customerDto(undefined)).toBeNull()
+  })
+
   test('twelve months, oldest first, across a year boundary', () => {
     const months = lastMonths(new Date('2026-02-15T00:00:00Z'))
     expect(months).toHaveLength(12)
     expect(months[0]).toBe('2025-03')
     expect(months.at(-1)).toBe('2026-02')
+  })
+
+  test('MRR by month counts a subscription from the end of its trial until the month it ended', () => {
+    const sub = { id: 'sub_1', status: 'canceled', customer: 'cus_1', start_date: 1_767_225_600, trial_end: 1_769_904_000, ended_at: 1_775_001_600, items: { data: [{ price: { unit_amount: 1200, recurring: { interval: 'year' } } }] } }
+    expect(subscriptionRow(sub, new Map())).toMatchObject({ mrr: 0, monthly: 100, paidFromMonth: '2026-02', endedMonth: '2026-04' })
+    const months = ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05']
+    // Ended Feb→Apr at 100 a month, plus one still running since March at today's 500.
+    expect(mrrByMonth(months, [{ from: '2026-02', to: '2026-04', mrr: 0, monthly: 100 }, { from: '2026-03', to: '', mrr: 500, monthly: 500 }])).toEqual([0, 100, 600, 500, 500])
   })
 })
 

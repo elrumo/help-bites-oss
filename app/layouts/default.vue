@@ -3,7 +3,7 @@
     <!-- Phones get a top bar; the sidebar slides over from the left. -->
     <header class="flex h-12 shrink-0 items-center gap-1 border-b border-default bg-default px-2 md:hidden">
       <UButton icon="i-lucide-menu" color="neutral" variant="ghost" square :aria-label="$t('nav.openNavigation')" @click="navOpen = true" />
-      <NuxtLink to="/inbox" class="flex items-center gap-2 px-1 text-[13px] font-semibold text-highlighted">
+      <NuxtLink to="/overview" class="flex items-center gap-2 px-1 text-[13px] font-semibold text-highlighted">
         <span class="grid size-5 place-items-center rounded-[5px] bg-primary-500 text-white" aria-hidden="true"><UIcon name="i-lucide-message-circle-more" class="size-3.5" /></span>
         HelpBites
       </NuxtLink>
@@ -98,6 +98,7 @@ const paletteGroups = computed<CommandPaletteGroup<CommandPaletteItem>[]>(() => 
     id: 'pages',
     label: t('layout.pages'),
     items: [
+      { label: t('nav.overview'), icon: 'i-lucide-house', kbds: ['g', 'o'], onSelect: () => go('/overview') },
       { label: t('nav.inbox'), icon: 'i-lucide-inbox', kbds: ['g', 'i'], onSelect: () => go('/inbox') },
       { label: t('layout.emailTemplates'), icon: 'i-lucide-mail', kbds: ['g', 'e'], onSelect: () => go('/emails?view=templates') },
       { label: t('layout.emailLog'), icon: 'i-lucide-history', onSelect: () => go('/emails?view=log') },
@@ -134,6 +135,7 @@ defineShortcuts({
   meta_k: () => { paletteOpen.value = !paletteOpen.value },
   'meta_,': () => { settingsTab.value = settingsTab.value ? '' : 'account' },
   c: () => { composeOpen.value = true; if (route.path !== '/inbox') navigateTo('/inbox') },
+  'g-o': () => navigateTo('/overview'),
   'g-i': () => navigateTo('/inbox'),
   'g-e': () => navigateTo('/emails?view=templates'),
   'g-p': () => navigateTo('/projects')

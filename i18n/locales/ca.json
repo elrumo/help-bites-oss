@@ -9,6 +9,7 @@
   "nav": {
     "openNavigation": "Obre la navegació",
     "main": "Principal",
+    "overview": "Visió general",
     "inbox": "Safata d'entrada",
     "email": "Correu",
     "projects": "Projectes",
@@ -52,6 +53,45 @@
     "errors": "Errors",
     "dev": "Dev",
     "settings": "Configuració"
+  },
+  "overview": {
+    "refresh": "Actualitza",
+    "loadError": "No s'ha pogut carregar la visió general",
+    "emptyTitle": "Afegeix el teu primer projecte",
+    "emptyDescription": "Un projecte és una de les teves apps. Les seves converses, els ingressos i tota la resta apareixen aquí.",
+    "unread": "No llegides",
+    "open": "Obertes",
+    "revenue": "Ingressos",
+    "noStripe": "Stripe no connectat",
+    "openErrorsCount": "{count} informe d'error obert | {count} informes d'error oberts",
+    "atAGlance": "D'un cop d'ull",
+    "unreadConversations": "Converses no llegides",
+    "unreadMessagesCount": "{count} missatge no llegit | {count} missatges no llegits",
+    "openConversations": "Converses obertes",
+    "openErrors": "Informes d'error oberts",
+    "previous": {
+      "30d": "respecte als 30 dies anteriors",
+      "90d": "respecte als 90 dies anteriors",
+      "12m": "respecte als 12 mesos anteriors"
+    },
+    "unreadMessages": "Missatges no llegits",
+    "openInbox": "Obre la safata d'entrada",
+    "inboxZero": "Safata buida",
+    "inboxZeroDescription": "Ningú espera resposta.",
+    "revenueByProject": "Ingressos per projecte",
+    "noRevenueTitle": "Encara no hi ha ingressos",
+    "noRevenueDescription": "Connecta Stripe a un projecte per veure aquí els seus ingressos, al costat de les altres apps.",
+    "share": "{share} dels ingressos en {currency}",
+    "mrrShort": "{amount} MRR",
+    "withoutStripe": "{count} projecte sense Stripe no es compta. | {count} projectes sense Stripe no es compten.",
+    "period": "Període",
+    "netRevenue": "Ingressos nets",
+    "netByMonth": "Ingressos nets per mes",
+    "subscribers": "{count} subscriptor | {count} subscriptors",
+    "connectStripe": "Connecta Stripe",
+    "waitingTitle": "Esperant la primera sincronització",
+    "waitingDescription": "Els pagaments apareixeran aquí tan bon punt es llegeixi el primer tram.",
+    "totalsIn": "Els totals són en {currency}. No inclosos: {others}."
   },
   "layout": {
     "demoBanner": "Demo amb dades d'exemple. Res del que facis aquí es desa.",
@@ -716,6 +756,10 @@
       "billing": "Facturació",
       "paidInTotal": "{amount} pagats en total",
       "noStripe": "No hi ha subscripcions ni pagaments de Stripe.",
+      "customerSince": "Client de Stripe des del {date}",
+      "credit": "{amount} de saldo a favor",
+      "owes": "Deu {amount}",
+      "delinquent": "Pagament endarrerit",
       "subscriptions": "Subscripcions",
       "endsOn": "Acaba el {date}",
       "canceled": "Cancel·lada",
@@ -2280,6 +2324,10 @@
           "term": "Totes les apps, una sola llista en directe",
           "desc": "Projectes amb colors, un únic comptador de no llegits i missatges que arriben en el moment. Filtra per responsable, estat o no llegits."
         },
+        "overview": {
+          "term": "Totes les apps d'un cop d'ull",
+          "desc": "El panell s'obre amb una visió general: una targeta per app amb les converses no llegides i obertes i els ingressos, els últims missatges no llegits i els ingressos per app."
+        },
         "notes": {
           "term": "Notes, context i errors",
           "desc": "Notes internes que el teu client mai no veu. Els seus errors recents i els comentaris enllaçats apareixen al costat de la conversa."
@@ -3046,8 +3094,8 @@
       "syncFailed": "La darrera sincronització ha fallat",
       "waitingTitle": "Esperant la primera sincronització",
       "waitingDescription": "Els pagaments apareixeran aquí tan bon punt es llegeixi el primer tram.",
-      "netByMonth": "Ingressos nets per mes",
-      "monthTitle": "{month}: {net} de {payments} pagaments",
+      "byMonth": "Ingressos per mes",
+      "monthTitle": "{month}: {net} de {payments} pagaments, {mrr} de MRR",
       "plans": "Plans",
       "noSubscribers": "No hi ha subscriptors de pagament.",
       "subscribers": "{count} subscriptor | {count} subscriptors",

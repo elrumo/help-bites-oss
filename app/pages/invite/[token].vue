@@ -79,7 +79,7 @@ async function accept() {
     agent.value = null
     workspaceId.value = result.workspace.id
     try { localStorage.setItem('hb-workspace', result.workspace.id) } catch {}
-    await reloadNuxtApp({ path: '/inbox' })
+    await reloadNuxtApp({ path: '/overview' })
   } catch (e: any) {
     error.value = e?.data?.statusMessage || t('admin.invite.couldNotAccept')
   } finally {

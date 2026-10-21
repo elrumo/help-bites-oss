@@ -1,4 +1,5 @@
 import { BRAND_RADII, BRAND_THEMES, type BrandRadius, type BrandTheme } from '../brand'
+import { CMS_ICONS } from './icons'
 
 /**
  * The content model behind Pages (the landing page builder) and the headless
@@ -12,7 +13,7 @@ import { BRAND_RADII, BRAND_THEMES, type BrandRadius, type BrandTheme } from '..
  * holds more blocks.
  */
 
-export const CMS_FIELD_TYPES = ['text', 'textarea', 'markdown', 'number', 'boolean', 'color', 'url', 'date', 'select', 'asset', 'blocks'] as const
+export const CMS_FIELD_TYPES = ['text', 'textarea', 'markdown', 'number', 'boolean', 'color', 'url', 'date', 'select', 'icon', 'asset', 'blocks'] as const
 export type CmsFieldType = typeof CMS_FIELD_TYPES[number]
 
 export type CmsField = {
@@ -22,7 +23,7 @@ export type CmsField = {
   /** Text types: a string; number: a number; boolean: true or false. Assets and blocks have none. */
   default?: string | number | boolean
   required?: boolean
-  /** `select`: the choices. */
+  /** `select`: the choices. `icon`: the icons offered (shared/cms/icons.ts); empty offers all. */
   options?: string[]
   /** `blocks`: the component keys allowed in it; empty allows every nestable component. */
   allow?: string[]
@@ -171,6 +172,10 @@ function normalizeField(raw: unknown): CmsField | string {
     if (!options.length) return `Field "${key}": a select needs options`
     field.options = [...new Set(options)].slice(0, CMS_LIMITS.options)
   }
+  if (type === 'icon' && Array.isArray(f.options)) {
+    const options = f.options.map(o => str(o, 40)).filter(o => Object.hasOwn(CMS_ICONS, o))
+    if (options.length) field.options = [...new Set(options)]
+  }
   if (type === 'blocks') field.allow = [...new Set((Array.isArray(f.allow) ? f.allow : []).map(k => str(k, 40)).filter(k => COMPONENT_KEY.test(k)))].slice(0, 50)
   if (f.default !== undefined && f.default !== null && f.default !== '' && type !== 'asset' && type !== 'blocks') {
     const value = coerceScalar(field, f.default)
@@ -231,6 +236,10 @@ function coerceScalar(field: Pick<CmsField, 'type' | 'options'>, value: unknown)
     case 'select': {
       const s = String(value ?? '')
       return field.options?.includes(s) ? s : undefined
+    }
+    case 'icon': {
+      const s = String(value ?? '')
+      return Object.hasOwn(CMS_ICONS, s) && (!field.options?.length || field.options.includes(s)) ? s : undefined
     }
     case 'date': {
       const s = String(value ?? '').trim()

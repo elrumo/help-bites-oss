@@ -15,6 +15,8 @@ import type { EmailFolder, EmailTemplate } from '~~/server/utils/emails'
 import type { EmailLogEntry, EmailLogStatus, EmailSuppression } from '~~/server/utils/emailLogs'
 import type { AdminProject } from '~~/server/utils/projects'
 import type { ProjectOverview } from '~~/server/utils/overview'
+import { OVERVIEW_UNREAD_LIMIT, revenueChange, type WorkspaceOverview, type WorkspaceRevenue } from '#shared/overview'
+import { REVENUE_RANGES, type RevenueRange } from '#shared/stripe'
 
 // The landing page's demo: the real panel, answered from memory instead of the
 // API. Nothing leaves the tab and a reload starts over from these fixtures.
@@ -261,6 +263,32 @@ const emailSuppressions: EmailSuppression[] = [
 const find = <T extends { id: string }>(list: T[], id: string | undefined, what: string): T => list.find(item => item.id === id) || fail(404, `${what} not found`)
 const typeOf = (c: Conversation) => types[c.projectId]?.find(t => t.key === c.type) || supportType(c.projectId)
 const userOf = (c: Conversation) => endUsers.find(u => u.id === c.endUserId)!
+
+// The overview's revenue: net by month for the last 12 months, oldest first, in dollars.
+const DEMO_REVENUE: Record<string, { months: number[], mrr: number, subscribers: number }> = {
+  acme: { months: [1840, 2010, 2150, 2380, 2290, 2620, 2870, 3010, 3260, 3490, 3720, 3980], mrr: 3980, subscribers: 211 },
+  fieldnotes: { months: [310, 340, 395, 420, 480, 455, 530, 610, 640, 705, 760, 820], mrr: 790, subscribers: 96 }
+}
+function demoRevenue(range: RevenueRange): WorkspaceRevenue {
+  const sum = (values: number[]) => values.reduce((total, n) => total + n, 0)
+  // A month stands in for 30 days; all time is the year and a bit before it.
+  const span = { '30d': 1, '90d': 3, '12m': 12, all: 0 }[range]
+  const rows = projects.filter(p => DEMO_REVENUE[p.id]).map((p) => {
+    const r = DEMO_REVENUE[p.id]!
+    const net = span ? sum(r.months.slice(-span)) : Math.round(sum(r.months) * 1.6)
+    const previousNet = !span ? null : span < 12 ? sum(r.months.slice(-2 * span, -span)) : Math.round(net * 0.62)
+    return { projectId: p.id, currency: 'usd', net, previousNet, change: revenueChange(net, previousNet), mrr: r.mrr, subscribers: r.subscribers, payments: Math.round(net / 19) }
+  })
+  const now = new Date(start)
+  const months = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11 + i, 1)).toISOString().slice(0, 7))
+  const net = sum(rows.map(r => r.net))
+  const previousNet = span ? sum(rows.map(r => r.previousNet || 0)) : null
+  return {
+    range, connected: rows.length,
+    totals: [{ currency: 'usd', net, previousNet, change: revenueChange(net, previousNet), mrr: sum(rows.map(r => r.mrr)), subscribers: sum(rows.map(r => r.subscribers)), months: months.map((month, i) => ({ month, net: sum(rows.map(r => DEMO_REVENUE[r.projectId]!.months[i]!)) })) }],
+    projects: rows.sort((a, b) => b.net - a.net)
+  }
+}
 const serializeUser = ({ projectId: _, ...user }: EndUser) => user
 
 function setStatus(c: Conversation, key: string) {
@@ -420,6 +448,20 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
       ].filter(item => item.count > 0),
       activity: scoped.filter(c => c.lastMessageAt).sort((a, b) => String(b.lastMessageAt).localeCompare(String(a.lastMessageAt))).slice(0, 10)
         .map(c => ({ id: `c:${c.id}`, title: userOf(c).name || userOf(c).email || 'Conversation', detail: c.lastMessagePreview, at: String(c.lastMessageAt), section: 'conversations', conversationId: c.id }))
+    }
+  }],
+  ['GET', /^\/admin\/overview$/, ({ query }): WorkspaceOverview => {
+    const open = (c: Conversation) => c.statusCategory === 'open' || c.statusCategory === 'pending'
+    const waiting = conversations.filter(c => !c.archivedAt && c.unreadByAgent > 0).sort((a, b) => String(b.lastMessageAt).localeCompare(String(a.lastMessageAt)))
+    const stats = projects.map((p) => {
+      const scoped = conversations.filter(c => c.projectId === p.id)
+      return { id: p.id, name: p.name, open: scoped.filter(open).length, unread: waiting.filter(c => c.projectId === p.id).length, errors: scoped.filter(c => c.type === 'error' && open(c)).length }
+    })
+    return {
+      totals: { unreadMessages: waiting.reduce((sum, c) => sum + c.unreadByAgent, 0), unread: waiting.length, open: stats.reduce((sum, p) => sum + p.open, 0), errors: stats.reduce((sum, p) => sum + p.errors, 0) },
+      projects: stats,
+      unread: waiting.slice(0, OVERVIEW_UNREAD_LIMIT).map(c => ({ conversationId: c.id, projectId: c.projectId, name: userOf(c).name, email: userOf(c).email, subject: c.subject, preview: c.lastMessagePreview, unread: c.unreadByAgent, at: String(c.lastMessageAt || c.createdAt) })),
+      revenue: demoRevenue(REVENUE_RANGES.find(r => r.value === query.range)?.value || '30d')
     }
   }],
   ['GET', /^\/admin\/projects\/([^/]+)\/secret$/, ({ params }) => ({ secret: (secrets[params[0]!] ||= `sk_demo_${newId('secret')}`) })],

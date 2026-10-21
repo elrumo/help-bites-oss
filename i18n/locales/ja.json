@@ -9,6 +9,7 @@
   "nav": {
     "openNavigation": "ナビゲーションを開く",
     "main": "メイン",
+    "overview": "ホーム",
     "inbox": "受信トレイ",
     "email": "メール",
     "projects": "プロジェクト",
@@ -52,6 +53,45 @@
     "errors": "エラー",
     "dev": "開発",
     "settings": "設定"
+  },
+  "overview": {
+    "refresh": "更新",
+    "loadError": "概要を読み込めませんでした",
+    "emptyTitle": "最初のプロジェクトを追加",
+    "emptyDescription": "プロジェクトはアプリひとつ分です。会話や収益など、すべてがここに表示されます。",
+    "unread": "未読",
+    "open": "対応中",
+    "revenue": "収益",
+    "noStripe": "Stripe 未接続",
+    "openErrorsCount": "未解決のエラーレポート {count} 件",
+    "atAGlance": "ひと目でわかる",
+    "unreadConversations": "未読の会話",
+    "unreadMessagesCount": "未読メッセージ {count} 件",
+    "openConversations": "対応中の会話",
+    "openErrors": "未解決のエラーレポート",
+    "previous": {
+      "30d": "前の 30 日間と比較",
+      "90d": "前の 90 日間と比較",
+      "12m": "前の 12 か月と比較"
+    },
+    "unreadMessages": "未読メッセージ",
+    "openInbox": "受信トレイを開く",
+    "inboxZero": "未読はありません",
+    "inboxZeroDescription": "返信を待っている人はいません。",
+    "revenueByProject": "プロジェクト別の収益",
+    "noRevenueTitle": "まだ収益はありません",
+    "noRevenueDescription": "プロジェクトに Stripe を接続すると、ほかのアプリと並べて収益をここに表示します。",
+    "share": "{currency} の収益の {share}",
+    "mrrShort": "MRR {amount}",
+    "withoutStripe": "Stripe 未接続のプロジェクト {count} 件は含まれていません。",
+    "period": "期間",
+    "netRevenue": "純収益",
+    "netByMonth": "月別の純収益",
+    "subscribers": "{count} 人のサブスクライバー",
+    "connectStripe": "Stripe に接続",
+    "waitingTitle": "最初の同期を待っています",
+    "waitingDescription": "最初の範囲の読み取りが終わると、支払いがここに表示されます。",
+    "totalsIn": "合計は {currency} です。含まれないもの: {others}。"
   },
   "layout": {
     "demoBanner": "サンプルデータのデモです。ここでの操作は保存されません。",
@@ -716,6 +756,10 @@
       "billing": "請求",
       "paidInTotal": "支払い合計 {amount}",
       "noStripe": "Stripe からのサブスクリプションや支払いはありません。",
+      "customerSince": "{date} から Stripe の顧客",
+      "credit": "{amount} のクレジット",
+      "owes": "未払い {amount}",
+      "delinquent": "支払い遅延",
       "subscriptions": "サブスクリプション",
       "endsOn": "{date} 終了",
       "canceled": "キャンセル済み",
@@ -2280,6 +2324,10 @@
           "term": "すべてのアプリを、ひとつのライブリスト",
           "desc": "色分けされたプロジェクト、未読数はひとつ、メッセージはリアルタイムで届きます。担当者、ステータス、未読で絞り込めます。"
         },
+        "overview": {
+          "term": "すべてのアプリをひと目で",
+          "desc": "パネルを開くと概要が表示されます。アプリごとのカードに未読・対応中の会話と収益、最新の未読メッセージ、アプリ別の収益。"
+        },
         "notes": {
           "term": "メモ、文脈、エラー",
           "desc": "顧客には見えない内部メモ。最近のエラーや関連するフィードバックが会話の横に表示されます。"
@@ -3046,8 +3094,8 @@
       "syncFailed": "前回の同期に失敗しました",
       "waitingTitle": "最初の同期を待っています",
       "waitingDescription": "最初の範囲の読み取りが終わると、支払いがここに表示されます。",
-      "netByMonth": "月別の純収益",
-      "monthTitle": "{month}：{payments} 件の支払いによる {net}",
+      "byMonth": "月別の収益",
+      "monthTitle": "{month}：{payments} 件の支払いによる {net}、MRR {mrr}",
       "plans": "プラン",
       "noSubscribers": "有料のサブスクライバーはいません。",
       "subscribers": "{count} 人のサブスクライバー",

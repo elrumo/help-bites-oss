@@ -18,6 +18,7 @@
 
     <nav class="min-h-0 flex-1 space-y-5 overflow-y-auto px-2 pb-3" :aria-label="$t('nav.main')">
       <div class="space-y-px">
+        <NuxtLink to="/overview" class="nav-item" active-class="nav-item-active"><UIcon name="i-lucide-house" class="size-4 shrink-0 text-muted" />{{ $t('nav.overview') }}</NuxtLink>
         <NuxtLink to="/inbox" class="nav-item" active-class="nav-item-active">
           <UIcon name="i-lucide-inbox" class="size-4 shrink-0 text-muted" />{{ $t('nav.inbox') }}
           <span v-if="totalUnread" class="ml-auto text-xs tabular-nums text-muted">{{ totalUnread }}</span>

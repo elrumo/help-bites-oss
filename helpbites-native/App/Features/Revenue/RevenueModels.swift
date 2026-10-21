@@ -42,7 +42,8 @@ enum RevenueRange: String, CaseIterable, Identifiable, Sendable {
 /// (19.99), unlike the payments in `recent`, which are in the smallest unit (1999).
 struct RevenueReport: Decodable, Equatable, Sendable {
   struct Subscribers: Decodable, Equatable, Sendable { let active, trialing, pastDue: Int }
-  struct Month: Decodable, Equatable, Sendable, Identifiable { let month: String; let net: Double; let payments: Int; var id: String { month } }
+  /// `mrr` is the MRR at the end of the month (this month: today).
+  struct Month: Decodable, Equatable, Sendable, Identifiable { let month: String; let net: Double; let payments: Int; let mrr: Double; var id: String { month } }
   struct Plan: Decodable, Equatable, Sendable, Identifiable { let plan: String; let subscribers: Int; let mrr: Double; var id: String { plan } }
   struct Customer: Decodable, Equatable, Sendable, Identifiable { let customerId, email: String; let net: Double; let payments: Int; var id: String { customerId } }
   struct OtherCurrency: Decodable, Equatable, Sendable { let currency: String; let net: Double }
@@ -77,9 +78,22 @@ struct StripeSubscription: Decodable, Equatable, Identifiable, Sendable {
   let cancelAtPeriodEnd: Bool
 }
 
+/// A Stripe customer as read live; `balance` is in the smallest unit of `currency`, negative when they have credit.
+struct StripeCustomer: Decodable, Equatable, Sendable {
+  let id, name, email: String
+  let createdAt: String?
+  let country: String
+  let delinquent: Bool
+  let balance: Double
+  let currency: String
+  let livemode: Bool
+}
+
 /// `GET /v1/admin/stripe/contact`; empty (and `currency` blank) when Stripe isn't connected.
+/// `customer` is read from Stripe live and is nil when they aren't a customer or Stripe didn't answer.
 struct ContactBilling: Decodable, Equatable, Sendable {
   let currency: String
+  let customer: StripeCustomer?
   let subscriptions: [StripeSubscription]
   let payments: [StripePayment]
 }

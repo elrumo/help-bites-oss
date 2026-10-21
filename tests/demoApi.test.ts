@@ -54,6 +54,20 @@ test('the demo answers a project overview, the page a project lands on', async (
   expect(overview.attention.every((item: any) => item.count > 0)).toBe(true)
 })
 
+test('the demo answers the workspace overview, the page the panel opens on', async () => {
+  const overview = await demoApi<any>('/admin/overview', { query: { range: '90d' } })
+  expect(overview.projects.map((p: any) => p.id)).toEqual(['acme', 'fieldnotes'])
+  expect(overview.unread.length).toBeGreaterThan(0)
+  expect(overview.unread.every((u: any) => u.unread > 0 && u.conversationId)).toBe(true)
+  expect(overview.totals.unread).toBe(overview.projects.reduce((sum: number, p: any) => sum + p.unread, 0))
+  const { revenue } = overview
+  expect(revenue.range).toBe('90d')
+  expect(revenue.totals[0].net).toBe(revenue.projects.reduce((sum: number, p: any) => sum + p.net, 0))
+  expect(revenue.totals[0].months).toHaveLength(12)
+  expect(revenue.projects[0].net).toBeGreaterThanOrEqual(revenue.projects[1].net)
+  expect((await demoApi<any>('/admin/overview', { query: { range: 'all' } })).revenue.totals[0].change).toBeNull()
+})
+
 test('the demo changelog has sample entries and refuses writes', async () => {
   const { entries } = await demoApi<any>('/admin/changelog/entries', { query: { project: 'acme' } })
   expect(entries.length).toBeGreaterThan(0)

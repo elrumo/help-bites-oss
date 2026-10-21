@@ -4,6 +4,8 @@ import Observation
 /// Where the panel can go, mirroring the web's pages. A project with no section
 /// is its page of sections, the step between Projects and a section on iPhone.
 enum AppRoute: Hashable {
+  /// Every project at once, the page the app opens on (web: /overview).
+  case overview
   case inbox
   case emailTemplates
   /// The email log across every project (web: /emails?view=log).
@@ -35,7 +37,7 @@ enum AppRoute: Hashable {
 /// The tab bar's tabs (iPhone), which become the sidebar on iPad and Mac. The
 /// sidebar also holds every project's sections, as the web's does.
 enum AppTab: Hashable {
-  case inbox, projects, templates, settings
+  case overview, inbox, projects, templates, settings
   case section(String, ProjectSection)
 }
 
@@ -97,12 +99,12 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
   let session: SessionStore
   let inbox: InboxStore
   var projects: [Project] = []
-  var tab: AppTab = .inbox
+  var tab: AppTab = .overview
   var projectsPath: [AppRoute] = []
   var templatesPath: [AppRoute] = []
   var settingsPath: [AppRoute] = []
   /// The Mac window's sidebar selection and the pages pushed onto its detail.
-  var macSelection: AppRoute = .inbox
+  var macSelection: AppRoute = .overview
   var macPath: [AppRoute] = []
   /// iPad at full width and Mac show the sidebar, where a project's section is a tab of its own.
   var sidebar = false
@@ -145,6 +147,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     return
     #else
     switch route {
+    case .overview: tab = .overview
     case .inbox: tab = .inbox
     case .emailTemplates: tab = .templates; templatesPath = []
     case .emailLog: tab = .templates; templatesPath = [.emailLog]

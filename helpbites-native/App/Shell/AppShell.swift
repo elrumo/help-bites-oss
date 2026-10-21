@@ -18,6 +18,10 @@ struct AppShell: View {
     MacShell()
     #else
     TabView(selection: $workspace.tab) {
+      Tab("Overview", systemImage: "house", value: AppTab.overview) {
+        NavigationStack { OverviewScreen().routes() }
+      }
+
       Tab("Inbox", systemImage: "tray", value: AppTab.inbox) {
         NavigationStack { InboxScreen() }
       }
@@ -100,6 +104,7 @@ struct RouteView: View {
   let route: AppRoute
   var body: some View {
     switch route {
+    case .overview: OverviewScreen()
     case .inbox: InboxScreen()
     case .emailTemplates: EmailLibraryScreen(projectId: nil)
     case .emailLog: EmailLibraryScreen(projectId: nil, initialTab: .log)
@@ -175,6 +180,7 @@ struct AppCommands: Commands {
     }
     CommandMenu("Go") {
       Group {
+        Button("Overview") { workspace?.go(.overview) }.keyboardShortcut("0")
         Button("Inbox") { workspace?.go(.inbox) }.keyboardShortcut("1")
         Button("Projects") { workspace?.go(.projects) }.keyboardShortcut("2")
         Button("Email Templates") { workspace?.go(.emailTemplates) }.keyboardShortcut("3")
@@ -199,6 +205,7 @@ struct CommandPalette: View {
 
   private var entries: [Entry] {
     var all: [Entry] = [
+      Entry(id: "overview", title: "Overview", detail: nil, systemImage: "house", route: .overview),
       Entry(id: "inbox", title: "Inbox", detail: nil, systemImage: "tray", route: .inbox),
       Entry(id: "emails", title: "Email templates", detail: nil, systemImage: "envelope", route: .emailTemplates),
       Entry(id: "email-log", title: "Email log", detail: nil, systemImage: "list.bullet.rectangle", route: .emailLog),

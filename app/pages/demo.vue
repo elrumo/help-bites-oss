@@ -6,5 +6,5 @@
 definePageMeta({ layout: 'bare' })
 const { token, setDemo } = useAgent()
 if (!token.value) setDemo(true)
-await navigateTo('/inbox', { replace: true })
+await navigateTo('/overview', { replace: true })
 </script>

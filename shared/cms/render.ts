@@ -1,5 +1,6 @@
 import { Marked } from 'marked'
 import { readableOn } from '../brand'
+import { CMS_ICONS } from './icons'
 import { DEFAULT_STYLE, SAFE_COLOR, normalizeAsset, type CmsBlock, type CmsComponentDef, type CmsField, type CmsLibrary, type CmsStyle } from './content'
 
 /**
@@ -10,9 +11,11 @@ import { DEFAULT_STYLE, SAFE_COLOR, normalizeAsset, type CmsBlock, type CmsCompo
  *   {{@key}}               the value, escaped or checked for its type; a
  *                          `blocks` field is its children's HTML
  *   {{@image.alt}}         an asset's alt, width, height, mime (or url)
+ *                          an `icon` field is an inline SVG (`.hb-icon`, 1em, currentColor)
  *   {{#key}}…{{/key}}      only when the value is set (non-empty, true, any blocks)
  *   {{^key}}…{{/key}}      only when it is not
  *   {{$pk}} {{$host}}      the project's public key and the HelpBites host (forms)
+ *   {{$uid}} {{$parent}}   this block's `_uid` and its parent's (radio groups, exclusive <details>)
  * Each block's outer element gets `data-hb-uid` and `data-hb-component` (the
  * editor and the bridge select by them) and its animation as `data-hb-anim`.
  */
@@ -73,11 +76,11 @@ function isSet(field: CmsField | undefined, block: CmsBlock): boolean {
 
 const SECTION = /\{\{([#^])\s*([A-Za-z][A-Za-z0-9_]*)\s*\}\}([\s\S]*?)\{\{\/\s*\2\s*\}\}/g
 const SLOT = /\{\{\s*@([A-Za-z][A-Za-z0-9_]*)(?:\.(alt|width|height|mime|url))?\s*\}\}/g
-const CONTEXT = /\{\{\s*\$(pk|host)\s*\}\}/g
+const CONTEXT = /\{\{\s*\$(pk|host|uid|parent)\s*\}\}/g
 
 type Walk = RenderContext & { used: Set<string> }
 
-function fill(def: CmsComponentDef, block: CmsBlock, ctx: Walk): string {
+function fill(def: CmsComponentDef, block: CmsBlock, ctx: Walk, parent: string): string {
   const fields = new Map(def.fields.map(f => [f.key, f]))
   let html = def.html
   // Repeated, so a section can sit inside another of a different key.
@@ -91,7 +94,7 @@ function fill(def: CmsComponentDef, block: CmsBlock, ctx: Walk): string {
     if (!field) return ''
     const v = valueOf(field, block)
     switch (field.type) {
-      case 'blocks': return renderList(Array.isArray(v) ? v as CmsBlock[] : [], ctx)
+      case 'blocks': return renderList(Array.isArray(v) ? v as CmsBlock[] : [], ctx, block._uid)
       case 'asset': {
         const a = normalizeAsset(v)
         if (!a) return ''
@@ -106,10 +109,12 @@ function fill(def: CmsComponentDef, block: CmsBlock, ctx: Walk): string {
       case 'color': return typeof v === 'string' && SAFE_COLOR.test(v.trim()) ? v.trim() : ''
       case 'number': return typeof v === 'number' && Number.isFinite(v) ? String(v) : ''
       case 'boolean': return v === true ? 'true' : ''
+      case 'icon': return typeof v === 'string' && Object.hasOwn(CMS_ICONS, v) ? `<svg class="hb-icon" viewBox="0 0 24 24" aria-hidden="true">${CMS_ICONS[v]}</svg>` : ''
       default: return esc(v ?? '')
     }
   })
-  return html.replace(CONTEXT, (_m, name: string) => esc(name === 'pk' ? ctx.pk : ctx.host))
+  const context: Record<string, string> = { pk: ctx.pk, host: ctx.host, uid: block._uid, parent }
+  return html.replace(CONTEXT, (_m, name: string) => esc(context[name]))
 }
 
 /** The block's outer tag carries its id, component and animation. */
@@ -120,15 +125,15 @@ function tag(html: string, block: CmsBlock): string {
   return html.replace(/^(\s*<[a-zA-Z][\w-]*)/, `$1${attrs}`)
 }
 
-function renderBlock(block: CmsBlock, ctx: Walk): string {
+function renderBlock(block: CmsBlock, ctx: Walk, parent = ''): string {
   const def = ctx.library.get(block.component)
   if (!def || !def.html) return ''
   ctx.used.add(def.key)
-  return tag(fill(def, block, ctx), block)
+  return tag(fill(def, block, ctx, parent), block)
 }
 
-function renderList(blocks: CmsBlock[], ctx: Walk): string {
-  return blocks.map(b => renderBlock(b, ctx)).join('\n')
+function renderList(blocks: CmsBlock[], ctx: Walk, parent: string): string {
+  return blocks.map(b => renderBlock(b, ctx, parent)).join('\n')
 }
 
 const RADII: Record<CmsStyle['radius'], [string, string]> = { sharp: ['0px', '0px'], soft: ['14px', '8px'], round: ['28px', '999px'] }
@@ -149,8 +154,11 @@ export function themeCss(style: CmsStyle, accent: string): string {
   return `:root { ${vars} }\n${modes}`
 }
 
+/** Typefaces Apple and Windows devices already have: named, never fetched (elsewhere the system font stands in). */
+const SYSTEM_FONTS = new Set(['avenir', 'avenir next', 'helvetica', 'helvetica neue', 'arial', 'georgia', 'times new roman', 'menlo', 'sf pro', 'segoe ui'])
+
 export function fontLink(style: CmsStyle): string {
-  const families = [...new Set([style.headingFont, style.bodyFont].map(family).filter(Boolean))]
+  const families = [...new Set([style.headingFont, style.bodyFont].map(family).filter(f => f && !SYSTEM_FONTS.has(f.toLowerCase())))]
   if (!families.length) return ''
   const query = families.map(f => `family=${f.replace(/ /g, '+')}:wght@400;500;600;700`).join('&')
   return `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?${query}&display=swap">`
@@ -159,8 +167,9 @@ export function fontLink(style: CmsStyle): string {
 /** The base every page gets: a reset, the type scale and the `.hb-*` helpers built-ins use (a host page may restyle them). */
 export const BASE_CSS = `*, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
-body { margin: 0; background: var(--hb-bg); color: var(--hb-text); font: 16px/1.6 var(--hb-font); -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--hb-bg); color: var(--hb-text); font: 16px/1.6 var(--hb-font); -webkit-font-smoothing: antialiased; overflow-x: clip; }
 img, video, iframe { max-width: 100%; display: block; }
+.hb-icon { width: 1em; height: 1em; flex: none; display: inline-block; vertical-align: -0.125em; }
 img, video { height: auto; }
 a { color: inherit; }
 h1, h2, h3, h4 { font-family: var(--hb-heading-font); line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 .5em; text-wrap: balance; }
@@ -185,6 +194,39 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 .hb-grid { display: grid; gap: 20px; grid-template-columns: repeat(var(--hb-cols, 3), minmax(0, 1fr)); }
 @media (max-width: 860px) { .hb-grid { grid-template-columns: repeat(min(var(--hb-cols, 3), 2), minmax(0, 1fr)); } }
 @media (max-width: 560px) { .hb-grid { grid-template-columns: minmax(0, 1fr); } }
+.hb-btn--ink { background: var(--hb-text); color: var(--hb-bg); }
+.hb-btn--glass { background: rgb(255 255 255 / .12); color: #fff; border-color: rgb(255 255 255 / .25); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.hb-btn--soft { background: var(--hb-surface); color: var(--hb-text); border-color: var(--hb-line); }
+.hb-btn .hb-icon { font-size: 1.1em; }
+.hb-title { font-size: clamp(2.1rem, 4.6vw, 3.35rem); line-height: 1.06; font-weight: 700; letter-spacing: -0.032em; margin: 14px 0 0; text-wrap: balance; }
+.hb-heading { font-size: clamp(1.75rem, 3vw, 2.1rem); line-height: 1.12; font-weight: 600; letter-spacing: -0.022em; margin: 14px 0 0; }
+.hb-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.hb-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; line-height: 1; background: color-mix(in srgb, var(--hb-text) 6%, transparent); color: var(--hb-text); }
+.hb-pill--blue { background: rgb(59 130 246 / .1); color: #2563eb; }
+.hb-pill--amber { background: rgb(245 158 11 / .12); color: #b45309; }
+.hb-pill--violet { background: rgb(139 92 246 / .1); color: #7c3aed; }
+.hb-pill--emerald { background: rgb(16 185 129 / .1); color: #047857; }
+.hb-pill--dark { background: var(--hb-text); color: var(--hb-bg); }
+.hb-pill--glass { background: rgb(255 255 255 / .1); color: rgb(255 255 255 / .85); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .1); }
+.hb-ping { position: relative; width: 8px; height: 8px; border-radius: 999px; background: currentColor; }
+.hb-ping::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: currentColor; animation: hb-ping 1.8s cubic-bezier(0, 0, .2, 1) infinite; }
+@keyframes hb-ping { 75%, 100% { transform: scale(2.4); opacity: 0; } }
+.hb-step { display: inline-flex; align-items: center; height: 28px; border-radius: 999px; padding: 0 12px; margin-bottom: 14px; background: rgb(59 130 246 / .1); color: #2563eb; font: 600 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.hb-textlink { color: var(--hb-accent); font-weight: 600; text-decoration: none; align-self: center; }
+.hb-textlink::after { content: " ↗"; }
+.hb-checks ul { list-style: none; padding: 0; margin: 24px 0 0; display: grid; gap: 16px; font-size: 17px; line-height: 1.35; }
+.hb-checks li { display: flex; gap: 12px; align-items: flex-start; }
+.hb-checks li::before { content: ""; flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: 999px; background: var(--hb-tint, var(--hb-accent)) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 12px no-repeat; }
+.hb-tint--blue { --hb-tint: #3b82f6; } .hb-tint--amber { --hb-tint: #f59e0b; } .hb-tint--violet { --hb-tint: #8b5cf6; } .hb-tint--emerald { --hb-tint: #10b981; } .hb-tint--neutral { --hb-tint: #171717; }
+.hb-stage { position: relative; aspect-ratio: 5 / 4; border-radius: 2rem; overflow: hidden; background: #f5f5f5; isolation: isolate; }
+.hb-stage::before { content: ""; position: absolute; inset: 0; z-index: -1; }
+.hb-stage--blue::before { background: radial-gradient(80% 70% at 10% 0%, rgb(147 197 253 / .65), transparent 70%), radial-gradient(60% 60% at 100% 100%, rgb(196 181 253 / .45), transparent 70%); }
+.hb-stage--amber::before { background: radial-gradient(80% 70% at 10% 0%, rgb(253 230 138 / .7), transparent 70%), radial-gradient(60% 60% at 100% 100%, rgb(254 202 202 / .5), transparent 70%); }
+.hb-stage--violet::before { background: radial-gradient(80% 70% at 90% 0%, rgb(196 181 253 / .65), transparent 70%), radial-gradient(60% 60% at 0% 100%, rgb(165 243 252 / .5), transparent 70%); }
+.hb-stage--emerald::before { background: radial-gradient(80% 70% at 10% 0%, rgb(167 243 208 / .7), transparent 70%), radial-gradient(60% 60% at 100% 100%, rgb(186 230 253 / .5), transparent 70%); }
+.hb-stage--bleed img { position: absolute; top: 9%; left: 7%; width: 128%; max-width: none; border-radius: 14px; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / .06), 0 24px 60px -24px rgb(15 23 42 / .35); -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 92%); mask-image: linear-gradient(to bottom, #000 45%, transparent 92%); }
+.hb-stage--center img { position: absolute; top: 9%; left: 50%; width: 46%; transform: translateX(-50%); border-radius: 14px; box-shadow: 0 24px 60px -24px rgb(15 23 42 / .35); -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 95%); mask-image: linear-gradient(to bottom, #000 55%, transparent 95%); }
+.hb-stage--contain img { position: absolute; inset: 8%; width: 84%; height: 84%; object-fit: contain; }
 .hb-js [data-hb-hide], .hb-js [data-hb-anim]:not([data-hb-anim^="{"]):not([data-hb-anim="parallax"]) { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }`
 

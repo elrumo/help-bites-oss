@@ -98,7 +98,7 @@ export function useAgent() {
         // Removed from this workspace (or it is gone): land wherever the server says is home.
         workspaceId.value = ''
         writeWorkspace('')
-        await reloadNuxtApp({ path: '/inbox' })
+        await reloadNuxtApp({ path: '/overview' })
       } else if (status === 402) {
         // The caller still gets the error; the modal says what ran out.
         planLimit.value = { message, ...data } as PlanLimit
@@ -151,7 +151,7 @@ export function useAgent() {
     workspaceId.value = id
     writeWorkspace(id)
     await api('/admin/me', { method: 'PATCH', body: { defaultWorkspaceId: id } }).catch(() => {})
-    await reloadNuxtApp({ path: '/inbox' })
+    await reloadNuxtApp({ path: '/overview' })
   }
 
   async function loadProjects(): Promise<AdminProject[]> {

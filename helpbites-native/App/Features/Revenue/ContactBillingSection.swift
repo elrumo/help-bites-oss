@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A contact's Stripe subscriptions and payments (web: the Billing block of ContactDrawer.vue,
+/// A contact's Stripe customer (read live), subscriptions and payments (web: the Billing block of ContactDrawer.vue,
 /// `GET /v1/admin/stripe/contact`). Drop it into a contact's detail; it shows nothing until
 /// Stripe is connected (and for roles that may not see money, which get a 403).
 /// `revenue` is the contact's `stripe_revenue` attribute and `customerId` its `stripe_customer`.
@@ -20,8 +20,14 @@ struct ContactBillingSection: View {
           HStack(spacing: 8) {
             SectionLabel("Billing")
             if let revenue, revenue > 0 { Text("\(Money.format(revenue, billing.currency)) paid in total").font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize() }
-            if let customerId, !customerId.isEmpty, let url = URL(string: "https://dashboard.stripe.com/customers/\(customerId)") {
+            if let url = dashboardURL(billing) {
               Button { openURL(url) } label: { Label("Stripe", systemImage: "arrow.up.right") }.buttonStyle(.lnGhost)
+            }
+          }
+          if let customer = billing.customer {
+            HStack(spacing: 6) {
+              Text(customerLine(customer, billing.currency)).font(.lnCaption).foregroundStyle(Theme.textMuted)
+              if customer.delinquent { Tag(text: "Payment overdue", tint: Theme.warning) }
             }
           }
           if billing.subscriptions.isEmpty && billing.payments.isEmpty {
@@ -46,6 +52,20 @@ struct ContactBillingSection: View {
       // `currency` is blank when Stripe isn't connected.
       if let result, !result.currency.isEmpty { billing = result }
     }
+  }
+
+  /// The live customer when Stripe found one (and knows whether it is a test one), else the id the last sync linked.
+  private func dashboardURL(_ billing: ContactBilling) -> URL? {
+    guard let id = billing.customer?.id ?? customerId, !id.isEmpty else { return nil }
+    return URL(string: "https://dashboard.stripe.com/\(billing.customer?.livemode == false ? "test/" : "")customers/\(id)")
+  }
+
+  private func customerLine(_ customer: StripeCustomer, _ currency: String) -> String {
+    var parts = ["Stripe customer since \(DateText.date(customer.createdAt)?.formatted(date: .abbreviated, time: .omitted) ?? "—")"]
+    if !customer.country.isEmpty { parts.append(Locale.current.localizedString(forRegionCode: customer.country) ?? customer.country) }
+    let balance = Money.minor(abs(customer.balance), customer.currency.isEmpty ? currency : customer.currency)
+    if customer.balance < 0 { parts.append("\(balance) credit") } else if customer.balance > 0 { parts.append("Owes \(balance)") }
+    return parts.joined(separator: " · ")
   }
 }
 

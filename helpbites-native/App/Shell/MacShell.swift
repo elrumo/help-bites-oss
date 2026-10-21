@@ -39,6 +39,7 @@ private struct MacSidebar: View {
   var body: some View {
     @Bindable var workspace = workspace
     List(selection: Binding(get: { Optional(workspace.macSelection) }, set: { if let route = $0 { workspace.go(route) } })) {
+      Label("Overview", systemImage: "house").tag(AppRoute.overview)
       Label("Inbox", systemImage: "tray").tag(AppRoute.inbox)
         .badge(workspace.inbox.totalUnread)
       Label("Email", systemImage: "envelope").tag(AppRoute.emailTemplates)

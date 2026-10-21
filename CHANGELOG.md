@@ -5,6 +5,12 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- The panel and the native app now open on **Overview** (`/overview`) instead of the inbox: a card per project, unread
+  and open conversations, the latest unread messages, total revenue and revenue by project. Its data is
+  `GET /v1/admin/overview` (see `docs/OVERVIEW.md`). No schema change; bookmarks to `/inbox` still work.
+- Revenue: the monthly chart draws MRR at the end of each month over net revenue, and hovering or tapping a month shows
+  its numbers. New `StripeSubscription` fields `monthly`, `paidFromMonth` and `endedMonth` (needs `schema:apply`; the
+  container does it on boot); the MRR line fills in after the next Stripe sync, hourly or from **Sync**.
 - Export and import between instances: **Settings → Workspace → Move to another HelpBites** (and **Settings → Data** in a
   project) downloads a workspace or one project, imports a file, or pulls straight from another HelpBites with an API key
   or login. See `docs/TRANSFER.md`. Needs `schema:apply` (the container does it on boot). To keep the original dates of

@@ -75,17 +75,7 @@ const blockIds = () => props.document.blocks.map(b => b.id)
  * drive the editor. Preview only; sent emails go out as written.
  */
 function previewRender(): Document {
-  const doc = new DOMParser().parseFromString(renderEmailHtml(props.document, { ids: true }), 'text/html')
-  // DOMParser parses <noscript> with scripting off, the frame with it on; and
-  // the frame would bring a <template shadowrootmode> to life unchecked.
-  doc.querySelectorAll('script, noscript, template, iframe, frame, object, embed, base, meta[http-equiv="refresh" i]').forEach(el => el.remove())
-  doc.querySelectorAll('*').forEach((el) => {
-    for (const { name, value } of [...el.attributes]) {
-      // URL parsing drops tabs, newlines and leading controls: `java&#9;script:` runs too.
-      if (/^on/i.test(name) || /^javascript:/i.test(value.replace(/[\u0000-\u0020]/g, ''))) el.removeAttribute(name)
-    }
-  })
-  return doc
+  return defangHtml(new DOMParser().parseFromString(renderEmailHtml(props.document, { ids: true }), 'text/html'))
 }
 
 // Only the runtime in the current srcdoc knows its nonce, so a message without

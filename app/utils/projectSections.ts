@@ -13,6 +13,7 @@ export const projectSections = [
   { path: 'onboarding', label: 'Onboarding', icon: 'i-lucide-gallery-horizontal-end' },
   { path: 'legal', label: 'Legal', icon: 'i-lucide-scale' },
   { path: 'brand', label: 'Brand', icon: 'i-lucide-swatch-book' },
+  { path: 'pages', label: 'Pages', icon: 'i-lucide-layout-template' },
   { path: 'email', label: 'Email', icon: 'i-lucide-mail' },
   { path: 'campaigns', label: 'Campaigns', icon: 'i-lucide-megaphone' },
   { path: 'flags', label: 'Flags', icon: 'i-lucide-toggle-right' },

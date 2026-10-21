@@ -250,7 +250,7 @@ const viaSecret = await call(`/v1/contacts?project=${projectB.id}`, { token: sec
 check((refused(viaSecret.status) || viaSecret.status < 300) && !viaSecret.text.includes(TAG_B) && !viaSecret.text.includes(projectB.id), 'A\'s project secret cannot reach B\'s project')
 
 // Lists and search: nothing of A's, anywhere.
-for (const path of ['/v1/admin/projects', '/v1/admin/conversations', `/v1/admin/end-users?q=${MARK}`, '/v1/admin/emails', '/v1/admin/email-folders', '/v1/admin/email-components', '/v1/admin/email-logs', '/v1/admin/email-suppressions', '/v1/admin/knowledge/models', '/v1/admin/support-agents', '/v1/admin/agents', '/v1/admin/api-keys', '/v1/admin/invitations', `/v1/admin/search?q=${MARK}`, '/v1/admin/errors/providers']) {
+for (const path of ['/v1/admin/projects', '/v1/admin/conversations', `/v1/admin/end-users?q=${MARK}`, '/v1/admin/emails', '/v1/admin/email-folders', '/v1/admin/email-components', '/v1/admin/email-logs', '/v1/admin/email-suppressions', '/v1/admin/knowledge/models', '/v1/admin/support-agents', '/v1/admin/agents', '/v1/admin/api-keys', '/v1/admin/invitations', `/v1/admin/search?q=${MARK}`, '/v1/admin/errors/providers', '/v1/admin/overview?range=all']) {
   const res = await call(path, B)
   check(res.status < 300 && !res.text.includes(MARK) && !res.text.includes(project.id), `B's ${path} shows nothing of A's`)
 }

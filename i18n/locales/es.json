@@ -9,6 +9,7 @@
   "nav": {
     "openNavigation": "Abrir navegación",
     "main": "Principal",
+    "overview": "Vista general",
     "inbox": "Bandeja de entrada",
     "email": "Correo",
     "projects": "Proyectos",
@@ -52,6 +53,45 @@
     "errors": "Errores",
     "dev": "Dev",
     "settings": "Ajustes"
+  },
+  "overview": {
+    "refresh": "Actualizar",
+    "loadError": "No se pudo cargar la vista general",
+    "emptyTitle": "Añade tu primer proyecto",
+    "emptyDescription": "Un proyecto es una de tus apps. Sus conversaciones, ingresos y todo lo demás aparecen aquí.",
+    "unread": "No leídas",
+    "open": "Abiertas",
+    "revenue": "Ingresos",
+    "noStripe": "Stripe no conectado",
+    "openErrorsCount": "{count} informe de error abierto | {count} informes de error abiertos",
+    "atAGlance": "De un vistazo",
+    "unreadConversations": "Conversaciones no leídas",
+    "unreadMessagesCount": "{count} mensaje no leído | {count} mensajes no leídos",
+    "openConversations": "Conversaciones abiertas",
+    "openErrors": "Informes de error abiertos",
+    "previous": {
+      "30d": "frente a los 30 días anteriores",
+      "90d": "frente a los 90 días anteriores",
+      "12m": "frente a los 12 meses anteriores"
+    },
+    "unreadMessages": "Mensajes no leídos",
+    "openInbox": "Abrir la bandeja de entrada",
+    "inboxZero": "Bandeja vacía",
+    "inboxZeroDescription": "Nadie espera respuesta.",
+    "revenueByProject": "Ingresos por proyecto",
+    "noRevenueTitle": "Todavía no hay ingresos",
+    "noRevenueDescription": "Conecta Stripe a un proyecto para ver aquí sus ingresos, junto a los de tus otras apps.",
+    "share": "{share} de los ingresos en {currency}",
+    "mrrShort": "{amount} MRR",
+    "withoutStripe": "{count} proyecto sin Stripe no se cuenta. | {count} proyectos sin Stripe no se cuentan.",
+    "period": "Periodo",
+    "netRevenue": "Ingresos netos",
+    "netByMonth": "Ingresos netos por mes",
+    "subscribers": "{count} suscriptor | {count} suscriptores",
+    "connectStripe": "Conectar Stripe",
+    "waitingTitle": "Esperando la primera sincronización",
+    "waitingDescription": "Los pagos aparecerán aquí en cuanto se lea el primer tramo.",
+    "totalsIn": "Los totales están en {currency}. No incluidos: {others}."
   },
   "layout": {
     "demoBanner": "Demo con datos de ejemplo. Nada de lo que hagas aquí se guarda.",
@@ -716,6 +756,10 @@
       "billing": "Facturación",
       "paidInTotal": "{amount} pagados en total",
       "noStripe": "No hay suscripciones ni pagos de Stripe.",
+      "customerSince": "Cliente de Stripe desde el {date}",
+      "credit": "{amount} de saldo a favor",
+      "owes": "Debe {amount}",
+      "delinquent": "Pago atrasado",
       "subscriptions": "Suscripciones",
       "endsOn": "Termina {date}",
       "canceled": "Cancelada",
@@ -2280,6 +2324,10 @@
           "term": "Todas las apps, una sola lista en vivo",
           "desc": "Proyectos con código de colores, un solo contador de no leídos y mensajes que llegan al momento. Filtra por responsable, estado o no leídos."
         },
+        "overview": {
+          "term": "Todas tus apps de un vistazo",
+          "desc": "El panel se abre con una vista general: una tarjeta por app con sus conversaciones no leídas y abiertas y sus ingresos, los últimos mensajes no leídos y los ingresos por app."
+        },
         "notes": {
           "term": "Notas, contexto y errores",
           "desc": "Notas internas que tu cliente nunca ve. Sus errores recientes y los comentarios vinculados aparecen junto a la conversación."
@@ -3046,8 +3094,8 @@
       "syncFailed": "La última sincronización falló",
       "waitingTitle": "Esperando la primera sincronización",
       "waitingDescription": "Los pagos aparecerán aquí en cuanto se lea el primer tramo.",
-      "netByMonth": "Ingresos netos por mes",
-      "monthTitle": "{month}: {net} de {payments} pagos",
+      "byMonth": "Ingresos por mes",
+      "monthTitle": "{month}: {net} de {payments} pagos, {mrr} de MRR",
       "plans": "Planes",
       "noSubscribers": "No hay suscriptores de pago.",
       "subscribers": "{count} suscriptor | {count} suscriptores",

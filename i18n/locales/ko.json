@@ -9,6 +9,7 @@
   "nav": {
     "openNavigation": "탐색 열기",
     "main": "메인",
+    "overview": "홈",
     "inbox": "받은편지함",
     "email": "이메일",
     "projects": "프로젝트",
@@ -52,6 +53,45 @@
     "errors": "오류",
     "dev": "개발",
     "settings": "설정"
+  },
+  "overview": {
+    "refresh": "새로 고침",
+    "loadError": "개요를 불러올 수 없습니다",
+    "emptyTitle": "첫 프로젝트 추가",
+    "emptyDescription": "프로젝트는 앱 하나입니다. 대화, 수익 등 모든 것이 여기에 표시됩니다.",
+    "unread": "읽지 않음",
+    "open": "열림",
+    "revenue": "수익",
+    "noStripe": "Stripe 미연결",
+    "openErrorsCount": "열린 오류 보고서 {count}건",
+    "atAGlance": "한눈에 보기",
+    "unreadConversations": "읽지 않은 대화",
+    "unreadMessagesCount": "읽지 않은 메시지 {count}개",
+    "openConversations": "열린 대화",
+    "openErrors": "열린 오류 보고서",
+    "previous": {
+      "30d": "이전 30일 대비",
+      "90d": "이전 90일 대비",
+      "12m": "이전 12개월 대비"
+    },
+    "unreadMessages": "읽지 않은 메시지",
+    "openInbox": "받은편지함 열기",
+    "inboxZero": "모두 읽었습니다",
+    "inboxZeroDescription": "답장을 기다리는 사람이 없습니다.",
+    "revenueByProject": "프로젝트별 수익",
+    "noRevenueTitle": "아직 수익이 없습니다",
+    "noRevenueDescription": "프로젝트에 Stripe를 연결하면 다른 앱과 나란히 수익이 여기에 표시됩니다.",
+    "share": "{currency} 수익의 {share}",
+    "mrrShort": "MRR {amount}",
+    "withoutStripe": "Stripe가 연결되지 않은 프로젝트 {count}개는 포함되지 않습니다.",
+    "period": "기간",
+    "netRevenue": "순수익",
+    "netByMonth": "월별 순수익",
+    "subscribers": "구독자 {count}명",
+    "connectStripe": "Stripe 연결",
+    "waitingTitle": "첫 동기화를 기다리는 중",
+    "waitingDescription": "첫 구간을 읽는 즉시 결제 내역이 여기에 표시됩니다.",
+    "totalsIn": "합계는 {currency} 기준입니다. 제외된 금액: {others}."
   },
   "layout": {
     "demoBanner": "샘플 데이터로 구성된 데모입니다. 여기서 하는 작업은 저장되지 않습니다.",
@@ -716,6 +756,10 @@
       "billing": "결제",
       "paidInTotal": "총 결제액 {amount}",
       "noStripe": "Stripe에 구독이나 결제 내역이 없습니다.",
+      "customerSince": "{date}부터 Stripe 고객",
+      "credit": "{amount} 크레딧",
+      "owes": "{amount} 미납",
+      "delinquent": "결제 연체",
       "subscriptions": "구독",
       "endsOn": "{date} 종료",
       "canceled": "취소됨",
@@ -2280,6 +2324,10 @@
           "term": "모든 앱, 하나의 실시간 목록",
           "desc": "색으로 구분된 프로젝트, 하나로 합쳐진 읽지 않은 수, 도착하는 즉시 보이는 메시지. 담당자, 상태, 읽지 않음으로 필터링할 수 있습니다."
         },
+        "overview": {
+          "term": "모든 앱을 한눈에",
+          "desc": "패널을 열면 개요가 먼저 보입니다. 앱마다 읽지 않은 대화, 열린 대화, 수익을 담은 카드와 최근 읽지 않은 메시지, 앱별 수익."
+        },
         "notes": {
           "term": "메모, 문맥, 오류",
           "desc": "고객에게는 보이지 않는 내부 메모. 고객의 최근 오류와 연결된 피드백이 대화 옆에 나타납니다."
@@ -3046,8 +3094,8 @@
       "syncFailed": "마지막 동기화에 실패했습니다",
       "waitingTitle": "첫 동기화를 기다리는 중",
       "waitingDescription": "첫 구간을 읽는 즉시 결제 내역이 여기에 표시됩니다.",
-      "netByMonth": "월별 순수익",
-      "monthTitle": "{month}: 결제 {payments}건, 순수익 {net}",
+      "byMonth": "월별 수익",
+      "monthTitle": "{month}: 결제 {payments}건, 순수익 {net}, MRR {mrr}",
       "plans": "플랜",
       "noSubscribers": "유료 구독자가 없습니다.",
       "subscribers": "구독자 {count}명",

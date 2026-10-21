@@ -107,7 +107,7 @@ const art = computed(() => [
 
 const resetToken = computed(() => typeof route.query.reset === 'string' ? route.query.reset : '')
 
-if (token.value && !resetToken.value) await navigateTo('/inbox', { replace: true })
+if (token.value && !resetToken.value) await navigateTo('/overview', { replace: true })
 
 onMounted(async () => {
   try {
@@ -148,10 +148,10 @@ async function submit() {
       const result = await $fetch<{ sessionToken: string, agent: any }>('/v1/admin/setup', { method: 'POST', body: { name: name.value, email: email.value, username: username.value.trim(), password: password.value, ...(needsToken.value ? { setupToken: setupToken.value } : {}) } })
       token.value = result.sessionToken
       agent.value = result.agent
-      await navigateTo(typeof route.query.next === 'string' ? route.query.next : '/inbox', { replace: true })
+      await navigateTo(typeof route.query.next === 'string' ? route.query.next : '/overview', { replace: true })
     } else {
       await login(username.value.trim(), password.value)
-      await navigateTo(typeof route.query.next === 'string' ? route.query.next : '/inbox', { replace: true })
+      await navigateTo(typeof route.query.next === 'string' ? route.query.next : '/overview', { replace: true })
     }
   } catch (e: any) {
     error.value = e?.data?.statusMessage || e?.statusMessage || (needsSetup.value ? t('login.createAccountError') : t('login.genericError'))

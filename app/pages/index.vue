@@ -307,7 +307,7 @@ const { t } = useI18n()
 // client fact and this route is prerendered, so the bounce happens on mount.
 const { token } = useAgent()
 onMounted(() => {
-  if (token.value) navigateTo('/inbox', { replace: true })
+  if (token.value) navigateTo('/overview', { replace: true })
 })
 
 useSeoMeta({
@@ -467,6 +467,7 @@ const features = computed(() => [
     hint: t('landing.features.inbox.hint'),
     items: [
       { term: t('landing.features.inbox.live.term'), desc: t('landing.features.inbox.live.desc') },
+      { term: t('landing.features.inbox.overview.term'), desc: t('landing.features.inbox.overview.desc') },
       { term: t('landing.features.inbox.notes.term'), desc: t('landing.features.inbox.notes.desc') },
       { term: t('landing.features.inbox.away.term'), desc: t('landing.features.inbox.away.desc') },
       { term: t('landing.features.inbox.first.term'), desc: t('landing.features.inbox.first.desc') },

@@ -49,6 +49,12 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 ## 2. Operator inbox
 
+- **Overview first.** Signing in opens the workspace overview: a card per project
+  with its unread and open conversations, revenue and open errors, then unread and
+  open totals, net revenue against the period before, MRR, the latest unread
+  messages and revenue by project. Revenue is for admins and owners, each project in
+  its own currency. It updates as messages arrive. Web and native.
+  [OVERVIEW.md](OVERVIEW.md)
 - **One inbox for every project.** Projects are colour-coded, with one unread
   count and filters for All, Mine, Unassigned, Open, Unread and Archived. Search by text.
 - **Triage.** Assign a teammate, set priority (low, normal, high, urgent), add
@@ -240,6 +246,14 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   15 minutes to daily, or on demand.
 - **Segments.** A rule builder (match all or any, on attributes, tags, dates and
   subscription) with a live count.
+- **Stripe billing.** With Stripe connected, a person's page looks them up in Stripe
+  live (by their linked customer, else their email) and shows when they became a
+  customer, their country, credit or balance owed and an overdue flag, next to their
+  subscriptions and payments from the hourly sync. Web and native.
+- **Revenue.** A project's Revenue tab totals net revenue, MRR, subscribers and
+  paying customers for a period, charts the last twelve months of net revenue with
+  MRR at the end of each month (hover, focus or touch a month for its numbers), and
+  lists plans, top customers and recent payments. Read-only. Web and native.
 - **Erasure.** Deleting a person removes their conversations, feedback and email
   history.
 
@@ -314,6 +328,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 [helpbites-native/README.md](../helpbites-native/README.md)
 
 - **One SwiftUI app.** Tabs on iPhone, a sidebar on iPad, and Mac via Catalyst.
+- **Overview.** The first tab on iPhone and the top of the sidebar on iPad and Mac
+  (⌘0): every project's card, the workspace's numbers, unread messages and revenue
+  by project, as on the web.
 - **Inbox.** Conversations, replies with images, status, deleting a message, and
   starting a new conversation.
 - **Most of the panel.** Projects and their settings, team, API keys, the developer

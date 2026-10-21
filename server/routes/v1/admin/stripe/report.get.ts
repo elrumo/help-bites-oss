@@ -4,7 +4,7 @@ defineRouteMeta({
   openAPI: {
     tags: ['Stripe'], operationId: 'getRevenueReport', security: [{ AgentSession: [] }, { AdminApiKey: [] }],
     summary: 'Revenue',
-    description: 'Net revenue, MRR, subscribers, revenue by month, plans, top customers and recent payments, from the last Stripe sync. Totals are in the currency with the most revenue; others are listed in `otherCurrencies`.',
+    description: 'Net revenue, MRR, subscribers, net revenue and MRR (at each month end) for the last 12 months, plans, top customers and recent payments, from the last Stripe sync. Totals are in the currency with the most revenue; others are listed in `otherCurrencies`.',
     parameters: [{ name: 'project', in: 'query', required: true, schema: { type: 'string' } }, { name: 'range', in: 'query', schema: { type: 'string', enum: ['30d', '90d', '12m', 'all'], default: '30d' } }],
     responses: { 200: { description: 'A revenue report.' }, 404: { description: 'Stripe is not connected.' } }
   }

@@ -45,12 +45,45 @@
             </div>
 
             <section class="rounded-xl border border-default p-4">
-              <h2 class="text-xs font-semibold text-muted">{{ $t('projectTools.revenue.netByMonth') }}</h2>
-              <ul class="mt-4 flex h-44 items-end gap-1.5" :aria-label="$t('projectTools.revenue.netByMonth')">
-                <li v-for="m in report.months" :key="m.month" class="flex h-full min-w-0 flex-1 flex-col justify-end gap-1" :title="$t('projectTools.revenue.monthTitle', { month: m.month, net: money(m.net), payments: m.payments })">
-                  <div class="w-full rounded-t bg-primary/70" :style="{ height: `${Math.max(m.net ? 3 : 0, (m.net / peak) * 100)}%` }" />
-                  <span class="truncate text-center text-[10px] text-muted">{{ m.month.slice(5) }}</span>
-                </li>
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                <h2 class="flex-1 font-semibold">{{ $t('projectTools.revenue.byMonth') }}</h2>
+                <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-primary/70" />{{ $t('projectTools.revenue.netRevenue') }}</span>
+                <span class="flex items-center gap-1.5"><span class="h-0.5 w-3 rounded-full bg-inverted" />MRR</span>
+              </div>
+              <!-- One column per month is the hover and focus target; the MRR line is drawn over the bars on the same scale. -->
+              <div class="relative mt-4 h-40" @mouseleave="hovered = -1">
+                <ul class="flex h-full items-end" :aria-label="$t('projectTools.revenue.byMonth')">
+                  <li
+                    v-for="(m, i) in report.months" :key="m.month" tabindex="0"
+                    class="flex h-full min-w-0 flex-1 items-end rounded px-[3px] outline-primary focus-visible:outline-2" :class="hovered === i && 'bg-elevated/60'"
+                    :aria-label="$t('projectTools.revenue.monthTitle', { month: monthLabel(m.month), net: money(m.net), payments: m.payments, mrr: money(m.mrr) })"
+                    @mouseenter="hovered = i" @focus="hovered = i" @blur="hovered = -1"
+                  >
+                    <div class="w-full rounded-t" :class="hovered === i ? 'bg-primary' : 'bg-primary/70'" :style="{ height: `${Math.max(m.net ? 3 : 0, (m.net / peak) * 100)}%` }" />
+                  </li>
+                </ul>
+                <svg class="pointer-events-none absolute inset-0 size-full overflow-visible" :viewBox="`0 0 ${report.months.length} 100`" preserveAspectRatio="none" aria-hidden="true">
+                  <polyline :points="mrrLine" fill="none" stroke="var(--ui-bg-inverted)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+                </svg>
+                <template v-if="point">
+                  <span class="pointer-events-none absolute size-2 -translate-x-1/2 translate-y-1/2 rounded-full bg-inverted ring-2 ring-(--ui-bg)" :style="{ left: `${((hovered + 0.5) / report.months.length) * 100}%`, bottom: `${(point.mrr / peak) * 100}%` }" />
+                  <div class="pointer-events-none absolute top-0 z-10 space-y-1 rounded-lg bg-default px-2.5 py-2 text-xs whitespace-nowrap shadow-lg ring ring-default" :style="tooltipAt(hovered)">
+                    <p class="font-medium text-highlighted">{{ monthLabel(point.month) }}</p>
+                    <p class="flex items-center gap-2">
+                      <span class="size-2.5 rounded-sm bg-primary/70" />
+                      <span class="font-semibold tabular-nums text-highlighted">{{ money(point.net) }}</span>
+                      <span class="text-muted">{{ $t('projectTools.revenue.netRevenue') }} · {{ $t('projectTools.revenue.payments', point.payments) }}</span>
+                    </p>
+                    <p class="flex items-center gap-2">
+                      <span class="h-0.5 w-2.5 rounded-full bg-inverted" />
+                      <span class="font-semibold tabular-nums text-highlighted">{{ money(point.mrr) }}</span>
+                      <span class="text-muted">MRR</span>
+                    </p>
+                  </div>
+                </template>
+              </div>
+              <ul class="mt-1 flex" aria-hidden="true">
+                <li v-for="m in report.months" :key="m.month" class="min-w-0 flex-1 truncate text-center text-[10px] text-muted">{{ m.month.slice(5) }}</li>
               </ul>
             </section>
 
@@ -107,7 +140,7 @@ import { logTime } from '~/utils/emailStatus'
 definePageMeta({ middleware: 'agent' })
 const { api } = useAgent()
 const toast = useToast()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const id = String(useRoute().params.id)
 
 const connection = ref<StripeConnection | null>(null)
@@ -118,7 +151,17 @@ const apiKey = ref('')
 const connecting = ref(false)
 
 const money = (amount: number) => formatMoney(amount, report.value?.currency || 'usd')
-const peak = computed(() => Math.max(1, ...(report.value?.months.map(m => m.net) || [])))
+// Net revenue and MRR share the one axis: both are money in the same currency.
+const peak = computed(() => Math.max(1, ...(report.value?.months.flatMap(m => [m.net, m.mrr]) || [])))
+const mrrLine = computed(() => (report.value?.months || []).map((m, i) => `${i + 0.5},${100 - (m.mrr / peak.value) * 100}`).join(' '))
+const hovered = ref(-1)
+const point = computed(() => report.value?.months[hovered.value])
+const monthLabel = (month: string) => new Date(`${month}-01T00:00:00Z`).toLocaleDateString(locale.value, { month: 'short', year: 'numeric', timeZone: 'UTC' })
+// Beside the hovered column, on whichever side has room, so it never covers that month's bar.
+function tooltipAt(i: number) {
+  const n = report.value?.months.length || 1
+  return i < n / 2 ? { left: `calc(${((i + 1) / n) * 100}% + 4px)` } : { right: `calc(${((n - i) / n) * 100}% + 4px)` }
+}
 const kpis = computed(() => {
   const r = report.value
   if (!r) return []

@@ -9,6 +9,7 @@
   "nav": {
     "openNavigation": "打开导航",
     "main": "主导航",
+    "overview": "总览",
     "inbox": "收件箱",
     "email": "邮件",
     "projects": "项目",
@@ -52,6 +53,45 @@
     "errors": "错误",
     "dev": "开发",
     "settings": "设置"
+  },
+  "overview": {
+    "refresh": "刷新",
+    "loadError": "无法加载总览",
+    "emptyTitle": "添加你的第一个项目",
+    "emptyDescription": "一个项目就是你的一个应用。它的对话、收入和其他一切都会显示在这里。",
+    "unread": "未读",
+    "open": "进行中",
+    "revenue": "收入",
+    "noStripe": "未连接 Stripe",
+    "openErrorsCount": "{count} 个未解决的错误报告",
+    "atAGlance": "一目了然",
+    "unreadConversations": "未读对话",
+    "unreadMessagesCount": "{count} 条未读消息",
+    "openConversations": "进行中的对话",
+    "openErrors": "未解决的错误报告",
+    "previous": {
+      "30d": "与之前 30 天相比",
+      "90d": "与之前 90 天相比",
+      "12m": "与之前 12 个月相比"
+    },
+    "unreadMessages": "未读消息",
+    "openInbox": "打开收件箱",
+    "inboxZero": "没有未读",
+    "inboxZeroDescription": "没有人在等待回复。",
+    "revenueByProject": "按项目划分的收入",
+    "noRevenueTitle": "还没有收入",
+    "noRevenueDescription": "为项目连接 Stripe，即可在这里与其他应用一起查看它的收入。",
+    "share": "占 {currency} 收入的 {share}",
+    "mrrShort": "MRR {amount}",
+    "withoutStripe": "{count} 个未连接 Stripe 的项目未计入。",
+    "period": "时间段",
+    "netRevenue": "净收入",
+    "netByMonth": "按月净收入",
+    "subscribers": "{count} 位订阅者",
+    "connectStripe": "连接 Stripe",
+    "waitingTitle": "等待首次同步",
+    "waitingDescription": "首段数据读取完成后，付款会立即显示在这里。",
+    "totalsIn": "总计以 {currency} 计算。未计入：{others}。"
   },
   "layout": {
     "demoBanner": "这是使用示例数据的演示。你在这里的任何操作都不会被保存。",
@@ -716,6 +756,10 @@
       "billing": "账单",
       "paidInTotal": "累计付款 {amount}",
       "noStripe": "Stripe 中没有订阅或付款记录。",
+      "customerSince": "自 {date} 起为 Stripe 客户",
+      "credit": "{amount} 余额",
+      "owes": "欠款 {amount}",
+      "delinquent": "付款逾期",
       "subscriptions": "订阅",
       "endsOn": "{date} 结束",
       "canceled": "已取消",
@@ -2280,6 +2324,10 @@
           "term": "所有应用，一个实时列表",
           "desc": "按颜色区分的项目、统一的未读计数，消息实时到达。可按负责人、状态或未读筛选。"
         },
+        "overview": {
+          "term": "所有应用一目了然",
+          "desc": "面板打开即是总览：每个应用一张卡片，显示未读和进行中的对话及收入，还有最新的未读消息和按应用划分的收入。"
+        },
         "notes": {
           "term": "备注、上下文与错误",
           "desc": "客户永远看不到的内部备注。他们最近的错误和关联的反馈会显示在会话旁边。"
@@ -3046,8 +3094,8 @@
       "syncFailed": "上次同步失败",
       "waitingTitle": "等待首次同步",
       "waitingDescription": "首段数据读取完成后，付款会立即显示在这里。",
-      "netByMonth": "按月净收入",
-      "monthTitle": "{month}：来自 {payments} 笔付款的 {net}",
+      "byMonth": "按月收入",
+      "monthTitle": "{month}：来自 {payments} 笔付款的 {net}，MRR {mrr}",
       "plans": "套餐",
       "noSubscribers": "没有付费订阅者。",
       "subscribers": "{count} 位订阅者",

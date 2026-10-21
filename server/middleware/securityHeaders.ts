@@ -5,7 +5,7 @@
 // operator's session. SAMEORIGIN rather than DENY keeps any same-origin frame
 // working. A route that sets its own header later still wins.
 // event.path keeps the query string: the widget frames `/embed?pk=…`.
-const FRAMEABLE = /^\/(embed|s|brand)([/?]|$)/
+const FRAMEABLE = /^\/(embed|s|brand|p)([/?]|$)/
 
 export default defineEventHandler((event) => {
   setResponseHeaders(event, {

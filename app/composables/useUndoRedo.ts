@@ -11,11 +11,12 @@ export interface UseUndoRedoOptions {
   maxSize?: number
 }
 
-export function useUndoRedo(opts: UseUndoRedoOptions = {}) {
+/** History of editor snapshots; `T` is what one holds (the email editor's by default). */
+export function useUndoRedo<T = EditorSnapshot>(opts: UseUndoRedoOptions = {}) {
   const maxSize = opts.maxSize ?? 50
 
-  const undoStack: EditorSnapshot[] = []
-  const redoStack: EditorSnapshot[] = []
+  const undoStack: T[] = []
+  const redoStack: T[] = []
 
   const canUndo = ref(false)
   const redoable = ref(false)
@@ -26,7 +27,7 @@ export function useUndoRedo(opts: UseUndoRedoOptions = {}) {
   }
 
   /** Save a snapshot before a user-initiated mutation. */
-  function push(snapshot: EditorSnapshot) {
+  function push(snapshot: T) {
     undoStack.push(snapshot)
     if (undoStack.length > maxSize) undoStack.shift()
     redoStack.length = 0
@@ -34,7 +35,7 @@ export function useUndoRedo(opts: UseUndoRedoOptions = {}) {
   }
 
   /** Pop the last snapshot for undo; returns it or null. */
-  function undo(current: EditorSnapshot): EditorSnapshot | null {
+  function undo(current: T): T | null {
     const prev = undoStack.pop()
     if (!prev) return null
     redoStack.push(current)
@@ -43,7 +44,7 @@ export function useUndoRedo(opts: UseUndoRedoOptions = {}) {
   }
 
   /** Pop the last redo snapshot; returns it or null. */
-  function redo(current: EditorSnapshot): EditorSnapshot | null {
+  function redo(current: T): T | null {
     const next = redoStack.pop()
     if (!next) return null
     undoStack.push(current)

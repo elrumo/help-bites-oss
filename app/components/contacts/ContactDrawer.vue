@@ -6,7 +6,7 @@
  */
 import type { Contact, ContactAttributeValue, ContactSubscription } from '#shared/contacts'
 import type { Conversation } from '#shared/support'
-import { STRIPE_ATTR, formatMoney, fromMinor, type StripePaymentDto, type StripeSubscriptionDto } from '#shared/stripe'
+import { STRIPE_ATTR, formatMoney, fromMinor, type StripeCustomerDto, type StripePaymentDto, type StripeSubscriptionDto } from '#shared/stripe'
 import type { EmailLogEntry, EmailLogStatus } from '~~/server/utils/emailLogs'
 import type { AdminProject } from '~~/server/utils/projects'
 import { SUBSCRIPTION_STATUS } from '~/utils/contactStatus'
@@ -25,7 +25,7 @@ const contact = ref<Contact | null>(null)
 const conversations = ref<Conversation[]>([])
 const emails = ref<EmailLogEntry[]>([])
 // Stripe: null until it says it is connected (a 403 for roles that may not see money also leaves it null).
-const billing = ref<{ currency: string, subscriptions: StripeSubscriptionDto[], payments: StripePaymentDto[] } | null>(null)
+const billing = ref<{ currency: string, customer: StripeCustomerDto | null, subscriptions: StripeSubscriptionDto[], payments: StripePaymentDto[] } | null>(null)
 const saving = ref(false)
 
 const name = ref('')
@@ -115,8 +115,14 @@ const attr = (key: string) => contact.value?.attributes[key]
 const INTERVALS = ['day', 'week', 'month', 'year']
 const every = (s: StripeSubscriptionDto) => `${money(s.amount, s.currency)}/${s.intervalCount > 1 ? `${s.intervalCount} ` : ''}${INTERVALS.includes(s.interval) ? t(`contacts.intervals.${s.interval}`) : s.interval}`
 const SUB_COLOR: Record<string, 'success' | 'info' | 'warning' | 'error' | 'neutral'> = { active: 'success', trialing: 'info', past_due: 'warning', unpaid: 'error', canceled: 'neutral' }
-const stripeUrl = computed(() => (attr(STRIPE_ATTR.customer) ? `https://dashboard.stripe.com/customers/${attr(STRIPE_ATTR.customer)}` : ''))
+// The live customer when Stripe found one (and knows whether it is a test one), else the id the last sync linked.
+const stripeUrl = computed(() => {
+  const customerId = billing.value?.customer?.id || attr(STRIPE_ATTR.customer)
+  return customerId ? `https://dashboard.stripe.com/${billing.value?.customer?.livemode === false ? 'test/' : ''}customers/${customerId}` : ''
+})
 const fullDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString() : '—')
+const day = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString() : '—')
+const country = (code: string) => { try { return new Intl.DisplayNames(undefined, { type: 'region' }).of(code) || code } catch { return code } }
 // Stripe and conversation statuses come from outside the panel; unknown ones show as sent.
 const statusText = (prefix: string, value: string) => (te(`${prefix}.${value}`) ? t(`${prefix}.${value}`) : value.replace('_', ' '))
 const emailStatusLabel = (status: EmailLogStatus) => t(`contacts.emailStatus.${status}`)
@@ -173,6 +179,12 @@ const dirty = computed(() => contact.value && (name.value !== contact.value.name
             <span v-if="attr(STRIPE_ATTR.revenue)" class="text-xs text-muted">{{ $t('contacts.drawer.paidInTotal', { amount: formatMoney(Number(attr(STRIPE_ATTR.revenue)), billing.currency) }) }}</span>
             <UButton v-if="stripeUrl" :to="stripeUrl" target="_blank" color="neutral" variant="ghost" size="xs" icon="i-lucide-arrow-up-right" label="Stripe" class="ml-auto" />
           </div>
+          <p v-if="billing.customer" class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted">
+            <span>{{ $t('contacts.drawer.customerSince', { date: day(billing.customer.createdAt) }) }}</span>
+            <span v-if="billing.customer.country">· {{ country(billing.customer.country) }}</span>
+            <span v-if="billing.customer.balance">· {{ $t(billing.customer.balance < 0 ? 'contacts.drawer.credit' : 'contacts.drawer.owes', { amount: money(Math.abs(billing.customer.balance), billing.customer.currency || billing.currency) }) }}</span>
+            <UBadge v-if="billing.customer.delinquent" :label="$t('contacts.drawer.delinquent')" color="warning" variant="subtle" size="sm" />
+          </p>
           <p v-if="!billing.subscriptions.length && !billing.payments.length" class="text-xs text-dimmed">{{ $t('contacts.drawer.noStripe') }}</p>
           <ul v-if="billing.subscriptions.length" class="divide-y divide-default rounded-lg border border-default" :aria-label="$t('contacts.drawer.subscriptions')">
             <li v-for="s in billing.subscriptions" :key="s.id" class="flex items-center gap-2 px-3 py-2">

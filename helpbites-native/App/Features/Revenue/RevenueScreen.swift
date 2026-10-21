@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 
 /// A project's revenue (web: projects/[id]/revenue.vue): connect Stripe, then net revenue,
@@ -174,12 +175,20 @@ struct RevenueScreen: View {
   }
 }
 
-/// The numbers: four tiles, revenue by month, plans, top customers, recent payments.
+/// The numbers: four tiles, revenue and MRR by month, plans, top customers, recent payments.
 private struct RevenueReportView: View {
   let report: RevenueReport
+  /// The month picked by touching the chart; the readout shows the latest one otherwise.
+  @State private var selected: String?
 
   private func money(_ amount: Double) -> String { Money.format(amount, report.currency) }
-  private var peak: Double { max(1, report.months.map(\.net).max() ?? 0) }
+  private var shown: RevenueReport.Month? { report.months.first { $0.id == selected } ?? report.months.last }
+
+  private func monthLabel(_ month: String) -> String {
+    let parts = month.split(separator: "-").compactMap { Int($0) }
+    guard parts.count == 2, let date = Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1])) else { return month }
+    return date.formatted(.dateTime.month(.abbreviated).year())
+  }
 
   private var kpis: [(label: String, value: String, hint: String)] {
     let subscribers = report.subscribers
@@ -207,19 +216,38 @@ private struct RevenueReportView: View {
     }
 
     VStack(alignment: .leading, spacing: 12) {
-      SectionLabel("Net revenue by month")
-      HStack(alignment: .bottom, spacing: 6) {
-        ForEach(report.months) { month in
-          VStack(spacing: 4) {
-            Spacer(minLength: 0)
-            RoundedRectangle(cornerRadius: 3).fill(Theme.accent.opacity(0.7))
-              .frame(height: max(month.net > 0 ? 3 : 0, 150 * month.net / peak))
-            Text(String(month.id.suffix(2))).font(.system(size: 10)).foregroundStyle(Theme.textMuted).lineLimit(1)
-          }
-          .frame(maxWidth: .infinity)
-          .accessibilityElement(children: .ignore)
-          .accessibilityLabel("\(month.month): \(money(month.net)) from \(month.payments) payments")
+      SectionLabel("Revenue by month")
+      // The readout doubles as the legend: touch or drag across the chart to read any month.
+      if let shown {
+        ViewThatFits(in: .horizontal) {
+          HStack(spacing: 12) { readout(shown) }
+          VStack(alignment: .leading, spacing: 4) { readout(shown) }
         }
+      }
+      // Net revenue and MRR share the one axis: both are money in the same currency.
+      Chart {
+        ForEach(report.months) { month in
+          BarMark(x: .value("Month", month.id), y: .value("Amount", month.net), width: .ratio(0.85))
+            .foregroundStyle(Theme.accent.opacity(month.id == selected ? 1 : 0.7))
+            .cornerRadius(3)
+            .accessibilityLabel(monthLabel(month.id))
+            .accessibilityValue("\(money(month.net)) from \(month.payments) payments")
+        }
+        ForEach(report.months) { month in
+          LineMark(x: .value("Month", month.id), y: .value("Amount", month.mrr), series: .value("Series", "MRR"))
+            .foregroundStyle(Theme.textHighlighted)
+            .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            .accessibilityLabel(monthLabel(month.id))
+            .accessibilityValue("\(money(month.mrr)) MRR")
+        }
+        if let selected, let point = report.months.first(where: { $0.id == selected }) {
+          PointMark(x: .value("Month", point.id), y: .value("Amount", point.mrr)).foregroundStyle(Theme.textHighlighted).symbolSize(64)
+        }
+      }
+      .chartXSelection(value: $selected)
+      .chartYAxis(.hidden)
+      .chartXAxis {
+        AxisMarks { value in AxisValueLabel { Text(String((value.as(String.self) ?? "").suffix(2))).font(.system(size: 10)).foregroundStyle(Theme.textMuted) } }
       }
       .frame(height: 176)
     }
@@ -247,6 +275,20 @@ private struct RevenueReportView: View {
 
     if !report.otherCurrencies.isEmpty {
       Text("Totals are in \(report.currency.uppercased()). Not included: \(report.otherCurrencies.map { Money.format($0.net, $0.currency) }.joined(separator: ", ")).").font(.lnCaption).foregroundStyle(Theme.textMuted)
+    }
+  }
+
+  @ViewBuilder private func readout(_ month: RevenueReport.Month) -> some View {
+    Text(monthLabel(month.id)).font(.lnCaption).foregroundStyle(Theme.textHighlighted)
+    HStack(spacing: 6) {
+      RoundedRectangle(cornerRadius: 2).fill(Theme.accent.opacity(0.7)).frame(width: 9, height: 9)
+      Text(money(month.net)).font(.lnCaption.weight(.semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted)
+      Text("net revenue · \(month.payments) payment\(month.payments == 1 ? "" : "s")").font(.lnCaption).foregroundStyle(Theme.textMuted)
+    }
+    HStack(spacing: 6) {
+      Capsule().fill(Theme.textHighlighted).frame(width: 10, height: 2)
+      Text(money(month.mrr)).font(.lnCaption.weight(.semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted)
+      Text("MRR").font(.lnCaption).foregroundStyle(Theme.textMuted)
     }
   }
 

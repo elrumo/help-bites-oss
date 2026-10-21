@@ -35,6 +35,20 @@
       "landing": { "listed": true, "key": "landing.features.inbox" }
     },
     {
+      "id": "overview",
+      "name": "Workspace overview",
+      "category": "platform",
+      "summary": "The page the panel and the app open on: a card per project (unread, open, revenue, errors), the latest unread messages, total revenue against the period before, and revenue by project.",
+      "editions": ["community", "cloud"],
+      "plan": "all",
+      "status": "stable",
+      "web": { "panel": ["app/pages/overview.vue"] },
+      "native": { "folders": ["helpbites-native/App/Features/Overview"] },
+      "api": { "prefixes": ["/v1/admin/overview"], "docs": "docs/OVERVIEW.md" },
+      "embed": null,
+      "landing": { "listed": true, "key": "landing.features.inbox.overview" }
+    },
+    {
       "id": "ticket-types",
       "name": "Ticket types and actions",
       "category": "support",
@@ -254,7 +268,7 @@
       "id": "revenue",
       "name": "Revenue (Stripe)",
       "category": "dev",
-      "summary": "Connect Stripe read-only to see revenue and a customer's billing next to their conversation.",
+      "summary": "Connect Stripe read-only to see revenue and MRR month by month, and on each contact their Stripe customer (looked up live) with subscriptions and payments.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "status": "stable",

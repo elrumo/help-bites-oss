@@ -410,6 +410,7 @@ const SCHEMAS = {
     }
   },
   // A Stripe subscription; `mrr` is its monthly recurring revenue (0 unless it pays today).
+  // `monthly`, `paidFromMonth` and `endedMonth` rebuild MRR by month for the Revenue chart.
   StripeSubscription: {
     fields: {
       project: { type: 'Pointer', targetClass: 'Project' },
@@ -427,7 +428,10 @@ const SCHEMAS = {
       startedAtSec: { type: 'Number' },
       canceledAtSec: { type: 'Number' },
       currentPeriodEndSec: { type: 'Number' },
-      cancelAtPeriodEnd: { type: 'Boolean' }
+      cancelAtPeriodEnd: { type: 'Boolean' },
+      monthly: { type: 'Number' },
+      paidFromMonth: { type: 'String' },
+      endedMonth: { type: 'String' }
     },
     indexes: {
       project_stripe: { projectId: 1, stripeId: 1 },

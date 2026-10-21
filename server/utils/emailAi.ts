@@ -554,7 +554,8 @@ export function closeBrackets(text: string): string {
   return inString || !open.length ? text : text.replace(/,\s*$/, '') + open.reverse().join('')
 }
 
-function withParsedArgs<T extends Record<string, { execute?: (input: any, options: any) => any }>>(tools: T): T {
+/** Tools whose execute parses arguments some models send as JSON strings. */
+export function withParsedArgs<T extends Record<string, { execute?: (input: any, options: any) => any }>>(tools: T): T {
   for (const t of Object.values(tools)) {
     const execute = t.execute
     if (execute) t.execute = (input, options) => execute(parseStringifiedArgs(input ?? {}), options)
