@@ -6,6 +6,7 @@ import { campaignBatchId, campaignStatsFrom, canMoveCampaign, CAMPAIGN_STATUSES,
 import type { ContactAttributeValue } from '#shared/contacts'
 import { groupByLocale, snapshotDocument, subjectForLocale, translatedDocuments } from '#shared/campaignLocale'
 import type { EmailStrings } from '#shared/email/translate'
+import { companyOf } from './company'
 import { contactQuery, getProjectSegment, serializeSegment } from './contacts'
 import { resolveSegmentWhere } from './segmentRelations'
 import { deliverEmails, projectEmailSender, type DeliveryResult, type EmailActor, type EmailSender, type OutgoingEmail } from './emailDelivery'
