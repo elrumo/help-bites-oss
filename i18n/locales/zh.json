@@ -699,6 +699,95 @@
       "image": "图片",
       "blocks": "模块",
       "insert": "插入"
+    },
+    "pages": "页面",
+    "newPage": "新建页面",
+    "noPages": "还没有页面",
+    "noPagesDescription": "页面是独立的（关于、联系方式、阅读清单）：它们不会出现在文章列表、订阅源和通讯中。请在“设计”中通过博客导航链接它们。",
+    "pageTitlePlaceholder": "页面标题",
+    "featured": "精选",
+    "featuredHint": "优先显示：在杂志布局中大幅展示，在其他布局中加上标记。",
+    "visibility": "谁可以阅读",
+    "visibilityPublic": "所有人",
+    "visibilityMembers": "仅限会员",
+    "visibilityPublicHint": "任何拥有链接的人、订阅源和搜索引擎。",
+    "visibilityMembersHint": "所有人都能看到标题和摘要；其余内容仅供通过你的应用或邮箱登录的读者阅读。订阅源中只包含摘要。",
+    "coverAlt": "描述这张图片（替代文本）",
+    "seo": {
+      "title": "搜索与社交",
+      "noDescription": "没有描述时，这里会显示摘要。",
+      "metaTitle": "搜索引擎标题",
+      "metaDescription": "搜索引擎描述",
+      "ogImage": "链接预览图片",
+      "ogImageHint": "留空则使用封面。",
+      "canonical": "规范地址",
+      "canonicalHint": "如果文章最早发布在其他地方，请填写那里的地址。搜索引擎会将文章归功于该地址。"
+    },
+    "newsletterWithPost": "文章上线时通过邮件发送给订阅者。",
+    "newsletterWaits": "文章将于 {when} 上线。通讯会在那时发出，不会提前。",
+    "sendWithPost": "发布时发送",
+    "publishOptions": "发布选项",
+    "publishAndEmail": "发布并发送邮件",
+    "scheduleAndEmail": "排期并发送邮件",
+    "publishOnly": "仅发布",
+    "scheduleOnly": "仅排期",
+    "sitemap": "站点地图",
+    "sitemapHint": "将它提交给 Google Search Console 或 Bing Webmaster Tools，让它们找到每一篇文章。",
+    "design": {
+      "title": "设计",
+      "description": "托管博客的外观。嵌入代码沿用你页面的外观，布局则使用这里的设置。",
+      "layout": "布局",
+      "layouts": {
+        "list": "列表",
+        "grid": "网格",
+        "magazine": "杂志"
+      },
+      "font": "字体",
+      "fonts": {
+        "sans": "无衬线",
+        "serif": "衬线"
+      },
+      "colorScheme": "配色方案",
+      "schemes": {
+        "auto": "跟随读者",
+        "light": "浅色",
+        "dark": "深色"
+      },
+      "accent": "强调色",
+      "accentHint": "用于链接、按钮和标签。除非你另行选择，否则使用项目的强调色。",
+      "useProjectAccent": "使用项目的颜色",
+      "logoUrl": "Logo",
+      "logoUrlHint": "显示在博客名称旁边。留空则使用项目的 Logo。",
+      "coverImageUrl": "封面图片",
+      "coverImageUrlHint": "横跨首页顶部的宽幅图片。",
+      "navigation": "导航",
+      "navigationHint": "博客页眉中的链接：博客中的某个页面（/about）、博客本身（/）或任意地址。",
+      "linkLabel": "链接文字",
+      "removeLink": "移除链接",
+      "addLink": "添加链接",
+      "social": "社交链接",
+      "website": "网站",
+      "footer": "页脚",
+      "footerHint": "每个页面底部的一行文字，例如版权声明。"
+    },
+    "import": {
+      "title": "从 Ghost 导入",
+      "description": "将你的文章和页面从 Ghost 博客迁移过来。",
+      "file": "Ghost 导出文件",
+      "fileHint": "在 Ghost 中：Settings → Advanced → Import/Export → Export content。一个 .json 文件。",
+      "choose": "选择文件",
+      "found": "{count} 篇文章和页面",
+      "siteUrl": "你的 Ghost 网站地址",
+      "siteUrlHint": "导出文件中的链接和图片不包含此地址。它们会继续指向那个网站，因此在迁移图片之前，请保持该网站在线。",
+      "update": "覆盖之前导入的文章",
+      "updateHint": "关闭时：之前从这个博客导入的文章保持现状。",
+      "members": "会员在单独的 CSV 文件中（Ghost 中的 Members → Export）。请在“联系人”中导入：邮箱、姓名、标签和通讯订阅同意都会被读取。",
+      "run": "导入",
+      "done": "已添加 {created} 篇，已更新 {updated} 篇，已跳过 {skipped} 篇。",
+      "close": "关闭",
+      "notGhost": "这不是 Ghost 导出文件：其中没有文章。",
+      "notJson": "该文件不是 JSON。",
+      "error": "导入失败。"
     }
   },
   "chat": {
@@ -2566,7 +2655,7 @@
         },
         "blog": {
           "term": "带邮件通讯的博客",
-          "desc": "在富文本编辑器中撰写文章，发布到托管博客、你自己的网站或 RSS，并通过邮件发送给订阅者。读者可以添加表情反应和评论。"
+          "desc": "在富文本编辑器中撰写文章和页面，发布到采用你自己设计的托管博客、你自己的网站或 RSS，并通过邮件发送给订阅者。支持仅限会员的文章、SEO 字段、站点地图以及从 Ghost 导入。读者可以添加表情反应和评论。"
         },
         "followers": {
           "term": "关注者会收到消息",

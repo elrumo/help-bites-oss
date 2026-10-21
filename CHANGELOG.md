@@ -53,6 +53,15 @@ All notable changes to the community edition. Versions are Docker image tags
   which in the cloud edition needs a plan with campaigns. New classes `BlogPost` and `BlogComment`, and fields
   `Project.blog` and `Campaign.blogPost` (need `schema:apply`; the container does it on boot). Images go to the bucket
   under `<projectId>/blog/`. A person's blog comments and reactions are erased with the rest of their data.
+- Blog, the Ghost-like parts: pages, featured and members-only posts, SEO fields, HTML bodies (YouTube and Vimeo
+  players allowed, sandboxed), the hosted blog's design (`Project.blog.design`: layout, typeface, colour scheme,
+  accent, logo, cover, navigation, social links, footer), search, related posts and a sitemap at
+  `/blog/<public key>/sitemap.xml`, publish-and-email (a scheduled post's newsletter waits for it), the
+  `blog.post.published` / `.updated` / `.unpublished` / `.deleted` event webhooks (the worker announces scheduled
+  posts as they go live) and `POST /v1/admin/blog/import` for a Ghost export. New `BlogPost` fields `type`,
+  `featured`, `visibility`, `bodyFormat`, `coverImageAlt`, `metaTitle`, `metaDescription`, `ogImageUrl`,
+  `canonicalUrl`, `externalId` and `announced`, with two indexes (need `schema:apply`; the container does it on
+  boot). Existing posts read as public posts in Markdown. The body limit is now 200,000 characters.
 - Languages and AI translation for onboarding flows, legal documents and email templates (`docs/LANGUAGES.md`). New
   fields `OnboardingFlow.locale` and `translations`, `LegalDocument.translationOf` and `EmailTemplate.locale` and
   `translations` (need `schema:apply`; the container does it on boot). `POST …/translate` on each uses the workspace's

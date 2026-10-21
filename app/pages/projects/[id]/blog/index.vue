@@ -7,8 +7,12 @@
       <template #actions>
         <UButton v-if="blogOn" icon="i-lucide-external-link" :label="$t('blog.openPublic')" color="neutral" variant="ghost" size="sm" :to="blogUrl" target="_blank" />
         <UButton v-if="blogOn" icon="i-lucide-rss" color="neutral" variant="ghost" size="sm" square :aria-label="$t('blog.copyFeed')" @click="copy(feedUrl, $t('blog.feed'))" />
+        <UButton icon="i-lucide-palette" :label="$t('blog.design.title')" color="neutral" variant="ghost" size="sm" class="hidden sm:inline-flex" @click="showDesign = true" />
         <UButton icon="i-lucide-settings-2" :label="$t('nav.settings')" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
-        <UButton icon="i-lucide-plus" :label="$t('blog.newPost')" size="sm" :to="`/projects/${id}/blog/new`" />
+        <UDropdownMenu :items="moreItems" :content="{ align: 'end' }">
+          <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" size="sm" square :aria-label="$t('blog.more')" />
+        </UDropdownMenu>
+        <UButton icon="i-lucide-plus" :label="tab === 'pages' ? $t('blog.newPage') : $t('blog.newPost')" size="sm" :to="newLink" />
       </template>
     </PageHeader>
 
@@ -23,9 +27,12 @@
 
         <UTabs v-model="tab" :items="tabs" variant="link" size="sm" :content="false" class="w-full" />
 
-        <template v-if="tab === 'posts'">
-          <EmptyState v-if="!posts.length" icon="i-lucide-newspaper" :title="$t('blog.nothingYet')" :description="$t('blog.emptyDescription')">
-            <UButton icon="i-lucide-plus" :label="$t('blog.newPost')" :to="`/projects/${id}/blog/new`" />
+        <template v-if="tab !== 'comments'">
+          <EmptyState v-if="!ofTab.length" :icon="tab === 'pages' ? 'i-lucide-file-text' : 'i-lucide-newspaper'" :title="tab === 'pages' ? $t('blog.noPages') : $t('blog.nothingYet')" :description="tab === 'pages' ? $t('blog.noPagesDescription') : $t('blog.emptyDescription')">
+            <div class="flex flex-wrap justify-center gap-2">
+              <UButton icon="i-lucide-plus" :label="tab === 'pages' ? $t('blog.newPage') : $t('blog.newPost')" :to="newLink" />
+              <UButton v-if="tab === 'posts'" icon="i-lucide-download" :label="$t('blog.import.title')" color="neutral" variant="soft" @click="showImport = true" />
+            </div>
           </EmptyState>
           <template v-else>
             <div class="flex flex-wrap items-center gap-2">
@@ -36,16 +43,20 @@
               <li v-for="post in shown" :key="post.id">
                 <NuxtLink :to="`/projects/${id}/blog/${post.id}`" class="flex items-center gap-3 px-3 py-2.5 text-[13px] transition-colors hover:bg-elevated">
                   <img v-if="post.coverImageUrl" :src="post.coverImageUrl" alt="" class="size-12 shrink-0 rounded-md bg-elevated object-cover">
-                  <span v-else class="grid size-12 shrink-0 place-items-center rounded-md bg-elevated text-dimmed"><UIcon name="i-lucide-newspaper" class="size-5" /></span>
+                  <span v-else class="grid size-12 shrink-0 place-items-center rounded-md bg-elevated text-dimmed"><UIcon :name="post.type === 'page' ? 'i-lucide-file-text' : 'i-lucide-newspaper'" class="size-5" /></span>
                   <span class="min-w-0 flex-1">
-                    <span class="block truncate font-medium text-highlighted">{{ post.title }}</span>
+                    <span class="flex items-center gap-1.5">
+                      <span class="truncate font-medium text-highlighted">{{ post.title }}</span>
+                      <UIcon v-if="post.featured" name="i-lucide-star" class="size-3.5 shrink-0 text-warning" :aria-label="$t('blog.featured')" />
+                      <UIcon v-if="post.visibility === 'members'" name="i-lucide-lock" class="size-3.5 shrink-0 text-muted" :aria-label="$t('blog.visibilityMembers')" />
+                    </span>
                     <span class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted">
                       <span class="rounded-full px-1.5 text-[11px] font-medium" :class="STATE_CLASS[stateOf(post)]">{{ stateLabel(post) }}</span>
                       <time v-if="post.publishedAt" :datetime="post.publishedAt">{{ shortDate(post.publishedAt) }}</time>
                       <span v-for="tag in post.tags.slice(0, 3)" :key="tag">#{{ tag }}</span>
                     </span>
                   </span>
-                  <span class="hidden shrink-0 items-center gap-3 text-xs tabular-nums text-muted sm:flex">
+                  <span v-if="post.type === 'post'" class="hidden shrink-0 items-center gap-3 text-xs tabular-nums text-muted sm:flex">
                     <span v-if="post.newsletter" class="flex items-center gap-1" :title="$t('blog.sentAsNewsletter')"><UIcon name="i-lucide-mail" class="size-3.5" />{{ campaignLabel(post.newsletter.status) }}</span>
                     <span class="flex items-center gap-1"><UIcon name="i-lucide-message-circle" class="size-3.5" />{{ post.commentCount }}</span>
                     <span class="flex items-center gap-1"><UIcon name="i-lucide-heart" class="size-3.5" />{{ reactionTotal(post) }}</span>
@@ -127,24 +138,40 @@
             <UButton icon="i-lucide-copy" :label="$t('blog.copySnippet')" size="xs" color="neutral" variant="soft" @click="copy(embedSnippet, $t('blog.snippet'))" />
             <UButton icon="i-lucide-book-open" :label="$t('blog.readDocs')" size="xs" color="neutral" variant="ghost" to="/docs/blog" target="_blank" />
           </div>
+          <UFormField v-if="blogOn" :label="$t('blog.sitemap')" :description="$t('blog.sitemapHint')">
+            <div class="flex gap-2">
+              <UInput :model-value="sitemapUrl" readonly class="min-w-0 flex-1 font-mono" />
+              <UButton icon="i-lucide-copy" color="neutral" variant="soft" :aria-label="$t('blog.sitemap')" @click="copy(sitemapUrl, $t('blog.sitemap'))" />
+            </div>
+          </UFormField>
 
           <p class="text-xs text-muted">{{ savingSettings ? $t('blog.saving') : settingsSaved ? $t('common.saved') : $t('blog.savesAsChange') }}</p>
           <p v-if="settingsError" class="text-sm text-error">{{ settingsError }}</p>
         </div>
       </template>
     </USlideover>
+
+    <USlideover v-model:open="showDesign" :title="$t('blog.design.title')" :description="$t('blog.design.description')" :ui="{ content: 'sm:max-w-lg' }">
+      <template #body>
+        <BlogDesignSettings v-if="project" :project="project" :can-manage="canManage" @saved="onProjectSaved" />
+      </template>
+    </USlideover>
+
+    <BlogImportModal v-model:open="showImport" :project-id="id" @imported="loadPosts" />
   </div>
 </template>
 
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
 import { blogTitle, DEFAULT_BLOG_CONFIG, isBlogPostLive, type BlogCommentStatus, type BlogCommentWithPost, type BlogConfig, type BlogPost } from '#shared/blog'
 import { can } from '#shared/roles'
 import type { AdminProject } from '~~/server/utils/projects'
 import { shortDate, timeAgo } from '~/utils/feedbackFormat'
 
-// A project's blog: its posts (written in the editor at ./[postId].vue), the
-// comments readers leave on them, and the settings. Nothing is public until
-// the blog is on and a post is published; scheduled posts go live on their own.
+// A project's blog: its posts and pages (written in the editor at
+// ./[postId].vue), the comments readers leave on them, the settings, the
+// hosted blog's design and an import from Ghost. Nothing is public until the
+// blog is on and a post is published; scheduled posts go live on their own.
 
 definePageMeta({ middleware: 'agent' })
 
@@ -161,14 +188,22 @@ const canManage = computed(() => can(context.value?.role, 'projects.manage'))
 const blogOn = computed(() => settings.value.enabled)
 const blogUrl = computed(() => (project.value ? `${appUrl.value}/blog/${project.value.publicKey}` : ''))
 const feedUrl = computed(() => (project.value ? `${appUrl.value}/v1/projects/${project.value.publicKey}/blog.rss` : ''))
+const sitemapUrl = computed(() => `${blogUrl.value}/sitemap.xml`)
 const defaultTitle = computed(() => blogTitle({ title: '' }, project.value?.name || ''))
 const embedSnippet = computed(() => `<div id="blog"></div>\n<script src="${appUrl.value}/blog.js" data-project="${project.value?.publicKey || 'pk_…'}" data-target="#blog" defer><\/script>`)
 
 const posts = ref<BlogPost[]>([])
 const loading = ref(true)
 const error = ref('')
-const tab = ref<'posts' | 'comments'>(route.query.tab === 'comments' ? 'comments' : 'posts')
-const tabs = computed(() => [{ label: t('blog.posts'), value: 'posts', icon: 'i-lucide-newspaper' }, { label: t('blog.commentsTab'), value: 'comments', icon: 'i-lucide-message-circle' }])
+const tab = ref<'posts' | 'pages' | 'comments'>(route.query.tab === 'comments' || route.query.tab === 'pages' ? route.query.tab : 'posts')
+const tabs = computed(() => [{ label: t('blog.posts'), value: 'posts', icon: 'i-lucide-newspaper' }, { label: t('blog.pages'), value: 'pages', icon: 'i-lucide-file-text' }, { label: t('blog.commentsTab'), value: 'comments', icon: 'i-lucide-message-circle' }])
+const newLink = computed(() => `/projects/${id}/blog/new${tab.value === 'pages' ? '?type=page' : ''}`)
+const showDesign = ref(false)
+const showImport = ref(false)
+const moreItems = computed<DropdownMenuItem[][]>(() => [[
+  { label: t('blog.design.title'), icon: 'i-lucide-palette', class: 'sm:hidden', onSelect: (): void => { showDesign.value = true } },
+  { label: t('blog.import.title'), icon: 'i-lucide-download', onSelect: (): void => { showImport.value = true } }
+]])
 
 // ---- posts ----
 type PostState = 'live' | 'scheduled' | 'draft'
@@ -188,11 +223,13 @@ function stateLabel(post: BlogPost): string {
 const reactionTotal = (post: BlogPost) => post.reactions.reduce((sum, r) => sum + r.count, 0)
 const campaignLabel = (status: string) => t(`blog.campaign.${['draft', 'scheduled', 'sending', 'paused', 'sent', 'canceled'].includes(status) ? status : 'draft'}`)
 
-const liveCount = computed(() => posts.value.filter(p => stateOf(p) === 'live').length)
-const draftCount = computed(() => posts.value.filter(p => stateOf(p) !== 'live').length)
+const onlyPosts = computed(() => posts.value.filter(p => p.type === 'post'))
+const liveCount = computed(() => onlyPosts.value.filter(p => stateOf(p) === 'live').length)
+const draftCount = computed(() => onlyPosts.value.filter(p => stateOf(p) !== 'live').length)
+const ofTab = computed(() => posts.value.filter(p => p.type === (tab.value === 'pages' ? 'page' : 'post')))
 const shown = computed(() => {
   const q = search.value.trim().toLowerCase()
-  return posts.value.filter(post => (statusFilter.value === 'all' || stateOf(post) === statusFilter.value)
+  return ofTab.value.filter(post => (statusFilter.value === 'all' || stateOf(post) === statusFilter.value)
     && (!q || post.title.toLowerCase().includes(q) || post.tags.some(tag => tag.toLowerCase().includes(q))))
 })
 
@@ -303,6 +340,10 @@ async function saveSettings(next: Partial<Record<keyof BlogConfig, unknown>>) {
   } finally {
     savingSettings.value = false
   }
+}
+
+function onProjectSaved(saved: AdminProject) {
+  projects.value = projects.value.map(p => (p.id === saved.id ? saved : p))
 }
 
 async function copy(text: string, what: string) {

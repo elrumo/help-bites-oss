@@ -16,6 +16,7 @@
         <UFormField :label="$t('blog.scheduleFor')" :description="$t('blog.scheduleForHint')">
           <UInput v-model="scheduledAt" type="datetime-local" class="w-full" />
         </UFormField>
+        <p v-if="waits" class="rounded-lg border border-info/40 bg-info/10 px-3 py-2 text-xs">{{ $t('blog.newsletterWaits', { when: goesLive }) }}</p>
         <p v-if="!postalAddress" class="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs">{{ $t('blog.needsAddress') }} <NuxtLink :to="`/projects/${projectId}/campaigns`" class="underline underline-offset-2">{{ $t('sections.campaigns') }}</NuxtLink>{{ $t('blog.needsAddressEnd') }}</p>
         <p class="text-xs text-muted">{{ $t('blog.newsletterGoesOnce') }}</p>
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
@@ -26,7 +27,7 @@
         <UButton :label="$t('blog.saveDraftCampaign')" color="neutral" variant="ghost" :loading="busy === 'draft'" @click="send('draft')" />
         <UButton class="ml-auto" :label="$t('common.cancel')" color="neutral" variant="ghost" @click="open = false" />
         <UButton v-if="scheduledAt" :label="$t('blog.schedule')" icon="i-lucide-calendar-clock" :loading="busy === 'schedule'" @click="send('schedule')" />
-        <UButton v-else :label="$t('blog.sendNow')" icon="i-lucide-send" :loading="busy === 'now'" @click="send('now')" />
+        <UButton v-else :label="waits ? $t('blog.sendWithPost') : $t('blog.sendNow')" icon="i-lucide-send" :loading="busy === 'now'" @click="send('now')" />
       </div>
     </template>
   </UModal>
@@ -39,14 +40,15 @@ import { fromLocalInput } from '~/utils/blogDraft'
 
 // Email a published post to the project's subscribers. It becomes a campaign
 // (test sends, pause, numbers under Campaigns); "Save as a draft" stops there
-// so the operator can send a test first.
+// so the operator can send a test first. A scheduled post's newsletter waits
+// for it: "Send" means when it goes live.
 
 const props = defineProps<{ post: BlogPost, projectId: string, topics: MarketingTopic[], defaultTopic: string, postalAddress: string }>()
 const emit = defineEmits<{ sent: [post: BlogPost, campaign: Campaign] }>()
 const open = defineModel<boolean>('open', { default: false })
 
 const { api } = useAgent()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const toast = useToast()
 const NONE = '__none__'
 const subject = ref('')
@@ -58,6 +60,8 @@ const busy = ref<'' | 'now' | 'schedule' | 'draft'>('')
 const error = ref('')
 
 const topicItems = computed(() => [{ label: t('blog.everySubscriber'), value: NONE }, ...props.topics.map(item => ({ label: item.name || item.key, value: item.key }))])
+const waits = computed(() => props.post.status === 'published' && !props.post.live)
+const goesLive = computed(() => (props.post.publishedAt ? new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(props.post.publishedAt)) : ''))
 const segmentItems = computed(() => [{ label: t('blog.noSegment'), value: NONE }, ...segments.value.map(item => ({ label: item.name, value: item.id }))])
 
 watch(open, async (isOpen) => {
@@ -84,7 +88,7 @@ async function send(mode: 'now' | 'schedule' | 'draft') {
       }
     })
     emit('sent', result.post, result.campaign)
-    toast.add({ title: mode === 'draft' ? t('blog.campaignDrafted') : mode === 'schedule' ? t('blog.newsletterScheduled') : t('blog.newsletterSending'), icon: 'i-lucide-mail-check', color: 'success' })
+    toast.add({ title: mode === 'draft' ? t('blog.campaignDrafted') : mode === 'schedule' || waits.value ? t('blog.newsletterScheduled') : t('blog.newsletterSending'), icon: 'i-lucide-mail-check', color: 'success' })
     open.value = false
   } catch (e: any) {
     error.value = e?.message || t('blog.newsletterError')

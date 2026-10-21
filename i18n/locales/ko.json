@@ -699,6 +699,95 @@
       "image": "이미지",
       "blocks": "블록",
       "insert": "삽입"
+    },
+    "pages": "페이지",
+    "newPage": "새 페이지",
+    "noPages": "아직 페이지가 없습니다",
+    "noPagesDescription": "페이지는 독립적으로 존재합니다(소개, 연락처, 읽기 목록 등). 목록, 피드, 뉴스레터에는 포함되지 않습니다. 디자인의 블로그 내비게이션에서 링크하세요.",
+    "pageTitlePlaceholder": "페이지 제목",
+    "featured": "추천",
+    "featuredHint": "맨 앞에 표시됩니다. 매거진 레이아웃에서는 크게, 다른 레이아웃에서는 표시가 붙습니다.",
+    "visibility": "읽을 수 있는 사람",
+    "visibilityPublic": "모든 사람",
+    "visibilityMembers": "회원 전용",
+    "visibilityPublicHint": "링크가 있는 누구나, 피드, 검색 엔진.",
+    "visibilityMembersHint": "제목과 발췌는 누구나 볼 수 있고, 나머지는 내 앱이나 이메일로 로그인한 독자만 볼 수 있습니다. 피드에는 발췌만 포함됩니다.",
+    "coverAlt": "이미지 설명(대체 텍스트)",
+    "seo": {
+      "title": "검색 및 소셜",
+      "noDescription": "설명이 없으면 여기에 발췌가 표시됩니다.",
+      "metaTitle": "검색 엔진용 제목",
+      "metaDescription": "검색 엔진용 설명",
+      "ogImage": "링크 미리보기 이미지",
+      "ogImageHint": "비워 두면 커버 이미지를 사용합니다.",
+      "canonical": "정규 주소",
+      "canonicalHint": "게시물이 다른 곳에 처음 게시되었다면 그 주소입니다. 검색 엔진은 그 주소를 원본으로 인정합니다."
+    },
+    "newsletterWithPost": "공개되면 구독자에게 이메일로 보냅니다.",
+    "newsletterWaits": "게시물은 {when}에 공개됩니다. 뉴스레터는 그때 발송되며, 그전에는 발송되지 않습니다.",
+    "sendWithPost": "게시되면 보내기",
+    "publishOptions": "게시 옵션",
+    "publishAndEmail": "게시하고 이메일 보내기",
+    "scheduleAndEmail": "예약하고 이메일 보내기",
+    "publishOnly": "게시만 하기",
+    "scheduleOnly": "예약만 하기",
+    "sitemap": "사이트맵",
+    "sitemapHint": "Google Search Console이나 Bing Webmaster Tools에 제출하면 모든 게시물을 찾을 수 있습니다.",
+    "design": {
+      "title": "디자인",
+      "description": "호스팅된 블로그의 모양입니다. 임베드는 내 페이지의 모양을 따르고, 레이아웃은 여기 설정을 사용합니다.",
+      "layout": "레이아웃",
+      "layouts": {
+        "list": "목록",
+        "grid": "그리드",
+        "magazine": "매거진"
+      },
+      "font": "글꼴",
+      "fonts": {
+        "sans": "산세리프",
+        "serif": "세리프"
+      },
+      "colorScheme": "색 구성표",
+      "schemes": {
+        "auto": "독자에 맞춤",
+        "light": "라이트",
+        "dark": "다크"
+      },
+      "accent": "강조 색상",
+      "accentHint": "링크, 버튼, 태그에 쓰입니다. 따로 고르지 않으면 프로젝트의 강조 색상을 사용합니다.",
+      "useProjectAccent": "프로젝트 색상 사용",
+      "logoUrl": "로고",
+      "logoUrlHint": "블로그 이름 옆에 표시됩니다. 비워 두면 프로젝트 로고를 사용합니다.",
+      "coverImageUrl": "커버 이미지",
+      "coverImageUrlHint": "첫 페이지 상단을 가로지르는 넓은 이미지입니다.",
+      "navigation": "내비게이션",
+      "navigationHint": "블로그 헤더의 링크입니다. 블로그의 페이지(/about), 블로그 자체(/) 또는 아무 주소나 넣을 수 있습니다.",
+      "linkLabel": "레이블",
+      "removeLink": "링크 삭제",
+      "addLink": "링크 추가",
+      "social": "소셜 링크",
+      "website": "웹사이트",
+      "footer": "바닥글",
+      "footerHint": "모든 페이지 하단에 표시되는 한 줄입니다. 예: 저작권 표시."
+    },
+    "import": {
+      "title": "Ghost에서 가져오기",
+      "description": "Ghost 블로그의 게시물과 페이지를 옮겨 옵니다.",
+      "file": "Ghost 내보내기 파일",
+      "fileHint": "Ghost에서 Settings → Advanced → Import/Export → Export content를 사용하세요. .json 파일입니다.",
+      "choose": "파일 선택",
+      "found": "게시물 및 페이지 {count}개",
+      "siteUrl": "Ghost 사이트 주소",
+      "siteUrlHint": "내보내기 파일에는 이 주소 없이 링크와 이미지가 기록됩니다. 링크와 이미지는 계속 그 사이트를 가리키므로, 이미지를 옮길 때까지 사이트를 유지하세요.",
+      "update": "이전에 가져온 게시물 덮어쓰기",
+      "updateHint": "끄면 이 블로그에서 이전에 가져온 게시물은 지금 그대로 둡니다.",
+      "members": "회원은 별도의 CSV입니다(Ghost의 Members → Export). 연락처에서 가져오면 이메일, 이름, 라벨, 뉴스레터 수신 동의가 반영됩니다.",
+      "run": "가져오기",
+      "done": "{created}개 추가, {updated}개 업데이트, {skipped}개 건너뜀.",
+      "close": "닫기",
+      "notGhost": "Ghost 내보내기 파일이 아닙니다. 게시물이 없습니다.",
+      "notJson": "이 파일은 JSON이 아닙니다.",
+      "error": "가져오기에 실패했습니다."
     }
   },
   "chat": {
@@ -2566,7 +2655,7 @@
         },
         "blog": {
           "term": "뉴스레터가 있는 블로그",
-          "desc": "리치 에디터로 게시물을 쓰고, 호스팅된 블로그나 내 사이트, RSS로 게시한 뒤 구독자에게 이메일로 보내세요. 독자는 반응과 댓글을 남길 수 있습니다."
+          "desc": "리치 에디터로 게시물과 페이지를 쓰고, 내 디자인의 호스팅된 블로그나 내 사이트, RSS로 게시한 뒤 구독자에게 이메일로 보내세요. 멤버 전용 게시물, SEO 필드, 사이트맵, Ghost에서 가져오기도 지원합니다. 독자는 반응과 댓글을 남길 수 있습니다."
         },
         "followers": {
           "term": "팔로워에게 소식이 전해집니다",

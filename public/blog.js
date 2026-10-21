@@ -10,8 +10,10 @@
  *   <script src="https://support.example.com/blog.js" data-project="pk_…" data-target="#blog" defer></script>
  *
  * Render posts yourself (from GET /v1/blog) and want only what goes under
- * one? data-view="extras" data-post="the-slug". One post with all of it:
- * data-view="post" data-post="the-slug".
+ * one? data-view="extras" data-post="the-slug". One post (or page) with all
+ * of it: data-view="post" data-post="the-slug". A members-only post shows its
+ * excerpt and a sign-in until the reader is a member; with data-body="#el"
+ * the extras view puts the body into your #el once they are.
  *
  * Reading is open to everyone. To let your signed-in users react and comment,
  * hand it an identity token (the same one the chat uses):
@@ -30,19 +32,20 @@
  * and writing is off.
  *
  * Options (data-* or init): project, target, view ('blog' | 'post' | 'extras'),
- * post, tag, limit (posts per page, default 10), theme ('system' | 'light' |
+ * post, tag, q (a search), layout ('list' | 'grid' | 'magazine'; defaults to
+ * the hosted blog's), body, limit (posts per page, default 10), theme ('system' | 'light' |
  * 'dark'; defaults to a dark/light class on your <html>), accent (defaults to
  * the project's), radius, font ('inherit' | 'system' | 'serif' | 'mono'),
- * show (which parts: 'cover,excerpt,tags,author,date,reactions,comments,subscribe'),
+ * show (which parts: 'cover,excerpt,tags,author,date,badges,search,reactions,comments,subscribe'),
  * deep-link-param ('post': the URL parameter an open post is kept in), host
  * (when you serve this file yourself), labels (init only: any of WORDS below).
  * Other calls: (['open', slug]), (['back']).
  *
  * Restyle it from your CSS with variables on .help-bites-blog
  * (--hb-blog-accent, -on-accent, -bg, -card, -text, -muted, -line, -radius,
- * -font, -width) or parts (::part(header), list, card, cover, title, meta,
- * excerpt, tag, post, body, reactions, reaction, comments, comment, composer,
- * button, subscribe). Every reader action is also a `helpbites:blog` event on
+ * -font, -width) or parts (::part(header), search, list, card, cover, title, meta,
+ * excerpt, tag, badge, post, body, gate, reactions, reaction, comments, comment,
+ * composer, button, subscribe). Every reader action is also a `helpbites:blog` event on
  * window ({ type: 'open' | 'react' | 'comment' | 'subscribe', slug }).
  * The data is GET /v1/blog?pk=… if you would rather draw your own.
  */
@@ -57,6 +60,9 @@
     view: attr('view') || 'blog',
     post: attr('post'),
     tag: attr('tag'),
+    q: attr('q'),
+    layout: attr('layout'),
+    body: attr('body'),
     limit: Number(attr('limit')) || 10,
     theme: attr('theme'),
     accent: attr('accent'),
@@ -83,7 +89,9 @@
     closed: 'Comments are closed.', signIn: 'Sign in to comment', signInReact: 'Sign in to react',
     email: 'Your email', name: 'Your name (shown with your comments)', continue: 'Continue', code: 'The 6-digit code we emailed you', verify: 'Verify', signOut: 'Sign out',
     subscribeTitle: 'Get new posts by email', subscribe: 'Subscribe', subscribed: 'Check your inbox to confirm.', subscribedDone: 'You are subscribed.',
-    error: 'Something went wrong. Try again.', notFound: 'This post is not available.'
+    error: 'Something went wrong. Try again.', notFound: 'This post is not available.',
+    search: 'Search posts', noMatches: 'No posts match that.', featured: 'Featured', members: 'Members',
+    membersTitle: 'This post is for members', membersText: 'Sign in with your email to read the rest.', membersOnly: 'Only members can read the rest.', readOn: 'Sign in to read'
   }
   var queue = window.HelpBitesBlog || []
   var host = null, root = null, mounted = false
@@ -165,6 +173,10 @@
       + 'textarea, input { width: 100%; font: inherit; font-size: 15px; color: inherit; background: transparent; border: 1px solid var(--hb-blog-line); border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; } textarea { min-height: 84px; resize: vertical; }'
       + '.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .note { color: var(--hb-blog-muted); font-size: 14px; margin: 8px 0 0; } .err { color: #dc2626; font-size: 14px; margin: 8px 0 0; }'
       + '.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }'
+      + '.find { margin: 14px 0 0; } .find input { margin: 0; max-width: 320px; padding: 8px 14px; border-radius: 999px; }'
+      + '.list.grid, .list.magazine { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); } .list.magazine > li:first-child { grid-column: 1 / -1; } .list.magazine > li:first-child .title { font-size: 1.6em; }'
+      + '.list > li, .list .card { height: 100%; } .badges { display: flex; gap: 6px; margin: 0 0 6px; } .chip { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: color-mix(in srgb, var(--hb-blog-accent) 12%, transparent); color: var(--hb-blog-accent); }'
+      + '.gate { text-align: center; } .gate h3 { margin-bottom: 4px; } .gate form, .gate > .btn { margin: 12px auto 0; max-width: 360px; }'
       + '@media (max-width: 640px) { .post .in { padding: 22px 18px 24px; } .post h1 { font-size: 1.6em; } }'
   }
 
@@ -174,6 +186,11 @@
 
   function metaLine(post) {
     return [shows('date') && post.publishedAt ? when(post.publishedAt) : '', shows('author') ? post.authorName : '', post.readingMinutes + ' ' + word('minRead')].filter(Boolean).join(' · ')
+  }
+
+  function badges(post) {
+    if (!shows('badges') || (!post.featured && !post.locked)) return null
+    return h('div', { class: 'badges' }, [post.featured ? h('span', { class: 'chip', part: 'badge' }, word('featured')) : null, post.locked ? h('span', { class: 'chip', part: 'badge' }, word('members')) : null])
   }
 
   function tags(post) {
@@ -201,14 +218,19 @@
   function listView() {
     var b = state.blog
     var meta = []
-    if (options.tag) meta.push('#' + options.tag + ' · ', h('a', { href: '#', onclick: function (e) { e.preventDefault(); options.tag = ''; load() } }, word('back')), ' · ')
+    if (options.tag || options.q) meta.push((options.q ? '“' + options.q + '”' : '#' + options.tag) + ' · ', h('a', { href: '#', onclick: function (e) { e.preventDefault(); options.tag = ''; options.q = ''; load() } }, word('back')), ' · ')
     meta.push(h('a', { href: b.feedUrl, target: '_blank', rel: 'noopener' }, word('rss')))
-    var head = h('div', { class: 'head', part: 'header' }, [h('h2', {}, b.title), b.description ? h('p', {}, b.description) : null, h('p', { class: 'meta' }, meta)])
-    if (!state.posts.length) return h('div', {}, [head, h('p', { class: 'note' }, word('empty'))])
-    var list = h('ul', { class: 'list', part: 'list' }, state.posts.map(function (post) {
+    var find = shows('search') ? h('form', { class: 'find', part: 'search', role: 'search', onsubmit: function (e) { e.preventDefault(); options.q = e.target.elements.q.value.trim(); options.tag = ''; load() } }, h('input', { type: 'search', name: 'q', value: options.q || '', placeholder: word('search'), 'aria-label': word('search') })) : null
+    var head = h('div', { class: 'head', part: 'header' }, [h('h2', {}, b.title), b.description ? h('p', {}, b.description) : null, h('p', { class: 'meta' }, meta), find])
+    if (!state.posts.length) return h('div', {}, [head, h('p', { class: 'note' }, options.q ? word('noMatches') : word('empty'))])
+    var layout = options.layout || b.layout || 'list'
+    // The magazine's large first card is the front page's, not a search's.
+    if (layout === 'magazine' && (options.q || options.tag)) layout = 'grid'
+    var list = h('ul', { class: 'list ' + layout, part: 'list' }, state.posts.map(function (post) {
       return h('li', {}, h('button', { class: 'card', part: 'card', type: 'button', onclick: function () { open(post.slug, true) } }, [
-        shows('cover') && post.coverImageUrl ? h('img', { class: 'cover', part: 'cover', src: post.coverImageUrl, alt: '', loading: 'lazy' }) : null,
+        shows('cover') && post.coverImageUrl ? h('img', { class: 'cover', part: 'cover', src: post.coverImageUrl, alt: post.coverImageAlt || '', loading: 'lazy' }) : null,
         h('div', { class: 'in' }, [
+          badges(post),
           h('p', { class: 'title', part: 'title' }, post.title),
           h('p', { class: 'meta', part: 'meta' }, metaLine(post)),
           shows('excerpt') && post.excerpt ? h('p', { class: 'excerpt', part: 'excerpt' }, post.excerpt) : null,
@@ -217,23 +239,46 @@
       ]))
     }))
     var more = state.hasMore ? h('p', {}, h('button', { class: 'quiet', type: 'button', onclick: loadMore }, word('more') + ' →')) : null
-    return h('div', {}, [head, list, more])
+    return h('div', {}, [head, list, more, subscribeView()])
   }
 
   function postView() {
     var post = state.post
     var top = options.view === 'blog' ? h('p', {}, h('button', { class: 'quiet', type: 'button', onclick: back }, '← ' + word('back'))) : null
     if (!post) return h('div', {}, [top, h('p', { class: 'note' }, state.busy ? '…' : word('notFound'))])
+    var page = post.type === 'page'
     var article = options.view === 'extras' ? null : h('article', { class: 'post', part: 'post' }, [
-      shows('cover') && post.coverImageUrl ? h('img', { class: 'cover', part: 'cover', src: post.coverImageUrl, alt: '' }) : null,
+      shows('cover') && post.coverImageUrl ? h('img', { class: 'cover', part: 'cover', src: post.coverImageUrl, alt: post.coverImageAlt || '' }) : null,
       h('div', { class: 'in' }, [
         h('h1', { part: 'title' }, post.title),
-        h('p', { class: 'meta', part: 'meta' }, metaLine(post)),
-        h('div', { class: 'body', part: 'body', html: post.bodyHtml || '' }),
-        tags(post)
+        page ? null : h('p', { class: 'meta', part: 'meta' }, metaLine(post)),
+        post.locked
+          ? h('div', { class: 'body', part: 'body' }, post.excerpt ? h('p', {}, post.excerpt) : null)
+          : h('div', { class: 'body', part: 'body', html: post.bodyHtml || '' }),
+        page ? null : tags(post)
       ])
     ])
-    return h('div', {}, [top, article, reactionsView(), commentsView(), subscribeView()])
+    if (post.locked) return h('div', {}, [top, article, gateView()])
+    return h('div', {}, [top, article, page ? null : reactionsView(), page ? null : commentsView(), page ? null : subscribeView()])
+  }
+
+  /** A members-only post the reader may not read yet: who can, and the way in. */
+  function gateView() {
+    var canSignIn = options.onSignIn || (state.project && state.project.allowAnonymousUsers)
+    return h('section', { class: 'box gate', part: 'gate' }, [
+      h('h3', {}, word('membersTitle')),
+      h('p', { class: 'note' }, canSignIn ? word('membersText') : word('membersOnly')),
+      canSignIn ? signInView('read') : null
+    ])
+  }
+
+  /** The extras view under your own copy of a members-only post: the body, once the reader may read it. */
+  function fillBody() {
+    var el = options.body && state.post ? document.querySelector(options.body) : null
+    if (!el) return
+    // The page's own "for members" note is for readers without JavaScript; the sign-in drawn here replaces it.
+    if (state.post.locked) { var note = el.querySelector('.gate'); if (note) note.remove(); return }
+    if (state.post.bodyHtml) el.innerHTML = state.post.bodyHtml // sanitised by HelpBites when it was saved
   }
 
   function reactionsView() {
@@ -302,14 +347,15 @@
     ])
   }
 
-  function signInView() {
+  function signInView(reason) {
+    var label = reason === 'read' ? word('readOn') : word('signIn')
     var emailOnly = !options.onSignIn && state.project && state.project.allowAnonymousUsers
-    if (!emailOnly) return options.onSignIn ? h('button', { class: 'btn', part: 'button', type: 'button', onclick: function () { options.onSignIn('comment') } }, word('signIn')) : null
+    if (!emailOnly) return options.onSignIn ? h('button', { class: 'btn', part: 'button', type: 'button', onclick: function () { options.onSignIn(reason || 'comment') } }, label) : null
     if (state.auth === 'code') {
       var code = h('input', { inputmode: 'numeric', autocomplete: 'one-time-code', placeholder: word('code') })
       return h('form', { onsubmit: function (e) { e.preventDefault(); confirmCode(code.value) } }, [code, h('button', { class: 'btn', type: 'submit', disabled: state.busy }, word('verify')), state.authError ? h('p', { class: 'err' }, state.authError) : null])
     }
-    if (state.auth !== 'email') return h('button', { class: 'btn', part: 'button', type: 'button', onclick: function () { state.auth = 'email'; render() } }, word('signIn'))
+    if (state.auth !== 'email') return h('button', { class: 'btn', part: 'button', type: 'button', onclick: function () { state.auth = 'email'; render() } }, label)
     var email = h('input', { type: 'email', autocomplete: 'email', placeholder: word('email'), required: true })
     var name = h('input', { type: 'text', autocomplete: 'name', placeholder: word('name') })
     return h('form', { onsubmit: function (e) { e.preventDefault(); startSession(email.value, name.value) } }, [email, name, h('button', { class: 'btn', type: 'submit', disabled: state.busy }, word('continue')), state.authError ? h('p', { class: 'err' }, state.authError) : null])
@@ -393,8 +439,15 @@
     state.authEmail = email.trim()
     state.authError = ''
     busy(api('/anonymous/session', { method: 'POST', body: { pk: options.project, email: state.authEmail, name: name.trim() } })).then(function (r) {
-      if (r.status === 'token') { state.token = r.token; store(r.token); state.auth = 'idle' } else state.auth = 'code'
-      render()
+      if (r.status !== 'token') { state.auth = 'code'; return render() }
+      state.token = r.token
+      store(r.token)
+      state.auth = 'idle'
+      if (!state.post || !state.post.locked) return render()
+      // Members read once they confirm the address: send the code.
+      return loadPost(state.slug).then(function () {
+        if (state.post && state.post.locked) return needsSignIn({ code: 'email_verification_required' })
+      })
     }, function (e) { state.authError = e.message; render() })
   }
 
@@ -425,10 +478,13 @@
 
   // ---- loading and navigation ----------------------------------------------
 
+  function filters() {
+    return (options.tag ? '&tag=' + encodeURIComponent(options.tag) : '') + (options.q ? '&q=' + encodeURIComponent(options.q) : '')
+  }
+
   function load() {
     state.slug = ''
-    var tag = options.tag ? '&tag=' + encodeURIComponent(options.tag) : ''
-    return api('/blog?limit=' + options.limit + tag).then(function (blog) {
+    return api('/blog?limit=' + options.limit + filters()).then(function (blog) {
       state.blog = blog
       state.posts = blog.posts
       state.hasMore = blog.hasMore
@@ -438,8 +494,7 @@
   }
 
   function loadMore() {
-    var tag = options.tag ? '&tag=' + encodeURIComponent(options.tag) : ''
-    api('/blog?limit=' + options.limit + '&skip=' + state.posts.length + tag).then(function (blog) {
+    api('/blog?limit=' + options.limit + '&skip=' + state.posts.length + filters()).then(function (blog) {
       state.posts = state.posts.concat(blog.posts)
       state.hasMore = blog.hasMore
       render()
@@ -453,12 +508,17 @@
     state.busy = true
     render()
     var meta = state.blog ? Promise.resolve(state.blog) : api('/blog?limit=1')
-    return Promise.all([meta, api('/blog/' + encodeURIComponent(slug)), api('/blog/' + encodeURIComponent(slug) + '/comments?limit=100').catch(function () { return { comments: [] } })]).then(function (all) {
+    return Promise.all([meta, api('/blog/' + encodeURIComponent(slug))]).then(function (all) {
       state.blog = all[0]
       state.post = all[1].post
-      state.comments = all[2].comments
-      state.busy = false
-      render()
+      // A members-only post's thread opens with its body; a page has none.
+      var thread = state.post.locked || state.post.type === 'page' ? Promise.resolve({ comments: [] }) : api('/blog/' + encodeURIComponent(slug) + '/comments?limit=100').catch(function () { return { comments: [] } })
+      return thread.then(function (page) {
+        state.comments = page.comments
+        state.busy = false
+        fillBody()
+        render()
+      })
     }, function () { state.busy = false; render() })
   }
 

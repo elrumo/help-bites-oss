@@ -204,22 +204,38 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 - **A rich editor.** Nuxt UI's TipTap editor: headings, lists, quotes, code,
   links and uploaded images, a `/` menu and a formatting bubble. Posts are saved
-  as Markdown and rendered once, through an allowlist. Drafts save themselves; a
-  live post changes only when you press Update.
-- **Publish or schedule.** A cover, an excerpt, up to 10 tags, the author and a
-  slug per post. A later date schedules it; it goes live on its own.
-- **Hosted, embedded and in RSS.** An indexable page at `/blog/pk_…` with link
-  previews, `blog.js` (MIT) drawing the blog in your own page (or only the
-  reactions and comments under posts you render yourself), the public JSON API
-  for your own UI, a SwiftUI snippet, and an RSS feed with full posts.
+  as Markdown (an imported post stays HTML) and rendered once, through an
+  allowlist that lets YouTube and Vimeo players through, sandboxed. Drafts save
+  themselves; a live post changes only when you press Update.
+- **Publish or schedule.** A cover with alt text, an excerpt, up to 10 tags, the
+  author and a slug per post. A later date schedules it; it goes live on its own.
+  **Featured** posts lead; **members-only** posts show their excerpt to everyone
+  and the rest to signed-in readers (your app's users, or readers who confirmed
+  their email). A title, description, image and canonical address for search
+  engines and link previews, with a preview.
+- **Pages.** About, Contact and the like: published like posts, kept out of the
+  list, the feed and the newsletter, linked from the blog's navigation.
+- **Hosted, embedded and in RSS.** An indexable blog at `/blog/pk_…` in your
+  design (list, grid or magazine layout, sans or serif, light, dark or automatic,
+  accent, logo, cover, up to 8 navigation links, social links, a footer) with
+  search, tag pages, related posts, newer and older links, link previews,
+  structured data and a sitemap. `blog.js` (MIT) draws the blog in your own page
+  (or only the reactions, comments and members sign-in under posts you render
+  yourself), the public JSON API serves your own UI (search, featured, pages), a
+  SwiftUI snippet, and an RSS feed with full posts.
 - **Reactions and comments.** Readers signed in by your app (an identity token)
   or with just their email react and comment; replies one level deep. The team
   answers as the team, hides, shows or deletes from the panel or the app, and can
   close one post's thread. New comments can be emailed to you.
 - **Newsletter.** Any published post goes to your subscribers as a campaign, with
-  topics, segments, test sends, the unsubscribe footer and its numbers. A sign-up
-  form can sit under each hosted post. In the cloud edition this part needs a
-  plan with campaigns.
+  topics, segments, test sends, the unsubscribe footer and its numbers; **Publish
+  and email** does both at once, and a scheduled post's email waits for it. A
+  sign-up form can sit under each hosted post. In the cloud edition this part
+  needs a plan with campaigns.
+- **Webhooks and moving in.** `blog.post.published`, `.updated`, `.unpublished`
+  and `.deleted` events (scheduled posts too) to rebuild a site or announce a
+  post. An import takes a Ghost export: posts, pages, tags, authors, dates, SEO
+  fields, featured and visibility; Ghost's members CSV goes into Contacts.
 
 **Brand kit** [BRAND.md](BRAND.md)
 
@@ -526,9 +542,11 @@ repository. See [EDITIONS.md](EDITIONS.md).
   form never overwrites an answer a contact already has. Files are not scanned for
   malware (only their type and size are checked), and the sequence a form starts
   is sent in its template's own language. [FORMS.md](FORMS.md)
-- **Blog.** The native app edits a post's Markdown as text, with a preview: the
-  rich editor is web-only. No translations of posts or the embed, no custom
-  domain for the hosted blog, and no MCP tools for it yet. [BLOG.md](BLOG.md)
+- **Blog.** The native app edits a post's Markdown (or an imported post's HTML)
+  as text, with a preview: the rich editor is web-only. No translations of posts
+  or the embed, no custom domain for the hosted blog, no paid tiers for
+  members-only posts (a member is a signed-in reader), images from a Ghost import
+  stay on the old site, and no MCP tools for it yet. [BLOG.md](BLOG.md)
 - **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
   email, campaigns, legal documents, flags or knowledge base editing, and it issues no refresh tokens, so an
   OAuth-connected assistant signs in again after a year. [MCP.md](MCP.md)

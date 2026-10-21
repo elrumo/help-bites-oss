@@ -1277,11 +1277,30 @@ const SCHEMAS = {
       commentsOpen: { type: 'Boolean' },
       commentCount: { type: 'Number' },
       reactions: { type: 'Array' },
-      newsletterCampaign: { type: 'Pointer', targetClass: 'Campaign' }
+      newsletterCampaign: { type: 'Pointer', targetClass: 'Campaign' },
+      // post | page (pages stay out of the list, the feed and the newsletter).
+      type: { type: 'String' },
+      featured: { type: 'Boolean' },
+      // public | members
+      visibility: { type: 'String' },
+      // markdown | html (an import)
+      bodyFormat: { type: 'String' },
+      coverImageAlt: { type: 'String' },
+      metaTitle: { type: 'String' },
+      metaDescription: { type: 'String' },
+      ogImageUrl: { type: 'String' },
+      canonicalUrl: { type: 'String' },
+      // Where an imported post came from (`ghost:<id>`), so importing again updates it.
+      externalId: { type: 'String' },
+      // The blog.post.published webhook went out for its current publication.
+      announced: { type: 'Boolean' }
     },
     indexes: {
       project_slug: { _p_project: 1, slug: 1 },
       project_status_published: { _p_project: 1, status: 1, publishedAt: -1 },
+      project_external: { _p_project: 1, externalId: 1 },
+      // The worker's look for scheduled posts that just went live.
+      status_published_announced: { status: 1, publishedAt: 1, announced: 1 },
       project_tags: { _p_project: 1, tagKeys: 1 },
       project_updated: { _p_project: 1, _updated_at: -1 }
     }

@@ -699,6 +699,95 @@
       "image": "画像",
       "blocks": "ブロック",
       "insert": "挿入"
+    },
+    "pages": "ページ",
+    "newPage": "新規ページ",
+    "noPages": "まだページはありません",
+    "noPagesDescription": "ページは独立したコンテンツです（自己紹介、お問い合わせ、読書リストなど）。一覧、フィード、ニュースレターには含まれません。「デザイン」のブログのナビゲーションからリンクしてください。",
+    "pageTitlePlaceholder": "ページのタイトル",
+    "featured": "注目",
+    "featuredHint": "先頭に表示されます。マガジンレイアウトでは大きく、ほかのレイアウトでは印付きで表示されます。",
+    "visibility": "閲覧できる人",
+    "visibilityPublic": "全員",
+    "visibilityMembers": "メンバー限定",
+    "visibilityPublicHint": "リンクを知っている人、フィード、検索エンジン。",
+    "visibilityMembersHint": "タイトルと抜粋は誰でも見られます。続きは、あなたのアプリまたはメールアドレスでログインした読者向けです。フィードには抜粋だけが含まれます。",
+    "coverAlt": "画像の説明（代替テキスト）",
+    "seo": {
+      "title": "検索とソーシャル",
+      "noDescription": "説明がない場合は、ここに抜粋が表示されます。",
+      "metaTitle": "検索エンジン向けのタイトル",
+      "metaDescription": "検索エンジン向けの説明",
+      "ogImage": "リンクプレビュー用の画像",
+      "ogImageHint": "空欄の場合はカバー画像を使用します。",
+      "canonical": "正規URL",
+      "canonicalHint": "投稿を最初に別の場所で公開した場合は、そのURLです。検索エンジンはそのURLを元の掲載先として扱います。"
+    },
+    "newsletterWithPost": "公開されたときに購読者にメールで送信します。",
+    "newsletterWaits": "投稿は {when} に公開されます。ニュースレターはその時点で送信され、それより前には送信されません。",
+    "sendWithPost": "公開時に送信",
+    "publishOptions": "公開オプション",
+    "publishAndEmail": "公開してメール送信",
+    "scheduleAndEmail": "予約してメール送信",
+    "publishOnly": "公開のみ",
+    "scheduleOnly": "予約のみ",
+    "sitemap": "サイトマップ",
+    "sitemapHint": "Google Search Console や Bing Webmaster Tools に登録すると、すべての投稿を見つけてもらえます。",
+    "design": {
+      "title": "デザイン",
+      "description": "ホストされたブログの見た目です。埋め込みはあなたのページの見た目を引き継ぎ、レイアウトはここの設定を使います。",
+      "layout": "レイアウト",
+      "layouts": {
+        "list": "リスト",
+        "grid": "グリッド",
+        "magazine": "マガジン"
+      },
+      "font": "フォント",
+      "fonts": {
+        "sans": "サンセリフ",
+        "serif": "セリフ"
+      },
+      "colorScheme": "配色",
+      "schemes": {
+        "auto": "読者に合わせる",
+        "light": "ライト",
+        "dark": "ダーク"
+      },
+      "accent": "アクセントカラー",
+      "accentHint": "リンク、ボタン、タグに使われます。別の色を選ばない限り、プロジェクトのアクセントカラーです。",
+      "useProjectAccent": "プロジェクトの色を使用",
+      "logoUrl": "ロゴ",
+      "logoUrlHint": "ブログ名の横に表示されます。空欄の場合はプロジェクトのロゴを使用します。",
+      "coverImageUrl": "カバー画像",
+      "coverImageUrlHint": "トップページの上部に広がる横長の画像です。",
+      "navigation": "ナビゲーション",
+      "navigationHint": "ブログのヘッダーに表示するリンクです。ブログのページ（/about）、ブログ自体（/）、または任意のURLを指定できます。",
+      "linkLabel": "表示名",
+      "removeLink": "リンクを削除",
+      "addLink": "リンクを追加",
+      "social": "ソーシャルリンク",
+      "website": "ウェブサイト",
+      "footer": "フッター",
+      "footerHint": "すべてのページの下部に表示される1行のテキストです（著作権表示など）。"
+    },
+    "import": {
+      "title": "Ghost からインポート",
+      "description": "Ghost ブログから投稿とページを移行します。",
+      "file": "Ghost のエクスポート",
+      "fileHint": "Ghost で Settings → Advanced → Import/Export → Export content を開きます。.json ファイルです。",
+      "choose": "ファイルを選択",
+      "found": "投稿とページ {count} 件",
+      "siteUrl": "Ghost サイトのURL",
+      "siteUrlHint": "エクスポートでは、リンクと画像がこのURLなしで書き出されます。それらは引き続きそのサイトを指すので、画像を移すまではサイトを公開したままにしてください。",
+      "update": "以前にインポートした投稿を上書き",
+      "updateHint": "オフの場合、このブログから以前に取り込んだ投稿は現在のまま残ります。",
+      "members": "メンバーは別の CSV です（Ghost の Members → Export）。「連絡先」でインポートすると、メールアドレス、名前、ラベル、ニュースレターの同意が取り込まれます。",
+      "run": "インポート",
+      "done": "{created} 件追加、{updated} 件更新、{skipped} 件スキップしました。",
+      "close": "閉じる",
+      "notGhost": "これは Ghost のエクスポートではありません。投稿が含まれていません。",
+      "notJson": "このファイルは JSON ではありません。",
+      "error": "インポートに失敗しました。"
     }
   },
   "chat": {
@@ -2566,7 +2655,7 @@
         },
         "blog": {
           "term": "ニュースレター付きのブログ",
-          "desc": "リッチエディターで投稿を書き、ホストされたブログ、自分のサイト、RSSで公開して、購読者にメールで届けます。読者はリアクションやコメントができます。"
+          "desc": "リッチエディターで投稿とページを書き、自分のデザインのホストされたブログ、自分のサイト、RSSで公開して、購読者にメールで届けます。メンバー限定の投稿、SEO 項目、サイトマップ、Ghost からのインポートにも対応。読者はリアクションやコメントができます。"
         },
         "followers": {
           "term": "フォロワーに最新情報が届く",

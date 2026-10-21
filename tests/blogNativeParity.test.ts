@@ -2,19 +2,25 @@ import { describe, expect, test } from 'bun:test'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
+  BLOG_ALT_MAX_LENGTH,
   BLOG_COMMENT_MAX_LENGTH,
   BLOG_EXCERPT_MAX_LENGTH,
+  BLOG_LAYOUTS,
+  BLOG_META_DESCRIPTION_MAX_LENGTH,
+  BLOG_META_TITLE_MAX_LENGTH,
+  BLOG_NAVIGATION_MAX,
   BLOG_REACTION_EMOJI,
   BLOG_REACTIONS,
   BLOG_RESERVED_SLUGS,
   BLOG_SLUG_MAX_LENGTH,
+  BLOG_SOCIAL_NETWORKS,
   BLOG_TAG_MAX_LENGTH,
   BLOG_TAGS_MAX,
   BLOG_TITLE_MAX_LENGTH
 } from '../shared/blog'
 
-// The native app hand-ports the blog's limits, reactions and slug rule; this
-// keeps the copies in step with shared/blog.ts.
+// The native app hand-ports the blog's limits, reactions, design choices and
+// slug rule; this keeps the copies in step with shared/blog.ts.
 
 const file = join(import.meta.dir, '../helpbites-native/App/Features/Blog/BlogModels.swift')
 const missing = (src: string, values: Array<string | number>) => values.filter(v => typeof v === 'number' ? !new RegExp(`\\b${v}\\b`).test(src) : !src.includes(JSON.stringify(v)))
@@ -28,6 +34,16 @@ describe('native blog parity', () => {
     // The reactions in the same order, and each with its emoji.
     expect(swift).toContain(`static let reactions = [${BLOG_REACTIONS.map(key => JSON.stringify(key)).join(', ')}]`)
     for (const [key, emoji] of Object.entries(BLOG_REACTION_EMOJI)) expect(swift).toContain(`${JSON.stringify(key)}: ${JSON.stringify(emoji)}`)
+  })
+
+  test('the post fields and design choices match', () => {
+    const swift = readFileSync(file, 'utf8')
+    expect(swift).toContain(`static let metaTitle = ${BLOG_META_TITLE_MAX_LENGTH}`)
+    expect(swift).toContain(`static let metaDescription = ${BLOG_META_DESCRIPTION_MAX_LENGTH}`)
+    expect(swift).toContain(`static let alt = ${BLOG_ALT_MAX_LENGTH}`)
+    expect(swift).toContain(`static let navigation = ${BLOG_NAVIGATION_MAX}`)
+    expect(swift).toContain(`static let layouts = [${BLOG_LAYOUTS.map(key => JSON.stringify(key)).join(', ')}]`)
+    expect(swift).toContain(`static let socialNetworks = [${BLOG_SOCIAL_NETWORKS.map(key => JSON.stringify(key)).join(', ')}]`)
   })
 
   test('the slug rule drops the same combining marks and keeps the same characters', () => {

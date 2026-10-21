@@ -266,6 +266,8 @@ await attempt('read A\'s blog post', `/v1/admin/blog/posts/${blogPost.id}`)
 await attempt('edit A\'s blog post', `/v1/admin/blog/posts/${blogPost.id}`, { method: 'PATCH', body: { title: 'pwned', status: 'draft' } })
 await attempt('send A\'s post as a newsletter', `/v1/admin/blog/posts/${blogPost.id}/newsletter`, { method: 'POST', body: { send: 'draft' } })
 await attempt('write a post in A\'s project', '/v1/admin/blog/posts', { method: 'POST', body: { project: project.id, title: 'pwned' } })
+await attempt('import a Ghost blog into A\'s project', '/v1/admin/blog/import', { method: 'POST', body: { project: project.id, export: { db: [{ data: { posts: [{ id: 'pwn', title: 'pwned', html: '<p>pwned</p>', status: 'published' }] } }] } } })
+await attempt('restyle A\'s blog', `/v1/admin/projects/${project.id}`, { method: 'PATCH', body: { blog: { design: { footer: 'pwned' } } } })
 await attempt('list A\'s blog comments', `/v1/admin/blog/comments?project=${project.id}`)
 await attempt('hide A\'s blog comment', `/v1/blog/comments/${blogComment.id}`, { method: 'PATCH', body: { status: 'hidden' } })
 await attempt('reply on A\'s blog as A\'s team', `/v1/blog/${blogPost.id}/comments?project=${project.id}`, { method: 'POST', body: { body: 'pwned' } })
@@ -361,6 +363,9 @@ check(kitAfter.brand?.tagline === `${MARK} tagline` && kitAfter.brand.page.publi
 if (brandUpload) check(kitAfter.assets?.some(a => a.id === brandUpload.id && a.name === `${MARK} logo`), 'A\'s brand file is untouched')
 const blogAfter = (await call(`/v1/admin/blog/posts/${blogPost.id}`, A)).json.post
 check(blogAfter?.title === `${MARK} story` && blogAfter.status === 'published', 'A\'s blog post is untouched')
+const blogPosts = (await call(`/v1/admin/blog/posts?project=${project.id}`, A)).json.posts || []
+check(blogPosts.every(p => p.title !== 'pwned'), 'nothing was imported into A\'s blog')
+check((await call(`/v1/admin/projects`, A)).json.projects?.find(p => p.id === project.id)?.blog?.design?.footer !== 'pwned', 'A\'s blog design is untouched')
 const blogThread = (await call(`/v1/blog/${blogPost.slug}/comments?pk=${project.publicKey}`)).json
 check(blogThread.comments?.length === 1 && blogThread.comments[0].body === `${MARK} reader comment`, 'A\'s blog comment is untouched')
 const pageAfter = (await call(`/v1/admin/cms/entries/${cmsEntry.id}`, A)).json.entry

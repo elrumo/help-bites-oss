@@ -699,6 +699,95 @@
       "image": "Imagen",
       "blocks": "Bloques",
       "insert": "Insertar"
+    },
+    "pages": "Páginas",
+    "newPage": "Nueva página",
+    "noPages": "Aún no hay páginas",
+    "noPagesDescription": "Las páginas van por libre (Acerca de, Contacto, una lista de lecturas): no aparecen en la lista, el feed ni el boletín. Enlázalas desde la navegación del blog, en Diseño.",
+    "pageTitlePlaceholder": "Título de la página",
+    "featured": "Destacada",
+    "featuredHint": "Se muestra primero: en grande en la disposición de revista y marcada en las demás.",
+    "visibility": "Quién puede leerla",
+    "visibilityPublic": "Todo el mundo",
+    "visibilityMembers": "Solo miembros",
+    "visibilityPublicHint": "Cualquiera con el enlace, el feed y los buscadores.",
+    "visibilityMembersHint": "Todo el mundo ve el título y el extracto; el resto es para los lectores con sesión iniciada en tu app o con su correo. El feed solo lleva el extracto.",
+    "coverAlt": "Describe la imagen (texto alternativo)",
+    "seo": {
+      "title": "Buscadores y redes sociales",
+      "noDescription": "Si no hay descripción, aquí se muestra el extracto.",
+      "metaTitle": "Título para buscadores",
+      "metaDescription": "Descripción para buscadores",
+      "ogImage": "Imagen para las vistas previas de enlaces",
+      "ogImageHint": "Vacío: la portada.",
+      "canonical": "Dirección canónica",
+      "canonicalHint": "Dónde apareció primero la entrada, si fue en otro sitio. Los buscadores atribuyen la entrada a esa dirección."
+    },
+    "newsletterWithPost": "Envíala por correo a tus suscriptores cuando se publique.",
+    "newsletterWaits": "La entrada se publica el {when}. El boletín sale entonces, no antes.",
+    "sendWithPost": "Enviar al publicarse",
+    "publishOptions": "Opciones de publicación",
+    "publishAndEmail": "Publicar y enviar por correo",
+    "scheduleAndEmail": "Programar y enviar por correo",
+    "publishOnly": "Solo publicar",
+    "scheduleOnly": "Solo programar",
+    "sitemap": "Mapa del sitio",
+    "sitemapHint": "Dáselo a Google Search Console o a Bing Webmaster Tools para que encuentren todas las entradas.",
+    "design": {
+      "title": "Diseño",
+      "description": "Cómo se ve el blog alojado. El embed adopta el aspecto de tu página y, de aquí, la disposición.",
+      "layout": "Disposición",
+      "layouts": {
+        "list": "Lista",
+        "grid": "Cuadrícula",
+        "magazine": "Revista"
+      },
+      "font": "Tipografía",
+      "fonts": {
+        "sans": "Sans serif",
+        "serif": "Serif"
+      },
+      "colorScheme": "Esquema de colores",
+      "schemes": {
+        "auto": "Según el lector",
+        "light": "Claro",
+        "dark": "Oscuro"
+      },
+      "accent": "Color de acento",
+      "accentHint": "Enlaces, botones y etiquetas. El acento del proyecto, salvo que elijas otro.",
+      "useProjectAccent": "Usar el del proyecto",
+      "logoUrl": "Logotipo",
+      "logoUrlHint": "Junto al nombre del blog. Vacío: el logotipo del proyecto.",
+      "coverImageUrl": "Imagen de portada",
+      "coverImageUrlHint": "Una imagen ancha en lo alto de la página principal.",
+      "navigation": "Navegación",
+      "navigationHint": "Enlaces en la cabecera del blog: una página del blog (/about), el propio blog (/) o cualquier dirección.",
+      "linkLabel": "Texto",
+      "removeLink": "Quitar el enlace",
+      "addLink": "Añadir un enlace",
+      "social": "Redes sociales",
+      "website": "Sitio web",
+      "footer": "Pie de página",
+      "footerHint": "Una línea al final de cada página, como un aviso de copyright."
+    },
+    "import": {
+      "title": "Importar desde Ghost",
+      "description": "Trae tus entradas y páginas desde un blog de Ghost.",
+      "file": "Exportación de Ghost",
+      "fileHint": "En Ghost: Settings → Advanced → Import/Export → Export content. Un archivo .json.",
+      "choose": "Elegir el archivo",
+      "found": "{count} entrada o página | {count} entradas y páginas",
+      "siteUrl": "Dirección de tu sitio de Ghost",
+      "siteUrlHint": "La exportación escribe los enlaces y las imágenes sin ella. Seguirán apuntando a ese sitio, así que mantenlo en línea hasta que muevas las imágenes.",
+      "update": "Sobrescribir las entradas ya importadas",
+      "updateHint": "Desactivado: las entradas que ya llegaron antes desde este blog se quedan como están.",
+      "members": "Los miembros van en un CSV aparte (Members → Export en Ghost). Impórtalo en Contactos: se recogen el correo, el nombre, las etiquetas y el consentimiento del boletín.",
+      "run": "Importar",
+      "done": "{created} añadidas, {updated} actualizadas, {skipped} omitidas.",
+      "close": "Cerrar",
+      "notGhost": "Esto no es una exportación de Ghost: no contiene entradas.",
+      "notJson": "Este archivo no es JSON.",
+      "error": "No se pudo completar la importación."
     }
   },
   "chat": {
@@ -2566,7 +2655,7 @@
         },
         "blog": {
           "term": "Un blog con boletín",
-          "desc": "Escribe entradas en un editor enriquecido, publícalas en un blog alojado, en tu propio sitio o por RSS, y envíalas por correo a tus suscriptores. Los lectores reaccionan y comentan."
+          "desc": "Escribe entradas y páginas en un editor enriquecido y publícalas en un blog alojado con tu propio diseño, en tu propio sitio o por RSS, y envíalas por correo a tus suscriptores. Entradas solo para miembros, campos SEO, un sitemap y una importación desde Ghost. Los lectores reaccionan y comentan."
         },
         "followers": {
           "term": "Los seguidores reciben las novedades",

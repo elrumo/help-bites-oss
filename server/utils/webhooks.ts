@@ -17,6 +17,7 @@ import { hasFeature, projectWorkspaceId } from './usage'
 // `createdAt` (reject old ones to stop replays).
 
 export type WebhookEventType = 'contact.subscription_changed' | 'email.suppressed' | 'cms.entry.published' | 'cms.entry.unpublished'
+  | 'blog.post.published' | 'blog.post.updated' | 'blog.post.unpublished' | 'blog.post.deleted'
 
 // Minutes to wait after each failed attempt; after the last, the delivery is marked failed.
 export const WEBHOOK_BACKOFF_MINUTES = [1, 5, 30, 120, 720]

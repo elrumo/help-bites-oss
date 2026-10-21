@@ -148,6 +148,10 @@ Settings → Event webhook: a URL and a signing secret. HelpBites posts:
 | `email.suppressed` | `{ email, reason: 'bounce' \| 'complaint', detail }` |
 | `cms.entry.published` | `{ entry: { id, slug, type, version, publishedAt } }`: rebuild a static site ([PAGES.md](PAGES.md)) |
 | `cms.entry.unpublished` | `{ entry: { id, slug, type } }` |
+| `blog.post.published` | `{ post: { id, slug, title, visibility, publishedAt, url } }`: a post went public, now or at its scheduled time ([BLOG.md](BLOG.md#webhooks)) |
+| `blog.post.updated` | the same: a public post changed |
+| `blog.post.unpublished` | the same: a public post stopped being public |
+| `blog.post.deleted` | the same: a public post was deleted |
 
 Body: `{ id, type, createdAt, projectId, data }`. Header
 `x-helpbites-signature: sha256=<hex HMAC-SHA256 of the raw body with your secret>`

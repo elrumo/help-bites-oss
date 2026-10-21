@@ -699,6 +699,95 @@
       "image": "Imatge",
       "blocks": "Blocs",
       "insert": "Insereix"
+    },
+    "pages": "Pàgines",
+    "newPage": "Nova pàgina",
+    "noPages": "Encara no hi ha pàgines",
+    "noPagesDescription": "Les pàgines van a part (Qui som, Contacte, una llista de lectures): queden fora de la llista, del feed i del butlletí. Enllaça-les des de la navegació del blog, a Disseny.",
+    "pageTitlePlaceholder": "Títol de la pàgina",
+    "featured": "Destacada",
+    "featuredHint": "Es mostra primer: en gran a la disposició de revista i marcada a les altres.",
+    "visibility": "Qui la pot llegir",
+    "visibilityPublic": "Tothom",
+    "visibilityMembers": "Només membres",
+    "visibilityPublicHint": "Qualsevol amb l'enllaç, el feed i els cercadors.",
+    "visibilityMembersHint": "Tothom en veu el títol i l'extracte; la resta és per als lectors amb sessió iniciada a la teva app o amb el seu correu. El feed només porta l'extracte.",
+    "coverAlt": "Descriu la imatge (text alternatiu)",
+    "seo": {
+      "title": "Cercadors i xarxes socials",
+      "noDescription": "Si no hi ha descripció, aquí es mostra l'extracte.",
+      "metaTitle": "Títol per als cercadors",
+      "metaDescription": "Descripció per als cercadors",
+      "ogImage": "Imatge per a les previsualitzacions d'enllaços",
+      "ogImageHint": "Buit: la portada.",
+      "canonical": "Adreça canònica",
+      "canonicalHint": "On va aparèixer primer l'entrada, si va ser en un altre lloc. Els cercadors atribueixen l'entrada a aquesta adreça."
+    },
+    "newsletterWithPost": "Envia-la per correu als teus subscriptors quan es publiqui.",
+    "newsletterWaits": "L'entrada es publica el {when}. El butlletí surt aleshores, no abans.",
+    "sendWithPost": "Envia en publicar-se",
+    "publishOptions": "Opcions de publicació",
+    "publishAndEmail": "Publica i envia per correu",
+    "scheduleAndEmail": "Programa i envia per correu",
+    "publishOnly": "Només publica",
+    "scheduleOnly": "Només programa",
+    "sitemap": "Mapa del lloc",
+    "sitemapHint": "Dona'l a Google Search Console o a Bing Webmaster Tools perquè trobin totes les entrades.",
+    "design": {
+      "title": "Disseny",
+      "description": "Com es veu el blog allotjat. L'embed adopta l'aspecte de la teva pàgina i, d'aquí, la disposició.",
+      "layout": "Disposició",
+      "layouts": {
+        "list": "Llista",
+        "grid": "Quadrícula",
+        "magazine": "Revista"
+      },
+      "font": "Tipografia",
+      "fonts": {
+        "sans": "Sans serif",
+        "serif": "Serif"
+      },
+      "colorScheme": "Esquema de colors",
+      "schemes": {
+        "auto": "Segons el lector",
+        "light": "Clar",
+        "dark": "Fosc"
+      },
+      "accent": "Color d'accent",
+      "accentHint": "Enllaços, botons i etiquetes. L'accent del projecte, tret que en triïs un altre.",
+      "useProjectAccent": "Usa el del projecte",
+      "logoUrl": "Logotip",
+      "logoUrlHint": "Al costat del nom del blog. Buit: el logotip del projecte.",
+      "coverImageUrl": "Imatge de portada",
+      "coverImageUrlHint": "Una imatge ampla a la part superior de la pàgina principal.",
+      "navigation": "Navegació",
+      "navigationHint": "Enllaços a la capçalera del blog: una pàgina del blog (/about), el mateix blog (/) o qualsevol adreça.",
+      "linkLabel": "Text",
+      "removeLink": "Treu l'enllaç",
+      "addLink": "Afegeix un enllaç",
+      "social": "Xarxes socials",
+      "website": "Lloc web",
+      "footer": "Peu de pàgina",
+      "footerHint": "Una línia al final de cada pàgina, com ara un avís de copyright."
+    },
+    "import": {
+      "title": "Importa des de Ghost",
+      "description": "Porta les teves entrades i pàgines des d'un blog de Ghost.",
+      "file": "Exportació de Ghost",
+      "fileHint": "A Ghost: Settings → Advanced → Import/Export → Export content. Un fitxer .json.",
+      "choose": "Tria el fitxer",
+      "found": "{count} entrada o pàgina | {count} entrades i pàgines",
+      "siteUrl": "Adreça del teu lloc de Ghost",
+      "siteUrlHint": "L'exportació escriu els enllaços i les imatges sense aquesta adreça. Continuaran apuntant a aquell lloc, així que mantén-lo en línia fins que moguis les imatges.",
+      "update": "Sobreescriu les entrades ja importades",
+      "updateHint": "Desactivat: les entrades que ja havien arribat abans d'aquest blog es queden tal com estan.",
+      "members": "Els membres van en un CSV a part (Members → Export a Ghost). Importa'l a Contactes: s'hi recullen el correu, el nom, les etiquetes i el consentiment del butlletí.",
+      "run": "Importa",
+      "done": "{created} afegides, {updated} actualitzades, {skipped} omeses.",
+      "close": "Tanca",
+      "notGhost": "Això no és una exportació de Ghost: no conté entrades.",
+      "notJson": "Aquest fitxer no és JSON.",
+      "error": "No s'ha pogut completar la importació."
     }
   },
   "chat": {
@@ -2566,7 +2655,7 @@
         },
         "blog": {
           "term": "Un blog amb butlletí",
-          "desc": "Escriu entrades en un editor enriquit, publica-les en un blog allotjat, al teu propi lloc o per RSS, i envia-les per correu als teus subscriptors. Els lectors reaccionen i comenten."
+          "desc": "Escriu entrades i pàgines en un editor enriquit i publica-les en un blog allotjat amb el teu propi disseny, al teu propi lloc o per RSS, i envia-les per correu als teus subscriptors. Entrades només per a membres, camps SEO, un sitemap i una importació des de Ghost. Els lectors reaccionen i comenten."
         },
         "followers": {
           "term": "Els seguidors reben les novetats",
