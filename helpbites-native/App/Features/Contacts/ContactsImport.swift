@@ -67,6 +67,7 @@ enum ContactsCSV {
       externalId: find("^(id|userid|externalid|uid|objectid)$"),
       email: find("^(e?mail|emailaddress)$") ?? find("mail"),
       name: find("^(name|fullname|displayname)$"),
+      language: find("^(language|lang|locale|preferredlanguage)$"),
       tags: find("^tags?$"),
       subscribed: find("^(subscribed|optin|marketing|newsletter|consent)$")
     )
@@ -98,6 +99,8 @@ enum ContactsCSV {
     if !email.isEmpty { input.email = email }
     let name = String(text(mapping.name).prefix(120))
     if !name.isEmpty { input.name = name }
+    // A cell that is not a language tag is left out rather than failing the row.
+    if let language = ContactLanguages.normalize(text(mapping.language)) { input.language = language }
     if mapping.tags != nil {
       var seen = Set<String>()
       let tags = text(mapping.tags).split(separator: ",").map { String($0.trimmingCharacters(in: .whitespaces).prefix(40)) }.filter { !$0.isEmpty && seen.insert($0).inserted }
@@ -119,6 +122,8 @@ enum ContactsCSV {
     let rows = parse("\u{FEFF}Email,Name\r\n\"a@b.co\",\"Doe, \"\"J\"\"\"\n\n,\nx@y.io,Z")
     assert(rows == [["Email", "Name"], ["a@b.co", "Doe, \"J\""], ["x@y.io", "Z"]])
     assert(guess(["User ID", "E-mail", "Full Name"]).email == "E-mail")
+    assert(guess(["Email", "Locale"]).language == "Locale")
+    assert(ContactLanguages.normalize("pt_br") == "pt-BR" && ContactLanguages.normalize("ZH-hant") == "zh-Hant" && ContactLanguages.normalize("nope nope") == nil)
     assert(normalizeEmail(" A@B.co ") == "a@b.co" && normalizeEmail("nope") == "")
     assert(attributeKey(for: "Plan Type") == "Plan_Type" && attributeKey(for: "1st") == "c_1st")
   }
@@ -150,7 +155,7 @@ struct CsvImportSheet: View {
   @State private var error = ""
   @State private var preview: (inputs: [ContactInput], skipped: Int) = ([], 0)
 
-  private var mappedColumns: Set<String> { Set([mapping.email, mapping.externalId, mapping.name, mapping.tags, mapping.subscribed].compactMap { $0 }) }
+  private var mappedColumns: Set<String> { Set([mapping.email, mapping.externalId, mapping.name, mapping.language, mapping.tags, mapping.subscribed].compactMap { $0 }) }
   private var attributeColumns: [String] { columns.filter { !mappedColumns.contains($0) } }
   private var fieldMapping: ContactMapping {
     var m = mapping
@@ -210,6 +215,7 @@ struct CsvImportSheet: View {
         picker("Email", $mapping.email)
         picker("User id", $mapping.externalId)
         picker("Name", $mapping.name)
+        picker("Language", $mapping.language)
         picker("Tags", $mapping.tags)
         picker("Opted in", $mapping.subscribed)
       }

@@ -53,6 +53,8 @@ enum ContactOriginKind: String, CaseIterable, Identifiable {
 
 struct Contact: Codable, Identifiable, Equatable, Sendable {
   let id, externalId, email, name, username, avatarUrl, subscription: String
+  /// The language to write to them in ("es", "pt-BR"); nil or blank until known, and absent on servers from before it.
+  let language: String?
   let attributes: [String: JSONValue]
   let tags, unsubscribedTopics, sources: [String]
   let consent: ContactConsent?
@@ -63,6 +65,26 @@ struct Contact: Codable, Identifiable, Equatable, Sendable {
   let lastSeenAt, createdAt, updatedAt: String?
 
   var displayName: String { !name.isEmpty ? name : !email.isEmpty ? email : !externalId.isEmpty ? externalId : "Unnamed" }
+}
+
+/// The languages the pickers offer (`COMMON_LOCALES` in shared/locales.ts); any well-formed tag is accepted.
+enum ContactLanguages {
+  static let common = ["en", "es", "ca", "fr", "de", "it", "pt", "pt-BR", "nl", "pl", "sv", "tr", "ru", "ar", "hi", "ja", "ko", "zh", "zh-TW"]
+  /// The language's own name for itself ("Español"); the tag when the system does not know it.
+  static func name(_ tag: String) -> String {
+    let name = Locale(identifier: tag).localizedString(forIdentifier: tag) ?? tag
+    return name.isEmpty ? tag : name.prefix(1).uppercased() + name.dropFirst()
+  }
+  /// "pt_br" → "pt-BR", "ZH-hant" → "zh-Hant"; nil when it is not a language tag (`normalizeLocale` in shared/locales.ts).
+  static func normalize(_ value: String) -> String? {
+    let raw = value.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "_", with: "-")
+    guard !raw.isEmpty, raw.count <= 20, raw.range(of: "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,2}$", options: .regularExpression) != nil else { return nil }
+    let parts = raw.split(separator: "-").map(String.init)
+    let rest = parts.dropFirst().map { part -> String in
+      part.count == 2 ? part.uppercased() : part.count == 4 ? part.prefix(1).uppercased() + part.dropFirst().lowercased() : part.lowercased()
+    }
+    return ([parts[0].lowercased()] + rest).joined(separator: "-")
+  }
 }
 
 struct ContactPage: Decodable, Sendable { let contacts: [Contact]; let nextCursor: String? }
@@ -150,7 +172,7 @@ struct SegmentPreview: Decodable, Sendable { let count: Int; let sample: [Contac
 
 /// The mapping of a source's (or CSV file's) columns onto contact fields.
 struct ContactMapping: Codable, Equatable, Sendable {
-  var externalId, email, name, tags, subscribed: String?
+  var externalId, email, name, language, tags, subscribed: String?
   var attributes: [String: String]?
 }
 
@@ -177,7 +199,7 @@ struct ContactSource: Codable, Identifiable, Equatable, Sendable {
 
 /// One contact as the API takes it (import rows, "Add").
 struct ContactInput: Encodable, Sendable {
-  var externalId, email, name: String?
+  var externalId, email, name, language: String?
   var attributes: [String: JSONValue]?
   var tags: [String]?
   var subscription: String?
