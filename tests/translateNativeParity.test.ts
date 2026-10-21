@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { LEAD_FORM_MAX_LOCALES } from '../shared/leadForms'
 import { COMMON_LOCALES, normalizeLocale } from '../shared/locales'
 import { ONBOARDING_MAX_LOCALES } from '../shared/onboarding'
 import { TRANSLATE_LIMITS } from '../shared/translate'
@@ -24,6 +25,7 @@ describe('native content-language parity', () => {
     expect(swiftNumber('onboardingTranslations')).toBe(ONBOARDING_MAX_LOCALES)
     expect(EMAIL_MAX_TRANSLATIONS).toBeGreaterThan(0)
     expect(swiftNumber('emailTranslations')).toBe(EMAIL_MAX_TRANSLATIONS)
+    expect(swiftNumber('leadFormTranslations')).toBe(LEAD_FORM_MAX_LOCALES)
   })
 
   test('the default tag is the one the server falls back to', () => {

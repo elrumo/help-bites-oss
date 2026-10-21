@@ -100,6 +100,18 @@ export async function storePublicFile(key: string, data: Buffer, mime: string, w
   return `${String(process.env.S3_PUBLIC_URL || '').replace(/\/+$/, '')}/${key}`
 }
 
+/** Store a file that is only handed out through an authenticated route (a lead form upload), counting its bytes. Its key is never shown to anyone. */
+export async function storeHiddenFile(key: string, data: Buffer, mime: string, workspaceId: string): Promise<void> {
+  await reserveUsage(workspaceId, 'storageBytes', data.length)
+  try {
+    await ensureBucket()
+    await useS3().putObject(bucket(), key, data, data.length, { 'Content-Type': mime, 'Content-Disposition': 'attachment', 'Cache-Control': 'private, no-store' })
+  } catch (error) {
+    await chargeUsage(workspaceId, 'storageBytes', -data.length)
+    throw error
+  }
+}
+
 export async function readUploadedImage(event: Parameters<typeof readMultipartFormData>[0]): Promise<Buffer> {
   const parts = await readMultipartFormData(event)
   const file = parts?.find(part => part.name === 'file' && part.data?.length)

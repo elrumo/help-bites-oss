@@ -960,7 +960,8 @@
       "erase": "Erase this person",
       "addedVia": "Added via",
       "leadForms": "Lead forms",
-      "deletedForm": "A deleted form"
+      "deletedForm": "A deleted form",
+      "files": "Files sent"
     },
     "empty": {
       "title": "No contacts yet",
@@ -2613,7 +2614,7 @@
         },
         "forms": {
           "term": "Waitlists and lead forms",
-          "desc": "Collect people before you launch with a single email box or a form of your own, on your site, a hosted page or in your app. Every sign-up becomes a contact with its own segment, double opt-in, a welcome email and a drip sequence."
+          "desc": "Collect people before you launch with a single email box or a form of your own, with file uploads and in your visitors' language, on your site, a hosted page or in your app. Every sign-up becomes a contact with its own segment, double opt-in, a welcome email and a drip sequence."
         }
       },
       "team": {
@@ -4108,7 +4109,8 @@
         "url": "Website",
         "phone": "Phone",
         "select": "Choice",
-        "checkbox": "Checkbox"
+        "checkbox": "Checkbox",
+        "file": "File upload"
       },
       "moveUp": "Move up",
       "moveDown": "Move down",
@@ -4211,7 +4213,26 @@
       "saved": "Saved",
       "saveError": "Could not save the form",
       "deleteConfirm": "Delete “{name}”? Sites that load it show nothing. Its leads and its segment stay.",
-      "deleteForm": "Delete form"
+      "deleteForm": "Delete form",
+      "accept": "Takes",
+      "acceptHint": "Checked by what the file really is: {types}",
+      "accepts": {
+        "images": "Pictures",
+        "documents": "Documents",
+        "any": "Pictures, documents or ZIP"
+      },
+      "maxMB": "Largest file",
+      "optionsTranslateHint": "What each option says in this language. The answer saved is still the original.",
+      "files": {
+        "title": "Files sent",
+        "loading": "Loading files…",
+        "download": "Download",
+        "delete": "Delete file",
+        "deleteConfirm": "Delete {name} for good?",
+        "downloadError": "Could not download the file.",
+        "deleteError": "Could not delete the file."
+      },
+      "fileKeyHint": "The name the file is sent under. Files are kept privately for your team, not as an attribute."
     }
   },
   "workspaceSettings": {

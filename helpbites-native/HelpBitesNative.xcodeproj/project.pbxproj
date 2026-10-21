@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		624C7302273BC22F113C3E66 /* LeadFormLanguages.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3EB1CA1B8B7FCDF25D3A1A4 /* LeadFormLanguages.swift */; };
+		FA4C5C4AEDC790659C91675D /* LeadFileRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A360207710D9AEFE7C1FCF /* LeadFileRows.swift */; };
 		0031351A56EF120C84ADDDDE /* OverviewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6779576CD0FDE22DD3B79FB /* OverviewModels.swift */; };
 		0070B1FD2272950A43C9D042 /* OnboardingPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99371F2E47B949CF19693DFF /* OnboardingPreview.swift */; };
 		01696599A0D056E75D2AAC96 /* BoardItemEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB2B0E6FF0E0040293D49B9 /* BoardItemEditor.swift */; };
@@ -156,6 +158,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B3EB1CA1B8B7FCDF25D3A1A4 /* LeadFormLanguages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeadFormLanguages.swift; sourceTree = "<group>"; };
+		08A360207710D9AEFE7C1FCF /* LeadFileRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeadFileRows.swift; sourceTree = "<group>"; };
 		05751387C8F6444ACF3826AB /* InboxScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxScreen.swift; sourceTree = "<group>"; };
 		071722D237E4656E3D078FE0 /* ProjectsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsModels.swift; sourceTree = "<group>"; };
 		075DCCCB0DD876F0BF73BD08 /* EmailComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailComponents.swift; sourceTree = "<group>"; };
@@ -577,6 +581,8 @@
 		B6F19E7A1E948865E2111C0A /* Forms */ = {
 			isa = PBXGroup;
 			children = (
+				08A360207710D9AEFE7C1FCF /* LeadFileRows.swift */,
+				B3EB1CA1B8B7FCDF25D3A1A4 /* LeadFormLanguages.swift */,
 				340F82128FD9CD641D35C185 /* LeadFormScreen.swift */,
 				4667C6D8BA48E8C6A1464AE3 /* LeadFormsModels.swift */,
 				E59137DDEC6F3E94C9EA052D /* LeadFormsScreen.swift */,
@@ -847,6 +853,8 @@
 				168D7A2E8D6B6879656A03BC /* KnowledgeScreen.swift in Sources */,
 				7122ECE2DCE5D25DC38E13A5 /* KnowledgeThemesSheet.swift in Sources */,
 				F93B357EA692E10449C7D62A /* LanguageControls.swift in Sources */,
+				FA4C5C4AEDC790659C91675D /* LeadFileRows.swift in Sources */,
+				624C7302273BC22F113C3E66 /* LeadFormLanguages.swift in Sources */,
 				70C6900B37B765EB5AEA9A19 /* LeadFormScreen.swift in Sources */,
 				C5B47FABE24A5601E1CFF9A5 /* LeadFormsModels.swift in Sources */,
 				5BFA0106226A00C8134A90DF /* LeadFormsScreen.swift in Sources */,

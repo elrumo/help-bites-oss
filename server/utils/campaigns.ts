@@ -10,8 +10,9 @@ import { deliverEmails, projectEmailSender, type DeliveryResult, type EmailActor
 import { emailSendingPaused } from './emailReputation'
 import { isMailerConfigured } from './mailer'
 import { buildOutgoingEmails, type EmailSendRequest } from './emailSend'
+import { localizeEmail } from '#shared/email/translate'
 import { blogNewsletterSnapshot } from './blogNewsletter'
-import { brandOf, findProjectEmail, serializeEmailTemplate } from './emails'
+import { brandOf, emailLocaleFor, findProjectEmail, serializeEmailTemplate } from './emails'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
 import { runExclusive } from './redis'
 import { signLinkToken } from './secrets'
@@ -146,14 +147,21 @@ export function unsubscribeLinks(base: string, projectId: string, contactId: str
 
 // ---- content -------------------------------------------------------------------------
 
-/** The design as it will go out: the master's with this project's accent, or the template's own. */
-export async function snapshotCampaign(project: ParseObject, ref: string): Promise<CampaignSnapshot> {
+/**
+ * The design as it will go out: the master's with this project's accent, or the
+ * template's own. With `locale` (a lead form's welcome email) it is in the
+ * nearest language the template has; campaigns and sequences send the original.
+ */
+export async function snapshotCampaign(project: ParseObject, ref: string, locale = ''): Promise<CampaignSnapshot> {
   if (!ref) throw createError({ statusCode: 400, statusMessage: 'Pick a template first' })
   const row = await findProjectEmail(project, ref)
   const t = serializeEmailTemplate(row)
   const source = t.master || t
   if (!source.document) throw createError({ statusCode: 400, statusMessage: 'That template has no design yet' })
-  const document = t.master ? applyProjectAccent(source.document, brandOf(project).theme?.accent) : source.document
+  const language = locale ? emailLocaleFor(source, [locale]) : source.locale
+  const words = language === source.locale ? undefined : source.translations[language]
+  const design = words ? localizeEmail(source.document, words) : source.document
+  const document = t.master ? applyProjectAccent(design, brandOf(project).theme?.accent) : design
   const defaults = Object.fromEntries(senderVariables(t, t.master).filter(v => v.defaultValue != null).map(v => [v.key, String(v.defaultValue)]))
   return { document, defaults, templateId: row.id || '', templateKey: t.key, templateName: t.master?.name || t.name }
 }

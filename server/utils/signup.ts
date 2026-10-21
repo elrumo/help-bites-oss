@@ -68,21 +68,23 @@ export async function addressMailAllowed(project: ParseObject, email: string): P
   }
 }
 
-export type ConfirmationCopy = { subject: string, body: string, ctaLabel: string }
+/** The built-in email's words; `greeting`, `note` and `reason` replace the message layout's English ones. */
+export type ConfirmationCopy = { subject: string, body: string, ctaLabel: string, greeting?: string, note?: string, reason?: string }
 
 /**
  * A confirmation email with `url` behind its button: `template` (a project's
- * own design, which gets {{confirmUrl}}) when there is one, else a plain
- * message with `copy`. Lead forms send theirs through here too.
+ * own design, which gets {{confirmUrl}}, in the first of `wanted` it has) when
+ * there is one, else a plain message with `copy`. Lead forms send theirs
+ * through here too.
  */
-export async function sendConfirmationEmail(project: ParseObject, contact: ParseObject, url: string, template: ParseObject | null, copy: ConfirmationCopy): Promise<void> {
+export async function sendConfirmationEmail(project: ParseObject, contact: ParseObject, url: string, template: ParseObject | null, copy: ConfirmationCopy, wanted: string[] = []): Promise<void> {
   const email = String(contact.get('email') || '')
   if (!await addressMailAllowed(project, email)) return
   const name = String(contact.get('name') || '')
   const poweredBy = await poweredByFor(project)
   const rendered = template
-    ? renderEmailTemplate(template, project, { confirmUrl: url, 'recipient.email': email, 'recipient.name': name })
-    : renderMessageEmail({ appName: String(project.get('name') || ''), senderName: String(project.get('name') || ''), recipientName: name, subject: copy.subject, body: copy.body, ctaUrl: url, ctaLabel: copy.ctaLabel, attachmentUrls: [], poweredBy })
+    ? renderEmailTemplate(template, project, { confirmUrl: url, 'recipient.email': email, 'recipient.name': name }, wanted)
+    : renderMessageEmail({ appName: String(project.get('name') || ''), senderName: String(project.get('name') || ''), recipientName: name, subject: copy.subject, body: copy.body, ctaUrl: url, ctaLabel: copy.ctaLabel, attachmentUrls: [], poweredBy, greeting: copy.greeting, note: copy.note, reason: copy.reason })
   const key = template ? String(template.get('key') || '') : ''
   await deliverEmails([{
     project,

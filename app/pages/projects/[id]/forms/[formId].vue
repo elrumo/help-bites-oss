@@ -28,6 +28,11 @@
             <USwitch v-model="form.active" :label="$t('projectTools.forms.active')" :description="$t('projectTools.forms.activeHint')" class="sm:col-span-2" />
           </section>
 
+          <LanguageTabs
+            :source="form.locale" :languages="languages" :active="lang" :busy="busy === 'translate'" :error="translateError"
+            @update:source="setSource" @select="lang = $event" @add="addLanguage" @remove="removeLanguage" @translate="translate"
+          />
+
           <section class="space-y-3">
             <div class="flex items-baseline justify-between">
               <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.forms.fields') }}</h3>
@@ -37,32 +42,62 @@
               <div class="flex items-center gap-1">
                 <UIcon :name="FIELD_ICONS[field.type]" class="size-4 text-muted" />
                 <span class="mr-auto ml-1.5 text-xs font-medium text-muted">{{ $t(`projectTools.forms.types.${field.type}`) }}<span v-if="field.type !== 'email' && field.type !== 'name'" class="font-mono"> · {{ field.key }}</span></span>
-                <UButton icon="i-lucide-arrow-up" size="xs" color="neutral" variant="ghost" square :disabled="i === 0" :aria-label="$t('projectTools.forms.moveUp')" @click="move(i, -1)" />
-                <UButton icon="i-lucide-arrow-down" size="xs" color="neutral" variant="ghost" square :disabled="i === form.fields.length - 1" :aria-label="$t('projectTools.forms.moveDown')" @click="move(i, 1)" />
-                <UButton icon="i-lucide-trash-2" size="xs" color="neutral" variant="ghost" square :disabled="field.type === 'email'" :aria-label="$t('projectTools.forms.removeField')" @click="form.fields.splice(i, 1)" />
+                <template v-if="!lang">
+                  <UButton icon="i-lucide-arrow-up" size="xs" color="neutral" variant="ghost" square :disabled="i === 0" :aria-label="$t('projectTools.forms.moveUp')" @click="move(i, -1)" />
+                  <UButton icon="i-lucide-arrow-down" size="xs" color="neutral" variant="ghost" square :disabled="i === form.fields.length - 1" :aria-label="$t('projectTools.forms.moveDown')" @click="move(i, 1)" />
+                  <UButton icon="i-lucide-trash-2" size="xs" color="neutral" variant="ghost" square :disabled="field.type === 'email'" :aria-label="$t('projectTools.forms.removeField')" @click="form.fields.splice(i, 1)" />
+                </template>
               </div>
-              <div class="mt-3 grid gap-3 sm:grid-cols-2">
+              <div v-if="lang" class="mt-3 grid gap-3 sm:grid-cols-2">
+                <UFormField :label="$t('projectTools.forms.label')">
+                  <UInput :model-value="fieldWord(field.id, 'label')" :placeholder="field.label || LEAD_FIELD_LABELS[field.type]" :maxlength="LEAD_FORM_LIMITS.label" class="w-full" @update:model-value="setFieldWord(field.id, 'label', $event)" />
+                </UFormField>
+                <UFormField v-if="hasPlaceholder(field)" :label="$t('projectTools.forms.placeholder')">
+                  <UInput :model-value="fieldWord(field.id, 'placeholder')" :placeholder="field.placeholder" :disabled="!field.placeholder" :maxlength="LEAD_FORM_LIMITS.placeholder" class="w-full" @update:model-value="setFieldWord(field.id, 'placeholder', $event)" />
+                </UFormField>
+                <UFormField v-if="field.type === 'select'" :label="$t('projectTools.forms.options')" :hint="$t('projectTools.forms.optionsTranslateHint')" class="sm:col-span-2">
+                  <div class="grid gap-2 sm:grid-cols-2">
+                    <UInput v-for="(option, n) in field.options" :key="n" :model-value="optionWord(field.id, n)" :placeholder="option" :maxlength="LEAD_FORM_LIMITS.option" size="sm" class="w-full" @update:model-value="setOptionWord(field, n, $event)" />
+                  </div>
+                </UFormField>
+              </div>
+              <div v-else class="mt-3 grid gap-3 sm:grid-cols-2">
                 <UFormField :label="$t('projectTools.forms.label')">
                   <UInput v-model="field.label" :maxlength="LEAD_FORM_LIMITS.label" :placeholder="LEAD_FIELD_LABELS[field.type]" class="w-full" @update:model-value="followKey(field)" />
                 </UFormField>
-                <UFormField v-if="field.type !== 'checkbox' && field.type !== 'select'" :label="$t('projectTools.forms.placeholder')">
+                <UFormField v-if="hasPlaceholder(field)" :label="$t('projectTools.forms.placeholder')">
                   <UInput v-model="field.placeholder" :maxlength="LEAD_FORM_LIMITS.placeholder" class="w-full" />
                 </UFormField>
-                <UFormField v-if="field.type !== 'email' && field.type !== 'name'" :label="$t('projectTools.forms.fieldKey')" :help="$t('projectTools.forms.fieldKeyHint')" :error="ATTRIBUTE_KEY_RE.test(field.key) ? undefined : $t('projectTools.forms.fieldKeyInvalid')">
+                <UFormField v-if="field.type !== 'email' && field.type !== 'name'" :label="$t('projectTools.forms.fieldKey')" :help="field.type === 'file' ? $t('projectTools.forms.fileKeyHint') : $t('projectTools.forms.fieldKeyHint')" :error="ATTRIBUTE_KEY_RE.test(field.key) ? undefined : $t('projectTools.forms.fieldKeyInvalid')">
                   <UInput v-model="field.key" class="w-full font-mono" @update:model-value="keyEdited.add(field.id)" />
                 </UFormField>
                 <UFormField v-if="field.type === 'select'" :label="$t('projectTools.forms.options')" :hint="$t('projectTools.forms.optionsHint')" class="sm:col-span-2">
                   <UInputTags v-model="field.options" :max="LEAD_FORM_LIMITS.options" :placeholder="$t('projectTools.forms.addOption')" class="w-full" />
                 </UFormField>
+                <template v-if="field.type === 'file'">
+                  <UFormField :label="$t('projectTools.forms.accept')" :help="$t('projectTools.forms.acceptHint', { types: LEAD_FILE_EXTENSIONS[field.accept || 'any'].join(', ') })">
+                    <USelect :model-value="field.accept || 'any'" :items="acceptItems" value-key="value" class="w-full" @update:model-value="field.accept = $event" />
+                  </UFormField>
+                  <UFormField :label="$t('projectTools.forms.maxMB')" :hint="`1–${LEAD_FORM_LIMITS.fileMB} MB`">
+                    <UInputNumber v-model="field.maxMB" :min="1" :max="LEAD_FORM_LIMITS.fileMB" class="w-full" />
+                  </UFormField>
+                </template>
               </div>
-              <USwitch v-if="field.type !== 'email'" v-model="field.required" :label="field.type === 'checkbox' ? $t('projectTools.forms.mustTick') : $t('projectTools.forms.required')" size="sm" class="mt-3" />
+              <USwitch v-if="field.type !== 'email' && !lang" v-model="field.required" :label="field.type === 'checkbox' ? $t('projectTools.forms.mustTick') : $t('projectTools.forms.required')" size="sm" class="mt-3" />
             </div>
-            <UDropdownMenu :items="addItems">
+            <UDropdownMenu v-if="!lang" :items="addItems">
               <UButton icon="i-lucide-plus" :label="$t('projectTools.forms.addField')" color="neutral" variant="soft" size="sm" :disabled="form.fields.length >= LEAD_FORM_LIMITS.fields" />
             </UDropdownMenu>
           </section>
 
-          <section class="space-y-3 rounded-xl border border-default p-4">
+          <section v-if="lang" class="space-y-3 rounded-xl border border-default p-4">
+            <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.forms.words') }}</h3>
+            <UFormField v-for="key in shownContentKeys" :key="key" :label="$t(`projectTools.forms.content.${key}`)">
+              <UTextarea v-if="key === 'description'" :model-value="contentWord(key)" :placeholder="form.content[key]" :maxlength="CONTENT_LIMIT[key]" autoresize :rows="2" :maxrows="6" class="w-full" @update:model-value="setContentWord(key, $event)" />
+              <UInput v-else :model-value="contentWord(key)" :placeholder="form.content[key]" :maxlength="CONTENT_LIMIT[key]" class="w-full" @update:model-value="setContentWord(key, $event)" />
+            </UFormField>
+          </section>
+          <section v-else class="space-y-3 rounded-xl border border-default p-4">
             <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.forms.words') }}</h3>
             <UFormField :label="$t('projectTools.forms.content.title')">
               <UInput v-model="form.content.title" :maxlength="LEAD_FORM_LIMITS.title" class="w-full font-medium" />
@@ -173,6 +208,9 @@
                 <span class="w-14 text-right text-xs text-muted">{{ logTime(c.createdAt || '') }}</span>
               </li>
             </ul>
+            <LeadFileList v-if="savedFields.some(f => f.type === 'file')" :project-id="id" :form="formId" :fields="savedFields">
+              <template #title><h4 class="text-xs font-semibold text-muted">{{ $t('projectTools.forms.files.title') }}</h4></template>
+            </LeadFileList>
             <div class="flex flex-wrap gap-2">
               <UButton v-if="segmentId" icon="i-lucide-users" :label="$t('projectTools.forms.showAll')" size="xs" color="neutral" variant="soft" :to="`/projects/${id}/contacts?segment=${segmentId}`" />
               <UButton v-if="segmentId" icon="i-lucide-megaphone" :label="$t('projectTools.forms.emailThem')" size="xs" color="neutral" variant="ghost" :to="`/projects/${id}/campaigns`" />
@@ -206,18 +244,22 @@
  */
 import { ATTRIBUTE_KEY_RE, type Contact } from '#shared/contacts'
 import type { Sequence } from '#shared/marketing'
-import { LEAD_FIELD_LABELS, LEAD_FIELD_TYPES, LEAD_FORM_FONTS, LEAD_FORM_KEY, LEAD_FORM_LIMITS, fieldKeyFrom, newFieldId, type LeadFieldType, type LeadForm, type LeadFormField } from '#shared/leadForms'
+import {
+  LEAD_FIELD_LABELS, LEAD_FIELD_TYPES, LEAD_FILE_EXTENSIONS, LEAD_FILE_KINDS, LEAD_FORM_FONTS, LEAD_FORM_KEY, LEAD_FORM_LIMITS, fieldKeyFrom, leadFormTexts, leadTranslationTexts, localizeLeadForm, newFieldId,
+  type LeadFieldText, type LeadFieldType, type LeadForm, type LeadFormContent, type LeadFormField, type LeadFormTranslation
+} from '#shared/leadForms'
 import type { EmailTemplate } from '~~/server/utils/emails'
+import LeadFileList from '~/components/contacts/LeadFileList.vue'
 import { SUBSCRIPTION_STATUS } from '~/utils/contactStatus'
 import { logTime } from '~/utils/emailStatus'
 
 definePageMeta({ middleware: 'agent' })
 
-type Editable = Pick<LeadForm, 'name' | 'key' | 'active' | 'fields' | 'content' | 'style' | 'settings'>
+type Editable = Pick<LeadForm, 'name' | 'key' | 'active' | 'fields' | 'content' | 'style' | 'settings' | 'locale' | 'translations'>
 
 const FIELD_ICONS: Record<LeadFieldType, string> = {
   email: 'i-lucide-at-sign', name: 'i-lucide-user', text: 'i-lucide-type', textarea: 'i-lucide-align-left', number: 'i-lucide-hash',
-  url: 'i-lucide-link', phone: 'i-lucide-phone', select: 'i-lucide-list', checkbox: 'i-lucide-square-check'
+  url: 'i-lucide-link', phone: 'i-lucide-phone', select: 'i-lucide-list', checkbox: 'i-lucide-square-check', file: 'i-lucide-paperclip'
 }
 
 const { api, projects, loadProjects } = useAgent()
@@ -230,7 +272,7 @@ const formId = String(route.params.formId)
 const project = computed(() => projects.value.find(p => p.id === id) || null)
 
 const saved = ref<LeadForm | null>(null)
-const form = ref<Editable>({ name: '', key: '', active: true, fields: [], content: { title: '', description: '', buttonLabel: '', successTitle: '', successMessage: '', confirmMessage: '', footnote: '' }, style: { accent: '', background: '', text: '', radius: 12, font: 'system', layout: 'stacked' }, settings: { doubleOptIn: true, confirmTemplate: '', welcomeTemplate: '', sequence: '', tags: [], redirectUrl: '' } })
+const form = ref<Editable>({ name: '', key: '', active: true, fields: [], content: { title: '', description: '', buttonLabel: '', successTitle: '', successMessage: '', confirmMessage: '', footnote: '' }, style: { accent: '', background: '', text: '', radius: 12, font: 'system', layout: 'stacked' }, settings: { doubleOptIn: true, confirmTemplate: '', welcomeTemplate: '', sequence: '', tags: [], redirectUrl: '' }, locale: 'en', translations: {} })
 const snapshotText = ref('')
 const loading = ref(true)
 const error = ref('')
@@ -241,7 +283,7 @@ const leads = ref<Contact[]>([])
 // Fields whose key the operator typed: those no longer follow the label.
 const keyEdited = reactive(new Set<string>())
 
-const editable = (f: LeadForm): Editable => JSON.parse(JSON.stringify({ name: f.name, key: f.key, active: f.active, fields: f.fields, content: f.content, style: f.style, settings: f.settings }))
+const editable = (f: LeadForm): Editable => JSON.parse(JSON.stringify({ name: f.name, key: f.key, active: f.active, fields: f.fields, content: f.content, style: f.style, settings: f.settings, locale: f.locale || 'en', translations: f.translations || {} }))
 const snapshot = (f: Editable) => JSON.stringify(f)
 const dirty = computed(() => !!saved.value && snapshot(form.value) !== snapshotText.value)
 const keyValid = computed(() => LEAD_FORM_KEY.test(form.value.key.trim()))
@@ -250,6 +292,7 @@ function fill(next: LeadForm) {
   saved.value = next
   form.value = editable(next)
   snapshotText.value = snapshot(form.value)
+  if (lang.value && !form.value.translations[lang.value]) lang.value = ''
   keyEdited.clear()
   for (const f of next.fields) keyEdited.add(f.id)
 }
@@ -273,7 +316,10 @@ async function save(quiet = false) {
   busy.value = 'save'
   error.value = ''
   try {
-    fill((await api<{ form: LeadForm }>(`/admin/lead-forms/${formId}`, { method: 'PATCH', body: { ...form.value, key: form.value.key.trim() } })).form)
+    // A language removed here is removed on the server too.
+    const translations: Record<string, unknown> = { ...form.value.translations }
+    for (const tag of Object.keys(saved.value?.translations || {})) if (!(tag in translations)) translations[tag] = null
+    fill((await api<{ form: LeadForm }>(`/admin/lead-forms/${formId}`, { method: 'PATCH', body: { ...form.value, key: form.value.key.trim(), translations } })).form)
     if (!quiet) toast.add({ title: t('projectTools.forms.saved'), icon: 'i-lucide-check', color: 'success' })
     return true
   } catch (e: any) {
@@ -296,6 +342,7 @@ async function remove() {
 
 const stats = computed(() => saved.value?.stats || { leads: 0, confirmed: 0 })
 const segmentId = computed(() => saved.value?.segment || '')
+const savedFields = computed(() => saved.value?.fields || [])
 const pageUrl = computed(() => `${appUrl.value}${saved.value?.pagePath || ''}`)
 const menu = computed(() => [[
   { label: t('projectTools.forms.openPage'), icon: 'i-lucide-external-link', onSelect: () => window.open(pageUrl.value, '_blank') },
@@ -326,12 +373,76 @@ function uniqueKey(base: string, except = '') {
 
 function addField(type: LeadFieldType) {
   const label = LEAD_FIELD_LABELS[type]
-  form.value.fields.push({ id: newFieldId(), key: type === 'name' ? 'name' : uniqueKey(fieldKeyFrom(label)), type, label, placeholder: '', required: false, options: type === 'select' ? [t('projectTools.forms.optionA'), t('projectTools.forms.optionB')] : [] })
+  form.value.fields.push({
+    id: newFieldId(), key: type === 'name' ? 'name' : uniqueKey(fieldKeyFrom(label)), type, label, placeholder: '', required: false,
+    options: type === 'select' ? [t('projectTools.forms.optionA'), t('projectTools.forms.optionB')] : [], accept: type === 'file' ? 'any' : '', maxMB: type === 'file' ? 10 : 0
+  })
 }
 
+const fileCount = computed(() => form.value.fields.filter(f => f.type === 'file').length)
 const addItems = computed(() => [LEAD_FIELD_TYPES.filter(type => type !== 'email' && (type !== 'name' || !form.value.fields.some(f => f.type === 'name'))).map(type => ({
-  label: t(`projectTools.forms.types.${type}`), icon: FIELD_ICONS[type], onSelect: () => addField(type)
+  label: t(`projectTools.forms.types.${type}`), icon: FIELD_ICONS[type], disabled: type === 'file' && fileCount.value >= LEAD_FORM_LIMITS.files, onSelect: () => addField(type)
 }))])
+const acceptItems = computed(() => LEAD_FILE_KINDS.map(value => ({ value, label: t(`projectTools.forms.accepts.${value}`) })))
+const hasPlaceholder = (f: LeadFormField) => f.type !== 'checkbox' && f.type !== 'select' && f.type !== 'file'
+
+// ---- languages ----
+const lang = ref('')
+const translateError = ref('')
+const CONTENT_LIMIT: Record<keyof LeadFormContent, number> = {
+  title: LEAD_FORM_LIMITS.title, description: LEAD_FORM_LIMITS.description, buttonLabel: LEAD_FORM_LIMITS.button, successTitle: LEAD_FORM_LIMITS.title,
+  successMessage: LEAD_FORM_LIMITS.message, confirmMessage: LEAD_FORM_LIMITS.message, footnote: LEAD_FORM_LIMITS.message
+}
+// Only words the original has can be translated; the confirm message only matters with double opt-in.
+const shownContentKeys = computed(() => (Object.keys(CONTENT_LIMIT) as (keyof LeadFormContent)[]).filter(key => form.value.content[key] && (key !== 'confirmMessage' || form.value.settings.doubleOptIn)))
+const languages = computed(() => {
+  const total = Object.keys(leadFormTexts(form.value.content, form.value.fields)).length
+  return Object.entries(form.value.translations).map(([locale, tr]) => ({ locale, filled: Math.min(total, Object.keys(leadTranslationTexts(tr)).length), total }))
+})
+const entry = (): LeadFormTranslation => (form.value.translations[lang.value] ||= { content: {}, fields: {} })
+const contentWord = (key: keyof LeadFormContent) => form.value.translations[lang.value]?.content[key] ?? ''
+function setContentWord(key: keyof LeadFormContent, value: string) { entry().content[key] = value }
+const fieldWord = (id: string, key: 'label' | 'placeholder') => form.value.translations[lang.value]?.fields[id]?.[key] ?? ''
+function setFieldWord(id: string, key: 'label' | 'placeholder', value: string) { (entry().fields[id] ||= {} as Partial<LeadFieldText>)[key] = value }
+const optionWord = (id: string, n: number) => form.value.translations[lang.value]?.fields[id]?.options?.[n] ?? ''
+function setOptionWord(field: LeadFormField, n: number, value: string) {
+  const words = (entry().fields[field.id] ||= {} as Partial<LeadFieldText>)
+  const options = field.options.map((_, i) => words.options?.[i] ?? '')
+  options[n] = value
+  words.options = options
+}
+
+function addLanguage(tag: string) {
+  form.value.translations[tag] = { content: {}, fields: {} }
+  lang.value = tag
+}
+
+function removeLanguage(tag: string) {
+  if (!confirm(t('translations.removeConfirm', { language: tag }))) return
+  delete form.value.translations[tag]
+  if (lang.value === tag) lang.value = ''
+}
+
+function setSource(tag: string) {
+  form.value.locale = tag
+  delete form.value.translations[tag]
+  if (lang.value === tag) lang.value = ''
+}
+
+// The server translates the saved form, so unsaved edits are saved first.
+async function translate(locales: string[], overwrite: boolean) {
+  if (dirty.value && !(await save(true))) return
+  busy.value = 'translate'
+  translateError.value = ''
+  try {
+    fill((await api<{ form: LeadForm }>(`/admin/lead-forms/${formId}/translate`, { method: 'POST', body: { locales, overwrite } })).form)
+    toast.add({ title: t('translations.translated', { n: locales.length }), icon: 'i-lucide-sparkles', color: 'success' })
+  } catch (e: any) {
+    translateError.value = e?.message || t('translations.translateError')
+  } finally {
+    busy.value = ''
+  }
+}
 
 // ---- look ----
 const projectAccent = computed(() => project.value?.theme?.accent || '#5e6ad2')
@@ -367,18 +478,25 @@ const snippet = computed(() => {
     const inputs = form.value.fields.map((f) => {
       const req = f.required ? ' required' : ''
       const ph = f.placeholder || f.label
+      if (f.type === 'file') return `  <input type="file" name="${f.key}" accept="${LEAD_FILE_EXTENSIONS[f.accept || 'any'].map(ext => `.${ext}`).join(',')}"${req}>`
       if (f.type === 'checkbox') return `  <label><input type="checkbox" name="${f.key}"${req}> ${escape(f.label)}</label>`
       if (f.type === 'textarea') return `  <textarea name="${f.key}" placeholder="${escape(ph)}"${req}></textarea>`
       if (f.type === 'select') return `  <select name="${f.key}"${req}>\n    <option value="">${escape(f.label)}</option>\n${f.options.map(o => `    <option>${escape(o)}</option>`).join('\n')}\n  </select>`
       return `  <input type="${INPUT_TYPES[f.type] || 'text'}" name="${f.key}" placeholder="${escape(ph)}"${req}>`
     })
-    return `<form action="${post}" method="post">\n${inputs.join('\n')}\n  <!-- Leave this empty: bots fill it in. -->\n  <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-10000px">\n  <button type="submit">${escape(form.value.content.buttonLabel)}</button>\n</form>`
+    const multipart = form.value.fields.some(f => f.type === 'file') ? ' enctype="multipart/form-data"' : ''
+    return `<form action="${post}" method="post"${multipart}>\n${inputs.join('\n')}\n  <!-- Leave this empty: bots fill it in. -->\n  <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-10000px">\n  <button type="submit">${escape(form.value.content.buttonLabel)}</button>\n</form>`
   }
   if (installTab.value === 'link') return `<a href="${appUrl.value}/f/${pk}/${key}">${escape(form.value.content.buttonLabel)}</a>\n\n<!-- or framed in your page -->\n<iframe src="${appUrl.value}/f/${pk}/${key}" title="${escape(form.value.content.title || form.value.name)}" style="width:100%;max-width:480px;height:520px;border:0"></iframe>`
   if (installTab.value === 'swift') return `// Add HelpBitesLeadForm.swift from the guide, then:\nHelpBitesLeadForm(host: URL(string: "${appUrl.value}")!, projectKey: "${pk}", form: "${key}")`
   if (installTab.value === 'api') {
     const sample: Record<string, unknown> = {}
-    for (const f of form.value.fields) sample[f.key] = f.type === 'email' ? 'ada@example.com' : f.type === 'name' ? 'Ada Lovelace' : f.type === 'checkbox' ? true : f.type === 'number' ? 3 : f.type === 'select' ? (f.options[0] || '') : f.type === 'url' ? 'https://example.com' : '…'
+    for (const f of form.value.fields) if (f.type !== 'file') sample[f.key] = f.type === 'email' ? 'ada@example.com' : f.type === 'name' ? 'Ada Lovelace' : f.type === 'checkbox' ? true : f.type === 'number' ? 3 : f.type === 'select' ? (f.options[0] || '') : f.type === 'url' ? 'https://example.com' : '…'
+    // A file goes as multipart: one -F per answer, the file with @.
+    if (form.value.fields.some(f => f.type === 'file')) {
+      const parts = [...Object.entries(sample).map(([k, v]) => `-F '${k}=${v}'`), ...form.value.fields.filter(f => f.type === 'file').map(f => `-F '${f.key}=@${f.accept === 'images' ? 'photo.png' : 'file.pdf'}'`)]
+      return `curl -s ${post} \\\n  ${parts.join(' \\\n  ')}`
+    }
     return `curl -s ${post} \\\n  -H 'content-type: application/json' \\\n  -d '${JSON.stringify(sample)}'`
   }
   return `<script src="${appUrl.value}/forms.js" data-project="${pk}" data-form="${key}" defer><\/script>`
@@ -412,15 +530,17 @@ function formsQueue(): Queue {
 function drawPreview() {
   if (!previewEl.value || !saved.value) return
   const f = form.value
+  // In a language tab the preview shows that translation, falling back word by word like visitors see it.
+  const words = localizeLeadForm(f.content, f.fields, lang.value ? f.translations[lang.value] : undefined)
   formsQueue().push(['preview', {
     target: previewEl.value,
     theme: previewTheme.value,
     state: previewState.value,
-    form: { key: f.key, name: f.name, fields: f.fields, content: f.content, style: { ...f.style, accent: f.style.accent || projectAccent.value }, doubleOptIn: f.settings.doubleOptIn, project: { name: project.value?.name || '', logoUrl: '' } }
+    form: { key: f.key, name: f.name, locale: lang.value || f.locale, ...words, style: { ...f.style, accent: f.style.accent || projectAccent.value }, doubleOptIn: f.settings.doubleOptIn, project: { name: project.value?.name || '', logoUrl: '' } }
   }])
 }
 
-watch([form, previewState, previewTheme, previewEl, projectAccent], drawPreview, { deep: true, flush: 'post' })
+watch([form, lang, previewState, previewTheme, previewEl, projectAccent], drawPreview, { deep: true, flush: 'post' })
 
 onMounted(async () => {
   if (!project.value) loadProjects().catch(() => {})

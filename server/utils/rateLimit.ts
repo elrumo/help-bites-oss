@@ -91,6 +91,8 @@ export const LIMITS = {
   onboardingReadsPerIp: { limit: 1200, window: 60 },
   // Lead forms load on every page view of the site they sit on.
   leadFormReadsPerIp: { limit: 1200, window: 60 },
+  // Multipart sign-ups carry files: counted before the body is read, so nobody streams in gigabytes.
+  leadFormUploadsPerIp: { limit: 20, window: 600 },
   brandReadsPerIp: { limit: 600, window: 60 },
   // Pages and the CMS delivery API: a site build can read many entries at once.
   cmsReadsPerIp: { limit: 1200, window: 60 }

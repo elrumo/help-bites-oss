@@ -1071,10 +1071,34 @@ const SCHEMAS = {
       segment: { type: 'String' },
       sequence: { type: 'String' },
       welcomeTemplate: { type: 'String' },
-      confirmTemplate: { type: 'String' }
+      confirmTemplate: { type: 'String' },
+      // The language its words are written in (default en), and their translations:
+      // { <locale>: { content: { title, … }, fields: { <fieldId>: { label, placeholder, options } } } }.
+      locale: { type: 'String' },
+      translations: { type: 'Object' }
     },
     indexes: {
       project_key: { _p_project: 1, key: 1 }
+    }
+  },
+  // A file someone sent with a lead form, kept for the operator: in the bucket at
+  // `storageKey` (`<projectId>/forms/<formId>/<uuid>.<ext>`), never linked publicly, and
+  // downloaded through /v1/admin/lead-files/<id>. Erased with its contact.
+  LeadFile: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      form: { type: 'Pointer', targetClass: 'LeadForm' },
+      contact: { type: 'Pointer', targetClass: 'EndUser' },
+      // The key of the file field it was sent through.
+      field: { type: 'String' },
+      name: { type: 'String' },
+      mime: { type: 'String' },
+      size: { type: 'Number' },
+      storageKey: { type: 'String' }
+    },
+    indexes: {
+      project_contact: { _p_project: 1, _p_contact: 1 },
+      project_form_created: { _p_project: 1, _p_form: 1, _created_at: -1 }
     }
   },
   // A file in a project's brand kit (logo, icon, screenshot, PDF…), stored in the bucket at

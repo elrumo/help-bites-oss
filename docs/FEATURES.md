@@ -49,14 +49,14 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 **Languages and AI translation** [LANGUAGES.md](LANGUAGES.md)
 
-- **Onboarding, legal documents and emails in your users' languages.** A flow and
-  an email template carry a translation per language; a legal document has a
-  linked copy per language, each with its own page.
+- **Onboarding, legal documents, emails and lead forms in your users' languages.**
+  A flow, an email template and a lead form carry a translation per language; a
+  legal document has a linked copy per language, each with its own page.
 - **Translate with AI, or write it.** One button per language fills what is
   missing through the workspace's AI (or the server's gateway) and keeps what you
   edited. Placeholders, links and HTML survive, or the string stays in the
   original language.
-- **Apps pick the language.** `?locale=` on the onboarding and email reads,
+- **Apps pick the language.** `?locale=` on the onboarding, lead form and email reads,
   `locale` on the send API (per recipient too), `data-locale` on the web script
   and a `locale:` parameter on the Swift snippet. A language that is missing gets
   the original.
@@ -325,14 +325,22 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   paying customers for a period, charts the last twelve months of net revenue with
   MRR at the end of each month (hover, focus or touch a month for its numbers), and
   lists plans, top customers and recent payments. Read-only. Web and native.
-- **Erasure.** Deleting a person removes their conversations, feedback, email
-  history and changelog subscriptions, including ones made by address alone.
+- **Erasure.** Deleting a person removes their conversations, feedback, the files
+  they sent through forms, email history and changelog subscriptions, including
+  ones made by address alone.
 
 **Lead forms** [FORMS.md](FORMS.md)
 
 - **Waitlists and interest forms.** As many forms per project as you need, from a
   single email box on one row to up to 12 fields (name, text, number, website,
-  phone, a choice, a checkbox). Each answer is saved on the contact. Web and native.
+  phone, a choice, a checkbox, a file). Each answer is saved on the contact. Web and native.
+- **File uploads.** Up to three file fields per form (pictures, documents or
+  either, up to 20 MB), checked by their contents and kept privately: the team
+  downloads them from the contact or the form. Erasing a person deletes them.
+- **In the visitor's language.** A translation per language of the form's words,
+  written by hand or by AI. The script, the hosted page, the Swift snippet and the
+  API show the visitor's language; errors, the confirmation and the welcome email
+  follow.
 - **Anywhere.** One script tag (`forms.js`, MIT) styled by `data-*` options, CSS
   variables and parts; a plain HTML form; a hosted page at `/f/<public key>/<key>`;
   a copy-paste SwiftUI view; or the public API from your own UI.
@@ -509,14 +517,15 @@ repository. See [EDITIONS.md](EDITIONS.md).
 - **Pages and CMS.** Web-only for now: no native screens. No custom domains for
   hosted pages, no scripts in components, no per-field translations, scheduled
   publishing, version history or generated TypeScript types yet. [PAGES.md](PAGES.md)
-- **Translations.** Onboarding, legal documents and template emails have them;
+- **Translations.** Onboarding, legal documents, template emails and lead forms have them;
   campaigns, sequences, the mail HelpBites sends itself, the chat, feedback and
   changelog embeds and CMS pages do not yet, and a contact has no language of its
   own. [LANGUAGES.md](LANGUAGES.md)
-- **Lead forms.** No CAPTCHA (a honeypot and rate limits only), no file uploads, no
-  translations and no A/B tests yet. Answers are saved on the contact, not kept as
-  separate submissions, and a form never overwrites an answer a contact already
-  has. [FORMS.md](FORMS.md)
+- **Lead forms.** No CAPTCHA (a honeypot and rate limits only) and no A/B tests
+  yet. Answers are saved on the contact, not kept as separate submissions, and a
+  form never overwrites an answer a contact already has. Files are not scanned for
+  malware (only their type and size are checked), and the sequence a form starts
+  is sent in its template's own language. [FORMS.md](FORMS.md)
 - **Blog.** The native app edits a post's Markdown as text, with a preview: the
   rich editor is web-only. No translations of posts or the embed, no custom
   domain for the hosted blog, and no MCP tools for it yet. [BLOG.md](BLOG.md)

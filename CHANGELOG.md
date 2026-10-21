@@ -34,6 +34,14 @@ All notable changes to the community edition. Versions are Docker image tags
   `docs/FORMS.md`. New class `LeadForm`, new fields `EndUser.origin` and `EndUser.leadForms` (with indexes) and
   `ContactSegment.auto` (need `schema:apply`; the container does it on boot). `/f` joins `/embed`, `/s`, `/brand` and
   `/p` as frameable. Welcome emails show in the email log with source `form`.
+- Lead forms take files and speak the visitor's language. A `file` field (up to three per form; pictures, documents or
+  either, up to 20 MB, checked by their bytes) sends the form as multipart; files are kept privately in the bucket
+  under `<projectId>/forms/<formId>/`, listed and downloaded at `/v1/admin/lead-files` and erased with the contact.
+  File fields need S3 configured (`S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`). Forms carry a
+  translation per language (`POST /v1/admin/lead-forms/{id}/translate` uses the workspace's AI); `forms.js`, the hosted
+  page and `GET /v1/forms/{pk}/{key}?locale=` show the visitor's, and errors, the confirmation page and email and the
+  welcome email follow. New class `LeadFile` and fields `LeadForm.locale` and `LeadForm.translations` (need
+  `schema:apply`; the container does it on boot). Confirmation links sent before this upgrade keep working.
 - Contacts show how they were added (**Added via**: app user, lead form, sign-up, import, sync, Stripe, API, by hand,
   feedback import), filterable in the people list, segments (`origin`, `leadForms`) and `GET /v1/contacts?origin=`.
   New contacts record it themselves; run `bun scripts/backfill-contacts.mjs --apply` once to store it for older ones.
