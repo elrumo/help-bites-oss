@@ -89,7 +89,7 @@ describe('translation guards', () => {
 
 describe('onboarding translations', () => {
   const steps: OnboardingStep[] = [
-    { id: 's1', title: 'Welcome', body: 'Start here', imageUrl: '', imageAlt: 'A screen', buttonLabel: '' },
+    { id: 's1', title: 'Welcome', body: 'Start here', imageUrl: '', imageAlt: 'A screen', buttonLabel: '', pricingTable: '' },
     { id: 's2', title: 'Done', body: '', imageUrl: 'https://cdn.test/a.png', imageAlt: '', buttonLabel: 'Finish' }
   ]
 

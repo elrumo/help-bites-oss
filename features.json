@@ -250,17 +250,31 @@
       "landing": { "listed": true, "key": "landing.features.app.onboarding" }
     },
     {
+      "id": "pricing-tables",
+      "name": "Pricing tables",
+      "category": "marketing",
+      "summary": "Plan cards, compact rows, a mobile paywall, a comparison table or one spotlight plan, for a site (pricing.js), a hosted page, a SwiftUI app, an onboarding step or the API. Plans can take their prices and checkout from Stripe (Checkout, a Payment Link or any URL) while the words and features stay in HelpBites; weekly, monthly, yearly and one-time prices, several currencies, translations and look options, numbers with purchases and revenue read from Stripe, A/B tests with a significance check, and AI suggestions from the project's repos, Stripe and revenue.",
+      "editions": ["community", "cloud"],
+      "plan": "all",
+      "status": "stable",
+      "web": { "panel": ["app/pages/projects/[id]/pricing/index.vue", "app/pages/projects/[id]/pricing/[tableId].vue"], "public": ["/pricing/:pk/:key"] },
+      "native": { "folders": ["helpbites-native/App/Features/Pricing"], "parity": "tests/pricingNativeParity.test.ts" },
+      "api": { "prefixes": ["/v1/pricing", "/v1/admin/pricing-tables", "/v1/admin/stripe/catalog"], "docs": "docs/PRICING.md" },
+      "embed": { "web": "public/pricing.js", "swift": "docs/PRICING.md#plug-and-play-swift", "customize": ["data-table", "data-target", "data-template", "data-theme", "data-accent", "data-radius", "data-font", "data-density", "data-interval", "data-currency", "data-locale", "data-show", "data-current", "data-email", "data-ref", "data-return", "data-host", "JS init options (labels, onSelect)", "--hb-pricing-* CSS variables", "::part() hooks", "hosted page /pricing/:pk/:key", "Swift accent, cornerRadius, design, locale, currency, current, onSelect"] },
+      "landing": { "listed": true, "key": "landing.features.app.pricing" }
+    },
+    {
       "id": "content-translation",
       "name": "Languages and AI translation",
       "category": "product",
-      "summary": "Onboarding flows, legal documents and email templates carry a translation per language, written by hand or by the workspace's AI; apps and sends pick one with a locale and fall back to the original.",
+      "summary": "Onboarding flows, pricing tables, legal documents and email templates carry a translation per language, written by hand or by the workspace's AI; apps and sends pick one with a locale and fall back to the original.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "status": "stable",
       "web": { "panel": ["app/components/LanguageTabs.vue", "app/components/email/EmailLanguages.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Onboarding", "helpbites-native/App/Features/Legal", "helpbites-native/App/Features/Email"], "parity": "tests/translateNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/onboarding", "/v1/admin/onboarding", "/v1/legal", "/v1/admin/legal", "/v1/emails", "/v1/admin/emails"], "docs": "docs/LANGUAGES.md" },
-      "embed": { "web": "public/onboarding.js", "swift": "docs/ONBOARDING.md#plug-and-play-swift", "customize": ["data-locale", "JS init locale and labels", "Swift locale parameter", "?locale= on the public onboarding, legal and email reads", "locale on the email send API"] },
+      "native": { "folders": ["helpbites-native/App/Features/Onboarding", "helpbites-native/App/Features/Pricing", "helpbites-native/App/Features/Legal", "helpbites-native/App/Features/Email"], "parity": "tests/translateNativeParity.test.ts" },
+      "api": { "prefixes": ["/v1/onboarding", "/v1/admin/onboarding", "/v1/pricing", "/v1/admin/pricing-tables", "/v1/legal", "/v1/admin/legal", "/v1/emails", "/v1/admin/emails"], "docs": "docs/LANGUAGES.md" },
+      "embed": { "web": "public/onboarding.js", "swift": "docs/ONBOARDING.md#plug-and-play-swift", "customize": ["data-locale", "JS init locale and labels", "Swift locale parameter", "?locale= on the public onboarding, pricing, legal and email reads", "locale on the email send API"] },
       "landing": { "listed": false, "key": null }
     },
     {
@@ -310,7 +324,7 @@
       "id": "revenue",
       "name": "Revenue (Stripe)",
       "category": "dev",
-      "summary": "Connect Stripe read-only to see revenue and MRR month by month, and on each contact their Stripe customer (looked up live) with subscriptions and payments.",
+      "summary": "Connect Stripe with a restricted key to see revenue and MRR month by month, and on each contact their Stripe customer (looked up live) with subscriptions and payments. Read-only, except that pricing tables open Stripe Checkout when the key allows it.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "status": "stable",
@@ -395,7 +409,7 @@
       "id": "mcp",
       "name": "AI assistants (MCP)",
       "category": "platform",
-      "summary": "An MCP server at /mcp lets Claude, ChatGPT, Cursor or any MCP client read the inbox, reply, triage feedback, move board items, write changelog entries and look into errors as the operator who connected it. Signs in with the browser (OAuth, for claude.ai and ChatGPT) or an admin API key; every tool is a /v1 call, so roles, workspaces and a key's project limit apply.",
+      "summary": "An MCP server at /mcp lets Claude, ChatGPT, Cursor or any MCP client read the inbox, reply, triage feedback, move board items, write changelog entries, look into errors and edit, publish, A/B test and get AI suggestions for pricing tables as the operator who connected it. Signs in with the browser (OAuth, for claude.ai and ChatGPT) or an admin API key; every tool is a /v1 call, so roles, workspaces and a key's project limit apply.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "status": "stable",
@@ -452,7 +466,7 @@
   "notBuilt": [
     "Contact sync does not notice rows deleted upstream.",
     "The MCP server offers tools only (no prompts, resources or live notifications), has no tools yet for email, campaigns, legal documents, flags or knowledge base editing, and issues no refresh tokens: an OAuth-connected assistant signs in again after a year.",
-    "No Swift package. Onboarding and the brand kit have copy-paste Swift snippets; the chat, feedback and changelog embeds are web-only (widget.js, feedback.js, changelog.js).",
+    "No Swift package. Onboarding, pricing tables and the brand kit have copy-paste Swift snippets; the chat, feedback and changelog embeds are web-only (widget.js, feedback.js, changelog.js).",
     "Onboarding keeps no completion statistics; apps learn outcomes from the web script's callbacks and events or the Swift onFinish.",
     "The brand kit has no download-everything archive; each file downloads on its own.",
     "Bugsink issues cannot be searched by customer.",
@@ -462,6 +476,7 @@
     "Components are HTML and CSS only: nothing that needs JavaScript of its own (an autoplaying carousel, a calculator).",
     "CMS content has no per-field translations, scheduled publishing or version history; folders such as es/… stand in for languages.",
     "The CMS generates no TypeScript types from component schemas.",
-    "Lead forms have no CAPTCHA (a honeypot and rate limits only), no file uploads, no translations and no A/B tests; answers are saved on the contact rather than kept as separate submissions, and never overwrite an answer the contact already has."
+    "Lead forms have no CAPTCHA (a honeypot and rate limits only), no file uploads, no translations and no A/B tests; answers are saved on the contact rather than kept as separate submissions, and never overwrite an answer the contact already has.",
+    "Pricing tables show fixed prices only (no metered or tiered Stripe prices), have no Stripe Customer Portal button and count purchases from Stripe only (not the App Store); the Swift snippet draws the cards template only."
   ]
 }

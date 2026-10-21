@@ -5,6 +5,16 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- Pricing tables: plan cards, rows, a paywall, a comparison table or a spotlight plan under **Project → Pricing** (web
+  and native), embedded with `public/pricing.js`, on a hosted page at `/pricing/<public key>/<key>`, in SwiftUI, in an
+  onboarding step, or read from `GET /v1/pricing/{pk}/{key}`; managed at `/v1/admin/pricing-tables`. See
+  `docs/PRICING.md`. New classes `PricingTable` and `PricingStat`, and field `pricingTable` on onboarding steps (need
+  `schema:apply`; the container does it on boot). Plans linked to Stripe read products, prices and Payment Links
+  through the project's Stripe key (new `GET /v1/admin/stripe/catalog`); Stripe Checkout buttons need "Checkout
+  Sessions: Write" on that key and purchase counting needs "Checkout Sessions: Read", so the key is no longer
+  read-only when you use them. The marketing worker flushes view and click counts from Redis and checks Stripe for
+  completed sessions every ten minutes per project with a published table. `/pricing/<pk>/<key>` joins the frameable
+  paths. A/B tests, AI suggestions (the workspace's AI or the gateway) and 11 new MCP tools come with it.
 - Lead forms: waitlist, "notify me" and interest forms under **Project → Forms** (web and native), embedded with
   `public/forms.js`, as a plain HTML form, on a hosted page at `/f/<public key>/<key>`, in SwiftUI, or through
   `GET`/`POST /v1/forms/{pk}/{key}`; managed at `/v1/admin/lead-forms`. Leads become contacts in a segment made for

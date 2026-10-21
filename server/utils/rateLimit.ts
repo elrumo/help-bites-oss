@@ -87,6 +87,14 @@ export const LIMITS = {
   onboardingReadsPerIp: { limit: 1200, window: 60 },
   // Lead forms load on every page view of the site they sit on.
   leadFormReadsPerIp: { limit: 1200, window: 60 },
+  // Pricing tables load on every page view of the site they sit on, and on every paywall an app opens.
+  pricingReadsPerIp: { limit: 1200, window: 60 },
+  // Each one creates a Stripe Checkout Session in the developer's account.
+  pricingCheckoutsPerIp: { limit: 30, window: 60 },
+  // A view and a click or two for every page a table is on.
+  pricingEventsPerIp: { limit: 600, window: 60 },
+  // Each suggestion reads up to three repos and makes one long model call.
+  pricingAiPerAgent: { limit: 6, window: 60 },
   brandReadsPerIp: { limit: 600, window: 60 },
   // Pages and the CMS delivery API: a site build can read many entries at once.
   cmsReadsPerIp: { limit: 1200, window: 60 }

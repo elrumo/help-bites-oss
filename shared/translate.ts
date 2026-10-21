@@ -12,6 +12,7 @@ export const TRANSLATE_LIMITS = { locales: 8, strings: 400, batchStrings: 40, ba
 export const TRANSLATE_CONTEXTS = {
   onboarding: 'short screens a mobile or web app shows a new user: titles, a sentence or two of body text, button labels, image descriptions',
   legal: 'sections of a legal document (privacy policy, terms of service) for a software product, in Markdown. Keep the legal meaning exactly; do not add, drop or soften any statement',
+  pricing: 'a pricing table on a website or in an app: plan names, one-line descriptions, short badges, feature names and values, button labels and small print. Keep prices, numbers and product names as they are',
   email: 'the copy of a product email: subject, preheader, headings, buttons and body text that may contain the inline HTML tags b, i, a and br'
 } as const
 export type TranslateContext = keyof typeof TRANSLATE_CONTEXTS

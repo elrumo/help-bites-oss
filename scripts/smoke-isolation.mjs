@@ -113,6 +113,7 @@ const { post } = await api('/v1/feedback', { token: userToken, method: 'POST', b
 const keyA = await api('/v1/admin/api-keys', { ...A, method: 'POST', body: { name: `${MARK} key` } })
 const { flow } = await api('/v1/admin/onboarding/flows', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} flow` } })
 const { form: leadForm } = await api('/v1/admin/lead-forms', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} form` } })
+const { table: pricingTable } = await api('/v1/admin/pricing-tables', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} pricing` } })
 await api(`/v1/admin/brand?project=${project.id}`, { ...A, method: 'PATCH', body: { tagline: `${MARK} tagline` } })
 const brandUpload = await maybe('brand file (needs S3)', async () => {
   const res = await upload('/v1/admin/brand/assets', { project: project.id, name: `${MARK} logo` }, A)
@@ -243,6 +244,20 @@ await attempt('edit A\'s lead form', `/v1/admin/lead-forms/${leadForm.id}`, { me
 await attempt('create a lead form in A\'s project', '/v1/admin/lead-forms', { method: 'POST', body: { project: project.id, name: 'pwned' } })
 await attempt('list the leads of A\'s form', `/v1/contacts?project=${project.id}&leadForm=${leadForm.id}`)
 await attempt('delete A\'s lead form', `/v1/admin/lead-forms/${leadForm.id}`, { method: 'DELETE' })
+await attempt('list A\'s pricing tables', `/v1/admin/pricing-tables?project=${project.id}`)
+await attempt('read A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}`)
+await attempt('edit A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}`, { method: 'PATCH', body: { name: 'pwned', checkout: { successUrl: 'https://evil.test/' } } })
+await attempt('preview A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/preview`, { method: 'POST', body: {} })
+await attempt('publish A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/publish`, { method: 'POST' })
+await attempt('translate A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/translate`, { method: 'POST', body: { locales: ['es'] } })
+await attempt('create a pricing table in A\'s project', '/v1/admin/pricing-tables', { method: 'POST', body: { project: project.id, name: 'pwned' } })
+await attempt('read A\'s pricing numbers', `/v1/admin/pricing-tables/${pricingTable.id}/stats?refresh=1`)
+await attempt('add a variant to A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/variants`, { method: 'POST', body: {} })
+await attempt('start an A/B test on A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/experiment/start`, { method: 'POST' })
+await attempt('stop an A/B test on A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/experiment/stop`, { method: 'POST', body: {} })
+await attempt('ask AI about A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}/suggest`, { method: 'POST', body: { notes: 'x' } })
+await attempt('read A\'s Stripe catalog', `/v1/admin/stripe/catalog?project=${project.id}`)
+await attempt('delete A\'s pricing table', `/v1/admin/pricing-tables/${pricingTable.id}`, { method: 'DELETE' })
 await attempt('read A\'s brand kit', `/v1/admin/brand?project=${project.id}`)
 await attempt('edit A\'s brand kit', `/v1/admin/brand?project=${project.id}`, { method: 'PATCH', body: { tagline: 'pwned', page: { public: true } } })
 await attempt('preview A\'s brand page', `/v1/admin/brand/preview?project=${project.id}`, { method: 'POST', body: {} })
@@ -326,6 +341,8 @@ check((await call(`/v1/admin/knowledge/models/${model.id}`, A)).json.model?.name
 const flowAfter = (await call(`/v1/admin/onboarding/flows/${flow.id}`, A)).json.flow
 check(flowAfter?.name === `${MARK} flow` && flowAfter.status === 'draft', 'A\'s onboarding flow is untouched')
 const formAfter = (await call(`/v1/admin/lead-forms/${leadForm.id}`, A)).json.form
+const pricingAfter = (await call(`/v1/admin/pricing-tables/${pricingTable.id}`, A)).json.table
+check(pricingAfter?.name === `${MARK} pricing` && pricingAfter.status === 'draft' && pricingAfter.checkout.successUrl === '' && !pricingAfter.experiment.variants.length, 'A\'s pricing table is untouched')
 check(formAfter?.name === `${MARK} form` && formAfter.settings.doubleOptIn === true, 'A\'s lead form is untouched')
 const kitAfter = (await call(`/v1/admin/brand?project=${project.id}`, A)).json
 check(kitAfter.brand?.tagline === `${MARK} tagline` && kitAfter.brand.page.public === false, 'A\'s brand kit is untouched')

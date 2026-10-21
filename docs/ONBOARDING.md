@@ -21,6 +21,7 @@ A flow is a list of steps under a **key**, the name your app asks for it by
 | `body` | Up to 600 characters. Line breaks are kept. |
 | `imageUrl`, `imageAlt` | An optional picture (any https URL; uploads and brand kit files work too) and its description for screen readers. |
 | `buttonLabel` | The button text. Empty uses the client's own: **Continue**, and **Get started** on the last step. |
+| `pricingTable` | The key of one of the project's [pricing tables](PRICING.md) to show under the text, such as a paywall at the end of the tour; choosing a plan finishes the tour. The public flow carries the published table as the step's `pricing` (null while it is a draft). `onboarding.js` draws it; the Swift snippet below shows the step's text only. |
 
 A flow has up to 12 steps, and a project up to 50 flows. The flow also has a
 `style` and `options`:

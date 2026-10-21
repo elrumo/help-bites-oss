@@ -385,7 +385,8 @@ async function readRepo(project: ParseObject, name?: string, paths?: string[]): 
   }
 }
 
-async function repoOverview(repo: ProjectRepo): Promise<string> {
+/** A repo as one block of text for a prompt: README, manifests and the file list. */
+export async function repoOverview(repo: ProjectRepo): Promise<string> {
   const snap = await fetchRepoSnapshot(repo)
   const readmePath = snap.tree.find(p => /^readme(\.md|\.markdown|\.txt)?$/i.test(p))
   const readme = readmePath ? await readRepoFile(repo, readmePath) : null

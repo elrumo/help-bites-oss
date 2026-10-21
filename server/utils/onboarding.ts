@@ -6,6 +6,7 @@ import {
   validateOnboardingOptions, validateOnboardingStyle, validateOnboardingSteps, validateOnboardingTranslations,
   type OnboardingOptions, type OnboardingStep, type OnboardingStyle, type OnboardingTranslations, type PublicOnboardingFlow
 } from '#shared/onboarding'
+import { findPricingTableByKey, publishedPricingTableByKey, readVisitor } from './pricing'
 import { readTargetLocales, translateMissing } from './translate'
 
 // Onboarding flows: the store behind /v1/admin/onboarding and the public read.
@@ -140,7 +141,11 @@ async function applyInput(project: ParseObject, row: ParseObject, body: Record<s
   if (body.steps !== undefined) {
     const result = validateOnboardingSteps(body.steps)
     errors.push(...result.errors)
-    if (!result.errors.length) row.set('steps', result.steps)
+    // A step's pricing table must be one of this project's (it may still be a draft: it shows once published).
+    for (const [i, step] of result.steps.entries()) {
+      if (step.pricingTable && !(await findPricingTableByKey(project, step.pricingTable))) errors.push(`Step ${i + 1}: the project has no pricing table "${step.pricingTable}"`)
+    }
+    if (!errors.length) row.set('steps', result.steps)
   }
   if (body.style !== undefined) {
     const result = validateOnboardingStyle(body.style, normalizeOnboardingStyle(row.get('style')))
@@ -240,5 +245,10 @@ export async function publicOnboardingFlow(event: H3Event): Promise<PublicOnboar
   setResponseHeader(event, 'Vary', 'Accept-Language')
   // ?locale=es wins over the browser's Accept-Language; a language the flow lacks gets the flow's own.
   const wanted = [getQuery(event).locale, ...parseAcceptLanguage(getHeader(event, 'accept-language'))]
-  return toPublicFlow(project, row, published, wanted)
+  const flow = toPublicFlow(project, row, published, wanted)
+  // A step with a pricing table carries it, in the flow's language, so one answer (and the copy an app keeps) has everything.
+  const tables = new Map<string, Awaited<ReturnType<typeof publishedPricingTableByKey>>>()
+  const visitor = readVisitor(getQuery(event).visitor)
+  for (const key of new Set(flow.steps.map(s => s.pricingTable).filter(Boolean))) tables.set(key, await publishedPricingTableByKey(project, key, [flow.locale], event, visitor).catch(() => null))
+  return { ...flow, steps: flow.steps.map(step => (step.pricingTable ? { ...step, pricing: tables.get(step.pricingTable) || null } : step)) }
 }
