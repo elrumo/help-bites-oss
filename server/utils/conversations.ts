@@ -501,7 +501,7 @@ export async function updateConversation(conversation: ParseObject, input: Recor
 
 /** The `conversation.status_changed` domain event. Fire and forget: the status is already saved. */
 function emitStatusChanged(conversation: ParseObject, from: string, to: string, statusCategory: string): void {
-  emitDomainEventLater(conversation.get('project'), 'conversation.status_changed', { conversationId: conversation.id, from, to, statusCategory })
+  emitDomainEventLater(conversation.get('project'), 'conversation.status_changed', { conversationId: conversation.id, from, to, statusCategory, ...(pointerId(conversation.get('endUser')) ? { contact: { id: pointerId(conversation.get('endUser')) } } : {}) })
 }
 
 export async function appendInternalNote(conversation: ParseObject, senderName: string, agent: ParseObject, body: string): Promise<ParseObject> {

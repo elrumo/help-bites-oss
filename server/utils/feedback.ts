@@ -34,6 +34,7 @@ import {
 import { anonymousWriteGate, revokeEndUserSessions } from './endUserSessions'
 import type { IdentityClaims } from './jwt'
 import type { OutgoingEmail } from './emailDelivery'
+import { emitDomainEventLater } from './domainEvents'
 
 type ParseQuery = InstanceType<ReturnType<typeof useParse>['Query']>
 
@@ -724,6 +725,8 @@ export async function createFeedbackPost(ctx: FeedbackContext, payload: unknown)
     await subscribe(ctx.project, row, [ctx.actor.externalId])
   }
   await publishPost(ctx, row, 'feedback.post.created')
+  const authorId = pointerId(row.get('endUser'))
+  emitDomainEventLater(ctx.project, 'feedback.post.created', { postId: row.id, number: row.get('number') ?? null, ...(authorId ? { contact: { id: authorId, externalId: String(row.get('authorExternalId') || '') } } : {}) })
   return row
 }
 
@@ -767,6 +770,7 @@ export async function updateFeedbackPost(ctx: FeedbackContext, row: ParseObject,
   }
   await row.save(null, MASTER)
   await publishPost(ctx, row)
+  if (transition.changed) emitDomainEventLater(ctx.project, 'feedback.post.status_changed', { postId: row.id, number: row.get('number') ?? null, from, to })
   if (transition.changed) void notifyFeedbackStatusChange(ctx, row, to)
   // A post that has just shipped may get a draft changelog entry (when the project asks for it).
   if (transition.changed && feedbackStatusCategory(ctx.config, from) !== 'done' && feedbackStatusCategory(ctx.config, to) === 'done') {
@@ -838,6 +842,7 @@ export async function voteOnFeedbackPost(ctx: FeedbackContext, row: ParseObject,
   await recountVotes(row)
   await row.save(null, MASTER)
   await publishPost(ctx, row)
+  if (voted) emitDomainEventLater(ctx.project, 'feedback.post.voted', { postId: row.id, number: row.get('number') ?? null, voterExternalId: ctx.actor.externalId })
   return voted
 }
 

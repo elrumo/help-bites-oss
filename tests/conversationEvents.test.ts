@@ -56,7 +56,7 @@ beforeEach(() => {
 describe('conversation.status_changed', () => {
   test('setStatus publishes it once, with where the status went', async () => {
     await conversations.setStatus(open(), 'done')
-    expect(emitted).toEqual([{ project, type: 'conversation.status_changed', data: { conversationId: 'c1', from: 'open', to: 'done', statusCategory: 'resolved' } }])
+    expect(emitted).toEqual([{ project, type: 'conversation.status_changed', data: { conversationId: 'c1', from: 'open', to: 'done', statusCategory: 'resolved', contact: { id: 'u1' } } }])
   })
 
   test('setting the status it already has publishes nothing', async () => {
@@ -66,7 +66,7 @@ describe('conversation.status_changed', () => {
 
   test('a triage edit that moves the status publishes it; one that does not, does not', async () => {
     await conversations.updateConversation(open(), { status: 'done' }, agent as never)
-    expect(emitted.map(e => e.data)).toEqual([{ conversationId: 'c1', from: 'open', to: 'done', statusCategory: 'resolved' }])
+    expect(emitted.map(e => e.data)).toEqual([{ conversationId: 'c1', from: 'open', to: 'done', statusCategory: 'resolved', contact: { id: 'u1' } }])
     emitted = []
     await conversations.updateConversation(open(), { priority: 'high' }, agent as never)
     expect(emitted).toEqual([])

@@ -25,11 +25,11 @@ timeout can arrive twice) and ignore old `createdAt`s.
 | `contact.created` | `{ contact: { id, externalId, email } }` |
 | `contact.subscription_changed` | `{ contact: { id, externalId, email }, from, to, unsubscribedTopics, topics?: { added, removed } }` |
 | `conversation.created` | `{ conversationId, contact: { id, externalId, email }, type }` |
-| `conversation.status_changed` | `{ conversationId, from, to, statusCategory }` |
+| `conversation.status_changed` | `{ conversationId, from, to, statusCategory, contact: { id } }` |
 | `conversation.feedback_linked` | `{ conversationId, postId, linked, created }` (`linked` is false when an operator unlinks it; `created` when the post was filed from the conversation) |
-| `feedback.post.created` | `{ postId, number }` |
+| `feedback.post.created` | `{ postId, number, contact?: { id, externalId } }` (the author, when a person wrote it) |
 | `feedback.post.status_changed` | `{ postId, number, from, to }` |
-| `feedback.post.voted` | `{ postId, number }` |
+| `feedback.post.voted` | `{ postId, number, voterExternalId }` (only when a vote is added) |
 | `board.item.created` | `{ itemId, number }` |
 | `board.item.status_changed` | `{ itemId, number, from, to }` |
 | `changelog.entry.published` | `{ entryId, number, releaseId, feedbackPostIds, boardItemIds, conversationIds }` |
