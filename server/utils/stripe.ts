@@ -7,7 +7,7 @@ import {
 import { contactQuery, upsertContacts } from './contacts'
 import { billingContactId, contactIdsForBilling } from './contactJoins'
 import { MASTER, iso, useParse, type ParseObject } from './parse'
-import { runExclusive } from './redis'
+import { runExclusive, useRedis } from './redis'
 import { readCredential, storeCredential } from './secrets'
 import { workspaceIsActive } from './tenancy'
 import { projectWorkspaceId } from './usage'
@@ -17,7 +17,9 @@ import { projectWorkspaceId } from './usage'
 // project — and the worker copies the account's charges and subscriptions into
 // StripePayment / StripeSubscription rows. Those feed the Revenue tab, the
 // contact's billing section, and the `stripe_*` attributes written onto each
-// customer's contact (shared/stripe.ts). HelpBites never writes to Stripe.
+// customer's contact (shared/stripe.ts). Nothing here writes to Stripe; the one
+// write HelpBites ever makes is a pricing table's Checkout Session
+// (server/utils/pricing.ts), and only with a key the operator gave that right.
 //
 // A run walks charges newest first from the cursor, then re-reads every
 // subscription, then refreshes the contacts of the customers it touched.
@@ -33,7 +35,7 @@ const DAY = 86_400
 type Cursor = { since: number, after?: string, startedAt?: number }
 type Customers = Map<string, { email: string, name: string }>
 
-async function stripeGet(key: string, path: string, params: Record<string, string> = {}): Promise<any> {
+export async function stripeGet(key: string, path: string, params: Record<string, string> = {}): Promise<any> {
   const res = await fetch(`${API}${path}?${new URLSearchParams(params)}`, { headers: { authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(30_000) })
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw createError({ statusCode: 502, statusMessage: `Stripe answered ${res.status}: ${String(body?.error?.message || res.statusText).slice(0, 200)}` })
@@ -51,6 +53,16 @@ async function* pages(key: string, path: string, params: Record<string, string> 
   }
 }
 
+/** Every item of a Stripe list, up to `max`. */
+export async function stripeListAll(key: string, path: string, params: Record<string, string> = {}, max = 1000): Promise<any[]> {
+  const out: any[] = []
+  for await (const page of pages(key, path, params)) {
+    out.push(...page)
+    if (out.length >= max) break
+  }
+  return out.slice(0, max)
+}
+
 function customerOf(raw: unknown): { id: string, email: string, name: string } {
   if (typeof raw === 'string') return { id: raw, email: '', name: '' }
   const c = (raw || {}) as { id?: string, email?: string, name?: string }
@@ -58,6 +70,9 @@ function customerOf(raw: unknown): { id: string, email: string, name: string } {
 }
 
 // ---- connecting ----------------------------------------------------------------
+
+/** Where pricing tables keep the project's products and prices (server/utils/pricing.ts); a new key starts it over. */
+export const pricingCatalogKey = (projectId: string) => `sb:pricing:catalog:${projectId}`
 
 export function serializeStripeAccount(row: ParseObject | null): StripeConnection {
   const stats = (row?.get('stats') || {}) as Partial<StripeConnection['stats']>
@@ -106,6 +121,7 @@ export async function connectStripe(project: ParseObject, apiKey: unknown): Prom
   row.set('nextRunAt', new Date())
   if (!replaced) { row.set('cursor', { since: 0 }); row.set('stats', {}) }
   await row.save(null, MASTER)
+  await useRedis().del(pricingCatalogKey(project.id || '')).catch(() => {})
   return row
 }
 
@@ -113,6 +129,7 @@ export async function connectStripe(project: ParseObject, apiKey: unknown): Prom
 export async function disconnectStripe(project: ParseObject): Promise<void> {
   const Parse = useParse()
   await (await findStripeAccount(project))?.destroy(MASTER)
+  await useRedis().del(pricingCatalogKey(project.id || '')).catch(() => {})
   for (const className of ['StripePayment', 'StripeSubscription']) {
     for (;;) {
       const rows = await new Parse.Query(className).equalTo('projectId', project.id).limit(1000).find(MASTER)

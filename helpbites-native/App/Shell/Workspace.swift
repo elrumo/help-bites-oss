@@ -34,6 +34,8 @@ enum AppRoute: Hashable {
   case onboardingFlow(String, String)
   /// One lead form (project id, form id).
   case leadForm(String, String)
+  /// One pricing table (project id, table id).
+  case pricingTable(String, String)
 }
 
 /// The tab bar's tabs (iPhone), which become the sidebar on iPad and Mac. The
@@ -45,7 +47,7 @@ enum AppTab: Hashable {
 
 /// A project's sections, nested under it in the sidebar like a Linear team's.
 enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
-  case overview, conversations, contacts, forms, revenue, knowledge, assistants, tickets, feedback, board, changelog, blog, onboarding, legal, brand, email, campaigns, flags, errors, dev, settings
+  case overview, conversations, contacts, forms, revenue, pricing, knowledge, assistants, tickets, feedback, board, changelog, blog, onboarding, legal, brand, email, campaigns, flags, errors, dev, settings
   var id: String { rawValue }
   var label: String {
     switch self {
@@ -54,6 +56,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .contacts: "Contacts"
     case .forms: "Forms"
     case .revenue: "Revenue"
+    case .pricing: "Pricing"
     case .knowledge: "Knowledge base"
     case .assistants: "Assistants"
     case .tickets: "Tickets"
@@ -86,6 +89,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .email: "envelope"
     case .campaigns: "megaphone"
     case .revenue: "dollarsign.circle"
+    case .pricing: "tag"
     case .changelog: "scroll"
     case .blog: "newspaper"
     case .onboarding: "rectangle.stack"
@@ -174,6 +178,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .leadForm(let id, _):
       if sidebar { tab = .section(id, .forms); return }
       go(.project(id, .forms)); projectsPath.append(route)
+    case .pricingTable(let id, _):
+      if sidebar { tab = .section(id, .pricing); return }
+      go(.project(id, .pricing)); projectsPath.append(route)
     }
     #endif
   }
@@ -192,6 +199,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
       macPath = [route]
     case .leadForm(let id, _):
       macSelection = .project(id, .forms)
+      macPath = [route]
+    case .pricingTable(let id, _):
+      macSelection = .project(id, .pricing)
       macPath = [route]
     default:
       macSelection = route

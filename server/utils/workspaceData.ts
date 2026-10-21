@@ -102,6 +102,8 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   OnboardingFlow: { scope: 'project' },
   OnboardingCompletion: { scope: 'project' },
   LeadForm: { scope: 'project' },
+  PricingTable: { scope: 'project' },
+  PricingStat: { scope: 'project' },
   // Its file goes with the project's `<projectId>/` prefix.
   LeadFile: { scope: 'project' },
   // Its file goes with the project's `<projectId>/` prefix.

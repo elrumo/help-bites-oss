@@ -9,7 +9,8 @@ export type McpParam = {
   type: McpParamType
   description: string
   enum?: string[]
-  items?: { type: 'string' }
+  /** An array's items: strings unless said otherwise. */
+  items?: { type: 'string' | 'object' }
   maximum?: number
   required?: boolean
   /** Where the value goes in the request. Default: the path when the route has `{name}`, else the query for GET and DELETE, else the body. */
@@ -406,6 +407,84 @@ export const MCP_TOOLS: readonly McpTool[] = [
       company: { type: 'object', description: 'Company profile: { name, legalName, address, email, phone, website, dpo }.' },
       hub: { type: 'object', description: 'Public hub: { enabled, title, tagline, sections, links, widgetHome }.' }
     }
+  },
+  {
+    name: 'list_pricing_tables', title: 'List pricing tables', readOnly: true, method: 'GET', path: '/v1/admin/pricing-tables',
+    description: 'A project\'s pricing tables (plan cards, paywalls, comparison tables) with their plans, status and anything to check before publishing, and whether Stripe is connected.',
+    params: { project: projectId }
+  },
+  {
+    name: 'get_pricing_table', title: 'Get a pricing table', readOnly: true, method: 'GET', path: '/v1/admin/pricing-tables/{id}',
+    description: 'One pricing table\'s working copy (plans with their Stripe links and written prices, features, words, look, options, translations, A/B test) and what is published.',
+    params: { id: id('pricing table') }
+  },
+  {
+    name: 'create_pricing_table', title: 'Create a pricing table', method: 'POST', path: '/v1/admin/pricing-tables',
+    description: 'Creates a draft pricing table with example plans that fit its template. Nothing shows on the site or in the app until it is published.',
+    params: {
+      project: projectId,
+      name: { type: 'string', required: true, description: 'Up to 80 characters.' },
+      key: { type: 'string', description: 'What sites and apps ask for it by (lowercase, digits, dashes). Default: from the name.' },
+      template: { type: 'string', enum: ['tiers', 'rows', 'paywall', 'matrix', 'spotlight'], description: 'Cards side by side (default), compact rows, a mobile paywall, a comparison table, or one wide plan.' }
+    }
+  },
+  {
+    name: 'update_pricing_table', title: 'Update a pricing table', method: 'PATCH', path: '/v1/admin/pricing-tables/{id}',
+    description: 'Edits the working copy; only the fields you pass change, and a list you pass replaces the old one, so read the table first and send whole plans and features. Prices from a linked Stripe price win over written ones. Publish to make it live.',
+    params: {
+      id: id('pricing table'),
+      name: { type: 'string', description: 'Up to 80 characters.' },
+      key: { type: 'string', description: 'Lowercase letters, digits and dashes.' },
+      template: { type: 'string', enum: ['tiers', 'rows', 'paywall', 'matrix', 'spotlight'], description: 'The layout.' },
+      plans: { type: 'array', items: { type: 'object' }, description: 'Up to 6 plans: id, key, name, description, badge, highlighted, stripeProduct, prices ({ week, month, year, once }: stripePrice, amount, amounts by currency, appStoreProduct), customPrice, priceNote, trialDays, action ({ type: checkout, payment_link, url or none, label, url }) and features (row id to true, false or a value such as "10").' },
+      features: { type: 'array', items: { type: 'object' }, description: 'Up to 40 rows: id, kind (feature or heading), text, hint.' },
+      content: { type: 'object', description: 'title, subtitle, footnote, weeklyLabel, monthlyLabel, yearlyLabel, savingsLabel, termsUrl, privacyUrl.' },
+      style: { type: 'object', description: 'accent, background, text (hex), radius, font, density, surface, highlight.' },
+      options: { type: 'object', description: 'defaultInterval, yearlyAs, cumulative, showExcluded, compare, currency.' },
+      checkout: { type: 'object', description: 'successUrl, cancelUrl, allowPromotionCodes.' },
+      translations: { type: 'object', description: 'By language tag, each a map of text keys (as `GET` lists them) to words; null removes a language.' },
+      experiment: { type: 'object', description: 'The A/B test: weight (0 to 100) and variants ([{ table: key, weight }]). Not while it runs.' }
+    }
+  },
+  {
+    name: 'publish_pricing_table', title: 'Publish a pricing table', method: 'POST', path: '/v1/admin/pricing-tables/{id}/publish',
+    description: 'Makes the working copy live on every site and app that shows the table, with its Stripe prices as they are now. Confirm with the user first.',
+    params: { id: id('pricing table') }
+  },
+  {
+    name: 'get_stripe_catalog', title: 'Stripe products and prices', readOnly: true, method: 'GET', path: '/v1/admin/stripe/catalog',
+    description: 'The project\'s active Stripe products, prices (in the smallest currency unit) and payment links, to link plans to. `connected: false` without Stripe.',
+    params: { project: projectId, refresh: { type: 'string', enum: ['1'], description: 'Ask Stripe now instead of the five-minute copy.' } }
+  },
+  {
+    name: 'get_pricing_stats', title: 'Pricing table numbers', readOnly: true, method: 'GET', path: '/v1/admin/pricing-tables/{id}/stats',
+    description: 'Views, visitors, clicks, checkouts, purchases and revenue (from Stripe) of a pricing table, by day and by plan, and its A/B test result with lift and confidence.',
+    params: { id: id('pricing table'), days: { type: 'integer', maximum: 365, description: 'How many days back (default 30).' } }
+  },
+  {
+    name: 'suggest_pricing', title: 'Suggest pricing with AI', method: 'POST', path: '/v1/admin/pricing-tables/{id}/suggest',
+    description: 'Proposes plan names, features and prices from the project\'s GitHub repos, Stripe, revenue and the table\'s numbers. Saves nothing: show the draft to the user, then apply it with update_pricing_table if they agree.',
+    params: {
+      id: id('pricing table'),
+      focus: { type: 'array', items: { type: 'string' }, description: 'Any of copy, features, prices (default all).' },
+      repos: { type: 'array', items: { type: 'string' }, description: 'Repo full names to read (default all, three at most).' },
+      notes: { type: 'string', description: 'What it should know, up to 1,000 characters.' }
+    }
+  },
+  {
+    name: 'add_pricing_variant', title: 'Add an A/B test variant', method: 'POST', path: '/v1/admin/pricing-tables/{id}/variants',
+    description: 'Copies the table into a new draft table and adds it to the table\'s A/B test. Edit and publish the copy, then start the test.',
+    params: { id: id('pricing table'), key: { type: 'string', description: 'The copy\'s key. Default: the table\'s key with -b, -c or -d.' } }
+  },
+  {
+    name: 'start_pricing_experiment', title: 'Start an A/B test', method: 'POST', path: '/v1/admin/pricing-tables/{id}/experiment/start',
+    description: 'Splits the table\'s visitors between it and its published variants by weight. Real visitors see it: confirm with the user first.',
+    params: { id: id('pricing table') }
+  },
+  {
+    name: 'stop_pricing_experiment', title: 'End an A/B test', method: 'POST', path: '/v1/admin/pricing-tables/{id}/experiment/stop',
+    description: 'Everyone sees the table again. With `adopt`, a variant\'s plans, words and look become the table\'s working copy, to publish.',
+    params: { id: id('pricing table'), adopt: { type: 'string', description: 'The key of the variant to keep.' } }
   }
 ]
 
@@ -472,7 +551,9 @@ function checkValue(param: McpParam, value: unknown): string {
       if (!Number.isInteger(value)) return 'must be a whole number'
       return param.maximum !== undefined && (value as number) > param.maximum ? `must be at most ${param.maximum}` : ''
     case 'boolean': return typeof value === 'boolean' ? '' : 'must be true or false'
-    case 'array': return Array.isArray(value) && value.every(item => typeof item === 'string') ? '' : 'must be a list of strings'
+    case 'array':
+      if (param.items?.type === 'object') return Array.isArray(value) && value.every(item => item && typeof item === 'object' && !Array.isArray(item)) ? '' : 'must be a list of objects'
+      return Array.isArray(value) && value.every(item => typeof item === 'string') ? '' : 'must be a list of strings'
     default: return value && typeof value === 'object' && !Array.isArray(value) ? '' : 'must be an object'
   }
 }

@@ -88,6 +88,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'ONBOARDING.md'
   },
   {
+    slug: 'pricing',
+    title: 'Pricing tables',
+    description: 'Plan cards, paywalls and comparison tables for your site, your Swift app and your onboarding, with prices and checkout from Stripe, currencies, translations, A/B tests and AI suggestions.',
+    group: 'Guides',
+    file: 'PRICING.md'
+  },
+  {
     slug: 'forms',
     title: 'Lead forms',
     description: 'Waitlists, "notify me" boxes and interest forms on your site, in your app or on a hosted page: every sign-up becomes a contact, with double opt-in, a welcome email and a sequence.',

@@ -11,6 +11,7 @@ export const projectSections: ProjectSection[] = [
   { path: 'contacts', label: 'Contacts', icon: 'i-lucide-users' },
   { path: 'forms', label: 'Forms', icon: 'i-lucide-clipboard-list' },
   { path: 'revenue', label: 'Revenue', icon: 'i-lucide-circle-dollar-sign' },
+  { path: 'pricing', label: 'Pricing', icon: 'i-lucide-tags' },
   { path: 'knowledge', label: 'Knowledge base', icon: 'i-lucide-book-open' },
   { path: 'assistants', label: 'Assistants', icon: 'i-lucide-sparkles' },
   { path: 'types', label: 'Tickets', icon: 'i-lucide-ticket' },

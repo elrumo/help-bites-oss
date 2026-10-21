@@ -44,10 +44,13 @@
  *   <script src="…/onboarding.js" data-project="pk_…" data-token="eyJ…" defer></script>
  *   HelpBitesOnboarding.push(['init', { token: () => fetch('/api/support/token').then(r => r.json()).then(r => r.token) }])
  *
+ * A step with a pricing table (a paywall at the end of a tour) draws it with
+ * pricing.js, which it loads from the same HelpBites when it gets there.
+ *
  * Restyle it from your CSS with variables on .help-bites-onboarding
  * (--hb-onboarding-accent, -on-accent, -bg, -text, -muted, -radius, -font,
  * -backdrop, -width) or parts (::part(card), overlay, progress, skip, media,
- * image, title, body, actions, back, next). Every outcome is also a
+ * image, title, body, pricing, actions, back, next). Every outcome is also a
  * `helpbites:onboarding` event on window. The data is
  * GET /v1/onboarding/{pk}/{key} if you would rather draw your own.
  */
@@ -105,6 +108,16 @@
   function load(key) { try { return JSON.parse(localStorage.getItem(key) || 'null') } catch (e) { return null } }
   /** The language to ask for: your choice, else the page's <html lang>, else the browser's. */
   function wanted() { return options.locale || document.documentElement.lang || (navigator.languages && navigator.languages[0]) || navigator.language || '' }
+  /** The id pricing.js keeps for this browser: a pricing table in a step is then the same A/B test variant it shows elsewhere. */
+  function visitor() {
+    try {
+      var id = localStorage.getItem('hb-visitor')
+      if (!id) { id = 'v_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem('hb-visitor', id) }
+      return id
+    } catch (e) {
+      return ''
+    }
+  }
   function cacheKey() { return 'hb-onboarding:flow:' + origin + ':' + options.project + ':' + options.flow + ':' + wanted() }
   function seenKey() { return 'hb-onboarding:seen:' + options.project + ':' + options.flow }
 
@@ -150,7 +163,8 @@
   }
 
   function refresh(done) {
-    var url = origin + '/v1/onboarding/' + encodeURIComponent(options.project) + '/' + encodeURIComponent(options.flow) + (wanted() ? '?locale=' + encodeURIComponent(wanted()) : '')
+    var query = [wanted() ? 'locale=' + encodeURIComponent(wanted()) : '', visitor() ? 'visitor=' + encodeURIComponent(visitor()) : ''].filter(Boolean).join('&')
+    var url = origin + '/v1/onboarding/' + encodeURIComponent(options.project) + '/' + encodeURIComponent(options.flow) + (query ? '?' + query : '')
     var controller = window.AbortController ? new AbortController() : null
     var timer = setTimeout(function () { if (controller) controller.abort() }, TIMEOUT_MS)
     fetch(url, { signal: controller && controller.signal, credentials: 'omit' })
@@ -224,6 +238,7 @@
       + '.text.solo{padding-top:36px}'
       + '.title{margin:0;font-size:22px;line-height:1.25;font-weight:650;letter-spacing:-.015em;text-wrap:balance}'
       + '.body{margin:10px 0 0;color:var(--_muted);white-space:pre-line;text-wrap:pretty}'
+      + '.pricing{padding:18px 24px 0;--hb-pricing-accent:var(--_accent);--hb-pricing-font:var(--_font)}'
       + '.actions{display:flex;gap:10px;padding:24px}'
       + '.btn{height:46px;padding:0 18px;border:0;border-radius:max(6px,calc(var(--_r) * .6));font:inherit;font-weight:600;cursor:pointer;transition:transform .12s ease,filter .15s}'
       + '.btn:active{transform:scale(.98)}'
@@ -233,6 +248,20 @@
       + 'button:focus-visible{outline:2px solid var(--_accent);outline-offset:2px}'
       + '@media (max-width:520px){.overlay{align-items:flex-end;padding:8px 8px calc(8px + env(safe-area-inset-bottom))}}'
       + (still ? '*{transition:none!important}' : '')
+  }
+
+  /** pricing.js, loaded once from the same HelpBites; commands pushed before it arrives run when it does. */
+  function pricing(command) {
+    var queue = window.HelpBitesPricing = window.HelpBitesPricing || []
+    if (!queue.__helpBites && !document.querySelector('script[data-hb-pricing]')) {
+      var tag = document.createElement('script')
+      tag.src = origin + '/pricing.js'
+      tag.async = true
+      tag.setAttribute('data-hb-pricing', '')
+      tag.setAttribute('data-host', origin)
+      document.head.appendChild(tag)
+    }
+    queue.push(command)
   }
 
   function el(tag, cls, part) {
@@ -305,6 +334,12 @@
         if (s.title) { var h = el('h2', 'title', 'title'); h.id = 'hb-onb-title'; h.textContent = s.title; text.appendChild(h) }
         if (s.body) { var p = el('p', 'body', 'body'); p.textContent = s.body; text.appendChild(p) }
         step.appendChild(text)
+        if (s.pricing) {
+          // The step's own title says what it is; the table brings its plans, toggle and small print.
+          var plans = el('div', 'pricing', 'pricing')
+          step.appendChild(plans)
+          pricing([how.preview ? 'preview' : 'draw', { table: s.pricing, target: plans, compact: true, theme: how.theme || options.theme, show: 'toggle,features,footnote', project: options.project, host: origin, onSelect: function () { if (!how.preview) chose() } }])
+        }
         var actions = el('div', 'actions', 'actions')
         if (index > 0) {
           var back = el('button', 'btn back', 'back')
@@ -313,7 +348,8 @@
           back.onclick = function () { go(-1) }
           actions.appendChild(back)
         }
-        var primary = el('button', 'btn next', 'next')
+        // Beside a pricing table its own button is the quiet way on; the plan's button is the loud one.
+        var primary = el('button', 'btn ' + (s.pricing ? 'back' : 'next'), 'next')
         primary.type = 'button'
         primary.textContent = s.buttonLabel || (last ? labels.done : labels.next)
         primary.onclick = function () { last ? finish('complete') : go(1) }
@@ -348,6 +384,13 @@
       } else host.remove()
       if (!how.preview && returnFocus && returnFocus.focus) try { returnFocus.focus({ preventScroll: true }) } catch (e) {}
       if (current && current.host === host) current = null
+    }
+
+    // Picking a plan finishes the tour: checkout takes it from there.
+    function chose() {
+      store(seenKey(), { version: flow.version || 0, result: 'complete', at: Date.now() })
+      emit('complete', flow, index)
+      if (options.onComplete) try { options.onComplete(flow) } catch (e) {}
     }
 
     function finish(result) {

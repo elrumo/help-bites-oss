@@ -143,3 +143,15 @@ test('the demo answers the customer panel and the reply picker, so the inbox pag
   expect((await demoApi<any>('/admin/saved-replies', { query: { project: 'acme' } })).replies.length).toBe(savedReplies.length)
   await expect(demoApi(`/admin/conversations/${conversations[0].id}/draft`, { method: 'POST' })).rejects.toMatchObject({ statusCode: 403 })
 })
+
+test('the demo shows a published pricing table with written prices', async () => {
+  const { tables } = await demoApi<any>('/admin/pricing-tables', { query: { project: 'acme' } })
+  expect(tables).toHaveLength(1)
+  const { table } = await demoApi<any>(`/admin/pricing-tables/${tables[0].id}`)
+  expect(table.published.plans.map((p: any) => p.key)).toEqual(['starter', 'pro', 'team'])
+  expect(table.published.plans[1].prices.year.amount).toBe(120)
+  expect((await demoApi<any>('/admin/stripe/catalog', { query: { project: 'acme' } })).connected).toBe(false)
+  const stats = await demoApi<any>(`/admin/pricing-tables/${tables[0].id}/stats`, { query: { days: 30 } })
+  expect(stats.total.visitors).toBe(stats.days.reduce((sum: number, d: any) => sum + d.visitors, 0))
+  expect(stats.total.revenue.usd).toBeGreaterThan(0)
+})
