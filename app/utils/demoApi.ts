@@ -442,7 +442,7 @@ function boardItem(number: number, title: string, status: string, statusCategory
   boardItems.push({
     id: `item_demo${number}`, projectId: 'acme', number, title, description: '', publicDescription: isPublic ? title : '', status, statusCategory,
     rank: boardItems.length + 1, priority, assigneeId, labels, targetDate: null, public: isPublic,
-    feedbackPostIds: posts.map(post => post.id), conversationIds,
+    feedbackPostIds: posts.map(post => post.id), conversationIds, errorRefs: [],
     voteCount: posts.reduce((sum, post) => sum + post.voteCount, 0),
     posts: posts.map(post => ({ ...postRef(post), voteCount: post.voteCount, hidden: false })),
     conversations: conversationIds.map(id => ({ id, subject: id === 'conv_demo5' ? 'Export stuck' : 'Calendar shows tasks a day early', status: 'open', endUserName: id === 'conv_demo5' ? 'Maya Chen' : 'Priya Natarajan' })),
@@ -646,6 +646,17 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['POST', /^\/admin\/errors\/([^/]+)\/analyze$/, ({ body }) => body.prompt
     ? { prompt: 'Exception: TypeError: Cannot read properties of undefined', files: ['acme/web/src/checkout.ts'] }
     : { text: '**Likely cause**\n\n`cart.items` is undefined when the cart is empty.\n\n**Suggested fix**\n\n```diff\n- const total = cart.items.reduce(...)\n+ const total = (cart.items ?? []).reduce(...)\n```\n\n**How to verify**\n\nSubmit an empty cart.\n\n**Impact**\n\nCheckout fails for empty carts.', files: ['acme/web/src/checkout.ts'], cached: false }],
+  // Filing an error on the board: one item per issue, as the server does.
+  ['GET', /^\/admin\/errors\/([^/]+)\/board$/, ({ params }) => ({ item: boardItems.find(item => item.errorRefs.some(ref => ref.issueId === params[0])) || null, boardEnabled: true })],
+  ['POST', /^\/admin\/errors\/([^/]+)\/board$/, ({ params }) => {
+    const issue = errorIssues.find(item => item.id === params[0]) || fail(404, 'Error not found')
+    const existing = boardItems.find(item => item.errorRefs.some(ref => ref.issueId === issue.id))
+    if (existing) return { item: existing, created: false }
+    boardItem(boardItems.length + 1, issue.title, 'backlog', 'open', [], '', '', [], [], false, 0)
+    const item = boardItems[boardItems.length - 1]!
+    item.errorRefs = [{ provider: 'glitchtip', issueId: issue.id, linkId: 'main', title: issue.title, url: issue.url }]
+    return { item, created: true }
+  }],
   ['PUT', /^\/admin\/errors\/([^/]+)$/, ({ params, body }) => {
     const issue = errorIssues.find(item => item.id === params[0]) || fail(404, 'Error not found')
     issue.status = body.status === 'open' ? 'unresolved' : body.status === 'closed' ? 'ignored' : 'resolved'
@@ -908,6 +919,9 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/admin\/blog\/posts$/, ({ query }) => { find(projects, query.project, 'Project'); return { posts: blogPosts.filter(post => post.projectId === query.project) } }],
   ['GET', /^\/admin\/blog\/posts\/([^/]+)$/, ({ params }) => ({ post: find(blogPosts, params[0], 'Post') })],
   ['GET', /^\/admin\/blog\/comments$/, ({ query }) => { find(projects, query.project, 'Project'); return { comments: [], total: 0, hasMore: false } }],
+  // Nothing in the demo answers a conversation or mentions an item from GitHub.
+  ['GET', /^\/admin\/changelog\/entries\/([^/]+)\/linked-conversations$/, ({ params }) => ({ count: 0, conversations: [], defaultBody: `Good news: “${find(changelogEntries, params[0], 'Entry').title}” has just shipped.` })],
+  ['GET', /^\/admin\/github-refs$/, () => ({ refs: [] })],
   ['GET', /^\/admin\/changelog\/releases$/, ({ query }) => { find(projects, query.project, 'Project'); return { releases: changelogReleases.filter(release => release.projectId === query.project) } }],
   ['GET', /^\/feedback\/roadmap$/, ({ query }) => {
     const { board } = find(projects, query.project, 'Project')

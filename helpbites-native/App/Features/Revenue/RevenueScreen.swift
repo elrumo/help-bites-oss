@@ -116,7 +116,7 @@ struct RevenueScreen: View {
     }
 
     if let report {
-      RevenueReportView(report: report)
+      RevenueReportView(projectId: projectId, report: report)
     } else {
       EmptyState(systemImage: "hourglass", title: "Waiting for the first sync", message: "Payments show up here as soon as the first stretch has been read.")
     }
@@ -175,11 +175,16 @@ struct RevenueScreen: View {
   }
 }
 
+private struct OpenContact: Identifiable { let id: String }
+
 /// The numbers: four tiles, revenue and MRR by month, plans, top customers, recent payments.
 private struct RevenueReportView: View {
+  let projectId: String
   let report: RevenueReport
   /// The month picked by touching the chart; the readout shows the latest one otherwise.
   @State private var selected: String?
+  /// The customer being looked at: a row that is also a contact opens them.
+  @State private var openContact: OpenContact?
 
   private func money(_ amount: Double) -> String { Money.format(amount, report.currency) }
   private var shown: RevenueReport.Month? { report.months.first { $0.id == selected } ?? report.months.last }
@@ -267,11 +272,12 @@ private struct RevenueReportView: View {
       } else {
         Card {
           ForEach(report.recent) { payment in
-            CardRow(divider: payment.id != report.recent.last?.id) { PaymentRow(payment: payment, showCustomer: true) }
+            CardRow(divider: payment.id != report.recent.last?.id) { PaymentRow(payment: payment, showCustomer: true) { openContact = OpenContact(id: $0) } }
           }
         }
       }
     }
+    .sheet(item: $openContact) { ContactSheetByID(projectId: projectId, contactId: $0.id) }
 
     if !report.otherCurrencies.isEmpty {
       Text("Totals are in \(report.currency.uppercased()). Not included: \(report.otherCurrencies.map { Money.format($0.net, $0.currency) }.joined(separator: ", ")).").font(.lnCaption).foregroundStyle(Theme.textMuted)
@@ -325,7 +331,10 @@ private struct RevenueReportView: View {
           ForEach(report.topCustomers) { customer in
             CardRow(divider: customer.id != report.topCustomers.last?.id) {
               HStack(spacing: 10) {
-                Text(customer.email.isEmpty ? customer.customerId : customer.email).font(.lnCallout).foregroundStyle(Theme.text).lineLimit(1)
+                let who = Text(customer.email.isEmpty ? customer.customerId : customer.email).font(.lnCallout).foregroundStyle(Theme.text).lineLimit(1)
+                if let contactId = customer.contactId, !contactId.isEmpty {
+                  Button { openContact = OpenContact(id: contactId) } label: { who.underline() }.buttonStyle(.plain).accessibilityHint("Opens this person")
+                } else { who }
                 Spacer(minLength: 8)
                 Text("\(customer.payments) payment\(customer.payments == 1 ? "" : "s")").font(.lnCaption).foregroundStyle(Theme.textMuted)
                 Text(money(customer.net)).font(.lnCallout).monospacedDigit().foregroundStyle(Theme.text)
@@ -345,6 +354,8 @@ struct PaymentRow: View {
   let payment: StripePayment
   var showCustomer = false
   @Environment(\.openURL) private var openURL
+  /// With a customer shown, tapping their name opens the person (their contact id) when they are one.
+  var onOpenContact: ((String) -> Void)? = nil
 
   private var title: String {
     showCustomer ? (payment.email.isEmpty ? (payment.customerId.isEmpty ? "Guest" : payment.customerId) : payment.email) : (payment.description.isEmpty ? "Payment" : payment.description)
@@ -352,8 +363,11 @@ struct PaymentRow: View {
 
   var body: some View {
     HStack(spacing: 10) {
-      (Text(title) + Text(showCustomer && !payment.description.isEmpty ? " · \(payment.description)" : "").foregroundStyle(Theme.textMuted))
+      let label = (Text(title) + Text(showCustomer && !payment.description.isEmpty ? " · \(payment.description)" : "").foregroundStyle(Theme.textMuted))
         .font(.lnCallout).foregroundStyle(Theme.text).lineLimit(1)
+      if showCustomer, let contactId = payment.contactId, !contactId.isEmpty, let onOpenContact {
+        Button { onOpenContact(contactId) } label: { label.underline() }.buttonStyle(.plain).accessibilityHint("Opens this person")
+      } else { label }
       Spacer(minLength: 8)
       if payment.status != "succeeded" { Tag(text: payment.status, tint: Theme.error) }
       else if payment.refunded > 0 { Tag(text: payment.refunded >= payment.amount ? "Refunded" : "Part refunded") }

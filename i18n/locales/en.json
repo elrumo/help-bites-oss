@@ -440,7 +440,9 @@
     "untitled": "Untitled",
     "setUpBoard": "Set up the project board",
     "addToExisting": "Add to existing…",
-    "unlinkItem": "Unlink #{number} {title}"
+    "unlinkItem": "Unlink #{number} {title}",
+    "filedFromErrors": "Filed from errors",
+    "openInTracker": "Open in {provider}"
   },
   "changelog": {
     "publicCount": "{count} public",
@@ -587,7 +589,26 @@
     "tagImproved": "Improved",
     "tagFixed": "Fixed",
     "tagRemoved": "Removed",
-    "tagBreaking": "Breaking"
+    "tagBreaking": "Breaking",
+    "reply": {
+      "title": "Reply to linked conversations",
+      "description": "Tell the people this entry answers. Nothing is sent until you press send.",
+      "message": "Your message",
+      "conversations": "Conversations",
+      "chosen": "{chosen} of {total} selected",
+      "all": "Select all",
+      "none": "Select none",
+      "sent": "Sent",
+      "sentEmailed": "Sent and emailed",
+      "failed": "Failed",
+      "email": "Email them too",
+      "emailDescription": "People with an email address also get the reply by email, as with any reply from the inbox.",
+      "summary": "{sent} sent, {failed} failed.",
+      "send": "Send to {count} conversation | Send to {count} conversations",
+      "error": "Could not send the replies.",
+      "hint": "This entry answers {count} conversation. You can tell them it shipped. | This entry answers {count} conversations. You can tell them it shipped.",
+      "button": "Reply to {count} linked conversation | Reply to {count} linked conversations"
+    }
   },
   "blog": {
     "posts": "Posts",
@@ -4722,6 +4743,11 @@
       "connectName": "Connect {name}",
       "loadFailed": "Could not load error tracking servers",
       "connectFailed": "Could not connect error tracking"
+    },
+    "board": {
+      "file": "File on board",
+      "onBoard": "On the board: #{number} {title}",
+      "failed": "Could not file this error on the board."
     }
   },
   "translations": {
@@ -4808,5 +4834,12 @@
     "loadFailed": "Could not load webhook endpoints",
     "saveFailed": "Could not save the endpoint",
     "pickEvents": "Pick at least one event, or choose Everything"
+  },
+  "github": {
+    "linkedWork": "Commits and pull requests",
+    "pullRequest": "Pull request",
+    "commit": "Commit",
+    "closes": "closes",
+    "closesTitle": "A closing keyword (like “fixes #12”) came with it"
   }
 }
