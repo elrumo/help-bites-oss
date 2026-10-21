@@ -517,6 +517,12 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Four ways in.** The project secret (server only), the public key (browser
   reads), an identity token (one user), and an admin API key (operators and tools).
   [CONNECTING.md](CONNECTING.md)
+- **Events and webhook endpoints.** Every change in a project (a conversation starts,
+  a post is voted on, a changelog entry goes public, a pull request merges) is a domain
+  event. Webhook endpoints receive the ones they filter for, signed per endpoint and
+  retried; a sequence can start from any of them, and four recipes (welcome, after
+  onboarding, thank-you for feedback, check-in after support) install as drafts.
+  [EVENTS.md](EVENTS.md)
 - **AI assistants (MCP).** An MCP server at `/mcp` lets Claude, ChatGPT, Cursor or
   any MCP client work in a workspace as the operator who connected it: read and reply
   in the inbox, add notes, triage the feedback board, move board items, write and

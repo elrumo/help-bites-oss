@@ -518,6 +518,36 @@
       "api": { "prefixes": ["/v1/admin/usage"], "docs": "docs/EDITIONS.md" },
       "embed": null,
       "landing": { "listed": false, "key": null }
+    },
+    {
+      "id": "domain-events",
+      "name": "Events and webhook endpoints",
+      "category": "platform",
+      "summary": "Every change in a project is a domain event on one bus. Webhook endpoints (each with its own signing secret and an event filter such as feedback.* or changelog.entry.published) receive them, signed and retried; sequences and in-process handlers listen on the same bus.",
+      "editions": ["community", "cloud"],
+      "plan": "pro",
+      "entitlement": "eventWebhooks",
+      "status": "stable",
+      "web": { "panel": ["app/components/settings/WebhookEndpoints.vue", "app/pages/projects/[id]/dev.vue"] },
+      "native": { "folders": ["helpbites-native/App/Features/Projects"], "parity": "tests/webhookNativeParity.test.ts" },
+      "api": { "prefixes": ["/v1/admin/projects/:id/webhooks"], "docs": "docs/EVENTS.md" },
+      "embed": null,
+      "landing": { "listed": false, "key": null }
+    },
+    {
+      "id": "automation-recipes",
+      "name": "Automation recipes",
+      "category": "marketing",
+      "summary": "Ready-made sequences started by an event (a sign-up, finishing onboarding, a feedback post, a resolved conversation): installed as a draft with the emails written, then edited and activated. Any sequence can wait for any domain event.",
+      "editions": ["community", "cloud"],
+      "plan": "pro",
+      "entitlement": "sequences",
+      "status": "stable",
+      "web": { "panel": ["app/components/campaigns/SequenceList.vue"] },
+      "native": { "folders": ["helpbites-native/App/Features/Campaigns"] },
+      "api": { "prefixes": ["/v1/automations"], "docs": "docs/MARKETING.md" },
+      "embed": null,
+      "landing": { "listed": false, "key": null }
     }
   ],
   "notBuilt": [

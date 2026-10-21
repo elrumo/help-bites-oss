@@ -5,6 +5,16 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- Events and webhook endpoints (`docs/EVENTS.md`). Everything that happens in a project is published as a domain event; the
+  project's original single event webhook keeps its four events, and `WebhookEndpoint` rows (up to 10 a project, each with its
+  own secret and an event filter) receive any of them: `/v1/admin/projects/{id}/webhooks`. A sequence can now start from any
+  event (`{ "type": "event", "event": "onboarding.completed" }`), and four ready-made recipes install as draft sequences
+  (`/v1/automations/recipes`). `contact.created` is not published per row for imports, database syncs and Stripe. Schema
+  (needs `schema:apply`; the container does it on boot): new class `WebhookEndpoint`, new field `WebhookDelivery.endpoint`.
+- `GET /v1/contacts/{id}/activity`: one person's conversations, posts, votes, emails, sequences, payments and onboarding in one
+  list. Contacts get a `language` (also set by the identity token's new `locale` claim); segments get the fields Stripe plan,
+  Language, Has an open conversation, Voted on a post, Has errors and Finished onboarding. New: `EndUser.language`, class
+  `OnboardingCompletion` (`POST /v1/onboarding/{pk}/{key}/complete`). The MCP server gains 22 tools.
 - The project's look is read one way everywhere (the Brand kit first, then the older Settings accent and logos): the
   widget, boards, forms, onboarding, legal and blog pages, campaign mail and brand page all agree. **The default accent is
   now `#4f46e5` everywhere** (forms and onboarding used `#5e6ad2` when a project had no colour); a project that never set a

@@ -106,6 +106,28 @@ a key's project limit apply exactly as they do in the panel and the native app.
 | `update_changelog_entry` | Edit an entry, or publish a draft. |
 | `list_errors` | Issues from the connected error tracker. |
 | `get_error` | One issue with its latest event and stack trace. |
+| `list_contacts` | A project's people: filter by segment, tag, subscription, billing or search. |
+| `get_contact` | One person, with their plan, MRR, language and tags. |
+| `get_contact_activity` | Everything one person has done in one list: conversations, posts, votes, emails, payments, onboarding. |
+| `update_contact` | Name, language, tags and attributes. |
+| `list_segments` | Saved segments. |
+| `list_sequences` | Automated email sequences. |
+| `enroll_in_sequence` | Put people (or a whole segment) on an active sequence. |
+| `list_automation_recipes` | Ready-made sequences started by an event. |
+| `install_automation_recipe` | Add a recipe as a draft sequence. |
+| `get_conversation_context` | Who the customer is: plan, MRR, past conversations, linked posts. |
+| `link_feedback_post` | Link a feedback post to a conversation, or file one for the customer. |
+| `draft_conversation_reply` | A draft reply from the project's assistant. Nothing is sent. |
+| `save_conversation_faq` | Save an answer from a conversation to the knowledge base. |
+| `list_saved_replies` | Reusable replies. |
+| `create_saved_reply` | Add one. |
+| `changelog_linked_conversations` | The conversations a changelog entry answers. |
+| `reply_to_changelog_conversations` | Tell all of them it shipped. |
+| `file_error_on_board` | Turn an error into a board item. |
+| `list_github_refs` | Commits and merged pull requests that mention an item as #12. |
+| `list_webhook_endpoints` | A project's webhook endpoints. |
+| `create_webhook_endpoint` | Add one, choosing the events. |
+| `update_project_settings` | The company profile and the public hub page. |
 
 Try: *"Which conversations are unread? Draft a reply to the one about the failed
 export, and show it to me before sending."*
