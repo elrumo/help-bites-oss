@@ -113,6 +113,10 @@ export type MessageEmailInput = {
   attachmentUrls?: string[]
   /** The "Powered by HelpBites" line under the footer, for mail to end users (poweredByFor). */
   poweredBy?: PoweredBy | null
+  /** Mail that is not a conversation reply, or not in English: the greeting, the line under the button ('' leaves it out) and why they get it. */
+  greeting?: string
+  note?: string
+  reason?: string
 }
 
 export function renderMessageEmail(input: MessageEmailInput): { subject: string, html: string, text: string } {
@@ -124,7 +128,9 @@ export function renderMessageEmail(input: MessageEmailInput): { subject: string,
   const substitutions: Record<string, string> = {
     preheader: escapeHtml(buildPreheader(input.body, senderName)),
     subject: escapeHtml(subject),
-    greeting: escapeHtml(resolveGreeting(input.recipientName)),
+    greeting: escapeHtml(input.greeting ?? resolveGreeting(input.recipientName)),
+    note: escapeHtml(input.note ?? `You can reply to this conversation from your ${appName} inbox.`),
+    reason: escapeHtml(input.reason ?? `You are receiving this because you have a ${appName} account.`),
     ctaBlock: renderCtaBlock(input.ctaUrl, input.ctaLabel, appName),
     appName: escapeHtml(appName),
     bodyHtml,
@@ -138,7 +144,7 @@ export function renderMessageEmail(input: MessageEmailInput): { subject: string,
     (match: string, token: string) => (token in substitutions ? substitutions[token]! : match)
   )
 
-  const text = `${resolveGreeting(input.recipientName)}\n\n${String(input.body ?? '').trim()}${
+  const text = `${input.greeting ?? resolveGreeting(input.recipientName)}\n\n${String(input.body ?? '').trim()}${
     (input.attachmentUrls || []).length ? `\n\n${(input.attachmentUrls || []).join('\n')}` : ''
   }${
     input.ctaUrl ? `\n\n${input.ctaLabel || `Open ${appName}`}: ${input.ctaUrl}` : ''

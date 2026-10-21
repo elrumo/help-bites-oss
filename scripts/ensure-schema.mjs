@@ -1075,10 +1075,34 @@ const SCHEMAS = {
       segment: { type: 'String' },
       sequence: { type: 'String' },
       welcomeTemplate: { type: 'String' },
-      confirmTemplate: { type: 'String' }
+      confirmTemplate: { type: 'String' },
+      // The language its words are written in (default en), and their translations:
+      // { <locale>: { content: { title, … }, fields: { <fieldId>: { label, placeholder, options } } } }.
+      locale: { type: 'String' },
+      translations: { type: 'Object' }
     },
     indexes: {
       project_key: { _p_project: 1, key: 1 }
+    }
+  },
+  // A file someone sent with a lead form, kept for the operator: in the bucket at
+  // `storageKey` (`<projectId>/forms/<formId>/<uuid>.<ext>`), never linked publicly, and
+  // downloaded through /v1/admin/lead-files/<id>. Erased with its contact.
+  LeadFile: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      form: { type: 'Pointer', targetClass: 'LeadForm' },
+      contact: { type: 'Pointer', targetClass: 'EndUser' },
+      // The key of the file field it was sent through.
+      field: { type: 'String' },
+      name: { type: 'String' },
+      mime: { type: 'String' },
+      size: { type: 'Number' },
+      storageKey: { type: 'String' }
+    },
+    indexes: {
+      project_contact: { _p_project: 1, _p_contact: 1 },
+      project_form_created: { _p_project: 1, _p_form: 1, _created_at: -1 }
     }
   },
   // A file in a project's brand kit (logo, icon, screenshot, PDF…), stored in the bucket at
@@ -1257,11 +1281,30 @@ const SCHEMAS = {
       commentsOpen: { type: 'Boolean' },
       commentCount: { type: 'Number' },
       reactions: { type: 'Array' },
-      newsletterCampaign: { type: 'Pointer', targetClass: 'Campaign' }
+      newsletterCampaign: { type: 'Pointer', targetClass: 'Campaign' },
+      // post | page (pages stay out of the list, the feed and the newsletter).
+      type: { type: 'String' },
+      featured: { type: 'Boolean' },
+      // public | members
+      visibility: { type: 'String' },
+      // markdown | html (an import)
+      bodyFormat: { type: 'String' },
+      coverImageAlt: { type: 'String' },
+      metaTitle: { type: 'String' },
+      metaDescription: { type: 'String' },
+      ogImageUrl: { type: 'String' },
+      canonicalUrl: { type: 'String' },
+      // Where an imported post came from (`ghost:<id>`), so importing again updates it.
+      externalId: { type: 'String' },
+      // The blog.post.published webhook went out for its current publication.
+      announced: { type: 'Boolean' }
     },
     indexes: {
       project_slug: { _p_project: 1, slug: 1 },
       project_status_published: { _p_project: 1, status: 1, publishedAt: -1 },
+      project_external: { _p_project: 1, externalId: 1 },
+      // The worker's look for scheduled posts that just went live.
+      status_published_announced: { status: 1, publishedAt: 1, announced: 1 },
       project_tags: { _p_project: 1, tagKeys: 1 },
       project_updated: { _p_project: 1, _updated_at: -1 }
     }

@@ -116,7 +116,7 @@ test('the demo answers the Revenue tab with the overview\'s numbers', async () =
 
 test('the demo blog has Acme\'s posts, opens one, and refuses writes', async () => {
   const { posts } = await demoApi<any>('/admin/blog/posts', { query: { project: 'acme' } })
-  expect(posts.map((post: any) => post.status)).toEqual(['published', 'draft'])
+  expect(posts.map((post: any) => `${post.type}:${post.status}`)).toEqual(['post:published', 'post:draft', 'page:published'])
   const { post } = await demoApi<any>(`/admin/blog/posts/${posts[0].id}`)
   expect(post.title).toBe(posts[0].title)
   expect(await demoApi<any>('/admin/blog/comments', { query: { project: 'acme' } })).toEqual({ comments: [], total: 0, hasMore: false })

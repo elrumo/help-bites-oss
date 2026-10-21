@@ -13,7 +13,7 @@ contacts ([CONTACTS.md](CONTACTS.md)).
 |---|---|
 | `HELPBITES_SECRET` | Required. Signs unsubscribe and confirm links, seals source credentials. 32+ random characters (`openssl rand -base64 48`). Never rotate it casually: old unsubscribe links must keep working (CAN-SPAM: 30 days at least). |
 | `APP_URL` | Required. The public origin unsubscribe and preference links point at. |
-| `MAILGUN_*` | As for all email. Optionally a separate sending domain for marketing (Email → Settings → Sender → "Send campaigns and sequences from a different address"), which must belong to the same Mailgun account. |
+| `MAILGUN_*` | As for all email. Optionally a separate sending domain for marketing (Email → Settings → Sender → "Send campaigns and sequences from a different address"), which must belong to the same Mailgun account. Without a mailer a campaign cannot be scheduled nor a sequence activated; a due sequence step waits an hour and tries again. |
 
 In **Email → Settings**: the **postal address** (required in every campaign), the
 **topics**, double opt-in, the thank-you URL, the marketing sender, and the
@@ -148,6 +148,10 @@ Email → Settings → Event webhook: a URL and a signing secret. HelpBites post
 | `email.suppressed` | `{ email, reason: 'bounce' \| 'complaint', detail }` |
 | `cms.entry.published` | `{ entry: { id, slug, type, version, publishedAt } }`: rebuild a static site ([PAGES.md](PAGES.md)) |
 | `cms.entry.unpublished` | `{ entry: { id, slug, type } }` |
+| `blog.post.published` | `{ post: { id, slug, title, visibility, publishedAt, url } }`: a post went public, now or at its scheduled time ([BLOG.md](BLOG.md#webhooks)) |
+| `blog.post.updated` | the same: a public post changed |
+| `blog.post.unpublished` | the same: a public post stopped being public |
+| `blog.post.deleted` | the same: a public post was deleted |
 
 Body: `{ id, type, createdAt, projectId, data }`. Header
 `x-helpbites-signature: sha256=<hex HMAC-SHA256 of the raw body with your secret>`

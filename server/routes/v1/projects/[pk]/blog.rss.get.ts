@@ -4,7 +4,7 @@ defineRouteMeta({
   openAPI: {
     tags: ['Blog'], operationId: 'blogFeed',
     summary: 'Blog RSS',
-    description: 'The latest 30 published posts as RSS 2.0, newest first, each with its full sanitised HTML and cover image. Unauthenticated. Scheduled posts join once their date passes. Each item links where the post lives: the project\'s own site when the blog\'s `postUrl` is set, else the hosted page `/blog/<pk>/<slug>`.',
+    description: 'The latest 30 published posts as RSS 2.0, newest first, each with its full sanitised HTML and cover image (a members-only post: its excerpt and a link, never its body). Pages are left out. Unauthenticated. Scheduled posts join once their date passes. Each item links where the post lives: the project\'s own site when the blog\'s `postUrl` is set, else the hosted page `/blog/<pk>/<slug>`.',
     parameters: [{ name: 'pk', in: 'path', required: true, schema: { type: 'string' }, description: 'Project public key' }],
     responses: { 200: { description: 'RSS 2.0', content: { 'application/rss+xml': { schema: { type: 'string' } } } }, 404: { description: 'Unknown project, or no blog.' } }
   }
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   const config = project ? getBlogConfig(project) : null
   if (!project || !config?.enabled) throw createError({ statusCode: 404, statusMessage: 'No blog here' })
 
-  const rows = await new (useParse()).Query('BlogPost').equalTo('project', project).equalTo('status', 'published').lessThanOrEqualTo('publishedAt', new Date()).descending('publishedAt').limit(30).find(MASTER)
+  const rows = await new (useParse()).Query('BlogPost').equalTo('project', project).equalTo('status', 'published').lessThanOrEqualTo('publishedAt', new Date()).notEqualTo('type', 'page').descending('publishedAt').limit(30).find(MASTER)
   const name = String(project.get('name') || '')
   const when = (row: ParseObject) => ((row.get('publishedAt') as Date | undefined) || new Date()).toUTCString()
   // The configured address, not the request's Host: the feed is publicly cached, so a forged header would be served to everyone.
@@ -33,8 +33,12 @@ export default defineEventHandler(async (event) => {
   const items = rows.map((row) => {
     const url = blogPostUrl(project, row)
     const cover = String(row.get('coverImageUrl') || '')
-    // Rendered and sanitised when the post was saved.
-    const html = `${cover ? `<p><img src="${escapeXml(cover)}" alt=""></p>` : ''}${String(row.get('bodyHtml') || '')}`
+    // A feed reader is nobody signed in: a members-only post is its lead-in and a way to read it.
+    const body = row.get('visibility') === 'members'
+      ? `<p>${escapeXml(row.get('excerpt'))}</p><p><a href="${escapeXml(url)}">This post is for members. Read it on the blog.</a></p>`
+      // Rendered and sanitised when the post was saved.
+      : String(row.get('bodyHtml') || '')
+    const html = `${cover ? `<p><img src="${escapeXml(cover)}" alt="${escapeXml(row.get('coverImageAlt'))}"></p>` : ''}${body}`
     const tags = (row.get('tags') as string[] | undefined) || []
     return `    <item>
       <title>${escapeXml(row.get('title'))}</title>

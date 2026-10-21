@@ -1,6 +1,6 @@
 <template>
   <div class="flex-1 min-h-0 flex flex-col">
-    <PageHeader :project-id="id" :title="draft.title.trim() || $t('blog.untitled')" :crumbs="[{ label: $t('sections.blog'), to: `/projects/${id}/blog` }]">
+    <PageHeader :project-id="id" :title="draft.title.trim() || $t('blog.untitled')" :crumbs="[{ label: $t('sections.blog'), to: `/projects/${id}/blog${draft.type === 'page' ? '?tab=pages' : ''}` }]">
       <template #title>
         <span v-if="post" class="ml-1 shrink-0 rounded-full px-1.5 text-[11px] font-medium" :class="STATE_CLASS[state]">{{ stateLabel }}</span>
         <span class="ml-1 hidden shrink-0 text-xs font-normal text-muted sm:inline">{{ saveLabel }}</span>
@@ -12,7 +12,13 @@
           <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" size="sm" square :aria-label="$t('blog.more')" />
         </UDropdownMenu>
         <UButton v-if="liveOrScheduled" :label="$t('blog.update')" icon="i-lucide-check" size="sm" :loading="saving" :disabled="!dirty" @click="save()" />
-        <UButton v-else :label="willSchedule ? $t('blog.schedule') : $t('blog.publish')" :icon="willSchedule ? 'i-lucide-calendar-clock' : 'i-lucide-rocket'" size="sm" :loading="saving" :disabled="!draft.title.trim()" @click="publish" />
+        <UFieldGroup v-else-if="canEmail" size="sm">
+          <UButton :label="willSchedule ? $t('blog.schedule') : $t('blog.publish')" :icon="willSchedule ? 'i-lucide-calendar-clock' : 'i-lucide-rocket'" :loading="saving" :disabled="!draft.title.trim()" @click="publish()" />
+          <UDropdownMenu :items="publishItems" :content="{ align: 'end' }">
+            <UButton icon="i-lucide-chevron-down" :disabled="!draft.title.trim() || saving" :aria-label="$t('blog.publishOptions')" />
+          </UDropdownMenu>
+        </UFieldGroup>
+        <UButton v-else :label="willSchedule ? $t('blog.schedule') : $t('blog.publish')" :icon="willSchedule ? 'i-lucide-calendar-clock' : 'i-lucide-rocket'" size="sm" :loading="saving" :disabled="!draft.title.trim()" @click="publish()" />
       </template>
     </PageHeader>
 
@@ -26,7 +32,7 @@
           <textarea
             ref="titleRef"
             v-model="draft.title"
-            :placeholder="$t('blog.titlePlaceholder')"
+            :placeholder="draft.type === 'page' ? $t('blog.pageTitlePlaceholder') : $t('blog.titlePlaceholder')"
             rows="1"
             maxlength="200"
             class="block w-full resize-none overflow-hidden bg-transparent text-3xl font-bold leading-tight tracking-tight text-highlighted outline-none placeholder:text-dimmed sm:px-8"
@@ -37,7 +43,7 @@
             ref="editorRef"
             v-slot="{ editor }"
             v-model="draft.body"
-            content-type="markdown"
+            :content-type="draft.bodyFormat === 'html' ? 'html' : 'markdown'"
             :placeholder="$t('blog.bodyPlaceholder')"
             :handlers="handlers"
             :mention="false"
@@ -55,13 +61,13 @@
         </div>
       </main>
       <aside class="hidden w-80 shrink-0 overflow-y-auto border-l border-default p-4 lg:block">
-        <BlogPostSettings v-model:draft="draft" :post="post" :project-id="id" :comments-allowed="blogConfig.comments" :can-market="canMarket" @newsletter="newsletterOpen = true" />
+        <BlogPostSettings v-model:draft="draft" :post="post" :project-id="id" :comments-allowed="blogConfig.comments" :can-market="canMarket" :blog-url="blogUrl" @newsletter="newsletterOpen = true" />
       </aside>
     </div>
 
     <USlideover v-model:open="settingsOpen" :title="$t('blog.postSettings')" :ui="{ content: 'sm:max-w-sm' }">
       <template #body>
-        <BlogPostSettings v-model:draft="draft" :post="post" :project-id="id" :comments-allowed="blogConfig.comments" :can-market="canMarket" @newsletter="newsletterOpen = true" />
+        <BlogPostSettings v-model:draft="draft" :post="post" :project-id="id" :comments-allowed="blogConfig.comments" :can-market="canMarket" :blog-url="blogUrl" @newsletter="newsletterOpen = true" />
       </template>
     </USlideover>
 
@@ -77,11 +83,13 @@ import { can } from '#shared/roles'
 import type { AdminProject } from '~~/server/utils/projects'
 import { blogPostCreateBody, blogPostPatch, draftFromPost, emptyBlogDraft, type BlogPostDraft } from '~/utils/blogDraft'
 
-// One blog post in Nuxt UI's editor (TipTap), saved as Markdown. A draft saves
-// itself a moment after you stop typing; a live or scheduled post keeps your
-// edits until you press Update, so half a sentence never goes public. `new`
-// is a post not created yet: the first save creates it and the address
-// becomes its id without reloading the editor.
+// One blog post or page in Nuxt UI's editor (TipTap), saved as Markdown (a
+// post imported from Ghost stays HTML). A draft saves itself a moment after
+// you stop typing; a live or scheduled post keeps your edits until you press
+// Update, so half a sentence never goes public. `new` is a post not created
+// yet (`?type=page` for a page): the first save creates it and the address
+// becomes its id without reloading the editor. "Publish and email" publishes,
+// then opens the newsletter.
 
 definePageMeta({ middleware: 'agent', key: route => `blog-editor-${String(route.params.id)}` })
 
@@ -91,10 +99,15 @@ const id = String(route.params.id)
 const { api, agent, projects, loadProjects, context } = useAgent()
 const toast = useToast()
 const { t, locale } = useI18n()
+const { locked } = usePlanLocks()
+const appUrl = useAppUrl()
 
 const project = computed<AdminProject | null>(() => projects.value.find(p => p.id === id) || null)
 const blogConfig = computed(() => project.value?.blog || DEFAULT_BLOG_CONFIG)
 const canMarket = computed(() => can(context.value?.role, 'marketing'))
+const blogUrl = computed(() => (project.value ? `${appUrl.value}/blog/${project.value.publicKey}` : ''))
+/** Whether this post can go out by email from here: a post (not a page), the plan has campaigns, the role may send them. */
+const canEmail = computed(() => draft.value.type === 'post' && canMarket.value && !locked('campaigns'))
 
 const postId = ref(String(route.params.postId || 'new'))
 const post = ref<BlogPost | null>(null)
@@ -174,10 +187,17 @@ watch(draft, () => {
   saveTimer = setTimeout(() => void save(), 1200)
 }, { deep: true })
 
-async function publish() {
+async function publish(andEmail = false) {
   const ok = await save({ status: 'published' })
-  if (ok) toast.add({ title: willSchedule.value ? t('blog.scheduledToast') : t('blog.publishedToast'), description: blogConfig.value.enabled ? undefined : t('blog.blogOffToast'), icon: 'i-lucide-rocket', color: 'success' })
+  if (!ok) return
+  toast.add({ title: willSchedule.value ? t('blog.scheduledToast') : t('blog.publishedToast'), description: blogConfig.value.enabled ? undefined : t('blog.blogOffToast'), icon: 'i-lucide-rocket', color: 'success' })
+  if (andEmail) newsletterOpen.value = true
 }
+
+const publishItems = computed<DropdownMenuItem[][]>(() => [[
+  { label: willSchedule.value ? t('blog.scheduleAndEmail') : t('blog.publishAndEmail'), icon: 'i-lucide-send', onSelect: (): void => { void publish(true) } },
+  { label: willSchedule.value ? t('blog.scheduleOnly') : t('blog.publishOnly'), icon: willSchedule.value ? 'i-lucide-calendar-clock' : 'i-lucide-rocket', onSelect: (): void => { void publish() } }
+]])
 
 async function unpublish() {
   if (await save({ status: 'draft' })) toast.add({ title: t('blog.unpublishedToast'), icon: 'i-lucide-eye-off' })
@@ -187,9 +207,10 @@ async function removePost() {
   if (!post.value || !confirm(t('blog.confirmDelete'))) return
   try {
     await api(`/admin/blog/posts/${post.value.id}`, { method: 'DELETE' })
+    const page = post.value.type === 'page'
     post.value = null
     draft.value = emptyBlogDraft()
-    await router.push(`/projects/${id}/blog`)
+    await router.push(`/projects/${id}/blog${page ? '?tab=pages' : ''}`)
   } catch (e: any) {
     toast.add({ title: t('blog.deleteError'), description: e?.message, color: 'error', icon: 'i-lucide-circle-alert' })
   }
@@ -197,7 +218,7 @@ async function removePost() {
 
 const moreItems = computed<DropdownMenuItem[][]>(() => [[
   ...(liveOrScheduled.value ? [{ label: t('blog.unpublish'), icon: 'i-lucide-eye-off', onSelect: (): void => { void unpublish() } }] : []),
-  { label: t('blog.sendNewsletter'), icon: 'i-lucide-send', disabled: !post.value?.live || !canMarket.value || (!!post.value?.newsletter && !['draft', 'canceled'].includes(post.value.newsletter.status)), onSelect: (): void => { newsletterOpen.value = true } },
+  ...(post.value?.type === 'post' ? [{ label: t('blog.sendNewsletter'), icon: 'i-lucide-send', disabled: post.value.status !== 'published' || !canEmail.value || (!!post.value.newsletter && !['draft', 'canceled'].includes(post.value.newsletter.status)), onSelect: (): void => { newsletterOpen.value = true } }] : []),
   ...(post.value?.newsletter ? [{ label: t('blog.openCampaign'), icon: 'i-lucide-arrow-up-right', to: `/projects/${id}/campaigns/${post.value.newsletter.campaignId}` }] : [])
 ], [
   { label: t('blog.deletePost'), icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: (): void => { void removePost() } }
@@ -319,7 +340,7 @@ async function load() {
   if (!project.value) await loadProjects()
   if (!project.value) throw new Error(t('blog.projectNotFound'))
   if (postId.value === 'new') {
-    draft.value = { ...emptyBlogDraft(), authorName: String(agent.value?.name || agent.value?.username || '') }
+    draft.value = { ...emptyBlogDraft(route.query.type === 'page' ? 'page' : 'post'), authorName: String(agent.value?.name || agent.value?.username || '') }
     return
   }
   post.value = (await api<{ post: BlogPost }>(`/admin/blog/posts/${postId.value}`)).post

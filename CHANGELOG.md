@@ -46,6 +46,8 @@ All notable changes to the community edition. Versions are Docker image tags
   behind: erase those people again to remove them.
 - A campaign with no mailer configured is refused when scheduled, sent or resumed, and one already sending pauses
   with the reason, instead of retrying every five minutes for ever.
+  Sequences too: activating one is refused, and a step that comes due with no mailer waits an hour without sending
+  (it used to log a failed email every five minutes).
 - AI hand-off: when a routing rule says "human", or no knowledge matches (well enough) and the assistant's fallback
   is "Hand to a human", the assistant no longer answers. The conversation gets the `needs-human` label and an
   internal note, and the assistant stays out of it until the label is removed.
@@ -63,6 +65,14 @@ All notable changes to the community edition. Versions are Docker image tags
   `docs/FORMS.md`. New class `LeadForm`, new fields `EndUser.origin` and `EndUser.leadForms` (with indexes) and
   `ContactSegment.auto` (need `schema:apply`; the container does it on boot). `/f` joins `/embed`, `/s`, `/brand` and
   `/p` as frameable. Welcome emails show in the email log with source `form`.
+- Lead forms take files and speak the visitor's language. A `file` field (up to three per form; pictures, documents or
+  either, up to 20 MB, checked by their bytes) sends the form as multipart; files are kept privately in the bucket
+  under `<projectId>/forms/<formId>/`, listed and downloaded at `/v1/admin/lead-files` and erased with the contact.
+  File fields need S3 configured (`S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`). Forms carry a
+  translation per language (`POST /v1/admin/lead-forms/{id}/translate` uses the workspace's AI); `forms.js`, the hosted
+  page and `GET /v1/forms/{pk}/{key}?locale=` show the visitor's, and errors, the confirmation page and email and the
+  welcome email follow. New class `LeadFile` and fields `LeadForm.locale` and `LeadForm.translations` (need
+  `schema:apply`; the container does it on boot). Confirmation links sent before this upgrade keep working.
 - Contacts show how they were added (**Added via**: app user, lead form, sign-up, import, sync, Stripe, API, by hand,
   feedback import), filterable in the people list, segments (`origin`, `leadForms`) and `GET /v1/contacts?origin=`.
   New contacts record it themselves; run `bun scripts/backfill-contacts.mjs --apply` once to store it for older ones.
@@ -74,6 +84,15 @@ All notable changes to the community edition. Versions are Docker image tags
   which in the cloud edition needs a plan with campaigns. New classes `BlogPost` and `BlogComment`, and fields
   `Project.blog` and `Campaign.blogPost` (need `schema:apply`; the container does it on boot). Images go to the bucket
   under `<projectId>/blog/`. A person's blog comments and reactions are erased with the rest of their data.
+- Blog, the Ghost-like parts: pages, featured and members-only posts, SEO fields, HTML bodies (YouTube and Vimeo
+  players allowed, sandboxed), the hosted blog's design (`Project.blog.design`: layout, typeface, colour scheme,
+  accent, logo, cover, navigation, social links, footer), search, related posts and a sitemap at
+  `/blog/<public key>/sitemap.xml`, publish-and-email (a scheduled post's newsletter waits for it), the
+  `blog.post.published` / `.updated` / `.unpublished` / `.deleted` event webhooks (the worker announces scheduled
+  posts as they go live) and `POST /v1/admin/blog/import` for a Ghost export. New `BlogPost` fields `type`,
+  `featured`, `visibility`, `bodyFormat`, `coverImageAlt`, `metaTitle`, `metaDescription`, `ogImageUrl`,
+  `canonicalUrl`, `externalId` and `announced`, with two indexes (need `schema:apply`; the container does it on
+  boot). Existing posts read as public posts in Markdown. The body limit is now 200,000 characters.
 - Languages and AI translation for onboarding flows, legal documents and email templates (`docs/LANGUAGES.md`). New
   fields `OnboardingFlow.locale` and `translations`, `LegalDocument.translationOf` and `EmailTemplate.locale` and
   `translations` (need `schema:apply`; the container does it on boot). `POST …/translate` on each uses the workspace's

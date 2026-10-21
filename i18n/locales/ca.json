@@ -58,6 +58,7 @@
     "onboarding": "Onboarding",
     "legal": "Legal",
     "brand": "Marca",
+    "pages": "Pàgines",
     "email": "Correu",
     "flags": "Flags",
     "errors": "Errors",
@@ -711,6 +712,95 @@
       "image": "Imatge",
       "blocks": "Blocs",
       "insert": "Insereix"
+    },
+    "pages": "Pàgines",
+    "newPage": "Nova pàgina",
+    "noPages": "Encara no hi ha pàgines",
+    "noPagesDescription": "Les pàgines van a part (Qui som, Contacte, una llista de lectures): queden fora de la llista, del feed i del butlletí. Enllaça-les des de la navegació del blog, a Disseny.",
+    "pageTitlePlaceholder": "Títol de la pàgina",
+    "featured": "Destacada",
+    "featuredHint": "Es mostra primer: en gran a la disposició de revista i marcada a les altres.",
+    "visibility": "Qui la pot llegir",
+    "visibilityPublic": "Tothom",
+    "visibilityMembers": "Només membres",
+    "visibilityPublicHint": "Qualsevol amb l'enllaç, el feed i els cercadors.",
+    "visibilityMembersHint": "Tothom en veu el títol i l'extracte; la resta és per als lectors amb sessió iniciada a la teva app o amb el seu correu. El feed només porta l'extracte.",
+    "coverAlt": "Descriu la imatge (text alternatiu)",
+    "seo": {
+      "title": "Cercadors i xarxes socials",
+      "noDescription": "Si no hi ha descripció, aquí es mostra l'extracte.",
+      "metaTitle": "Títol per als cercadors",
+      "metaDescription": "Descripció per als cercadors",
+      "ogImage": "Imatge per a les previsualitzacions d'enllaços",
+      "ogImageHint": "Buit: la portada.",
+      "canonical": "Adreça canònica",
+      "canonicalHint": "On va aparèixer primer l'entrada, si va ser en un altre lloc. Els cercadors atribueixen l'entrada a aquesta adreça."
+    },
+    "newsletterWithPost": "Envia-la per correu als teus subscriptors quan es publiqui.",
+    "newsletterWaits": "L'entrada es publica el {when}. El butlletí surt aleshores, no abans.",
+    "sendWithPost": "Envia en publicar-se",
+    "publishOptions": "Opcions de publicació",
+    "publishAndEmail": "Publica i envia per correu",
+    "scheduleAndEmail": "Programa i envia per correu",
+    "publishOnly": "Només publica",
+    "scheduleOnly": "Només programa",
+    "sitemap": "Mapa del lloc",
+    "sitemapHint": "Dona'l a Google Search Console o a Bing Webmaster Tools perquè trobin totes les entrades.",
+    "design": {
+      "title": "Disseny",
+      "description": "Com es veu el blog allotjat. L'embed adopta l'aspecte de la teva pàgina i, d'aquí, la disposició.",
+      "layout": "Disposició",
+      "layouts": {
+        "list": "Llista",
+        "grid": "Quadrícula",
+        "magazine": "Revista"
+      },
+      "font": "Tipografia",
+      "fonts": {
+        "sans": "Sans serif",
+        "serif": "Serif"
+      },
+      "colorScheme": "Esquema de colors",
+      "schemes": {
+        "auto": "Segons el lector",
+        "light": "Clar",
+        "dark": "Fosc"
+      },
+      "accent": "Color d'accent",
+      "accentHint": "Enllaços, botons i etiquetes. L'accent del projecte, tret que en triïs un altre.",
+      "useProjectAccent": "Usa el del projecte",
+      "logoUrl": "Logotip",
+      "logoUrlHint": "Al costat del nom del blog. Buit: el logotip del projecte.",
+      "coverImageUrl": "Imatge de portada",
+      "coverImageUrlHint": "Una imatge ampla a la part superior de la pàgina principal.",
+      "navigation": "Navegació",
+      "navigationHint": "Enllaços a la capçalera del blog: una pàgina del blog (/about), el mateix blog (/) o qualsevol adreça.",
+      "linkLabel": "Text",
+      "removeLink": "Treu l'enllaç",
+      "addLink": "Afegeix un enllaç",
+      "social": "Xarxes socials",
+      "website": "Lloc web",
+      "footer": "Peu de pàgina",
+      "footerHint": "Una línia al final de cada pàgina, com ara un avís de copyright."
+    },
+    "import": {
+      "title": "Importa des de Ghost",
+      "description": "Porta les teves entrades i pàgines des d'un blog de Ghost.",
+      "file": "Exportació de Ghost",
+      "fileHint": "A Ghost: Settings → Advanced → Import/Export → Export content. Un fitxer .json.",
+      "choose": "Tria el fitxer",
+      "found": "{count} entrada o pàgina | {count} entrades i pàgines",
+      "siteUrl": "Adreça del teu lloc de Ghost",
+      "siteUrlHint": "L'exportació escriu els enllaços i les imatges sense aquesta adreça. Continuaran apuntant a aquell lloc, així que mantén-lo en línia fins que moguis les imatges.",
+      "update": "Sobreescriu les entrades ja importades",
+      "updateHint": "Desactivat: les entrades que ja havien arribat abans d'aquest blog es queden tal com estan.",
+      "members": "Els membres van en un CSV a part (Members → Export a Ghost). Importa'l a Contactes: s'hi recullen el correu, el nom, les etiquetes i el consentiment del butlletí.",
+      "run": "Importa",
+      "done": "{created} afegides, {updated} actualitzades, {skipped} omeses.",
+      "close": "Tanca",
+      "notGhost": "Això no és una exportació de Ghost: no conté entrades.",
+      "notJson": "Aquest fitxer no és JSON.",
+      "error": "No s'ha pogut completar la importació."
     }
   },
   "chat": {
@@ -801,7 +891,8 @@
       "subscription": "Subscripció",
       "billing": "Facturació",
       "spentOver": "Despesa superior a",
-      "spentMoreThan": "Despesa superior a"
+      "spentMoreThan": "Despesa superior a",
+      "origin": "Afegit mitjançant"
     },
     "billingFilter": {
       "all": "Qualsevol facturació",
@@ -888,7 +979,9 @@
         "sources": "Font",
         "createdAt": "Afegit",
         "lastSeenAt": "Vist per última vegada",
-        "updatedAt": "Actualitzat"
+        "updatedAt": "Actualitzat",
+        "origin": "Afegit mitjançant",
+        "leadForms": "Formulari"
       },
       "op": {
         "is": "és",
@@ -913,7 +1006,8 @@
         "days": "Dies",
         "date": "Data",
         "removeRule": "Treu la regla"
-      }
+      },
+      "pickForm": "Tria un formulari"
     },
     "form": {
       "email": "Correu",
@@ -965,7 +1059,11 @@
       "conversations": "Converses",
       "noneYet": "Encara cap.",
       "nothingSent": "Encara no s'ha enviat res.",
-      "erase": "Esborra aquesta persona"
+      "erase": "Esborra aquesta persona",
+      "addedVia": "Afegit mitjançant",
+      "leadForms": "Formularis",
+      "deletedForm": "Un formulari eliminat",
+      "files": "Fitxers enviats"
     },
     "empty": {
       "title": "Encara no hi ha contactes",
@@ -1018,7 +1116,9 @@
       "showPeople": "Mostra aquestes persones",
       "namePlaceholder": "Usuaris Pro vistos aquest mes",
       "ruleCount": "{count} regla | {count} regles",
-      "peopleCount": "{count} persones"
+      "peopleCount": "{count} persones",
+      "auto": "Auto",
+      "autoHint": "Creat per a un formulari. Canvia-li el nom, edita'l o elimina'l com qualsevol altre segment."
     },
     "sources": {
       "connect": "Connecta una base de dades",
@@ -1090,6 +1190,17 @@
       "consentSubscribed": "Tots aquí han acceptat el correu de màrqueting",
       "consentSubscribedDescription": "Es registra com a consentiment seu. Ningú que s'hagi donat de baixa tornarà a subscriure's.",
       "saveAndSync": "Desa i sincronitza"
+    },
+    "origin": {
+      "app": "Usuari de l'app",
+      "lead_form": "Formulari",
+      "signup": "Alta a la newsletter",
+      "import": "Importació CSV",
+      "sync": "Sincronització de base de dades",
+      "stripe": "Stripe",
+      "api": "API",
+      "panel": "Afegit a mà",
+      "feedback": "Importat de comentaris"
     }
   },
   "campaigns": {
@@ -2553,7 +2664,7 @@
         },
         "blog": {
           "term": "Un blog amb butlletí",
-          "desc": "Escriu entrades en un editor enriquit, publica-les en un blog allotjat, al teu propi lloc o per RSS, i envia-les per correu als teus subscriptors. Els lectors reaccionen i comenten."
+          "desc": "Escriu entrades i pàgines en un editor enriquit i publica-les en un blog allotjat amb el teu propi disseny, al teu propi lloc o per RSS, i envia-les per correu als teus subscriptors. Entrades només per a membres, camps SEO, un sitemap i una importació des de Ghost. Els lectors reaccionen i comenten."
         },
         "followers": {
           "term": "Els seguidors reben les novetats",
@@ -2601,7 +2712,7 @@
         },
         "forms": {
           "term": "Llistes d’espera i formularis de contacte",
-          "desc": "Recull interessats abans de llançar amb un simple camp d’email o un formulari a mida, al teu web, en una pàgina allotjada o a la teva app. Cada registre es converteix en un contacte amb el seu propi segment, doble confirmació, un email de benvinguda i una seqüència."
+          "desc": "Recull interessats abans de llançar amb un simple camp d’email o un formulari a mida, amb pujada de fitxers i en l’idioma dels teus visitants, al teu web, en una pàgina allotjada o a la teva app. Cada registre es converteix en un contacte amb el seu propi segment, doble confirmació, un email de benvinguda i una seqüència."
         }
       },
       "team": {
@@ -2793,7 +2904,7 @@
     "fallbackHuman": "Passar a una persona",
     "fallbackSilent": "Romandre en silenci",
     "autoReply": "Respondre automàticament als usuaris d'aquest projecte",
-    "autoReplyHint": "— desactivat per defecte; envia respostes fonamentades com a aquest assistent",
+    "autoReplyHint": "— desactivat per defecte, i només mentre l'estat sigui Actiu; envia respostes fonamentades com a aquest assistent",
     "whenAi": "Quan respondre amb IA",
     "minConfidence": "Confiança mínima",
     "minConfidenceHint": "Només envia una resposta d'IA quan la millor coincidència de coneixement tingui almenys aquesta seguretat. 0% = intentar-ho sempre.",
@@ -3031,7 +3142,17 @@
       "latestActivity": "Activitat recent",
       "nothingYet": "Encara no hi ha res",
       "activityEmpty": "Les converses, els comentaris i els elements de planificació acabats apareixeran aquí.",
-      "loadError": "No s'ha pogut carregar la visió general"
+      "loadError": "No s'ha pogut carregar la visió general",
+      "stats": {
+        "open": "Converses obertes",
+        "new": "Noves aquesta setmana",
+        "emails": "Correus enviats · 7 d",
+        "feedback": "Comentaris · 7 d"
+      },
+      "activityTitle": {
+        "newFeedback": "Comentari nou: {title}",
+        "completed": "Completat {item}"
+      }
     },
     "settings": {
       "general": "General",
@@ -3754,6 +3875,175 @@
         "mobile": "Amplada de mòbil",
         "previewHint": "Els teus canvis sense desar, sense els fitxers privats, tal com els omet la pàgina pública."
       }
+    },
+    "forms": {
+      "guide": "Guia",
+      "newForm": "Nou formulari",
+      "newFormDescription": "Comença amb un sol camp de correu, una llista d'espera o un formulari més llarg. Podràs canviar cada camp després.",
+      "title": "Formularis de contacte",
+      "intro": "Recull interessats abans de llançar: una llista d'espera, un camp d'“avisa'm” o un formulari d'interès, al teu web, a la teva app o en una pàgina allotjada. Qui s'hi registra es converteix en un contacte, entra al segment del formulari i pot rebre un correu de benvinguda i una seqüència.",
+      "emptyTitle": "Encara no hi ha formularis",
+      "emptyDescription": "Crea un formulari, afegeix una línia al teu web i veuràs arribar els interessats a Contactes.",
+      "leadCount": "{count} interessat | {count} interessats",
+      "confirmedCount": "{count} a la llista",
+      "live": "Actiu",
+      "closed": "Tancat",
+      "startFrom": "Comença amb",
+      "presets": {
+        "email": "Només correu",
+        "emailHint": "Un camp de correu i un botó, en una fila.",
+        "waitlist": "Llista d'espera",
+        "waitlistHint": "Correu i nom.",
+        "detailed": "Formulari d'interès",
+        "detailedHint": "Correu, nom, empresa, càrrec i una pregunta."
+      },
+      "name": "Nom",
+      "namePlaceholder": "Llista d'espera del llançament",
+      "defaultName": "Llista d'espera",
+      "key": "Clau",
+      "keyHint": "El teu web i la teva app demanen el formulari amb aquest nom.",
+      "keyInvalid": "Fes servir lletres minúscules, dígits i guions, fins a 40.",
+      "create": "Crea el formulari",
+      "createError": "No s'ha pogut crear el formulari",
+      "loadError": "No s'han pogut carregar els formularis",
+      "form": "Formulari",
+      "notFound": "Aquest formulari no existeix.",
+      "active": "Accepta registres",
+      "activeHint": "Desactivat, el formulari es tanca: els webs i les apps que el carreguen no mostren res.",
+      "fields": "Camps",
+      "types": {
+        "email": "Correu",
+        "name": "Nom",
+        "text": "Text curt",
+        "textarea": "Text llarg",
+        "number": "Número",
+        "url": "Lloc web",
+        "phone": "Telèfon",
+        "select": "Opció",
+        "checkbox": "Casella",
+        "file": "Pujada de fitxer"
+      },
+      "moveUp": "Mou amunt",
+      "moveDown": "Mou avall",
+      "removeField": "Treu el camp",
+      "label": "Etiqueta",
+      "placeholder": "Text d'exemple",
+      "fieldKey": "Es desa com a",
+      "fieldKeyHint": "L'atribut del contacte on va la resposta.",
+      "fieldKeyInvalid": "Lletres, dígits i _, començant per una lletra.",
+      "options": "Opcions",
+      "optionsHint": "Prem Retorn després de cadascuna.",
+      "addOption": "Afegeix una opció",
+      "optionA": "Opció A",
+      "optionB": "Opció B",
+      "required": "Obligatori",
+      "mustTick": "S'ha de marcar",
+      "addField": "Afegeix un camp",
+      "words": "Textos",
+      "content": {
+        "title": "Títol",
+        "description": "Descripció",
+        "buttonLabel": "Botó",
+        "successTitle": "Després de registrar-se",
+        "successMessage": "Missatge d'agraïment",
+        "confirmMessage": "Mentre confirmen",
+        "confirmMessageHint": "Es mostra en lloc de l'agraïment fins que fan clic a l'enllaç del correu.",
+        "footnote": "Lletra petita",
+        "footnotePlaceholder": "Només t'escriurem sobre el llançament. Dona't de baixa quan vulguis."
+      },
+      "look": "Aspecte",
+      "accent": "Accent",
+      "projectAccent": "L'accent del projecte",
+      "background": "Fons",
+      "noBackground": "Cap: s'integra a la teva pàgina",
+      "text": "Text",
+      "followsTheme": "Segueix el mode clar o fosc",
+      "reset": "Restableix",
+      "layout": "Disposició",
+      "layouts": {
+        "stacked": "Apilat",
+        "inline": "En una fila"
+      },
+      "radius": "Radi de les cantonades",
+      "font": "Tipografia",
+      "after": "Quan algú es registra",
+      "afterHint": "Es converteix en un contacte, rep les etiquetes de sota i entra al segment d'aquest formulari.",
+      "doubleOptIn": "Demana que confirmin el correu",
+      "doubleOptInHint": "Reben un correu amb un enllaç i queden pendents fins que hi fan clic. El correu de benvinguda i la seqüència s'esperen fins llavors.",
+      "confirmTemplate": "Correu de confirmació",
+      "confirmTemplateHint": "Una plantilla amb un botó {'{'}{'{'}confirmUrl{'}'}{'}'}.",
+      "builtInConfirm": "El de HelpBites",
+      "welcomeTemplate": "Correu de benvinguda",
+      "welcomeTemplateHint": "S'envia una vegada, quan ja són a la llista.",
+      "noWelcome": "Cap",
+      "sequence": "Inicia una seqüència",
+      "sequenceHint": "Una seqüència en esborrany o en pausa els manté al primer pas fins que l'activis.",
+      "noSequence": "Cap",
+      "sequenceStatus": {
+        "active": "activa",
+        "draft": "esborrany",
+        "paused": "en pausa"
+      },
+      "tags": "Etiquetes",
+      "tagsHint": "S'afegeixen a tothom qui es registra.",
+      "addTag": "Afegeix una etiqueta",
+      "redirectUrl": "Després, envia'ls a",
+      "redirectUrlHint": "Per a un formulari HTML senzill, la pàgina allotjada i l'enllaç de confirmació. Buit mostra una pàgina d'agraïment.",
+      "newTemplate": "Nova plantilla de correu",
+      "manageSequences": "Seqüències",
+      "install": "Posa'l al teu web o a la teva app",
+      "installTabs": {
+        "script": "Script",
+        "link": "Enllaç"
+      },
+      "installHints": {
+        "script": "Una etiqueta script dibuixa el formulari on la posis, amb els teus colors. No cal res més.",
+        "html": "Un formulari senzill, amb l'estil del teu propi CSS. Envia directament a HelpBites i torna a la pàgina d'agraïment.",
+        "link": "Una pàgina allotjada per enllaçar-hi o per inserir al teu web.",
+        "swift": "Enganxa HelpBitesLeadForm.swift de la guia a la teva app i mostra la vista on vulguis.",
+        "api": "Envia les respostes des de la teva pròpia interfície o servidor. La resposta de cada camp va sota la seva clau."
+      },
+      "saveFirst": "Desa abans els canvis: el fragment fa servir el formulari desat.",
+      "copy": "Copia",
+      "copied": "Copiat",
+      "openPage": "Obre la pàgina allotjada",
+      "openJson": "Obre el JSON del formulari",
+      "readGuide": "Llegeix la guia",
+      "leads": "Interessats",
+      "leadsHint": "Les darreres persones d'aquest formulari. Són contactes com els altres, al segment d'aquest formulari.",
+      "noLeads": "Encara no s'hi ha registrat ningú.",
+      "showAll": "Mostra'ls tots a Contactes",
+      "emailThem": "Escriu-los",
+      "preview": "Vista prèvia",
+      "previewStates": {
+        "form": "Formulari",
+        "success": "Fet"
+      },
+      "toggleTheme": "Canvia entre clar i fosc",
+      "previewHint": "Els teus canvis sense desar, dibuixats pel mateix script que carrega el teu web. El fragment de Swift té la mateixa disposició.",
+      "saved": "Desat",
+      "saveError": "No s'ha pogut desar el formulari",
+      "deleteConfirm": "Vols eliminar “{name}”? Els webs que el carreguen no mostraran res. Els seus interessats i el seu segment es mantenen.",
+      "deleteForm": "Elimina el formulari",
+      "accept": "Accepta",
+      "acceptHint": "Es comprova què és realment el fitxer: {types}",
+      "accepts": {
+        "images": "Imatges",
+        "documents": "Documents",
+        "any": "Imatges, documents o ZIP"
+      },
+      "maxMB": "Mida màxima",
+      "optionsTranslateHint": "El que diu cada opció en aquest idioma. La resposta desada continua sent l'original.",
+      "files": {
+        "title": "Fitxers enviats",
+        "loading": "Carregant fitxers…",
+        "download": "Descarrega",
+        "delete": "Elimina el fitxer",
+        "deleteConfirm": "Vols eliminar {name} per sempre?",
+        "downloadError": "No s'ha pogut descarregar el fitxer.",
+        "deleteError": "No s'ha pogut eliminar el fitxer."
+      },
+      "fileKeyHint": "El nom amb què s'envia el fitxer. Els fitxers es guarden en privat per al teu equip, no com a atribut."
     }
   },
   "workspaceSettings": {

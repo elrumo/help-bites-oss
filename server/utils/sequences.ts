@@ -1,6 +1,6 @@
 import { createError } from 'h3'
 import { MAX_SEQUENCE_STEPS, nextStepAt, validateSequenceInput, type Sequence, type SequenceStatus, type SequenceStep, type SequenceTrigger } from '#shared/marketing'
-import { campaignEmails, complianceProblems, publicBaseUrl, snapshotCampaign, type CampaignSnapshot } from './campaigns'
+import { CAMPAIGN_NO_MAILER, campaignEmails, campaignMailerReady, complianceProblems, publicBaseUrl, snapshotCampaign, type CampaignSnapshot } from './campaigns'
 import { deliverEmails, type DeliveryResult, type EmailActor } from './emailDelivery'
 import { emailSendingPaused } from './emailReputation'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
@@ -52,12 +52,13 @@ export async function applySequenceInput(project: ParseObject, row: ParseObject,
   row.set('steps', steps)
 }
 
-/** Activating checks every step for an unsubscribe link and the postal address, as campaigns do. */
+/** Activating checks that email can send at all, and every step for an unsubscribe link and the postal address, as campaigns do. */
 export async function setSequenceStatus(project: ParseObject, row: ParseObject, status: unknown): Promise<void> {
   if (!['draft', 'active', 'paused'].includes(String(status))) throw createError({ statusCode: 400, statusMessage: 'status must be draft, active or paused' })
   if (status === 'active') {
     const steps = (row.get('steps') as SequenceStep[]) || []
     if (!steps.length) throw createError({ statusCode: 400, statusMessage: 'Add a step first' })
+    if (!campaignMailerReady(project)) throw createError({ statusCode: 503, statusMessage: CAMPAIGN_NO_MAILER })
     for (const [i, step] of steps.entries()) {
       const problems = complianceProblems(project, (await snapshotCampaign(project, step.template)).document)
       if (problems.length) throw createError({ statusCode: 400, statusMessage: `Step ${i + 1}: ${problems.join('; ')}` })
@@ -238,6 +239,13 @@ export async function runDueSequenceSteps(limit = SEQUENCE_LIMITS.perTick): Prom
           continue
         }
         snapshots.set(`${project.id}:${step.template}`, snapshot)
+        // No mailer at all: the step waits without trying, so the log does not fill with a failure every five minutes.
+        if (!campaignMailerReady(project)) {
+          row.set('nextAt', new Date(Date.now() + PLAN_RETRY_MS))
+          row.set('lastError', CAMPAIGN_NO_MAILER.slice(0, 300))
+          await row.save(null, MASTER)
+          continue
+        }
         let result: DeliveryResult | undefined
         try {
           [result] = await deliverEmails(campaignEmails(project, snapshot, [contact], { batchId, subject: step.subject || '', topic: trigger.topic || '', testMode: false, source: 'sequence', actor: SEQUENCE_ACTOR, base, metadata: { sequence: sequence.id || '', step: step.id } }))

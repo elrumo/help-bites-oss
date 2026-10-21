@@ -58,6 +58,7 @@
     "onboarding": "オンボーディング",
     "legal": "法務",
     "brand": "ブランド",
+    "pages": "ページ",
     "email": "メール",
     "flags": "フラグ",
     "errors": "エラー",
@@ -711,6 +712,95 @@
       "image": "画像",
       "blocks": "ブロック",
       "insert": "挿入"
+    },
+    "pages": "ページ",
+    "newPage": "新規ページ",
+    "noPages": "まだページはありません",
+    "noPagesDescription": "ページは独立したコンテンツです（自己紹介、お問い合わせ、読書リストなど）。一覧、フィード、ニュースレターには含まれません。「デザイン」のブログのナビゲーションからリンクしてください。",
+    "pageTitlePlaceholder": "ページのタイトル",
+    "featured": "注目",
+    "featuredHint": "先頭に表示されます。マガジンレイアウトでは大きく、ほかのレイアウトでは印付きで表示されます。",
+    "visibility": "閲覧できる人",
+    "visibilityPublic": "全員",
+    "visibilityMembers": "メンバー限定",
+    "visibilityPublicHint": "リンクを知っている人、フィード、検索エンジン。",
+    "visibilityMembersHint": "タイトルと抜粋は誰でも見られます。続きは、あなたのアプリまたはメールアドレスでログインした読者向けです。フィードには抜粋だけが含まれます。",
+    "coverAlt": "画像の説明（代替テキスト）",
+    "seo": {
+      "title": "検索とソーシャル",
+      "noDescription": "説明がない場合は、ここに抜粋が表示されます。",
+      "metaTitle": "検索エンジン向けのタイトル",
+      "metaDescription": "検索エンジン向けの説明",
+      "ogImage": "リンクプレビュー用の画像",
+      "ogImageHint": "空欄の場合はカバー画像を使用します。",
+      "canonical": "正規URL",
+      "canonicalHint": "投稿を最初に別の場所で公開した場合は、そのURLです。検索エンジンはそのURLを元の掲載先として扱います。"
+    },
+    "newsletterWithPost": "公開されたときに購読者にメールで送信します。",
+    "newsletterWaits": "投稿は {when} に公開されます。ニュースレターはその時点で送信され、それより前には送信されません。",
+    "sendWithPost": "公開時に送信",
+    "publishOptions": "公開オプション",
+    "publishAndEmail": "公開してメール送信",
+    "scheduleAndEmail": "予約してメール送信",
+    "publishOnly": "公開のみ",
+    "scheduleOnly": "予約のみ",
+    "sitemap": "サイトマップ",
+    "sitemapHint": "Google Search Console や Bing Webmaster Tools に登録すると、すべての投稿を見つけてもらえます。",
+    "design": {
+      "title": "デザイン",
+      "description": "ホストされたブログの見た目です。埋め込みはあなたのページの見た目を引き継ぎ、レイアウトはここの設定を使います。",
+      "layout": "レイアウト",
+      "layouts": {
+        "list": "リスト",
+        "grid": "グリッド",
+        "magazine": "マガジン"
+      },
+      "font": "フォント",
+      "fonts": {
+        "sans": "サンセリフ",
+        "serif": "セリフ"
+      },
+      "colorScheme": "配色",
+      "schemes": {
+        "auto": "読者に合わせる",
+        "light": "ライト",
+        "dark": "ダーク"
+      },
+      "accent": "アクセントカラー",
+      "accentHint": "リンク、ボタン、タグに使われます。別の色を選ばない限り、プロジェクトのアクセントカラーです。",
+      "useProjectAccent": "プロジェクトの色を使用",
+      "logoUrl": "ロゴ",
+      "logoUrlHint": "ブログ名の横に表示されます。空欄の場合はプロジェクトのロゴを使用します。",
+      "coverImageUrl": "カバー画像",
+      "coverImageUrlHint": "トップページの上部に広がる横長の画像です。",
+      "navigation": "ナビゲーション",
+      "navigationHint": "ブログのヘッダーに表示するリンクです。ブログのページ（/about）、ブログ自体（/）、または任意のURLを指定できます。",
+      "linkLabel": "表示名",
+      "removeLink": "リンクを削除",
+      "addLink": "リンクを追加",
+      "social": "ソーシャルリンク",
+      "website": "ウェブサイト",
+      "footer": "フッター",
+      "footerHint": "すべてのページの下部に表示される1行のテキストです（著作権表示など）。"
+    },
+    "import": {
+      "title": "Ghost からインポート",
+      "description": "Ghost ブログから投稿とページを移行します。",
+      "file": "Ghost のエクスポート",
+      "fileHint": "Ghost で Settings → Advanced → Import/Export → Export content を開きます。.json ファイルです。",
+      "choose": "ファイルを選択",
+      "found": "投稿とページ {count} 件",
+      "siteUrl": "Ghost サイトのURL",
+      "siteUrlHint": "エクスポートでは、リンクと画像がこのURLなしで書き出されます。それらは引き続きそのサイトを指すので、画像を移すまではサイトを公開したままにしてください。",
+      "update": "以前にインポートした投稿を上書き",
+      "updateHint": "オフの場合、このブログから以前に取り込んだ投稿は現在のまま残ります。",
+      "members": "メンバーは別の CSV です（Ghost の Members → Export）。「連絡先」でインポートすると、メールアドレス、名前、ラベル、ニュースレターの同意が取り込まれます。",
+      "run": "インポート",
+      "done": "{created} 件追加、{updated} 件更新、{skipped} 件スキップしました。",
+      "close": "閉じる",
+      "notGhost": "これは Ghost のエクスポートではありません。投稿が含まれていません。",
+      "notJson": "このファイルは JSON ではありません。",
+      "error": "インポートに失敗しました。"
     }
   },
   "chat": {
@@ -801,7 +891,8 @@
       "subscription": "購読状況",
       "billing": "請求",
       "spentOver": "利用額の下限",
-      "spentMoreThan": "利用額が次より多い"
+      "spentMoreThan": "利用額が次より多い",
+      "origin": "追加経路"
     },
     "billingFilter": {
       "all": "すべての請求",
@@ -888,7 +979,9 @@
         "sources": "ソース",
         "createdAt": "追加日",
         "lastSeenAt": "最終アクセス",
-        "updatedAt": "更新日"
+        "updatedAt": "更新日",
+        "origin": "追加経路",
+        "leadForms": "リードフォーム"
       },
       "op": {
         "is": "は",
@@ -913,7 +1006,8 @@
         "days": "日数",
         "date": "日付",
         "removeRule": "ルールを削除"
-      }
+      },
+      "pickForm": "フォームを選択"
     },
     "form": {
       "email": "メール",
@@ -965,7 +1059,11 @@
       "conversations": "会話",
       "noneYet": "まだありません。",
       "nothingSent": "まだ送信されたメールはありません。",
-      "erase": "この人のデータを削除"
+      "erase": "この人のデータを削除",
+      "addedVia": "追加経路",
+      "leadForms": "リードフォーム",
+      "deletedForm": "削除されたフォーム",
+      "files": "送信されたファイル"
     },
     "empty": {
       "title": "まだ連絡先がありません",
@@ -1018,7 +1116,9 @@
       "showPeople": "この人たちを表示",
       "namePlaceholder": "今月アクセスしたプロユーザー",
       "ruleCount": "ルール {count} 件",
-      "peopleCount": "{count} 人"
+      "peopleCount": "{count} 人",
+      "auto": "自動",
+      "autoHint": "リードフォーム用に作成されました。ほかのセグメントと同じように名前の変更、編集、削除ができます。"
     },
     "sources": {
       "connect": "データベースを接続",
@@ -1090,6 +1190,17 @@
       "consentSubscribed": "ここにいる全員がマーケティングメールに同意",
       "consentSubscribedDescription": "本人の同意として記録されます。配信停止済みの人が再登録されることはありません。",
       "saveAndSync": "保存して同期"
+    },
+    "origin": {
+      "app": "アプリのユーザー",
+      "lead_form": "リードフォーム",
+      "signup": "ニュースレター登録",
+      "import": "CSV インポート",
+      "sync": "データベース同期",
+      "stripe": "Stripe",
+      "api": "API",
+      "panel": "手動で追加",
+      "feedback": "フィードバックから取り込み"
     }
   },
   "campaigns": {
@@ -2553,7 +2664,7 @@
         },
         "blog": {
           "term": "ニュースレター付きのブログ",
-          "desc": "リッチエディターで投稿を書き、ホストされたブログ、自分のサイト、RSSで公開して、購読者にメールで届けます。読者はリアクションやコメントができます。"
+          "desc": "リッチエディターで投稿とページを書き、自分のデザインのホストされたブログ、自分のサイト、RSSで公開して、購読者にメールで届けます。メンバー限定の投稿、SEO 項目、サイトマップ、Ghost からのインポートにも対応。読者はリアクションやコメントができます。"
         },
         "followers": {
           "term": "フォロワーに最新情報が届く",
@@ -2601,7 +2712,7 @@
         },
         "forms": {
           "term": "ウェイトリストとリードフォーム",
-          "desc": "メール入力欄ひとつ、または独自の項目を持つフォームで、ローンチ前から見込み客を集められます。サイト、ホストページ、アプリのどこにでも置けて、登録した人はそれぞれ専用セグメントの連絡先になり、ダブルオプトイン、ウェルカムメール、ステップメールにも対応します。"
+          "desc": "メール入力欄ひとつ、または独自の項目を持つフォームで、ローンチ前から見込み客を集められます。ファイルのアップロードや訪問者の言語での表示にも対応。サイト、ホストページ、アプリのどこにでも置けて、登録した人はそれぞれ専用セグメントの連絡先になり、ダブルオプトイン、ウェルカムメール、ステップメールにも対応します。"
         }
       },
       "team": {
@@ -2793,7 +2904,7 @@
     "fallbackHuman": "担当者に引き継ぐ",
     "fallbackSilent": "返信しない",
     "autoReply": "このプロジェクトのユーザーに自動返信",
-    "autoReplyHint": "— デフォルトではオフ。根拠のある回答をこのアシスタントとして送信します",
+    "autoReplyHint": "— デフォルトではオフ。ステータスが「有効」の間だけ、根拠のある回答をこのアシスタントとして送信します",
     "whenAi": "AI で回答するタイミング",
     "minConfidence": "最低信頼度",
     "minConfidenceHint": "最適な知識の一致がこの確度以上の場合にのみ AI の回答を送信します。0% = 常に試行。",
@@ -3031,7 +3142,17 @@
       "latestActivity": "最新のアクティビティ",
       "nothingYet": "まだ何もありません",
       "activityEmpty": "会話、フィードバック、プランニングで完了した項目がここに表示されます。",
-      "loadError": "概要を読み込めませんでした"
+      "loadError": "概要を読み込めませんでした",
+      "stats": {
+        "open": "未解決の会話",
+        "new": "今週の新規",
+        "emails": "送信メール · 7日",
+        "feedback": "フィードバック · 7日"
+      },
+      "activityTitle": {
+        "newFeedback": "新しいフィードバック: {title}",
+        "completed": "完了: {item}"
+      }
     },
     "settings": {
       "general": "一般",
@@ -3754,6 +3875,175 @@
         "mobile": "スマートフォン幅",
         "previewHint": "未保存の変更を、公開ページと同じく非公開ファイルを除いて表示しています。"
       }
+    },
+    "forms": {
+      "guide": "ガイド",
+      "newForm": "新しいフォーム",
+      "newFormDescription": "メール入力欄ひとつ、ウェイトリスト、または項目の多いフォームから始めます。各項目はあとから変更できます。",
+      "title": "リードフォーム",
+      "intro": "ローンチ前から見込み客を集めましょう。ウェイトリスト、「お知らせを受け取る」欄、興味関心フォームを、サイト、アプリ、ホストページに置けます。登録した人は連絡先になり、フォーム専用のセグメントに入り、ウェルカムメールとシーケンスを受け取れます。",
+      "emptyTitle": "フォームはまだありません",
+      "emptyDescription": "フォームを作ってサイトに1行追加すれば、リードが「連絡先」に集まっていきます。",
+      "leadCount": "リード {count} 件",
+      "confirmedCount": "リスト登録 {count} 件",
+      "live": "受付中",
+      "closed": "受付終了",
+      "startFrom": "ひな形",
+      "presets": {
+        "email": "メールのみ",
+        "emailHint": "メール入力欄とボタンを1行に。",
+        "waitlist": "ウェイトリスト",
+        "waitlistHint": "メールアドレスと名前。",
+        "detailed": "興味関心フォーム",
+        "detailedHint": "メールアドレス、名前、会社、役職、質問ひとつ。"
+      },
+      "name": "名前",
+      "namePlaceholder": "ローンチのウェイトリスト",
+      "defaultName": "ウェイトリスト",
+      "key": "キー",
+      "keyHint": "サイトとアプリはこの名前でフォームを取得します。",
+      "keyInvalid": "小文字の英字、数字、ハイフンを使い、40文字までにしてください。",
+      "create": "フォームを作成",
+      "createError": "フォームを作成できませんでした",
+      "loadError": "フォームを読み込めませんでした",
+      "form": "フォーム",
+      "notFound": "このフォームは存在しません。",
+      "active": "登録を受け付ける",
+      "activeHint": "オフにするとフォームは受付終了になり、読み込むサイトやアプリには何も表示されません。",
+      "fields": "項目",
+      "types": {
+        "email": "メールアドレス",
+        "name": "名前",
+        "text": "短いテキスト",
+        "textarea": "長いテキスト",
+        "number": "数値",
+        "url": "ウェブサイト",
+        "phone": "電話番号",
+        "select": "選択肢",
+        "checkbox": "チェックボックス",
+        "file": "ファイルのアップロード"
+      },
+      "moveUp": "上へ移動",
+      "moveDown": "下へ移動",
+      "removeField": "項目を削除",
+      "label": "ラベル",
+      "placeholder": "プレースホルダー",
+      "fieldKey": "保存先",
+      "fieldKeyHint": "回答が保存される連絡先の属性です。",
+      "fieldKeyInvalid": "英字、数字、_ を使い、英字で始めてください。",
+      "options": "選択肢",
+      "optionsHint": "ひとつ入力するごとに Enter を押します。",
+      "addOption": "選択肢を追加",
+      "optionA": "選択肢 A",
+      "optionB": "選択肢 B",
+      "required": "必須",
+      "mustTick": "チェック必須",
+      "addField": "項目を追加",
+      "words": "文言",
+      "content": {
+        "title": "タイトル",
+        "description": "説明",
+        "buttonLabel": "ボタン",
+        "successTitle": "登録後",
+        "successMessage": "お礼のメッセージ",
+        "confirmMessage": "確認待ちのあいだ",
+        "confirmMessageHint": "メールのリンクをクリックするまで、お礼のメッセージの代わりに表示されます。",
+        "footnote": "注記",
+        "footnotePlaceholder": "ローンチに関するお知らせだけをお送りします。いつでも配信を停止できます。"
+      },
+      "look": "外観",
+      "accent": "アクセント",
+      "projectAccent": "プロジェクトのアクセント",
+      "background": "背景",
+      "noBackground": "なし：ページにそのまま配置",
+      "text": "テキスト",
+      "followsTheme": "ライト／ダークに合わせる",
+      "reset": "リセット",
+      "layout": "レイアウト",
+      "layouts": {
+        "stacked": "縦並び",
+        "inline": "1行"
+      },
+      "radius": "角の丸み",
+      "font": "フォント",
+      "after": "登録後の流れ",
+      "afterHint": "連絡先になり、下のタグが付き、このフォームのセグメントに入ります。",
+      "doubleOptIn": "メールアドレスの確認を求める",
+      "doubleOptInHint": "リンク付きのメールが届き、クリックするまで確認待ちになります。ウェルカムメールとシーケンスはそのあとに始まります。",
+      "confirmTemplate": "確認メール",
+      "confirmTemplateHint": "{'{'}{'{'}confirmUrl{'}'}{'}'} ボタンのあるテンプレート。",
+      "builtInConfirm": "HelpBites 標準",
+      "welcomeTemplate": "ウェルカムメール",
+      "welcomeTemplateHint": "リストに登録されたときに一度だけ送信されます。",
+      "noWelcome": "なし",
+      "sequence": "シーケンスを開始",
+      "sequenceHint": "下書きまたは一時停止中のシーケンスでは、有効にするまで最初のステップで待機します。",
+      "noSequence": "なし",
+      "sequenceStatus": {
+        "active": "有効",
+        "draft": "下書き",
+        "paused": "一時停止中"
+      },
+      "tags": "タグ",
+      "tagsHint": "登録したすべての人に付きます。",
+      "addTag": "タグを追加",
+      "redirectUrl": "登録後の移動先",
+      "redirectUrlHint": "シンプルな HTML フォーム、ホストページ、確認リンクで使われます。空欄ならお礼のページを表示します。",
+      "newTemplate": "新しいメールテンプレート",
+      "manageSequences": "シーケンス",
+      "install": "サイトやアプリに設置",
+      "installTabs": {
+        "script": "スクリプト",
+        "link": "リンク"
+      },
+      "installHints": {
+        "script": "script タグひとつで、置いた場所にフォームをあなたの色で表示します。ほかには何も要りません。",
+        "html": "あなたの CSS でスタイルを付けるシンプルなフォームです。HelpBites に直接送信し、お礼のページに戻ります。",
+        "link": "リンクしたり、サイトに埋め込んだりできるホストページです。",
+        "swift": "ガイドの HelpBitesLeadForm.swift をアプリに貼り付けて、好きな場所にビューを表示します。",
+        "api": "独自の UI やサーバーから回答を送信します。各項目の回答はそのキーで送ります。"
+      },
+      "saveFirst": "先に変更を保存してください。スニペットは保存済みのフォームを使います。",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "openPage": "ホストページを開く",
+      "openJson": "フォームの JSON を開く",
+      "readGuide": "ガイドを読む",
+      "leads": "リード",
+      "leadsHint": "このフォームから最近登録した人です。ほかと同じ連絡先で、このフォームのセグメントに入っています。",
+      "noLeads": "まだ誰も登録していません。",
+      "showAll": "「連絡先」ですべて表示",
+      "emailThem": "メールを送る",
+      "preview": "プレビュー",
+      "previewStates": {
+        "form": "フォーム",
+        "success": "完了"
+      },
+      "toggleTheme": "ライトとダークを切り替え",
+      "previewHint": "未保存の変更を、サイトが読み込むのと同じスクリプトで描画しています。Swift のスニペットでもレイアウトは同じです。",
+      "saved": "保存しました",
+      "saveError": "フォームを保存できませんでした",
+      "deleteConfirm": "「{name}」を削除しますか？読み込んでいるサイトには何も表示されなくなります。リードとセグメントは残ります。",
+      "deleteForm": "フォームを削除",
+      "accept": "受け付けるファイル",
+      "acceptHint": "ファイルの実際の中身で確認します: {types}",
+      "accepts": {
+        "images": "画像",
+        "documents": "文書",
+        "any": "画像、文書、ZIP"
+      },
+      "maxMB": "最大サイズ",
+      "optionsTranslateHint": "この言語での各選択肢の表示です。保存される回答は元の選択肢のままです。",
+      "files": {
+        "title": "送信されたファイル",
+        "loading": "ファイルを読み込み中…",
+        "download": "ダウンロード",
+        "delete": "ファイルを削除",
+        "deleteConfirm": "{name} を完全に削除しますか？",
+        "downloadError": "ファイルをダウンロードできませんでした。",
+        "deleteError": "ファイルを削除できませんでした。"
+      },
+      "fileKeyHint": "ファイルを送信するときの名前です。ファイルは属性ではなく、チーム専用に非公開で保存されます。"
     }
   },
   "workspaceSettings": {

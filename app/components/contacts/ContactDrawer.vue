@@ -12,6 +12,7 @@ import type { EmailLogEntry, EmailLogStatus } from '~~/server/utils/emailLogs'
 import type { AdminProject } from '~~/server/utils/projects'
 import { SUBSCRIPTION_STATUS } from '~/utils/contactStatus'
 import { ORIGIN_ICONS, originText } from '~/utils/contactOrigin'
+import LeadFileList from '~/components/contacts/LeadFileList.vue'
 import { EMAIL_STATUS, logTime } from '~/utils/emailStatus'
 
 const props = defineProps<{ project: AdminProject }>()
@@ -191,6 +192,10 @@ const dirty = computed(() => contact.value && (name.value !== contact.value.name
           <dt class="text-muted">{{ $t('contacts.lastSeen') }}</dt><dd>{{ fullDate(contact.lastSeenAt) }}</dd>
           <template v-if="contact.sources.length"><dt class="text-muted">{{ $t('contacts.drawer.syncedFrom') }}</dt><dd>{{ $t('contacts.drawer.sourceCount', contact.sources.length) }}</dd></template>
         </dl>
+
+        <LeadFileList v-if="contact.leadForms.length" :key="contact.id" :project-id="project.id" :contact="contact.id">
+          <template #title><h3 class="text-xs font-semibold text-muted">{{ $t('contacts.drawer.files') }}</h3></template>
+        </LeadFileList>
 
         <section v-if="billing" class="space-y-2">
           <div class="flex items-center gap-2">

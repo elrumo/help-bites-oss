@@ -71,6 +71,7 @@ export const NOT_PORTABLE: Record<string, string> = {
   WebhookDelivery: 'the old instance\'s outbox',
   BrandAsset: 'a file in the old bucket',
   CmsAsset: 'a file in the old bucket; pages keep linking to it there',
+  LeadFile: 'a file in the old bucket; download it there before you move',
   Campaign: 'could send again; recreate it from the template',
   SequenceEnrollment: 'would send the next step again',
   DataTransfer: 'the old instance\'s own bookkeeping'

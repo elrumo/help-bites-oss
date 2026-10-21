@@ -115,6 +115,8 @@ struct LeadFormScreen: View {
         toggle("Taking sign-ups", "Off closes the form: sites and apps that load it show nothing.", isOn: draft.active)
       }
 
+      LeadFormLanguagesPanel(draft: draft, canTranslate: !dirty && busy == "") { locales, overwrite in try await translate(locales, overwrite) }
+
       HStack {
         SectionLabel("Fields")
         Text("\(draft.wrappedValue.fields.count) of \(LeadFormLimits.fields)").font(.lnCaption).foregroundStyle(Theme.textMuted).monospacedDigit()
@@ -130,6 +132,7 @@ struct LeadFormScreen: View {
       Menu {
         ForEach(LeadFormLimits.fieldTypes.filter { $0.id != "email" && ($0.id != "name" || !draft.wrappedValue.fields.contains { $0.type == "name" }) }, id: \.id) { type in
           Button { draft.wrappedValue.fields.append(.new(type.id, taken: draft.wrappedValue.fields.map(\.key))) } label: { Label(type.label, systemImage: type.systemImage) }
+            .disabled(type.id == "file" && draft.wrappedValue.fields.filter { $0.type == "file" }.count >= LeadFormLimits.files)
         }
       } label: { Label("Add field", systemImage: "plus") }
         .menuStyle(.button).buttonStyle(.lnSecondaryCompact).fixedSize()
@@ -215,6 +218,13 @@ struct LeadFormScreen: View {
         }
         Text("They are contacts like everyone else: filter People by this form's segment to see them all.").font(.lnCaption).foregroundStyle(Theme.textMuted)
       }
+
+      if form.fields.contains(where: { $0.type == "file" }) {
+        LegalPanel("Files sent") {
+          LeadFileRows(projectId: projectId, formId: formId, fields: form.fields)
+          Text("Kept privately: only your team can download them. Erasing a person deletes their files.").font(.lnCaption).foregroundStyle(Theme.textMuted)
+        }
+      }
     }
   }
 
@@ -251,6 +261,12 @@ struct LeadFormScreen: View {
   ]
 
   private var base: String { session.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/")) }
+  /// A file input's `accept` for each kind (`LEAD_FILE_EXTENSIONS`).
+  private static let accept = [
+    "images": ".png,.jpg,.jpeg,.gif,.webp",
+    "documents": ".pdf,.docx,.xlsx,.pptx,.odt,.ods,.doc,.xls,.rtf,.txt,.csv,.md",
+    "any": ".png,.jpg,.jpeg,.gif,.webp,.pdf,.docx,.xlsx,.pptx,.odt,.ods,.doc,.xls,.rtf,.txt,.csv,.md,.zip"
+  ]
 
   private func snippet(_ kind: String) -> String {
     let pk = workspace.project(projectId)?.publicKey ?? "pk_…"
@@ -263,19 +279,36 @@ struct LeadFormScreen: View {
         let required = f.required ? " required" : ""
         let hint = f.placeholder.isEmpty ? f.label : f.placeholder
         switch f.type {
+        case "file": return "  <input type=\"file\" name=\"\(f.key)\" accept=\"\(Self.accept[f.accept] ?? Self.accept["any"]!)\"\(required)>"
         case "checkbox": return "  <label><input type=\"checkbox\" name=\"\(f.key)\"\(required)> \(f.label)</label>"
         case "textarea": return "  <textarea name=\"\(f.key)\" placeholder=\"\(hint)\"\(required)></textarea>"
         case "select": return "  <select name=\"\(f.key)\"\(required)>\n    <option value=\"\">\(f.label)</option>\n" + f.options.map { "    <option>\($0)</option>" }.joined(separator: "\n") + "\n  </select>"
         default: return "  <input type=\"\(["email": "email", "number": "number", "url": "url", "phone": "tel"][f.type] ?? "text")\" name=\"\(f.key)\" placeholder=\"\(hint)\"\(required)>"
         }
       }
-      return "<form action=\"\(post)\" method=\"post\">\n\(inputs.joined(separator: "\n"))\n  <input type=\"text\" name=\"website\" tabindex=\"-1\" autocomplete=\"off\" aria-hidden=\"true\" style=\"position:absolute;left:-10000px\">\n  <button type=\"submit\">\(saved?.content.buttonLabel ?? "Notify me")</button>\n</form>"
+      let multipart = (saved?.fields ?? []).contains { $0.type == "file" } ? " enctype=\"multipart/form-data\"" : ""
+      return "<form action=\"\(post)\" method=\"post\"\(multipart)>\n\(inputs.joined(separator: "\n"))\n  <input type=\"text\" name=\"website\" tabindex=\"-1\" autocomplete=\"off\" aria-hidden=\"true\" style=\"position:absolute;left:-10000px\">\n  <button type=\"submit\">\(saved?.content.buttonLabel ?? "Notify me")</button>\n</form>"
     case "link":
       return "\(base)/f/\(pk)/\(key)\n\n<iframe src=\"\(base)/f/\(pk)/\(key)\" style=\"width:100%;max-width:480px;height:520px;border:0\"></iframe>"
     case "swift":
       return "// Add HelpBitesLeadForm.swift from the guide, then:\nHelpBitesLeadForm(host: URL(string: \"\(base)\")!, projectKey: \"\(pk)\", form: \"\(key)\")"
     case "api":
-      let sample = (saved?.fields ?? []).map { f -> String in
+      let fields = saved?.fields ?? []
+      // A file goes as multipart: one -F per answer, the file with @.
+      if fields.contains(where: { $0.type == "file" }) {
+        let parts = fields.map { f -> String in
+          switch f.type {
+          case "file": "-F '\(f.key)=@\(f.accept == "images" ? "photo.png" : "file.pdf")'"
+          case "email": "-F 'email=ada@example.com'"
+          case "name": "-F 'name=Ada Lovelace'"
+          case "checkbox": "-F '\(f.key)=true'"
+          case "select": "-F '\(f.key)=\(f.options.first ?? "")'"
+          default: "-F '\(f.key)=…'"
+          }
+        }
+        return "curl -s \(post) \\\n  " + parts.joined(separator: " \\\n  ")
+      }
+      let sample = fields.filter { $0.type != "file" }.map { f -> String in
         let value: String = switch f.type {
         case "email": "\"ada@example.com\""
         case "name": "\"Ada Lovelace\""
@@ -337,6 +370,13 @@ struct LeadFormScreen: View {
     }
   }
 
+  /// The server translates the saved form; the panel only offers it when nothing waits to be saved.
+  private func translate(_ locales: [String], _ overwrite: Bool) async throws {
+    struct Body: Encodable, Sendable { let locales: [String]; let overwrite: Bool }
+    let response: LeadFormResponse = try await session.send("/v1/admin/lead-forms/\(formId)/translate", body: Body(locales: locales, overwrite: overwrite))
+    apply(response.form)
+  }
+
   private func delete() async {
     busy = "delete"
     defer { busy = "" }
@@ -362,11 +402,11 @@ private struct LeadFieldCard: View {
       ReorderControls(index: index, count: count, move: move, remove: remove)
     }, content: {
       OnboardingTextField(label: "Label", text: $field.label, limit: LeadFormLimits.label)
-      if field.type != "checkbox" && field.type != "select" {
+      if field.hasPlaceholder {
         OnboardingTextField(label: "Placeholder", text: $field.placeholder, limit: LeadFormLimits.placeholder)
       }
       if field.type != "email" && field.type != "name" {
-        LabeledField(label: "Saved as", hint: LeadFormLimits.validFieldKey(field.key) ? "The contact attribute the answer goes in." : "Letters, digits and _, starting with a letter; not a reserved name.") {
+        LabeledField(label: "Saved as", hint: !LeadFormLimits.validFieldKey(field.key) ? "Letters, digits and _, starting with a letter; not a reserved name." : field.type == "file" ? "The name the file is sent under. Files are kept privately for your team, not as an attribute." : "The contact attribute the answer goes in.") {
           TextField("company", text: $field.key).textFieldStyle(.linear).font(.lnMono).textInputAutocapitalization(.never).autocorrectionDisabled()
         }
       }
@@ -377,6 +417,17 @@ private struct LeadFieldCard: View {
             set: { field.options = Array($0.split(separator: ",").map { String($0.trimmingCharacters(in: .whitespaces).prefix(LeadFormLimits.option)) }.filter { !$0.isEmpty }.prefix(LeadFormLimits.options)) }
           ))
           .textFieldStyle(.linear)
+        }
+      }
+      if field.type == "file" {
+        LabeledField(label: "Takes", hint: LeadFormLimits.fileKinds.first { $0.id == field.accept }?.hint) {
+          Picker("Takes", selection: $field.accept) {
+            ForEach(LeadFormLimits.fileKinds, id: \.id) { Text($0.label).tag($0.id) }
+          }
+          .pickerStyle(.segmented).labelsHidden()
+        }
+        Stepper(value: $field.maxMB, in: 1...LeadFormLimits.fileMB) {
+          Text("Largest file: \(field.maxMB) MB").font(.lnRow).foregroundStyle(Theme.text).monospacedDigit()
         }
       }
       if field.type != "email" {
@@ -391,8 +442,11 @@ struct LeadFormPreview: View {
   let draft: LeadFormDraft
   let projectAccent: String?
   @State private var done = false
+  /// '' shows the original; a tag shows that translation, word by word like visitors see it.
+  @State private var language = ""
 
   var body: some View {
+    let words = draft.translations[language].map { $0.localized(content: draft.content, fields: draft.fields) } ?? (content: draft.content, fields: draft.fields)
     let accent = draft.style.accent.isEmpty ? (projectAccent ?? "") : draft.style.accent
     let tint = Color(hexString: accent) ?? Theme.accent
     let radius = CGFloat(draft.style.radius)
@@ -400,21 +454,28 @@ struct LeadFormPreview: View {
     VStack(alignment: .leading, spacing: 14) {
       HStack {
         SectionLabel("Preview")
+        if !draft.translations.isEmpty {
+          Picker("Language", selection: $language) {
+            Text(ContentLocale.name(draft.locale)).tag("")
+            ForEach(draft.translations.keys.sorted(), id: \.self) { Text(ContentLocale.name($0)).tag($0) }
+          }
+          .labelsHidden().fixedSize()
+        }
         Picker("State", selection: $done) { Text("Form").tag(false); Text("Done").tag(true) }.pickerStyle(.segmented).labelsHidden().fixedSize()
       }
       VStack(alignment: .leading, spacing: 12) {
         if done {
-          Label(draft.content.successTitle, systemImage: "checkmark.circle.fill").font(.headline).foregroundStyle(Theme.textHighlighted)
-          Text(draft.settings.doubleOptIn ? draft.content.confirmMessage : draft.content.successMessage).foregroundStyle(Theme.textMuted)
+          Label(words.content.successTitle, systemImage: "checkmark.circle.fill").font(.headline).foregroundStyle(Theme.textHighlighted)
+          Text(draft.settings.doubleOptIn ? words.content.confirmMessage : words.content.successMessage).foregroundStyle(Theme.textMuted)
         } else {
-          if !draft.content.title.isEmpty { Text(draft.content.title).font(.title3.weight(.semibold)).foregroundStyle(Theme.textHighlighted) }
-          if !draft.content.description.isEmpty { Text(draft.content.description).font(.callout).foregroundStyle(Theme.textMuted) }
-          let button = Text(draft.content.buttonLabel).fontWeight(.semibold).padding(.horizontal, 16).frame(minHeight: 42)
+          if !words.content.title.isEmpty { Text(words.content.title).font(.title3.weight(.semibold)).foregroundStyle(Theme.textHighlighted) }
+          if !words.content.description.isEmpty { Text(words.content.description).font(.callout).foregroundStyle(Theme.textMuted) }
+          let button = Text(words.content.buttonLabel).fontWeight(.semibold).padding(.horizontal, 16).frame(minHeight: 42)
             .background(tint, in: RoundedRectangle(cornerRadius: radius * 0.75)).foregroundStyle(accent.count == 7 ? OnboardingPreview.readable(on: accent) : .white)
-          if draft.style.layout == "inline" && draft.fields.count == 1, let only = draft.fields.first {
+          if draft.style.layout == "inline" && words.fields.count == 1, let only = words.fields.first {
             HStack(spacing: 8) { input(only, radius); button }
           } else {
-            ForEach(draft.fields) { field in
+            ForEach(words.fields) { field in
               if field.type == "checkbox" {
                 Label(field.label, systemImage: "square").font(.callout).foregroundStyle(Theme.text)
               } else {
@@ -426,7 +487,7 @@ struct LeadFormPreview: View {
             }
             button.frame(maxWidth: .infinity)
           }
-          if !draft.content.footnote.isEmpty { Text(draft.content.footnote).font(.caption).foregroundStyle(Theme.textMuted) }
+          if !words.content.footnote.isEmpty { Text(words.content.footnote).font(.caption).foregroundStyle(Theme.textMuted) }
         }
       }
       .fontDesign(design)
@@ -439,7 +500,7 @@ struct LeadFormPreview: View {
   private static let designs: [String: Font.Design] = ["rounded": .rounded, "serif": .serif, "mono": .monospaced]
 
   private func input(_ field: LeadFormField, _ radius: CGFloat) -> some View {
-    Text(field.type == "select" ? (field.options.first ?? "—") : field.placeholder.isEmpty ? field.label : field.placeholder)
+    Text(field.type == "select" ? (field.options.first ?? "—") : field.type == "file" ? "Choose a file · up to \(field.maxMB) MB" : field.placeholder.isEmpty ? field.label : field.placeholder)
       .font(.callout).foregroundStyle(Theme.textDimmed).lineLimit(1)
       .frame(maxWidth: .infinity, minHeight: field.type == "textarea" ? 72 : 42, alignment: field.type == "textarea" ? .topLeading : .leading)
       .padding(.horizontal, 12).padding(.vertical, field.type == "textarea" ? 10 : 0)

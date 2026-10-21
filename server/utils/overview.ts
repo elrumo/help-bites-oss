@@ -1,8 +1,9 @@
 // A project's Overview page: headline numbers, the setup checklist, what needs
 // attention and the latest activity, all derived from rows that already exist.
 // `section` is a web section path both apps link to, optionally with a `?query`
-// or `#anchor`. Below it, the workspace overview (shared/overview.ts): every
-// project at once.
+// or `#anchor`. `title` is English; the panel translates the activity by `titleKey`
+// with `params`, and keeps the English for a key it does not know.
+// Below it, the workspace overview (shared/overview.ts): every project at once.
 
 import { OVERVIEW_UNREAD_LIMIT, revenueChange, type WorkspaceOverview, type WorkspaceRevenue } from '#shared/overview'
 import { can } from '#shared/roles'
@@ -16,7 +17,7 @@ export type ProjectOverview = {
   setup: ProjectSetup
   /** What waits on someone (see shared/attention.ts), with the unread conversations first. */
   attention: AttentionItem[]
-  activity: { id: string, title: string, detail: string, at: string, section: string, conversationId?: string }[]
+  activity: { id: string, title: string, titleKey?: string, params?: Record<string, string | number>, detail: string, at: string, section: string, conversationId?: string }[]
 }
 
 const OPEN_CATEGORIES = ['open', 'pending']
@@ -59,8 +60,11 @@ export async function projectOverview(ctx: MemberContext, project: ParseObject):
       const user = row.get('endUser') as ParseObject | undefined
       return { id: `c:${row.id}`, title: String(user?.get('name') || user?.get('email') || row.get('subject') || 'Conversation'), detail: String(row.get('lastMessagePreview') || ''), at: iso(row.get('lastMessageAt')) || '', section: 'conversations', conversationId: row.id }
     }),
-    ...posts.map(row => ({ id: `f:${row.id}`, title: `New feedback: ${row.get('title') || 'Untitled'}`, detail: String(row.get('authorName') || ''), at: iso(row.get('postedAt')) || '', section: 'feedback' })),
-    ...completed.map(row => ({ id: `b:${row.id}`, title: `Completed ${row.get('number') ? `#${row.get('number')} ` : ''}${row.get('title') || ''}`.trim(), detail: '', at: iso(row.get('completedAt')) || '', section: 'board' }))
+    ...posts.map(row => ({ id: `f:${row.id}`, title: `New feedback: ${row.get('title') || 'Untitled'}`, titleKey: 'newFeedback', params: { title: String(row.get('title') || 'Untitled') }, detail: String(row.get('authorName') || ''), at: iso(row.get('postedAt')) || '', section: 'feedback' })),
+    ...completed.map((row) => {
+      const item = `${row.get('number') ? `#${row.get('number')} ` : ''}${row.get('title') || ''}`.trim()
+      return { id: `b:${row.id}`, title: `Completed ${item}`, titleKey: 'completed', params: { item }, detail: '', at: iso(row.get('completedAt')) || '', section: 'board' }
+    })
   ].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 20)
 
   return { stats, setup, attention, activity }

@@ -10,8 +10,12 @@ import { safeHttpUrl } from './support'
 export const BLOG_TITLE_MAX_LENGTH = 200
 export const BLOG_SLUG_MAX_LENGTH = 80
 export const BLOG_EXCERPT_MAX_LENGTH = 300
-/** Markdown source characters: a long essay with room to spare. */
-export const BLOG_BODY_MAX_LENGTH = 100_000
+/** Source characters: a long essay with room to spare, or a long post imported as HTML. */
+export const BLOG_BODY_MAX_LENGTH = 200_000
+/** What search engines and link previews show; Ghost's limits. */
+export const BLOG_META_TITLE_MAX_LENGTH = 300
+export const BLOG_META_DESCRIPTION_MAX_LENGTH = 500
+export const BLOG_ALT_MAX_LENGTH = 300
 export const BLOG_TAGS_MAX = 10
 export const BLOG_TAG_MAX_LENGTH = 40
 export const BLOG_PAGE_MAX = 50
@@ -31,6 +35,18 @@ export const BLOG_RESERVED_SLUGS = ['comments', 'rss', 'feed', 'tags', 'subscrib
 export const BLOG_POST_STATUSES = ['draft', 'published'] as const
 export type BlogPostStatus = typeof BLOG_POST_STATUSES[number]
 
+/** A post is in the list, the feed and the newsletter; a page (About, Contact) stands on its own, linked from the navigation. */
+export const BLOG_POST_TYPES = ['post', 'page'] as const
+export type BlogPostType = typeof BLOG_POST_TYPES[number]
+
+/** Who reads the body: everyone, or the blog's members (readers signed in with your app or their email). */
+export const BLOG_VISIBILITIES = ['public', 'members'] as const
+export type BlogVisibility = typeof BLOG_VISIBILITIES[number]
+
+/** How the body is written: Markdown (what the editor saves) or HTML (a post imported from Ghost). */
+export const BLOG_BODY_FORMATS = ['markdown', 'html'] as const
+export type BlogBodyFormat = typeof BLOG_BODY_FORMATS[number]
+
 /** The reactions a reader may leave on a post, in the order they show. */
 export const BLOG_REACTIONS = ['heart', '+1', 'hooray', 'laugh', 'rocket', 'eyes'] as const
 export type BlogReactionKey = typeof BLOG_REACTIONS[number]
@@ -42,6 +58,92 @@ export const BLOG_COMMENT_STATUSES = ['visible', 'hidden', 'deleted'] as const
 export type BlogCommentStatus = typeof BLOG_COMMENT_STATUSES[number]
 export const BLOG_COMMENT_MAX_LENGTH = 4000
 export const BLOG_COMMENTS_PAGE_MAX = 100
+
+// ---- design -----------------------------------------------------------------
+
+/** How the hosted blog lays out its posts: one column, a grid of cards, or the newest featured post large above a grid. */
+export const BLOG_LAYOUTS = ['list', 'grid', 'magazine'] as const
+export type BlogLayout = typeof BLOG_LAYOUTS[number]
+export const BLOG_FONTS = ['sans', 'serif'] as const
+export type BlogFont = typeof BLOG_FONTS[number]
+export const BLOG_COLOR_SCHEMES = ['auto', 'light', 'dark'] as const
+export type BlogColorScheme = typeof BLOG_COLOR_SCHEMES[number]
+export const BLOG_SOCIAL_NETWORKS = ['x', 'bluesky', 'mastodon', 'github', 'linkedin', 'instagram', 'youtube', 'website'] as const
+export type BlogSocialNetwork = typeof BLOG_SOCIAL_NETWORKS[number]
+export const BLOG_NAVIGATION_MAX = 8
+
+/** A link in the hosted blog's header: an http(s) address, or a path on the blog (`/about` is the page with slug `about`, `/` the blog itself). */
+export type BlogNavLink = { label: string, url: string }
+
+/** The hosted blog's look (Ghost's Design settings). The embed takes your page's look instead, and the layout. */
+export type BlogDesign = {
+  layout: BlogLayout
+  font: BlogFont
+  colorScheme: BlogColorScheme
+  /** '#rrggbb', or '' for the project's accent. */
+  accent: string
+  /** '' falls back to the project's brand logo. */
+  logoUrl: string
+  /** A wide image across the top of the blog's front page. */
+  coverImageUrl: string
+  navigation: BlogNavLink[]
+  social: Partial<Record<BlogSocialNetwork, string>>
+  footer: string
+}
+
+export const DEFAULT_BLOG_DESIGN: BlogDesign = { layout: 'list', font: 'sans', colorScheme: 'auto', accent: '', logoUrl: '', coverImageUrl: '', navigation: [], social: {}, footer: '' }
+
+/** A navigation target as stored: an http(s) URL, or a blog path (`/`, `/about`). Null when it is neither. */
+export function readBlogNavUrl(value: unknown): string | null {
+  const url = typeof value === 'string' ? value.trim() : ''
+  if (/^\/[a-z0-9/-]{0,120}$/i.test(url) && !url.includes('//')) return url.toLowerCase()
+  return safeHttpUrl(url) || null
+}
+
+function validateDesign(value: unknown, base: BlogDesign, errors: string[]): BlogDesign {
+  const raw = record(value)
+  const design: BlogDesign = { ...base, navigation: [...base.navigation], social: { ...base.social } }
+  const choose = <T extends string>(key: 'layout' | 'font' | 'colorScheme', options: readonly T[]) => {
+    if (raw[key] === undefined) return
+    if (options.includes(raw[key] as T)) (design as unknown as Record<string, unknown>)[key] = raw[key]
+    else errors.push(`design.${key} is one of ${options.join(', ')}`)
+  }
+  choose('layout', BLOG_LAYOUTS)
+  choose('font', BLOG_FONTS)
+  choose('colorScheme', BLOG_COLOR_SCHEMES)
+  if (raw.accent !== undefined) {
+    const accent = typeof raw.accent === 'string' ? raw.accent.trim() : null
+    if (accent === null || (accent && !/^#[0-9a-f]{6}$/i.test(accent))) errors.push('design.accent must be a #rrggbb colour or empty')
+    else design.accent = accent
+  }
+  for (const key of ['logoUrl', 'coverImageUrl'] as const) {
+    if (raw[key] === undefined) continue
+    const url = raw[key] === null ? '' : safeHttpUrl(raw[key])
+    if (raw[key] && !url) errors.push(`design.${key} must be an http(s) URL`)
+    else design[key] = url
+  }
+  if (raw.footer !== undefined) {
+    if (typeof raw.footer !== 'string' || raw.footer.trim().length > 300) errors.push('design.footer is up to 300 characters')
+    else design.footer = raw.footer.trim()
+  }
+  if (raw.navigation !== undefined) {
+    const list = Array.isArray(raw.navigation) ? raw.navigation : null
+    const links = (list || []).map(item => record(item)).map(item => ({ label: typeof item.label === 'string' ? item.label.trim() : '', url: readBlogNavUrl(item.url) }))
+    if (!list || links.length > BLOG_NAVIGATION_MAX || links.some(link => !link.label || link.label.length > 40 || !link.url)) errors.push(`design.navigation is up to ${BLOG_NAVIGATION_MAX} links, each a label (up to 40 characters) and an http(s) address or a path such as /about`)
+    else design.navigation = links.map(link => ({ label: link.label, url: link.url! }))
+  }
+  if (raw.social !== undefined) {
+    const social = record(raw.social)
+    for (const [key, url] of Object.entries(social)) {
+      if (!(BLOG_SOCIAL_NETWORKS as readonly string[]).includes(key)) { errors.push(`design.social.${key} is not a network (${BLOG_SOCIAL_NETWORKS.join(', ')})`); continue }
+      const clean = url === null || url === '' ? '' : safeHttpUrl(url)
+      if (url && !clean) errors.push(`design.social.${key} must be an http(s) URL`)
+      else if (clean) design.social[key as BlogSocialNetwork] = clean
+      else delete design.social[key as BlogSocialNetwork]
+    }
+  }
+  return design
+}
 
 // ---- config -----------------------------------------------------------------
 
@@ -64,6 +166,8 @@ export type BlogConfig = {
   newsletterTopic: string
   /** A sign-up form under each hosted post, into the project's contacts (the newsletter's audience). */
   subscribeForm: boolean
+  /** How the hosted blog looks. */
+  design: BlogDesign
 }
 
 export const DEFAULT_BLOG_CONFIG: BlogConfig = {
@@ -75,7 +179,8 @@ export const DEFAULT_BLOG_CONFIG: BlogConfig = {
   commentNotify: [],
   postUrl: '',
   newsletterTopic: '',
-  subscribeForm: false
+  subscribeForm: false,
+  design: DEFAULT_BLOG_DESIGN
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -94,7 +199,7 @@ export function validateBlogConfig(value: unknown, base: BlogConfig = DEFAULT_BL
   const errors: string[] = []
   if (value !== undefined && value !== null && (typeof value !== 'object' || Array.isArray(value))) errors.push('blog must be an object')
   const raw = record(value)
-  const config: BlogConfig = { ...base, commentNotify: [...base.commentNotify] }
+  const config: BlogConfig = { ...base, commentNotify: [...base.commentNotify], design: base.design || DEFAULT_BLOG_DESIGN }
 
   for (const key of ['enabled', 'comments', 'reactions', 'subscribeForm'] as const) {
     if (raw[key] === undefined) continue
@@ -123,6 +228,8 @@ export function validateBlogConfig(value: unknown, base: BlogConfig = DEFAULT_BL
     if (topic === null || (topic && !TOPIC.test(topic))) errors.push('newsletterTopic is a topic key (lowercase letters, digits and hyphens) or empty')
     else config.newsletterTopic = topic
   }
+  // Partial too: a layout change does not resend the navigation.
+  config.design = validateDesign(raw.design, config.design, errors)
   return { config, errors }
 }
 
@@ -142,7 +249,7 @@ export function fillBlogPostUrl(template: string, siteUrl: string, slug: string)
 
 /**
  * Title → URL key. NFD-normalises so accented letters keep their base letter
- * ("Cómo" → "como") rather than vanishing. The Swift port (BlogSlug.swift) must
+ * ("Cómo" → "como") rather than vanishing. The Swift port (BlogSlug in BlogModels.swift) must
  * give the same answer for the same title.
  */
 export function blogSlugify(value: string): string {
@@ -167,22 +274,38 @@ export function isBlogPostLive(post: { status: BlogPostStatus, publishedAt: stri
   return post.status === 'published' && !!post.publishedAt && new Date(post.publishedAt).getTime() <= now
 }
 
+/** What search engines and link previews show, each falling back to the post's own when empty. */
+export type BlogSeo = {
+  metaTitle: string
+  metaDescription: string
+  /** The image link previews show; the cover when empty. */
+  ogImageUrl: string
+  /** Where the post first appeared, when that is elsewhere (an import, a guest post). */
+  canonicalUrl: string
+}
+
 /** The team's view of a post. */
-export type BlogPost = {
+export type BlogPost = BlogSeo & {
   id: string
   projectId: string
+  type: BlogPostType
   title: string
   slug: string
   /** The lead-in shown on the list, in the feed and as the page's description; written, or taken from the body. */
   excerpt: string
   /** Whether `excerpt` was written (true) or taken from the body (false). */
   excerptWritten: boolean
-  /** Markdown, as the editor saves it. */
+  /** As the editor saves it: Markdown, or HTML for a post imported as HTML. */
   body: string
+  bodyFormat: BlogBodyFormat
   /** Sanitised HTML, rendered once on write. */
   bodyHtml: string
   coverImageUrl: string
+  coverImageAlt: string
   tags: string[]
+  /** Shown first: large on the magazine layout, marked on the others. */
+  featured: boolean
+  visibility: BlogVisibility
   status: BlogPostStatus
   /** The date shown and the moment a published post goes public; set on first publish. */
   publishedAt: string | null
@@ -202,15 +325,21 @@ export type BlogPost = {
   updatedAt: string
 }
 
-/** What a reader gets. `bodyHtml` only on a single post, never on the list. */
-export type PublicBlogPost = {
+/** What a reader gets. `bodyHtml` only on a single post, never on the list, and not when `locked`. */
+export type PublicBlogPost = BlogSeo & {
   id: string
+  type: BlogPostType
   slug: string
   title: string
   excerpt: string
   bodyHtml?: string
   coverImageUrl: string
+  coverImageAlt: string
   tags: string[]
+  featured: boolean
+  visibility: BlogVisibility
+  /** A members-only post this viewer may not read yet: sign in (an identity token, or an email-only session) for the body. */
+  locked: boolean
   publishedAt: string
   authorName: string
   readingMinutes: number
@@ -223,6 +352,8 @@ export type PublicBlogPost = {
 export type PublicBlog = {
   title: string
   description: string
+  /** The hosted blog's layout, for an embed that wants to match it. */
+  layout: BlogLayout
   /** RSS 2.0 of the latest posts. */
   feedUrl: string
   /** Whether readers may react and comment at all. */
@@ -235,13 +366,18 @@ export type PublicBlog = {
   hasMore: boolean
 }
 
-export type BlogPostValues = {
+export type BlogPostValues = Partial<BlogSeo> & {
+  type?: BlogPostType
   title?: string
   slug?: string
   excerpt?: string
   body?: string
+  bodyFormat?: BlogBodyFormat
   coverImageUrl?: string
+  coverImageAlt?: string
   tags?: string[]
+  featured?: boolean
+  visibility?: BlogVisibility
   status?: BlogPostStatus
   publishedAt?: Date | null
   commentsOpen?: boolean
@@ -289,7 +425,7 @@ export function readBlogPostInput(payload: unknown, options: { create: boolean }
   }
   if (has('body')) {
     const body = raw.body === null ? '' : typeof raw.body === 'string' ? raw.body : null
-    if (body === null || body.length > BLOG_BODY_MAX_LENGTH) errors.push(`body is Markdown of up to ${BLOG_BODY_MAX_LENGTH} characters`)
+    if (body === null || body.length > BLOG_BODY_MAX_LENGTH) errors.push(`body is up to ${BLOG_BODY_MAX_LENGTH} characters`)
     else values.body = body
   }
   if (has('coverImageUrl')) {
@@ -309,9 +445,31 @@ export function readBlogPostInput(payload: unknown, options: { create: boolean }
     const date = readDate(raw.publishedAt, 'publishedAt', errors)
     if (date !== undefined) values.publishedAt = date
   }
-  if (has('commentsOpen')) {
-    if (typeof raw.commentsOpen !== 'boolean') errors.push('commentsOpen must be true or false')
-    else values.commentsOpen = raw.commentsOpen
+  for (const key of ['commentsOpen', 'featured'] as const) {
+    if (!has(key)) continue
+    if (typeof raw[key] !== 'boolean') errors.push(`${key} must be true or false`)
+    else values[key] = raw[key] as boolean
+  }
+  const choose = <T extends string>(key: 'type' | 'visibility' | 'bodyFormat', allowed: readonly T[], fallback: T) => {
+    if (has(key)) {
+      if (allowed.includes(raw[key] as T)) values[key] = raw[key] as never
+      else errors.push(`${key} must be one of ${allowed.join(', ')}`)
+    } else if (options.create) values[key] = fallback as never
+  }
+  choose('type', BLOG_POST_TYPES, 'post')
+  choose('visibility', BLOG_VISIBILITIES, 'public')
+  choose('bodyFormat', BLOG_BODY_FORMATS, 'markdown')
+  for (const [key, max] of [['metaTitle', BLOG_META_TITLE_MAX_LENGTH], ['metaDescription', BLOG_META_DESCRIPTION_MAX_LENGTH], ['coverImageAlt', BLOG_ALT_MAX_LENGTH]] as const) {
+    if (!has(key)) continue
+    const text = raw[key] === null ? '' : typeof raw[key] === 'string' ? (raw[key] as string).replace(/\s+/g, ' ').trim() : null
+    if (text === null || text.length > max) errors.push(`${key} is up to ${max} characters`)
+    else values[key] = text
+  }
+  for (const key of ['ogImageUrl', 'canonicalUrl'] as const) {
+    if (!has(key)) continue
+    const url = raw[key] === null ? '' : safeHttpUrl(raw[key])
+    if (raw[key] && !url) errors.push(`${key} must be an http(s) URL`)
+    else values[key] = url
   }
   return { values, errors }
 }
