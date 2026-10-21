@@ -338,7 +338,7 @@
     "settingsDescription": "The board, its statuses and labels, and the public roadmap.",
     "savesAsChange": "Saves as you change it",
     "boardOn": "Board is on",
-    "boardOnDescription": "Items, links from the inbox and feedback, and the roadmap.",
+    "boardOnDescription": "Items, links from the inbox and feedback, and the roadmap. The public roadmap keeps listing feedback posts until an item is on it.",
     "syncFeedback": "Sync linked feedback",
     "syncFeedbackDescription": "When an item moves to another status category, its linked posts follow — and their followers get the usual emails.",
     "roadmapLayout": "Roadmap layout",

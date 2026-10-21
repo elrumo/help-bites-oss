@@ -192,6 +192,10 @@ The settings are the `board` object on `PATCH /v1/admin/projects/:id` (partial:
 The roadmap is published through the feedback board's public pages and API, so
 the feedback board must be on, with its Roadmap view.
 
+Switching the project board on does not empty the roadmap: it keeps listing
+feedback posts until at least one board item is public in a planned, active or
+done status. From then on the board's public items are the roadmap.
+
 - Items are **private by default**. Turn on *On public roadmap* per item.
 - A public item shows **once its status is planned, in progress or done** (by
   category). Backlog and canceled items, and those statuses' names, never go
@@ -229,7 +233,8 @@ the feedback board must be on, with its Roadmap view.
   post) or an operator with `?project=`. Returns `{ options, statuses, labels?,
   items }`; 404 unless the feedback board offers a roadmap and the project board
   is on. `GET /v1/feedback/config` says which roadmap applies:
-  `roadmapSource: "board" | "posts"`.
+  `roadmapSource: "board" | "posts"` (`board` once the board has a public item
+  in a roadmap status).
 - `GET|POST /v1/admin/board-items?project=<id>` (list, or create with optional
   `feedbackPostIds` / `conversationIds`), `PATCH|DELETE
   /v1/admin/board-items/:id`, and `POST /v1/admin/board-items/:id/links` with

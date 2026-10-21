@@ -176,7 +176,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   its linked posts to the matching feedback status.
 - **Public roadmap.** Items stay private until you publish them. A published item
   appears once it is planned, active or done, and shows only its public
-  description. Layouts: columns, timeline or list. It has its own page at
+  description. Until the board has a published item, the roadmap keeps listing
+  feedback posts, so switching the board on never empties it. Layouts: columns, timeline or list. It has its own page at
   `/roadmap/pk_…` and can be embedded.
 
 **Changelog** [FEEDBACK.md](FEEDBACK.md#changelog)
