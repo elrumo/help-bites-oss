@@ -54,10 +54,18 @@ plugin ticking every 15 seconds; it stays off until `HELPBITES_SECRET` is set.
 - The design is frozen when sending starts; editing the template later changes
   nothing that is going out.
 - Placeholders: `{{firstName}}`, `{{contact.name}}`, `{{contact.email}}`,
-  `{{contact.externalId}}`, `{{contact.<attribute>}}` (or the attribute's own
+  `{{contact.language}}`, `{{contact.externalId}}`, `{{contact.<attribute>}}` (or the attribute's own
   name), `{{unsubscribeUrl}}`, `{{preferencesUrl}}`, `{{project.*}}`, and the
   template's own variables (their defaults apply). Anything left unfilled goes
   out blank, never as `{{…}}`.
+- **Languages**: each recipient gets the translation of the template closest to their
+  contact's `language` (`es-MX` gets `es`), and the template's own language when it has
+  none or they have none. Translating a template is all it takes; see
+  [Languages](LANGUAGES.md#a-contacts-language). The campaign's own subject is in the
+  template's language, so a translation that carries a subject of its own replaces it for
+  those recipients. Every translation needs the unsubscribe link and the postal address
+  too, or the campaign does not go. Sequence steps and a lead form's welcome email work
+  the same way, since all of them send through the same composer.
 - Sending: 100 contacts at a time through the send pipeline (suppressions,
   log, tracking), about a thousand per worker tick. Every recipient's log row
   has batch id `cm_<campaignId>`: the recipient list is
@@ -88,12 +96,37 @@ first, after enrollment). Started by:
 - **someone subscribing** (optionally to one topic), including a confirmed
   sign-up;
 - **an event** from your app: `POST /v1/track { event: 'trial_started', contact: { externalId } }`;
-- **by hand**: `POST /v1/sequences/:id/enrollments { contacts: [ids] }`.
+- **by hand**: from a contact's page (**Add to sequence**), from a segment (**Add everyone to a sequence**, in the
+  segment list or on the people list while a segment is selected), or over the API
+  (below).
 
 Only subscribed contacts are enrolled, once per sequence. Anyone who
 unsubscribes, or opts out of the sequence's topic, leaves at their next step.
 Pausing a sequence holds everyone where they are. Each step's log batch id is
 `sq_<enrollment>_<step>`, so a step is never sent twice.
+
+### Enrolling by hand
+
+The sequence has to be `active`. Pass `contacts` (up to 100 contact ids) or `segment` (a segment id):
+
+```bash
+# One person, or a handful
+curl -X POST $HELPBITES/v1/sequences/$SEQ/enrollments -H "Authorization: Bearer $SK" -H 'content-type: application/json' \
+  -d '{ "contacts": ["CONTACT_ID"] }'
+
+# Everyone in a segment (up to 5,000 per call)
+curl -X POST $HELPBITES/v1/sequences/$SEQ/enrollments -H "Authorization: Bearer $SK" -H 'content-type: application/json' \
+  -d '{ "segment": "SEGMENT_ID" }'
+# → { "enrolled": 412, "skipped": { "notSubscribed": 31, "optedOut": 0, "alreadyEnrolled": 9, "notFound": 0 }, "truncated": false }
+```
+
+`skipped` says why people were left out: `notSubscribed` (they never agreed to marketing email, or
+unsubscribed), `optedOut` (a sequence with a topic skips segment members who opted out of it),
+`alreadyEnrolled` (on it now or before), `notFound` (ids that are not this project's contacts).
+A segment bigger than the call's 5,000 answers `truncated: true`; call again for the next batch
+(the people already on the sequence are skipped, so it carries on where it stopped). `contacts` and
+`segment` together, or neither, is a `400`. Segments that use the
+[built-in fields](CONTACTS.md#built-in-segment-fields) work too, e.g. everyone who *finished onboarding*.
 
 ## Sign-up form and double opt-in
 
