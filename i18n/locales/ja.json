@@ -2977,7 +2977,42 @@
       "latestActivity": "最新のアクティビティ",
       "nothingYet": "まだ何もありません",
       "activityEmpty": "会話、フィードバック、ボードで完了した項目がここに表示されます。",
-      "loadError": "概要を読み込めませんでした"
+      "loadError": "概要を読み込めませんでした",
+      "stats": {
+        "open": "未解決の会話",
+        "new": "今週の新規",
+        "emails": "送信メール · 7日",
+        "feedback": "フィードバック · 7日"
+      },
+      "health": {
+        "chat": "チャットウィジェット",
+        "email": "メール送信",
+        "notify": "チームへの通知",
+        "feedback": "フィードバックボード",
+        "errors": "エラー追跡"
+      },
+      "healthDetail": {
+        "noOrigins": "許可されたオリジンがありません",
+        "notLoaded": "まだサイトで読み込まれていません",
+        "origins": "許可されたオリジン {count} 件",
+        "defaultSender": "デフォルトの送信者",
+        "notConfigured": "未設定",
+        "nobodyEmailed": "誰にも通知されません",
+        "on": "オン",
+        "off": "オフ",
+        "notConnected": "未接続"
+      },
+      "attention": {
+        "unread": "未読の会話",
+        "errors": "未解決のエラーレポート",
+        "emails": "失敗したメール · 7日",
+        "documents": "処理に失敗したナレッジ文書",
+        "feedback": "振り分け待ちのフィードバック"
+      },
+      "activityTitle": {
+        "newFeedback": "新しいフィードバック: {title}",
+        "completed": "完了: {item}"
+      }
     },
     "settings": {
       "general": "一般",

@@ -2977,7 +2977,42 @@
       "latestActivity": "Activitat recent",
       "nothingYet": "Encara no hi ha res",
       "activityEmpty": "Les converses, els comentaris i els elements acabats del tauler apareixeran aquí.",
-      "loadError": "No s'ha pogut carregar la visió general"
+      "loadError": "No s'ha pogut carregar la visió general",
+      "stats": {
+        "open": "Converses obertes",
+        "new": "Noves aquesta setmana",
+        "emails": "Correus enviats · 7 d",
+        "feedback": "Comentaris · 7 d"
+      },
+      "health": {
+        "chat": "Widget de xat",
+        "email": "Enviament de correu",
+        "notify": "Avisos a l'equip",
+        "feedback": "Tauler de comentaris",
+        "errors": "Seguiment d'errors"
+      },
+      "healthDetail": {
+        "noOrigins": "Cap origen permès",
+        "notLoaded": "Encara no s'ha carregat al teu lloc",
+        "origins": "{count} origen permès | {count} orígens permesos",
+        "defaultSender": "Remitent per defecte",
+        "notConfigured": "Sense configurar",
+        "nobodyEmailed": "No s'avisa ningú",
+        "on": "Activat",
+        "off": "Desactivat",
+        "notConnected": "Sense connectar"
+      },
+      "attention": {
+        "unread": "Converses sense llegir",
+        "errors": "Informes d'error oberts",
+        "emails": "Correus fallits · 7 d",
+        "documents": "Documents de coneixement que no s'han pogut processar",
+        "feedback": "Comentaris per classificar"
+      },
+      "activityTitle": {
+        "newFeedback": "Comentari nou: {title}",
+        "completed": "Completat {item}"
+      }
     },
     "settings": {
       "general": "General",

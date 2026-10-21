@@ -535,10 +535,13 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
         { key: 'emails', label: 'Emails sent · 7d', value: mail.length, section: 'email?view=log' }
       ],
       health: [
-        { key: 'chat', label: 'Chat widget', state: origins ? 'ok' : 'warn', detail: origins ? `${origins} allowed origin${origins === 1 ? '' : 's'}` : 'No allowed origins', section: 'dev' },
-        { key: 'email', label: 'Email sending', state: 'ok', detail: p.fromEmail || 'Default sender', section: 'settings' },
-        { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', detail: p.feedback.enabled ? 'On' : 'Off', section: 'feedback' },
-        { key: 'errors', label: 'Error tracking', state: p.errors.connected ? 'ok' : 'off', detail: p.errors.connected ? p.errors.providerName : 'Not connected', section: 'errors' }
+        // The demo's users have all written in, so an allowed origin is a working widget.
+        origins
+          ? { key: 'chat', label: 'Chat widget', state: 'ok', detail: `${origins} allowed origin${origins === 1 ? '' : 's'}`, detailKey: 'origins', params: { count: origins }, section: 'dev' }
+          : { key: 'chat', label: 'Chat widget', state: 'warn', detail: 'No allowed origins', detailKey: 'noOrigins', section: 'dev' },
+        { key: 'email', label: 'Email sending', state: 'ok', ...(p.fromEmail ? { detail: p.fromEmail } : { detail: 'Default sender', detailKey: 'defaultSender' }), section: 'settings' },
+        { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', ...(p.feedback.enabled ? { detail: 'On', detailKey: 'on' } : { detail: 'Off', detailKey: 'off' }), section: 'feedback' },
+        { key: 'errors', label: 'Error tracking', state: p.errors.connected ? 'ok' : 'off', ...(p.errors.connected ? { detail: p.errors.providerName } : { detail: 'Not connected', detailKey: 'notConnected' }), section: 'errors' }
       ],
       attention: [
         { key: 'unread', label: 'Unread conversations', count: unread, section: 'conversations' },

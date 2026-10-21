@@ -3001,7 +3001,42 @@
       "latestActivity": "Latest activity",
       "nothingYet": "Nothing yet",
       "activityEmpty": "Conversations, feedback and finished board items will show up here.",
-      "loadError": "Could not load the overview"
+      "loadError": "Could not load the overview",
+      "stats": {
+        "open": "Open conversations",
+        "new": "New this week",
+        "emails": "Emails sent · 7d",
+        "feedback": "Feedback · 7d"
+      },
+      "health": {
+        "chat": "Chat widget",
+        "email": "Email sending",
+        "notify": "Team notifications",
+        "feedback": "Feedback board",
+        "errors": "Error tracking"
+      },
+      "healthDetail": {
+        "noOrigins": "No allowed origins",
+        "notLoaded": "Not loaded on your site yet",
+        "origins": "{count} allowed origin | {count} allowed origins",
+        "defaultSender": "Default sender",
+        "notConfigured": "Not configured",
+        "nobodyEmailed": "Nobody is emailed",
+        "on": "On",
+        "off": "Off",
+        "notConnected": "Not connected"
+      },
+      "attention": {
+        "unread": "Unread conversations",
+        "errors": "Open error reports",
+        "emails": "Failed emails · 7d",
+        "documents": "Knowledge documents failed to process",
+        "feedback": "Feedback awaiting triage"
+      },
+      "activityTitle": {
+        "newFeedback": "New feedback: {title}",
+        "completed": "Completed {item}"
+      }
     },
     "settings": {
       "general": "General",

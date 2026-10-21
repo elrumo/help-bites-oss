@@ -2977,7 +2977,42 @@
       "latestActivity": "Actividad reciente",
       "nothingYet": "Todavía no hay nada",
       "activityEmpty": "Las conversaciones, los comentarios y los elementos terminados del tablero aparecerán aquí.",
-      "loadError": "No se pudo cargar la vista general"
+      "loadError": "No se pudo cargar la vista general",
+      "stats": {
+        "open": "Conversaciones abiertas",
+        "new": "Nuevas esta semana",
+        "emails": "Correos enviados · 7 d",
+        "feedback": "Comentarios · 7 d"
+      },
+      "health": {
+        "chat": "Widget de chat",
+        "email": "Envío de correo",
+        "notify": "Avisos al equipo",
+        "feedback": "Tablero de comentarios",
+        "errors": "Seguimiento de errores"
+      },
+      "healthDetail": {
+        "noOrigins": "Ningún origen permitido",
+        "notLoaded": "Aún no se ha cargado en tu sitio",
+        "origins": "{count} origen permitido | {count} orígenes permitidos",
+        "defaultSender": "Remitente predeterminado",
+        "notConfigured": "Sin configurar",
+        "nobodyEmailed": "No se avisa a nadie",
+        "on": "Activado",
+        "off": "Desactivado",
+        "notConnected": "Sin conectar"
+      },
+      "attention": {
+        "unread": "Conversaciones sin leer",
+        "errors": "Informes de error abiertos",
+        "emails": "Correos fallidos · 7 d",
+        "documents": "Documentos de conocimiento que no se pudieron procesar",
+        "feedback": "Comentarios por clasificar"
+      },
+      "activityTitle": {
+        "newFeedback": "Nuevo comentario: {title}",
+        "completed": "Completado {item}"
+      }
     },
     "settings": {
       "general": "General",
