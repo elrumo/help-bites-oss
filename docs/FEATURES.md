@@ -2,7 +2,8 @@
 
 Everything HelpBites does today, grouped by where you meet it. Each line
 describes code that is on `main`; the link in brackets goes to the doc with the
-detail.
+detail. The machine-readable version is [features.json](../features.json), which
+every feature change must update (see [CLAUDE.md](../CLAUDE.md)).
 
 Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 [EDITIONS.md](EDITIONS.md). Section 14 lists what is not built yet.
@@ -329,9 +330,7 @@ See [EDITIONS.md](EDITIONS.md).
 
 ## 14. Not built yet, and known limits
 
-- **Native app.** No CSV import and no database sync (both are web only). No
-  workspace picker yet, so it works in the user's default workspace.
-  ([ContactsScreen.swift](../helpbites-native/App/Features/Contacts/ContactsScreen.swift))
+- **Native app.** No workspace picker yet, so it works in the user's default workspace.
 - **Push.** Off until APNs credentials are set on the server.
 - **Contact sync.** Rows deleted upstream are not noticed yet. Erase them through
   the API. [CONTACTS.md](CONTACTS.md)
@@ -339,5 +338,4 @@ See [EDITIONS.md](EDITIONS.md).
   counts twice in that item's total. [FEEDBACK.md](FEEDBACK.md)
 - **Bugsink.** Its issues cannot be searched by customer, so a customer's errors do
   not appear in their conversation. [ERRORS.md](ERRORS.md)
-- **Language.** The panel and the widgets are English only. There is no
-  translation layer.
+- **Language.** The panel is translated into Spanish, Catalan, Chinese, Japanese and Korean; the widgets are English only.
