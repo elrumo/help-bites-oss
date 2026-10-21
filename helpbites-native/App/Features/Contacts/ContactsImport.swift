@@ -100,7 +100,7 @@ enum ContactsCSV {
     let name = String(text(mapping.name).prefix(120))
     if !name.isEmpty { input.name = name }
     // A cell that is not a language tag is left out rather than failing the row.
-    if let language = ContactLanguages.normalize(text(mapping.language)) { input.language = language }
+    if let language = ContentLocale.normalize(text(mapping.language)) { input.language = language }
     if mapping.tags != nil {
       var seen = Set<String>()
       let tags = text(mapping.tags).split(separator: ",").map { String($0.trimmingCharacters(in: .whitespaces).prefix(40)) }.filter { !$0.isEmpty && seen.insert($0).inserted }
@@ -123,7 +123,7 @@ enum ContactsCSV {
     assert(rows == [["Email", "Name"], ["a@b.co", "Doe, \"J\""], ["x@y.io", "Z"]])
     assert(guess(["User ID", "E-mail", "Full Name"]).email == "E-mail")
     assert(guess(["Email", "Locale"]).language == "Locale")
-    assert(ContactLanguages.normalize("pt_br") == "pt-BR" && ContactLanguages.normalize("ZH-hant") == "zh-Hant" && ContactLanguages.normalize("nope nope") == nil)
+    assert(ContentLocale.normalize("pt_br") == "pt-BR" && ContentLocale.normalize("ZH-hant") == "zh-Hant" && ContentLocale.normalize("nope nope") == nil)
     assert(normalizeEmail(" A@B.co ") == "a@b.co" && normalizeEmail("nope") == "")
     assert(attributeKey(for: "Plan Type") == "Plan_Type" && attributeKey(for: "1st") == "c_1st")
   }

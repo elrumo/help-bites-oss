@@ -67,28 +67,6 @@ struct Contact: Codable, Identifiable, Equatable, Sendable {
   var displayName: String { !name.isEmpty ? name : !email.isEmpty ? email : !externalId.isEmpty ? externalId : "Unnamed" }
 }
 
-/// The languages the pickers offer (`COMMON_LOCALES` in shared/locales.ts); any well-formed tag is accepted.
-enum ContactLanguages {
-  static let common = ["en", "es", "ca", "fr", "de", "it", "pt", "pt-BR", "nl", "pl", "sv", "tr", "ru", "ar", "hi", "ja", "ko", "zh", "zh-TW"]
-  /// The language's own name for itself ("Español"); the tag when the system does not know it.
-  static func name(_ tag: String) -> String {
-    let name = Locale(identifier: tag).localizedString(forIdentifier: tag) ?? tag
-    return name.isEmpty ? tag : name.prefix(1).uppercased() + name.dropFirst()
-  }
-  /// "pt_br" → "pt-BR", "ZH-hant" → "zh-Hant"; nil when it is not a language tag (`normalizeLocale` in shared/locales.ts).
-  static func normalize(_ value: String) -> String? {
-    let raw = value.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "_", with: "-")
-    guard !raw.isEmpty, raw.count <= 20, raw.range(of: "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,2}$", options: .regularExpression) != nil else { return nil }
-    let parts = raw.split(separator: "-").map(String.init)
-    let rest = parts.dropFirst().map { part -> String in
-      part.count == 2 ? part.uppercased() : part.count == 4 ? part.prefix(1).uppercased() + part.dropFirst().lowercased() : part.lowercased()
-    }
-    return ([parts[0].lowercased()] + rest).joined(separator: "-")
-  }
-}
-
-struct ContactPage: Decodable, Sendable { let contacts: [Contact]; let nextCursor: String? }
-
 /// What a subscription status means, as the web's SUBSCRIPTION_STATUS (app/utils/contactStatus.ts).
 enum SubscriptionStatus: String, CaseIterable, Identifiable {
   case subscribed, pending, unsubscribed, none

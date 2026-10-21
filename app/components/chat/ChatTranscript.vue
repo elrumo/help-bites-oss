@@ -265,11 +265,14 @@ const props = withDefaults(defineProps<{
   /** Older messages exist on the server; shows "Load earlier messages" up top. */
   hasEarlier?: boolean
   loadingEarlier?: boolean
-}>(), { ownSender: 'user', ownActor: '', readAt: null, loading: false, assistantLogo: '', hasEarlier: false, loadingEarlier: false })
+  /** Offers "Save as FAQ" on the team's own public replies (the inbox). */
+  canSaveFaq?: boolean
+}>(), { ownSender: 'user', ownActor: '', readAt: null, loading: false, assistantLogo: '', hasEarlier: false, loadingEarlier: false, canSaveFaq: false })
 
 const emit = defineEmits<{
   (event: 'retry' | 'discard' | 'unsend', message: Message): void
   (event: 'react', message: Message, emoji: string): void
+  (event: 'save-faq', message: Message): void
   (event: 'load-earlier'): void
 }>()
 
@@ -346,6 +349,7 @@ function bubbleMenu(message: Message) {
     { label: t('chat.copy'), icon: 'i-lucide-clipboard', onSelect: () => void navigator.clipboard?.writeText(message.body).catch(() => undefined) }
   ]
   if (canReply(message)) items.push({ label: t('chat.reply'), icon: 'i-lucide-reply', onSelect: () => reply(message) })
+  if (props.canSaveFaq && message.sender === 'agent' && message.visibility !== 'internal' && message.body && !message.delivery) items.push({ label: t('chat.saveAsFaq'), icon: 'i-lucide-book-open-check', onSelect: () => emit('save-faq', message) })
   if (message.sender === props.ownSender && !message.delivery) items.push({ label: t('chat.unsend'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('unsend', message) })
   return canReact(message) ? [react, items] : [items]
 }
