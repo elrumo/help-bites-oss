@@ -45,8 +45,11 @@ describe('native email parity', () => {
 
   // Skipped until EmailChatPanel.swift exists.
   test.skipIf(!existsSync(swiftPath('EmailChatPanel.swift')))('EmailChatPanel.swift has the chat starters and quick actions verbatim', () => {
-    const vue = readFileSync(join(root, 'app/components/email/EmailChat.vue'), 'utf8')
-    const prompts = [...vue.matchAll(/prompt: '((?:[^'\\]|\\.)*)'/g)].map(m => m[1]!.replace(/\\(.)/g, '$1'))
+    // The prompts live in en.json; the panel fills {name} with '{{name}}' ({projectUrl} with '{{project.url}}'), which is what Swift carries.
+    const { emailEditor } = JSON.parse(readFileSync(join(root, 'i18n/locales/en.json'), 'utf8'))
+    const prompts = Object.entries<string>({ ...emailEditor.starters, ...emailEditor.quick })
+      .filter(([key]) => key.endsWith('Prompt') && key !== 'fixPrompt')
+      .map(([, text]) => text.replace('{projectUrl}', '{project.url}').replace(/\{([\w.]+)\}/g, '{{$1}}'))
     expect(prompts.length).toBeGreaterThanOrEqual(12)
     const src = swift('EmailChatPanel.swift')
     expect(prompts.filter(p => !src.includes(p))).toEqual([])

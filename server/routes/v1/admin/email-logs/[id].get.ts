@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
 async function renderLoggedTemplate(ctx: Awaited<ReturnType<typeof requireMember>>, log: ReturnType<typeof serializeEmailLog>): Promise<string | null> {
   try {
     const values = Object.fromEntries(log.variables.filter(v => v.value !== '[redacted]' && !v.value.endsWith('…')).map(v => [v.key, v.value]))
-    const project = log.projectId ? await loadProjectUnscoped(log.projectId) : null
+    const project = log.projectId ? await requireProject(ctx, log.projectId) : null
     return renderEmailTemplate(await scoped.emailTemplate(ctx, log.template!.id!), project, values).html
   } catch {
     return null // the template was deleted or no longer renders

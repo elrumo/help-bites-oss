@@ -35,6 +35,9 @@ export const IMPORT_ORDER = [
   'LegalDocument',
   'LegalDocumentVersion',
   'OnboardingFlow',
+  'CmsComponent',
+  'CmsEntry',
+  'CmsChatMessage',
   'EmailFolder',
   'EmailComponent',
   'EmailTemplate',
@@ -63,6 +66,7 @@ export const NOT_PORTABLE: Record<string, string> = {
   StripeSubscription: 'comes from the Stripe account',
   WebhookDelivery: 'the old instance\'s outbox',
   BrandAsset: 'a file in the old bucket',
+  CmsAsset: 'a file in the old bucket; pages keep linking to it there',
   Campaign: 'could send again; recreate it from the template',
   SequenceEnrollment: 'would send the next step again',
   DataTransfer: 'the old instance\'s own bookkeeping'

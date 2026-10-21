@@ -83,5 +83,7 @@ export const LIMITS = {
   legalScanPerAgent: { limit: 6, window: 60 },
   // Every first launch of an app reads its onboarding; carrier NAT puts many phones behind one address.
   onboardingReadsPerIp: { limit: 1200, window: 60 },
-  brandReadsPerIp: { limit: 600, window: 60 }
+  brandReadsPerIp: { limit: 600, window: 60 },
+  // Pages and the CMS delivery API: a site build can read many entries at once.
+  cmsReadsPerIp: { limit: 1200, window: 60 }
 } as const

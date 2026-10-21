@@ -228,6 +228,8 @@ const SCHEMAS = {
       legalAnswers: { type: 'Object' },
       // The brand kit: words, colours, fonts, guidelines and the public page's look (shared/brand.ts). Files are BrandAsset rows.
       brand: { type: 'Object' },
+      // Pages and CMS settings { previewUrl, brief } (shared/cms/content.ts).
+      cms: { type: 'Object' },
       flags: { type: 'Array' },
       errors: { type: 'Object' },
       // Error alert rules { rules, emails } (shared/errorAlerts.ts).
@@ -1050,6 +1052,75 @@ const SCHEMAS = {
     indexes: {
       project_order: { _p_project: 1, order: 1 }
     }
+  },
+  // Pages and CMS (shared/cms/): a project's own components (the built-ins live in code), its
+  // entries and its files. An entry's `content` is the working tree of blocks and `published` the
+  // copy frozen at the last publish ({ name, slug, content, style }); `status` says whether the
+  // published copy is served. Slugs and component keys are unique per project (checked on write).
+  CmsComponent: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      key: { type: 'String' },
+      name: { type: 'String' },
+      description: { type: 'String' },
+      root: { type: 'Boolean' },
+      nestable: { type: 'Boolean' },
+      fields: { type: 'Array' },
+      html: { type: 'String' },
+      css: { type: 'String' }
+    },
+    indexes: { project_key: { _p_project: 1, key: 1 } }
+  },
+  CmsEntry: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      slug: { type: 'String' },
+      name: { type: 'String' },
+      // The root component's key: page, or a project's own entry type.
+      type: { type: 'String' },
+      content: { type: 'Object' },
+      style: { type: 'Object' },
+      // draft | published
+      status: { type: 'String' },
+      published: { type: 'Object' },
+      publishedAt: { type: 'Date' },
+      version: { type: 'Number' }
+    },
+    indexes: {
+      project_slug: { _p_project: 1, slug: 1 },
+      project_type_status: { _p_project: 1, type: 1, status: 1 }
+    }
+  },
+  // A file in a project's CMS library, stored at `storageKey` (`<projectId>/cms/<uuid>.<ext>`) and public at `url`.
+  CmsAsset: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      name: { type: 'String' },
+      alt: { type: 'String' },
+      storageKey: { type: 'String' },
+      url: { type: 'String' },
+      mime: { type: 'String' },
+      size: { type: 'Number' },
+      width: { type: 'Number' },
+      height: { type: 'Number' }
+    },
+    indexes: { project_created: { _p_project: 1, _created_at: -1 } }
+  },
+  // The Pages assistant's chats: about one entry, one component, or the project (neither).
+  CmsChatMessage: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      entry: { type: 'Pointer', targetClass: 'CmsEntry' },
+      component: { type: 'Pointer', targetClass: 'CmsComponent' },
+      chatId: { type: 'String' },
+      clientId: { type: 'String' },
+      role: { type: 'String' },
+      // JSON text: tool inputs can carry keys Parse refuses in nested objects.
+      content: { type: 'String' },
+      tier: { type: 'String' },
+      agent: { type: 'Pointer', targetClass: '_User' }
+    },
+    indexes: { project_chat_created: { _p_project: 1, chatId: 1, _created_at: 1 } }
   },
   // Readers' comments on a published entry. Authored by the host's own user id (the identity
   // token's `sub`), like feedback; `bodyHtml` is the Markdown rendered with the strict comment

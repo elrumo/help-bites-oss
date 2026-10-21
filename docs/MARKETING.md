@@ -139,6 +139,8 @@ Settings → Event webhook: a URL and a signing secret. HelpBites posts:
 |---|---|
 | `contact.subscription_changed` | `{ contact: { id, externalId, email }, from, to, unsubscribedTopics, topics?: { added, removed } }` |
 | `email.suppressed` | `{ email, reason: 'bounce' \| 'complaint', detail }` |
+| `cms.entry.published` | `{ entry: { id, slug, type, version, publishedAt } }`: rebuild a static site ([PAGES.md](PAGES.md)) |
+| `cms.entry.unpublished` | `{ entry: { id, slug, type } }` |
 
 Body: `{ id, type, createdAt, projectId, data }`. Header
 `x-helpbites-signature: sha256=<hex HMAC-SHA256 of the raw body with your secret>`

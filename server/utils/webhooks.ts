@@ -16,7 +16,7 @@ import { hasFeature, projectWorkspaceId } from './usage'
 // an `id` (dedupe on it: a retry after a timeout can arrive twice) and
 // `createdAt` (reject old ones to stop replays).
 
-export type WebhookEventType = 'contact.subscription_changed' | 'email.suppressed'
+export type WebhookEventType = 'contact.subscription_changed' | 'email.suppressed' | 'cms.entry.published' | 'cms.entry.unpublished'
 
 // Minutes to wait after each failed attempt; after the last, the delivery is marked failed.
 export const WEBHOOK_BACKOFF_MINUTES = [1, 5, 30, 120, 720]

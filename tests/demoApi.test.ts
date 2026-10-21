@@ -54,9 +54,12 @@ test('the demo answers a project overview, the page a project lands on', async (
   expect(overview.attention.every((item: any) => item.count > 0)).toBe(true)
 })
 
-test('the demo changelog starts empty and refuses writes', async () => {
-  expect(await demoApi<any>('/admin/changelog/entries', { query: { project: 'acme' } })).toEqual({ entries: [] })
-  expect(await demoApi<any>('/admin/changelog/releases', { query: { project: 'acme' } })).toEqual({ releases: [] })
+test('the demo changelog has sample entries and refuses writes', async () => {
+  const { entries } = await demoApi<any>('/admin/changelog/entries', { query: { project: 'acme' } })
+  expect(entries.length).toBeGreaterThan(0)
+  expect(entries.every((entry: any) => entry.projectId === 'acme')).toBe(true)
+  const { releases } = await demoApi<any>('/admin/changelog/releases', { query: { project: 'acme' } })
+  expect(releases.length).toBeGreaterThan(0)
   await expect(demoApi('/admin/changelog/entries', { method: 'POST', query: { project: 'acme' }, body: { title: 'x' } })).rejects.toMatchObject({ statusCode: 403 })
 })
 
