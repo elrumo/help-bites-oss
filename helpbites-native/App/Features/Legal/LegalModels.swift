@@ -60,6 +60,8 @@ struct LegalDocument: Codable, Identifiable, Equatable, Sendable {
   let type: String
   var slug: String
   var locale: String?
+  /// The id of the document this one translates; nil for an original. Documents sharing one are the same text in other languages.
+  var translationOf: String?
   var title: String
   var status: String
   var sections: [LegalSection]
@@ -72,6 +74,10 @@ struct LegalDocument: Codable, Identifiable, Equatable, Sendable {
   var updatedAt: String?
 
   var kind: LegalType { LegalType(rawValue: type) ?? .privacy }
+  /// The language tag of the text ("en" when the server sent none).
+  var language: String { (locale ?? "").isEmpty ? ContentLocale.defaultTag : locale! }
+  /// The id every language of one text shares: the original's.
+  var group: String { translationOf ?? id }
   var isPublished: Bool { status == "published" }
   /// The date part of `effectiveDate` ("2025-01-31"), which is how the web shows it.
   var effectiveDay: String { String((effectiveDate ?? "").prefix(10)) }

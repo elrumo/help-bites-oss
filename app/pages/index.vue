@@ -512,6 +512,7 @@ const features = computed(() => [
       { term: t('landing.more.stripe.title'), desc: t('landing.more.stripe.body') },
       { term: t('landing.features.team.legal.term'), desc: t('landing.features.team.legal.desc') },
       { term: t('landing.features.team.brand.term'), desc: t('landing.features.team.brand.desc') },
+      { term: t('landing.features.team.pages.term'), desc: t('landing.features.team.pages.desc') },
       { term: t('landing.features.team.flags.term'), desc: t('landing.features.team.flags.desc') },
       { term: t('landing.features.team.types.term'), desc: t('landing.features.team.types.desc') },
       { term: t('landing.features.team.roles.term'), desc: t('landing.features.team.roles.desc') },

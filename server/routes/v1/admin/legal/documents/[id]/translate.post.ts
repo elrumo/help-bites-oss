@@ -11,6 +11,8 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'content' })
+  // A translation is a new document, so it counts as creating one.
+  await assertFeature(ctx.workspace, 'legalDocs')
   const { project, row } = await scopedLegalDocument(ctx, event)
   const copy = await translateLegalDocument(ctx, project, row, (await readBody(event).catch(() => ({}))) || {})
   return { document: serializeLegalDocument(project, copy) }

@@ -3917,6 +3917,39 @@
       "connectFailed": "无法连接错误追踪"
     }
   },
+  "translations": {
+    "title": "语言",
+    "intro": "用用户的语言展示内容。添加一种语言后可用 AI 翻译,也可以自己撰写。留空的部分会以{language}显示。",
+    "original": "原文",
+    "writtenIn": "原文语言",
+    "add": "添加语言",
+    "addTag": "添加“{tag}”",
+    "badTag": "请使用 es 或 pt-BR 这样的语言标签。",
+    "translate": "用 AI 翻译",
+    "retranslate": "全部重新翻译",
+    "remove": "移除语言",
+    "removeConfirm": "移除{language}翻译?",
+    "editing": "正在编辑{language}翻译。留空的字段会使用{original}文本。",
+    "translated": "已翻译成 {n} 种语言",
+    "translateError": "无法翻译,请重试。",
+    "legalIntro": "同一文档的其他语言版本是与本文档关联的独立页面。可用 AI 翻译,也可以自己撰写。",
+    "thisLanguage": "本文档的语言",
+    "legalReview": "AI 翻译只是草稿。发布前请让律师审阅;这不构成法律意见。",
+    "published": "已发布",
+    "draft": "草稿",
+    "email": {
+      "subject": "主题",
+      "preheader": "预览文本",
+      "plainText": "纯文本版本",
+      "heading": "标题",
+      "body": "正文",
+      "button": "按钮文字",
+      "imageAlt": "图片说明",
+      "component": "组件:{field}",
+      "linked": "关联模板会发送其主模板的翻译。请翻译主模板的设计。",
+      "sendHint": "选择一种语言进行编辑。可在发送 API 中用 \"locale\" 指定语言,或为每个收件人设置语言。"
+    }
+  },
   "oauth": {
     "title": "将 {client} 连接到 HelpBites",
     "description": "{client} 将能以你的身份、按你的角色读取和更改此工作区中的内容。你可随时在 设置 → API 密钥 中断开连接。",

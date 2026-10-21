@@ -74,11 +74,25 @@ export const DOCS: readonly DocPage[] = [
     file: 'ONBOARDING.md'
   },
   {
+    slug: 'languages',
+    title: 'Languages and AI translation',
+    description: 'Show onboarding, legal pages and emails in your users\' language: add languages, translate with AI or by hand, and pick one with a locale from your web app, Swift app or the API.',
+    group: 'Guides',
+    file: 'LANGUAGES.md'
+  },
+  {
     slug: 'brand',
     title: 'Brand kit',
     description: 'Keep logos, icons, screenshots, colours, fonts and guidelines in one place, and share them on a public press page, an embed for your site, or the API.',
     group: 'Guides',
     file: 'BRAND.md'
+  },
+  {
+    slug: 'pages',
+    title: 'Pages and headless CMS',
+    description: 'Design landing pages in a visual editor and host them, or read the same copy, images and components from your Vue, JavaScript or Swift app. An assistant writes pages, copy and components.',
+    group: 'Guides',
+    file: 'PAGES.md'
   },
   {
     slug: 'mcp',

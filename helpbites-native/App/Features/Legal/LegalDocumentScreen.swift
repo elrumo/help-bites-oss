@@ -18,7 +18,7 @@ struct LegalDocumentScreen: View {
         Color.clear.projectScreen(projectId, "Document")
       }
     }
-    .task { if store == nil { store = LegalDocumentStore(documentId: documentId, session: session) } }
+    .task { if store == nil { store = LegalDocumentStore(documentId: documentId, projectId: projectId, session: session) } }
   }
 }
 
@@ -35,6 +35,11 @@ private struct LegalDocumentContent: View {
   @State private var publishing = false
   @State private var note = ""
   @State private var confirm: Confirm?
+  @State private var translating = false
+  /// Another language of this text, pushed on top of this screen.
+  @State private var opened: String?
+  /// The draft just made, pushed once the translate sheet is gone.
+  @State private var created: String?
 
   private enum Confirm: Identifiable {
     case unpublish, delete, replaceTldr
@@ -83,6 +88,17 @@ private struct LegalDocumentContent: View {
       case .restore(let version): Text("Replace the working text with version \(version)? You can then review and publish it.")
       }
     }
+    .sheet(isPresented: $translating, onDismiss: { if let id = created { created = nil; opened = id } }) {
+      if let document {
+        TranslateSheet(
+          title: "Translate with AI", source: document.language, existing: ([document] + store.otherLanguages).map(\.language), limit: 1, overwriteHint: nil,
+          note: "Creates a new draft in that language, linked to this document. Nothing is published. It is a machine translation to review, not legal advice."
+        ) { tags, _ in
+          if let tag = tags.first { created = try await store.translate(to: tag).id }
+        }
+      }
+    }
+    .navigationDestination(item: $opened) { LegalDocumentScreen(projectId: projectId, documentId: $0) }
     .sheet(isPresented: $showWizard) {
       if let document { LegalWizardSheet(projectId: projectId, document: document) { _, _ in Task { await store.load() } } }
     }
@@ -217,6 +233,7 @@ private struct LegalDocumentContent: View {
       if document.isPublished, let publicURL { publicPanel(publicURL) }
       summaryPanel
       detailsPanel
+      languagesPanel
       rulesPanel
       if !store.versions.isEmpty { versionsPanel }
     }
@@ -270,6 +287,47 @@ private struct LegalDocumentContent: View {
       }
       Button { showWizard = true } label: { Label("Answers and recompose", systemImage: "checklist") }
         .buttonStyle(SecondaryButtonStyle(compact: true)).disabled(store.dirty)
+    }
+  }
+
+  /// This text's language and the same text in other languages (web: the Languages card of legal/[docId].vue).
+  private var languagesPanel: some View {
+    LegalPanel("Languages") {
+      if let document {
+        LabeledField(label: "Written in", hint: "Public pages link the languages of one document to each other.") {
+          LanguageMenu(include: [document.language], onPick: { tag in Task { await store.setLocale(tag) } }) { Label(ContentLocale.label(document.language), systemImage: "globe") }
+            .disabled(store.dirty || store.busy != "")
+        }
+        if store.otherLanguages.isEmpty {
+          Text("No other languages yet.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+        } else {
+          VStack(spacing: 0) {
+            ForEach(store.otherLanguages) { other in
+              Button { opened = other.id } label: {
+                HStack(spacing: 8) {
+                  VStack(alignment: .leading, spacing: 2) {
+                    Text(ContentLocale.label(other.language)).font(.lnRow).foregroundStyle(Theme.textHighlighted)
+                    Text(other.title.isEmpty ? other.kind.label : other.title).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
+                  }
+                  Spacer(minLength: 4)
+                  Tag(text: other.isPublished ? "Published" : "Draft", tint: other.isPublished ? Theme.success : Theme.textDimmed)
+                  Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+                }
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
+              }
+              .buttonStyle(.plain)
+            }
+          }
+        }
+        HStack(spacing: 8) {
+          Button { translating = true } label: { Label("Translate with AI", systemImage: "sparkles") }
+            .buttonStyle(SecondaryButtonStyle(compact: true)).disabled(store.dirty || store.busy != "")
+          if store.busy == "locale" { ProgressView().controlSize(.small) }
+        }
+        if store.dirty { Text("Save your edits first: translating and changing the language use the saved text.").font(.lnCaption).foregroundStyle(Theme.textMuted) }
+        Text("Translations are drafts to review, not legal advice. Have a person who reads the language check them before you publish.").font(.lnCaption).foregroundStyle(Theme.textMuted)
+      }
     }
   }
 

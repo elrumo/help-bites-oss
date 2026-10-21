@@ -35,6 +35,7 @@ import { useUndoRedo, type EditorSnapshot } from '~/composables/useUndoRedo'
 import EmailPreview from '~/components/email/EmailPreview.vue'
 import EmailInspector from '~/components/email/EmailInspector.vue'
 import EmailVariables from '~/components/email/EmailVariables.vue'
+import EmailLanguages from '~/components/email/EmailLanguages.vue'
 import EmailTemplatePicker from '~/components/email/EmailTemplatePicker.vue'
 import EmailChat from '~/components/email/EmailChat.vue'
 import EmailLayers from '~/components/email/EmailLayers.vue'
@@ -71,7 +72,9 @@ const templateOpen = ref(false)
 const rightTab = ref<string | number>('design')
 const rightTabs = computed(() => [
   { label: t('emailEditor.design'), icon: 'i-lucide-sliders-horizontal', value: 'design' },
-  { label: t('emailEditor.variables'), icon: 'i-lucide-braces', value: 'variables' }
+  { label: t('emailEditor.variables'), icon: 'i-lucide-braces', value: 'variables' },
+  // Translations are saved by the API, which a share-link editor cannot reach.
+  ...(props.agentToken ? [{ label: t('translations.title'), icon: 'i-lucide-languages', value: 'languages' }] : [])
 ])
 const aiOpen = ref(true)
 const layersOpen = ref(true)
@@ -593,6 +596,12 @@ useHead({ title: () => name.value || t('sections.email') })
           @select="selectedId = $event"
           @save-component="saveBlockAsComponent"
           @edit-component="editComponent"
+        />
+        <EmailLanguages
+          v-else-if="rightTab === 'languages'"
+          :template="template"
+          :document="document"
+          :flush="() => saveNow()"
         />
         <EmailVariables
           v-else

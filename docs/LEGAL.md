@@ -185,13 +185,40 @@ next version. `GET …/versions` lists them and `POST …/versions/:n/restore` p
 one back as the working draft (it is not republished). `unpublish` takes the page
 down.
 
+## Other languages
+
+Every document has a `locale`, the language it is written in (`en`, `es`, `pt-BR`…;
+set it when you create the document or with `PATCH`). The same text in another
+language is another document, linked to the original: a draft you can edit, publish
+and unpublish on its own.
+
+**Translate with AI** (on the document, or `POST /documents/:id/translate` with
+`{ "locale": "es" }`) creates that copy. Every section, the title and the summary are
+translated; the sections keep their ids, clauses, locks and the requirements they
+answer, and are marked `ai` so they stand out for review. Nothing is published. A
+language the document already has answers `409`: edit that copy, or delete it first.
+If the AI loses a link or the structure of a section, that section stays in the
+original language for you to fix instead of being saved broken.
+
+To link documents you wrote yourself, set `translationOf` on one to the id of the
+other (`PATCH`, or `null` to unlink).
+
+**AI translations are drafts, and this is not legal advice.** Have a lawyer who
+reads the language review them before you publish.
+
+Published documents that share an original link to each other on the public page
+(a **Languages** line under the text, plus `hreflang` alternates for search engines
+when `APP_URL` is set), and the page's own words (*Effective*, *Version*,
+*Contents*, *In short*) follow the document's language. The JSON lists the copies
+as `translations`.
+
 ## The public page
 
 | URL | What |
 |---|---|
 | `/legal/:publicKey/:slug` | The styled page |
-| `/legal/:publicKey` | A list of the project's published documents |
-| `GET /v1/legal/:publicKey/:slug` | JSON: title, summary, dates, sections, `markdown`, `html` |
+| `/legal/:publicKey` | A list of the project's published documents (one per language) |
+| `GET /v1/legal/:publicKey/:slug` | JSON: title, summary, `locale`, dates, sections, `markdown`, `html`, and `translations` (`[{ locale, title, path }]`: the same document in other languages) |
 | `GET /v1/legal/:publicKey/:slug?format=md` or `/v1/legal/:publicKey/:slug.md` | Markdown (`text/markdown`), headed by the title and summary |
 | `GET /v1/legal/:publicKey/:slug?format=html` or `/v1/legal/:publicKey/:slug.html` | A sanitised HTML fragment (`text/html`) to embed in your own page |
 | `GET /v1/legal/:publicKey/:slug.json` | The JSON, same as without a suffix |
@@ -244,6 +271,7 @@ the body) and an operator session or admin API key. The full schema is at
 | `POST` `/documents/:id/publish` `unpublish` `recompose` `check` | Lifecycle and checks |
 | `POST` `/documents/:id/sections/:sid/rewrite` | AI rewrite of one section (`apply: true` to save it) |
 | `POST` `/documents/:id/tldr/generate` | AI summary |
+| `POST` `/documents/:id/translate` | AI translation into `{ "locale": "es" }`: a new linked draft |
 | `GET` `/documents/:id/versions`, `POST` `…/:n/restore` | History |
 | `GET` `/wizard/:type`, `POST` `/wizard/:type/compose` | The questions (with pre-filled `defaults`); a preview |
 | `POST` `/wizard/:type/suggest` | Suggest answers from the project's GitHub repos |

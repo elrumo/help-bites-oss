@@ -137,7 +137,7 @@
       "id": "email-designer",
       "name": "Email designer",
       "category": "email",
-      "summary": "Block designer with components, shared master templates, linting, an AI designer and share links. Native editor on the same design format.",
+      "summary": "Block designer with components, shared master templates, linting, an AI designer, share links and a translation per language. Native editor on the same design format.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "entitlement": "emailAiUltra",
@@ -152,7 +152,7 @@
       "id": "email-sending",
       "name": "Email send API and delivery log",
       "category": "email",
-      "summary": "POST /v1/emails/send with templates, HTML, variables, attachments, scheduling, idempotency; delivery log, stats and automatic suppressions.",
+      "summary": "POST /v1/emails/send with templates (in each recipient's language), HTML, variables, attachments, scheduling, idempotency; delivery log, stats and automatic suppressions.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "entitlement": "customSendingDomain",
@@ -225,7 +225,7 @@
       "id": "onboarding",
       "name": "Onboarding flows",
       "category": "product",
-      "summary": "Welcome screens written in the panel and published as versions; a web script or a SwiftUI file shows them once from a copy the app keeps, so they still show when HelpBites is unreachable.",
+      "summary": "Welcome screens written in the panel and published as versions, in any number of languages; a web script or a SwiftUI file shows them once from a copy the app keeps, so they still show when HelpBites is unreachable.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "status": "stable",
@@ -236,10 +236,24 @@
       "landing": { "listed": true, "key": "landing.features.app.onboarding" }
     },
     {
+      "id": "content-translation",
+      "name": "Languages and AI translation",
+      "category": "product",
+      "summary": "Onboarding flows, legal documents and email templates carry a translation per language, written by hand or by the workspace's AI; apps and sends pick one with a locale and fall back to the original.",
+      "editions": ["community", "cloud"],
+      "plan": "all",
+      "status": "stable",
+      "web": { "panel": ["app/components/LanguageTabs.vue", "app/components/email/EmailLanguages.vue"] },
+      "native": { "folders": ["helpbites-native/App/Features/Onboarding", "helpbites-native/App/Features/Legal", "helpbites-native/App/Features/Email"], "parity": "tests/translateNativeParity.test.ts" },
+      "api": { "prefixes": ["/v1/onboarding", "/v1/admin/onboarding", "/v1/legal", "/v1/admin/legal", "/v1/emails", "/v1/admin/emails"], "docs": "docs/LANGUAGES.md" },
+      "embed": { "web": "public/onboarding.js", "swift": "docs/ONBOARDING.md#plug-and-play-swift", "customize": ["data-locale", "JS init locale and labels", "Swift locale parameter", "?locale= on the public onboarding, legal and email reads", "locale on the email send API"] },
+      "landing": { "listed": false, "key": null }
+    },
+    {
       "id": "legal-documents",
       "name": "Legal documents",
       "category": "product",
-      "summary": "Privacy policy, terms, cookie and refund policies composed from reviewed clauses, importable, hosted on public pages. Not legal advice.",
+      "summary": "Privacy policy, terms, cookie and refund policies composed from reviewed clauses, importable, hosted on public pages, with a linked copy per language. Not legal advice.",
       "editions": ["community", "cloud"],
       "plan": "pro",
       "entitlement": "legalDocs",
@@ -263,6 +277,20 @@
       "api": { "prefixes": ["/v1/brand", "/v1/admin/brand"], "docs": "docs/BRAND.md" },
       "embed": { "web": "public/brand.js", "swift": "docs/BRAND.md#in-a-swift-app", "customize": ["data-template", "data-theme", "data-radius", "data-accent", "data-sections", "the same as URL parameters", "Swift cornerRadius"] },
       "landing": { "listed": true, "key": "landing.features.team.brand" }
+    },
+    {
+      "id": "pages-cms",
+      "name": "Pages and headless CMS",
+      "category": "marketing",
+      "summary": "Landing pages built in a visual editor from templates and components (built-in or written in HTML and CSS), with files, scroll animations, an AI assistant and wizard that writes pages, copy and components from GitHub repos, hosting at /p/:pk, an embed, a delivery API for Vue, JS and Swift, and live editing of the developer's own site.",
+      "editions": ["community", "cloud"],
+      "plan": "all",
+      "status": "stable",
+      "web": { "panel": ["app/pages/projects/[id]/pages/index.vue", "app/pages/projects/[id]/pages/[entryId].vue", "app/pages/projects/[id]/pages/components/[componentId].vue"], "public": ["/p/:pk", "/p/:pk/:slug"] },
+      "native": { "folders": [] },
+      "api": { "prefixes": ["/v1/cms", "/v1/admin/cms"], "docs": "docs/PAGES.md" },
+      "embed": { "web": "public/pages.js", "swift": "docs/PAGES.md#in-a-swift-app", "customize": ["data-page", "data-target", "data-height", "data-title", "HelpBitesPages.push(['init', …])", "the page's own style (accent, mode, radius, fonts, width)", "CSS variables and .hb-* classes in components", "cms.mjs client, editable() and bridge() for your own UI", "Swift accent, titleFont and cornerRadius"] },
+      "landing": { "listed": true, "key": "landing.features.team.pages" }
     },
     {
       "id": "revenue",
@@ -413,6 +441,12 @@
     "No Swift package. Onboarding and the brand kit have copy-paste Swift snippets; the chat, feedback and changelog embeds are web-only (widget.js, feedback.js, changelog.js).",
     "Onboarding keeps no completion statistics; apps learn outcomes from the web script's callbacks and events or the Swift onFinish.",
     "The brand kit has no download-everything archive; each file downloads on its own.",
-    "Bugsink issues cannot be searched by customer."
+    "Bugsink issues cannot be searched by customer.",
+    "Pages and the CMS are web-only: the native app has no screens for them yet.",
+    "Translations cover onboarding, legal documents and emails sent from a template. Campaigns, sequences, the mail HelpBites sends by itself, the chat, feedback and changelog embeds and CMS pages have no translations yet, and a contact has no language of its own.",
+    "Hosted pages have no custom domains yet; they live at /p/<public key> on the HelpBites host.",
+    "Components are HTML and CSS only: nothing that needs JavaScript of its own (an autoplaying carousel, a calculator).",
+    "CMS content has no per-field translations, scheduled publishing or version history; folders such as es/… stand in for languages.",
+    "The CMS generates no TypeScript types from component schemas."
   ]
 }

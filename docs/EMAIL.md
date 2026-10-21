@@ -31,6 +31,28 @@ accent and values are baked into the copy, so it looks the same, and later
 master edits no longer reach it. You can't delete a master while projects
 still link it.
 
+## Languages
+
+A template has a `locale`, the language its design is written in (default `en`), and
+can carry a translation per language. A translation is the design's *words*: the
+subject, preheader, plain-text part, headings, text, button labels, image descriptions
+and the text fields of components. Layout, links, colours and custom HTML stay as
+designed, so editing the design never forks it; a block added later is shown in the
+original language until it is translated.
+
+Open the **Languages** tab of the editor (or `POST /v1/admin/emails/:id/translate`
+with `{ "locales": ["es", "fr"] }`) to translate with AI. `{{placeholders}}`, links and
+HTML tags are kept; a string whose translation lost one stays in the original
+language. Strings you already translated or edited are kept unless `overwrite: true`.
+A linked template sends its master's translations, so translate the master.
+
+Send in a language with `locale` on the request (`"locale": "es"`) or per recipient
+(`"to": [{ "email": "ada@example.com", "locale": "es-MX" }]`); a recipient's wins.
+`es-MX` finds `es` when there is no regional translation, and a language the template
+does not have is sent in the template's own. `POST /v1/emails/render` and
+`GET /v1/emails/:key?locale=es` preview it. Your own `html`, `document` and `message`
+emails are not translated: write them in the language you send.
+
 ## Variables
 
 `{{name}}` placeholders work anywhere in a template: subject, preheader, text,
@@ -176,7 +198,8 @@ Everything else:
 
 | Field | |
 |---|---|
-| `to` | Up to 50 recipients: `ada@example.com`, `Ada Lovelace <ada@example.com>`, or `{ email, name?, variables? }` for values of their own (they win over the call's `variables`). Each recipient gets their own message. Duplicates are sent once. |
+| `to` | Up to 50 recipients: `ada@example.com`, `Ada Lovelace <ada@example.com>`, or `{ email, name?, locale?, variables? }` for values and a language of their own (they win over the call's). Each recipient gets their own message. Duplicates are sent once. |
+| `locale` | The language to send a `template` in (`es`, `pt-BR`): its translation when it has one, else the template's own language. See [Languages](#languages). |
 | `variables` | Values for the placeholders. |
 | `subject` | Overrides the template's subject. Placeholders fill in. |
 | `text` | The plain-text part. Otherwise the template's own, or generated from the HTML. |
@@ -219,7 +242,7 @@ curl "https://help.example.com/v1/emails/welcome?format=html&firstName=Ada" \
   -H "Authorization: Bearer $HELPBITES_SECRET"
 ```
 
-- `format=html` returns the HTML document itself, `format=text` the plain-text part. Without it you get `{ id, key, name, subject, html, text, variables }`, where `variables` lists what you can pass and what each falls back to.
+- `format=html` returns the HTML document itself, `format=text` the plain-text part. `locale=es` renders that translation (the `locale` in the answer says which language you got; `Accept-Language` is used when it is left out). Without `format` you get `{ id, key, name, subject, locale, html, text, variables }`, where `variables` lists what you can pass and what each falls back to.
 - `GET /v1/emails` lists every template the project can use (its own and linked masters), with keys and variables.
 - With the project secret, `:key` is the send key or the template id. An operator session or admin key reads any template by id, masters included; a master renders with its sample values.
 
@@ -250,6 +273,7 @@ With an operator session or admin key:
 | Route | |
 |---|---|
 | `GET/POST /v1/admin/emails`, `GET/PATCH/DELETE /v1/admin/emails/:id` | Templates and masters, plus `duplicate`, `detach`, `share`, `chat` and `events` under `:id`. |
+| `POST /v1/admin/emails/:id/translate` | Translate with AI: `{ locales: ["es"], overwrite? }`. Translations are also read and written with `PATCH`: `locale`, and `translations: { es: { subject: "…", "<blockId>#label": "…" }, fr: null }` (a language present replaces that language, `null` removes it). |
 | `POST /v1/admin/emails/:id/test` | Send a test: `{ to?, variables?, project? }`. |
 | `POST /v1/admin/emails/import` | Up to 100 templates by send key: `{ project?, mode: "create" \| "upsert", dryRun?, templates: [{ key, name?, description?, folder?, document? \| html? (+ subject, preheader, text, settings) \| master? (+ variableValues), variables? }] }`. `create` keeps existing keys; `dryRun` reports and writes nothing. |
 | `GET /v1/admin/emails/export` | Every template of `?project=` (or every master) in the import format. |

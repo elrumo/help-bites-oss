@@ -21,7 +21,9 @@
  * element instead of as a dialog), show ('once' | 'update': again after each
  * publish | 'always' | 'manual': only on ['open']), theme ('system' | 'light' |
  * 'dark'; defaults to a dark/light class on your <html>), accent, radius, font
- * ('system' | 'rounded' | 'serif' | 'mono'), fallback.
+ * ('system' | 'rounded' | 'serif' | 'mono'), fallback, locale (a language tag such as
+ * 'es' or 'pt-BR': the translation to show; defaults to your <html lang>, then the
+ * browser's language; a flow without that translation shows in its own language).
  *
  *   <script>
  *     window.HelpBitesOnboarding = window.HelpBitesOnboarding || []
@@ -57,6 +59,7 @@
     radius: attr('radius'),
     font: attr('font'),
     fallback: attr('fallback'),
+    locale: attr('locale'),
     labels: {},
     onComplete: null,
     onSkip: null,
@@ -71,13 +74,29 @@
     serif: 'ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif',
     mono: 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace'
   }
+  // The words the buttons use when a step has no label of its own, by language (labels in your options win).
+  var WORDS = {
+    en: { next: 'Continue', done: 'Get started', back: 'Back', skip: 'Skip' },
+    es: { next: 'Continuar', done: 'Empezar', back: 'Atrás', skip: 'Omitir' },
+    ca: { next: 'Continua', done: 'Comença', back: 'Enrere', skip: 'Omet' },
+    fr: { next: 'Continuer', done: 'Commencer', back: 'Retour', skip: 'Passer' },
+    de: { next: 'Weiter', done: 'Los geht\u2019s', back: 'Zur\u00fcck', skip: '\u00dcberspringen' },
+    it: { next: 'Continua', done: 'Inizia', back: 'Indietro', skip: 'Salta' },
+    pt: { next: 'Continuar', done: 'Come\u00e7ar', back: 'Voltar', skip: 'Pular' },
+    ja: { next: '\u7d9a\u3051\u308b', done: '\u59cb\u3081\u308b', back: '\u623b\u308b', skip: '\u30b9\u30ad\u30c3\u30d7' },
+    ko: { next: '\uacc4\uc18d', done: '\uc2dc\uc791\ud558\uae30', back: '\ub4a4\ub85c', skip: '\uac74\ub108\ub6f0\uae30' },
+    zh: { next: '\u7ee7\u7eed', done: '\u5f00\u59cb', back: '\u8fd4\u56de', skip: '\u8df3\u8fc7' }
+  }
+  var RTL = { ar: 1, he: 1, fa: 1, ur: 1 }
   var still = matchMedia('(prefers-reduced-motion: reduce)').matches
   var current = null
 
   // ---- storage: every access may throw (private mode, blocked storage) ----
   function store(key, value) { try { value === null ? localStorage.removeItem(key) : localStorage.setItem(key, JSON.stringify(value)) } catch (e) {} }
   function load(key) { try { return JSON.parse(localStorage.getItem(key) || 'null') } catch (e) { return null } }
-  function cacheKey() { return 'hb-onboarding:flow:' + origin + ':' + options.project + ':' + options.flow }
+  /** The language to ask for: your choice, else the page's <html lang>, else the browser's. */
+  function wanted() { return options.locale || document.documentElement.lang || (navigator.languages && navigator.languages[0]) || navigator.language || '' }
+  function cacheKey() { return 'hb-onboarding:flow:' + origin + ':' + options.project + ':' + options.flow + ':' + wanted() }
   function seenKey() { return 'hb-onboarding:seen:' + options.project + ':' + options.flow }
 
   function emit(type, flow, step) {
@@ -104,7 +123,7 @@
   }
 
   function refresh(done) {
-    var url = origin + '/v1/onboarding/' + encodeURIComponent(options.project) + '/' + encodeURIComponent(options.flow)
+    var url = origin + '/v1/onboarding/' + encodeURIComponent(options.project) + '/' + encodeURIComponent(options.flow) + (wanted() ? '?locale=' + encodeURIComponent(wanted()) : '')
     var controller = window.AbortController ? new AbortController() : null
     var timer = setTimeout(function () { if (controller) controller.abort() }, TIMEOUT_MS)
     fetch(url, { signal: controller && controller.signal, credentials: 'omit' })
@@ -200,9 +219,14 @@
   function draw(flow, how) {
     var steps = (flow.steps || []).filter(function (s) { return s && (s.title || s.body || s.imageUrl) })
     if (!steps.length) return null
-    var labels = options.labels || {}
+    var base = String(flow.locale || '').toLowerCase().split('-')[0]
+    var words = WORDS[base] || WORDS.en
+    var given = options.labels || {}
+    var labels = { next: given.next || words.next, done: given.done || words.done, back: given.back || words.back, skip: given.skip || words.skip }
     var opts = flow.options || {}
     var host = el('div', 'help-bites-onboarding')
+    if (flow.locale) host.setAttribute('lang', flow.locale)
+    if (RTL[base]) host.setAttribute('dir', 'rtl')
     var shadow = host.attachShadow({ mode: 'open' })
     var styleEl = el('style')
     styleEl.textContent = css(flow, !!how.target, how.theme)
@@ -217,7 +241,7 @@
     var progress = el('div', 'progress', 'progress')
     var skip = el('button', 'skip', 'skip')
     skip.type = 'button'
-    skip.textContent = labels.skip || 'Skip'
+    skip.textContent = labels.skip
     top.appendChild(progress)
     if (opts.skippable !== false && !how.preview) top.appendChild(skip)
     var step = el('div', 'step')
@@ -258,13 +282,13 @@
         if (index > 0) {
           var back = el('button', 'btn back', 'back')
           back.type = 'button'
-          back.textContent = labels.back || 'Back'
+          back.textContent = labels.back
           back.onclick = function () { go(-1) }
           actions.appendChild(back)
         }
         var primary = el('button', 'btn next', 'next')
         primary.type = 'button'
-        primary.textContent = s.buttonLabel || (last ? labels.done || 'Get started' : labels.next || 'Continue')
+        primary.textContent = s.buttonLabel || (last ? labels.done : labels.next)
         primary.onclick = function () { last ? finish('complete') : go(1) }
         actions.appendChild(primary)
         step.appendChild(actions)

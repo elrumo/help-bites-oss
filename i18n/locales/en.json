@@ -2303,7 +2303,7 @@
         },
         "onboarding": {
           "term": "Onboarding that always loads",
-          "desc": "Write welcome screens in the panel and show them once with one script tag or a SwiftUI file. Your app keeps a copy, so they still show when HelpBites is unreachable."
+          "desc": "Write welcome screens in the panel and show them once with one script tag or a SwiftUI file, in your users' languages. Your app keeps a copy, so they still show when HelpBites is unreachable."
         },
         "media": {
           "term": "Images, reactions, read receipts",
@@ -2395,7 +2395,7 @@
         },
         "api": {
           "term": "A send API",
-          "desc": "POST a template, your own HTML or a block document, with per-recipient variables, attachments, scheduling and idempotency keys."
+          "desc": "POST a template, your own HTML or a block document, with per-recipient variables and language, attachments, scheduling and idempotency keys."
         },
         "log": {
           "term": "A log of every delivery",
@@ -2415,11 +2415,15 @@
         },
         "legal": {
           "term": "Hosted legal pages",
-          "desc": "Draft a privacy policy, terms, cookie and refund policy from reviewed clauses, then publish them on a page you link to."
+          "desc": "Draft a privacy policy, terms, cookie and refund policy from reviewed clauses, translate them with AI, then publish them on a page you link to."
         },
         "brand": {
           "term": "A brand kit to share",
           "desc": "Logos, app icons, screenshots, colours, fonts and guidelines on a public press page in one of three templates, with downloads and an embed for your site."
+        },
+        "pages": {
+          "term": "Landing pages and a headless CMS",
+          "desc": "Build pages from templates and components in a visual editor, with animations, and host them. Or read the same content from your Vue, JavaScript or Swift app. An assistant writes the copy and new components, reading your GitHub repos."
         },
         "flags": {
           "term": "Feature flags",
@@ -3654,7 +3658,6 @@
       "layers": "Layers",
       "addBlock": "Add block",
       "addTo": "Add to {field}",
-      "emptyList": "Empty",
       "missingComponent": "Missing: {key}",
       "page": "Page",
       "pageHint": "The page's own settings. Click a block to edit it.",
@@ -4220,6 +4223,39 @@
       "connectName": "Connect {name}",
       "loadFailed": "Could not load error tracking servers",
       "connectFailed": "Could not connect error tracking"
+    }
+  },
+  "translations": {
+    "title": "Languages",
+    "intro": "Show this in your users' language. Add a language and translate it with AI, or write it yourself. Anything left empty is shown in {language}.",
+    "original": "original",
+    "writtenIn": "Written in",
+    "add": "Add a language",
+    "addTag": "Add \"{tag}\"",
+    "badTag": "Use a language tag such as es or pt-BR.",
+    "translate": "Translate with AI",
+    "retranslate": "Translate everything again",
+    "remove": "Remove language",
+    "removeConfirm": "Remove the {language} translation?",
+    "editing": "Editing the {language} translation. Fields you leave empty fall back to {original}.",
+    "translated": "Translated into {n} language(s)",
+    "translateError": "Could not translate. Try again.",
+    "legalIntro": "The same document in another language is a separate page, linked to this one. Translate it with AI, or write it yourself.",
+    "thisLanguage": "Language of this document",
+    "legalReview": "AI translations are drafts. Have a lawyer review them before you publish; this is not legal advice.",
+    "published": "Published",
+    "draft": "Draft",
+    "email": {
+      "subject": "Subject",
+      "preheader": "Preheader",
+      "plainText": "Plain-text version",
+      "heading": "Heading",
+      "body": "Text",
+      "button": "Button label",
+      "imageAlt": "Image description",
+      "component": "Component: {field}",
+      "linked": "A linked template sends its master's translations. Translate the master design instead.",
+      "sendHint": "Pick a language to edit it. Send in a language with \"locale\" on the send API, or set a recipient's own language."
     }
   },
   "oauth": {

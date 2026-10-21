@@ -73,7 +73,7 @@ function onDrop(e: DragEvent) {
 <template>
   <div :class="depth ? 'ms-3 border-s border-default ps-1.5' : ''">
     <div v-for="f in fields" :key="f.key" class="space-y-px" @dragleave.self="dropAt = null">
-      <p v-if="depth || fields.length > 1" class="px-2 pt-1 text-[11px] text-dimmed">{{ f.field.label }}</p>
+      <p v-if="f.list.length && (depth || fields.length > 1)" class="px-2 pt-1 text-[11px] text-dimmed">{{ f.field.label }}</p>
       <div v-for="(child, i) in f.list" :key="child._uid" class="relative" @dragover="onDragOver($event, f.key, i)" @drop.prevent="onDrop">
         <span v-if="dropAt?.field === f.key && dropAt.index === i" class="pointer-events-none absolute inset-x-1 -top-px z-10 h-0.5 rounded-full bg-primary" />
         <UButton
@@ -99,12 +99,12 @@ function onDrop(e: DragEvent) {
         <CmsLayers :block="child" :library="library" :selected-id="selectedId" :depth="depth + 1" />
         <span v-if="i === f.list.length - 1 && dropAt?.field === f.key && dropAt.index === f.list.length" class="pointer-events-none absolute inset-x-1 -bottom-px z-10 h-0.5 rounded-full bg-primary" />
       </div>
-      <div v-if="!f.list.length" class="rounded-md" @dragover="onDragOver($event, f.key, 0)" @drop.prevent="onDrop">
-        <p class="px-2 py-1 text-[11px] text-dimmed" :class="dropAt?.field === f.key && 'text-primary'">{{ $t('projectTools.pages.emptyList') }}</p>
+      <!-- An empty list is one quiet line: its add menu, which a dragged block can also drop on. -->
+      <div class="rounded-md" :class="!f.list.length && dropAt?.field === f.key && 'ring-1 ring-primary'" @dragover="!f.list.length && onDragOver($event, f.key, 0)" @drop.prevent="!f.list.length && onDrop($event)">
+        <UDropdownMenu :items="addItems(f.field.allow, f.key)" :content="{ align: 'start' }" :ui="{ content: 'max-h-80' }">
+          <UButton icon="i-lucide-plus" :label="f.list.length ? (depth ? undefined : $t('projectTools.pages.addBlock')) : (depth || fields.length > 1 ? f.field.label : $t('projectTools.pages.addBlock'))" size="xs" color="neutral" variant="ghost" class="text-dimmed" :aria-label="$t('projectTools.pages.addTo', { field: f.field.label })" />
+        </UDropdownMenu>
       </div>
-      <UDropdownMenu :items="addItems(f.field.allow, f.key)" :content="{ align: 'start' }" :ui="{ content: 'max-h-80' }">
-        <UButton icon="i-lucide-plus" :label="depth ? undefined : $t('projectTools.pages.addBlock')" size="xs" color="neutral" variant="ghost" class="text-dimmed" :aria-label="$t('projectTools.pages.addTo', { field: f.field.label })" />
-      </UDropdownMenu>
     </div>
   </div>
 </template>

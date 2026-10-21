@@ -31,9 +31,12 @@
       </div>
       <ul class="grid gap-4" :class="group.key === 'screenshots' ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-5' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'">
         <li v-for="asset in group.items" :key="asset.id" class="group min-w-0">
-          <div class="relative grid place-items-center overflow-hidden rounded-xl border border-default" :class="[group.key === 'screenshots' ? 'aspect-[9/16] p-2' : 'aspect-[4/3] p-[12%]', tileBackground(asset.background)]">
-            <img v-if="asset.mime.startsWith('image/')" :src="asset.url" :alt="asset.name" class="max-h-full max-w-full object-contain" loading="lazy">
-            <span v-else class="text-xs font-semibold text-muted">{{ fileType(asset.mime) }}</span>
+          <div class="relative overflow-hidden rounded-xl border border-default" :class="[group.key === 'screenshots' ? 'aspect-[9/16]' : 'aspect-[4/3]', tileBackground(asset.background)]">
+            <!-- Absolutely positioned so the image has a definite box to fit and centre in. -->
+            <div class="absolute flex items-center justify-center" :class="group.key === 'screenshots' ? 'inset-2' : 'inset-[12%]'">
+              <img v-if="asset.mime.startsWith('image/')" :src="asset.url" :alt="asset.name" class="max-h-full max-w-full object-contain" loading="lazy">
+              <span v-else class="text-xs font-semibold text-muted">{{ fileType(asset.mime) }}</span>
+            </div>
             <UBadge v-if="!asset.public" :label="$t('projectTools.brand.files.private')" color="neutral" variant="solid" size="sm" class="absolute left-2 top-2" />
             <UDropdownMenu :items="menuFor(asset)" :content="{ align: 'end' }">
               <UButton icon="i-lucide-ellipsis" size="xs" color="neutral" variant="solid" square class="absolute right-2 top-2 opacity-0 transition-opacity focus:opacity-100 group-hover:opacity-100" :aria-label="$t('projectTools.brand.files.actionsFor', { name: asset.name })" />
