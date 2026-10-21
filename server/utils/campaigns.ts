@@ -13,6 +13,7 @@ import { deliverEmails, projectEmailSender, type DeliveryResult, type EmailActor
 import { emailSendingPaused } from './emailReputation'
 import { isMailerConfigured } from './mailer'
 import { buildOutgoingEmails, type EmailSendRequest } from './emailSend'
+import { localizeEmail } from '#shared/email/translate'
 import { blogNewsletterSnapshot } from './blogNewsletter'
 import { brandOf, findProjectEmail, readTranslations, serializeEmailTemplate } from './emails'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
@@ -160,7 +161,10 @@ export function unsubscribeLinks(base: string, projectId: string, contactId: str
 
 // ---- content -------------------------------------------------------------------------
 
-/** The design as it will go out: the master's with this project's accent, or the template's own. */
+/**
+ * The design as it will go out: the master's with this project's accent, or the
+ * template's own. The language is chosen per recipient when it is sent (`campaignEmails`).
+ */
 export async function snapshotCampaign(project: ParseObject, ref: string): Promise<CampaignSnapshot> {
   if (!ref) throw createError({ statusCode: 400, statusMessage: 'Pick a template first' })
   const row = await findProjectEmail(project, ref)
@@ -246,9 +250,9 @@ export function blankValues(document: EmailDocument, subject: string): Record<st
  * design, so a contact whose language is "es" gets the Spanish email when the
  * template has one.
  */
-export function campaignEmails(project: ParseObject, snapshot: CampaignSnapshot, contacts: ParseObject[], options: { batchId: string, subject: string, topic: string, testMode: boolean, source: 'campaign' | 'sequence' | 'form' | 'test', actor: EmailActor, base: string, metadata?: Record<string, string> }): OutgoingEmail[] {
+export function campaignEmails(project: ParseObject, snapshot: CampaignSnapshot, contacts: ParseObject[], options: { batchId: string, subject: string, topic: string, /** Send everyone in this language (a lead form's own) instead of each contact's. */ language?: string, testMode: boolean, source: 'campaign' | 'sequence' | 'form' | 'test', actor: EmailActor, base: string, metadata?: Record<string, string> }): OutgoingEmail[] {
   const sender = marketingSender(project)
-  return groupByLocale(contacts, c => String(c.get('language') || ''), snapshot).flatMap(({ locale, items }) => {
+  return groupByLocale(contacts, c => options.language || String(c.get('language') || ''), snapshot).flatMap(({ locale, items }) => {
     const document = snapshotDocument(snapshot, locale)
     const subject = subjectForLocale(snapshot, locale, options.subject)
     const request: EmailSendRequest = {

@@ -67,7 +67,13 @@ export function readBlogCommentPage(query: Record<string, unknown>): { limit: nu
 }
 
 /** A post's thread, oldest first. The team also sees what was hidden; nobody sees what was deleted. */
+/** A members-only post's thread is for its members, like its body. */
+function assertBlogPostReadable(ctx: BlogContext, post: ParseObject): void {
+  if (post.get('visibility') === 'members' && !isBlogMember(ctx.actor)) throw createError({ statusCode: 403, statusMessage: 'This post is for members: sign in (and confirm your email) to join the discussion' })
+}
+
 export async function listBlogComments(ctx: BlogContext, post: ParseObject, page: { limit: number, skip: number }): Promise<BlogCommentPage> {
+  assertBlogPostReadable(ctx, post)
   const build = () => {
     const query = new (useParse()).Query('BlogComment').equalTo('post', post)
     if (isBlogStaff(ctx.actor)) query.notEqualTo('status', 'deleted')
@@ -122,8 +128,9 @@ export async function syncBlogCommentCount(post: ParseObject): Promise<number> {
 export async function createBlogComment(ctx: BlogContext, post: ParseObject, payload: unknown): Promise<{ comment: ParseObject, text: string, commentCount: number }> {
   const actor = ctx.actor
   if (actor.kind === 'anonymous') throw createError({ statusCode: 401, statusMessage: 'Sign in to comment' })
-  if (!ctx.config.comments || post.get('commentsOpen') === false) throw createError({ statusCode: 403, statusMessage: 'Comments are closed' })
+  if (!ctx.config.comments || post.get('commentsOpen') === false || blogPostTypeOf(post) === 'page') throw createError({ statusCode: 403, statusMessage: 'Comments are closed' })
   if (!isBlogPostRowLive(post)) throw createError({ statusCode: 404, statusMessage: 'Post not found' })
+  assertBlogPostReadable(ctx, post)
 
   const { body, parentId, errors } = readBlogCommentInput(payload)
   if (errors.length) badRequest(errors.join('; '))

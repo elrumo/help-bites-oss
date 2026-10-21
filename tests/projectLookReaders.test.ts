@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { DEFAULT_ACCENT } from '../shared/projectLook'
 import { blogPageProject } from '../server/utils/blogPage'
+import { normalizeBlogConfig } from '../shared/blog'
+const BLOG = normalizeBlogConfig({})
 import { brandOf } from '../server/utils/emails'
 import { formProjectLook } from '../server/utils/leadForms'
 import { legalLook } from '../server/utils/legalPage'
@@ -29,7 +31,7 @@ describe('every reader of the project look agrees', () => {
     const logo = 'https://cdn.test/kit-logo.svg'
     expect(lookOf(kit)).toMatchObject({ accent, logoUrl: logo })
     expect(pageBrand(kit)).toMatchObject({ name: 'Acme', accent, logoUrl: logo })
-    expect(blogPageProject(kit)).toMatchObject({ name: 'Acme', accent, logo })
+    expect(blogPageProject(kit, BLOG)).toMatchObject({ name: 'Acme', accent, logo })
     expect(legalLook(kit)).toMatchObject({ name: 'Acme', accent, logo })
     expect(formProjectLook(kit)).toEqual({ name: 'Acme', accent, logoUrl: logo })
     expect(flowProjectLook(kit)).toEqual({ name: 'Acme', accent, logoUrl: logo })
@@ -45,7 +47,7 @@ describe('every reader of the project look agrees', () => {
   test('a project that never filled the kit in keeps its older fields', () => {
     const old = row({ name: 'Old', theme: { accent: '#AA0000' }, brandLogoUrl: 'https://old.test/logo.png' })
     expect(pageBrand(old).accent).toBe('#aa0000')
-    expect(blogPageProject(old).accent).toBe('#aa0000')
+    expect(blogPageProject(old, BLOG).accent).toBe('#aa0000')
     expect(legalLook(old).accent).toBe('#aa0000')
     expect(formProjectLook(old)).toEqual({ name: 'Old', accent: '#aa0000', logoUrl: 'https://old.test/logo.png' })
     expect(flowProjectLook(old).accent).toBe('#aa0000')
@@ -54,7 +56,7 @@ describe('every reader of the project look agrees', () => {
   test('with nothing set every surface uses the one default accent', () => {
     const bare = row({ name: 'Bare' })
     expect(DEFAULT_ACCENT).toBe('#4f46e5')
-    for (const accent of [pageBrand(bare).accent, blogPageProject(bare).accent, legalLook(bare).accent, formProjectLook(bare).accent, flowProjectLook(bare).accent, brandOf(bare).theme?.accent]) expect(accent).toBe(DEFAULT_ACCENT)
+    for (const accent of [pageBrand(bare).accent, blogPageProject(bare, BLOG).accent, legalLook(bare).accent, formProjectLook(bare).accent, flowProjectLook(bare).accent, brandOf(bare).theme?.accent]) expect(accent).toBe(DEFAULT_ACCENT)
   })
 
   test('the legal pages keep their own accent, logo and font as overrides', () => {
@@ -65,6 +67,6 @@ describe('every reader of the project look agrees', () => {
     expect(look.font).toContain('Georgia')
     // The other surfaces still follow the kit.
     expect(pageBrand(own).accent).toBe('#16a34a')
-    expect(blogPageProject(own).logo).toBe('https://cdn.test/kit-logo.svg')
+    expect(blogPageProject(own, BLOG).logo).toBe('https://cdn.test/kit-logo.svg')
   })
 })

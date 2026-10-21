@@ -19,6 +19,9 @@ enum DomainEventCatalog {
     Group(key: "github", label: "GitHub", events: [("github.commit.referenced", "Commit references an item"), ("github.pull_request.merged", "Pull request merged")]),
     Group(key: "email", label: "Email", events: [("email.suppressed", "Address suppressed")]),
     Group(key: "cms", label: "Pages", events: [("cms.entry.published", "Page published"), ("cms.entry.unpublished", "Page unpublished")]),
+    Group(key: "blog", label: "Blog", events: [
+      ("blog.post.published", "Blog post published"), ("blog.post.updated", "Blog post updated"), ("blog.post.unpublished", "Blog post unpublished"), ("blog.post.deleted", "Blog post deleted")
+    ]),
     Group(key: "onboarding", label: "Onboarding", events: [("onboarding.completed", "Onboarding finished")])
   ]
 }

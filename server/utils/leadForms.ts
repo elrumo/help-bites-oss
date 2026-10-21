@@ -1,11 +1,14 @@
+import { randomUUID } from 'node:crypto'
 import { createError, getHeader, getQuery, getRouterParam, type H3Event } from 'h3'
 import { extractTemplateVariables } from '#shared/email/placeholders'
-import { parseAcceptLanguage } from '#shared/locales'
 import {
-  DEFAULT_LEAD_SETTINGS, LEAD_FIELD_LABELS, LEAD_FORM_KEY, LEAD_FORM_LIMITS, LEAD_FORM_PRESETS, leadFieldsOf, leadFormKeyFrom, normalizeLeadContent, normalizeLeadSettings,
-  normalizeLeadStyle, presetForm, readLeadSubmission, validateLeadContent, validateLeadFields, validateLeadSettings, validateLeadStyle,
-  type LeadForm, type LeadFormField, type LeadFormPreset, type LeadFormSettings, type PublicLeadForm
+  DEFAULT_LEAD_SETTINGS, LEAD_FIELD_LABELS, LEAD_FILE_EXTENSIONS, LEAD_FORM_KEY, LEAD_FORM_WORDS, LEAD_FORM_LIMITS, LEAD_FORM_MAX_LOCALES, LEAD_FORM_PRESETS, checkLeadFiles, fillWords, leadFieldsOf,
+  leadFormKeyFrom, leadFormLocaleOf, leadFormTexts, leadFormWords, leadOptionAliases, leadTranslationFromTexts, leadTranslationTexts, leadTranslationsOf, localizeLeadForm,
+  normalizeLeadContent, normalizeLeadSettings, normalizeLeadStyle, presetForm, readLeadSubmission, validateLeadContent, validateLeadFields, validateLeadSettings, validateLeadStyle,
+  validateLeadTranslations, type AcceptedLeadFile, type LeadFile, type LeadForm, type LeadFormPreset, type LeadFormSettings, type LeadFormWords, type PublicLeadField,
+  type PublicLeadForm, type UploadedLeadFile
 } from '#shared/leadForms'
+import { matchLocale, normalizeLocale, parseAcceptLanguage } from '#shared/locales'
 import { ALL_LEADS_SEGMENT, leadFormSegmentFilter } from '#shared/segments'
 import type { PoweredBy } from './branding'
 import { campaignEmails, publicBaseUrl, snapshotCampaign } from './campaigns'
@@ -13,14 +16,16 @@ import { contactQuery, findContactBy, saveContact, upsertContacts } from './cont
 import { deliverEmails, type EmailActor } from './emailDelivery'
 import { findProjectEmail } from './emails'
 import { escapeHtml } from './messageEmail'
-import { pageBrand, renderMarketingPage } from './marketingPages'
+import { messagePage, pageBrand, renderMarketingPage, type PageBrand } from './marketingPages'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
 import { loadProjectUnscoped, lookOf } from './projects'
 import { LIMITS, rateLimit } from './rateLimit'
 import { runExclusive } from './redis'
+import { deleteDocumentObject, getDocumentBuffer, s3Configured, storeHiddenFile } from './s3'
 import { readLinkToken, signLinkToken } from './secrets'
 import { enrollContact, getProjectSequence } from './sequences'
-import { SIGNUPS_CLOSED, projectConfirmTemplate, sendConfirmationEmail } from './signup'
+import { projectConfirmTemplate, sendConfirmationEmail } from './signup'
+import { readTargetLocales, translateMissing } from './translate'
 
 // Lead forms: the store behind /v1/admin/lead-forms, the public form at
 // /v1/forms/{pk}/{key} (read it, post to it), the hosted page at /f/{pk}/{key},
@@ -31,6 +36,13 @@ import { SIGNUPS_CLOSED, projectConfirmTemplate, sendConfirmationEmail } from '.
 // lead is `pending` until they press the button behind the link in the
 // confirmation email; then (or right away without it) the form's welcome email
 // goes out once and they start its sequence.
+//
+// A form is written in one language (`locale`) and may carry a translation per
+// language: visitors get the one they ask for (`?locale=`, `locale` in the
+// body, else the browser's), and so do its pages, its errors and its emails.
+// Files sent through a file field are kept as LeadFile rows: the object sits
+// under `<projectId>/forms/<formId>/` by an unguessable name and only goes out
+// through the authenticated download route.
 
 const CONFIRM_DAYS = 7
 const FORM_ACTOR: EmailActor = { type: 'system', id: '', name: 'Lead form' }
@@ -96,6 +108,8 @@ export function serializeLeadForm(project: ParseObject, row: ParseObject, stats 
     content: normalizeLeadContent(row.get('content')),
     style: normalizeLeadStyle(row.get('style')),
     settings: settingsOf(row),
+    locale: leadFormLocaleOf(row.get('locale')),
+    translations: leadTranslationsOf(row.get('translations')),
     segment: String(row.get('segment') || ''),
     stats,
     path: `/v1/forms/${pk}/${key}`,
@@ -147,10 +161,29 @@ async function applyInput(project: ParseObject, row: ParseObject, body: Record<s
     if (typeof body.active !== 'boolean') errors.push('active must be true or false')
     else row.set('active', body.active)
   }
+  if (body.locale !== undefined) {
+    const locale = normalizeLocale(body.locale)
+    if (!locale) errors.push('locale must be a language tag, such as "en" or "pt-BR"')
+    else row.set('locale', locale)
+  }
   if (body.fields !== undefined) {
     const result = validateLeadFields(body.fields)
     errors.push(...result.errors)
-    if (!result.errors.length) row.set('fields', result.fields)
+    if (result.fields.some(f => f.type === 'file') && !s3Configured()) errors.push('File fields need file storage: set S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY and S3_BUCKET on the server')
+    if (!errors.length) row.set('fields', result.fields)
+  }
+  // Translations follow the fields and the language: a removed field's words go
+  // with it, and a language the form is now written in is no longer a translation.
+  if (body.translations !== undefined || body.fields !== undefined || body.locale !== undefined) {
+    const fields = leadFieldsOf(row.get('fields'))
+    const locale = leadFormLocaleOf(row.get('locale'))
+    const ids = new Set(fields.map(f => f.id))
+    const kept = Object.fromEntries(Object.entries(leadTranslationsOf(row.get('translations')))
+      .filter(([tag]) => tag.toLowerCase() !== locale.toLowerCase())
+      .map(([tag, t]) => [tag, { content: t.content, fields: Object.fromEntries(Object.entries(t.fields).filter(([id]) => ids.has(id))) }]))
+    const result = body.translations === undefined ? { translations: kept, errors: [] } : validateLeadTranslations(body.translations, fields, locale, kept)
+    errors.push(...result.errors)
+    if (!errors.length) row.set('translations', result.translations)
   }
   if (body.content !== undefined) {
     const result = validateLeadContent(body.content, normalizeLeadContent(row.get('content')))
@@ -179,6 +212,27 @@ async function applyInput(project: ParseObject, row: ParseObject, body: Record<s
     }
   }
   if (errors.length) badRequest(errors.join('; '))
+}
+
+/**
+ * Machine-translates the form's words into each language (saved as a
+ * translation the operator can edit). What is already translated stays unless
+ * `overwrite`, so a person's edits survive a re-run.
+ */
+export async function translateLeadForm(ctx: MemberContext, row: ParseObject, body: Record<string, unknown>): Promise<void> {
+  const fields = leadFieldsOf(row.get('fields'))
+  const locale = leadFormLocaleOf(row.get('locale'))
+  const translations = leadTranslationsOf(row.get('translations'))
+  const source = leadFormTexts(normalizeLeadContent(row.get('content')), fields)
+  if (!Object.keys(source).length) badRequest('The form has no text to translate')
+  const next = { ...translations }
+  for (const to of readTargetLocales(body.locales, locale)) {
+    const texts = await translateMissing(ctx, source, leadTranslationTexts(translations[to]), { from: locale, to, context: 'form', overwrite: body.overwrite === true })
+    next[to] = leadTranslationFromTexts(texts, fields)
+  }
+  if (Object.keys(next).length > LEAD_FORM_MAX_LOCALES) badRequest(`A form has at most ${LEAD_FORM_MAX_LOCALES} translations`)
+  row.set('translations', next)
+  await row.save(null, MASTER)
 }
 
 const segmentName = (formName: string) => `Leads · ${formName}`.slice(0, 80)
@@ -258,14 +312,29 @@ export function formProjectLook(project: ParseObject) {
   return { name: look.name, accent: look.accent, logoUrl: look.logoUrl || look.iconUrl }
 }
 
-export function toPublicLeadForm(project: ParseObject, row: ParseObject): PublicLeadForm {
+/** The languages a visitor asks for, best first: `locale` in the body, then in the query, then the browser's. */
+export function wantedLocales(event: H3Event, body: Record<string, unknown> = {}): unknown[] {
+  return [body.locale, getQuery(event).locale, ...parseAcceptLanguage(getHeader(event, 'accept-language'))]
+}
+
+/** The form in the first wanted language it has (its own otherwise): its words, and the built-in words around them. */
+export function localizedLeadForm(form: LeadForm, wanted: unknown[]): { locale: string, locales: string[], content: LeadForm['content'], fields: PublicLeadField[], words: LeadFormWords } {
+  const locales = [form.locale, ...Object.keys(form.translations)]
+  const locale = matchLocale(wanted, locales) || form.locale
+  return { locale, locales, ...localizeLeadForm(form.content, form.fields, form.translations[locale]), words: leadFormWords(locale) }
+}
+
+export function toPublicLeadForm(project: ParseObject, row: ParseObject, wanted: unknown[] = []): PublicLeadForm {
   const form = serializeLeadForm(project, row)
   const look = formProjectLook(project)
+  const { locale, locales, content, fields } = localizedLeadForm(form, wanted)
   return {
     key: form.key,
     name: form.name,
-    fields: form.fields,
-    content: form.content,
+    locale,
+    locales,
+    fields,
+    content,
     style: { ...form.style, accent: form.style.accent || look.accent },
     doubleOptIn: form.settings.doubleOptIn,
     project: { name: look.name, logoUrl: look.logoUrl }
@@ -293,26 +362,39 @@ export async function readPublicLeadForm(event: H3Event): Promise<{ project: Par
   return findPublicLeadForm(getRouterParam(event, 'pk') || '', getRouterParam(event, 'key') || '')
 }
 
-/** At the plan's contact limit the form closes for everyone alike, so its answer never tells who is already a contact. */
-function closedAtLimit(error: { statusCode?: number }): never {
-  throw error.statusCode === 402 ? createError({ statusCode: 402, statusMessage: SIGNUPS_CLOSED }) : error
+/**
+ * At the plan's contact or storage limit the form closes for everyone alike,
+ * so its answer never tells who is already a contact.
+ */
+function closedAtLimit(words: LeadFormWords) {
+  return (error: { statusCode?: number }): never => {
+    throw error.statusCode === 402 ? createError({ statusCode: 402, statusMessage: words.closedTitle }) : error
+  }
 }
 
 /**
- * Take one submission. Invalid answers are a 400 listing what to fix; after
- * that the answer is the same whether or not the address was known
- * (`pending` is whether the form asks people to confirm).
+ * Take one submission (`files` are the file parts of a multipart one, by
+ * field key). Invalid answers are a 400 listing what to fix, in the visitor's
+ * language; after that the answer is the same whether or not the address was
+ * known (`pending` is whether the form asks people to confirm).
  */
-export async function submitLeadForm(event: H3Event, project: ParseObject, row: ParseObject, body: Record<string, unknown>): Promise<{ pending: boolean }> {
+export async function submitLeadForm(event: H3Event, project: ParseObject, row: ParseObject, body: Record<string, unknown>, files: Record<string, UploadedLeadFile> = {}): Promise<{ pending: boolean }> {
   const form = serializeLeadForm(project, row)
-  const { submission, errors } = readLeadSubmission(form.fields, body)
+  // Checked against the fields as the visitor saw them, so errors name them in their language.
+  const { locale, fields, words } = localizedLeadForm(form, wantedLocales(event, body))
+  const { submission, errors } = readLeadSubmission(fields, body, { words, aliases: leadOptionAliases(form.fields, form.translations) })
+  const uploads = checkLeadFiles(fields, files, words)
+  errors.push(...uploads.errors)
   const pending = form.settings.doubleOptIn
   if (submission.bot) return { pending }
   if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; '), data: { code: 'invalid_lead', errors } })
   const ip = clientIp(event) || ''
   await rateLimit(`sb:rl:signup:${ip || 'ip'}`, LIMITS.signupsPerIp.limit, LIMITS.signupsPerIp.window)
   await rateLimit(`sb:rl:signup:p:${project.id}`, LIMITS.signupsPerProject.limit, LIMITS.signupsPerProject.window)
-  await checkGauge(await projectWorkspaceId(project), 'contacts').catch(closedAtLimit)
+  const workspaceId = await projectWorkspaceId(project)
+  await checkGauge(workspaceId, 'contacts').catch(closedAtLimit(words))
+  // Files go up first: when storage is full nobody is saved half.
+  const stored = uploads.files.length ? await putLeadFiles(project, form, workspaceId, uploads.files).catch(closedAtLimit(words)) : []
   const consent = { ip, ua: String(getHeader(event, 'user-agent') || '').slice(0, 300), formUrl: String(getHeader(event, 'referer') || getHeader(event, 'origin') || '').slice(0, 300) }
 
   const existing = await findContactBy(project, { email: submission.email })
@@ -324,15 +406,119 @@ export async function submitLeadForm(event: H3Event, project: ParseObject, row: 
   // The browser's first language fills the contact's (never replaces it), so the welcome email can come in it.
   const language = parseAcceptLanguage(getHeader(event, 'accept-language'))[0]
   const [result] = await upsertContacts(project, [{ email: submission.email, ...(submission.name ? { name: submission.name } : {}), ...(language ? { language } : {}), ...(attributes ? { attributes } : {}), tags: form.settings.tags, subscription, leadForms: [form.id] }], { via: 'lead_form', explicit: true, fillOnly: true, consent, origin: { type: 'lead_form', id: form.id } })
-    .catch(closedAtLimit)
-  if (!result || result.status === 'failed') {
+    .catch(async (error) => {
+      await dropLeadObjects(workspaceId, stored)
+      return closedAtLimit(words)(error)
+    })
+  const contact = result && result.status !== 'failed' ? await findContactBy(project, { email: submission.email }) : null
+  if (!contact) {
     console.error('[forms] a lead was not saved:', result?.error)
+    await dropLeadObjects(workspaceId, stored)
     return { pending }
   }
-  const contact = await findContactBy(project, { email: submission.email })
-  if (contact?.get('subscription') === 'subscribed') void welcomeLead(project, form, contact).catch(error => console.error('[forms] welcome failed:', (error as Error).message))
-  else if (contact?.get('subscription') === 'pending') void sendLeadConfirmation(project, form, contact).catch(error => console.error('[forms] confirmation failed:', (error as Error).message))
+  if (stored.length) await saveLeadFiles(project, row, contact, stored)
+  if (contact.get('subscription') === 'subscribed') void welcomeLead(project, form, contact, locale).catch(error => console.error('[forms] welcome failed:', (error as Error).message))
+  else if (contact.get('subscription') === 'pending') void sendLeadConfirmation(project, form, contact, locale).catch(error => console.error('[forms] confirmation failed:', (error as Error).message))
   return { pending }
+}
+
+// ---- files ---------------------------------------------------------------------------
+
+type StoredLeadFile = AcceptedLeadFile & { storageKey: string }
+
+async function putLeadFiles(project: ParseObject, form: LeadForm, workspaceId: string, files: AcceptedLeadFile[]): Promise<StoredLeadFile[]> {
+  const stored: StoredLeadFile[] = []
+  try {
+    for (const file of files) {
+      const storageKey = `${project.id}/forms/${form.id}/${randomUUID()}.${file.ext}`
+      await storeHiddenFile(storageKey, Buffer.from(file.data), file.mime, workspaceId)
+      stored.push({ ...file, storageKey })
+    }
+  } catch (error) {
+    await dropLeadObjects(workspaceId, stored)
+    throw error
+  }
+  return stored
+}
+
+async function dropLeadObjects(workspaceId: string, stored: StoredLeadFile[]): Promise<void> {
+  for (const file of stored) {
+    await deleteDocumentObject(file.storageKey)
+    await chargeUsage(workspaceId, 'storageBytes', -file.data.length)
+  }
+}
+
+async function saveLeadFiles(project: ParseObject, form: ParseObject, contact: ParseObject, stored: StoredLeadFile[]): Promise<void> {
+  const Parse = useParse()
+  await Parse.Object.saveAll(stored.map((file) => {
+    const row = new (Parse.Object.extend('LeadFile'))() as ParseObject
+    row.set('project', project)
+    row.set('form', form)
+    row.set('contact', contact)
+    row.set('field', file.field.key)
+    row.set('name', file.name)
+    row.set('mime', file.mime)
+    row.set('size', file.data.length)
+    row.set('storageKey', file.storageKey)
+    return row
+  }), MASTER)
+}
+
+export function serializeLeadFile(row: ParseObject): LeadFile {
+  return {
+    id: row.id || '',
+    formId: pointerId(row.get('form')),
+    contactId: pointerId(row.get('contact')),
+    field: String(row.get('field') || ''),
+    name: String(row.get('name') || ''),
+    mime: String(row.get('mime') || ''),
+    size: Number(row.get('size') || 0),
+    createdAt: iso(row.createdAt)
+  }
+}
+
+export async function getLeadFile(id: string): Promise<ParseObject> {
+  try {
+    return await new (useParse()).Query('LeadFile').get(id, MASTER)
+  } catch {
+    throw createError({ statusCode: 404, statusMessage: 'File not found' })
+  }
+}
+
+/** A project's uploads, newest first: one person's (`contactId`) or one form's (`formId`). `before` pages back by date. */
+export async function listLeadFiles(project: ParseObject, filter: { contactId?: string, formId?: string, before?: Date | null, limit?: number }): Promise<LeadFile[]> {
+  const Parse = useParse()
+  const query = new Parse.Query('LeadFile').equalTo('project', project).descending('createdAt').limit(Math.min(Math.max(filter.limit || 100, 1), 200))
+  if (filter.contactId) query.equalTo('contact', Parse.Object.extend('EndUser').createWithoutData(filter.contactId))
+  if (filter.formId) query.equalTo('form', Parse.Object.extend('LeadForm').createWithoutData(filter.formId))
+  if (filter.before) query.lessThan('createdAt', filter.before)
+  return (await query.find(MASTER)).map(serializeLeadFile)
+}
+
+export async function readLeadFile(row: ParseObject): Promise<Buffer> {
+  return await getDocumentBuffer(String(row.get('storageKey') || ''))
+}
+
+/** Removes uploads, their objects and their bytes from the workspace's storage. Returns how many went. */
+export async function deleteLeadFiles(project: ParseObject, rows: ParseObject[]): Promise<number> {
+  if (!rows.length) return 0
+  const workspaceId = await projectWorkspaceId(project)
+  for (const row of rows) {
+    await deleteDocumentObject(String(row.get('storageKey') || ''))
+    await chargeUsage(workspaceId, 'storageBytes', -Number(row.get('size') || 0))
+  }
+  await useParse().Object.destroyAll(rows, MASTER)
+  return rows.length
+}
+
+/** Everything a person sent through any form, for erasure. */
+export async function eraseLeadFiles(project: ParseObject, contact: ParseObject): Promise<number> {
+  let count = 0
+  for (;;) {
+    const rows = await new (useParse()).Query('LeadFile').equalTo('project', project).equalTo('contact', contact).limit(500).find(MASTER)
+    count += await deleteLeadFiles(project, rows)
+    if (rows.length < 500) return count
+  }
 }
 
 /**
@@ -340,14 +526,14 @@ export async function submitLeadForm(event: H3Event, project: ParseObject, row: 
  * `lf_<form>_<contact>`), and its sequence. A draft or paused sequence holds
  * them at the first step until it is activated.
  */
-export async function welcomeLead(project: ParseObject, form: LeadForm, contact: ParseObject): Promise<void> {
+export async function welcomeLead(project: ParseObject, form: LeadForm, contact: ParseObject, locale = ''): Promise<void> {
   const { welcomeTemplate, sequence } = form.settings
   if (welcomeTemplate && contact.get('email')) {
     const batchId = `lf_${form.id}_${contact.id}`
     await runExclusive(`sb:leadwelcome:${batchId}`, 60, async () => {
       if (await new (useParse()).Query('EmailLog').equalTo('batchId', batchId).notEqualTo('status', 'failed').first(MASTER)) return
       const snapshot = await snapshotCampaign(project, welcomeTemplate)
-      await deliverEmails(campaignEmails(project, snapshot, [contact], { batchId, subject: '', topic: '', testMode: false, source: 'form', actor: FORM_ACTOR, base: publicBaseUrl(), metadata: { form: form.id } }))
+      await deliverEmails(campaignEmails(project, snapshot, [contact], { batchId, subject: '', topic: '', language: locale, testMode: false, source: 'form', actor: FORM_ACTOR, base: publicBaseUrl(), metadata: { form: form.id } }))
     }, { waitMs: 5000, failOpen: true })
   }
   if (sequence) {
@@ -358,31 +544,38 @@ export async function welcomeLead(project: ParseObject, form: LeadForm, contact:
 
 // ---- confirming ----------------------------------------------------------------------
 
-export function leadConfirmToken(projectId: string, contactId: string, formId: string, now = Date.now()): string {
-  return signLinkToken('leadconfirm', [projectId, contactId, formId, Math.floor(now / 1000) + CONFIRM_DAYS * 86400].join(':'))
+/** The link in the confirmation email. It carries the language the person signed up in (a tag has no colon), so the confirm page and the welcome email speak it too. */
+export function leadConfirmToken(projectId: string, contactId: string, formId: string, locale = '', now = Date.now()): string {
+  return signLinkToken('leadconfirm', [projectId, contactId, formId, Math.floor(now / 1000) + CONFIRM_DAYS * 86400, normalizeLocale(locale) || ''].join(':'))
 }
 
-export function readLeadConfirmToken(token: string, now = Date.now()): { projectId: string, contactId: string, formId: string } | null {
+export function readLeadConfirmToken(token: string, now = Date.now()): { projectId: string, contactId: string, formId: string, locale: string } | null {
   let payload: string | null = null
   try { payload = readLinkToken('leadconfirm', token) } catch { return null }
-  const [projectId, contactId, formId, expires] = String(payload || '').split(':')
+  const [projectId, contactId, formId, expires, locale] = String(payload || '').split(':')
   if (!projectId || !contactId || !formId || !(Number(expires) * 1000 > now)) return null
-  return { projectId, contactId, formId }
+  return { projectId, contactId, formId, locale: normalizeLocale(locale) || '' }
 }
 
-async function sendLeadConfirmation(project: ParseObject, form: LeadForm, contact: ParseObject): Promise<void> {
-  const url = `${publicBaseUrl()}/f/confirm/${leadConfirmToken(project.id || '', contact.id || '', form.id)}`
+async function sendLeadConfirmation(project: ParseObject, form: LeadForm, contact: ParseObject, locale: string): Promise<void> {
+  const url = `${publicBaseUrl()}/f/confirm/${leadConfirmToken(project.id || '', contact.id || '', form.id, locale)}`
   const own = form.settings.confirmTemplate ? await findProjectEmail(project, form.settings.confirmTemplate).catch(() => null) : null
-  const app = String(project.get('name') || '')
+  const words = leadFormWords(locale)
+  const name = String(project.get('name') || '') || localizedLeadForm(form, [locale]).content.title
+  const first = String(contact.get('name') || '').trim().split(/\s+/)[0] || ''
+  // All of it in their language: a sign-up confirmation is no conversation, so the layout's reply line goes.
   await sendConfirmationEmail(project, contact, url, own || await projectConfirmTemplate(project), {
-    subject: `Confirm your email for ${form.content.title || app || 'our list'}`,
-    body: `Please confirm you want to hear from ${app || 'us'}. If you did not sign up, ignore this message: you will not hear from us.`,
-    ctaLabel: 'Confirm my email'
-  })
+    subject: fillWords(words.emailSubject, { name }),
+    body: fillWords(words.emailBody, { name }),
+    ctaLabel: words.confirmButton,
+    greeting: first ? fillWords(words.hello, { name: first }) : words.helloThere,
+    note: '',
+    reason: fillWords(words.emailReason, { name })
+  }, [locale])
 }
 
 /** The click in the confirmation email (a POST from the confirm page). The form may be gone by then: the person is still confirmed. */
-export async function confirmLead(event: H3Event, token: string): Promise<{ project: ParseObject, form: LeadForm | null } | null> {
+export async function confirmLead(event: H3Event, token: string): Promise<{ project: ParseObject, form: LeadForm | null, locale: string } | null> {
   const link = readLeadConfirmToken(token)
   if (!link) return null
   const project = await loadProjectUnscoped(link.projectId).catch(() => null)
@@ -396,13 +589,13 @@ export async function confirmLead(event: H3Event, token: string): Promise<{ proj
     await saveContact(project, contact, { subscription: 'subscribed' }, { via: 'lead_form', explicit: true, consent })
   }
   const form = row ? serializeLeadForm(project, row) : null
-  if (form && contact.get('subscription') === 'subscribed') await welcomeLead(project, form, contact).catch(error => console.error('[forms] welcome failed:', (error as Error).message))
-  return { project, form }
+  if (form && contact.get('subscription') === 'subscribed') await welcomeLead(project, form, contact, link.locale).catch(error => console.error('[forms] welcome failed:', (error as Error).message))
+  return { project, form, locale: link.locale }
 }
 
 // ---- pages ---------------------------------------------------------------------------
 
-function fieldHtml(f: LeadFormField, value: string): string {
+function fieldHtml(f: PublicLeadField, value: string, words: LeadFormWords): string {
   const label = escapeHtml(f.label || LEAD_FIELD_LABELS[f.type])
   const name = escapeHtml(f.key)
   const required = f.required ? ' required' : ''
@@ -410,41 +603,71 @@ function fieldHtml(f: LeadFormField, value: string): string {
   if (f.type === 'checkbox') return `<label class="check"><input type="checkbox" name="${name}" value="on"${required}${value ? ' checked' : ''}><span>${label}</span></label>`
   let input: string
   if (f.type === 'textarea') input = `<textarea name="${name}" rows="4"${placeholder}${required} maxlength="${LEAD_FORM_LIMITS.textarea}">${escapeHtml(value)}</textarea>`
-  else if (f.type === 'select') input = `<select name="${name}"${required}><option value="">—</option>${f.options.map(o => `<option${o === value ? ' selected' : ''}>${escapeHtml(o)}</option>`).join('')}</select>`
-  else {
-    const type = { email: 'email', name: 'text', text: 'text', number: 'number', url: 'url', phone: 'tel' }[f.type] || 'text'
+  else if (f.type === 'select') input = `<select name="${name}"${required}><option value="">—</option>${f.options.map((o, i) => `<option value="${escapeHtml(o)}"${o === value ? ' selected' : ''}>${escapeHtml(f.optionLabels[i] || o)}</option>`).join('')}</select>`
+  else if (f.type === 'file') {
+    const accept = LEAD_FILE_EXTENSIONS[f.accept || 'any'].map(ext => `.${ext}`).join(',')
+    input = `<input type="file" name="${name}" accept="${accept}"${required}><small class="hint">${escapeHtml(fillWords(words.fileHint, { mb: f.maxMB }))}</small>`
+  } else {
+    const type = { email: 'email', name: 'text', text: 'text', number: 'number', url: 'url', phone: 'tel' }[f.type as string] || 'text'
     const auto = { email: ' autocomplete="email"', name: ' autocomplete="name"', phone: ' autocomplete="tel"', url: ' autocomplete="url"' }[f.type as string] || ''
     input = `<input type="${type}" name="${name}" value="${escapeHtml(value)}"${placeholder}${auto}${required}${f.type === 'number' ? ' step="any"' : ''}>`
   }
-  return `<label class="field"><span>${label}${f.required ? '' : ' <small>(optional)</small>'}</span>${input}</label>`
+  return `<label class="field"><span>${label}${f.required ? '' : ` <small>${escapeHtml(words.optional)}</small>`}</span>${input}</label>`
 }
 
-/** The hosted form, for a link or an iframe: plain HTML, posting to the public endpoint. */
-export function leadFormPage(project: ParseObject, row: ParseObject, options: { sent?: boolean, error?: string, values?: Record<string, unknown>, poweredBy?: PoweredBy | null } = {}): string {
+/**
+ * The hosted form, for a link or an iframe: plain HTML, posting to the public
+ * endpoint (as multipart when it has a file field), in the first of `wanted`
+ * the form has.
+ */
+export function leadFormPage(project: ParseObject, row: ParseObject, options: { sent?: boolean, error?: string, values?: Record<string, unknown>, poweredBy?: PoweredBy | null, wanted?: unknown[] } = {}): string {
   const form = serializeLeadForm(project, row)
-  const brand = { ...pageBrand(project, options.poweredBy), ...(form.style.accent ? { accent: form.style.accent } : {}) }
-  const { content } = form
+  const { locale, content, fields, words } = localizedLeadForm(form, options.wanted || [])
+  const brand = { ...pageBrand(project, options.poweredBy), ...(form.style.accent ? { accent: form.style.accent } : {}), lang: locale }
   if (options.sent) {
     return renderMarketingPage(brand, content.successTitle, `<h1>${escapeHtml(content.successTitle)}</h1><p>${escapeHtml(form.settings.doubleOptIn ? content.confirmMessage : content.successMessage)}</p>`)
   }
   const values = options.values || {}
+  const multipart = fields.some(f => f.type === 'file') ? ' enctype="multipart/form-data"' : ''
   return renderMarketingPage(brand, content.title || form.name, `${content.title ? `<h1>${escapeHtml(content.title)}</h1>` : ''}
 ${content.description ? `<p>${escapeHtml(content.description)}</p>` : ''}
 ${options.error ? `<div class="note">${escapeHtml(options.error)}</div>` : ''}
-<form method="post" action="${escapeHtml(form.path)}">
-${form.fields.map(f => fieldHtml(f, values[f.key] === undefined ? '' : String(values[f.key]))).join('\n')}
+<form method="post" action="${escapeHtml(form.path)}"${multipart}>
+${fields.map(f => fieldHtml(f, values[f.key] === undefined || f.type === 'file' ? '' : String(values[f.key]), words)).join('\n')}
+<input type="hidden" name="locale" value="${escapeHtml(locale)}">
 <div class="hp" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
 <button type="submit">${escapeHtml(content.buttonLabel)}</button>
 </form>
 ${content.footnote ? `<p class="small">${escapeHtml(content.footnote)}</p>` : ''}`)
 }
 
-export function leadConfirmPage(project: ParseObject, token: string, poweredBy: PoweredBy | null = null): string {
-  return renderMarketingPage(pageBrand(project, poweredBy), 'Confirm', `<h1>Confirm your email</h1><p>One click and you are on the list.</p>
-<form method="post" action="/f/confirm/${encodeURIComponent(token)}"><button type="submit">Confirm my email</button></form>`)
+/** A page with one message (a closed form, an expired link) in the first of `wanted` that has built-in words, else English. */
+export function leadMessagePage(brand: PageBrand, wanted: unknown[], which: 'closed' | 'expired'): string {
+  const lang = wanted.map(normalizeLocale).find(tag => tag && tag.split('-')[0]! in LEAD_FORM_WORDS) || 'en'
+  const words = leadFormWords(lang)
+  return messagePage({ ...brand, lang }, which === 'closed' ? words.closedTitle : words.expiredTitle, which === 'closed' ? words.closedBody : words.expiredBody)
 }
 
-/** Where a plain form or the confirmation link sends people next: the form's own page, else HelpBites' thank-you page. */
-export function afterSignupUrl(project: ParseObject, form: LeadForm): string {
-  return form.settings.redirectUrl || `/f/${encodeURIComponent(String(project.get('publicKey') || ''))}/${encodeURIComponent(form.key)}?sent=1`
+export function leadConfirmPage(project: ParseObject, token: string, locale: string, poweredBy: PoweredBy | null = null): string {
+  const words = leadFormWords(locale)
+  return renderMarketingPage({ ...pageBrand(project, poweredBy), lang: normalizeLocale(locale) || 'en' }, words.confirmTitle, `<h1>${escapeHtml(words.confirmTitle)}</h1><p>${escapeHtml(words.confirmBody)}</p>
+<form method="post" action="/f/confirm/${encodeURIComponent(token)}"><button type="submit">${escapeHtml(words.confirmButton)}</button></form>`)
+}
+
+/** After the confirmation click: the form's thank-you words in the person's language. */
+export function leadConfirmedPage(project: ParseObject, form: LeadForm | null, locale: string, poweredBy: PoweredBy | null = null): string {
+  const brand = { ...pageBrand(project, poweredBy), ...(form?.style.accent ? { accent: form.style.accent } : {}) }
+  if (!form) return messagePage({ ...brand, lang: 'en' }, 'You are on the list', `Thanks for confirming. You will hear from ${project.get('name') || 'us'} soon.`)
+  const { locale: lang, content } = localizedLeadForm(form, [locale])
+  return messagePage({ ...brand, lang }, content.successTitle, content.successMessage)
+}
+
+/**
+ * Where a plain form or the confirmation link sends people next: the form's
+ * own page, else HelpBites' thank-you page (in the language they used).
+ */
+export function afterSignupUrl(project: ParseObject, form: LeadForm, locale = ''): string {
+  if (form.settings.redirectUrl) return form.settings.redirectUrl
+  const lang = locale && locale !== form.locale ? `&locale=${encodeURIComponent(locale)}` : ''
+  return `/f/${encodeURIComponent(String(project.get('publicKey') || ''))}/${encodeURIComponent(form.key)}?sent=1${lang}`
 }

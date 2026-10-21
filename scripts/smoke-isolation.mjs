@@ -114,6 +114,15 @@ const keyA = await api('/v1/admin/api-keys', { ...A, method: 'POST', body: { nam
 const { flow } = await api('/v1/admin/onboarding/flows', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} flow` } })
 const { form: leadForm } = await api('/v1/admin/lead-forms', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} form` } })
 const { reply: savedReply } = await api('/v1/admin/saved-replies', { ...A, method: 'POST', body: { project: project.id, title: `${MARK} reply`, body: `${MARK} text`, shortcut: MARK } })
+const leadFile = await maybe('lead form file (needs S3)', async () => {
+  const { form } = await api(`/v1/admin/lead-forms/${leadForm.id}`, { ...A, method: 'PATCH', body: { fields: [...leadForm.fields, { type: 'file', key: 'shot', label: 'Shot', accept: 'images' }] } })
+  const body = new FormData()
+  body.append('email', `${MARK.toLowerCase()}-lead@a.example.test`)
+  body.append('shot', new Blob([PNG], { type: 'image/png' }), `${MARK}.png`)
+  const res = await fetch(`${BASE}/v1/forms/${project.publicKey}/${form.key}`, { method: 'POST', body })
+  if (res.status !== 202) throw new Error(`${res.status} ${await res.text()}`)
+  return (await api(`/v1/admin/lead-files?project=${project.id}&form=${leadForm.id}`, A)).files[0]
+})
 await api(`/v1/admin/brand?project=${project.id}`, { ...A, method: 'PATCH', body: { tagline: `${MARK} tagline` } })
 const brandUpload = await maybe('brand file (needs S3)', async () => {
   const res = await upload('/v1/admin/brand/assets', { project: project.id, name: `${MARK} logo` }, A)
@@ -261,12 +270,20 @@ await attempt('read A\'s lead form', `/v1/admin/lead-forms/${leadForm.id}`)
 await attempt('edit A\'s lead form', `/v1/admin/lead-forms/${leadForm.id}`, { method: 'PATCH', body: { name: 'pwned', settings: { doubleOptIn: false } } })
 await attempt('create a lead form in A\'s project', '/v1/admin/lead-forms', { method: 'POST', body: { project: project.id, name: 'pwned' } })
 await attempt('list the leads of A\'s form', `/v1/contacts?project=${project.id}&leadForm=${leadForm.id}`)
+await attempt('translate A\'s lead form', `/v1/admin/lead-forms/${leadForm.id}/translate`, { method: 'POST', body: { locales: ['es'] } })
+await attempt('list the files of A\'s form', `/v1/admin/lead-files?project=${project.id}&form=${leadForm.id}`)
+if (leadFile) {
+  await attempt('download A\'s lead file', `/v1/admin/lead-files/${leadFile.id}/download`)
+  await attempt('delete A\'s lead file', `/v1/admin/lead-files/${leadFile.id}`, { method: 'DELETE' })
+}
 await attempt('delete A\'s lead form', `/v1/admin/lead-forms/${leadForm.id}`, { method: 'DELETE' })
 await attempt('list A\'s blog', `/v1/admin/blog/posts?project=${project.id}`)
 await attempt('read A\'s blog post', `/v1/admin/blog/posts/${blogPost.id}`)
 await attempt('edit A\'s blog post', `/v1/admin/blog/posts/${blogPost.id}`, { method: 'PATCH', body: { title: 'pwned', status: 'draft' } })
 await attempt('send A\'s post as a newsletter', `/v1/admin/blog/posts/${blogPost.id}/newsletter`, { method: 'POST', body: { send: 'draft' } })
 await attempt('write a post in A\'s project', '/v1/admin/blog/posts', { method: 'POST', body: { project: project.id, title: 'pwned' } })
+await attempt('import a Ghost blog into A\'s project', '/v1/admin/blog/import', { method: 'POST', body: { project: project.id, export: { db: [{ data: { posts: [{ id: 'pwn', title: 'pwned', html: '<p>pwned</p>', status: 'published' }] } }] } } })
+await attempt('restyle A\'s blog', `/v1/admin/projects/${project.id}`, { method: 'PATCH', body: { blog: { design: { footer: 'pwned' } } } })
 await attempt('list A\'s blog comments', `/v1/admin/blog/comments?project=${project.id}`)
 await attempt('hide A\'s blog comment', `/v1/blog/comments/${blogComment.id}`, { method: 'PATCH', body: { status: 'hidden' } })
 await attempt('reply on A\'s blog as A\'s team', `/v1/blog/${blogPost.id}/comments?project=${project.id}`, { method: 'POST', body: { body: 'pwned' } })
@@ -357,11 +374,15 @@ const flowAfter = (await call(`/v1/admin/onboarding/flows/${flow.id}`, A)).json.
 check(flowAfter?.name === `${MARK} flow` && flowAfter.status === 'draft', 'A\'s onboarding flow is untouched')
 const formAfter = (await call(`/v1/admin/lead-forms/${leadForm.id}`, A)).json.form
 check(formAfter?.name === `${MARK} form` && formAfter.settings.doubleOptIn === true, 'A\'s lead form is untouched')
+if (leadFile) check((await call(`/v1/admin/lead-files/${leadFile.id}/download`, A)).status === 200, 'A\'s lead file is untouched')
 const kitAfter = (await call(`/v1/admin/brand?project=${project.id}`, A)).json
 check(kitAfter.brand?.tagline === `${MARK} tagline` && kitAfter.brand.page.public === false, 'A\'s brand kit is untouched')
 if (brandUpload) check(kitAfter.assets?.some(a => a.id === brandUpload.id && a.name === `${MARK} logo`), 'A\'s brand file is untouched')
 const blogAfter = (await call(`/v1/admin/blog/posts/${blogPost.id}`, A)).json.post
 check(blogAfter?.title === `${MARK} story` && blogAfter.status === 'published', 'A\'s blog post is untouched')
+const blogPosts = (await call(`/v1/admin/blog/posts?project=${project.id}`, A)).json.posts || []
+check(blogPosts.every(p => p.title !== 'pwned'), 'nothing was imported into A\'s blog')
+check((await call(`/v1/admin/projects`, A)).json.projects?.find(p => p.id === project.id)?.blog?.design?.footer !== 'pwned', 'A\'s blog design is untouched')
 const blogThread = (await call(`/v1/blog/${blogPost.slug}/comments?pk=${project.publicKey}`)).json
 check(blogThread.comments?.length === 1 && blogThread.comments[0].body === `${MARK} reader comment`, 'A\'s blog comment is untouched')
 const pageAfter = (await call(`/v1/admin/cms/entries/${cmsEntry.id}`, A)).json.entry

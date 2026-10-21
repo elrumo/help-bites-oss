@@ -16,8 +16,13 @@
  * colour behind the form), accent,
  * radius, font ('system' | 'rounded' | 'serif' | 'mono'), layout ('stacked' |
  * 'inline': the inputs and the button on one row), show (the parts to show:
- * 'title,description,footnote' by default; 'none' for just the inputs), host
- * (where HelpBites is, when you serve this file from your own site).
+ * 'title,description,footnote' by default; 'none' for just the inputs), locale
+ * (the language to show it in, when the form has a translation for it; defaults
+ * to your <html lang>, then the browser's), host (where HelpBites is, when you
+ * serve this file from your own site).
+ *
+ * A form with a file field sends its answers as multipart/form-data; files are
+ * checked for size here and for size and kind on the server.
  *
  *   <script>
  *     window.HelpBitesForms = window.HelpBitesForms || []
@@ -32,7 +37,8 @@
  * Restyle it from your CSS with variables on .help-bites-form
  * (--hb-form-accent, -on-accent, -bg, -text, -muted, -border, -input-bg,
  * -radius, -font, -gap, -max-width) or parts (::part(form), title,
- * description, fields, field, label, input, button, footnote, success, error).
+ * description, fields, field, label, input, hint, button, footnote, success,
+ * error).
  * Every outcome is also a `helpbites:form` event on window. The data is
  * GET /v1/forms/{pk}/{key}, and answers are posted to the same URL, if you
  * would rather draw your own.
@@ -44,7 +50,7 @@
   var origin = (attr('host') || new URL(script.src, location.href).origin).replace(/\/+$/, '')
   var own = {
     project: attr('project'), form: attr('form'), target: attr('target'), theme: attr('theme'), accent: attr('accent'), radius: attr('radius'),
-    font: attr('font'), layout: attr('layout'), show: attr('show'), host: origin, anchor: script
+    font: attr('font'), layout: attr('layout'), show: attr('show'), locale: attr('locale'), host: origin, anchor: script
   }
 
   // A second script tag on the page: the first one's code draws its form too.
@@ -52,6 +58,7 @@
   if (ready && ready.__helpBites) { ready.push(['render', own]); return }
 
   var TIMEOUT_MS = 8000
+  var UPLOAD_TIMEOUT_MS = 120000
   var FONTS = {
     system: '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif',
     rounded: 'ui-rounded, "SF Pro Rounded", Nunito, "Varela Round", -apple-system, BlinkMacSystemFont, sans-serif',
@@ -60,7 +67,25 @@
   }
   var INPUT = { email: 'email', name: 'text', text: 'text', number: 'number', url: 'url', phone: 'tel' }
   var AUTO = { email: 'email', name: 'name', phone: 'tel', url: 'url' }
-  var defaults = { labels: {}, values: {}, onSuccess: null, onError: null }
+  // What a file field takes (shared/leadForms.ts LEAD_FILE_EXTENSIONS); the server checks the bytes.
+  var IMAGES = '.png,.jpg,.jpeg,.gif,.webp'
+  var DOCUMENTS = '.pdf,.docx,.xlsx,.pptx,.odt,.ods,.doc,.xls,.rtf,.txt,.csv,.md'
+  var ACCEPT = { images: IMAGES, documents: DOCUMENTS, any: IMAGES + ',' + DOCUMENTS + ',.zip' }
+  // The few words the embed says itself, by language (shared/leadForms.ts LEAD_FORM_WORDS); the form's own come from the server.
+  var WORDS = {
+    en: { optional: '(optional)', tooMany: 'Too many tries. Wait a moment and try again.', failed: 'Something went wrong. Please try again.', offline: 'Could not reach the server. Check your connection and try again.', fileSize: '{label}: the file is larger than {mb} MB', fileHint: 'Up to {mb} MB' },
+    es: { optional: '(opcional)', tooMany: 'Demasiados intentos. Espera un momento y vuelve a intentarlo.', failed: 'Algo ha fallado. Vuelve a intentarlo.', offline: 'No se ha podido conectar con el servidor. Comprueba tu conexi\u00f3n y vuelve a intentarlo.', fileSize: '{label}: el archivo ocupa m\u00e1s de {mb} MB', fileHint: 'Hasta {mb} MB' },
+    ca: { optional: '(opcional)', tooMany: 'Massa intents. Espera un moment i torna-ho a provar.', failed: 'Alguna cosa ha fallat. Torna-ho a provar.', offline: 'No s\u2019ha pogut connectar amb el servidor. Comprova la connexi\u00f3 i torna-ho a provar.', fileSize: '{label}: el fitxer ocupa m\u00e9s de {mb} MB', fileHint: 'Fins a {mb} MB' },
+    fr: { optional: '(facultatif)', tooMany: 'Trop de tentatives. Patientez un instant et r\u00e9essayez.', failed: 'Une erreur est survenue. Veuillez r\u00e9essayer.', offline: 'Impossible de joindre le serveur. V\u00e9rifiez votre connexion et r\u00e9essayez.', fileSize: '{label} : le fichier d\u00e9passe {mb} Mo', fileHint: 'Jusqu\u2019\u00e0 {mb} Mo' },
+    de: { optional: '(optional)', tooMany: 'Zu viele Versuche. Warte einen Moment und versuche es erneut.', failed: 'Etwas ist schiefgelaufen. Bitte versuche es erneut.', offline: 'Der Server ist nicht erreichbar. Pr\u00fcfe deine Verbindung und versuche es erneut.', fileSize: '{label}: Die Datei ist gr\u00f6\u00dfer als {mb} MB', fileHint: 'Bis zu {mb} MB' },
+    it: { optional: '(facoltativo)', tooMany: 'Troppi tentativi. Attendi un momento e riprova.', failed: 'Qualcosa \u00e8 andato storto. Riprova.', offline: 'Impossibile raggiungere il server. Controlla la connessione e riprova.', fileSize: '{label}: il file supera {mb} MB', fileHint: 'Fino a {mb} MB' },
+    pt: { optional: '(opcional)', tooMany: 'Muitas tentativas. Aguarde um momento e tente de novo.', failed: 'Algo deu errado. Tente de novo.', offline: 'N\u00e3o foi poss\u00edvel conectar ao servidor. Verifique sua conex\u00e3o e tente de novo.', fileSize: '{label}: o arquivo tem mais de {mb} MB', fileHint: 'At\u00e9 {mb} MB' },
+    ja: { optional: '(\u4efb\u610f)', tooMany: '\u8a66\u884c\u56de\u6570\u304c\u591a\u3059\u304e\u307e\u3059\u3002\u3057\u3070\u3089\u304f\u3057\u3066\u304b\u3089\u3082\u3046\u4e00\u5ea6\u304a\u8a66\u3057\u304f\u3060\u3055\u3044\u3002', failed: '\u30a8\u30e9\u30fc\u304c\u767a\u751f\u3057\u307e\u3057\u305f\u3002\u3082\u3046\u4e00\u5ea6\u304a\u8a66\u3057\u304f\u3060\u3055\u3044\u3002', offline: '\u30b5\u30fc\u30d0\u30fc\u306b\u63a5\u7d9a\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002\u63a5\u7d9a\u3092\u78ba\u8a8d\u3057\u3066\u3001\u3082\u3046\u4e00\u5ea6\u304a\u8a66\u3057\u304f\u3060\u3055\u3044\u3002', fileSize: '{label}: \u30d5\u30a1\u30a4\u30eb\u304c{mb} MB\u3092\u8d85\u3048\u3066\u3044\u307e\u3059', fileHint: '{mb} MB\u307e\u3067' },
+    ko: { optional: '(\uc120\ud0dd)', tooMany: '\uc2dc\ub3c4 \ud69f\uc218\uac00 \ub108\ubb34 \ub9ce\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uc138\uc694.', failed: '\ubb38\uc81c\uac00 \ubc1c\uc0dd\ud588\uc2b5\ub2c8\ub2e4. \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uc138\uc694.', offline: '\uc11c\ubc84\uc5d0 \uc5f0\uacb0\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4. \uc5f0\uacb0\uc744 \ud655\uc778\ud558\uace0 \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uc138\uc694.', fileSize: '{label}: \ud30c\uc77c\uc774 {mb}MB\ubcf4\ub2e4 \ud07d\ub2c8\ub2e4', fileHint: '\ucd5c\ub300 {mb}MB' },
+    zh: { optional: '(\u9009\u586b)', tooMany: '\u5c1d\u8bd5\u6b21\u6570\u8fc7\u591a\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002', failed: '\u51fa\u4e86\u70b9\u95ee\u9898\uff0c\u8bf7\u91cd\u8bd5\u3002', offline: '\u65e0\u6cd5\u8fde\u63a5\u670d\u52a1\u5668\uff0c\u8bf7\u68c0\u67e5\u7f51\u7edc\u540e\u91cd\u8bd5\u3002', fileSize: '{label}\uff1a\u6587\u4ef6\u8d85\u8fc7 {mb} MB', fileHint: '\u6700\u5927 {mb} MB' }
+  }
+  var RTL = { ar: 1, he: 1, fa: 1, ur: 1 }
+  var defaults = { labels: {}, values: {}, locale: '', onSuccess: null, onError: null }
   var mounts = []
 
   function emit(type, form, extra) {
@@ -144,6 +169,9 @@
       + '.tick{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--_accent) 16%,transparent);color:var(--_accent);font-weight:700}'
       + '.success .title{font-size:18px}'
       + '.success .description{margin-top:4px}'
+      + 'input[type=file]{height:auto;padding:7px 8px;color:var(--_muted);cursor:pointer}'
+      + 'input[type=file]::file-selector-button{margin-inline-end:10px;padding:6px 12px;border:0;border-radius:calc(var(--_r) * .5);background:color-mix(in srgb,var(--_accent) 14%,transparent);color:var(--_text);font:inherit;font-size:13px;font-weight:550;cursor:pointer}'
+      + '.hint{font-size:12px;color:var(--_muted)}'
       + '.hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}'
   }
 
@@ -159,6 +187,11 @@
     e.textContent = value
     return e
   }
+
+  function fill(template, values) { return template.replace(/\{(\w+)\}/g, function (m, k) { return values[k] === undefined ? m : values[k] }) }
+  function base(locale) { return String(locale || '').toLowerCase().split('-')[0] }
+  /** The built-in words for the language the form came back in. */
+  function said(form) { return WORDS[base(form.locale)] || WORDS.en }
 
   /** The words: your labels win, then the form's own. */
   function words(form, o) {
@@ -183,7 +216,7 @@
     return out
   }
 
-  function fieldEl(f, id, inline) {
+  function fieldEl(f, id, inline, W) {
     var label = f.label || f.key
     if (f.type === 'checkbox') {
       var box = el('label', 'field check', 'field')
@@ -195,19 +228,37 @@
       box.appendChild(text('span', 'label', 'label', label))
       return box
     }
-    var wrap = el('label', 'field' + (f.type === 'textarea' ? ' wide' : ''), 'field')
+    var wrap = el('label', 'field' + (f.type === 'textarea' || f.type === 'file' ? ' wide' : ''), 'field')
     var name = el('span', 'label', 'label')
     name.textContent = label
-    if (!f.required && !inline) name.appendChild(text('small', '', '', ' (optional)'))
+    if (!f.required && (!inline || f.type === 'file')) name.appendChild(text('small', '', '', ' ' + W.optional))
     var input
     if (f.type === 'textarea') input = el('textarea', '', 'input')
     else if (f.type === 'select') {
       input = el('select', '', 'input')
       var none = el('option')
       none.value = ''
-      none.textContent = f.placeholder || '—'
+      // On one row the label is hidden, so the empty choice says what it is.
+      none.textContent = f.placeholder || (inline ? label : '—')
       input.appendChild(none)
-      ;(f.options || []).forEach(function (option) { var opt = el('option'); opt.value = option; opt.textContent = option; input.appendChild(opt) })
+      // The value is the option itself; what it says may be a translation.
+      ;(f.options || []).forEach(function (option, i) { var opt = el('option'); opt.value = option; opt.textContent = (f.optionLabels && f.optionLabels[i]) || option; input.appendChild(opt) })
+    } else if (f.type === 'file') {
+      input = el('input', '', 'input')
+      input.type = 'file'
+      input.accept = ACCEPT[f.accept] || ACCEPT.any
+      var mb = f.maxMB || 10
+      input.addEventListener('change', function () {
+        var file = input.files && input.files[0]
+        input.setCustomValidity(file && file.size > mb * 1024 * 1024 ? fill(W.fileSize, { label: label, mb: mb }) : '')
+      })
+      input.name = f.key
+      input.id = id
+      input.required = !!f.required
+      wrap.appendChild(name)
+      wrap.appendChild(input)
+      wrap.appendChild(text('span', 'hint', 'hint', fill(W.fileHint, { mb: mb })))
+      return wrap
     } else {
       input = el('input', '', 'input')
       input.type = INPUT[f.type] || 'text'
@@ -234,7 +285,10 @@
     var layout = pick(o, 'layout') || (form.style && form.style.layout) || 'stacked'
     var w = words(form, o)
     var show = parts(o)
+    var W = said(form)
     var root = el('div', 'root ' + (layout === 'inline' ? 'inline' : 'stacked'))
+    if (form.locale) root.setAttribute('lang', form.locale)
+    if (RTL[base(form.locale)]) root.setAttribute('dir', 'rtl')
     root.setAttribute('role', 'region')
     root.setAttribute('aria-label', w.title || form.name || 'Sign up')
     shadow.appendChild(root)
@@ -263,7 +317,7 @@
     var formEl = el('form', '', 'form')
     formEl.noValidate = false
     var fields = el('div', 'fields', 'fields')
-    ;(form.fields || []).forEach(function (f, i) { fields.appendChild(fieldEl(f, 'hb-form-' + (form.key || 'f') + '-' + i, layout === 'inline')) })
+    ;(form.fields || []).forEach(function (f, i) { fields.appendChild(fieldEl(f, 'hb-form-' + (form.key || 'f') + '-' + i, layout === 'inline', W)) })
     var hp = el('div', 'hp')
     hp.setAttribute('aria-hidden', 'true')
     var trap = el('input')
@@ -287,20 +341,32 @@
       e.preventDefault()
       if (formEl.reportValidity && !formEl.reportValidity()) return
       var values = Object.assign({}, defaults.values, o.values || {})
+      var files = {}
       ;(form.fields || []).forEach(function (f) {
         var input = formEl.elements[f.key]
         if (!input) return
+        if (f.type === 'file') { if (input.files && input.files[0]) files[f.key] = input.files[0]; return }
         values[f.key] = f.type === 'checkbox' ? input.checked : input.value
       })
       values.website = trap.value
+      if (form.locale) values.locale = form.locale
       if (o.preview) { success(!!form.doubleOptIn); return }
+      // A form with a file field goes as multipart (the browser sets its boundary), anything else as JSON.
+      var multipart = (form.fields || []).some(function (f) { return f.type === 'file' })
+      var body
+      if (multipart) {
+        body = new FormData()
+        for (var k in values) if (values[k] !== undefined && values[k] !== null) body.append(k, values[k] === true ? 'true' : values[k] === false ? '' : String(values[k]))
+        for (var key in files) body.append(key, files[key], files[key].name)
+      } else body = JSON.stringify(values)
       error.hidden = true
       button.disabled = true
       emit('submit', form)
       var controller = window.AbortController ? new AbortController() : null
-      var timer = setTimeout(function () { if (controller) controller.abort() }, TIMEOUT_MS)
+      // Files take longer to send than a few words.
+      var timer = setTimeout(function () { if (controller) controller.abort() }, multipart ? UPLOAD_TIMEOUT_MS : TIMEOUT_MS)
       var url = o.host + '/v1/forms/' + encodeURIComponent(o.project) + '/' + encodeURIComponent(form.key)
-      fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values), credentials: 'omit', signal: controller && controller.signal })
+      fetch(url, { method: 'POST', headers: multipart ? {} : { 'Content-Type': 'application/json' }, body: body, credentials: 'omit', signal: controller && controller.signal })
         .then(function (r) { return r.json().catch(function () { return {} }).then(function (body) { return { ok: r.ok, status: r.status, body: body } }) })
         .then(function (res) {
           clearTimeout(timer)
@@ -313,9 +379,9 @@
             if (done) try { done({ form: form.key, pending: pending }) } catch (x) {}
             return
           }
-          fail(res.status === 429 ? 'Too many tries. Wait a moment and try again.' : (res.body && (res.body.message || res.body.statusMessage)) || 'Something went wrong. Please try again.')
+          fail(res.status === 429 ? W.tooMany : (res.body && (res.body.message || res.body.statusMessage)) || W.failed)
         })
-        .catch(function () { clearTimeout(timer); button.disabled = false; fail('Could not reach the server. Check your connection and try again.') })
+        .catch(function () { clearTimeout(timer); button.disabled = false; fail(W.offline) })
     })
 
     function fail(message) {
@@ -336,31 +402,40 @@
     return host
   }
 
-  function render(o) {
-    if (!o.project) return console.warn('[help-bites] forms.js needs data-project="pk_…"')
-    o.host = (o.host || origin).replace(/\/+$/, '')
-    var host = hostFor(o)
-    if (!host) return
+  /** Reads the form in the language asked for, then draws it (again, for a mount whose language changed). */
+  function load(mount) {
+    var o = mount.options
     var controller = window.AbortController ? new AbortController() : null
     var timer = setTimeout(function () { if (controller) controller.abort() }, TIMEOUT_MS)
-    var url = o.host + '/v1/forms/' + encodeURIComponent(o.project) + (o.form ? '/' + encodeURIComponent(o.form) : '')
+    // Your page's language, unless you name one; without either the server goes by the browser's.
+    var locale = pick(o, 'locale') || document.documentElement.lang || ''
+    var url = o.host + '/v1/forms/' + encodeURIComponent(o.project) + (o.form ? '/' + encodeURIComponent(o.form) : '') + (locale ? '?locale=' + encodeURIComponent(locale) : '')
     fetch(url, { credentials: 'omit', signal: controller && controller.signal })
       .then(function (r) { if (r.status === 404) console.warn('[help-bites] no active form ' + (o.form || '') + ' for ' + o.project); return r.ok ? r.json() : null })
       .then(function (body) {
         clearTimeout(timer)
-        if (!body || !body.form) { host.remove(); return }
-        var mount = { host: host, form: body.form, options: o }
-        mounts.push(mount)
-        draw(host, body.form, o)
+        if (!body || !body.form) { if (!mount.form) mount.host.remove(); return }
+        if (!mount.form) mounts.push(mount)
+        mount.form = body.form
+        draw(mount.host, body.form, o)
       })
-      .catch(function () { clearTimeout(timer); host.remove() })
+      .catch(function () { clearTimeout(timer); if (!mount.form) mount.host.remove() })
+  }
+
+  function render(o) {
+    if (!o.project) return console.warn('[help-bites] forms.js needs data-project="pk_…"')
+    o.host = (o.host || origin).replace(/\/+$/, '')
+    var host = hostFor(o)
+    if (host) load({ host: host, form: null, options: o })
   }
 
   var commands = {
     // Defaults for every form on the page; forms already drawn are drawn again with them.
     init: function (opts) {
+      var relocale = opts && opts.locale !== undefined && opts.locale !== defaults.locale
       for (var k in (opts || {})) if (opts[k] !== undefined) defaults[k] = opts[k]
-      mounts.forEach(function (m) { draw(m.host, m.form, m.options) })
+      // A new language needs the form's words in it: read them again.
+      mounts.forEach(function (m) { if (relocale && !m.options.locale) load(m); else draw(m.host, m.form, m.options) })
     },
     render: function (opts) { render(Object.assign({}, own, { anchor: null }, opts || {})) },
     // Draws a form you pass in, without fetching or sending anything (the panel's preview).

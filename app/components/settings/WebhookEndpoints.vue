@@ -95,7 +95,7 @@ const secret = ref('')
 const copied = ref(false)
 const form = reactive({ url: '', description: '', all: true, events: [] as string[], enabled: true })
 
-const GROUP_LABELS: Record<string, string> = { contact: 'Contacts', conversation: 'Conversations', feedback: 'Feedback', board: 'Board', changelog: 'Changelog', errors: 'Errors', github: 'GitHub', email: 'Email', cms: 'Pages', onboarding: 'Onboarding' }
+const GROUP_LABELS: Record<string, string> = { contact: 'Contacts', conversation: 'Conversations', feedback: 'Feedback', board: 'Board', changelog: 'Changelog', errors: 'Errors', github: 'GitHub', email: 'Email', cms: 'Pages', blog: 'Blog', onboarding: 'Onboarding' }
 const groups = computed(() => [...new Set(DOMAIN_EVENTS.map(e => e.group))].map(name => ({ name, label: GROUP_LABELS[name] || name, events: DOMAIN_EVENTS.filter(e => e.group === name) })))
 
 const base = () => `/admin/projects/${props.projectId}/webhooks`

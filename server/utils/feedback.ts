@@ -1564,7 +1564,7 @@ export async function importFeedbackPost(project: ParseObject, config: FeedbackB
 export async function eraseEndUserData(project: ParseObject, who: string | ParseObject): Promise<Record<string, number>> {
   const Parse = useParse()
   const externalId = typeof who === 'string' ? who : String(who.get('externalId') || '')
-  const counts = { posts: 0, comments: 0, votes: 0, reactions: 0, subscriptions: 0, changelogSubscriptions: 0, conversations: 0, messages: 0, emailLogs: 0, enrollments: 0, endUsers: 0 }
+  const counts = { posts: 0, comments: 0, votes: 0, reactions: 0, subscriptions: 0, changelogSubscriptions: 0, conversations: 0, messages: 0, emailLogs: 0, enrollments: 0, files: 0, endUsers: 0 }
   if (externalId) await eraseFeedbackData(project, externalId, counts)
 
   const endUser = typeof who === 'string' ? await findEndUser(project, externalId) : who
@@ -1598,6 +1598,8 @@ export async function eraseEndUserData(project: ParseObject, who: string | Parse
     if (pending) counts.emailLogs += (await destroyWhere('EmailLog', q => q.equalTo('project', project).equalTo('to', pending))).length
     await revokeEndUserSessions(endUser)
     counts.enrollments = (await destroyWhere('SequenceEnrollment', q => q.equalTo('contact', endUser)).catch(() => [])).length
+    // Files they sent through a lead form: the rows and the stored objects.
+    counts.files = await eraseLeadFiles(project, endUser)
     // Queued webhook events about them carry their address; they go too.
     await destroyWhere('WebhookDelivery', q => q.equalTo('project', project).equalTo('status', 'pending').equalTo('payload.data.contact.id', endUser.id)).catch(() => [])
     await endUser.destroy(MASTER)

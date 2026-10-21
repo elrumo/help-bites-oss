@@ -7,8 +7,10 @@ import { lookOf } from './projects'
 // work in any mail client's browser and survive link scanners (a GET never
 // changes anything; every change is a form POST).
 
-/** `poweredBy` is poweredByFor(project), awaited by the caller because these pages render synchronously. */
-export type PageBrand = { name: string, logoUrl: string, accent: string, poweredBy?: PoweredBy | null }
+/** `poweredBy` is poweredByFor(project), awaited by the caller because these pages render synchronously. `lang` is the page's language (English when absent). */
+export type PageBrand = { name: string, logoUrl: string, accent: string, poweredBy?: PoweredBy | null, lang?: string }
+
+const RTL = new Set(['ar', 'he', 'fa', 'ur'])
 
 export function pageBrand(project: { get: (key: string) => unknown }, poweredBy: PoweredBy | null = null): PageBrand {
   const look = lookOf(project)
@@ -23,8 +25,9 @@ export function pageBrand(project: { get: (key: string) => unknown }, poweredBy:
 /** A whole page around `body` (already-escaped HTML). */
 export function renderMarketingPage(brand: PageBrand, title: string, body: string): string {
   const logo = /^https?:\/\//.test(brand.logoUrl) ? `<img src="${escapeHtml(brand.logoUrl)}" alt="" width="40" height="40">` : ''
+  const lang = brand.lang || 'en'
   return `<!doctype html>
-<html lang="en">
+<html lang="${escapeHtml(lang)}"${RTL.has(lang.split('-')[0]!) ? ' dir="rtl"' : ''}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -48,6 +51,8 @@ label small { display: block; color: var(--muted); font-size: 13px; }
 input[type=checkbox] { margin-top: 4px; accent-color: var(--accent); width: 16px; height: 16px; }
 input[type=email], input[type=text], input[type=number], input[type=url], input[type=tel], select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; font: inherit; margin-bottom: 12px; }
 textarea { resize: vertical; }
+input[type=file] { width: 100%; margin-bottom: 4px; font: inherit; color: var(--muted); }
+label.field > small.hint { display: block; color: var(--muted); font-size: 12px; margin-bottom: 12px; }
 label.field { display: block; padding: 0; cursor: auto; }
 label.field + label.field, label.field + label.check, label.check + label.field { border-top: 0; }
 label.field > span { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }

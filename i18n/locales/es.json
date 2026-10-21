@@ -49,6 +49,7 @@
     "onboarding": "Onboarding",
     "legal": "Legal",
     "brand": "Marca",
+    "pages": "Páginas",
     "email": "Correo",
     "campaigns": "Campañas",
     "flags": "Flags",
@@ -698,6 +699,95 @@
       "image": "Imagen",
       "blocks": "Bloques",
       "insert": "Insertar"
+    },
+    "pages": "Páginas",
+    "newPage": "Nueva página",
+    "noPages": "Aún no hay páginas",
+    "noPagesDescription": "Las páginas van por libre (Acerca de, Contacto, una lista de lecturas): no aparecen en la lista, el feed ni el boletín. Enlázalas desde la navegación del blog, en Diseño.",
+    "pageTitlePlaceholder": "Título de la página",
+    "featured": "Destacada",
+    "featuredHint": "Se muestra primero: en grande en la disposición de revista y marcada en las demás.",
+    "visibility": "Quién puede leerla",
+    "visibilityPublic": "Todo el mundo",
+    "visibilityMembers": "Solo miembros",
+    "visibilityPublicHint": "Cualquiera con el enlace, el feed y los buscadores.",
+    "visibilityMembersHint": "Todo el mundo ve el título y el extracto; el resto es para los lectores con sesión iniciada en tu app o con su correo. El feed solo lleva el extracto.",
+    "coverAlt": "Describe la imagen (texto alternativo)",
+    "seo": {
+      "title": "Buscadores y redes sociales",
+      "noDescription": "Si no hay descripción, aquí se muestra el extracto.",
+      "metaTitle": "Título para buscadores",
+      "metaDescription": "Descripción para buscadores",
+      "ogImage": "Imagen para las vistas previas de enlaces",
+      "ogImageHint": "Vacío: la portada.",
+      "canonical": "Dirección canónica",
+      "canonicalHint": "Dónde apareció primero la entrada, si fue en otro sitio. Los buscadores atribuyen la entrada a esa dirección."
+    },
+    "newsletterWithPost": "Envíala por correo a tus suscriptores cuando se publique.",
+    "newsletterWaits": "La entrada se publica el {when}. El boletín sale entonces, no antes.",
+    "sendWithPost": "Enviar al publicarse",
+    "publishOptions": "Opciones de publicación",
+    "publishAndEmail": "Publicar y enviar por correo",
+    "scheduleAndEmail": "Programar y enviar por correo",
+    "publishOnly": "Solo publicar",
+    "scheduleOnly": "Solo programar",
+    "sitemap": "Mapa del sitio",
+    "sitemapHint": "Dáselo a Google Search Console o a Bing Webmaster Tools para que encuentren todas las entradas.",
+    "design": {
+      "title": "Diseño",
+      "description": "Cómo se ve el blog alojado. El embed adopta el aspecto de tu página y, de aquí, la disposición.",
+      "layout": "Disposición",
+      "layouts": {
+        "list": "Lista",
+        "grid": "Cuadrícula",
+        "magazine": "Revista"
+      },
+      "font": "Tipografía",
+      "fonts": {
+        "sans": "Sans serif",
+        "serif": "Serif"
+      },
+      "colorScheme": "Esquema de colores",
+      "schemes": {
+        "auto": "Según el lector",
+        "light": "Claro",
+        "dark": "Oscuro"
+      },
+      "accent": "Color de acento",
+      "accentHint": "Enlaces, botones y etiquetas. El acento del proyecto, salvo que elijas otro.",
+      "useProjectAccent": "Usar el del proyecto",
+      "logoUrl": "Logotipo",
+      "logoUrlHint": "Junto al nombre del blog. Vacío: el logotipo del proyecto.",
+      "coverImageUrl": "Imagen de portada",
+      "coverImageUrlHint": "Una imagen ancha en lo alto de la página principal.",
+      "navigation": "Navegación",
+      "navigationHint": "Enlaces en la cabecera del blog: una página del blog (/about), el propio blog (/) o cualquier dirección.",
+      "linkLabel": "Texto",
+      "removeLink": "Quitar el enlace",
+      "addLink": "Añadir un enlace",
+      "social": "Redes sociales",
+      "website": "Sitio web",
+      "footer": "Pie de página",
+      "footerHint": "Una línea al final de cada página, como un aviso de copyright."
+    },
+    "import": {
+      "title": "Importar desde Ghost",
+      "description": "Trae tus entradas y páginas desde un blog de Ghost.",
+      "file": "Exportación de Ghost",
+      "fileHint": "En Ghost: Settings → Advanced → Import/Export → Export content. Un archivo .json.",
+      "choose": "Elegir el archivo",
+      "found": "{count} entrada o página | {count} entradas y páginas",
+      "siteUrl": "Dirección de tu sitio de Ghost",
+      "siteUrlHint": "La exportación escribe los enlaces y las imágenes sin ella. Seguirán apuntando a ese sitio, así que mantenlo en línea hasta que muevas las imágenes.",
+      "update": "Sobrescribir las entradas ya importadas",
+      "updateHint": "Desactivado: las entradas que ya llegaron antes desde este blog se quedan como están.",
+      "members": "Los miembros van en un CSV aparte (Members → Export en Ghost). Impórtalo en Contactos: se recogen el correo, el nombre, las etiquetas y el consentimiento del boletín.",
+      "run": "Importar",
+      "done": "{created} añadidas, {updated} actualizadas, {skipped} omitidas.",
+      "close": "Cerrar",
+      "notGhost": "Esto no es una exportación de Ghost: no contiene entradas.",
+      "notJson": "Este archivo no es JSON.",
+      "error": "No se pudo completar la importación."
     }
   },
   "chat": {
@@ -788,7 +878,8 @@
       "subscription": "Suscripción",
       "billing": "Facturación",
       "spentOver": "Gasto superior a",
-      "spentMoreThan": "Gasto superior a"
+      "spentMoreThan": "Gasto superior a",
+      "origin": "Añadido mediante"
     },
     "billingFilter": {
       "all": "Cualquier facturación",
@@ -875,7 +966,9 @@
         "sources": "Fuente",
         "createdAt": "Añadido",
         "lastSeenAt": "Visto por última vez",
-        "updatedAt": "Actualizado"
+        "updatedAt": "Actualizado",
+        "origin": "Añadido mediante",
+        "leadForms": "Formulario"
       },
       "op": {
         "is": "es",
@@ -900,7 +993,8 @@
         "days": "Días",
         "date": "Fecha",
         "removeRule": "Quitar regla"
-      }
+      },
+      "pickForm": "Elige un formulario"
     },
     "form": {
       "email": "Correo",
@@ -952,7 +1046,11 @@
       "conversations": "Conversaciones",
       "noneYet": "Todavía ninguna.",
       "nothingSent": "Aún no se ha enviado nada.",
-      "erase": "Borrar a esta persona"
+      "erase": "Borrar a esta persona",
+      "addedVia": "Añadido mediante",
+      "leadForms": "Formularios",
+      "deletedForm": "Un formulario eliminado",
+      "files": "Archivos enviados"
     },
     "empty": {
       "title": "Aún no hay contactos",
@@ -1005,7 +1103,9 @@
       "showPeople": "Ver estas personas",
       "namePlaceholder": "Usuarios Pro vistos este mes",
       "ruleCount": "{count} regla | {count} reglas",
-      "peopleCount": "{count} personas"
+      "peopleCount": "{count} personas",
+      "auto": "Auto",
+      "autoHint": "Creado para un formulario. Cámbiale el nombre, edítalo o elimínalo como cualquier otro segmento."
     },
     "sources": {
       "connect": "Conectar una base de datos",
@@ -1077,6 +1177,17 @@
       "consentSubscribed": "Todas aquí aceptaron el correo de marketing",
       "consentSubscribedDescription": "Se registra como su consentimiento. Nadie que se haya dado de baja vuelve a suscribirse.",
       "saveAndSync": "Guardar y sincronizar"
+    },
+    "origin": {
+      "app": "Usuario de la app",
+      "lead_form": "Formulario",
+      "signup": "Alta en la newsletter",
+      "import": "Importación CSV",
+      "sync": "Sincronización de base de datos",
+      "stripe": "Stripe",
+      "api": "API",
+      "panel": "Añadido a mano",
+      "feedback": "Importado de comentarios"
     }
   },
   "campaigns": {
@@ -2544,7 +2655,7 @@
         },
         "blog": {
           "term": "Un blog con boletín",
-          "desc": "Escribe entradas en un editor enriquecido, publícalas en un blog alojado, en tu propio sitio o por RSS, y envíalas por correo a tus suscriptores. Los lectores reaccionan y comentan."
+          "desc": "Escribe entradas y páginas en un editor enriquecido y publícalas en un blog alojado con tu propio diseño, en tu propio sitio o por RSS, y envíalas por correo a tus suscriptores. Entradas solo para miembros, campos SEO, un sitemap y una importación desde Ghost. Los lectores reaccionan y comentan."
         },
         "followers": {
           "term": "Los seguidores reciben las novedades",
@@ -2592,7 +2703,7 @@
         },
         "forms": {
           "term": "Listas de espera y formularios de contacto",
-          "desc": "Reúne interesados antes de lanzar con un simple campo de email o un formulario a tu medida, en tu web, en una página alojada o en tu app. Cada registro se convierte en un contacto con su propio segmento, doble confirmación, un email de bienvenida y una secuencia."
+          "desc": "Reúne interesados antes de lanzar con un simple campo de email o un formulario a tu medida, con subida de archivos y en el idioma de tus visitantes, en tu web, en una página alojada o en tu app. Cada registro se convierte en un contacto con su propio segmento, doble confirmación, un email de bienvenida y una secuencia."
         }
       },
       "team": {
@@ -2784,7 +2895,7 @@
     "fallbackHuman": "Pasar a una persona",
     "fallbackSilent": "Permanecer en silencio",
     "autoReply": "Responder automáticamente a los usuarios de este proyecto",
-    "autoReplyHint": "— desactivado por defecto; envía respuestas fundamentadas como este asistente",
+    "autoReplyHint": "— desactivado por defecto, y solo mientras el estado sea Activo; envía respuestas fundamentadas como este asistente",
     "whenAi": "Cuándo responder con IA",
     "minConfidence": "Confianza mínima",
     "minConfidenceHint": "Solo envía una respuesta de IA cuando la mejor coincidencia de conocimiento tenga al menos esta seguridad. 0% = intentarlo siempre.",
@@ -2976,7 +3087,42 @@
       "latestActivity": "Actividad reciente",
       "nothingYet": "Todavía no hay nada",
       "activityEmpty": "Las conversaciones, los comentarios y los elementos terminados del tablero aparecerán aquí.",
-      "loadError": "No se pudo cargar la vista general"
+      "loadError": "No se pudo cargar la vista general",
+      "stats": {
+        "open": "Conversaciones abiertas",
+        "new": "Nuevas esta semana",
+        "emails": "Correos enviados · 7 d",
+        "feedback": "Comentarios · 7 d"
+      },
+      "health": {
+        "chat": "Widget de chat",
+        "email": "Envío de correo",
+        "notify": "Avisos al equipo",
+        "feedback": "Tablero de comentarios",
+        "errors": "Seguimiento de errores"
+      },
+      "healthDetail": {
+        "noOrigins": "Ningún origen permitido",
+        "notLoaded": "Aún no se ha cargado en tu sitio",
+        "origins": "{count} origen permitido | {count} orígenes permitidos",
+        "defaultSender": "Remitente predeterminado",
+        "notConfigured": "Sin configurar",
+        "nobodyEmailed": "No se avisa a nadie",
+        "on": "Activado",
+        "off": "Desactivado",
+        "notConnected": "Sin conectar"
+      },
+      "attention": {
+        "unread": "Conversaciones sin leer",
+        "errors": "Informes de error abiertos",
+        "emails": "Correos fallidos · 7 d",
+        "documents": "Documentos de conocimiento que no se pudieron procesar",
+        "feedback": "Comentarios por clasificar"
+      },
+      "activityTitle": {
+        "newFeedback": "Nuevo comentario: {title}",
+        "completed": "Completado {item}"
+      }
     },
     "settings": {
       "general": "General",
@@ -3700,6 +3846,175 @@
         "mobile": "Ancho de móvil",
         "previewHint": "Tus cambios sin guardar, sin los archivos privados, igual que los omite la página pública."
       }
+    },
+    "forms": {
+      "guide": "Guía",
+      "newForm": "Nuevo formulario",
+      "newFormDescription": "Empieza con un solo campo de correo, una lista de espera o un formulario más largo. Podrás cambiar cada campo después.",
+      "title": "Formularios de contacto",
+      "intro": "Reúne interesados antes de lanzar: una lista de espera, un campo de “avísame” o un formulario de interés, en tu web, en tu app o en una página alojada. Quien se registra se convierte en un contacto, entra en el segmento del formulario y puede recibir un correo de bienvenida y una secuencia.",
+      "emptyTitle": "Aún no hay formularios",
+      "emptyDescription": "Crea un formulario, añade una línea a tu web y verás llegar a los interesados en Contactos.",
+      "leadCount": "{count} interesado | {count} interesados",
+      "confirmedCount": "{count} en la lista",
+      "live": "Activo",
+      "closed": "Cerrado",
+      "startFrom": "Empezar con",
+      "presets": {
+        "email": "Solo correo",
+        "emailHint": "Un campo de correo y un botón, en una fila.",
+        "waitlist": "Lista de espera",
+        "waitlistHint": "Correo y nombre.",
+        "detailed": "Formulario de interés",
+        "detailedHint": "Correo, nombre, empresa, cargo y una pregunta."
+      },
+      "name": "Nombre",
+      "namePlaceholder": "Lista de espera del lanzamiento",
+      "defaultName": "Lista de espera",
+      "key": "Clave",
+      "keyHint": "Tu web y tu app piden el formulario por este nombre.",
+      "keyInvalid": "Usa letras minúsculas, dígitos y guiones, hasta 40.",
+      "create": "Crear formulario",
+      "createError": "No se pudo crear el formulario",
+      "loadError": "No se pudieron cargar los formularios",
+      "form": "Formulario",
+      "notFound": "Este formulario no existe.",
+      "active": "Acepta registros",
+      "activeHint": "Desactivado, el formulario se cierra: las webs y apps que lo cargan no muestran nada.",
+      "fields": "Campos",
+      "types": {
+        "email": "Correo",
+        "name": "Nombre",
+        "text": "Texto corto",
+        "textarea": "Texto largo",
+        "number": "Número",
+        "url": "Sitio web",
+        "phone": "Teléfono",
+        "select": "Opción",
+        "checkbox": "Casilla",
+        "file": "Subida de archivo"
+      },
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "removeField": "Quitar campo",
+      "label": "Etiqueta",
+      "placeholder": "Texto de ejemplo",
+      "fieldKey": "Se guarda como",
+      "fieldKeyHint": "El atributo del contacto donde va la respuesta.",
+      "fieldKeyInvalid": "Letras, dígitos y _, empezando por una letra.",
+      "options": "Opciones",
+      "optionsHint": "Pulsa Intro después de cada una.",
+      "addOption": "Añadir una opción",
+      "optionA": "Opción A",
+      "optionB": "Opción B",
+      "required": "Obligatorio",
+      "mustTick": "Debe marcarse",
+      "addField": "Añadir campo",
+      "words": "Textos",
+      "content": {
+        "title": "Título",
+        "description": "Descripción",
+        "buttonLabel": "Botón",
+        "successTitle": "Tras registrarse",
+        "successMessage": "Mensaje de agradecimiento",
+        "confirmMessage": "Mientras confirman",
+        "confirmMessageHint": "Se muestra en lugar del agradecimiento hasta que hacen clic en el enlace del correo.",
+        "footnote": "Letra pequeña",
+        "footnotePlaceholder": "Solo te escribiremos sobre el lanzamiento. Date de baja cuando quieras."
+      },
+      "look": "Aspecto",
+      "accent": "Acento",
+      "projectAccent": "El acento del proyecto",
+      "background": "Fondo",
+      "noBackground": "Ninguno: se integra en tu página",
+      "text": "Texto",
+      "followsTheme": "Sigue el modo claro u oscuro",
+      "reset": "Restablecer",
+      "layout": "Disposición",
+      "layouts": {
+        "stacked": "Apilado",
+        "inline": "En una fila"
+      },
+      "radius": "Radio de las esquinas",
+      "font": "Tipografía",
+      "after": "Cuando alguien se registra",
+      "afterHint": "Se convierte en un contacto, recibe las etiquetas de abajo y entra en el segmento de este formulario.",
+      "doubleOptIn": "Pedir que confirmen su correo",
+      "doubleOptInHint": "Reciben un correo con un enlace y quedan pendientes hasta que hacen clic. El correo de bienvenida y la secuencia esperan a eso.",
+      "confirmTemplate": "Correo de confirmación",
+      "confirmTemplateHint": "Una plantilla con un botón {'{'}{'{'}confirmUrl{'}'}{'}'}.",
+      "builtInConfirm": "El de HelpBites",
+      "welcomeTemplate": "Correo de bienvenida",
+      "welcomeTemplateHint": "Se envía una vez, cuando ya están en la lista.",
+      "noWelcome": "Ninguno",
+      "sequence": "Iniciar una secuencia",
+      "sequenceHint": "Una secuencia en borrador o en pausa los mantiene en el primer paso hasta que la actives.",
+      "noSequence": "Ninguna",
+      "sequenceStatus": {
+        "active": "activa",
+        "draft": "borrador",
+        "paused": "en pausa"
+      },
+      "tags": "Etiquetas",
+      "tagsHint": "Se añaden a todos los que se registran.",
+      "addTag": "Añadir una etiqueta",
+      "redirectUrl": "Después, enviarlos a",
+      "redirectUrlHint": "Para un formulario HTML simple, la página alojada y el enlace de confirmación. Vacío muestra una página de agradecimiento.",
+      "newTemplate": "Nueva plantilla de correo",
+      "manageSequences": "Secuencias",
+      "install": "Ponlo en tu web o en tu app",
+      "installTabs": {
+        "script": "Script",
+        "link": "Enlace"
+      },
+      "installHints": {
+        "script": "Una etiqueta script dibuja el formulario donde la pongas, con tus colores. No necesita nada más.",
+        "html": "Un formulario simple, con el estilo de tu propio CSS. Envía directamente a HelpBites y vuelve a la página de agradecimiento.",
+        "link": "Una página alojada a la que enlazar o que insertar en tu web.",
+        "swift": "Pega HelpBitesLeadForm.swift de la guía en tu app y muestra la vista donde quieras.",
+        "api": "Envía las respuestas desde tu propia interfaz o servidor. La respuesta de cada campo va bajo su clave."
+      },
+      "saveFirst": "Guarda antes tus cambios: el fragmento usa el formulario guardado.",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "openPage": "Abrir la página alojada",
+      "openJson": "Abrir el JSON del formulario",
+      "readGuide": "Leer la guía",
+      "leads": "Interesados",
+      "leadsHint": "Las últimas personas de este formulario. Son contactos como los demás, en el segmento de este formulario.",
+      "noLeads": "Todavía no se ha registrado nadie.",
+      "showAll": "Ver todos en Contactos",
+      "emailThem": "Escribirles",
+      "preview": "Vista previa",
+      "previewStates": {
+        "form": "Formulario",
+        "success": "Hecho"
+      },
+      "toggleTheme": "Cambiar entre claro y oscuro",
+      "previewHint": "Tus cambios sin guardar, dibujados por el mismo script que carga tu web. El fragmento de Swift tiene la misma disposición.",
+      "saved": "Guardado",
+      "saveError": "No se pudo guardar el formulario",
+      "deleteConfirm": "¿Eliminar “{name}”? Las webs que lo cargan no mostrarán nada. Sus interesados y su segmento se mantienen.",
+      "deleteForm": "Eliminar formulario",
+      "accept": "Acepta",
+      "acceptHint": "Se comprueba qué es realmente el archivo: {types}",
+      "accepts": {
+        "images": "Imágenes",
+        "documents": "Documentos",
+        "any": "Imágenes, documentos o ZIP"
+      },
+      "maxMB": "Tamaño máximo",
+      "optionsTranslateHint": "Lo que dice cada opción en este idioma. La respuesta guardada sigue siendo la original.",
+      "files": {
+        "title": "Archivos enviados",
+        "loading": "Cargando archivos…",
+        "download": "Descargar",
+        "delete": "Eliminar archivo",
+        "deleteConfirm": "¿Eliminar {name} para siempre?",
+        "downloadError": "No se pudo descargar el archivo.",
+        "deleteError": "No se pudo eliminar el archivo."
+      },
+      "fileKeyHint": "El nombre con el que se envía el archivo. Los archivos se guardan en privado para tu equipo, no como atributo."
     }
   },
   "workspaceSettings": {

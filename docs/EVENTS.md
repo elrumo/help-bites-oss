@@ -39,6 +39,8 @@ timeout can arrive twice) and ignore old `createdAt`s.
 | `email.suppressed` | `{ email, reason: 'bounce' \| 'complaint', detail }` |
 | `cms.entry.published` | `{ entry: { id, slug, type, version, publishedAt } }` |
 | `cms.entry.unpublished` | `{ entry: { id, slug, type } }` |
+| `blog.post.published` | `{ post: { id, slug, title, visibility, publishedAt, url } }` ([BLOG.md](BLOG.md#webhooks)) |
+| `blog.post.updated` / `blog.post.unpublished` / `blog.post.deleted` | the same |
 | `onboarding.completed` | `{ flow, outcome: 'completed' \| 'skipped', contact: { id, externalId, email } }` |
 | `webhook.test` | `{ message }`: only from "Send a test event" |
 
@@ -63,11 +65,11 @@ curl -X DELETE "$HELPBITES/v1/admin/projects/$PROJECT/webhooks/$ID"        -H "A
 ```
 
 `events` is a list of filters: `*` (everything, the default), `group.*` (one group: `contact`, `conversation`, `feedback`,
-`board`, `changelog`, `errors`, `github`, `email`, `cms`, `onboarding`) or an exact type. Up to 10 endpoints per project.
+`board`, `changelog`, `errors`, `github`, `email`, `cms`, `blog`, `onboarding`) or an exact type. Up to 10 endpoints per project.
 
 The project's original single event webhook (Settings → Event webhook, [MARKETING.md](MARKETING.md#event-webhook)) keeps
-working and keeps receiving the four events it always did (`contact.subscription_changed`, `email.suppressed`,
-`cms.entry.published`, `cms.entry.unpublished`); add an endpoint for anything else.
+working and keeps receiving the events it always did (`contact.subscription_changed`, `email.suppressed`,
+`cms.entry.published`, `cms.entry.unpublished` and the four `blog.post.*`); add an endpoint for anything else.
 
 ## Verifying and retrying
 

@@ -335,7 +335,8 @@ export function guessMapping(columns: string[]): ContactFieldMapping {
     externalId: find(/^(id|userid|externalid|uid|objectid)$/),
     name: find(/^(name|fullname|displayname)$/),
     language: find(/^(language|lang|locale|preferredlanguage)$/),
-    tags: find(/^tags?$/),
-    subscribed: find(/^(subscribed|optin|marketing|newsletter|consent)$/)
+    tags: find(/^(tags?|labels?)$/),
+    // subscribed_to_emails: Ghost's members export.
+    subscribed: find(/^(subscribed|subscribedtoemails|optin|marketing|newsletter|consent)$/)
   }
 }

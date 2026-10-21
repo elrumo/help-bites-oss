@@ -49,6 +49,7 @@
     "onboarding": "新手引导",
     "legal": "法务",
     "brand": "品牌",
+    "pages": "页面",
     "email": "邮件",
     "campaigns": "营销活动",
     "flags": "功能开关",
@@ -698,6 +699,95 @@
       "image": "图片",
       "blocks": "模块",
       "insert": "插入"
+    },
+    "pages": "页面",
+    "newPage": "新建页面",
+    "noPages": "还没有页面",
+    "noPagesDescription": "页面是独立的（关于、联系方式、阅读清单）：它们不会出现在文章列表、订阅源和通讯中。请在“设计”中通过博客导航链接它们。",
+    "pageTitlePlaceholder": "页面标题",
+    "featured": "精选",
+    "featuredHint": "优先显示：在杂志布局中大幅展示，在其他布局中加上标记。",
+    "visibility": "谁可以阅读",
+    "visibilityPublic": "所有人",
+    "visibilityMembers": "仅限会员",
+    "visibilityPublicHint": "任何拥有链接的人、订阅源和搜索引擎。",
+    "visibilityMembersHint": "所有人都能看到标题和摘要；其余内容仅供通过你的应用或邮箱登录的读者阅读。订阅源中只包含摘要。",
+    "coverAlt": "描述这张图片（替代文本）",
+    "seo": {
+      "title": "搜索与社交",
+      "noDescription": "没有描述时，这里会显示摘要。",
+      "metaTitle": "搜索引擎标题",
+      "metaDescription": "搜索引擎描述",
+      "ogImage": "链接预览图片",
+      "ogImageHint": "留空则使用封面。",
+      "canonical": "规范地址",
+      "canonicalHint": "如果文章最早发布在其他地方，请填写那里的地址。搜索引擎会将文章归功于该地址。"
+    },
+    "newsletterWithPost": "文章上线时通过邮件发送给订阅者。",
+    "newsletterWaits": "文章将于 {when} 上线。通讯会在那时发出，不会提前。",
+    "sendWithPost": "发布时发送",
+    "publishOptions": "发布选项",
+    "publishAndEmail": "发布并发送邮件",
+    "scheduleAndEmail": "排期并发送邮件",
+    "publishOnly": "仅发布",
+    "scheduleOnly": "仅排期",
+    "sitemap": "站点地图",
+    "sitemapHint": "将它提交给 Google Search Console 或 Bing Webmaster Tools，让它们找到每一篇文章。",
+    "design": {
+      "title": "设计",
+      "description": "托管博客的外观。嵌入代码沿用你页面的外观，布局则使用这里的设置。",
+      "layout": "布局",
+      "layouts": {
+        "list": "列表",
+        "grid": "网格",
+        "magazine": "杂志"
+      },
+      "font": "字体",
+      "fonts": {
+        "sans": "无衬线",
+        "serif": "衬线"
+      },
+      "colorScheme": "配色方案",
+      "schemes": {
+        "auto": "跟随读者",
+        "light": "浅色",
+        "dark": "深色"
+      },
+      "accent": "强调色",
+      "accentHint": "用于链接、按钮和标签。除非你另行选择，否则使用项目的强调色。",
+      "useProjectAccent": "使用项目的颜色",
+      "logoUrl": "Logo",
+      "logoUrlHint": "显示在博客名称旁边。留空则使用项目的 Logo。",
+      "coverImageUrl": "封面图片",
+      "coverImageUrlHint": "横跨首页顶部的宽幅图片。",
+      "navigation": "导航",
+      "navigationHint": "博客页眉中的链接：博客中的某个页面（/about）、博客本身（/）或任意地址。",
+      "linkLabel": "链接文字",
+      "removeLink": "移除链接",
+      "addLink": "添加链接",
+      "social": "社交链接",
+      "website": "网站",
+      "footer": "页脚",
+      "footerHint": "每个页面底部的一行文字，例如版权声明。"
+    },
+    "import": {
+      "title": "从 Ghost 导入",
+      "description": "将你的文章和页面从 Ghost 博客迁移过来。",
+      "file": "Ghost 导出文件",
+      "fileHint": "在 Ghost 中：Settings → Advanced → Import/Export → Export content。一个 .json 文件。",
+      "choose": "选择文件",
+      "found": "{count} 篇文章和页面",
+      "siteUrl": "你的 Ghost 网站地址",
+      "siteUrlHint": "导出文件中的链接和图片不包含此地址。它们会继续指向那个网站，因此在迁移图片之前，请保持该网站在线。",
+      "update": "覆盖之前导入的文章",
+      "updateHint": "关闭时：之前从这个博客导入的文章保持现状。",
+      "members": "会员在单独的 CSV 文件中（Ghost 中的 Members → Export）。请在“联系人”中导入：邮箱、姓名、标签和通讯订阅同意都会被读取。",
+      "run": "导入",
+      "done": "已添加 {created} 篇，已更新 {updated} 篇，已跳过 {skipped} 篇。",
+      "close": "关闭",
+      "notGhost": "这不是 Ghost 导出文件：其中没有文章。",
+      "notJson": "该文件不是 JSON。",
+      "error": "导入失败。"
     }
   },
   "chat": {
@@ -788,7 +878,8 @@
       "subscription": "订阅状态",
       "billing": "账单",
       "spentOver": "消费超过",
-      "spentMoreThan": "消费超过"
+      "spentMoreThan": "消费超过",
+      "origin": "添加途径"
     },
     "billingFilter": {
       "all": "任何账单状态",
@@ -875,7 +966,9 @@
         "sources": "数据源",
         "createdAt": "添加时间",
         "lastSeenAt": "最后活跃",
-        "updatedAt": "更新时间"
+        "updatedAt": "更新时间",
+        "origin": "添加途径",
+        "leadForms": "线索表单"
       },
       "op": {
         "is": "是",
@@ -900,7 +993,8 @@
         "days": "天数",
         "date": "日期",
         "removeRule": "移除规则"
-      }
+      },
+      "pickForm": "选择表单"
     },
     "form": {
       "email": "邮件",
@@ -952,7 +1046,11 @@
       "conversations": "会话",
       "noneYet": "暂无。",
       "nothingSent": "尚未发送任何邮件。",
-      "erase": "删除此人的数据"
+      "erase": "删除此人的数据",
+      "addedVia": "添加途径",
+      "leadForms": "线索表单",
+      "deletedForm": "已删除的表单",
+      "files": "已提交的文件"
     },
     "empty": {
       "title": "暂无联系人",
@@ -1005,7 +1103,9 @@
       "showPeople": "查看这些人",
       "namePlaceholder": "本月活跃的专业版用户",
       "ruleCount": "{count} 条规则",
-      "peopleCount": "{count} 人"
+      "peopleCount": "{count} 人",
+      "auto": "自动",
+      "autoHint": "为某个线索表单创建。可以像其他分群一样重命名、编辑或删除。"
     },
     "sources": {
       "connect": "连接数据库",
@@ -1077,6 +1177,17 @@
       "consentSubscribed": "这里的所有人都同意接收营销邮件",
       "consentSubscribedDescription": "记录为他们的同意。已退订的人不会被重新订阅。",
       "saveAndSync": "保存并同步"
+    },
+    "origin": {
+      "app": "应用用户",
+      "lead_form": "线索表单",
+      "signup": "新闻通讯订阅",
+      "import": "CSV 导入",
+      "sync": "数据库同步",
+      "stripe": "Stripe",
+      "api": "API",
+      "panel": "手动添加",
+      "feedback": "从反馈导入"
     }
   },
   "campaigns": {
@@ -2544,7 +2655,7 @@
         },
         "blog": {
           "term": "带邮件通讯的博客",
-          "desc": "在富文本编辑器中撰写文章，发布到托管博客、你自己的网站或 RSS，并通过邮件发送给订阅者。读者可以添加表情反应和评论。"
+          "desc": "在富文本编辑器中撰写文章和页面，发布到采用你自己设计的托管博客、你自己的网站或 RSS，并通过邮件发送给订阅者。支持仅限会员的文章、SEO 字段、站点地图以及从 Ghost 导入。读者可以添加表情反应和评论。"
         },
         "followers": {
           "term": "关注者会收到消息",
@@ -2592,7 +2703,7 @@
         },
         "forms": {
           "term": "候补名单与线索表单",
-          "desc": "在发布前用一个邮箱输入框或自定义表单收集感兴趣的用户，可放在你的网站、托管页面或应用中。每次注册都会成为联系人，并自动归入专属分组，支持双重确认、欢迎邮件和自动邮件序列。"
+          "desc": "在发布前用一个邮箱输入框或自定义表单收集感兴趣的用户，支持文件上传，并以访客的语言显示，可放在你的网站、托管页面或应用中。每次注册都会成为联系人，并自动归入专属分组，支持双重确认、欢迎邮件和自动邮件序列。"
         }
       },
       "team": {
@@ -2784,7 +2895,7 @@
     "fallbackHuman": "转交人工",
     "fallbackSilent": "保持沉默",
     "autoReply": "自动回复此项目的用户",
-    "autoReplyHint": "— 默认关闭；以此助手的身份发送有依据的回答",
+    "autoReplyHint": "— 默认关闭，且仅在状态为“启用”时生效；以此助手的身份发送有依据的回答",
     "whenAi": "何时使用 AI 回答",
     "minConfidence": "最低置信度",
     "minConfidenceHint": "仅当最佳知识匹配的把握至少达到此值时才发送 AI 回答。0% = 始终尝试。",
@@ -2976,7 +3087,42 @@
       "latestActivity": "最新动态",
       "nothingYet": "暂无内容",
       "activityEmpty": "会话、反馈和看板中已完成的事项都会显示在这里。",
-      "loadError": "无法加载概览"
+      "loadError": "无法加载概览",
+      "stats": {
+        "open": "未结束的会话",
+        "new": "本周新增",
+        "emails": "已发送邮件 · 7 天",
+        "feedback": "反馈 · 7 天"
+      },
+      "health": {
+        "chat": "聊天组件",
+        "email": "邮件发送",
+        "notify": "团队通知",
+        "feedback": "反馈看板",
+        "errors": "错误追踪"
+      },
+      "healthDetail": {
+        "noOrigins": "没有允许的来源",
+        "notLoaded": "尚未在你的网站上加载",
+        "origins": "{count} 个允许的来源",
+        "defaultSender": "默认发件人",
+        "notConfigured": "未配置",
+        "nobodyEmailed": "不会通知任何人",
+        "on": "开启",
+        "off": "关闭",
+        "notConnected": "未连接"
+      },
+      "attention": {
+        "unread": "未读会话",
+        "errors": "未处理的错误报告",
+        "emails": "发送失败的邮件 · 7 天",
+        "documents": "处理失败的知识文档",
+        "feedback": "待分类的反馈"
+      },
+      "activityTitle": {
+        "newFeedback": "新反馈：{title}",
+        "completed": "已完成 {item}"
+      }
     },
     "settings": {
       "general": "通用",
@@ -3700,6 +3846,175 @@
         "mobile": "手机宽度",
         "previewHint": "你尚未保存的更改，私有文件会像公开页面一样被排除在外。"
       }
+    },
+    "forms": {
+      "guide": "指南",
+      "newForm": "新建表单",
+      "newFormDescription": "从单个邮箱输入框、候补名单或更完整的表单开始。之后可以修改每个字段。",
+      "title": "线索表单",
+      "intro": "在发布前收集感兴趣的用户：候补名单、“通知我”输入框或意向表单，可放在你的网站、应用或托管页面上。每个注册的人都会成为联系人，进入该表单专属的分群，并可收到欢迎邮件和邮件序列。",
+      "emptyTitle": "还没有表单",
+      "emptyDescription": "创建一个表单，在你的网站上加一行代码，线索就会出现在“联系人”中。",
+      "leadCount": "{count} 条线索",
+      "confirmedCount": "{count} 人在名单中",
+      "live": "开放中",
+      "closed": "已关闭",
+      "startFrom": "起始模板",
+      "presets": {
+        "email": "仅邮箱",
+        "emailHint": "一个邮箱输入框和一个按钮，排成一行。",
+        "waitlist": "候补名单",
+        "waitlistHint": "邮箱和姓名。",
+        "detailed": "意向表单",
+        "detailedHint": "邮箱、姓名、公司、职位和一个问题。"
+      },
+      "name": "名称",
+      "namePlaceholder": "发布候补名单",
+      "defaultName": "候补名单",
+      "key": "键",
+      "keyHint": "你的网站和应用通过这个名称来请求表单。",
+      "keyInvalid": "请使用小写字母、数字和连字符，最多 40 个字符。",
+      "create": "创建表单",
+      "createError": "无法创建表单",
+      "loadError": "无法加载表单",
+      "form": "表单",
+      "notFound": "该表单不存在。",
+      "active": "接受注册",
+      "activeHint": "关闭后表单停止接收：加载它的网站和应用将什么也不显示。",
+      "fields": "字段",
+      "types": {
+        "email": "邮箱",
+        "name": "姓名",
+        "text": "短文本",
+        "textarea": "长文本",
+        "number": "数字",
+        "url": "网站",
+        "phone": "电话",
+        "select": "单选",
+        "checkbox": "复选框",
+        "file": "文件上传"
+      },
+      "moveUp": "上移",
+      "moveDown": "下移",
+      "removeField": "移除字段",
+      "label": "字段标题",
+      "placeholder": "占位文字",
+      "fieldKey": "保存为",
+      "fieldKeyHint": "答案所保存到的联系人属性。",
+      "fieldKeyInvalid": "仅限字母、数字和 _，且以字母开头。",
+      "options": "选项",
+      "optionsHint": "每输入一项后按 Enter。",
+      "addOption": "添加选项",
+      "optionA": "选项 A",
+      "optionB": "选项 B",
+      "required": "必填",
+      "mustTick": "必须勾选",
+      "addField": "添加字段",
+      "words": "文案",
+      "content": {
+        "title": "标题",
+        "description": "描述",
+        "buttonLabel": "按钮",
+        "successTitle": "注册后",
+        "successMessage": "感谢语",
+        "confirmMessage": "等待确认时",
+        "confirmMessageHint": "在对方点击邮件中的链接之前，显示此内容来代替感谢语。",
+        "footnote": "附注",
+        "footnotePlaceholder": "我们只会发送有关发布的邮件，可随时退订。"
+      },
+      "look": "外观",
+      "accent": "强调色",
+      "projectAccent": "项目的强调色",
+      "background": "背景",
+      "noBackground": "无：直接融入你的页面",
+      "text": "文字",
+      "followsTheme": "跟随浅色或深色",
+      "reset": "重置",
+      "layout": "布局",
+      "layouts": {
+        "stacked": "堆叠",
+        "inline": "单行"
+      },
+      "radius": "圆角",
+      "font": "字体",
+      "after": "有人注册后",
+      "afterHint": "对方会成为联系人，加上下面的标签，并进入此表单的分群。",
+      "doubleOptIn": "要求确认邮箱",
+      "doubleOptInHint": "对方会收到一封带链接的邮件，点击前处于待确认状态。欢迎邮件和邮件序列会等到确认后再开始。",
+      "confirmTemplate": "确认邮件",
+      "confirmTemplateHint": "带有 {'{'}{'{'}confirmUrl{'}'}{'}'} 按钮的模板。",
+      "builtInConfirm": "HelpBites 默认",
+      "welcomeTemplate": "欢迎邮件",
+      "welcomeTemplateHint": "加入名单时发送一次。",
+      "noWelcome": "无",
+      "sequence": "启动邮件序列",
+      "sequenceHint": "草稿或已暂停的序列会让他们停在第一步，直到你启用它。",
+      "noSequence": "无",
+      "sequenceStatus": {
+        "active": "已启用",
+        "draft": "草稿",
+        "paused": "已暂停"
+      },
+      "tags": "标签",
+      "tagsHint": "会添加给每个注册的人。",
+      "addTag": "添加标签",
+      "redirectUrl": "然后跳转到",
+      "redirectUrlHint": "用于普通 HTML 表单、托管页面和确认链接。留空则显示感谢页面。",
+      "newTemplate": "新建邮件模板",
+      "manageSequences": "邮件序列",
+      "install": "放到你的网站或应用中",
+      "installTabs": {
+        "script": "脚本",
+        "link": "链接"
+      },
+      "installHints": {
+        "script": "一个 script 标签就能在你放置的位置按你的配色绘制表单，无需其他任何东西。",
+        "html": "一个普通表单，样式由你自己的 CSS 决定。直接提交到 HelpBites，然后回到感谢页面。",
+        "link": "一个托管页面，可以链接过去，也可以嵌入你的网站。",
+        "swift": "把指南中的 HelpBitesLeadForm.swift 粘贴到你的应用中，然后在任意位置显示该视图。",
+        "api": "从你自己的界面或服务器提交答案。每个字段的答案放在对应的键下。"
+      },
+      "saveFirst": "请先保存更改：代码片段使用的是已保存的表单。",
+      "copy": "复制",
+      "copied": "已复制",
+      "openPage": "打开托管页面",
+      "openJson": "打开表单的 JSON",
+      "readGuide": "阅读指南",
+      "leads": "线索",
+      "leadsHint": "通过此表单最新注册的人。他们和其他人一样是联系人，位于此表单的分群中。",
+      "noLeads": "还没有人注册。",
+      "showAll": "在“联系人”中查看全部",
+      "emailThem": "给他们发邮件",
+      "preview": "预览",
+      "previewStates": {
+        "form": "表单",
+        "success": "完成"
+      },
+      "toggleTheme": "切换浅色和深色",
+      "previewHint": "你尚未保存的更改，由你的网站所加载的同一个脚本绘制。Swift 代码片段的布局相同。",
+      "saved": "已保存",
+      "saveError": "无法保存表单",
+      "deleteConfirm": "删除“{name}”？加载它的网站将什么也不显示。它的线索和分群会保留。",
+      "deleteForm": "删除表单",
+      "accept": "接受",
+      "acceptHint": "按文件的实际类型检查：{types}",
+      "accepts": {
+        "images": "图片",
+        "documents": "文档",
+        "any": "图片、文档或 ZIP"
+      },
+      "maxMB": "最大文件大小",
+      "optionsTranslateHint": "各选项在此语言中的显示文字。保存的答案仍是原始选项。",
+      "files": {
+        "title": "已提交的文件",
+        "loading": "正在加载文件…",
+        "download": "下载",
+        "delete": "删除文件",
+        "deleteConfirm": "永久删除 {name}？",
+        "downloadError": "无法下载该文件。",
+        "deleteError": "无法删除该文件。"
+      },
+      "fileKeyHint": "文件提交时使用的名称。文件仅供你的团队私下查看，不会存为属性。"
     }
   },
   "workspaceSettings": {

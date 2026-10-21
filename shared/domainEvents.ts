@@ -4,7 +4,7 @@
 // event) and in-process handlers listen on the same bus. Shared by the
 // server, the panel (the endpoint editor) and the docs.
 
-export type DomainEventGroup = 'contact' | 'conversation' | 'feedback' | 'board' | 'changelog' | 'errors' | 'github' | 'email' | 'cms' | 'onboarding'
+export type DomainEventGroup = 'contact' | 'conversation' | 'feedback' | 'board' | 'changelog' | 'errors' | 'github' | 'email' | 'cms' | 'blog' | 'onboarding'
 
 export type DomainEventDef = { type: string, group: DomainEventGroup, label: string, description: string }
 
@@ -27,6 +27,10 @@ export const DOMAIN_EVENTS: DomainEventDef[] = [
   { type: 'email.suppressed', group: 'email', label: 'Address suppressed', description: 'An address bounced, complained or was blocked.' },
   { type: 'cms.entry.published', group: 'cms', label: 'Page published', description: 'A page or entry was published.' },
   { type: 'cms.entry.unpublished', group: 'cms', label: 'Page unpublished', description: 'A page or entry was taken down.' },
+  { type: 'blog.post.published', group: 'blog', label: 'Blog post published', description: 'A post went public: published now, or its scheduled moment came.' },
+  { type: 'blog.post.updated', group: 'blog', label: 'Blog post updated', description: 'A public post was changed.' },
+  { type: 'blog.post.unpublished', group: 'blog', label: 'Blog post unpublished', description: 'A public post stopped being public.' },
+  { type: 'blog.post.deleted', group: 'blog', label: 'Blog post deleted', description: 'A public post was deleted.' },
   { type: 'onboarding.completed', group: 'onboarding', label: 'Onboarding finished', description: 'A person finished (or skipped) an onboarding flow.' }
 ]
 
@@ -38,7 +42,7 @@ export const DOMAIN_EVENT_TYPES: string[] = DOMAIN_EVENTS.map(e => e.type)
  * Events the project's original single webhook (Settings → Event webhook)
  * keeps receiving. New events go to endpoints, which choose what they want.
  */
-export const LEGACY_WEBHOOK_EVENTS = ['contact.subscription_changed', 'email.suppressed', 'cms.entry.published', 'cms.entry.unpublished']
+export const LEGACY_WEBHOOK_EVENTS = ['contact.subscription_changed', 'email.suppressed', 'cms.entry.published', 'cms.entry.unpublished', 'blog.post.published', 'blog.post.updated', 'blog.post.unpublished', 'blog.post.deleted']
 
 export const WEBHOOK_ENDPOINT_LIMITS = { endpoints: 10, filters: 30, description: 120 }
 

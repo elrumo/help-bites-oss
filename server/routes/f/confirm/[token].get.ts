@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   const project = link ? await loadProjectUnscoped(link.projectId).catch(() => null) : null
   if (!project) {
     setResponseStatus(event, 400)
-    return messagePage({ name: 'HelpBites', logoUrl: '', accent: '#4f46e5' }, 'This link has expired', 'Confirmation links work for seven days. Sign up again to get a new one.')
+    return leadMessagePage({ name: 'HelpBites', logoUrl: '', accent: '#4f46e5' }, wantedLocales(event), 'expired')
   }
-  return leadConfirmPage(project, token, await poweredByFor(project))
+  return leadConfirmPage(project, token, link!.locale, await poweredByFor(project))
 })

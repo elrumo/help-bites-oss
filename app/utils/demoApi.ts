@@ -487,13 +487,14 @@ function blogPost(n: number, title: string, body: string, status: 'draft' | 'pub
   const published = status === 'published'
   const excerpt = body.replace(/[#*_`>]/g, '').split('\n').find(line => line.trim())?.trim().slice(0, 200) || ''
   blogPosts.push({
-    id: `blog_demo${n}`, projectId: 'acme', title, slug: slug(title), excerpt, excerptWritten: false, body, bodyHtml: body.split('\n\n').map(p => `<p>${p}</p>`).join(''),
-    coverImageUrl: '', tags: [], status, publishedAt: published ? ago(minutesAgo) : null, live: published, authorName: 'You', readingMinutes: 3,
+    id: `blog_demo${n}`, projectId: 'acme', type: 'post', title, slug: slug(title), excerpt, excerptWritten: false, body, bodyFormat: 'markdown', bodyHtml: body.split('\n\n').map(p => `<p>${p}</p>`).join(''),
+    coverImageUrl: '', coverImageAlt: '', tags: [], featured: false, visibility: 'public', metaTitle: '', metaDescription: '', ogImageUrl: '', canonicalUrl: '', status, publishedAt: published ? ago(minutesAgo) : null, live: published, authorName: 'You', readingMinutes: 3,
     commentsOpen: true, commentCount: 0, reactions: [], newsletter: null, url: `/blog/pk_demo_acme/${slug(title)}`, createdAt: ago(minutesAgo + 120), updatedAt: ago(minutesAgo), ...extra
   })
 }
-blogPost(1, 'How we made notebook search work offline', 'Search used to wait for the server. In 2.4 it runs on your device first, so results show as you type, even on a plane.\n\nHere is how the index fits in a few megabytes, and what we tried first.', 'published', 60 * 24 * 2, { tags: ['Engineering'], reactions: [{ key: 'heart', count: 12 }, { key: 'rocket', count: 5 }] })
+blogPost(1, 'How we made notebook search work offline', 'Search used to wait for the server. In 2.4 it runs on your device first, so results show as you type, even on a plane.\n\nHere is how the index fits in a few megabytes, and what we tried first.', 'published', 60 * 24 * 2, { tags: ['Engineering'], featured: true, reactions: [{ key: 'heart', count: 12 }, { key: 'rocket', count: 5 }] })
 blogPost(2, 'Markdown export is coming', 'You asked, and it is nearly done: one zip per notebook, a file per page, images included.', 'draft', 60 * 2, { tags: ['Product'] })
+blogPost(3, 'About Acme', 'We are three people making a notebook that works offline and syncs when it can.', 'published', 60 * 24 * 30, { type: 'page' })
 
 const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/admin\/me$/, () => ({ agent: ME, workspace: WORKSPACE, role: 'owner', workspaces: [WORKSPACE], edition: 'community', plan: { id: UNLIMITED_PLAN.id, name: UNLIMITED_PLAN.name, unlimited: true }, features: { ...UNLIMITED_PLAN.features, teammatePasswords: true }, links: { sourceCode: '/source' } })],
@@ -544,10 +545,13 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
         { key: 'emails', label: 'Emails sent · 7d', value: mail.length, section: 'email?view=log' }
       ],
       health: [
-        { key: 'chat', label: 'Chat widget', state: origins ? 'ok' : 'warn', detail: origins ? `${origins} allowed origin${origins === 1 ? '' : 's'}` : 'No allowed origins', section: 'dev' },
-        { key: 'email', label: 'Email sending', state: 'ok', detail: p.fromEmail || 'Default sender', section: 'settings' },
-        { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', detail: p.feedback.enabled ? 'On' : 'Off', section: 'feedback' },
-        { key: 'errors', label: 'Error tracking', state: p.errors.connected ? 'ok' : 'off', detail: p.errors.connected ? p.errors.providerName : 'Not connected', section: 'errors' }
+        // The demo's users have all written in, so an allowed origin is a working widget.
+        origins
+          ? { key: 'chat', label: 'Chat widget', state: 'ok', detail: `${origins} allowed origin${origins === 1 ? '' : 's'}`, detailKey: 'origins', params: { count: origins }, section: 'dev' }
+          : { key: 'chat', label: 'Chat widget', state: 'warn', detail: 'No allowed origins', detailKey: 'noOrigins', section: 'dev' },
+        { key: 'email', label: 'Email sending', state: 'ok', ...(p.fromEmail ? { detail: p.fromEmail } : { detail: 'Default sender', detailKey: 'defaultSender' }), section: 'settings' },
+        { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', ...(p.feedback.enabled ? { detail: 'On', detailKey: 'on' } : { detail: 'Off', detailKey: 'off' }), section: 'feedback' },
+        { key: 'errors', label: 'Error tracking', state: p.errors.connected ? 'ok' : 'off', ...(p.errors.connected ? { detail: p.errors.providerName } : { detail: 'Not connected', detailKey: 'notConnected' }), section: 'errors' }
       ],
       attention: [
         { key: 'unread', label: 'Unread conversations', count: unread, section: 'conversations' },

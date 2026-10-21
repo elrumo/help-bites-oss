@@ -49,6 +49,7 @@
     "onboarding": "온보딩",
     "legal": "법무",
     "brand": "브랜드",
+    "pages": "페이지",
     "email": "이메일",
     "campaigns": "캠페인",
     "flags": "플래그",
@@ -698,6 +699,95 @@
       "image": "이미지",
       "blocks": "블록",
       "insert": "삽입"
+    },
+    "pages": "페이지",
+    "newPage": "새 페이지",
+    "noPages": "아직 페이지가 없습니다",
+    "noPagesDescription": "페이지는 독립적으로 존재합니다(소개, 연락처, 읽기 목록 등). 목록, 피드, 뉴스레터에는 포함되지 않습니다. 디자인의 블로그 내비게이션에서 링크하세요.",
+    "pageTitlePlaceholder": "페이지 제목",
+    "featured": "추천",
+    "featuredHint": "맨 앞에 표시됩니다. 매거진 레이아웃에서는 크게, 다른 레이아웃에서는 표시가 붙습니다.",
+    "visibility": "읽을 수 있는 사람",
+    "visibilityPublic": "모든 사람",
+    "visibilityMembers": "회원 전용",
+    "visibilityPublicHint": "링크가 있는 누구나, 피드, 검색 엔진.",
+    "visibilityMembersHint": "제목과 발췌는 누구나 볼 수 있고, 나머지는 내 앱이나 이메일로 로그인한 독자만 볼 수 있습니다. 피드에는 발췌만 포함됩니다.",
+    "coverAlt": "이미지 설명(대체 텍스트)",
+    "seo": {
+      "title": "검색 및 소셜",
+      "noDescription": "설명이 없으면 여기에 발췌가 표시됩니다.",
+      "metaTitle": "검색 엔진용 제목",
+      "metaDescription": "검색 엔진용 설명",
+      "ogImage": "링크 미리보기 이미지",
+      "ogImageHint": "비워 두면 커버 이미지를 사용합니다.",
+      "canonical": "정규 주소",
+      "canonicalHint": "게시물이 다른 곳에 처음 게시되었다면 그 주소입니다. 검색 엔진은 그 주소를 원본으로 인정합니다."
+    },
+    "newsletterWithPost": "공개되면 구독자에게 이메일로 보냅니다.",
+    "newsletterWaits": "게시물은 {when}에 공개됩니다. 뉴스레터는 그때 발송되며, 그전에는 발송되지 않습니다.",
+    "sendWithPost": "게시되면 보내기",
+    "publishOptions": "게시 옵션",
+    "publishAndEmail": "게시하고 이메일 보내기",
+    "scheduleAndEmail": "예약하고 이메일 보내기",
+    "publishOnly": "게시만 하기",
+    "scheduleOnly": "예약만 하기",
+    "sitemap": "사이트맵",
+    "sitemapHint": "Google Search Console이나 Bing Webmaster Tools에 제출하면 모든 게시물을 찾을 수 있습니다.",
+    "design": {
+      "title": "디자인",
+      "description": "호스팅된 블로그의 모양입니다. 임베드는 내 페이지의 모양을 따르고, 레이아웃은 여기 설정을 사용합니다.",
+      "layout": "레이아웃",
+      "layouts": {
+        "list": "목록",
+        "grid": "그리드",
+        "magazine": "매거진"
+      },
+      "font": "글꼴",
+      "fonts": {
+        "sans": "산세리프",
+        "serif": "세리프"
+      },
+      "colorScheme": "색 구성표",
+      "schemes": {
+        "auto": "독자에 맞춤",
+        "light": "라이트",
+        "dark": "다크"
+      },
+      "accent": "강조 색상",
+      "accentHint": "링크, 버튼, 태그에 쓰입니다. 따로 고르지 않으면 프로젝트의 강조 색상을 사용합니다.",
+      "useProjectAccent": "프로젝트 색상 사용",
+      "logoUrl": "로고",
+      "logoUrlHint": "블로그 이름 옆에 표시됩니다. 비워 두면 프로젝트 로고를 사용합니다.",
+      "coverImageUrl": "커버 이미지",
+      "coverImageUrlHint": "첫 페이지 상단을 가로지르는 넓은 이미지입니다.",
+      "navigation": "내비게이션",
+      "navigationHint": "블로그 헤더의 링크입니다. 블로그의 페이지(/about), 블로그 자체(/) 또는 아무 주소나 넣을 수 있습니다.",
+      "linkLabel": "레이블",
+      "removeLink": "링크 삭제",
+      "addLink": "링크 추가",
+      "social": "소셜 링크",
+      "website": "웹사이트",
+      "footer": "바닥글",
+      "footerHint": "모든 페이지 하단에 표시되는 한 줄입니다. 예: 저작권 표시."
+    },
+    "import": {
+      "title": "Ghost에서 가져오기",
+      "description": "Ghost 블로그의 게시물과 페이지를 옮겨 옵니다.",
+      "file": "Ghost 내보내기 파일",
+      "fileHint": "Ghost에서 Settings → Advanced → Import/Export → Export content를 사용하세요. .json 파일입니다.",
+      "choose": "파일 선택",
+      "found": "게시물 및 페이지 {count}개",
+      "siteUrl": "Ghost 사이트 주소",
+      "siteUrlHint": "내보내기 파일에는 이 주소 없이 링크와 이미지가 기록됩니다. 링크와 이미지는 계속 그 사이트를 가리키므로, 이미지를 옮길 때까지 사이트를 유지하세요.",
+      "update": "이전에 가져온 게시물 덮어쓰기",
+      "updateHint": "끄면 이 블로그에서 이전에 가져온 게시물은 지금 그대로 둡니다.",
+      "members": "회원은 별도의 CSV입니다(Ghost의 Members → Export). 연락처에서 가져오면 이메일, 이름, 라벨, 뉴스레터 수신 동의가 반영됩니다.",
+      "run": "가져오기",
+      "done": "{created}개 추가, {updated}개 업데이트, {skipped}개 건너뜀.",
+      "close": "닫기",
+      "notGhost": "Ghost 내보내기 파일이 아닙니다. 게시물이 없습니다.",
+      "notJson": "이 파일은 JSON이 아닙니다.",
+      "error": "가져오기에 실패했습니다."
     }
   },
   "chat": {
@@ -788,7 +878,8 @@
       "subscription": "구독",
       "billing": "결제",
       "spentOver": "최소 지출액",
-      "spentMoreThan": "지출 금액이 다음보다 많음"
+      "spentMoreThan": "지출 금액이 다음보다 많음",
+      "origin": "추가 경로"
     },
     "billingFilter": {
       "all": "모든 결제",
@@ -875,7 +966,9 @@
         "sources": "소스",
         "createdAt": "추가일",
         "lastSeenAt": "마지막 접속",
-        "updatedAt": "업데이트됨"
+        "updatedAt": "업데이트됨",
+        "origin": "추가 경로",
+        "leadForms": "리드 양식"
       },
       "op": {
         "is": "같음",
@@ -900,7 +993,8 @@
         "days": "일수",
         "date": "날짜",
         "removeRule": "규칙 삭제"
-      }
+      },
+      "pickForm": "양식 선택"
     },
     "form": {
       "email": "이메일",
@@ -952,7 +1046,11 @@
       "conversations": "대화",
       "noneYet": "아직 없음.",
       "nothingSent": "아직 보낸 이메일이 없습니다.",
-      "erase": "이 사람 데이터 삭제"
+      "erase": "이 사람 데이터 삭제",
+      "addedVia": "추가 경로",
+      "leadForms": "리드 양식",
+      "deletedForm": "삭제된 양식",
+      "files": "보낸 파일"
     },
     "empty": {
       "title": "아직 연락처가 없습니다",
@@ -1005,7 +1103,9 @@
       "showPeople": "이 사람들 보기",
       "namePlaceholder": "이번 달 접속한 프로 사용자",
       "ruleCount": "규칙 {count}개",
-      "peopleCount": "{count}명"
+      "peopleCount": "{count}명",
+      "auto": "자동",
+      "autoHint": "리드 양식용으로 만들어졌습니다. 다른 세그먼트처럼 이름을 바꾸거나 편집하거나 삭제할 수 있습니다."
     },
     "sources": {
       "connect": "데이터베이스 연결",
@@ -1077,6 +1177,17 @@
       "consentSubscribed": "여기 있는 모든 사람이 마케팅 이메일에 동의함",
       "consentSubscribedDescription": "본인의 동의로 기록됩니다. 구독을 취소한 사람은 다시 구독되지 않습니다.",
       "saveAndSync": "저장 후 동기화"
+    },
+    "origin": {
+      "app": "앱 사용자",
+      "lead_form": "리드 양식",
+      "signup": "뉴스레터 가입",
+      "import": "CSV 가져오기",
+      "sync": "데이터베이스 동기화",
+      "stripe": "Stripe",
+      "api": "API",
+      "panel": "직접 추가",
+      "feedback": "피드백에서 가져옴"
     }
   },
   "campaigns": {
@@ -2544,7 +2655,7 @@
         },
         "blog": {
           "term": "뉴스레터가 있는 블로그",
-          "desc": "리치 에디터로 게시물을 쓰고, 호스팅된 블로그나 내 사이트, RSS로 게시한 뒤 구독자에게 이메일로 보내세요. 독자는 반응과 댓글을 남길 수 있습니다."
+          "desc": "리치 에디터로 게시물과 페이지를 쓰고, 내 디자인의 호스팅된 블로그나 내 사이트, RSS로 게시한 뒤 구독자에게 이메일로 보내세요. 멤버 전용 게시물, SEO 필드, 사이트맵, Ghost에서 가져오기도 지원합니다. 독자는 반응과 댓글을 남길 수 있습니다."
         },
         "followers": {
           "term": "팔로워에게 소식이 전해집니다",
@@ -2592,7 +2703,7 @@
         },
         "forms": {
           "term": "대기자 명단과 리드 양식",
-          "desc": "출시 전부터 이메일 입력란 하나 또는 직접 만든 양식으로 관심 있는 사람을 모으세요. 웹사이트, 호스팅 페이지, 앱 어디에나 넣을 수 있고, 가입한 사람은 전용 세그먼트의 연락처가 되며 이중 확인, 환영 이메일, 자동 시퀀스를 지원합니다."
+          "desc": "출시 전부터 이메일 입력란 하나 또는 직접 만든 양식으로 관심 있는 사람을 모으세요. 파일 업로드와 방문자 언어 표시도 지원합니다. 웹사이트, 호스팅 페이지, 앱 어디에나 넣을 수 있고, 가입한 사람은 전용 세그먼트의 연락처가 되며 이중 확인, 환영 이메일, 자동 시퀀스를 지원합니다."
         }
       },
       "team": {
@@ -2784,7 +2895,7 @@
     "fallbackHuman": "상담원에게 넘기기",
     "fallbackSilent": "응답하지 않기",
     "autoReply": "이 프로젝트의 사용자에게 자동 답장",
-    "autoReplyHint": "— 기본값은 꺼짐. 근거 있는 답변을 이 어시스턴트 이름으로 보냅니다",
+    "autoReplyHint": "— 기본값은 꺼짐이며 상태가 활성일 때만 작동합니다. 근거 있는 답변을 이 어시스턴트 이름으로 보냅니다",
     "whenAi": "AI로 답변할 때",
     "minConfidence": "최소 신뢰도",
     "minConfidenceHint": "가장 좋은 지식 일치 결과의 확신도가 이 값 이상일 때만 AI 답변을 보냅니다. 0% = 항상 시도.",
@@ -2976,7 +3087,42 @@
       "latestActivity": "최근 활동",
       "nothingYet": "아직 없습니다",
       "activityEmpty": "대화, 피드백, 보드에서 완료된 항목이 여기에 표시됩니다.",
-      "loadError": "개요를 불러올 수 없습니다"
+      "loadError": "개요를 불러올 수 없습니다",
+      "stats": {
+        "open": "열린 대화",
+        "new": "이번 주 신규",
+        "emails": "보낸 이메일 · 7일",
+        "feedback": "피드백 · 7일"
+      },
+      "health": {
+        "chat": "채팅 위젯",
+        "email": "이메일 발송",
+        "notify": "팀 알림",
+        "feedback": "피드백 보드",
+        "errors": "오류 추적"
+      },
+      "healthDetail": {
+        "noOrigins": "허용된 출처 없음",
+        "notLoaded": "아직 사이트에서 로드되지 않았습니다",
+        "origins": "허용된 출처 {count}개",
+        "defaultSender": "기본 발신자",
+        "notConfigured": "설정되지 않음",
+        "nobodyEmailed": "알림 받는 사람 없음",
+        "on": "켜짐",
+        "off": "꺼짐",
+        "notConnected": "연결되지 않음"
+      },
+      "attention": {
+        "unread": "읽지 않은 대화",
+        "errors": "열린 오류 보고",
+        "emails": "실패한 이메일 · 7일",
+        "documents": "처리에 실패한 지식 문서",
+        "feedback": "분류 대기 중인 피드백"
+      },
+      "activityTitle": {
+        "newFeedback": "새 피드백: {title}",
+        "completed": "완료: {item}"
+      }
     },
     "settings": {
       "general": "일반",
@@ -3700,6 +3846,175 @@
         "mobile": "휴대폰 너비",
         "previewHint": "저장하지 않은 변경 사항이며, 공개 페이지처럼 비공개 파일은 빠져 있습니다."
       }
+    },
+    "forms": {
+      "guide": "가이드",
+      "newForm": "새 양식",
+      "newFormDescription": "이메일 입력란 하나, 대기자 명단, 또는 더 긴 양식으로 시작하세요. 모든 필드는 나중에 바꿀 수 있습니다.",
+      "title": "리드 양식",
+      "intro": "출시 전부터 관심 있는 사람을 모으세요. 대기자 명단, “알림 받기” 입력란, 관심 양식을 웹사이트, 앱, 호스팅 페이지에 넣을 수 있습니다. 가입한 사람은 연락처가 되어 양식 전용 세그먼트에 들어가고, 환영 이메일과 시퀀스를 받을 수 있습니다.",
+      "emptyTitle": "아직 양식이 없습니다",
+      "emptyDescription": "양식을 만들고 웹사이트에 한 줄만 추가하면, 리드가 연락처에 쌓이기 시작합니다.",
+      "leadCount": "리드 {count}명",
+      "confirmedCount": "명단에 {count}명",
+      "live": "운영 중",
+      "closed": "마감됨",
+      "startFrom": "시작 형태",
+      "presets": {
+        "email": "이메일만",
+        "emailHint": "이메일 입력란과 버튼을 한 줄에.",
+        "waitlist": "대기자 명단",
+        "waitlistHint": "이메일과 이름.",
+        "detailed": "관심 양식",
+        "detailedHint": "이메일, 이름, 회사, 직무, 질문 하나."
+      },
+      "name": "이름",
+      "namePlaceholder": "출시 대기자 명단",
+      "defaultName": "대기자 명단",
+      "key": "키",
+      "keyHint": "웹사이트와 앱이 이 이름으로 양식을 요청합니다.",
+      "keyInvalid": "소문자, 숫자, 하이픈만 사용하고 40자까지 입력하세요.",
+      "create": "양식 만들기",
+      "createError": "양식을 만들 수 없습니다",
+      "loadError": "양식을 불러올 수 없습니다",
+      "form": "양식",
+      "notFound": "이 양식은 존재하지 않습니다.",
+      "active": "가입 받기",
+      "activeHint": "끄면 양식이 닫혀, 양식을 불러오는 웹사이트와 앱에 아무것도 표시되지 않습니다.",
+      "fields": "필드",
+      "types": {
+        "email": "이메일",
+        "name": "이름",
+        "text": "짧은 텍스트",
+        "textarea": "긴 텍스트",
+        "number": "숫자",
+        "url": "웹사이트",
+        "phone": "전화번호",
+        "select": "선택",
+        "checkbox": "체크박스",
+        "file": "파일 업로드"
+      },
+      "moveUp": "위로 이동",
+      "moveDown": "아래로 이동",
+      "removeField": "필드 삭제",
+      "label": "라벨",
+      "placeholder": "플레이스홀더",
+      "fieldKey": "저장 위치",
+      "fieldKeyHint": "답변이 저장되는 연락처 속성입니다.",
+      "fieldKeyInvalid": "영문자, 숫자, _만 쓰고 영문자로 시작하세요.",
+      "options": "옵션",
+      "optionsHint": "하나 입력할 때마다 Enter를 누르세요.",
+      "addOption": "옵션 추가",
+      "optionA": "옵션 A",
+      "optionB": "옵션 B",
+      "required": "필수",
+      "mustTick": "반드시 체크",
+      "addField": "필드 추가",
+      "words": "문구",
+      "content": {
+        "title": "제목",
+        "description": "설명",
+        "buttonLabel": "버튼",
+        "successTitle": "가입 후",
+        "successMessage": "감사 메시지",
+        "confirmMessage": "확인하는 동안",
+        "confirmMessageHint": "이메일의 링크를 클릭할 때까지 감사 메시지 대신 표시됩니다.",
+        "footnote": "하단 문구",
+        "footnotePlaceholder": "출시 관련 소식만 보내드립니다. 언제든지 수신을 거부할 수 있습니다."
+      },
+      "look": "디자인",
+      "accent": "강조 색",
+      "projectAccent": "프로젝트의 강조 색",
+      "background": "배경",
+      "noBackground": "없음: 페이지 위에 그대로 표시",
+      "text": "텍스트",
+      "followsTheme": "라이트·다크 모드를 따름",
+      "reset": "초기화",
+      "layout": "레이아웃",
+      "layouts": {
+        "stacked": "세로 배치",
+        "inline": "한 줄"
+      },
+      "radius": "모서리 둥글기",
+      "font": "글꼴",
+      "after": "가입한 뒤",
+      "afterHint": "연락처가 되고, 아래 태그가 붙으며, 이 양식의 세그먼트에 들어갑니다.",
+      "doubleOptIn": "이메일 확인 요청",
+      "doubleOptInHint": "링크가 담긴 이메일을 받고, 클릭할 때까지 대기 상태가 됩니다. 환영 이메일과 시퀀스는 그 뒤에 시작됩니다.",
+      "confirmTemplate": "확인 이메일",
+      "confirmTemplateHint": "{'{'}{'{'}confirmUrl{'}'}{'}'} 버튼이 있는 템플릿.",
+      "builtInConfirm": "HelpBites 기본",
+      "welcomeTemplate": "환영 이메일",
+      "welcomeTemplateHint": "명단에 오르면 한 번 보냅니다.",
+      "noWelcome": "없음",
+      "sequence": "시퀀스 시작",
+      "sequenceHint": "초안이거나 일시 중지된 시퀀스는 활성화할 때까지 첫 단계에서 대기합니다.",
+      "noSequence": "없음",
+      "sequenceStatus": {
+        "active": "활성",
+        "draft": "초안",
+        "paused": "일시 중지"
+      },
+      "tags": "태그",
+      "tagsHint": "가입한 모든 사람에게 붙습니다.",
+      "addTag": "태그 추가",
+      "redirectUrl": "이후 이동할 주소",
+      "redirectUrlHint": "일반 HTML 양식, 호스팅 페이지, 확인 링크에 쓰입니다. 비워 두면 감사 페이지를 보여 줍니다.",
+      "newTemplate": "새 이메일 템플릿",
+      "manageSequences": "시퀀스",
+      "install": "웹사이트나 앱에 넣기",
+      "installTabs": {
+        "script": "스크립트",
+        "link": "링크"
+      },
+      "installHints": {
+        "script": "script 태그 하나로 넣은 자리에 양식을 내 색상으로 그립니다. 다른 것은 필요 없습니다.",
+        "html": "내 CSS로 스타일을 입히는 일반 양식입니다. HelpBites로 바로 보내고 감사 페이지로 돌아옵니다.",
+        "link": "링크하거나 웹사이트에 넣을 수 있는 호스팅 페이지입니다.",
+        "swift": "가이드의 HelpBitesLeadForm.swift를 앱에 붙여 넣고 원하는 곳에 뷰를 표시하세요.",
+        "api": "직접 만든 UI나 서버에서 답변을 보내세요. 각 필드의 답변은 해당 키로 보냅니다."
+      },
+      "saveFirst": "먼저 변경 사항을 저장하세요. 스니펫은 저장된 양식을 사용합니다.",
+      "copy": "복사",
+      "copied": "복사됨",
+      "openPage": "호스팅 페이지 열기",
+      "openJson": "양식 JSON 열기",
+      "readGuide": "가이드 읽기",
+      "leads": "리드",
+      "leadsHint": "이 양식으로 최근 가입한 사람들입니다. 다른 사람과 같은 연락처이며, 이 양식의 세그먼트에 있습니다.",
+      "noLeads": "아직 가입한 사람이 없습니다.",
+      "showAll": "연락처에서 모두 보기",
+      "emailThem": "이메일 보내기",
+      "preview": "미리 보기",
+      "previewStates": {
+        "form": "양식",
+        "success": "완료"
+      },
+      "toggleTheme": "라이트·다크 모드 전환",
+      "previewHint": "저장하지 않은 변경 사항을 사이트가 불러오는 것과 같은 스크립트로 그린 화면입니다. Swift 스니펫도 레이아웃이 같습니다.",
+      "saved": "저장됨",
+      "saveError": "양식을 저장할 수 없습니다",
+      "deleteConfirm": "“{name}”을(를) 삭제할까요? 양식을 불러오는 사이트에는 아무것도 표시되지 않습니다. 리드와 세그먼트는 그대로 남습니다.",
+      "deleteForm": "양식 삭제",
+      "accept": "받는 파일",
+      "acceptHint": "파일의 실제 형식으로 확인합니다: {types}",
+      "accepts": {
+        "images": "이미지",
+        "documents": "문서",
+        "any": "이미지, 문서 또는 ZIP"
+      },
+      "maxMB": "최대 크기",
+      "optionsTranslateHint": "이 언어로 표시되는 각 옵션입니다. 저장되는 답변은 원래 옵션 그대로입니다.",
+      "files": {
+        "title": "보낸 파일",
+        "loading": "파일을 불러오는 중…",
+        "download": "다운로드",
+        "delete": "파일 삭제",
+        "deleteConfirm": "{name}을(를) 영구히 삭제할까요?",
+        "downloadError": "파일을 다운로드할 수 없습니다.",
+        "deleteError": "파일을 삭제할 수 없습니다."
+      },
+      "fileKeyHint": "파일을 보낼 때 쓰는 이름입니다. 파일은 속성이 아니라 팀만 볼 수 있도록 비공개로 보관됩니다."
     }
   },
   "workspaceSettings": {
