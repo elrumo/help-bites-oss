@@ -2372,7 +2372,7 @@
         },
         "roles": {
           "term": "Roles para tu equipo",
-          "desc": "Los agentes responden, los administradores gestionan proyectos y el equipo, y los propietarios se ocupan de la facturación. Invita a personas por correo."
+          "desc": "Los agentes responden, los administradores gestionan proyectos y el equipo, y los propietarios se ocupan de la facturación. Invita a personas por correo. Exporta un espacio de trabajo o un proyecto, o muévelo entre autoalojado y nube con un clic."
         }
       }
     },
@@ -2797,7 +2797,9 @@
       "saveError": "No se pudo guardar",
       "projectNotFound": "Proyecto no encontrado",
       "loadError": "No se pudo cargar el proyecto",
-      "leaveConfirm": "¿Salir sin guardar los cambios?"
+      "leaveConfirm": "¿Salir sin guardar los cambios?",
+      "data": "Datos",
+      "dataHint": "Llevar este proyecto a otro HelpBites."
     },
     "dev": {
       "guide": "Guía",
@@ -3424,6 +3426,54 @@
       "dailyReset": "Este recuento se reinicia a medianoche UTC.",
       "byoAi": "Tu propio proveedor de IA (Ajustes → IA) no usa créditos.",
       "close": "Cerrar"
+    },
+    "transfer": {
+      "title": "Llevar a otro HelpBites",
+      "projectTitle": "Llevar este proyecto",
+      "downloadWorkspace": "Descarga todo, listo para importar en otro sitio",
+      "downloadProject": "Descarga este proyecto, listo para importar en otro sitio",
+      "downloadHint": "Conversaciones, contactos, conocimiento, correo, changelog y ajustes en un solo archivo que otro HelpBites puede importar. Las contraseñas, las claves de API, las conexiones de Stripe y GitHub y los archivos subidos se quedan atrás.",
+      "download": "Descargar",
+      "downloadFailed": "No se pudo descargar la exportación",
+      "importTitle": "Importar a este espacio de trabajo",
+      "importHint": "Desde un archivo o directamente desde otro HelpBites (autoalojado o en la nube). Todo entra como proyectos nuevos; aquí no se sobrescribe nada y no se cambia nada en el otro lado.",
+      "fromFile": "Desde un archivo",
+      "fromInstance": "Desde otro HelpBites",
+      "aFile": "Un archivo",
+      "aHost": "{host}",
+      "oneProject": "Un proyecto",
+      "wholeWorkspace": "Todo el espacio de trabajo",
+      "queued": "Esperando para empezar…",
+      "running": "Importando…",
+      "runningOn": "Importando {class}: {count} filas hasta ahora",
+      "done": "Se importaron {rows} filas en {projects} proyectos.",
+      "nothingKept": "No se conservó nada; corrige el problema y empieza de nuevo.",
+      "newKey": "{name}: su clave ya se usaba aquí, así que ahora tiene {key}. Actualiza el código incrustado en tu sitio.",
+      "secrets": "Cada proyecto tiene un secreto nuevo (cámbialo en las claves del proyecto). Las conexiones que guardan credenciales, como Stripe, GitHub, Telegram, los rastreadores de errores y los secretos de webhook, hay que configurarlas de nuevo.",
+      "sequencesPaused": "Las secuencias que estaban en marcha quedan en pausa aquí. Actívalas cuando estés listo.",
+      "skipped": "{count} {class} omitidos: {reason}",
+      "started": "Importación iniciada",
+      "importFailed": "No se pudo iniciar la importación",
+      "connectTitle": "Importar desde otro HelpBites",
+      "connectHint": "Inicia sesión en el otro HelpBites con un propietario o administrador. Lo leemos una vez, en segundo plano, y cerramos la sesión.",
+      "address": "Su dirección",
+      "auth": {
+        "key": "Clave de API de administrador",
+        "login": "Usuario y contraseña"
+      },
+      "apiKey": "Clave de API de administrador",
+      "apiKeyHint": "Creada en Claves de API allí",
+      "login": "Usuario o correo",
+      "password": "Contraseña",
+      "connect": "Conectar",
+      "connectFailed": "No se pudo conectar",
+      "connected": "Conectado a {host}, espacio de trabajo {workspace}.",
+      "sourceWorkspace": "Espacio de trabajo allí",
+      "whatToImport": "Qué importar",
+      "everything": "Todo el espacio de trabajo",
+      "willCreate": "Se crea aquí como proyectos nuevos y sigue funcionando allí hasta que cambies tus sitios.",
+      "back": "Atrás",
+      "startImport": "Iniciar importación"
     }
   },
   "errors": {

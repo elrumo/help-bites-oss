@@ -2372,7 +2372,7 @@
         },
         "roles": {
           "term": "チームのロール",
-          "desc": "エージェントは返信し、管理者はプロジェクトとチームを管理し、オーナーは請求を担当します。メールでメンバーを招待できます。"
+          "desc": "エージェントは返信し、管理者はプロジェクトとチームを管理し、オーナーは請求を担当します。メールでメンバーを招待できます。ワークスペースやプロジェクトを書き出したり、セルフホストとクラウドの間でワンクリックで移行したりできます。"
         }
       }
     },
@@ -2797,7 +2797,9 @@
       "saveError": "保存できませんでした",
       "projectNotFound": "プロジェクトが見つかりません",
       "loadError": "プロジェクトを読み込めませんでした",
-      "leaveConfirm": "変更を保存せずに離れますか？"
+      "leaveConfirm": "変更を保存せずに離れますか？",
+      "data": "データ",
+      "dataHint": "このプロジェクトを別の HelpBites へ移行します。"
     },
     "dev": {
       "guide": "ガイド",
@@ -3424,6 +3426,54 @@
       "dailyReset": "この集計は UTC の深夜0時にリセットされます。",
       "byoAi": "独自の AI プロバイダー（設定 → AI）はクレジットを消費しません。",
       "close": "閉じる"
+    },
+    "transfer": {
+      "title": "別の HelpBites へ移行",
+      "projectTitle": "このプロジェクトを移行",
+      "downloadWorkspace": "すべてをダウンロード（他の環境へインポート可能）",
+      "downloadProject": "このプロジェクトをダウンロード（他の環境へインポート可能）",
+      "downloadHint": "会話、連絡先、ナレッジ、メール、変更履歴、設定を、別の HelpBites がインポートできる 1 つのファイルにまとめます。パスワード、API キー、Stripe と GitHub の接続、アップロード済みファイルは含まれません。",
+      "download": "ダウンロード",
+      "downloadFailed": "エクスポートをダウンロードできませんでした",
+      "importTitle": "このワークスペースにインポート",
+      "importHint": "ファイル、または別の HelpBites（セルフホストまたはクラウド）から直接。すべて新しいプロジェクトとして取り込まれ、ここで上書きされるものはなく、相手側も変更されません。",
+      "fromFile": "ファイルから",
+      "fromInstance": "別の HelpBites から",
+      "aFile": "ファイル",
+      "aHost": "{host}",
+      "oneProject": "1 つのプロジェクト",
+      "wholeWorkspace": "ワークスペース全体",
+      "queued": "開始を待っています…",
+      "running": "インポート中…",
+      "runningOn": "{class} をインポート中：これまでに {count} 行",
+      "done": "{projects} 件のプロジェクトに {rows} 行をインポートしました。",
+      "nothingKept": "何も保存されていません。原因を修正してもう一度開始してください。",
+      "newKey": "{name}：キーはすでに使われていたため、新しいキー {key} になりました。サイトの埋め込みコードを更新してください。",
+      "secrets": "各プロジェクトには新しいシークレットが発行されます（プロジェクトのキーでローテーションできます）。Stripe、GitHub、Telegram、エラートラッカー、Webhook シークレットなど、認証情報を持つ接続は再設定が必要です。",
+      "sequencesPaused": "実行中だったシーケンスはここでは一時停止されています。準備ができたら有効にしてください。",
+      "skipped": "{class} を {count} 件除外しました：{reason}",
+      "started": "インポートを開始しました",
+      "importFailed": "インポートを開始できませんでした",
+      "connectTitle": "別の HelpBites からインポート",
+      "connectHint": "オーナーまたは管理者で、もう一方の HelpBites にサインインします。バックグラウンドで一度だけ読み取り、サインアウトします。",
+      "address": "アドレス",
+      "auth": {
+        "key": "管理者 API キー",
+        "login": "ユーザー名とパスワード"
+      },
+      "apiKey": "管理者 API キー",
+      "apiKeyHint": "相手側の API キーで作成",
+      "login": "ユーザー名またはメール",
+      "password": "パスワード",
+      "connect": "接続",
+      "connectFailed": "接続できませんでした",
+      "connected": "{host} に接続しました（ワークスペース：{workspace}）。",
+      "sourceWorkspace": "相手側のワークスペース",
+      "whatToImport": "インポートする内容",
+      "everything": "ワークスペース内のすべて",
+      "willCreate": "ここでは新しいプロジェクトとして作成され、サイトを切り替えるまで相手側でも動き続けます。",
+      "back": "戻る",
+      "startImport": "インポートを開始"
     }
   },
   "errors": {

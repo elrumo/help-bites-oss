@@ -2372,7 +2372,7 @@
         },
         "roles": {
           "term": "团队角色",
-          "desc": "客服人员负责回复，管理员负责项目和团队，所有者负责账单。可通过邮件邀请成员。"
+          "desc": "客服人员负责回复，管理员负责项目和团队，所有者负责账单。可通过邮件邀请成员。可导出整个工作区或单个项目，也可一键在自托管与云端之间迁移。"
         }
       }
     },
@@ -2797,7 +2797,9 @@
       "saveError": "无法保存",
       "projectNotFound": "未找到项目",
       "loadError": "无法加载项目",
-      "leaveConfirm": "离开而不保存更改？"
+      "leaveConfirm": "离开而不保存更改？",
+      "data": "数据",
+      "dataHint": "将此项目迁移到另一个 HelpBites。"
     },
     "dev": {
       "guide": "指南",
@@ -3424,6 +3426,54 @@
       "dailyReset": "该计数将于 UTC 午夜重置。",
       "byoAi": "你自己的 AI 提供商（设置 → AI）不消耗积分。",
       "close": "关闭"
+    },
+    "transfer": {
+      "title": "迁移到另一个 HelpBites",
+      "projectTitle": "迁移此项目",
+      "downloadWorkspace": "下载全部内容，可导入到其他实例",
+      "downloadProject": "下载此项目，可导入到其他实例",
+      "downloadHint": "对话、联系人、知识库、邮件、更新日志和设置合并为一个文件，另一个 HelpBites 可以导入。密码、API 密钥、Stripe 和 GitHub 连接以及已上传的文件不会包含在内。",
+      "download": "下载",
+      "downloadFailed": "无法下载导出文件",
+      "importTitle": "导入到此工作区",
+      "importHint": "来自文件，或直接来自另一个 HelpBites（自托管或云端）。全部内容作为新项目导入；这里不会覆盖任何内容，对方也不会有任何更改。",
+      "fromFile": "从文件导入",
+      "fromInstance": "从另一个 HelpBites 导入",
+      "aFile": "一个文件",
+      "aHost": "{host}",
+      "oneProject": "一个项目",
+      "wholeWorkspace": "整个工作区",
+      "queued": "等待开始…",
+      "running": "正在导入…",
+      "runningOn": "正在导入 {class}：目前 {count} 行",
+      "done": "已将 {rows} 行导入 {projects} 个项目。",
+      "nothingKept": "未保留任何内容；请修复问题后重新开始。",
+      "newKey": "{name}：其密钥在此处已被占用，现为 {key}。请更新你网站上的嵌入代码。",
+      "secrets": "每个项目都会获得新的密钥（可在项目密钥中轮换）。保存凭据的连接，如 Stripe、GitHub、Telegram、错误追踪器和 Webhook 密钥，需要重新设置。",
+      "sequencesPaused": "原本运行中的序列在这里处于暂停状态。准备好后再启用。",
+      "skipped": "已略过 {count} 个 {class}：{reason}",
+      "started": "已开始导入",
+      "importFailed": "无法开始导入",
+      "connectTitle": "从另一个 HelpBites 导入",
+      "connectHint": "使用所有者或管理员身份登录另一个 HelpBites。我们会在后台读取一次，然后退出登录。",
+      "address": "其地址",
+      "auth": {
+        "key": "管理员 API 密钥",
+        "login": "用户名和密码"
+      },
+      "apiKey": "管理员 API 密钥",
+      "apiKeyHint": "在对方的 API 密钥页面创建",
+      "login": "用户名或邮箱",
+      "password": "密码",
+      "connect": "连接",
+      "connectFailed": "无法连接",
+      "connected": "已连接到 {host}，工作区 {workspace}。",
+      "sourceWorkspace": "对方的工作区",
+      "whatToImport": "要导入的内容",
+      "everything": "工作区中的全部内容",
+      "willCreate": "它会在这里创建为新项目，并在你切换网站之前继续在对方运行。",
+      "back": "返回",
+      "startImport": "开始导入"
     }
   },
   "errors": {

@@ -2372,7 +2372,7 @@
         },
         "roles": {
           "term": "Rols per al teu equip",
-          "desc": "Els agents responen, els administradors gestionen projectes i l'equip, i els propietaris s'encarreguen de la facturació. Convida persones per correu."
+          "desc": "Els agents responen, els administradors gestionen projectes i l'equip, i els propietaris s'encarreguen de la facturació. Convida persones per correu. Exporta un espai de treball o un projecte, o mou-lo entre autoallotjat i núvol amb un clic."
         }
       }
     },
@@ -2797,7 +2797,9 @@
       "saveError": "No s'ha pogut desar",
       "projectNotFound": "Projecte no trobat",
       "loadError": "No s'ha pogut carregar el projecte",
-      "leaveConfirm": "Vols sortir sense desar els canvis?"
+      "leaveConfirm": "Vols sortir sense desar els canvis?",
+      "data": "Dades",
+      "dataHint": "Porta aquest projecte a un altre HelpBites."
     },
     "dev": {
       "guide": "Guia",
@@ -3424,6 +3426,54 @@
       "dailyReset": "Aquest recompte es reinicia a mitjanit UTC.",
       "byoAi": "El teu propi proveïdor d'IA (Configuració → IA) no consumeix crèdits.",
       "close": "Tanca"
+    },
+    "transfer": {
+      "title": "Porta-ho a un altre HelpBites",
+      "projectTitle": "Porta aquest projecte",
+      "downloadWorkspace": "Descarrega-ho tot, a punt per importar en un altre lloc",
+      "downloadProject": "Descarrega aquest projecte, a punt per importar en un altre lloc",
+      "downloadHint": "Converses, contactes, coneixement, correu, changelog i configuració en un sol fitxer que un altre HelpBites pot importar. Les contrasenyes, les claus d'API, les connexions de Stripe i GitHub i els fitxers pujats es queden enrere.",
+      "download": "Descarrega",
+      "downloadFailed": "No s'ha pogut descarregar l'exportació",
+      "importTitle": "Importa a aquest espai de treball",
+      "importHint": "Des d'un fitxer o directament des d'un altre HelpBites (autoallotjat o al núvol). Tot entra com a projectes nous; aquí no se sobreescriu res i no es canvia res a l'altra banda.",
+      "fromFile": "Des d'un fitxer",
+      "fromInstance": "Des d'un altre HelpBites",
+      "aFile": "Un fitxer",
+      "aHost": "{host}",
+      "oneProject": "Un projecte",
+      "wholeWorkspace": "Tot l'espai de treball",
+      "queued": "Esperant per començar…",
+      "running": "Important…",
+      "runningOn": "Important {class}: {count} files fins ara",
+      "done": "S'han importat {rows} files en {projects} projectes.",
+      "nothingKept": "No s'ha conservat res; corregeix-ho i torna a començar.",
+      "newKey": "{name}: la seva clau ja s'utilitzava aquí, així que ara té {key}. Actualitza el codi incrustat al teu lloc.",
+      "secrets": "Cada projecte té un secret nou (canvia'l a les claus del projecte). Les connexions que guarden credencials, com Stripe, GitHub, Telegram, els rastrejadors d'errors i els secrets de webhook, s'han de tornar a configurar.",
+      "sequencesPaused": "Les seqüències que estaven en marxa queden en pausa aquí. Activa-les quan estiguis a punt.",
+      "skipped": "{count} {class} omesos: {reason}",
+      "started": "Importació iniciada",
+      "importFailed": "No s'ha pogut iniciar la importació",
+      "connectTitle": "Importa des d'un altre HelpBites",
+      "connectHint": "Inicia la sessió a l'altre HelpBites amb un propietari o administrador. El llegim una vegada, en segon pla, i tanquem la sessió.",
+      "address": "La seva adreça",
+      "auth": {
+        "key": "Clau d'API d'administrador",
+        "login": "Usuari i contrasenya"
+      },
+      "apiKey": "Clau d'API d'administrador",
+      "apiKeyHint": "Creada a Claus d'API allà",
+      "login": "Usuari o correu",
+      "password": "Contrasenya",
+      "connect": "Connecta",
+      "connectFailed": "No s'ha pogut connectar",
+      "connected": "Connectat a {host}, espai de treball {workspace}.",
+      "sourceWorkspace": "Espai de treball allà",
+      "whatToImport": "Què s'importa",
+      "everything": "Tot l'espai de treball",
+      "willCreate": "Es crea aquí com a projectes nous i continua funcionant allà fins que canviïs els teus llocs.",
+      "back": "Enrere",
+      "startImport": "Inicia la importació"
     }
   },
   "errors": {
