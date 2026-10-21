@@ -205,7 +205,7 @@ private struct FeedbackPostPicker: View {
           .linearList()
         }
       }
-      .searchable(text: $query, prompt: "Search posts or #12")
+      .searchable(text: $query, prompt: "Search posts by title")
       .panelScreen("Add an existing post")
       .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
       .task(id: query) {

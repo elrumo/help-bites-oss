@@ -284,7 +284,7 @@
       "feedbackNoPosts": "No post linked yet.",
       "feedbackFileNew": "File a post",
       "feedbackAddExisting": "Add an existing post",
-      "feedbackSearch": "Search posts or #12",
+      "feedbackSearch": "Search posts by title",
       "feedbackFollowing": "Follows this post",
       "feedbackNotFollowing": "Not following",
       "feedbackUnlink": "Unlink #{number} {title}",

@@ -322,7 +322,8 @@ async function save() {
     const result = await api<{ project: AdminProject }>(`/admin/projects/${id}`, {
       method: 'PATCH',
       // The server replaces theme wholesale; keep the keys this page doesn't edit.
-      body: { ...rest, notifyEmails: notifyEmailsText, ...(accentChanged ? { theme: { ...project.value?.theme, accent: accent.trim() } } : {}) }
+      // A link row left blank is dropped rather than rejected.
+      body: { ...rest, hub: { ...rest.hub, links: rest.hub.links.filter(link => link.label.trim() || link.url.trim()) }, notifyEmails: notifyEmailsText, ...(accentChanged ? { theme: { ...project.value?.theme, accent: accent.trim() } } : {}) }
     })
     fill(result.project)
     await loadProjects()

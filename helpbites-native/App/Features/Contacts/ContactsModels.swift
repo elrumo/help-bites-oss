@@ -67,6 +67,9 @@ struct Contact: Codable, Identifiable, Equatable, Sendable {
   var displayName: String { !name.isEmpty ? name : !email.isEmpty ? email : !externalId.isEmpty ? externalId : "Unnamed" }
 }
 
+/// GET /v1/contacts.
+struct ContactPage: Decodable, Sendable { let contacts: [Contact]; let nextCursor: String? }
+
 /// What a subscription status means, as the web's SUBSCRIPTION_STATUS (app/utils/contactStatus.ts).
 enum SubscriptionStatus: String, CaseIterable, Identifiable {
   case subscribed, pending, unsubscribed, none

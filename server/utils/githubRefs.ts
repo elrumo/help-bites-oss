@@ -91,15 +91,22 @@ async function upsertRef(project: ParseObject, target: Target, source: GithubRef
 async function closeBoardItem(project: ParseObject, target: Target): Promise<boolean> {
   const board = getBoardConfig(project)
   const done = board.statuses.find(status => status.category === 'done')
-  const category = feedbackStatusCategory(board, String(target.row.get('status') || ''))
-  if (!done || category === 'done' || category === 'closed') return false
-  try {
-    await updateBoardItem(project, githubActor(), target.row, { status: done.key })
-    return true
-  } catch (error) {
-    console.error('[github] could not move board item', target.id, (error as Error).message)
-    return false
-  }
+  if (!done) return false
+  // A squash merge sends a push and a pull_request delivery together: one lock, and the item re-read inside it, so it moves once.
+  const held = await runExclusive(`sb:ghclose:${target.id}`, 30, async () => {
+    const row = await new (useParse()).Query('BoardItem').equalTo('project', project).equalTo('objectId', target.id).first(MASTER)
+    if (!row) return false
+    const category = feedbackStatusCategory(board, String(row.get('status') || ''))
+    if (category === 'done' || category === 'closed') return false
+    try {
+      await updateBoardItem(project, githubActor(), row, { status: done.key })
+      return true
+    } catch (error) {
+      console.error('[github] could not move board item', target.id, (error as Error).message)
+      return false
+    }
+  }, { failOpen: true })
+  return held.ran ? held.value : false
 }
 
 export type RecordedRefs = { targets: { kind: GithubRefTarget, id: string, number: number, closes: boolean }[], closed: string[] }

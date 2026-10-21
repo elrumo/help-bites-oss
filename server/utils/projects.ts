@@ -304,7 +304,8 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     const accent = typeof theme.accent === 'string' && /^#[0-9a-f]{6}$/i.test(theme.accent.trim()) ? theme.accent.trim() : ''
     project.set('theme', { ...(accent ? { accent } : {}), ...(typeof theme.dark === 'boolean' ? { dark: theme.dark } : {}) })
     // The Brand kit is where the accent lives; Settings edits it from here.
-    if ('accent' in theme) {
+    // An empty accent clears it; one that is not a colour is ignored rather than read as a clear.
+    if ('accent' in theme && (accent || !theme.accent)) {
       const { config } = validateBrandConfig({ page: { accent } }, normalizeBrandConfig(project.get('brand')))
       project.set('brand', config)
     }

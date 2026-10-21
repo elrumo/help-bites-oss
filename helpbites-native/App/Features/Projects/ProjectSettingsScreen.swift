@@ -465,7 +465,7 @@ struct ProjectSettingsScreen: View {
       fromName: form.fromName, notifyEmails: form.notifyEmails,
       fromEmail: form.fromEmail.trimmingCharacters(in: .whitespaces), replyTo: form.replyTo.trimmingCharacters(in: .whitespaces), mailDomain: form.mailDomain.trimmingCharacters(in: .whitespaces),
       emailLogContent: form.emailLogContent,
-      company: form.company, hub: form.hub,
+      company: form.company, hub: form.hub.droppingBlankLinks,
       // The accent is the Brand kit's: send it only when it changed here, so saving something else never pins it.
       // `theme` is replaced whole on the server: send `dark` back so saving here keeps it.
       theme: accent == (project?.theme.accent ?? "") ? nil : ProjectTheme(accent: accent.isEmpty ? nil : accent, dark: project?.theme.dark)

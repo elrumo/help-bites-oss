@@ -26,9 +26,9 @@ export const AUTOMATION_RECIPES: AutomationRecipe[] = [
     description: 'A welcome, a few tips three days later and a check-in after ten days, for everyone who subscribes.',
     trigger: { type: 'subscribed' },
     steps: [
-      { delayMinutes: 0, subject: 'Welcome to {{project.name}}', heading: 'Welcome!', paragraphs: ['Thanks for signing up, {{firstName}}. We will only write when we have something worth your time.', 'Reply to this email any time: a person reads it.'] },
+      { delayMinutes: 0, subject: 'Welcome to {{project.name}}', heading: 'Welcome!', paragraphs: ['Thanks for signing up. We will only write when we have something worth your time.', 'Reply to this email any time: a person reads it.'] },
       { delayMinutes: 3 * 1440, subject: 'Getting the most out of {{project.name}}', heading: 'Three things worth knowing', paragraphs: ['Replace this with the three things new people ask about most.'] },
-      { delayMinutes: 10 * 1440, subject: 'How is it going?', heading: 'How is it going?', paragraphs: ['You joined a little while ago, {{firstName}}. Is there anything we could do better? Just hit reply.'] }
+      { delayMinutes: 10 * 1440, subject: 'How is it going?', heading: 'How is it going?', paragraphs: ['You joined a little while ago. Is there anything we could do better? Just hit reply.'] }
     ]
   },
   {
@@ -37,7 +37,7 @@ export const AUTOMATION_RECIPES: AutomationRecipe[] = [
     description: 'When someone finishes your onboarding flow, send tips the next day and a nudge to share feedback a week later.',
     trigger: { type: 'event', event: 'onboarding.completed' },
     steps: [
-      { delayMinutes: 1440, subject: 'You are all set, {{firstName}}', heading: 'You are all set', paragraphs: ['Thanks for taking the tour. Here is where to go next.'] },
+      { delayMinutes: 1440, subject: 'You are all set', heading: 'You are all set', paragraphs: ['Thanks for taking the tour. Here is where to go next.'] },
       { delayMinutes: 7 * 1440, subject: 'What would make {{project.name}} better?', heading: 'We would love your ideas', paragraphs: ['You have had a week with us. What is missing? Tell us on the feedback board and vote on what matters most.'] }
     ]
   },
@@ -47,7 +47,7 @@ export const AUTOMATION_RECIPES: AutomationRecipe[] = [
     description: 'Ten minutes after someone posts on your feedback board, thank them and tell them what happens next.',
     trigger: { type: 'event', event: 'feedback.post.created' },
     steps: [
-      { delayMinutes: 10, subject: 'Thanks for your idea', heading: 'Thanks for sharing that', paragraphs: ['We read every post, {{firstName}}. You will get an email when its status changes.'] }
+      { delayMinutes: 10, subject: 'Thanks for your idea', heading: 'Thanks for sharing that', paragraphs: ['We read every post. You will get an email when its status changes.'] }
     ]
   },
   {
@@ -56,7 +56,7 @@ export const AUTOMATION_RECIPES: AutomationRecipe[] = [
     description: 'Three days after a conversation is resolved, ask whether the problem is really gone.',
     trigger: { type: 'event', event: 'conversation.resolved' },
     steps: [
-      { delayMinutes: 3 * 1440, subject: 'Did we solve it?', heading: 'Did we solve it?', paragraphs: ['We closed your conversation a few days ago, {{firstName}}. If anything is still not right, reply to this email and we will pick it up.'] }
+      { delayMinutes: 3 * 1440, subject: 'Did we solve it?', heading: 'Did we solve it?', paragraphs: ['We closed your conversation a few days ago. If anything is still not right, reply to this email and we will pick it up.'] }
     ]
   }
 ]

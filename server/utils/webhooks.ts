@@ -27,6 +27,7 @@ export type WebhookEventType = string
 export const WEBHOOK_BACKOFF_MINUTES = [1, 5, 30, 120, 720]
 // A suspended workspace's events wait (without using up attempts) and are looked at again this much later.
 const INACTIVE_RETRY_MS = 60 * 60_000
+const DELIVERY_BUDGET_MS = 90_000
 
 export function webhookSignature(secret: string, body: string): string {
   return `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`
@@ -85,11 +86,14 @@ export async function queueWebhooks(project: ParseObject, event: DomainEvent): P
 async function deliver(row: ParseObject): Promise<void> {
   const project = row.get('project') as ParseObject
   const endpoint = row.get('endpoint') as ParseObject | undefined
-  const url = String(endpoint ? endpoint.get('url') || '' : project.get('eventWebhookUrl') || '')
-  const secret = String(endpoint ? endpoint.get('secret') || '' : project.get('eventWebhookSecret') || '')
+  // A row with no endpoint belongs to the project's original webhook, which only ever got its own events:
+  // one whose endpoint was deleted must not fall through to it.
+  const orphaned = !endpoint && !LEGACY_WEBHOOK_EVENTS.includes(String(row.get('type')))
+  const url = String(orphaned ? '' : endpoint ? endpoint.get('url') || '' : project.get('eventWebhookUrl') || '')
+  const secret = String(orphaned ? '' : endpoint ? endpoint.get('secret') || '' : project.get('eventWebhookSecret') || '')
   if (!url || !secret || (endpoint && endpoint.get('enabled') === false)) {
     row.set('status', 'failed')
-    row.set('lastError', endpoint ? 'The endpoint was deleted or switched off' : 'The project has no event webhook any more')
+    row.set('lastError', endpoint || orphaned ? 'The endpoint was deleted or switched off' : 'The project has no event webhook any more')
     row.unset('nextAt')
     await row.save(null, MASTER)
     return
@@ -125,6 +129,7 @@ async function deliver(row: ParseObject): Promise<void> {
 
 /** Post what is due, oldest first. One process at a time. */
 export async function deliverDueWebhooks(limit = 50): Promise<void> {
+  const started = Date.now()
   await runExclusive('sb:webhooks:deliver', 120, async () => {
     const rows = await new (useParse()).Query('WebhookDelivery').equalTo('status', 'pending').lessThanOrEqualTo('nextAt', new Date()).ascending('nextAt').include('project').include('endpoint').limit(limit).find(MASTER)
     // Per project in order, a few projects at a time: one slow endpoint does not hold up the rest.
@@ -139,7 +144,11 @@ export async function deliverDueWebhooks(limit = 50): Promise<void> {
         await useParse().Object.saveAll(list, MASTER)
         return
       }
-      for (const row of list) await deliver(row)
+      // The lock below lasts 120 s and is not renewed: stop starting deliveries well before it ends.
+      for (const row of list) {
+        if (Date.now() - started > DELIVERY_BUDGET_MS) break
+        await deliver(row)
+      }
     }))
   })
 }

@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'marketing' })
   const project = await requireProject(ctx, getRouterParam(event, 'id') || '')
   const row = await getProjectEndpoint(project, getRouterParam(event, 'wid') || '')
+  await dropPendingDeliveries(row)
   await row.destroy(MASTER)
   return { ok: true }
 })

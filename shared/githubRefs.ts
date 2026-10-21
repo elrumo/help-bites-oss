@@ -56,11 +56,14 @@ export function commitMessageRefs(message: string): GithubRefMention[] {
   return parseGithubRefs([subject, ...lines.slice(1)].join('\n'))
 }
 
-/** References in a pull request: title and description (with keywords), then its branch. Its own number is not one. */
+/**
+ * References in a pull request: title and description (with keywords), then its branch. A bare mention of the
+ * PR's own number is GitHub's, not an item's; with a closing keyword (`Fixes #12` in PR 12) it is read as the item.
+ */
 export function pullRequestRefs(pr: { number?: number, title?: string, body?: string, branch?: string }): GithubRefMention[] {
   const mentions = parseGithubRefs(`${pr.title || ''}\n${pr.body || ''}`)
   for (const number of parseBranchRefs(pr.branch || '')) if (!mentions.some(m => m.number === number)) mentions.push({ number, closes: false })
-  return mentions.filter(m => m.number !== pr.number).slice(0, GITHUB_REFS_MAX)
+  return mentions.filter(m => m.number !== pr.number || m.closes).slice(0, GITHUB_REFS_MAX)
 }
 
 export type GithubRefTarget = 'board' | 'feedback'

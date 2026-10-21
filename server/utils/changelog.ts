@@ -849,6 +849,9 @@ export async function mergeChangelogEntries(project: ParseObject, writer: Change
     const ids = unique([...stringList(merged.get(field)), ...sources.flatMap(row => stringList(row.get(field)))]).slice(0, CHANGELOG_LINKS_MAX)
     if (ids.length) merged.set(field, ids)
   }
+  // Followers of what the sources linked were mailed when those went public: the merge is not news to them.
+  const publishedSources = sources.filter(row => entryStatus(row) === 'published')
+  if (publishedSources.length && publishedSources.every(row => row.get('followersNotifiedAt'))) merged.set('followersNotifiedAt', new Date())
   await merged.save(null, MASTER)
   // Announced only now, with everything the sources linked.
   if (entryStatus(merged) === 'published') await announcePublished(project, [merged])

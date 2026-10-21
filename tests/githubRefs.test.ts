@@ -85,6 +85,8 @@ describe('pullRequestRefs', () => {
   test('a branch number the words already name keeps its keyword, and the PR\'s own number is dropped', () => {
     expect(pullRequestRefs({ number: 34, title: 'Closes #12', branch: 'fix/12-x' })).toEqual([{ number: 12, closes: true }])
     expect(pullRequestRefs({ number: 34, title: 'Follow-up to #34', branch: '' })).toEqual([])
+    // Item numbers are their own sequence: a closing keyword names the item even when the PR has the same number.
+    expect(pullRequestRefs({ number: 12, title: 'Fix login', body: 'Fixes #12', branch: '' })).toEqual([{ number: 12, closes: true }])
   })
 
   test('nothing to find', () => {

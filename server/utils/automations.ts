@@ -51,6 +51,8 @@ export function requireRecipe(id: string): AutomationRecipe {
  * sequences, and the contact is only loaded when one matches.
  */
 export async function startSequencesForEvent(event: DomainEvent, project: ParseObject): Promise<number> {
+  // Someone who skipped the tour is not someone who finished it.
+  if (event.type === 'onboarding.completed' && event.data.outcome === 'skipped') return 0
   const names = eventTriggerNames(event)
   const waiting = (await new (useParse()).Query('Sequence').equalTo('project', project).equalTo('status', 'active').equalTo('trigger.type', 'event').limit(100).find(MASTER))
     .filter(sequence => names.includes((sequence.get('trigger') as SequenceTrigger).event || ''))

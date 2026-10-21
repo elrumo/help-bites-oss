@@ -120,7 +120,7 @@ function fakeEntry(fields: Record<string, unknown>): ClaimableEntry & { fields: 
 }
 
 describe('claimFollowerNotification', () => {
-  const published = () => fakeEntry({ status: 'published', publishedAt: ago(60_000) })
+  const published = () => fakeEntry({ status: 'published', publishedAt: ago(60_000), feedbackPostIds: ['p1'] })
 
   test('the first claim wins and stamps the entry; the second finds it taken', async () => {
     const entry = published()
@@ -142,6 +142,20 @@ describe('claimFollowerNotification', () => {
     release()
     const results = await Promise.all([first, second])
     expect(results.filter(Boolean)).toHaveLength(1)
+  })
+
+  test('an entry that links nothing yet stays unclaimed, so links added later still count', async () => {
+    const entry = fakeEntry({ status: 'published', publishedAt: ago(60_000) })
+    let saves = 0
+    expect(await claimFollowerNotification('e1', { exclusive: memoryLock(), load: async () => ({ entry, releaseStatus: null }), save: async () => { saves++ }, now })).toBeNull()
+    expect(saves).toBe(0)
+    expect(entry.fields.followersNotifiedAt).toBeUndefined()
+  })
+
+  test('an entry that waited in a draft release is as old as the release, not the entry', () => {
+    const written = ago(10 * 24 * 60 * 60 * 1000)
+    expect(followerVerdict({ status: 'published', releaseStatus: 'published', publishedAt: written, releasePublishedAt: ago(60_000), followersNotifiedAt: null }, now)).toBe('send')
+    expect(followerVerdict({ status: 'published', releaseStatus: 'published', publishedAt: written, releasePublishedAt: written, followersNotifiedAt: null }, now)).toBe('stale')
   })
 
   test('an entry held back by a draft release stays unclaimed, for when the release publishes', async () => {

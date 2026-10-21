@@ -17,6 +17,8 @@ export type FollowerEntryState = {
   /** The entry's release; null when it has none. */
   releaseStatus: 'draft' | 'published' | null
   publishedAt: Date | null
+  /** When its release went out; an entry held in a draft release became public then, not when it was written. */
+  releasePublishedAt?: Date | null
   followersNotifiedAt: Date | null
 }
 
@@ -30,7 +32,9 @@ export type FollowerVerdict = 'send' | 'already-sent' | 'not-public' | 'stale'
 export function followerVerdict(entry: FollowerEntryState, now: Date): FollowerVerdict {
   if (entry.followersNotifiedAt) return 'already-sent'
   if (entry.status !== 'published' || entry.releaseStatus === 'draft') return 'not-public'
-  if (entry.publishedAt && now.getTime() - entry.publishedAt.getTime() > FOLLOWER_MAIL_CUTOFF_MS) return 'stale'
+  // It became public at the later of the two moments.
+  const becamePublic = [entry.publishedAt, entry.releasePublishedAt].filter((d): d is Date => d instanceof Date).sort((a, b) => b.getTime() - a.getTime())[0]
+  if (becamePublic && now.getTime() - becamePublic.getTime() > FOLLOWER_MAIL_CUTOFF_MS) return 'stale'
   return 'send'
 }
 

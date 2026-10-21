@@ -89,3 +89,15 @@ export async function recentDeliveries(project: ParseObject, endpointId = '', li
     deliveredAt: iso(row.get('deliveredAt'))
   }))
 }
+
+/** Deliveries still waiting for an endpoint that is going away: they are given up on, not sent anywhere else. */
+export async function dropPendingDeliveries(endpoint: ParseObject): Promise<void> {
+  const Parse = useParse()
+  const rows = await new Parse.Query('WebhookDelivery').equalTo('endpoint', endpoint).equalTo('status', 'pending').limit(1000).find(MASTER)
+  for (const row of rows) {
+    row.set('status', 'failed')
+    row.set('lastError', 'The endpoint was deleted')
+    row.unset('nextAt')
+  }
+  if (rows.length) await Parse.Object.saveAll(rows, MASTER)
+}

@@ -26,7 +26,7 @@ export type ClaimableEntry = { get(key: string): unknown, set(key: string, value
 export type FollowerClaimDeps<T extends ClaimableEntry> = {
   exclusive: Exclusive
   /** The entry as stored right now (never a copy from before the lock), with its release's status. */
-  load: () => Promise<{ entry: T, releaseStatus: 'draft' | 'published' | null } | null>
+  load: () => Promise<{ entry: T, releaseStatus: 'draft' | 'published' | null, releasePublishedAt?: Date | null } | null>
   save: (entry: T) => Promise<void>
   now?: Date
 }
@@ -47,8 +47,12 @@ export async function claimFollowerNotification<T extends ClaimableEntry>(entryI
       status: String(found.entry.get('status') || ''),
       releaseStatus: found.releaseStatus,
       publishedAt: dateOf(found.entry.get('publishedAt')),
+      releasePublishedAt: found.releasePublishedAt ?? null,
       followersNotifiedAt: dateOf(found.entry.get('followersNotifiedAt'))
     }, now)
+    // Nothing linked yet: leave it unclaimed, so links added later (and a later publish) still count.
+    const linked = stringList(found.entry.get('feedbackPostIds')).length + stringList(found.entry.get('boardItemIds')).length > 0
+    if (verdict === 'send' && !linked) return null
     if (verdict === 'send' || verdict === 'stale') {
       found.entry.set('followersNotifiedAt', now)
       await deps.save(found.entry)
@@ -60,15 +64,15 @@ export async function claimFollowerNotification<T extends ClaimableEntry>(entryI
 
 const stringList = (value: unknown): string[] => (Array.isArray(value) ? value.map(String).filter(Boolean) : [])
 
-async function loadClaimable(project: ParseObject, entryId: string): Promise<{ entry: ParseObject, releaseStatus: 'draft' | 'published' | null } | null> {
+async function loadClaimable(project: ParseObject, entryId: string): Promise<{ entry: ParseObject, releaseStatus: 'draft' | 'published' | null, releasePublishedAt: Date | null } | null> {
   const Parse = useParse()
   const entry = await new Parse.Query('ChangelogEntry').equalTo('project', project).equalTo('objectId', entryId).first(MASTER)
   if (!entry) return null
   const releaseId = pointerId(entry.get('release'))
-  if (!releaseId) return { entry, releaseStatus: null }
+  if (!releaseId) return { entry, releaseStatus: null, releasePublishedAt: null }
   const release = await new Parse.Query('ChangelogRelease').equalTo('project', project).equalTo('objectId', releaseId).first(MASTER)
   // A release that is gone no longer holds the entry back.
-  return { entry, releaseStatus: release ? (release.get('status') === 'published' ? 'published' : 'draft') : null }
+  return { entry, releaseStatus: release ? (release.get('status') === 'published' ? 'published' : 'draft') : null, releasePublishedAt: dateOf(release?.get('publishedAt')) }
 }
 
 /** The `changelog.entry.published` handler: claim the entry, then mail its followers. Never throws. */

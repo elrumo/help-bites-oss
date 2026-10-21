@@ -55,6 +55,13 @@ struct HubConfig: Codable, Equatable, Sendable {
   var links: [HubLink] = []
   var widgetHome = WidgetHome()
 
+  /// A link row left blank is dropped rather than rejected by the server.
+  var droppingBlankLinks: HubConfig {
+    var copy = self
+    copy.links = links.filter { !$0.label.trimmingCharacters(in: .whitespaces).isEmpty || !$0.url.trimmingCharacters(in: .whitespaces).isEmpty }
+    return copy
+  }
+
   init() {}
   init(from decoder: Decoder) throws {
     let c = try decoder.container(keyedBy: CodingKeys.self)

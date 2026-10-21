@@ -69,16 +69,18 @@ export async function errorUserExternalIds(project: ParseObject): Promise<string
   } catch {}
   const { issues } = await listIssues(project, { status: 'unresolved', limit: ERRORS_ISSUES })
   const found = new Set<string>()
+  let complete = true
   for (const part of chunks(issues.slice(0, ERRORS_ISSUES) as ErrorIssue[], 10)) {
     await Promise.all(part.map(async (issue) => {
       try {
         const id = errorEventUserId(await latestErrorEvent(project, issue.provider, issue.id, issue.linkId))
         if (id) found.add(id)
-      } catch {}
+      } catch { complete = false }
     }))
   }
   const ids = [...found]
-  try { await useRedis().set(key, JSON.stringify(ids), 'EX', ERRORS_CACHE_SECONDS) } catch {}
+  // A list with holes (the tracker failed on some issues) is used now but not kept for ten minutes.
+  if (complete) try { await useRedis().set(key, JSON.stringify(ids), 'EX', ERRORS_CACHE_SECONDS) } catch {}
   return ids
 }
 
