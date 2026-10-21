@@ -1,4 +1,5 @@
 import { DEFAULT_FEEDBACK_CONFIG, type FeedbackPost } from '#shared/feedback'
+import { billingFromAttributes, type ConversationContextResponse } from '#shared/conversationHub'
 import { DEFAULT_BOARD_CONFIG, ROADMAP_CATEGORIES, type BoardItem } from '#shared/board'
 import { DEFAULT_MARKETING_CONFIG } from '#shared/marketing'
 import { presetForm } from '#shared/leadForms'
@@ -175,7 +176,7 @@ function seed(projectId: string, user: Omit<EndUser, 'id' | 'projectId'>, subjec
   const conversation: Conversation = {
     id, projectId, endUserId: endUser.id, assistantId: '', subject, status: status.key, statusCategory: status.category, type: type.key, priority: 'normal',
     assigneeId: '', assignedAt: null, tags: [], fields: {}, subjectRef: null, reopenedAt: null, closedAt: null, doneAt: null, context: null,
-    lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 0, userReadAt: null, agentReadAt: null, archivedAt: null,
+    lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 0, userReadAt: null, agentReadAt: null, archivedAt: null, feedbackPostIds: [],
     createdAt: ago(thread[0]![2]), ...extra
   }
   const agentName = projects.find(p => p.id === projectId)!.fromName
@@ -285,6 +286,10 @@ const emailSuppressions: EmailSuppression[] = [
 const find = <T extends { id: string }>(list: T[], id: string | undefined, what: string): T => list.find(item => item.id === id) || fail(404, `${what} not found`)
 const typeOf = (c: Conversation) => types[c.projectId]?.find(t => t.key === c.type) || supportType(c.projectId)
 const userOf = (c: Conversation) => endUsers.find(u => u.id === c.endUserId)!
+const demoSavedReplies = [
+  { id: 'sr_demo1', title: 'Thanks, looking into it', shortcut: 'looking', body: 'Hi {{firstName}}, thanks for the report. We are looking into it and will write back as soon as we know more.' },
+  { id: 'sr_demo2', title: 'Refund policy', shortcut: 'refund', body: 'Hi {{firstName}}, you can ask for a refund within 30 days of the charge. Reply here and we will take care of it.' }
+]
 
 // Stripe, for the overview and the Revenue tab: net and MRR (at each month end) for the last
 // 12 months, oldest first, in dollars; today's paying plans (name, subscribers, MRR), top
@@ -689,7 +694,7 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const conversation: Conversation = {
       id: newId('conv'), projectId: p.id, endUserId: user.id, assistantId: '', subject: String(body.subject || ''), status: status.key, statusCategory: status.category, type: 'support', priority: 'normal',
       assigneeId: ME.id, assignedAt: now(), tags: [], fields: {}, subjectRef: null, reopenedAt: null, closedAt: null, doneAt: null, context: null,
-      lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 1, userReadAt: null, agentReadAt: now(), archivedAt: null, createdAt: now()
+      lastMessageAt: null, lastMessagePreview: '', lastMessageFrom: '', unreadByAgent: 0, unreadByUser: 1, userReadAt: null, agentReadAt: now(), archivedAt: null, feedbackPostIds: [], createdAt: now()
     }
     conversations.push(conversation)
     messages.push(message(conversation.id, 'agent', p.fromName, String(body.body || ''), now()))
@@ -700,6 +705,23 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const c = find(conversations, params[0], 'Conversation')
     return { conversation: c, endUser: serializeUser(userOf(c)), project: projects.find(p => p.id === c.projectId) }
   }],
+  // The customer panel: who they are, what they pay, earlier threads and the feedback they follow.
+  ['GET', /^\/admin\/conversations\/([^/]+)\/context$/, ({ params }): ConversationContextResponse => {
+    const c = find(conversations, params[0], 'Conversation')
+    const user = userOf(c)
+    const attributes = asContact(user).attributes as Record<string, any>
+    const plan = String(attributes.plan || '')
+    const post = feedbackPosts.find(p => p.projectId === c.projectId && p.title === c.subject)
+    return {
+      contact: { id: user.id, name: user.name, email: user.email, externalId: user.externalId, language: '', lastSeenAt: ago(12) },
+      billing: billingFromAttributes({ ...attributes, [STRIPE_ATTR.plan]: plan ? plan[0]!.toUpperCase() + plan.slice(1) : '', [STRIPE_ATTR.mrr]: ({ free: 0, pro: 19, team: 49 } as Record<string, number>)[plan] ?? 0 }, 'usd'),
+      pastConversations: conversations.filter(o => o.endUserId === c.endUserId && o.id !== c.id).slice(0, 10).map(o => ({ id: o.id, subject: o.subject, status: o.status, statusCategory: o.statusCategory, lastMessageAt: o.lastMessageAt, lastMessagePreview: o.lastMessagePreview, createdAt: o.createdAt })),
+      feedbackPosts: post ? [{ id: post.id, number: post.number, title: post.title, status: post.status, statusLabel: post.status, statusCategory: post.statusCategory, following: true }] : [],
+      faqModels: { models: [], defaultModelId: '' }
+    }
+  }],
+  ['GET', /^\/admin\/conversations\/([^/]+)\/suggestions$/, () => ({ faqs: [], savedReplies: demoSavedReplies })],
+  ['GET', /^\/admin\/saved-replies$/, () => ({ replies: demoSavedReplies.map(reply => ({ ...reply, projectId: 'acme', createdAt: ago(60 * 24 * 9), updatedAt: ago(60 * 24 * 9) })) })],
   ['PATCH', /^\/admin\/conversations\/([^/]+)$/, ({ params, body }) => {
     const c = find(conversations, params[0], 'Conversation')
     if (typeof body.status === 'string') setStatus(c, body.status)

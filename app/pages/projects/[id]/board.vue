@@ -185,6 +185,23 @@
               <p v-else class="text-xs text-muted">{{ $t('board.linkFromInbox') }}</p>
             </section>
 
+            <section v-if="current.errorRefs.length" class="space-y-2">
+              <h3 class="text-sm font-semibold">{{ $t('board.filedFromErrors') }} <span class="font-normal text-muted">{{ current.errorRefs.length }}</span></h3>
+              <ul class="divide-y divide-default rounded-lg border border-default">
+                <li v-for="ref in current.errorRefs" :key="`${ref.provider}:${ref.issueId}`" class="flex items-center gap-2.5 px-2.5 py-2 text-[13px]">
+                  <UIcon name="i-lucide-bug" class="size-3.5 shrink-0 text-muted" />
+                  <span class="min-w-0 flex-1 truncate">{{ ref.title || ref.issueId }}</span>
+                  <UButton v-if="ref.url" :to="ref.url" target="_blank" size="xs" color="neutral" variant="ghost" icon="i-lucide-arrow-up-right" :label="$t('board.openInTracker', { provider: trackerName(ref.provider) })" />
+                </li>
+              </ul>
+            </section>
+
+            <section class="space-y-2">
+              <h3 class="text-sm font-semibold">{{ $t('github.linkedWork') }}</h3>
+              <GithubRefs :project-id="id" kind="board" :target-id="current.id" />
+              <p class="text-xs text-muted">{{ $t('github.hint') }}</p>
+            </section>
+
             <section class="space-y-2">
               <h3 class="text-sm font-semibold">{{ $t('sections.changelog') }}</h3>
               <ChangelogLinks :project-id="id" kind="board" :target-id="current.id" :source="{ title: current.title, publicDescription: current.publicDescription }" />
@@ -273,6 +290,7 @@ const toneDot = (color?: FeedbackColor) => TONES[color || 'neutral'] || TONES.ne
 const statusOf = (key: string) => board.value?.statuses.find(s => s.key === key)
 const labelOf = (key: string) => board.value?.labels.find(l => l.key === key)
 const initialsOf = (name: string) => (name || '?').trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase()
+const trackerName = (provider: string) => (provider === 'bugsink' ? 'Bugsink' : provider === 'glitchtip' ? 'GlitchTip' : provider)
 const assigneeOf = (item: BoardItem) => agents.value.find(agent => agent.id === item.assigneeId) || null
 /** Target dates are calendar days at UTC midnight. */
 const dayLabel = (value: string) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })

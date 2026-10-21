@@ -2029,6 +2029,20 @@
       "none": "This project has no public changelog.",
       "loadFailed": "The changelog could not be loaded.",
       "missingKey": "Missing project key. Check the data-project attribute on the changelog script."
+    },
+    "home": {
+      "tab": "Home",
+      "messagesTab": "Messages",
+      "tabs": "Chat sections",
+      "whatsNew": "What is new",
+      "seeAll": "See all updates",
+      "feedback": "Feedback",
+      "shareIdea": "Share an idea",
+      "seeBoard": "See all ideas",
+      "votes": "Votes",
+      "gettingStarted": "Getting started",
+      "start": "Start",
+      "welcome": "How can we help?"
     }
   },
   "feedback": {

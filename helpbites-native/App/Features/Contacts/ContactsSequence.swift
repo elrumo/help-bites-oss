@@ -93,7 +93,8 @@ struct AddToSequenceSheet: View {
     adding = true
     defer { adding = false }
     do {
-      summary = try await session.send("/v1/sequences/\(picked)/enrollments", body: Input(project: projectId, contacts: segment == nil ? contactId.map { [$0] } : nil, segment: segment?.id))
+      let result: EnrollSummary = try await session.send("/v1/sequences/\(picked)/enrollments", body: Input(project: projectId, contacts: segment == nil ? contactId.map { [$0] } : nil, segment: segment?.id))
+      summary = result
       error = ""
     } catch { self.error = error.localizedDescription }
   }
