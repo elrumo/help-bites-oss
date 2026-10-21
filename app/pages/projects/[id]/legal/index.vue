@@ -31,6 +31,7 @@
               <p class="truncate font-mono text-xs text-muted">/legal/…/{{ doc.slug }}</p>
             </NuxtLink>
             <UBadge :label="LEGAL_DOC_LABELS[doc.type as LegalDocType]" color="neutral" variant="soft" size="sm" />
+            <UBadge v-if="doc.locale" :label="localeName(doc.locale, uiLocale)" color="neutral" variant="outline" size="sm" />
             <UBadge :label="doc.status === 'published' ? $t('projectTools.legal.publishedVersion', { version: doc.version }) : $t('projectTools.legal.draft')" :color="doc.status === 'published' ? 'success' : 'neutral'" variant="soft" size="sm" />
             <UButton v-if="doc.status === 'published'" :to="publicUrl(doc)" target="_blank" icon="i-lucide-external-link" size="sm" color="neutral" variant="ghost" square :aria-label="$t('projectTools.legal.openPublicPage')" />
           </li>
@@ -46,11 +47,12 @@
 
 <script setup lang="ts">
 import { LEGAL_DOC_LABELS, type LegalDocType } from '#shared/legal/types'
+import { localeName } from '#shared/locales'
 
 definePageMeta({ middleware: 'agent' })
 
 const { api } = useAgent()
-const { t } = useI18n()
+const { t, locale: uiLocale } = useI18n()
 const id = String(useRoute().params.id)
 const documents = ref<any[]>([])
 const loading = ref(true)

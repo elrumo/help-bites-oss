@@ -21,12 +21,18 @@
 
           <section class="grid gap-4 rounded-xl border border-default p-4 sm:grid-cols-2">
             <UFormField :label="$t('projectTools.onboarding.name')">
-              <UInput v-model="form.name" :maxlength="ONBOARDING_LIMITS.name" class="w-full" />
+              <UInput v-if="!lang" v-model="form.name" :maxlength="ONBOARDING_LIMITS.name" class="w-full" />
+              <UInput v-else :model-value="form.translations[lang]?.name || ''" :placeholder="form.name" :maxlength="ONBOARDING_LIMITS.name" class="w-full" @update:model-value="setName($event)" />
             </UFormField>
-            <UFormField :label="$t('projectTools.onboarding.key')" :hint="$t('projectTools.onboarding.keyHint')" :error="keyValid ? undefined : $t('projectTools.onboarding.keyInvalid')">
+            <UFormField v-if="!lang" :label="$t('projectTools.onboarding.key')" :hint="$t('projectTools.onboarding.keyHint')" :error="keyValid ? undefined : $t('projectTools.onboarding.keyInvalid')">
               <UInput v-model="form.key" class="w-full font-mono" />
             </UFormField>
           </section>
+
+          <LanguageTabs
+            :source="form.locale" :languages="languages" :active="lang" :busy="busy === 'translate'" :error="translateError"
+            @update:source="setSource" @select="lang = $event" @add="addLanguage" @remove="removeLanguage" @translate="translate"
+          />
 
           <div class="space-y-3">
             <div class="flex items-baseline justify-between">
@@ -36,11 +42,29 @@
             <div v-for="(step, i) in form.steps" :key="step.id" class="rounded-xl border p-4 transition-colors" :class="previewStep === i ? 'border-accented' : 'border-default'" @focusin="previewStep = i">
               <div class="flex items-center gap-1">
                 <button type="button" class="mr-auto text-xs font-medium text-muted hover:text-highlighted" @click="previewStep = i">{{ $t('projectTools.onboarding.stepN', { n: i + 1 }) }}</button>
+                <template v-if="!lang">
                 <UButton icon="i-lucide-arrow-up" size="xs" color="neutral" variant="ghost" square :disabled="i === 0" :aria-label="$t('projectTools.onboarding.moveUp')" @click="move(i, -1)" />
                 <UButton icon="i-lucide-arrow-down" size="xs" color="neutral" variant="ghost" square :disabled="i === form.steps.length - 1" :aria-label="$t('projectTools.onboarding.moveDown')" @click="move(i, 1)" />
                 <UButton icon="i-lucide-trash-2" size="xs" color="neutral" variant="ghost" square :disabled="form.steps.length === 1" :aria-label="$t('projectTools.onboarding.removeStep')" @click="removeStep(i)" />
+                </template>
               </div>
-              <div class="mt-2 space-y-3">
+              <div v-if="lang" class="mt-2 space-y-3">
+                <UFormField :label="$t('projectTools.onboarding.stepTitle')" :hint="`${word(step.id, 'title').length} / ${ONBOARDING_LIMITS.title}`">
+                  <UInput :model-value="word(step.id, 'title')" :placeholder="step.title" :maxlength="ONBOARDING_LIMITS.title" class="w-full font-medium" @update:model-value="setWord(step.id, 'title', $event)" />
+                </UFormField>
+                <UFormField :label="$t('projectTools.onboarding.stepBody')" :hint="`${word(step.id, 'body').length} / ${ONBOARDING_LIMITS.body}`">
+                  <UTextarea :model-value="word(step.id, 'body')" :placeholder="step.body" :maxlength="ONBOARDING_LIMITS.body" autoresize :rows="2" :maxrows="8" class="w-full" @update:model-value="setWord(step.id, 'body', $event)" />
+                </UFormField>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <UFormField v-if="step.imageUrl" :label="$t('projectTools.onboarding.imageAlt')">
+                    <UInput :model-value="word(step.id, 'imageAlt')" :placeholder="step.imageAlt" :maxlength="ONBOARDING_LIMITS.alt" class="w-full" @update:model-value="setWord(step.id, 'imageAlt', $event)" />
+                  </UFormField>
+                  <UFormField :label="$t('projectTools.onboarding.buttonLabel')">
+                    <UInput :model-value="word(step.id, 'buttonLabel')" :placeholder="step.buttonLabel || (i === form.steps.length - 1 ? $t('projectTools.onboarding.getStarted') : $t('projectTools.onboarding.continue'))" :maxlength="ONBOARDING_LIMITS.label" class="w-full" @update:model-value="setWord(step.id, 'buttonLabel', $event)" />
+                  </UFormField>
+                </div>
+              </div>
+              <div v-else class="mt-2 space-y-3">
                 <UFormField :label="$t('projectTools.onboarding.stepTitle')" :hint="`${step.title.length} / ${ONBOARDING_LIMITS.title}`">
                   <UInput v-model="step.title" :maxlength="ONBOARDING_LIMITS.title" class="w-full font-medium" />
                 </UFormField>
@@ -82,7 +106,7 @@
                 </div>
               </div>
             </div>
-            <UButton icon="i-lucide-plus" :label="$t('projectTools.onboarding.addStep')" color="neutral" variant="soft" size="sm" :disabled="form.steps.length >= ONBOARDING_LIMITS.steps" @click="addStep" />
+            <UButton v-if="!lang" icon="i-lucide-plus" :label="$t('projectTools.onboarding.addStep')" color="neutral" variant="soft" size="sm" :disabled="form.steps.length >= ONBOARDING_LIMITS.steps" @click="addStep" />
           </div>
 
           <section class="rounded-xl border border-default p-4">
@@ -153,12 +177,12 @@
 </template>
 
 <script setup lang="ts">
-import { ONBOARDING_FONTS, ONBOARDING_KEY, ONBOARDING_LIMITS, ONBOARDING_PROGRESS, newStepId, type OnboardingOptions, type OnboardingStep, type OnboardingStyle } from '#shared/onboarding'
+import { ONBOARDING_FONTS, ONBOARDING_KEY, ONBOARDING_LIMITS, ONBOARDING_PROGRESS, localizeOnboarding, newStepId, onboardingTexts, translationTexts, type OnboardingOptions, type OnboardingStep, type OnboardingStepText, type OnboardingStyle, type OnboardingTranslations } from '#shared/onboarding'
 
 definePageMeta({ middleware: 'agent' })
 
-type Flow = { id: string, key: string, name: string, status: 'draft' | 'published', version: number, steps: OnboardingStep[], style: OnboardingStyle, options: OnboardingOptions, changed: boolean, published: any, path: string }
-type Form = Pick<Flow, 'name' | 'key' | 'steps' | 'style' | 'options'>
+type Flow = { id: string, key: string, name: string, status: 'draft' | 'published', version: number, steps: OnboardingStep[], style: OnboardingStyle, options: OnboardingOptions, locale: string, translations: OnboardingTranslations, changed: boolean, published: any, path: string }
+type Form = Pick<Flow, 'name' | 'key' | 'steps' | 'style' | 'options' | 'locale' | 'translations'>
 
 const { api, projects, loadProjects } = useAgent()
 const { t } = useI18n()
@@ -170,20 +194,21 @@ const flowId = String(route.params.flowId)
 const project = computed(() => projects.value.find(p => p.id === id) || null)
 
 const flow = ref<Flow | null>(null)
-const form = ref<Form>({ name: '', key: '', steps: [], style: { accent: '', background: '', text: '', radius: 20, font: 'system' }, options: { skippable: true, progress: 'bar' } })
+const form = ref<Form>({ name: '', key: '', steps: [], style: { accent: '', background: '', text: '', radius: 20, font: 'system' }, options: { skippable: true, progress: 'bar' }, locale: 'en', translations: {} })
 const saved = ref('')
 const loading = ref(true)
 const error = ref('')
 const busy = ref('')
 
-const snapshot = (f: Form) => JSON.stringify({ name: f.name, key: f.key, steps: f.steps, style: f.style, options: f.options })
+const snapshot = (f: Form) => JSON.stringify({ name: f.name, key: f.key, steps: f.steps, style: f.style, options: f.options, locale: f.locale, translations: f.translations })
 const dirty = computed(() => !!flow.value && snapshot(form.value) !== saved.value)
 const keyValid = computed(() => ONBOARDING_KEY.test(form.value.key.trim()))
 const publishLabel = computed(() => flow.value?.status !== 'published' ? t('projectTools.shared.publish') : dirty.value || flow.value.changed ? t('projectTools.onboarding.publishChanges') : t('projectTools.onboarding.published'))
 
 function fill(next: Flow) {
   flow.value = next
-  form.value = JSON.parse(JSON.stringify({ name: next.name, key: next.key, steps: next.steps, style: next.style, options: next.options }))
+  form.value = JSON.parse(JSON.stringify({ name: next.name, key: next.key, steps: next.steps, style: next.style, options: next.options, locale: next.locale, translations: next.translations }))
+  if (lang.value && !form.value.translations[lang.value]) lang.value = ''
   saved.value = snapshot(form.value)
   previewStep.value = Math.min(previewStep.value, Math.max(0, next.steps.length - 1))
 }
@@ -203,7 +228,10 @@ async function save(quiet = false) {
   busy.value = 'save'
   error.value = ''
   try {
-    fill((await api<{ flow: Flow }>(`/admin/onboarding/flows/${flowId}`, { method: 'PATCH', body: { ...form.value, key: form.value.key.trim() } })).flow)
+    // A language is replaced when sent and removed when null, so the ones taken out are sent as null.
+    const translations: Record<string, unknown> = { ...form.value.translations }
+    for (const tag of Object.keys(flow.value?.translations || {})) if (!(tag in translations)) translations[tag] = null
+    fill((await api<{ flow: Flow }>(`/admin/onboarding/flows/${flowId}`, { method: 'PATCH', body: { ...form.value, key: form.value.key.trim(), translations } })).flow)
     if (!quiet) toast.add({ title: t('projectTools.onboarding.saved'), icon: 'i-lucide-check', color: 'success' })
     return true
   } catch (e: any) {
@@ -260,6 +288,55 @@ const menu = computed(() => [[
   ...(flow.value?.status === 'published' ? [{ label: t('projectTools.onboarding.unpublish'), icon: 'i-lucide-eye-off', onSelect: () => act('unpublish') }] : []),
   { label: t('projectTools.onboarding.deleteFlow'), icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: remove }
 ]])
+
+// ---- languages ----
+const lang = ref('')
+const translateError = ref('')
+const languages = computed(() => {
+  const total = Object.keys(onboardingTexts(form.value.name, form.value.steps)).length
+  return Object.entries(form.value.translations).map(([locale, tr]) => ({ locale, filled: Math.min(total, Object.keys(translationTexts(tr)).length), total }))
+})
+
+const word = (stepId: string, key: keyof OnboardingStepText) => form.value.translations[lang.value]?.steps[stepId]?.[key] ?? ''
+function setWord(stepId: string, key: keyof OnboardingStepText, value: string) {
+  const entry = (form.value.translations[lang.value] ||= { name: '', steps: {} })
+  ;(entry.steps[stepId] ||= {})[key] = value
+}
+function setName(value: string) {
+  ;(form.value.translations[lang.value] ||= { name: '', steps: {} }).name = value
+}
+
+function addLanguage(tag: string) {
+  form.value.translations[tag] = { name: '', steps: {} }
+  lang.value = tag
+}
+
+function removeLanguage(tag: string) {
+  if (!confirm(t('translations.removeConfirm', { language: tag }))) return
+  delete form.value.translations[tag]
+  if (lang.value === tag) lang.value = ''
+}
+
+function setSource(tag: string) {
+  form.value.locale = tag
+  delete form.value.translations[tag]
+  if (lang.value === tag) lang.value = ''
+}
+
+// The server translates the saved working copy, so unsaved edits are saved first.
+async function translate(locales: string[], overwrite: boolean) {
+  if (dirty.value && !(await save(true))) return
+  busy.value = 'translate'
+  translateError.value = ''
+  try {
+    fill((await api<{ flow: Flow }>(`/admin/onboarding/flows/${flowId}/translate`, { method: 'POST', body: { locales, overwrite } })).flow)
+    toast.add({ title: t('translations.translated', { n: locales.length }), icon: 'i-lucide-sparkles', color: 'success' })
+  } catch (e: any) {
+    translateError.value = e?.message || t('translations.translateError')
+  } finally {
+    busy.value = ''
+  }
+}
 
 // ---- steps ----
 function move(index: number, by: number) {
@@ -364,11 +441,11 @@ function drawPreview() {
     target: previewEl.value,
     step: previewStep.value,
     theme: previewTheme.value,
-    flow: { key: form.value.key, name: form.value.name, version: flow.value.version, style, options: form.value.options, steps: form.value.steps }
+    flow: { key: form.value.key, version: flow.value.version, style, options: form.value.options, ...localizeOnboarding(form.value.name, form.value.steps, lang.value ? form.value.translations[lang.value] : undefined) }
   }])
 }
 
-watch([form, previewStep, previewTheme, previewEl, projectAccent], drawPreview, { deep: true, flush: 'post' })
+watch([form, lang, previewStep, previewTheme, previewEl, projectAccent], drawPreview, { deep: true, flush: 'post' })
 
 onMounted(async () => {
   if (!project.value) loadProjects().catch(() => {})

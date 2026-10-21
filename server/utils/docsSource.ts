@@ -8,6 +8,7 @@ import feedback from '../../docs/FEEDBACK.md'
 import flags from '../../docs/FLAGS.md'
 import legal from '../../docs/LEGAL.md'
 import onboarding from '../../docs/ONBOARDING.md'
+import pages from '../../docs/PAGES.md'
 import transfer from '../../docs/TRANSFER.md'
 
 // The text of each published guide, bundled into the server at build time (the
@@ -22,6 +23,7 @@ const SOURCES: Record<string, string> = {
   'FLAGS.md': flags,
   'LEGAL.md': legal,
   'ONBOARDING.md': onboarding,
+  'PAGES.md': pages,
   'TRANSFER.md': transfer
 }
 

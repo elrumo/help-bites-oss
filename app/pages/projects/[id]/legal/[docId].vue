@@ -72,6 +72,29 @@
           </section>
 
           <section class="rounded-xl border border-default p-4">
+            <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('translations.title') }}</h3>
+            <p class="mt-1 text-xs text-dimmed">{{ $t('translations.legalIntro') }}</p>
+            <UFormField :label="$t('translations.thisLanguage')" class="mt-3">
+              <USelectMenu v-model="locale" :items="localeItems" value-key="value" create-item="always" class="w-full" @create="setLocale($event)">
+                <template #create-item-label="{ item }">{{ $t('translations.addTag', { tag: item }) }}</template>
+              </USelectMenu>
+            </UFormField>
+            <ul v-if="siblings.length" class="mt-3 space-y-1.5">
+              <li v-for="s in siblings" :key="s.id" class="flex items-center gap-2 text-[13px]">
+                <NuxtLink :to="`/projects/${id}/legal/${s.id}`" class="min-w-0 flex-1 truncate font-medium text-highlighted hover:underline">{{ localeName(s.locale, uiLocale) }}</NuxtLink>
+                <UBadge :label="s.status === 'published' ? $t('translations.published') : $t('translations.draft')" :color="s.status === 'published' ? 'success' : 'neutral'" variant="soft" size="sm" />
+              </li>
+            </ul>
+            <div class="mt-3 flex gap-2">
+              <USelectMenu v-model="target" :items="targetItems" value-key="value" :placeholder="$t('translations.add')" create-item="always" size="sm" class="min-w-0 flex-1" @create="setTarget($event)">
+                <template #create-item-label="{ item }">{{ $t('translations.addTag', { tag: item }) }}</template>
+              </USelectMenu>
+              <UButton icon="i-lucide-sparkles" :label="$t('translations.translate')" size="sm" color="neutral" variant="soft" :disabled="dirty || !target" :loading="busy === 'translate'" @click="translateTo" />
+            </div>
+            <p class="mt-2 text-xs text-dimmed">{{ dirty ? $t('projectTools.legalDoc.saveToUseAi') : $t('translations.legalReview') }}</p>
+          </section>
+
+          <section class="rounded-xl border border-default p-4">
             <div class="flex items-center justify-between">
               <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.legalDoc.rulesCheck') }}</h3>
               <span v-if="coverage?.mapped" class="text-xs text-muted">{{ $t('projectTools.legalDoc.covered', { covered: coverage.covered.length, total: coverage.total }) }}</span>
@@ -117,15 +140,17 @@
 
 <script setup lang="ts">
 import type { LegalFinding, LegalSection } from '#shared/legal/types'
+import { COMMON_LOCALES, localeName, normalizeLocale } from '#shared/locales'
 
 definePageMeta({ middleware: 'agent' })
 
-type Doc = { id: string, type: any, slug: string, title: string, status: string, sections: LegalSection[], answers: any, tldr: { text: string, source: string } | null, effectiveDate: string | null, version: number, path: string }
+type Doc = { id: string, type: any, slug: string, locale: string, translationOf: string | null, title: string, status: string, sections: LegalSection[], answers: any, tldr: { text: string, source: string } | null, effectiveDate: string | null, version: number, path: string }
 type Coverage = { total: number, covered: any[], gaps: { id: string, summary: string, citation: string, severity: string }[], unreviewedPacks: string[], mapped: boolean }
 
 const { api } = useAgent()
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale: uiLocale } = useI18n()
+const toast = useToast()
 const id = String(route.params.id)
 const docId = String(route.params.docId)
 
@@ -145,24 +170,58 @@ const slug = ref('')
 const effective = ref('')
 const tldr = ref('')
 const tldrEdited = ref(false)
+const locale = ref('en')
+const target = ref('')
+const siblings = ref<{ id: string, locale: string, status: string }[]>([])
 
 const tldrSource = computed(() => (tldrEdited.value ? 'human' : doc.value?.tldr?.source || ''))
 const publicUrl = computed(() => (doc.value ? `${location.origin}${doc.value.path}` : ''))
 const dateOnly = (iso: string | null) => (iso ? iso.slice(0, 10) : '')
 const dirty = computed(() => !!doc.value && (
   JSON.stringify(sections.value.map(s => [s.id, s.heading, s.body, s.locked])) !== JSON.stringify(doc.value.sections.map(s => [s.id, s.heading, s.body, s.locked]))
-  || title.value !== doc.value.title || slug.value !== doc.value.slug || effective.value !== dateOnly(doc.value.effectiveDate) || tldrEdited.value
+  || locale.value !== doc.value.locale || title.value !== doc.value.title || slug.value !== doc.value.slug || effective.value !== dateOnly(doc.value.effectiveDate) || tldrEdited.value
 ))
 
 function adopt(next: Doc, nextCoverage?: Coverage) {
   doc.value = next
   if (nextCoverage) coverage.value = nextCoverage
   sections.value = next.sections.map(s => ({ ...s, satisfies: [...s.satisfies] }))
+  locale.value = next.locale
   title.value = next.title
   slug.value = next.slug
   effective.value = dateOnly(next.effectiveDate)
   tldr.value = next.tldr?.text || ''
   tldrEdited.value = false
+}
+
+// Documents sharing the original's id are one text in several languages.
+async function loadSiblings() {
+  if (!doc.value) return
+  const group = doc.value.translationOf || doc.value.id
+  const { documents } = await api<{ documents: Doc[] }>('/admin/legal/documents', { query: { project: id } })
+  siblings.value = documents.filter(d => d.id !== doc.value!.id && (d.translationOf || d.id) === group).map(d => ({ id: d.id, locale: d.locale, status: d.status }))
+}
+
+const localeItems = computed(() => [...new Set([locale.value, ...COMMON_LOCALES])].map(value => ({ value, label: `${localeName(value, uiLocale.value)} · ${value}` })))
+const targetItems = computed(() => COMMON_LOCALES
+  .filter(tag => ![locale.value, ...siblings.value.map(s => s.locale)].some(have => have.toLowerCase() === tag.toLowerCase()))
+  .map(value => ({ value, label: `${localeName(value, uiLocale.value)} · ${value}` })))
+
+function setLocale(tag: string) {
+  const next = normalizeLocale(tag)
+  if (next) locale.value = next
+  else toast.add({ title: t('translations.badTag'), color: 'error', icon: 'i-lucide-circle-alert' })
+}
+function setTarget(tag: string) {
+  const next = normalizeLocale(tag)
+  if (next) target.value = next
+  else toast.add({ title: t('translations.badTag'), color: 'error', icon: 'i-lucide-circle-alert' })
+}
+
+// A new draft in the other language, linked to this one; the person reviews it there.
+async function translateTo() {
+  const result = await run('translate', () => call<{ document: Doc }>('/translate', 'POST', { locale: target.value }))
+  if (result) await navigateTo(`/projects/${id}/legal/${result.document.id}`)
 }
 
 async function loadVersions() {
@@ -176,6 +235,7 @@ async function load() {
     const result = await api<{ document: Doc, coverage: Coverage }>(`/admin/legal/documents/${docId}`)
     adopt(result.document, result.coverage)
     await loadVersions()
+    await loadSiblings().catch(() => {})
   } catch (e: any) {
     error.value = e?.message || t('projectTools.legalDoc.loadError')
   } finally {
@@ -201,6 +261,7 @@ async function save() {
   const body: Record<string, unknown> = {
     title: title.value,
     slug: slug.value,
+    locale: locale.value,
     effectiveDate: effective.value || null,
     sections: sections.value.map(s => ({ id: s.id, heading: s.heading, body: s.body, locked: s.locked }))
   }

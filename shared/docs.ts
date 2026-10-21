@@ -81,6 +81,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'BRAND.md'
   },
   {
+    slug: 'pages',
+    title: 'Pages and headless CMS',
+    description: 'Design landing pages in a visual editor and host them, or read the same copy, images and components from your Vue, JavaScript or Swift app. An assistant writes pages, copy and components.',
+    group: 'Guides',
+    file: 'PAGES.md'
+  },
+  {
     slug: 'errors',
     title: 'Error tracking',
     description: 'Connect GlitchTip or Bugsink to browse errors, get alert emails when one spikes, and fix them with AI that reads your GitHub repos.',

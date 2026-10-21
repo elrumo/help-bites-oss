@@ -232,7 +232,7 @@ export function onboardingTranslationsOf(value: unknown): OnboardingTranslations
     for (const [id, s] of Object.entries(record(entry.steps))) {
       const words: Partial<OnboardingStepText> = {}
       for (const key of STEP_TEXT_KEYS) if (typeof record(s)[key] === 'string' && record(s)[key]) words[key] = record(s)[key] as string
-      steps[id] = words
+      if (Object.keys(words).length) steps[id] = words
     }
     out[tag] = { name: String(entry.name || ''), steps }
   }
