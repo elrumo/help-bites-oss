@@ -425,7 +425,12 @@ async function sendCampaign(row: ParseObject, workspaceId: string, budgetMs: num
     // An operator may pause or cancel mid-run.
     const status = (await new Parse.Query('Campaign').select('status').get(row.id || '', MASTER)).get('status')
     if (status !== 'sending') return
-    const query = await campaignAudience(project, audience)
+    // A segment that cannot be worked out (too many matches for a lookup, a tracker that is down) pauses the send where it is.
+    const query = await campaignAudience(project, audience).catch(async (error: Error) => {
+      await stopCampaign(row, 'paused', `Paused: the audience could not be worked out (${error.message})`)
+      return null
+    })
+    if (!query) return
     if (cursor) query.greaterThan('objectId', cursor)
     const contacts = await query.ascending('objectId').limit(CHUNK).find(MASTER)
     if (!contacts.length) {
