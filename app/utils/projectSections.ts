@@ -3,6 +3,7 @@ export const projectSections = [
   { path: 'overview', label: 'Overview', icon: 'i-lucide-layout-dashboard' },
   { path: 'conversations', label: 'Conversations', icon: 'i-lucide-inbox' },
   { path: 'contacts', label: 'Contacts', icon: 'i-lucide-users' },
+  { path: 'forms', label: 'Forms', icon: 'i-lucide-clipboard-list' },
   { path: 'revenue', label: 'Revenue', icon: 'i-lucide-circle-dollar-sign' },
   { path: 'knowledge', label: 'Knowledge base', icon: 'i-lucide-book-open' },
   { path: 'assistants', label: 'Assistants', icon: 'i-lucide-sparkles' },

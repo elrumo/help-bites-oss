@@ -32,6 +32,8 @@ enum AppRoute: Hashable {
   case legalDocument(String, String)
   /// One onboarding flow (project id, flow id).
   case onboardingFlow(String, String)
+  /// One lead form (project id, form id).
+  case leadForm(String, String)
 }
 
 /// The tab bar's tabs (iPhone), which become the sidebar on iPad and Mac. The
@@ -43,13 +45,14 @@ enum AppTab: Hashable {
 
 /// A project's sections, nested under it in the sidebar like a Linear team's.
 enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
-  case overview, conversations, contacts, revenue, knowledge, assistants, tickets, feedback, board, changelog, onboarding, legal, brand, email, campaigns, flags, errors, dev, settings
+  case overview, conversations, contacts, forms, revenue, knowledge, assistants, tickets, feedback, board, changelog, onboarding, legal, brand, email, campaigns, flags, errors, dev, settings
   var id: String { rawValue }
   var label: String {
     switch self {
     case .overview: "Overview"
     case .conversations: "Conversations"
     case .contacts: "Contacts"
+    case .forms: "Forms"
     case .revenue: "Revenue"
     case .knowledge: "Knowledge base"
     case .assistants: "Assistants"
@@ -73,6 +76,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .overview: "square.grid.2x2"
     case .conversations: "tray"
     case .contacts: "person.2"
+    case .forms: "list.bullet.clipboard"
     case .knowledge: "book"
     case .assistants: "sparkles"
     case .tickets: "ticket"
@@ -165,6 +169,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .onboardingFlow(let id, _):
       if sidebar { tab = .section(id, .onboarding); return }
       go(.project(id, .onboarding)); projectsPath.append(route)
+    case .leadForm(let id, _):
+      if sidebar { tab = .section(id, .forms); return }
+      go(.project(id, .forms)); projectsPath.append(route)
     }
     #endif
   }
@@ -180,6 +187,9 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
       macPath = [route]
     case .onboardingFlow(let id, _):
       macSelection = .project(id, .onboarding)
+      macPath = [route]
+    case .leadForm(let id, _):
+      macSelection = .project(id, .forms)
       macPath = [route]
     default:
       macSelection = route

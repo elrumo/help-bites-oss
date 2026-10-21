@@ -13,7 +13,7 @@ import { isProbablyEmail } from './projects'
 // One message per recipient, always: recipients never see each other, each
 // can get their own variables, and each has its own delivery status.
 
-export type EmailSource = 'api' | 'admin' | 'test' | 'notification' | 'feedback' | 'system' | 'campaign' | 'sequence'
+export type EmailSource = 'api' | 'admin' | 'test' | 'notification' | 'feedback' | 'system' | 'campaign' | 'sequence' | 'form'
 export type EmailKind = 'template' | 'html' | 'document' | 'message'
 export type EmailActor = { type: 'project' | 'agent' | 'admin_key' | 'system', id: string, name: string }
 export type EmailRecipient = { email: string, name: string }

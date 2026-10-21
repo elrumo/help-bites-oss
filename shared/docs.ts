@@ -74,6 +74,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'ONBOARDING.md'
   },
   {
+    slug: 'forms',
+    title: 'Lead forms',
+    description: 'Waitlists, "notify me" boxes and interest forms on your site, in your app or on a hosted page: every sign-up becomes a contact, with double opt-in, a welcome email and a sequence.',
+    group: 'Guides',
+    file: 'FORMS.md'
+  },
+  {
     slug: 'languages',
     title: 'Languages and AI translation',
     description: 'Show onboarding, legal pages and emails in your users\' language: add languages, translate with AI or by hand, and pick one with a locale from your web app, Swift app or the API.',

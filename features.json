@@ -167,7 +167,7 @@
       "id": "contacts",
       "name": "Contacts, segments and database sync",
       "category": "marketing",
-      "summary": "One record per person, CSV import, batch API, segments, read-only sync from Parse, Postgres, Supabase and Firestore, erasure.",
+      "summary": "One record per person with how they were added (app, lead form, sign-up, import, sync, Stripe, API, by hand), CSV import, batch API, segments, read-only sync from Parse, Postgres, Supabase and Firestore, erasure.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "entitlement": "contactSources",
@@ -177,6 +177,20 @@
       "api": { "prefixes": ["/v1/contacts", "/v1/segments", "/v1/track", "/v1/admin/contact-sources"], "docs": "docs/CONTACTS.md" },
       "embed": null,
       "landing": { "listed": true, "key": "landing.features.email.contacts" }
+    },
+    {
+      "id": "lead-forms",
+      "name": "Lead forms and waitlists",
+      "category": "marketing",
+      "summary": "Waitlist, \"notify me\" and interest forms, from a single email box to custom fields, on a site (forms.js or plain HTML), a hosted page, in a SwiftUI app or over the API. Leads become contacts marked Added via: Lead form, in a segment made for each form, with optional double opt-in, a welcome email from a template and a sequence.",
+      "editions": ["community", "cloud"],
+      "plan": "all",
+      "status": "stable",
+      "web": { "panel": ["app/pages/projects/[id]/forms/index.vue", "app/pages/projects/[id]/forms/[formId].vue"], "public": ["/f/:pk/:key", "/f/confirm/:token"] },
+      "native": { "folders": ["helpbites-native/App/Features/Forms"], "parity": "tests/leadFormsNativeParity.test.ts" },
+      "api": { "prefixes": ["/v1/forms", "/v1/admin/lead-forms"], "docs": "docs/FORMS.md" },
+      "embed": { "web": "public/forms.js", "swift": "docs/FORMS.md#plug-and-play-swift", "customize": ["data-form", "data-target", "data-theme", "data-accent", "data-radius", "data-font", "data-layout", "data-show", "data-host", "JS init options (labels, values, callbacks)", "--hb-form-* CSS variables", "::part() hooks", "plain HTML form", "hosted page /f/:pk/:key", "Swift accent, cornerRadius, design, values"] },
+      "landing": { "listed": true, "key": "landing.features.email.forms" }
     },
     {
       "id": "campaigns",
@@ -447,6 +461,7 @@
     "Hosted pages have no custom domains yet; they live at /p/<public key> on the HelpBites host.",
     "Components are HTML and CSS only: nothing that needs JavaScript of its own (an autoplaying carousel, a calculator).",
     "CMS content has no per-field translations, scheduled publishing or version history; folders such as es/… stand in for languages.",
-    "The CMS generates no TypeScript types from component schemas."
+    "The CMS generates no TypeScript types from component schemas.",
+    "Lead forms have no CAPTCHA (a honeypot and rate limits only), no file uploads, no translations and no A/B tests; answers are saved on the contact rather than kept as separate submissions, and never overwrite an answer the contact already has."
   ]
 }

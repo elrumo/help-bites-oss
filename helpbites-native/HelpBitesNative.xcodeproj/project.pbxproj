@@ -67,6 +67,7 @@
 		56480ABCFA511248CE0542A4 /* ContentLocale.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACD7DDE57FDF181331B90CC /* ContentLocale.swift */; };
 		59574AA5C6720ABD7EFD4D78 /* ChangelogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AB1B1A7F01FAE81D655A837 /* ChangelogStore.swift */; };
 		5B2EBF30CBCD4DAEE1974B05 /* EmailModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC19BAB63EA4C39D5933383F /* EmailModels.swift */; };
+		5BFA0106226A00C8134A90DF /* LeadFormsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E59137DDEC6F3E94C9EA052D /* LeadFormsScreen.swift */; };
 		5CC00D257A4B3CD780405012 /* LegalModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA8D433FF9F026C9450913B /* LegalModels.swift */; };
 		60421F967C5A1257FA7A5C67 /* ErrorsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3405C68EBDBA7CF773F10E27 /* ErrorsModels.swift */; };
 		610ED01E5CF7FB265F8EEA0D /* ContactsSegments.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E90337AF1C01EA40A4D08C /* ContactsSegments.swift */; };
@@ -79,6 +80,7 @@
 		6EF78C8AC45F900F83EFB5EB /* InboxNewConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B384FEDEACF5942FDB85E58 /* InboxNewConversation.swift */; };
 		7023404EF16FA58B2117AB05 /* BoardLinksSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC639C90F634EC463322EEBD /* BoardLinksSection.swift */; };
 		70A51A382BA70997E744F8AA /* EmailChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 633F469608738367F95618E4 /* EmailChat.swift */; };
+		70C6900B37B765EB5AEA9A19 /* LeadFormScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 340F82128FD9CD641D35C185 /* LeadFormScreen.swift */; };
 		7122ECE2DCE5D25DC38E13A5 /* KnowledgeThemesSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5078A4DBEACD109566238584 /* KnowledgeThemesSheet.swift */; };
 		7151EFE9EEF9AAEE94D600A5 /* ContactsImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED651BDA860B6454C22BA040 /* ContactsImport.swift */; };
 		73C91F75051DF76707AF73AD /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4EB03A1DB8F2EDA54E2748B /* APIClient.swift */; };
@@ -122,6 +124,7 @@
 		C2322DFFB48E44A542D5654A /* ChangelogEntryEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E68E181C52F67F219EECDEB /* ChangelogEntryEditor.swift */; };
 		C3601F91CAAF0CC00C9EA1B3 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6286A8CE54C5D1233C199F9F /* Models.swift */; };
 		C3AB72C554AAE1AC966F6548 /* AIScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C2D92B16E6CF9C9184F1044 /* AIScreen.swift */; };
+		C5B47FABE24A5601E1CFF9A5 /* LeadFormsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4667C6D8BA48E8C6A1464AE3 /* LeadFormsModels.swift */; };
 		CEC57D705FEAE927D1454A73 /* EmailDesignPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C03509436E1534D77E37EFA /* EmailDesignPanel.swift */; };
 		CED551B687CB8DCCE9BDF40F /* CampaignsSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D55072CC37A21DC24072F7D9 /* CampaignsSettings.swift */; };
 		CEFA998994A9B0BE10C49EE3 /* InboxChangelogLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B1B16B79FC4E958C1C0B767 /* InboxChangelogLinks.swift */; };
@@ -174,6 +177,7 @@
 		32AB7D4E03FB86E5C5928E70 /* LegalLookSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalLookSheet.swift; sourceTree = "<group>"; };
 		3355C6487BA31EDD842C76AB /* ChangelogSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogSheets.swift; sourceTree = "<group>"; };
 		3405C68EBDBA7CF773F10E27 /* ErrorsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorsModels.swift; sourceTree = "<group>"; };
+		340F82128FD9CD641D35C185 /* LeadFormScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeadFormScreen.swift; sourceTree = "<group>"; };
 		38F8D2D6865E1FFC4CFDE887 /* BrandAssetSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandAssetSheet.swift; sourceTree = "<group>"; };
 		3A4E63426E9489CB63264A1C /* FeedbackPostEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackPostEditor.swift; sourceTree = "<group>"; };
 		3BA8D433FF9F026C9450913B /* LegalModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalModels.swift; sourceTree = "<group>"; };
@@ -183,6 +187,7 @@
 		3F0AB26746629F28ED2EB217 /* HelpBitesNative.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HelpBitesNative.entitlements; sourceTree = "<group>"; };
 		4399D8D3565E838D22F753CC /* AssistantsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantsScreen.swift; sourceTree = "<group>"; };
 		4587E4E535D670DBA6FA42D0 /* ErrorsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorsScreen.swift; sourceTree = "<group>"; };
+		4667C6D8BA48E8C6A1464AE3 /* LeadFormsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeadFormsModels.swift; sourceTree = "<group>"; };
 		4711D007B64E1D08792D8CF0 /* EmailSuppressionsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSuppressionsScreen.swift; sourceTree = "<group>"; };
 		4A5C11CF6FAA42F97D74ECB7 /* OnboardingLanguages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLanguages.swift; sourceTree = "<group>"; };
 		4B1B16B79FC4E958C1C0B767 /* InboxChangelogLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxChangelogLinks.swift; sourceTree = "<group>"; };
@@ -277,6 +282,7 @@
 		E4C6B16FC2FB8D1ABFC81F89 /* LegalAnalyseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalAnalyseSheet.swift; sourceTree = "<group>"; };
 		E4EB03A1DB8F2EDA54E2748B /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		E53ABB3330B02B2312D00144 /* DeveloperScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperScreen.swift; sourceTree = "<group>"; };
+		E59137DDEC6F3E94C9EA052D /* LeadFormsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeadFormsScreen.swift; sourceTree = "<group>"; };
 		E66C75ABF3816D680627EA3A /* InboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxStore.swift; sourceTree = "<group>"; };
 		E837EAA1BBD4EDFCDE7C0912 /* GlobalSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalSearch.swift; sourceTree = "<group>"; };
 		EACD7DDE57FDF181331B90CC /* ContentLocale.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentLocale.swift; sourceTree = "<group>"; };
@@ -546,6 +552,16 @@
 			path = Changelog;
 			sourceTree = "<group>";
 		};
+		B6F19E7A1E948865E2111C0A /* Forms */ = {
+			isa = PBXGroup;
+			children = (
+				340F82128FD9CD641D35C185 /* LeadFormScreen.swift */,
+				4667C6D8BA48E8C6A1464AE3 /* LeadFormsModels.swift */,
+				E59137DDEC6F3E94C9EA052D /* LeadFormsScreen.swift */,
+			);
+			path = Forms;
+			sourceTree = "<group>";
+		};
 		C09AD1632E68EFC49E5A337A /* Contacts */ = {
 			isa = PBXGroup;
 			children = (
@@ -606,6 +622,7 @@
 				167907B4DA3BF75C32A9EF2D /* Errors */,
 				C5CF1C1C1D8475BFEA85E8E5 /* Feedback */,
 				50CB2E0BA8F5356EDB05E305 /* Flags */,
+				B6F19E7A1E948865E2111C0A /* Forms */,
 				81FC9160C80059597EE9D601 /* Inbox */,
 				7CF3F74C7C8B8699EAC5771F /* Knowledge */,
 				8858E537225228F4D1DCCCC9 /* Legal */,
@@ -802,6 +819,9 @@
 				168D7A2E8D6B6879656A03BC /* KnowledgeScreen.swift in Sources */,
 				7122ECE2DCE5D25DC38E13A5 /* KnowledgeThemesSheet.swift in Sources */,
 				F93B357EA692E10449C7D62A /* LanguageControls.swift in Sources */,
+				70C6900B37B765EB5AEA9A19 /* LeadFormScreen.swift in Sources */,
+				C5B47FABE24A5601E1CFF9A5 /* LeadFormsModels.swift in Sources */,
+				5BFA0106226A00C8134A90DF /* LeadFormsScreen.swift in Sources */,
 				E61FACDBE74EF777AFC7F7CA /* LegalAnalyseSheet.swift in Sources */,
 				DEF88320748825F1D7EE2DF9 /* LegalDocumentParts.swift in Sources */,
 				ED0305A6C8C26D9168E89CAF /* LegalDocumentScreen.swift in Sources */,

@@ -1,6 +1,8 @@
 import { DEFAULT_FEEDBACK_CONFIG, type FeedbackPost } from '#shared/feedback'
 import { DEFAULT_BOARD_CONFIG, ROADMAP_CATEGORIES, type BoardItem } from '#shared/board'
 import { DEFAULT_MARKETING_CONFIG } from '#shared/marketing'
+import { presetForm } from '#shared/leadForms'
+import { ALL_LEADS_SEGMENT, leadFormSegmentFilter } from '#shared/segments'
 import { DEFAULT_CHANGELOG_CONFIG, type ChangelogEntry, type ChangelogRelease } from '#shared/changelog'
 import { normalizeBrandConfig } from '#shared/brand'
 import { normalizeSettings } from '#shared/cms/content'
@@ -101,7 +103,12 @@ const types: Record<string, ConversationType[]> = { acme: [supportType('acme'), 
 const secrets: Record<string, string> = {}
 
 const endUsers: EndUser[] = []
-const segments: { id: string, projectId: string, name: string, filter: unknown, createdAt: string, updatedAt: string }[] = []
+// One lead form with its two segments, as a project that made a waitlist has them.
+const demoLeadForm = { ...presetForm('waitlist'), id: 'lf_demo1', projectId: 'acme', key: 'waitlist', name: 'Launch waitlist', active: true, settings: { doubleOptIn: true, confirmTemplate: '', welcomeTemplate: '', sequence: '', tags: ['waitlist'], redirectUrl: '' }, segment: 'seg_demo_leads', path: '/v1/forms/pk_demo/waitlist', pagePath: '/f/pk_demo/waitlist', createdAt: ago(60 * 24 * 40), updatedAt: ago(60 * 24 * 2) }
+const segments: { id: string, projectId: string, name: string, filter: unknown, auto: boolean, createdAt: string, updatedAt: string }[] = [
+  { id: 'seg_demo_leads', projectId: 'acme', name: 'Leads · Launch waitlist', filter: leadFormSegmentFilter('lf_demo1'), auto: true, createdAt: ago(60 * 24 * 40), updatedAt: ago(60 * 24 * 40) },
+  { id: 'seg_demo_all_leads', projectId: 'acme', name: 'All leads', filter: ALL_LEADS_SEGMENT, auto: true, createdAt: ago(60 * 24 * 40), updatedAt: ago(60 * 24 * 40) }
+]
 const contactExtras: Record<string, { tags?: string[], subscription?: string }> = {}
 const DEMO_PLANS = ['free', 'pro', 'team']
 const demoCampaigns = [{
@@ -114,6 +121,7 @@ const demoCampaigns = [{
 function asContact(u: EndUser) {
   const n = Number(u.id.replace(/\D/g, '')) || 0
   const extra = contactExtras[u.id] || {}
+  const lead = u.projectId === 'acme' && n % 4 === 0
   // What a Stripe sync writes on a paying customer's contact.
   const paid = DEMO_REVENUE[u.projectId]?.customers.find(([email]) => email === u.email)
   const stripe = paid ? { [STRIPE_ATTR.customer]: customerId(paid[0]), [STRIPE_ATTR.revenue]: paid[1], [STRIPE_ATTR.payments]: paid[2], [STRIPE_ATTR.status]: 'active' } : {}
@@ -121,10 +129,17 @@ function asContact(u: EndUser) {
     id: u.id, externalId: u.externalId, email: u.email, name: u.name, username: '', avatarUrl: '',
     attributes: { plan: DEMO_PLANS[n % 3]!, seats: (n % 5) + 1, ...stripe }, tags: extra.tags || (n % 2 ? ['beta'] : []),
     subscription: extra.subscription || (n % 3 === 0 ? 'none' : 'subscribed'), unsubscribedTopics: [],
-    consent: n % 3 === 0 ? null : { source: 'form', at: ago(60 * 24 * 20) }, sources: [], feedbackEmails: true,
+    consent: n % 3 === 0 ? null : { source: lead ? 'lead_form' : 'form', at: ago(60 * 24 * 20) }, sources: [], feedbackEmails: true,
+    // Every fourth person came in through the waitlist; the rest are the app's own users.
+    origin: { type: lead ? 'lead_form' : 'app', id: lead ? demoLeadForm.id : '', at: ago(60 * 24 * 30 + n) }, leadForms: lead ? [demoLeadForm.id] : [],
     lastSeenAt: ago(n * 37), createdAt: ago(60 * 24 * 30 + n), updatedAt: ago(n)
   }
 }
+function demoLeadFormWithStats() {
+  const leads = endUsers.map(asContact).filter(c => c.leadForms.includes(demoLeadForm.id))
+  return { ...demoLeadForm, stats: { leads: leads.length, confirmed: leads.filter(c => c.subscription === 'subscribed').length } }
+}
+
 const conversations: Conversation[] = []
 const messages: Message[] = []
 const errorServers = [
@@ -848,7 +863,7 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/contacts$/, ({ query }) => {
     const q = (query.q || '').toLowerCase()
     const rows = endUsers.filter(u => u.projectId === query.project && (!q || [u.name, u.email, u.externalId].some(v => v.toLowerCase().includes(q)))).map(asContact)
-    return { contacts: rows.filter(c => !query.subscription || c.subscription === query.subscription), nextCursor: null }
+    return { contacts: rows.filter(c => (!query.subscription || c.subscription === query.subscription) && (!query.origin || c.origin.type === query.origin) && (!query.leadForm || c.leadForms.includes(query.leadForm))), nextCursor: null }
   }],
   ['GET', /^\/contacts\/([^/]+)$/, ({ params }) => ({ contact: asContact(find(endUsers, params[0], 'Contact')) })],
   ['PATCH', /^\/contacts\/([^/]+)$/, ({ params, body }) => {
@@ -859,7 +874,7 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   }],
   ['GET', /^\/segments$/, ({ query }) => ({ segments: segments.filter(s => s.projectId === query.project) })],
   ['POST', /^\/segments$/, ({ body }) => {
-    const segment = { id: newId('seg'), projectId: String(body.project), name: String(body.name || 'Segment'), filter: body.filter || { match: 'all', rules: [] }, createdAt: now(), updatedAt: now() }
+    const segment = { id: newId('seg'), projectId: String(body.project), name: String(body.name || 'Segment'), filter: body.filter || { match: 'all', rules: [] }, auto: false, createdAt: now(), updatedAt: now() }
     segments.push(segment)
     return { segment }
   }],
@@ -877,6 +892,9 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const rows = endUsers.filter(u => u.projectId === body.project).map(asContact)
     return { count: rows.length, sample: rows.slice(0, 10) }
   }],
+
+  ['GET', /^\/admin\/lead-forms$/, ({ query }) => ({ forms: query.project === 'acme' ? [demoLeadFormWithStats()] : [] })],
+  ['GET', /^\/admin\/lead-forms\/([^/]+)$/, ({ params }) => ({ form: find([demoLeadFormWithStats()], params[0], 'Form') })],
 
   ['GET', /^\/admin\/contact-sources$/, () => ({ sources: [], kinds: [{ kind: 'parse', label: 'Parse Server' }, { kind: 'postgres', label: 'Postgres / Supabase' }, { kind: 'firestore', label: 'Firebase / Firestore' }], ready: true })],
 

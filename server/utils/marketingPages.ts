@@ -2,7 +2,7 @@ import { poweredByHtml, type PoweredBy } from './branding'
 import { escapeHtml } from './messageEmail'
 
 // The few public pages marketing email links to — preferences, confirm,
-// sign-up — as plain server-rendered HTML: no JavaScript, no sign-in, they
+// sign-up, lead forms — as plain server-rendered HTML: no JavaScript, no sign-in, they
 // work in any mail client's browser and survive link scanners (a GET never
 // changes anything; every change is a form POST).
 
@@ -45,7 +45,14 @@ label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; curs
 label + label { border-top: 1px solid var(--line); }
 label small { display: block; color: var(--muted); font-size: 13px; }
 input[type=checkbox] { margin-top: 4px; accent-color: var(--accent); width: 16px; height: 16px; }
-input[type=email], input[type=text] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; font: inherit; margin-bottom: 12px; }
+input[type=email], input[type=text], input[type=number], input[type=url], input[type=tel], select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; font: inherit; margin-bottom: 12px; }
+textarea { resize: vertical; }
+label.field { display: block; padding: 0; cursor: auto; }
+label.field + label.field, label.field + label.check, label.check + label.field { border-top: 0; }
+label.field > span { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+label.field small { display: inline; }
+label.check { padding: 0 0 12px; }
+p.small { font-size: 13px; margin: 16px 0 0; }
 button { width: 100%; padding: 11px 16px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
 button.quiet { background: transparent; color: var(--muted); border: 1px solid var(--line); font-weight: 500; margin-top: 10px; }
 .note { padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--text); margin-bottom: 16px; }

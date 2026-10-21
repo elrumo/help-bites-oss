@@ -94,6 +94,10 @@ Pausing a sequence holds everyone where they are. Each step's log batch id is
 
 ## Sign-up form and double opt-in
 
+For a waitlist or an interest form with fields of your own, a welcome email and
+a sequence per form, use [lead forms](FORMS.md); this section is the
+project-wide newsletter sign-up.
+
 - Hosted page: `/s/<publicKey>`, to link to or iframe.
 - Or a plain form on your site (Settings shows the snippet):
 

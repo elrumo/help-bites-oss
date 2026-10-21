@@ -279,13 +279,17 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 - **One record per person.** Identified by your user id or by email, with
   attributes, tags, a subscription status, and a consent record.
+- **How each person was added.** Every contact shows **Added via**: an app user, a
+  lead form (and which), the newsletter sign-up, a CSV import, a database sync,
+  Stripe, the API, by hand or a feedback import. The people list and segments filter
+  by it. Web and native.
 - **Imports.** CSV in the panel, mapped in the browser. The batch API takes up to
   1,000 rows.
 - **Sync from your database.** Reads Parse Server, Postgres or Supabase (read-only)
   and Firestore. Incremental when the table has an updated-at column. Runs every
   15 minutes to daily, or on demand.
-- **Segments.** A rule builder (match all or any, on attributes, tags, dates and
-  subscription) with a live count.
+- **Segments.** A rule builder (match all or any, on attributes, tags, dates,
+  subscription, how people were added and which lead form) with a live count.
 - **Stripe billing.** With Stripe connected, a person's page looks them up in Stripe
   live (by their linked customer, else their email) and shows when they became a
   customer, their country, credit or balance owed and an overdue flag, next to their
@@ -296,6 +300,20 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   lists plans, top customers and recent payments. Read-only. Web and native.
 - **Erasure.** Deleting a person removes their conversations, feedback and email
   history.
+
+**Lead forms** [FORMS.md](FORMS.md)
+
+- **Waitlists and interest forms.** As many forms per project as you need, from a
+  single email box on one row to up to 12 fields (name, text, number, website,
+  phone, a choice, a checkbox). Each answer is saved on the contact. Web and native.
+- **Anywhere.** One script tag (`forms.js`, MIT) styled by `data-*` options, CSS
+  variables and parts; a plain HTML form; a hosted page at `/f/<public key>/<key>`;
+  a copy-paste SwiftUI view; or the public API from your own UI.
+- **Leads land in Contacts.** New people are marked **Added via: Lead form**, get
+  the form's tags, and fall into a segment made for the form (plus **All leads**).
+- **After sign-up.** Optional double opt-in with your own confirmation template, a
+  welcome email from any template (sent once), a sequence to start, and where to
+  send people next.
 
 **Campaigns and sequences** [MARKETING.md](MARKETING.md)
 
@@ -461,6 +479,10 @@ See [EDITIONS.md](EDITIONS.md).
   campaigns, sequences, the mail HelpBites sends itself, the chat, feedback and
   changelog embeds and CMS pages do not yet, and a contact has no language of its
   own. [LANGUAGES.md](LANGUAGES.md)
+- **Lead forms.** No CAPTCHA (a honeypot and rate limits only), no file uploads, no
+  translations and no A/B tests yet. Answers are saved on the contact, not kept as
+  separate submissions, and a form never overwrites an answer a contact already
+  has. [FORMS.md](FORMS.md)
 - **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
   email, campaigns, legal documents, flags or knowledge base editing, and it issues no refresh tokens, so an
   OAuth-connected assistant signs in again after a year. [MCP.md](MCP.md)

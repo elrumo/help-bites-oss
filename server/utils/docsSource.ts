@@ -6,6 +6,7 @@ import deployment from '../../docs/DEPLOYMENT.md'
 import errors from '../../docs/ERRORS.md'
 import feedback from '../../docs/FEEDBACK.md'
 import flags from '../../docs/FLAGS.md'
+import forms from '../../docs/FORMS.md'
 import languages from '../../docs/LANGUAGES.md'
 import legal from '../../docs/LEGAL.md'
 import mcp from '../../docs/MCP.md'
@@ -23,6 +24,7 @@ const SOURCES: Record<string, string> = {
   'ERRORS.md': errors,
   'FEEDBACK.md': feedback,
   'FLAGS.md': flags,
+  'FORMS.md': forms,
   'LANGUAGES.md': languages,
   'LEGAL.md': legal,
   'MCP.md': mcp,

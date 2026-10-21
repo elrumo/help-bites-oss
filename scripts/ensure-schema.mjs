@@ -314,6 +314,10 @@ const SCHEMAS = {
       consent: { type: 'Object' },
       // ContactSource ids this person was synced from.
       sources: { type: 'Array' },
+      // How they first got here { type, id, at } (shared/contacts.ts ContactOrigin), set when the row is made.
+      origin: { type: 'Object' },
+      // LeadForm ids they signed up through.
+      leadForms: { type: 'Array' },
       // Email-only users (server/utils/endUserSessions.ts): `anonymous` rows have
       // an `anon_…` externalId; the address stays in `pendingEmail` until the
       // person proves it with a code, then moves to `email`.
@@ -331,7 +335,9 @@ const SCHEMAS = {
       project_email: { _p_project: 1, email: 1 },
       project_created: { _p_project: 1, _created_at: -1, _id: -1 },
       project_subscription_id: { _p_project: 1, subscription: 1, _id: 1 },
-      project_tags: { _p_project: 1, tags: 1 }
+      project_tags: { _p_project: 1, tags: 1 },
+      project_leadForms: { _p_project: 1, leadForms: 1 },
+      project_origin: { _p_project: 1, 'origin.type': 1 }
     }
   },
   // The developer's own database, synced into contacts on a schedule
@@ -531,7 +537,9 @@ const SCHEMAS = {
     fields: {
       project: { type: 'Pointer', targetClass: 'Project' },
       name: { type: 'String' },
-      filter: { type: 'Object' }
+      filter: { type: 'Object' },
+      // Made by HelpBites: 'lead_form' (one form's leads) or 'leads' (every lead); '' or missing for the operator's own.
+      auto: { type: 'String' }
     },
     indexes: { project_created: { _p_project: 1, _created_at: -1 } }
   },
@@ -1033,6 +1041,31 @@ const SCHEMAS = {
       published: { type: 'Object' },
       publishedAt: { type: 'Date' },
       version: { type: 'Number' }
+    },
+    indexes: {
+      project_key: { _p_project: 1, key: 1 }
+    }
+  },
+  // A lead form (server/utils/leadForms.ts): a waitlist or interest form read and posted at
+  // /v1/forms/<publicKey>/<key> and hosted at /f/<publicKey>/<key>. `fields`, `content`, `style`
+  // and `settings` are shared/leadForms.ts shapes. The ids it names are columns of their own, so a
+  // transfer can map them: `segment` (made for its leads), `sequence`, and the two templates (key or id).
+  LeadForm: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      // Unique within the project (checked on write).
+      key: { type: 'String' },
+      name: { type: 'String' },
+      active: { type: 'Boolean' },
+      fields: { type: 'Array' },
+      content: { type: 'Object' },
+      style: { type: 'Object' },
+      // { doubleOptIn, tags, redirectUrl }
+      settings: { type: 'Object' },
+      segment: { type: 'String' },
+      sequence: { type: 'String' },
+      welcomeTemplate: { type: 'String' },
+      confirmTemplate: { type: 'String' }
     },
     indexes: {
       project_key: { _p_project: 1, key: 1 }

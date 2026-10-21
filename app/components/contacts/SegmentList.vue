@@ -89,6 +89,7 @@ async function remove(segment: ContactSegment) {
           <button type="button" class="flex min-w-0 flex-1 items-center gap-3 text-left" @click="edit(s)">
             <UIcon name="i-lucide-filter" class="size-4 shrink-0 text-muted" />
             <span class="min-w-0 flex-1 truncate font-medium text-highlighted">{{ s.name }}</span>
+            <UTooltip v-if="s.auto" :text="$t('contacts.segments.autoHint')"><UBadge :label="$t('contacts.segments.auto')" icon="i-lucide-clipboard-list" color="neutral" variant="soft" size="sm" /></UTooltip>
             <span class="text-xs text-muted">{{ $t('contacts.segments.ruleCount', s.filter.rules.length) }}</span>
             <span class="w-24 text-right text-xs tabular-nums text-muted">{{ counts[s.id] === undefined ? '…' : $t('contacts.segments.peopleCount', { count: counts[s.id]!.toLocaleString() }) }}</span>
           </button>

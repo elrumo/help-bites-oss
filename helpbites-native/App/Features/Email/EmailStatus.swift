@@ -46,7 +46,7 @@ enum EmailStatusText {
 
   static let sources: [(key: String, label: String)] = [
     ("api", "API"), ("admin", "Operator"), ("test", "Test"), ("notification", "Notification"), ("feedback", "Feedback"), ("system", "HelpBites"),
-    ("campaign", "Campaign"), ("sequence", "Sequence")
+    ("campaign", "Campaign"), ("sequence", "Sequence"), ("form", "Lead form")
   ]
 
   static func source(_ key: String?) -> String {
