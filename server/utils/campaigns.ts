@@ -196,7 +196,7 @@ export function blankValues(document: EmailDocument, subject: string): Record<st
 }
 
 /** One message per contact, through the send API's own composer. */
-export function campaignEmails(project: ParseObject, snapshot: CampaignSnapshot, contacts: ParseObject[], options: { batchId: string, subject: string, topic: string, testMode: boolean, source: 'campaign' | 'sequence' | 'test', actor: EmailActor, base: string, metadata?: Record<string, string> }): OutgoingEmail[] {
+export function campaignEmails(project: ParseObject, snapshot: CampaignSnapshot, contacts: ParseObject[], options: { batchId: string, subject: string, topic: string, testMode: boolean, source: 'campaign' | 'sequence' | 'form' | 'test', actor: EmailActor, base: string, metadata?: Record<string, string> }): OutgoingEmail[] {
   const sender = marketingSender(project)
   const request: EmailSendRequest = {
     content: { type: 'document', document: snapshot.document },

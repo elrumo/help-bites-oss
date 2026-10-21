@@ -52,7 +52,8 @@
     "flags": "Flags",
     "errors": "Errors",
     "dev": "Dev",
-    "settings": "Configuració"
+    "settings": "Configuració",
+    "forms": "Formularis"
   },
   "overview": {
     "refresh": "Actualitza",
@@ -2404,6 +2405,10 @@
         "contacts": {
           "term": "Contactes, segments i campanyes",
           "desc": "Sincronitza persones des de Postgres, Parse o Firestore, segmenta-les i després llança difusions i seqüències de degoteig amb doble confirmació."
+        },
+        "forms": {
+          "term": "Llistes d’espera i formularis de contacte",
+          "desc": "Recull interessats abans de llançar amb un simple camp d’email o un formulari a mida, al teu web, en una pàgina allotjada o a la teva app. Cada registre es converteix en un contacte amb el seu propi segment, doble confirmació, un email de benvinguda i una seqüència."
         }
       },
       "team": {

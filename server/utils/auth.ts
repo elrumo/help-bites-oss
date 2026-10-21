@@ -181,6 +181,7 @@ export async function ensureEndUser(project: ParseObject, claims: { sub: string,
     row!.set('project', project)
     row!.set('externalId', claims.sub)
     row!.set('subscription', 'none')
+    row!.set('origin', { type: 'app', id: '', at: new Date().toISOString() })
   }
   dirty ||= row!.isNew()
   if (name && row!.get('name') !== name) { row!.set('name', name); dirty = true }

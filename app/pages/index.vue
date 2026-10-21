@@ -512,7 +512,8 @@ const features = computed(() => [
       { term: t('landing.features.email.designer.term'), desc: t('landing.features.email.designer.desc') },
       { term: t('landing.features.email.api.term'), desc: t('landing.features.email.api.desc') },
       { term: t('landing.features.email.log.term'), desc: t('landing.features.email.log.desc') },
-      { term: t('landing.features.email.contacts.term'), desc: t('landing.features.email.contacts.desc') }
+      { term: t('landing.features.email.contacts.term'), desc: t('landing.features.email.contacts.desc') },
+      { term: t('landing.features.email.forms.term'), desc: t('landing.features.email.forms.desc') }
     ]
   },
   {

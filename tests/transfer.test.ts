@@ -114,8 +114,10 @@ describe('what travels', () => {
       for (const [path, target] of Object.entries(paths)) {
         expect(real(className, path.split('.')[0]!)).toBe(true)
         expect(IMPORT_ORDER as readonly string[]).toContain(target)
-        // The class an id points at is created first, or is the class itself.
-        expect((IMPORT_ORDER as readonly string[]).indexOf(target)).toBeLessThanOrEqual((IMPORT_ORDER as readonly string[]).indexOf(className) + (target === 'FeedbackComment' ? 99 : 0))
+        // The class an id points at is created first, or is the class itself, unless the field holds
+        // a single id (a String column): the importer sets those once everything exists.
+        const single = !path.includes('.') && fieldsOf(className).find(item => item.name === path)?.type === 'String'
+        if (!single) expect((IMPORT_ORDER as readonly string[]).indexOf(target)).toBeLessThanOrEqual((IMPORT_ORDER as readonly string[]).indexOf(className))
       }
     }
     for (const [className, list] of Object.entries(DROP_FIELDS)) for (const field of list) expect(real(className, field)).toBe(true)
@@ -229,6 +231,22 @@ describe('importing', () => {
     const sequence = made('Sequence')[0]!.body
     expect(sequence.steps).toEqual([{ id: 'a', template: made('EmailTemplate')[0]!.id }, { id: 'b', template: 'by-key' }])
     expect(sequence.status).toBe('paused')
+  })
+
+  test('a lead form keeps its leads, its segment, its sequence and its welcome email', async () => {
+    const [head, project] = sample()
+    await importLines(file(head!, project!,
+      line('LeadForm', { objectId: 'lf1', project: ptr('Project', 'p1'), key: 'waitlist', name: 'Waitlist', segment: 'seg1', sequence: 's1', welcomeTemplate: 't1', confirmTemplate: 'confirm-by-key' }),
+      line('EndUser', { objectId: 'u1', project: ptr('Project', 'p1'), email: 'a@x.io', leadForms: ['lf1'], origin: { type: 'lead_form', id: 'lf1' } }),
+      line('ContactSegment', { objectId: 'seg1', project: ptr('Project', 'p1'), name: 'Leads · Waitlist', auto: 'lead_form', filter: { match: 'all', rules: [{ field: 'leadForms', op: 'includes', value: 'lf1' }] } }),
+      line('EmailTemplate', { objectId: 't1', ...old, project: ptr('Project', 'p1'), name: 'Welcome' }),
+      line('Sequence', { objectId: 's1', project: ptr('Project', 'p1'), name: 'Nurture', status: 'draft', steps: [] })
+    ), workspace)
+    const form = made('LeadForm')[0]!
+    expect(made('EndUser')[0]!.body).toMatchObject({ leadForms: [form.id], origin: { type: 'lead_form', id: form.id } })
+    expect(made('ContactSegment')[0]!.body.filter.rules[0].value).toBe(form.id)
+    // The form comes first; what it names is set once everything exists.
+    expect(store.get(`LeadForm/${form.id}`)).toMatchObject({ segment: made('ContactSegment')[0]!.id, sequence: made('Sequence')[0]!.id, welcomeTemplate: made('EmailTemplate')[0]!.id, confirmTemplate: 'confirm-by-key' })
   })
 
   test('without the maintenance key rows are created oldest first; with it they keep their dates', async () => {

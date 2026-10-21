@@ -1251,6 +1251,7 @@ async function importPerson(project: ParseObject, person: FeedbackImportPerson):
     endUser = new (Parse.Object.extend('EndUser'))() as ParseObject
     endUser.set('project', project)
     endUser.set('externalId', externalId)
+    endUser.set('origin', { type: 'feedback', id: '', at: new Date().toISOString() })
   }
   let dirty = endUser.isNew()
   // What the user's own token said wins over history: only fill blanks.

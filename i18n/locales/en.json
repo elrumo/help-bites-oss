@@ -53,7 +53,8 @@
     "errors": "Errors",
     "dev": "Dev",
     "settings": "Settings",
-    "pages": "Pages"
+    "pages": "Pages",
+    "forms": "Forms"
   },
   "overview": {
     "refresh": "Refresh",
@@ -608,7 +609,8 @@
       "subscription": "Subscription",
       "billing": "Billing",
       "spentOver": "Spent over",
-      "spentMoreThan": "Spent more than"
+      "spentMoreThan": "Spent more than",
+      "origin": "Added via"
     },
     "billingFilter": {
       "all": "Any billing",
@@ -695,7 +697,9 @@
         "sources": "Source",
         "createdAt": "Added",
         "lastSeenAt": "Last seen",
-        "updatedAt": "Updated"
+        "updatedAt": "Updated",
+        "origin": "Added via",
+        "leadForms": "Lead form"
       },
       "op": {
         "is": "is",
@@ -720,7 +724,8 @@
         "days": "Days",
         "date": "Date",
         "removeRule": "Remove rule"
-      }
+      },
+      "pickForm": "Pick a form"
     },
     "form": {
       "email": "Email",
@@ -772,7 +777,10 @@
       "conversations": "Conversations",
       "noneYet": "None yet.",
       "nothingSent": "Nothing sent yet.",
-      "erase": "Erase this person"
+      "erase": "Erase this person",
+      "addedVia": "Added via",
+      "leadForms": "Lead forms",
+      "deletedForm": "A deleted form"
     },
     "empty": {
       "title": "No contacts yet",
@@ -825,7 +833,9 @@
       "showPeople": "Show these people",
       "namePlaceholder": "Pro users seen this month",
       "ruleCount": "{count} rule | {count} rules",
-      "peopleCount": "{count} people"
+      "peopleCount": "{count} people",
+      "auto": "Auto",
+      "autoHint": "Made for a lead form. Rename, edit or delete it like any other segment."
     },
     "sources": {
       "connect": "Connect a database",
@@ -897,6 +907,17 @@
       "consentSubscribed": "Everyone here agreed to marketing email",
       "consentSubscribedDescription": "Recorded as their consent. Nobody who unsubscribed is subscribed again.",
       "saveAndSync": "Save and sync"
+    },
+    "origin": {
+      "app": "App user",
+      "lead_form": "Lead form",
+      "signup": "Newsletter sign-up",
+      "import": "CSV import",
+      "sync": "Database sync",
+      "stripe": "Stripe",
+      "api": "API",
+      "panel": "Added by hand",
+      "feedback": "Feedback import"
     }
   },
   "campaigns": {
@@ -2405,6 +2426,10 @@
         "contacts": {
           "term": "Contacts, segments and campaigns",
           "desc": "Sync people from Postgres, Parse or Firestore, segment them, then run broadcasts and drip sequences with double opt-in."
+        },
+        "forms": {
+          "term": "Waitlists and lead forms",
+          "desc": "Collect people before you launch with a single email box or a form of your own, on your site, a hosted page or in your app. Every sign-up becomes a contact with its own segment, double opt-in, a welcome email and a drip sequence."
         }
       },
       "team": {
@@ -3813,6 +3838,155 @@
           "faq": "Write an FAQ that answers the main objections someone in the audience would have before signing up."
         }
       }
+    },
+    "forms": {
+      "guide": "Guide",
+      "newForm": "New form",
+      "newFormDescription": "Start from a single email box, a waitlist or a longer form. You can change every field later.",
+      "title": "Lead forms",
+      "intro": "Collect people before you launch: a waitlist, a \"notify me\" box or an interest form, on your site, in your app or on a hosted page. Everyone who signs up becomes a contact, lands in the form's own segment and can get a welcome email and a sequence.",
+      "emptyTitle": "No forms yet",
+      "emptyDescription": "Make a form, add one line to your site, and watch the leads come in under Contacts.",
+      "leadCount": "{count} lead | {count} leads",
+      "confirmedCount": "{count} on the list",
+      "live": "Live",
+      "closed": "Closed",
+      "startFrom": "Start from",
+      "presets": {
+        "email": "Email only",
+        "emailHint": "One email box and a button, on one row.",
+        "waitlist": "Waitlist",
+        "waitlistHint": "Email and name.",
+        "detailed": "Interest form",
+        "detailedHint": "Email, name, company, role and a question."
+      },
+      "name": "Name",
+      "namePlaceholder": "Launch waitlist",
+      "defaultName": "Waitlist",
+      "key": "Key",
+      "keyHint": "Your site and app ask for the form by this name.",
+      "keyInvalid": "Use lowercase letters, digits and dashes, up to 40.",
+      "create": "Create form",
+      "createError": "Could not create the form",
+      "loadError": "Could not load the forms",
+      "form": "Form",
+      "notFound": "This form does not exist.",
+      "active": "Taking sign-ups",
+      "activeHint": "Off closes the form: sites and apps that load it show nothing.",
+      "fields": "Fields",
+      "types": {
+        "email": "Email",
+        "name": "Name",
+        "text": "Short text",
+        "textarea": "Long text",
+        "number": "Number",
+        "url": "Website",
+        "phone": "Phone",
+        "select": "Choice",
+        "checkbox": "Checkbox"
+      },
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "removeField": "Remove field",
+      "label": "Label",
+      "placeholder": "Placeholder",
+      "fieldKey": "Saved as",
+      "fieldKeyHint": "The contact attribute the answer goes in.",
+      "fieldKeyInvalid": "Letters, digits and _, starting with a letter.",
+      "options": "Options",
+      "optionsHint": "Press Enter after each one.",
+      "addOption": "Add an option",
+      "optionA": "Option A",
+      "optionB": "Option B",
+      "required": "Required",
+      "mustTick": "Must be ticked",
+      "addField": "Add field",
+      "words": "Words",
+      "content": {
+        "title": "Title",
+        "description": "Description",
+        "buttonLabel": "Button",
+        "successTitle": "After signing up",
+        "successMessage": "Thank-you message",
+        "confirmMessage": "While they confirm",
+        "confirmMessageHint": "Shown instead of the thank-you message until they click the link in the email.",
+        "footnote": "Small print",
+        "footnotePlaceholder": "We only email about the launch. Unsubscribe any time."
+      },
+      "look": "Look",
+      "accent": "Accent",
+      "projectAccent": "The project's accent",
+      "background": "Background",
+      "noBackground": "None: sits on your page",
+      "text": "Text",
+      "followsTheme": "Follows light or dark",
+      "reset": "Reset",
+      "layout": "Layout",
+      "layouts": {
+        "stacked": "Stacked",
+        "inline": "One row"
+      },
+      "radius": "Corner radius",
+      "font": "Font",
+      "after": "After someone signs up",
+      "afterHint": "They become a contact, get the tags below and join this form's segment.",
+      "doubleOptIn": "Ask them to confirm their email",
+      "doubleOptInHint": "They get an email with a link and are pending until they click it. The welcome email and the sequence wait for that.",
+      "confirmTemplate": "Confirmation email",
+      "confirmTemplateHint": "A template with a {'{'}{'{'}confirmUrl{'}'}{'}'} button.",
+      "builtInConfirm": "HelpBites' own",
+      "welcomeTemplate": "Welcome email",
+      "welcomeTemplateHint": "Sent once, when they are on the list.",
+      "noWelcome": "None",
+      "sequence": "Start a sequence",
+      "sequenceHint": "A draft or paused sequence holds them at the first step until you activate it.",
+      "noSequence": "None",
+      "sequenceStatus": {
+        "active": "active",
+        "draft": "draft",
+        "paused": "paused"
+      },
+      "tags": "Tags",
+      "tagsHint": "Added to everyone who signs up.",
+      "addTag": "Add a tag",
+      "redirectUrl": "Then send them to",
+      "redirectUrlHint": "For a plain HTML form, the hosted page and the confirmation link. Empty shows a thank-you page.",
+      "newTemplate": "New email template",
+      "manageSequences": "Sequences",
+      "install": "Put it on your site or in your app",
+      "installTabs": {
+        "script": "Script",
+        "link": "Link"
+      },
+      "installHints": {
+        "script": "One script tag draws the form where you put it, in your colours. It needs nothing else.",
+        "html": "A plain form, styled by your own CSS. It posts straight to HelpBites and comes back to the thank-you page.",
+        "link": "A hosted page to link to, or to frame in your site.",
+        "swift": "Paste HelpBitesLeadForm.swift from the guide into your app, then show the view anywhere.",
+        "api": "Post answers from your own UI or server. Each field's answer goes under its key."
+      },
+      "saveFirst": "Save your changes first: the snippet uses the saved form.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "openPage": "Open the hosted page",
+      "openJson": "Open the form's JSON",
+      "readGuide": "Read the guide",
+      "leads": "Leads",
+      "leadsHint": "The latest people from this form. They are contacts like everyone else, in this form's segment.",
+      "noLeads": "Nobody has signed up yet.",
+      "showAll": "Show all in Contacts",
+      "emailThem": "Email them",
+      "preview": "Preview",
+      "previewStates": {
+        "form": "Form",
+        "success": "Done"
+      },
+      "toggleTheme": "Switch light and dark",
+      "previewHint": "Your unsaved changes, drawn by the same script your site loads. The Swift snippet has the same layout.",
+      "saved": "Saved",
+      "saveError": "Could not save the form",
+      "deleteConfirm": "Delete “{name}”? Sites that load it show nothing. Its leads and its segment stay.",
+      "deleteForm": "Delete form"
     }
   },
   "workspaceSettings": {

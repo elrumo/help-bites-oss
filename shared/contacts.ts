@@ -11,6 +11,16 @@ export type ContactAttributeValue = string | number | boolean
 /** Proof of marketing consent: how, when and from where someone opted in. */
 export type ContactConsent = { source: string, at: string, ip?: string, ua?: string, formUrl?: string, confirmedAt?: string }
 
+/**
+ * How a contact first got here, set once when the row is made: one of your
+ * app's users (an identity token, email-only access), a lead form (`id`: the
+ * form), the newsletter sign-up, a CSV import, a database sync (`id`: the
+ * source), Stripe, the API, the panel, or a feedback import.
+ */
+export type ContactOriginType = 'app' | 'lead_form' | 'signup' | 'import' | 'sync' | 'stripe' | 'api' | 'panel' | 'feedback'
+export const CONTACT_ORIGIN_TYPES: ContactOriginType[] = ['app', 'lead_form', 'signup', 'import', 'sync', 'stripe', 'api', 'panel', 'feedback']
+export type ContactOrigin = { type: ContactOriginType, id: string, at: string | null }
+
 export type Contact = {
   id: string
   externalId: string
@@ -26,6 +36,10 @@ export type Contact = {
   consent: ContactConsent | null
   /** Ids of the sources (database syncs) this contact came from. */
   sources: string[]
+  /** How they first got here; null for someone from before this was kept whose history says nothing. */
+  origin: ContactOrigin | null
+  /** Ids of the lead forms they signed up through. */
+  leadForms: string[]
   feedbackEmails: boolean
   lastSeenAt: string | null
   createdAt: string | null
@@ -37,6 +51,37 @@ export const CONTACT_LIMITS = { attributes: 50, attributeValue: 500, tags: 50, t
 // Stored as nested Mongo keys and queried as `attributes.<key>`: no dots, no `$`.
 export const ATTRIBUTE_KEY_RE = /^[A-Za-z][A-Za-z0-9_]{0,39}$/
 export const TOPIC_KEY_RE = /^[a-z0-9][a-z0-9_-]{0,39}$/
+
+/** The origin a writer's `via` (ContactWriteOptions) stands for. */
+export function originTypeForVia(via: string): ContactOriginType {
+  const map: Record<string, ContactOriginType> = { form: 'signup', import: 'import', panel: 'panel', sync: 'sync', stripe: 'stripe', lead_form: 'lead_form', app: 'app', feedback: 'feedback' }
+  return map[via] || 'api'
+}
+
+/** A stored origin, or null when it is not one. */
+export function readContactOrigin(value: unknown): ContactOrigin | null {
+  const raw = (value && typeof value === 'object' && !Array.isArray(value) ? value : {}) as Record<string, unknown>
+  if (!CONTACT_ORIGIN_TYPES.includes(raw.type as ContactOriginType)) return null
+  return { type: raw.type as ContactOriginType, id: typeof raw.id === 'string' ? raw.id : '', at: typeof raw.at === 'string' ? raw.at : null }
+}
+
+/**
+ * The best guess for a contact from before origins were kept: a sync it came
+ * from, how its consent was recorded, or an app user id. Null when nothing
+ * says (scripts/backfill-contacts.mjs writes the same guess once).
+ */
+export function guessContactOrigin(row: { externalId?: unknown, sources?: unknown, consent?: unknown, leadForms?: unknown, anonymous?: unknown }): ContactOrigin | null {
+  const list = (value: unknown) => (Array.isArray(value) ? value.map(String).filter(Boolean) : [])
+  const leadForms = list(row.leadForms)
+  if (leadForms.length) return { type: 'lead_form', id: leadForms[0]!, at: null }
+  const sources = list(row.sources)
+  if (sources.length) return { type: 'sync', id: sources[0]!, at: null }
+  const consent = (row.consent && typeof row.consent === 'object' ? row.consent : {}) as { source?: unknown }
+  const via = typeof consent.source === 'string' ? consent.source : ''
+  if (via) return { type: /^[A-Za-z0-9]{10}$/.test(via) ? 'sync' : originTypeForVia(via), id: /^[A-Za-z0-9]{10}$/.test(via) ? via : '', at: null }
+  if (row.anonymous === true || (typeof row.externalId === 'string' && row.externalId)) return { type: 'app', id: '', at: null }
+  return null
+}
 
 /** Lowercased address, or '' when it does not look like one. */
 export function normalizeEmail(value: unknown): string {
@@ -93,6 +138,8 @@ export type ContactInput = {
   tags?: string[]
   subscription?: ContactSubscription
   unsubscribedTopics?: string[]
+  /** Lead forms they came through (added, never removed). Written by the forms endpoint only. */
+  leadForms?: string[]
 }
 
 /** Validate one contact as the API receives it. Unknown keys are ignored. */

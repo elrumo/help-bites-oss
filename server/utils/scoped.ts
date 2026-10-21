@@ -90,6 +90,7 @@ export const scoped = {
 
   legalDocument: async (ctx: MemberContext, id: string) => viaProject(ctx, await getLegalDocument(id), 'Document not found'),
   onboardingFlow: async (ctx: MemberContext, id: string) => viaProject(ctx, await getOnboardingFlow(id), 'Flow not found'),
+  leadForm: async (ctx: MemberContext, id: string) => viaProject(ctx, await getLeadForm(id), 'Form not found'),
   brandAsset: async (ctx: MemberContext, id: string) => viaProject(ctx, await getBrandAsset(id), 'File not found'),
   cmsComponent: async (ctx: MemberContext, id: string) => viaProject(ctx, await getCmsComponent(id), 'Component not found'),
   cmsEntry: async (ctx: MemberContext, id: string) => viaProject(ctx, await getCmsEntry(id), 'Entry not found'),

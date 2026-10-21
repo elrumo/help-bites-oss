@@ -59,7 +59,7 @@ export function readConfirmToken(token: string, now = Date.now()): { projectId: 
 }
 
 /** A form can be pointed at someone else's address: at most a few mails per address a day, confirmations and preference links together. */
-async function addressMailAllowed(project: ParseObject, email: string): Promise<boolean> {
+export async function addressMailAllowed(project: ParseObject, email: string): Promise<boolean> {
   try {
     await rateLimit(`sb:rl:confirm:${project.id}:${createHash('sha256').update(email).digest('hex')}`, LIMITS.confirmMailsPerAddress.limit, LIMITS.confirmMailsPerAddress.window)
     return true
@@ -68,26 +68,47 @@ async function addressMailAllowed(project: ParseObject, email: string): Promise<
   }
 }
 
-export async function sendConfirmation(project: ParseObject, contact: ParseObject): Promise<void> {
+export type ConfirmationCopy = { subject: string, body: string, ctaLabel: string }
+
+/**
+ * A confirmation email with `url` behind its button: `template` (a project's
+ * own design, which gets {{confirmUrl}}) when there is one, else a plain
+ * message with `copy`. Lead forms send theirs through here too.
+ */
+export async function sendConfirmationEmail(project: ParseObject, contact: ParseObject, url: string, template: ParseObject | null, copy: ConfirmationCopy): Promise<void> {
   const email = String(contact.get('email') || '')
   if (!await addressMailAllowed(project, email)) return
-  const url = `${publicBaseUrl()}/u/confirm/${confirmToken(project.id || '', contact.id || '')}`
   const name = String(contact.get('name') || '')
-  const own = await new (useParse()).Query('EmailTemplate').equalTo('project', project).equalTo('key', 'confirm-subscription').include('master').first(MASTER)
   const poweredBy = await poweredByFor(project)
-  const rendered = own
-    ? renderEmailTemplate(own, project, { confirmUrl: url, 'recipient.email': email, 'recipient.name': name })
-    : renderMessageEmail({ appName: String(project.get('name') || ''), senderName: String(project.get('name') || ''), recipientName: name, subject: `Confirm your subscription to ${project.get('name') || 'our newsletter'}`, body: `Please confirm you want email from ${project.get('name') || 'us'}. If you did not sign up, ignore this message: you will not hear from us.`, ctaUrl: url, ctaLabel: 'Confirm subscription', attachmentUrls: [], poweredBy })
+  const rendered = template
+    ? renderEmailTemplate(template, project, { confirmUrl: url, 'recipient.email': email, 'recipient.name': name })
+    : renderMessageEmail({ appName: String(project.get('name') || ''), senderName: String(project.get('name') || ''), recipientName: name, subject: copy.subject, body: copy.body, ctaUrl: url, ctaLabel: copy.ctaLabel, attachmentUrls: [], poweredBy })
+  const key = template ? String(template.get('key') || '') : ''
   await deliverEmails([{
     project,
     to: { email, name },
     subject: rendered.subject,
     // The message layout already carries the badge; the project's own template gets it at the end.
-    html: own ? withPoweredByHtml(rendered.html, poweredBy) : rendered.html,
-    text: own ? withPoweredByText(rendered.text, poweredBy) : rendered.text,
+    html: template ? withPoweredByHtml(rendered.html, poweredBy) : rendered.html,
+    text: template ? withPoweredByText(rendered.text, poweredBy) : rendered.text,
     sender: marketingSender(project),
-    log: { source: 'system', kind: own ? 'template' : 'message', template: own || null, templateKey: own ? 'confirm-subscription' : '', templateName: own ? 'Confirm subscription' : 'Confirm subscription', variables: { confirmUrl: url }, batchId: newEmailBatchId(), actor: SYSTEM_EMAIL_ACTOR }
+    log: { source: 'system', kind: template ? 'template' : 'message', template, templateKey: key, templateName: template ? String(template.get('name') || 'Confirm subscription') : 'Confirm subscription', variables: { confirmUrl: url }, batchId: newEmailBatchId(), actor: SYSTEM_EMAIL_ACTOR }
   }])
+}
+
+/** The project's own confirmation design (send key `confirm-subscription`), if it has one. */
+export async function projectConfirmTemplate(project: ParseObject): Promise<ParseObject | null> {
+  return await new (useParse()).Query('EmailTemplate').equalTo('project', project).equalTo('key', 'confirm-subscription').include('master').first(MASTER) || null
+}
+
+export async function sendConfirmation(project: ParseObject, contact: ParseObject): Promise<void> {
+  const url = `${publicBaseUrl()}/u/confirm/${confirmToken(project.id || '', contact.id || '')}`
+  const app = String(project.get('name') || '')
+  await sendConfirmationEmail(project, contact, url, await projectConfirmTemplate(project), {
+    subject: `Confirm your subscription to ${app || 'our newsletter'}`,
+    body: `Please confirm you want email from ${app || 'us'}. If you did not sign up, ignore this message: you will not hear from us.`,
+    ctaLabel: 'Confirm subscription'
+  })
 }
 
 /** A subscriber changes topics on their own preferences page, never from the public form. */

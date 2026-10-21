@@ -112,6 +112,7 @@ await api(`/v1/admin/projects/${project.id}`, { ...A, method: 'PATCH', body: { f
 const { post } = await api('/v1/feedback', { token: userToken, method: 'POST', body: { title: `${MARK} idea` } })
 const keyA = await api('/v1/admin/api-keys', { ...A, method: 'POST', body: { name: `${MARK} key` } })
 const { flow } = await api('/v1/admin/onboarding/flows', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} flow` } })
+const { form: leadForm } = await api('/v1/admin/lead-forms', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} form` } })
 await api(`/v1/admin/brand?project=${project.id}`, { ...A, method: 'PATCH', body: { tagline: `${MARK} tagline` } })
 const brandUpload = await maybe('brand file (needs S3)', async () => {
   const res = await upload('/v1/admin/brand/assets', { project: project.id, name: `${MARK} logo` }, A)
@@ -236,6 +237,12 @@ await attempt('publish A\'s onboarding flow', `/v1/admin/onboarding/flows/${flow
 await attempt('translate A\'s onboarding flow', `/v1/admin/onboarding/flows/${flow.id}/translate`, { method: 'POST', body: { locales: ['es'] } })
 await attempt('create a flow in A\'s project', '/v1/admin/onboarding/flows', { method: 'POST', body: { project: project.id, name: 'pwned' } })
 await attempt('delete A\'s onboarding flow', `/v1/admin/onboarding/flows/${flow.id}`, { method: 'DELETE' })
+await attempt('list A\'s lead forms', `/v1/admin/lead-forms?project=${project.id}`)
+await attempt('read A\'s lead form', `/v1/admin/lead-forms/${leadForm.id}`)
+await attempt('edit A\'s lead form', `/v1/admin/lead-forms/${leadForm.id}`, { method: 'PATCH', body: { name: 'pwned', settings: { doubleOptIn: false } } })
+await attempt('create a lead form in A\'s project', '/v1/admin/lead-forms', { method: 'POST', body: { project: project.id, name: 'pwned' } })
+await attempt('list the leads of A\'s form', `/v1/contacts?project=${project.id}&leadForm=${leadForm.id}`)
+await attempt('delete A\'s lead form', `/v1/admin/lead-forms/${leadForm.id}`, { method: 'DELETE' })
 await attempt('read A\'s brand kit', `/v1/admin/brand?project=${project.id}`)
 await attempt('edit A\'s brand kit', `/v1/admin/brand?project=${project.id}`, { method: 'PATCH', body: { tagline: 'pwned', page: { public: true } } })
 await attempt('preview A\'s brand page', `/v1/admin/brand/preview?project=${project.id}`, { method: 'POST', body: {} })
@@ -318,6 +325,8 @@ check((await call(`/v1/admin/support-agents/${assistant.id}`, A)).status === 200
 check((await call(`/v1/admin/knowledge/models/${model.id}`, A)).json.model?.name === `${MARK} model`, 'A\'s knowledge model is untouched')
 const flowAfter = (await call(`/v1/admin/onboarding/flows/${flow.id}`, A)).json.flow
 check(flowAfter?.name === `${MARK} flow` && flowAfter.status === 'draft', 'A\'s onboarding flow is untouched')
+const formAfter = (await call(`/v1/admin/lead-forms/${leadForm.id}`, A)).json.form
+check(formAfter?.name === `${MARK} form` && formAfter.settings.doubleOptIn === true, 'A\'s lead form is untouched')
 const kitAfter = (await call(`/v1/admin/brand?project=${project.id}`, A)).json
 check(kitAfter.brand?.tagline === `${MARK} tagline` && kitAfter.brand.page.public === false, 'A\'s brand kit is untouched')
 if (brandUpload) check(kitAfter.assets?.some(a => a.id === brandUpload.id && a.name === `${MARK} logo`), 'A\'s brand file is untouched')

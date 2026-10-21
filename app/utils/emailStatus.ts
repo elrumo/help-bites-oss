@@ -26,7 +26,8 @@ export const EMAIL_SOURCE_LABELS: Record<string, string> = {
   feedback: 'Feedback',
   system: 'HelpBites',
   campaign: 'Campaign',
-  sequence: 'Sequence'
+  sequence: 'Sequence',
+  form: 'Lead form'
 }
 
 export const EMAIL_SUPPRESSION_REASON_LABELS: Record<string, string> = {

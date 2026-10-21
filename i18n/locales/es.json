@@ -52,7 +52,8 @@
     "flags": "Flags",
     "errors": "Errores",
     "dev": "Dev",
-    "settings": "Ajustes"
+    "settings": "Ajustes",
+    "forms": "Formularios"
   },
   "overview": {
     "refresh": "Actualizar",
@@ -2404,6 +2405,10 @@
         "contacts": {
           "term": "Contactos, segmentos y campañas",
           "desc": "Sincroniza personas desde Postgres, Parse o Firestore, segméntalas y luego lanza difusiones y secuencias de goteo con doble confirmación."
+        },
+        "forms": {
+          "term": "Listas de espera y formularios de contacto",
+          "desc": "Reúne interesados antes de lanzar con un simple campo de email o un formulario a tu medida, en tu web, en una página alojada o en tu app. Cada registro se convierte en un contacto con su propio segmento, doble confirmación, un email de bienvenida y una secuencia."
         }
       },
       "team": {

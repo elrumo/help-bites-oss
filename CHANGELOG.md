@@ -5,6 +5,16 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- Lead forms: waitlist, "notify me" and interest forms under **Project → Forms** (web and native), embedded with
+  `public/forms.js`, as a plain HTML form, on a hosted page at `/f/<public key>/<key>`, in SwiftUI, or through
+  `GET`/`POST /v1/forms/{pk}/{key}`; managed at `/v1/admin/lead-forms`. Leads become contacts in a segment made for
+  each form, with optional double opt-in (confirm links at `/f/confirm/<token>`), a welcome email and a sequence. See
+  `docs/FORMS.md`. New class `LeadForm`, new fields `EndUser.origin` and `EndUser.leadForms` (with indexes) and
+  `ContactSegment.auto` (need `schema:apply`; the container does it on boot). `/f` joins `/embed`, `/s`, `/brand` and
+  `/p` as frameable. Welcome emails show in the email log with source `form`.
+- Contacts show how they were added (**Added via**: app user, lead form, sign-up, import, sync, Stripe, API, by hand,
+  feedback import), filterable in the people list, segments (`origin`, `leadForms`) and `GET /v1/contacts?origin=`.
+  New contacts record it themselves; run `bun scripts/backfill-contacts.mjs --apply` once to store it for older ones.
 - Languages and AI translation for onboarding flows, legal documents and email templates (`docs/LANGUAGES.md`). New
   fields `OnboardingFlow.locale` and `translations`, `LegalDocument.translationOf` and `EmailTemplate.locale` and
   `translations` (need `schema:apply`; the container does it on boot). `POST …/translate` on each uses the workspace's

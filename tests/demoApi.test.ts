@@ -45,6 +45,16 @@ test('the demo answers the CRM: contacts, segments and sources', async () => {
   expect((await demoApi<any>('/admin/contact-sources', { query: { project: 'acme' } })).kinds).toHaveLength(3)
 })
 
+test('the demo answers lead forms, their leads and where each contact came from', async () => {
+  const { forms } = await demoApi<any>('/admin/lead-forms', { query: { project: 'acme' } })
+  expect(forms[0].key).toBe('waitlist')
+  const { contacts } = await demoApi<any>('/contacts', { query: { project: 'acme', leadForm: forms[0].id } })
+  expect(contacts.length).toBe(forms[0].stats.leads)
+  expect(contacts.length).toBeGreaterThan(0)
+  expect(contacts.every((c: any) => c.origin.type === 'lead_form')).toBe(true)
+  expect((await demoApi<any>('/segments', { query: { project: 'acme' } })).segments.some((s: any) => s.auto && s.id === forms[0].segment)).toBe(true)
+})
+
 test('the demo answers a project overview, the page a project lands on', async () => {
   const overview = await demoApi<any>('/admin/projects/acme/overview')
   expect(overview.stats.length).toBeGreaterThan(0)

@@ -84,6 +84,7 @@ export default defineNuxtConfig({
     // Onboarding must still show while HelpBites is unreachable, so a cached copy may be used for a week then.
     '/onboarding.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400, stale-if-error=604800' } },
     '/pages.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
+    '/forms.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/cms.mjs': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     // Versioned file names: a new version is a new path.
     '/vendor/**': { headers: { 'Cache-Control': 'public, max-age=31536000, immutable' } },
