@@ -47,7 +47,7 @@ enum AppTab: Hashable {
 
 /// A project's sections, nested under it in the sidebar like a Linear team's.
 enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
-  case overview, conversations, contacts, forms, revenue, pricing, knowledge, assistants, tickets, feedback, board, changelog, onboarding, legal, brand, email, campaigns, flags, errors, dev, settings
+  case overview, conversations, contacts, forms, revenue, pricing, knowledge, assistants, tickets, feedback, board, changelog, blog, onboarding, legal, brand, email, campaigns, flags, errors, dev, settings
   var id: String { rawValue }
   var label: String {
     switch self {
@@ -63,6 +63,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .feedback: "Feedback"
     case .board: "Board"
     case .changelog: "Changelog"
+    case .blog: "Blog"
     case .onboarding: "Onboarding"
     case .legal: "Legal"
     case .brand: "Brand"
@@ -90,6 +91,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .revenue: "dollarsign.circle"
     case .pricing: "tag"
     case .changelog: "scroll"
+    case .blog: "newspaper"
     case .onboarding: "rectangle.stack"
     case .legal: "scale.3d"
     case .brand: "paintpalette"

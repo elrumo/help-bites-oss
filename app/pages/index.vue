@@ -13,10 +13,18 @@
           <a href="#features" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.features') }}</a>
           <NuxtLink to="/docs" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.docs') }}</NuxtLink>
           <a :href="repo" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.source') }}</a>
+          <!-- Registered by the edition's client plugins, which the prerendered page never ran. -->
+          <ClientOnly>
+            <NuxtLink v-for="link in landingLinks" :key="link.key" :to="link.to" class="text-muted transition-colors hover:text-highlighted">{{ link.label }}</NuxtLink>
+          </ClientOnly>
         </nav>
         <div class="ml-auto flex items-center gap-2">
           <UButton to="/login" :label="$t('login.signIn')" color="neutral" variant="ghost" size="sm" />
-          <UButton to="/demo" :label="$t('landing.tryDemo')" size="sm" />
+          <template v-if="meta.signup === 'open'">
+            <UButton to="/demo" :label="$t('landing.tryDemo')" color="neutral" variant="outline" size="sm" class="hidden sm:inline-flex" />
+            <UButton to="/signup" :label="$t('landing.nav.signUp')" size="sm" />
+          </template>
+          <UButton v-else to="/demo" :label="$t('landing.tryDemo')" size="sm" />
         </div>
       </div>
     </header>
@@ -302,6 +310,9 @@ definePageMeta({ layout: 'bare' })
 const repo = 'https://github.com/elrumo/help-bites-oss'
 const appUrl = useAppUrl()
 const { t } = useI18n()
+// Where anyone may sign up (the hosted edition), the header offers it; the edition adds its own links (pricing).
+const meta = useMeta()
+const { landingLinks } = editionUi()
 
 // Signed-in operators have no business on the marketing page. The cookie is a
 // client fact and this route is prerendered, so the bounce happens on mount.
@@ -482,6 +493,7 @@ const features = computed(() => [
       { term: t('landing.features.feedback.board.term'), desc: t('landing.features.feedback.board.desc') },
       { term: t('landing.features.feedback.roadmap.term'), desc: t('landing.features.feedback.roadmap.desc') },
       { term: t('landing.features.feedback.changelog.term'), desc: t('landing.features.feedback.changelog.desc') },
+      { term: t('landing.features.feedback.blog.term'), desc: t('landing.features.feedback.blog.desc') },
       { term: t('landing.features.feedback.followers.term'), desc: t('landing.features.feedback.followers.desc') }
     ]
   },

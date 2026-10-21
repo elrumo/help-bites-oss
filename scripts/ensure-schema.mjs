@@ -222,6 +222,8 @@ const SCHEMAS = {
       // Changelog options (`autoDraft`) and its entries' `#N` counter.
       changelog: { type: 'Object' },
       changelogSeq: { type: 'Number' },
+      // Blog options: on/off, title, comments, reactions, the newsletter's topic (shared/blog.ts).
+      blog: { type: 'Object' },
       // Legal pages: the operator's identity and the look of the hosted pages (shared/legal/config.ts).
       legal: { type: 'Object' },
       // Wizard answers saved for reuse by the next legal document (server/utils/legal.ts saveSharedAnswers).
@@ -253,7 +255,9 @@ const SCHEMAS = {
       // Newsletter settings (shared/marketing.ts) and the signed event webhook.
       marketing: { type: 'Object' },
       eventWebhookUrl: { type: 'String' },
-      eventWebhookSecret: { type: 'String' }
+      eventWebhookSecret: { type: 'String' },
+      // When the chat widget last loaded on a host page (stamped at most hourly); setup is green only after it has.
+      widgetSeenAt: { type: 'Date' }
     },
     indexes: {
       publicKey_1: { publicKey: 1 },
@@ -467,7 +471,9 @@ const SCHEMAS = {
       startedAt: { type: 'Date' },
       finishedAt: { type: 'Date' },
       nextAt: { type: 'Date' },
-      lastError: { type: 'String' }
+      lastError: { type: 'String' },
+      // A blog post sent as a newsletter, in place of a template (server/utils/blogNewsletter.ts).
+      blogPost: { type: 'Pointer', targetClass: 'BlogPost' }
     },
     indexes: {
       project_created: { _p_project: 1, _created_at: -1 },
@@ -1127,10 +1133,34 @@ const SCHEMAS = {
       segment: { type: 'String' },
       sequence: { type: 'String' },
       welcomeTemplate: { type: 'String' },
-      confirmTemplate: { type: 'String' }
+      confirmTemplate: { type: 'String' },
+      // The language its words are written in (default en), and their translations:
+      // { <locale>: { content: { title, … }, fields: { <fieldId>: { label, placeholder, options } } } }.
+      locale: { type: 'String' },
+      translations: { type: 'Object' }
     },
     indexes: {
       project_key: { _p_project: 1, key: 1 }
+    }
+  },
+  // A file someone sent with a lead form, kept for the operator: in the bucket at
+  // `storageKey` (`<projectId>/forms/<formId>/<uuid>.<ext>`), never linked publicly, and
+  // downloaded through /v1/admin/lead-files/<id>. Erased with its contact.
+  LeadFile: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      form: { type: 'Pointer', targetClass: 'LeadForm' },
+      contact: { type: 'Pointer', targetClass: 'EndUser' },
+      // The key of the file field it was sent through.
+      field: { type: 'String' },
+      name: { type: 'String' },
+      mime: { type: 'String' },
+      size: { type: 'Number' },
+      storageKey: { type: 'String' }
+    },
+    indexes: {
+      project_contact: { _p_project: 1, _p_contact: 1 },
+      project_form_created: { _p_project: 1, _p_form: 1, _created_at: -1 }
     }
   },
   // A file in a project's brand kit (logo, icon, screenshot, PDF…), stored in the bucket at
@@ -1284,6 +1314,84 @@ const SCHEMAS = {
     }
   },
   // The ledger of sends: what stops a tick (or a second instance) mailing the same week twice.
+  // Blog posts (server/utils/blog.ts): Markdown written by the team, rendered
+  // once into bodyHtml. Reactions are "key:actor" strings on the row, as on
+  // feedback posts.
+  BlogPost: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      title: { type: 'String' },
+      slug: { type: 'String' },
+      excerpt: { type: 'String' },
+      excerptWritten: { type: 'Boolean' },
+      body: { type: 'String' },
+      bodyHtml: { type: 'String' },
+      readingMinutes: { type: 'Number' },
+      coverImageUrl: { type: 'String' },
+      tags: { type: 'Array' },
+      // The tags lowercased, for ?tag= in any case.
+      tagKeys: { type: 'Array' },
+      // draft | published; a published post with a future publishedAt is scheduled.
+      status: { type: 'String' },
+      publishedAt: { type: 'Date' },
+      author: { type: 'Pointer', targetClass: '_User' },
+      authorName: { type: 'String' },
+      commentsOpen: { type: 'Boolean' },
+      commentCount: { type: 'Number' },
+      reactions: { type: 'Array' },
+      newsletterCampaign: { type: 'Pointer', targetClass: 'Campaign' },
+      // post | page (pages stay out of the list, the feed and the newsletter).
+      type: { type: 'String' },
+      featured: { type: 'Boolean' },
+      // public | members
+      visibility: { type: 'String' },
+      // markdown | html (an import)
+      bodyFormat: { type: 'String' },
+      coverImageAlt: { type: 'String' },
+      metaTitle: { type: 'String' },
+      metaDescription: { type: 'String' },
+      ogImageUrl: { type: 'String' },
+      canonicalUrl: { type: 'String' },
+      // Where an imported post came from (`ghost:<id>`), so importing again updates it.
+      externalId: { type: 'String' },
+      // The blog.post.published webhook went out for its current publication.
+      announced: { type: 'Boolean' }
+    },
+    indexes: {
+      project_slug: { _p_project: 1, slug: 1 },
+      project_status_published: { _p_project: 1, status: 1, publishedAt: -1 },
+      project_external: { _p_project: 1, externalId: 1 },
+      // The worker's look for scheduled posts that just went live.
+      status_published_announced: { status: 1, publishedAt: 1, announced: 1 },
+      project_tags: { _p_project: 1, tagKeys: 1 },
+      project_updated: { _p_project: 1, _updated_at: -1 }
+    }
+  },
+  // Readers' comments on blog posts (server/utils/blogComments.ts). A reply's
+  // parentId names the top-level comment it answers.
+  BlogComment: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      post: { type: 'Pointer', targetClass: 'BlogPost' },
+      parentId: { type: 'String' },
+      body: { type: 'String' },
+      bodyHtml: { type: 'String' },
+      // visible | hidden | deleted
+      status: { type: 'String' },
+      postedAt: { type: 'Date' },
+      editedAt: { type: 'Date' },
+      endUser: { type: 'Pointer', targetClass: 'EndUser' },
+      authorExternalId: { type: 'String' },
+      authorName: { type: 'String' },
+      authorAvatar: { type: 'String' },
+      authorIsStaff: { type: 'Boolean' }
+    },
+    indexes: {
+      post_status_posted: { _p_post: 1, status: 1, postedAt: 1 },
+      project_posted: { _p_project: 1, postedAt: -1 },
+      author_recent: { _p_project: 1, authorExternalId: 1, postedAt: -1 }
+    }
+  },
   ChangelogNotifyRun: {
     fields: {
       project: { type: 'Pointer', targetClass: 'Project' },

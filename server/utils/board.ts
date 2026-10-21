@@ -308,6 +308,20 @@ export async function deleteBoardItem(row: ParseObject): Promise<void> {
 // ---- the public roadmap -----------------------------------------------------
 
 /**
+ * Where the public roadmap comes from. The board takes it over only once it
+ * has something to show: items start private, so switching the board on must
+ * not swap a roadmap full of posts for an empty one.
+ */
+export async function roadmapSourceOf(project: ParseObject): Promise<'board' | 'posts'> {
+  const board = getBoardConfig(project)
+  if (!board.enabled) return 'posts'
+  const statuses = board.statuses.filter(status => ROADMAP_CATEGORIES.includes(status.category)).map(status => status.key)
+  if (!statuses.length) return 'posts'
+  const published = await new (useParse()).Query('BoardItem').equalTo('project', project).equalTo('public', true).containedIn('status', statuses).first(MASTER)
+  return published ? 'board' : 'posts'
+}
+
+/**
  * Public items in a planned, active or done status, with only the board's
  * roadmap statuses (Backlog and Canceled never go out by name) and only the
  * linked posts that are not hidden. Signed-in viewers also get `hasVoted`.

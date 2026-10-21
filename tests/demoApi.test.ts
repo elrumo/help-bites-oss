@@ -91,6 +91,16 @@ test('the demo answers the Revenue tab with the overview\'s numbers', async () =
   expect(contacts.find((c: any) => c.email === 'priya@example.com').attributes.stripe_revenue).toBe(1176)
 })
 
+test('the demo blog has Acme\'s posts, opens one, and refuses writes', async () => {
+  const { posts } = await demoApi<any>('/admin/blog/posts', { query: { project: 'acme' } })
+  expect(posts.map((post: any) => `${post.type}:${post.status}`)).toEqual(['post:published', 'post:draft', 'page:published'])
+  const { post } = await demoApi<any>(`/admin/blog/posts/${posts[0].id}`)
+  expect(post.title).toBe(posts[0].title)
+  expect(await demoApi<any>('/admin/blog/comments', { query: { project: 'acme' } })).toEqual({ comments: [], total: 0, hasMore: false })
+  expect(await demoApi<any>('/admin/blog/posts', { query: { project: 'fieldnotes' } })).toEqual({ posts: [] })
+  await expect(demoApi('/admin/blog/posts', { method: 'POST', body: { project: 'acme', title: 'x' } })).rejects.toMatchObject({ statusCode: 403 })
+})
+
 test('the demo changelog has Acme\'s release and drafts, and refuses writes', async () => {
   const { entries } = await demoApi<any>('/admin/changelog/entries', { query: { project: 'acme' } })
   expect(entries.some((e: any) => e.status === 'published')).toBe(true)

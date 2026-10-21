@@ -1,8 +1,8 @@
 import Foundation
 
 /// Languages for the content HelpBites serves to end users (onboarding, legal pages,
-/// emails): shared/locales.ts and the limits of shared/translate.ts, shared/onboarding.ts
-/// and server/utils/emails.ts, ported by hand (tests/translateNativeParity.test.ts).
+/// emails, lead forms): shared/locales.ts and the limits of shared/translate.ts, shared/onboarding.ts,
+/// shared/leadForms.ts and server/utils/emails.ts, ported by hand (tests/translateNativeParity.test.ts).
 /// Not the panel's own languages.
 enum ContentLocale {
   /// `COMMON_LOCALES`: offered by the pickers; any well-formed tag is accepted.
@@ -14,6 +14,8 @@ enum ContentLocale {
   static let onboardingTranslations = 20
   /// `EMAIL_MAX_TRANSLATIONS`: translations one email template keeps.
   static let emailTranslations = 20
+  /// `LEAD_FORM_MAX_LOCALES`: translations one lead form keeps.
+  static let leadFormTranslations = 20
 
   /// "pt_br" → "pt-BR", "ZH-hant" → "zh-Hant"; nil when it is not a language tag.
   static func normalize(_ value: String) -> String? {

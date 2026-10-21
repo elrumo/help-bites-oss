@@ -1,6 +1,6 @@
 # Languages and AI translation
 
-Show onboarding, legal pages and emails in your users' language. Write each once,
+Show onboarding, legal pages, emails and lead forms in your users' language. Write each once,
 add the languages you serve, and either translate with AI or write the words
 yourself. Anything a translation leaves out is shown in the original language, so
 a half-translated screen never goes blank.
@@ -10,6 +10,7 @@ a half-translated screen never goes blank.
 | [Onboarding](ONBOARDING.md#languages) | One flow, a translation per language of its name, titles, bodies, button labels and image descriptions. Apps ask for one with `?locale=`. |
 | [Legal documents](LEGAL.md#other-languages) | One linked document per language, each with its own page, versions and publish state. |
 | [Emails](EMAIL.md#languages) | One template, a translation per language of its words. A send names the language with `locale`. |
+| [Lead forms](FORMS.md#languages) | One form, a translation per language of its words and each field's label, placeholder and options. Visitors get theirs; errors and emails follow. |
 
 A language is a tag in the usual form: `es`, `fr`, `pt-BR`, `zh-Hant`. HelpBites
 writes them in one spelling (`pt_br` becomes `pt-BR`) and matches the nearest one:
@@ -26,6 +27,7 @@ action over the API:
 | `POST /v1/admin/onboarding/flows/{id}/translate` | `{ "locales": ["es", "fr"], "overwrite"?: false }` |
 | `POST /v1/admin/legal/documents/{id}/translate` | `{ "locale": "es" }`: creates a new linked draft |
 | `POST /v1/admin/emails/{id}/translate` | `{ "locales": ["es", "fr"], "overwrite"?: false }` |
+| `POST /v1/admin/lead-forms/{id}/translate` | `{ "locales": ["es", "fr"], "overwrite"?: false }` |
 
 It uses the same AI as every other HelpBites feature: the workspace's own provider
 when you set one (Settings, AI), otherwise the server's gateway
@@ -44,10 +46,10 @@ What keeps the result safe to save:
   `overwrite: true` translates everything again (the panel's *Translate everything
   again*).
 - At most 8 languages per request, 400 strings per call, and 20 translations kept
-  per flow or template. Requests are rate limited per operator.
+  per flow, template or form. Requests are rate limited per operator.
 - Nothing reaches your users until you publish: onboarding translations go out with
-  the next publish, translated legal documents are drafts, and emails use a
-  translation as soon as it is saved (the send API reads the saved template).
+  the next publish, translated legal documents are drafts, and emails and lead
+  forms use a translation as soon as it is saved.
 
 AI translation is a draft, not a final text. Read it, and for legal documents have
 a lawyer review it.
@@ -67,6 +69,9 @@ card's direction.
 <script src="https://YOUR-SUPPORT-HOST/onboarding.js" data-project="pk_…" data-flow="welcome" data-locale="es" defer></script>
 ```
 
+`forms.js` does the same for [lead forms](FORMS.md#languages) (`data-locale`), and
+the hosted form page takes `?locale=` or the browser's language.
+
 ### Swift
 
 The onboarding snippet requests the user's first language
@@ -78,13 +83,17 @@ ContentView()
 ```
 
 Its default button words are your app's own strings, so they follow your app's
-localisation.
+localisation. The lead form snippet takes `locale` the same way.
 
 ### API
 
 ```bash
 # Onboarding: the translation, or the flow's own language when there is none
 curl -s "https://YOUR-SUPPORT-HOST/v1/onboarding/PROJECT_PUBLIC_KEY/welcome?locale=es"
+
+# A lead form: its words in that language, and which ones it has
+curl -s "https://YOUR-SUPPORT-HOST/v1/forms/PROJECT_PUBLIC_KEY/waitlist?locale=es"
+# → { "form": { "locale": "es", "locales": ["en", "es"], … } }
 
 # A legal document and where its other languages are
 curl -s https://YOUR-SUPPORT-HOST/v1/legal/PROJECT_PUBLIC_KEY/privacy-es

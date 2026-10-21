@@ -26,6 +26,9 @@ enum SessionPhase { case loading, signedOut, signedIn }
   var plan: PlanSummary? { context?.plan }
   /// Whether the workspace's plan includes a feature (absent keys are included).
   func hasFeature(_ key: String) -> Bool { context?.features?[key] ?? true }
+  /// Whether the plan leaves a feature out, to say so before the server refuses (web: usePlanLocks).
+  /// Never on an unlimited plan, which every self-hosted install is.
+  func isLocked(_ key: String) -> Bool { plan.map { !$0.unlimited } == true && !hasFeature(key) }
 
   init() {
     workspaceId = UserDefaults.standard.string(forKey: "helpbites.workspace") ?? ""

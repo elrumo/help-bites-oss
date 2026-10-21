@@ -69,6 +69,12 @@ struct ContactDetailSheet: View {
           LabeledContent("Last seen", value: contact.lastSeenAt.map { DateText.day($0) } ?? "—")
         }
 
+        if let forms = contact.leadForms, !forms.isEmpty {
+          Section("Files sent") {
+            LeadFileRows(projectId: projectId, contactId: contact.id)
+          }
+        }
+
         Section("Conversations") {
           if conversations.isEmpty { Text("None yet.").font(.lnMeta).foregroundStyle(Theme.textMuted) }
           ForEach(conversations) { conversation in
@@ -121,7 +127,7 @@ struct ContactDetailSheet: View {
       .confirmationDialog("They unsubscribed. Only subscribe them again if they asked you to.", isPresented: $confirmResubscribe, titleVisibility: .visible) {
         Button("Subscribe again") { Task { await save(subscription: "subscribed", resubscribe: true) } }
       }
-      .confirmationDialog("Erase \(contact.displayName)? Their conversations, feedback and email history go too.", isPresented: $confirmErase, titleVisibility: .visible) {
+      .confirmationDialog("Erase \(contact.displayName)? Their conversations, feedback, files and email history go too.", isPresented: $confirmErase, titleVisibility: .visible) {
         Button("Erase", role: .destructive) { Task { await erase() } }
       }
     }

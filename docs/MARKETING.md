@@ -13,7 +13,7 @@ contacts ([CONTACTS.md](CONTACTS.md)).
 |---|---|
 | `HELPBITES_SECRET` | Required. Signs unsubscribe and confirm links, seals source credentials. 32+ random characters (`openssl rand -base64 48`). Never rotate it casually: old unsubscribe links must keep working (CAN-SPAM: 30 days at least). |
 | `APP_URL` | Required. The public origin unsubscribe and preference links point at. |
-| `MAILGUN_*` | As for all email. Optionally a separate sending domain for marketing (Settings → Sender), which must belong to the same Mailgun account. |
+| `MAILGUN_*` | As for all email. Optionally a separate sending domain for marketing (Settings → Sender), which must belong to the same Mailgun account. Without a mailer a campaign cannot be scheduled nor a sequence activated; a due sequence step waits an hour and tries again. |
 
 In **Settings**: the **postal address** (required in every campaign), the
 **topics**, double opt-in, the thank-you URL, the marketing sender, and the
@@ -69,6 +69,9 @@ plugin ticking every 15 seconds; it stays off until `HELPBITES_SECRET` is set.
   twice.
 - **Mailgun down or throttling** (429/5xx): the campaign stops, keeps its
   place, and tries again five minutes later.
+- **No mailer at all** (no Mailgun key or sending domain): scheduling or
+  sending is refused with a 503 that says what to set, and a campaign already
+  sending pauses with that reason in `lastError`. Resume it once mail is set up.
 - **Pause / resume / cancel** while sending; numbers update live and for days
   after (opens and clicks arrive through the Mailgun webhook). Each log row
   counts once at its furthest status, so *opened* includes those who clicked.
@@ -145,6 +148,10 @@ Settings → Event webhook: a URL and a signing secret. HelpBites posts:
 | `email.suppressed` | `{ email, reason: 'bounce' \| 'complaint', detail }` |
 | `cms.entry.published` | `{ entry: { id, slug, type, version, publishedAt } }`: rebuild a static site ([PAGES.md](PAGES.md)) |
 | `cms.entry.unpublished` | `{ entry: { id, slug, type } }` |
+| `blog.post.published` | `{ post: { id, slug, title, visibility, publishedAt, url } }`: a post went public, now or at its scheduled time ([BLOG.md](BLOG.md#webhooks)) |
+| `blog.post.updated` | the same: a public post changed |
+| `blog.post.unpublished` | the same: a public post stopped being public |
+| `blog.post.deleted` | the same: a public post was deleted |
 
 Body: `{ id, type, createdAt, projectId, data }`. Header
 `x-helpbites-signature: sha256=<hex HMAC-SHA256 of the raw body with your secret>`

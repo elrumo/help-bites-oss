@@ -186,7 +186,7 @@ import { newOutboxId, useChatOutbox, type OutboxEntry } from '~/composables/useC
 definePageMeta({ middleware: 'agent' })
 
 type QueueView = 'all' | 'unassigned' | 'mine' | 'open' | 'unread' | 'archived'
-type QueueCounts = { status: Record<string, number>, type: Record<string, number>, assignee: Record<string, number> }
+type ViewCounts = Record<QueueView, number>
 type HumanAgent = { id: string, username: string, email: string, name: string }
 
 const { api, token, agent, projects, loadProjects, agentHeaders } = useAgent()
@@ -202,8 +202,8 @@ const endUsers = ref<Record<string, InboxEndUser>>({})
 const listLoading = ref(false)
 const listError = ref('')
 const hasMore = ref(false)
-const queueCounts = ref<QueueCounts>({ status: {}, type: {}, assignee: {} })
-const archivedCount = ref(0)
+// Each view's count, from the server under the same filters as the list, so a pill's number is the rows it lists.
+const viewCounts = ref<ViewCounts>({ all: 0, unassigned: 0, mine: 0, open: 0, unread: 0, archived: 0 })
 const view = ref<QueueView>('all')
 const projectFilter = ref('all')
 const statusFilter = ref('any')
@@ -223,12 +223,12 @@ const projectItems = computed(() => [{ label: t('inbox.allProjects'), value: 'al
 const statusFilterItems = computed(() => [{ label: t('inbox.anyStatus'), value: 'any' }, { label: t('inbox.open'), value: 'open' }, { label: t('inbox.done'), value: 'done' }])
 const priorityFilterItems = computed(() => [{ label: t('inbox.anyPriority'), value: 'any' }, { label: t('inbox.low'), value: 'low' }, { label: t('inbox.normal'), value: 'normal' }, { label: t('inbox.high'), value: 'high' }, { label: t('inbox.urgent'), value: 'urgent' }])
 const viewItems = computed(() => [
-  { key: 'all' as const, label: t('inbox.all'), count: conversations.value.length },
-  { key: 'unassigned' as const, label: t('inbox.unassigned'), count: queueCounts.value.assignee.unassigned || 0 },
-  { key: 'mine' as const, label: t('inbox.mine'), count: agent.value?.id ? queueCounts.value.assignee[agent.value.id] || 0 : 0 },
-  { key: 'open' as const, label: t('inbox.open'), count: queueCounts.value.status.open || 0 },
-  { key: 'unread' as const, label: t('inbox.unread'), count: totalUnread.value },
-  { key: 'archived' as const, label: t('inbox.archived'), count: archivedCount.value }
+  { key: 'all' as const, label: t('inbox.all'), count: viewCounts.value.all },
+  { key: 'unassigned' as const, label: t('inbox.unassigned'), count: viewCounts.value.unassigned },
+  { key: 'mine' as const, label: t('inbox.mine'), count: viewCounts.value.mine },
+  { key: 'open' as const, label: t('inbox.open'), count: viewCounts.value.open },
+  { key: 'unread' as const, label: t('inbox.unread'), count: viewCounts.value.unread },
+  { key: 'archived' as const, label: t('inbox.archived'), count: viewCounts.value.archived }
 ])
 
 function scheduleLoad() {
@@ -245,11 +245,16 @@ function clearFilters() {
   void loadList()
 }
 
-// Archived threads live on the server side of the query, not in the loaded page.
+// A view is a server query: the page holds that view's rows, not a slice of the last page.
 async function setView(next: QueueView) {
-  const refetch = (view.value === 'archived') !== (next === 'archived')
+  if (view.value === next) return
   view.value = next
-  if (refetch) await loadList()
+  await loadList()
+}
+
+type QueuePage = { conversations: Conversation[], endUsers: Record<string, InboxEndUser>, hasMore: boolean, totalUnread: number, viewCounts?: ViewCounts }
+function queueQuery() {
+  return { project: projectFilter.value === 'all' ? undefined : projectFilter.value, status: statusFilter.value === 'any' ? undefined : statusFilter.value, priority: priorityFilter.value === 'any' ? undefined : priorityFilter.value, type: typeFilter.value || undefined, q: searchQuery.value.trim() || undefined, view: view.value === 'all' ? undefined : view.value }
 }
 
 async function loadList(more = false) {
@@ -257,24 +262,34 @@ async function loadList(more = false) {
   listError.value = ''
   try {
     const last = more ? conversations.value[conversations.value.length - 1] : null
-    const result = await api<{ conversations: Conversation[], endUsers: Record<string, InboxEndUser>, hasMore: boolean, totalUnread: number, counts: QueueCounts, archivedCount: number }>('/admin/conversations', {
-      query: { project: projectFilter.value === 'all' ? undefined : projectFilter.value, status: statusFilter.value === 'any' ? undefined : statusFilter.value, priority: priorityFilter.value === 'any' ? undefined : priorityFilter.value, type: typeFilter.value || undefined, q: searchQuery.value.trim() || undefined, archived: view.value === 'archived' ? 'true' : undefined, before: last?.lastMessageAt || undefined }
-    })
+    const result = await api<QueuePage>('/admin/conversations', { query: { ...queueQuery(), before: last?.lastMessageAt || undefined } })
     conversations.value = more ? [...conversations.value, ...result.conversations] : result.conversations
     endUsers.value = { ...endUsers.value, ...result.endUsers }
     hasMore.value = result.hasMore
     totalUnread.value = result.totalUnread
-    queueCounts.value = result.counts
-    archivedCount.value = result.archivedCount || 0
+    if (result.viewCounts) viewCounts.value = result.viewCounts
   } catch (error: any) {
     listError.value = error?.message || t('inbox.loadError')
   } finally { listLoading.value = false }
 }
 
+// A row changed (triage, archive, a live event): the counts follow from the server, a moment later and once per burst.
+let countsTimer: ReturnType<typeof setTimeout> | null = null
+function refreshCounts() {
+  if (countsTimer) clearTimeout(countsTimer)
+  countsTimer = setTimeout(async () => {
+    try {
+      const result = await api<QueuePage>('/admin/conversations', { query: { ...queueQuery(), limit: 1 } })
+      totalUnread.value = result.totalUnread
+      if (result.viewCounts) viewCounts.value = result.viewCounts
+    } catch {}
+  }, 600)
+}
+
 const filteredConversations = computed(() => conversations.value.filter((conversation) => {
   if (view.value === 'unassigned') return !conversation.assigneeId
   if (view.value === 'mine') return conversation.assigneeId === agent.value?.id
-  if (view.value === 'open') return conversation.statusCategory === 'open' || conversation.status === 'open'
+  if (view.value === 'open') return conversation.statusCategory === 'open'
   if (view.value === 'unread') return conversation.unreadByAgent > 0
   return true
 }))
@@ -356,8 +371,10 @@ async function loadTypes(projectId: string) {
 function removeConversation(id: string) {
   conversations.value = conversations.value.filter(item => item.id !== id)
   if (activeId.value === id) void select('')
+  refreshCounts()
 }
 function upsertConversation(conversation: Conversation) {
+  refreshCounts()
   // Archived rows belong to the Archived view only, and the queue never shows them.
   if (Boolean(conversation.archivedAt) !== (view.value === 'archived')) {
     const hadRow = conversations.value.some(item => item.id === conversation.id)
@@ -422,7 +439,6 @@ async function toggleArchive(id: string) {
   const archive = !conversation.archivedAt
   try {
     const { conversation: updated } = await api<{ conversation: Conversation }>(`/admin/conversations/${id}/archive`, { method: 'POST', body: { archived: archive } })
-    archivedCount.value = Math.max(0, archivedCount.value + (archive ? 1 : -1))
     if (archive && conversation.unreadByAgent > 0) totalUnread.value = Math.max(0, totalUnread.value - conversation.unreadByAgent)
     upsertConversation(updated)
     toast.add({ title: archive ? t('inbox.archivedToast') : t('inbox.unarchivedToast'), icon: archive ? 'i-lucide-archive' : 'i-lucide-archive-restore' })
@@ -433,8 +449,7 @@ async function remove(id: string) {
   if (!conversation || !confirm(t('inbox.deleteConfirm'))) return
   try {
     await api(`/admin/conversations/${id}`, { method: 'DELETE' })
-    if (conversation.archivedAt) archivedCount.value = Math.max(0, archivedCount.value - 1)
-    else if (conversation.unreadByAgent > 0) totalUnread.value = Math.max(0, totalUnread.value - conversation.unreadByAgent)
+    if (!conversation.archivedAt && conversation.unreadByAgent > 0) totalUnread.value = Math.max(0, totalUnread.value - conversation.unreadByAgent)
     removeConversation(id)
     toast.add({ title: t('inbox.deleted'), icon: 'i-lucide-trash-2' })
   } catch (error: any) { threadError.value = listError.value = error?.message || t('inbox.deleteError') }

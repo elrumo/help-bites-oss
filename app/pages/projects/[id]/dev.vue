@@ -195,7 +195,8 @@ const integrations = computed(() => {
   const origins = p.allowedOrigins.length
   const flags = p.flags?.length || 0
   return [
-    { key: 'chat' as const, label: t('projectPages.dev.chatWidget'), icon: 'i-lucide-message-circle-more', tone: (origins ? 'ok' : 'warn') as Tone, status: origins ? t('projectPages.dev.originsCount', origins) : t('projectPages.dev.noOrigins') },
+    // Green only once the widget has loaded on a host page: allowing an origin is not installing it.
+    { key: 'chat' as const, label: t('projectPages.dev.chatWidget'), icon: 'i-lucide-message-circle-more', tone: (origins && p.widgetSeenAt ? 'ok' : 'warn') as Tone, status: !origins ? t('projectPages.dev.noOrigins') : p.widgetSeenAt ? t('projectPages.dev.originsCount', origins) : t('projectPages.dev.widgetNotSeen') },
     { key: 'feedback' as const, label: t('sections.feedback'), icon: 'i-lucide-lightbulb', tone: (p.feedback?.enabled ? 'ok' : 'off') as Tone, status: p.feedback?.enabled ? t('projectPages.dev.boardOn') : t('projectPages.dev.off') },
     { key: 'flags' as const, label: t('sections.flags'), icon: 'i-lucide-toggle-right', tone: (flags ? 'ok' : 'off') as Tone, status: flags ? t('projectPages.dev.flagsCount', flags) : t('projectPages.dev.noneYet') },
     { key: 'errors' as const, label: t('sections.errors'), icon: 'i-lucide-bug', tone: (p.errors?.connected ? 'ok' : 'off') as Tone, status: p.errors?.connected ? p.errors.providerName : t('projectPages.dev.notConnected') },

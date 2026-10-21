@@ -53,6 +53,10 @@ export const LIMITS = {
   changelogReadsPerIp: { limit: 1200, window: 60 },
   // Five comments in ten minutes is far more than a discussion needs and far less than a flood.
   changelogCommentsPerUser: { limit: 5, window: 600 },
+  // The blog: a host's server renders its pages from one IP, as for the changelog.
+  blogReadsPerIp: { limit: 1200, window: 60 },
+  blogCommentsPerUser: { limit: 5, window: 600 },
+  blogReactionsPerUser: { limit: 60, window: 60 },
   // AI changelog runs cost credits: by hand, and from GitHub pushes.
   changelogGeneratePerProject: { limit: 10, window: 3600 },
   changelogPushPerProject: { limit: 20, window: 3600 },
@@ -87,6 +91,8 @@ export const LIMITS = {
   onboardingReadsPerIp: { limit: 1200, window: 60 },
   // Lead forms load on every page view of the site they sit on.
   leadFormReadsPerIp: { limit: 1200, window: 60 },
+  // Multipart sign-ups carry files: counted before the body is read, so nobody streams in gigabytes.
+  leadFormUploadsPerIp: { limit: 20, window: 600 },
   // Pricing tables load on every page view of the site they sit on, and on every paywall an app opens.
   pricingReadsPerIp: { limit: 1200, window: 60 },
   // Each one creates a Stripe Checkout Session in the developer's account.

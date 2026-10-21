@@ -1,6 +1,7 @@
 // The CRM's background work, one tick every 15 seconds: database syncs and
-// Stripe syncs that are due, pricing table numbers and conversions, campaigns that are sending,
-// sequence steps and webhook deliveries.
+// Stripe syncs that are due, pricing table numbers and conversions, campaigns that
+// are sending, sequence steps, blog posts whose scheduled moment came (their
+// webhook) and webhook deliveries.
 // No queue: each job's state and cursor live on its own Parse row, and a
 // Redis lock per row keeps two processes off the same one, so a crash or a
 // deploy just resumes on the next tick.
@@ -13,6 +14,7 @@ const JOBS: [string, () => Promise<void>][] = [
   ['pricing', () => runPricingWork()],
   ['campaigns', async () => { if (hasRootSecret()) for (const id of await dueCampaigns(5)) await runCampaign(id) }],
   ['sequences', async () => { if (hasRootSecret()) await runDueSequenceSteps() }],
+  ['blog', () => announceDueBlogPosts()],
   ['webhooks', () => deliverDueWebhooks()]
 ]
 

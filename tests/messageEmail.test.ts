@@ -185,4 +185,16 @@ describe('renderMessageEmail', () => {
     expect(text).toContain('<not escaped here>')
     expect(text).toContain('Open your inbox: https://example.com/messages')
   })
+
+  test('the greeting and the small print are a conversation reply\'s unless the mail says otherwise', () => {
+    const plain = renderMessageEmail({ appName: 'Acme <Co>', body: 'Hello' })
+    expect(plain.html).toContain('You can reply to this conversation from your Acme &lt;Co&gt; inbox.')
+    expect(plain.html).toContain('You are receiving this because you have a Acme &lt;Co&gt; account.')
+    const own = renderMessageEmail({ appName: 'Acme', recipientName: 'Ana', body: 'Confirma', greeting: 'Hola, Ana:', note: '', reason: 'Recibes este <correo>.' })
+    expect(own.html).toContain('Hola, Ana:')
+    expect(own.html).not.toContain('Hi Ana')
+    expect(own.html).not.toContain('reply to this conversation')
+    expect(own.html).toContain('Recibes este &lt;correo&gt;.')
+    expect(own.text.startsWith('Hola, Ana:')).toBe(true)
+  })
 })

@@ -8,8 +8,11 @@ import { contactQuery, getProjectSegment, serializeSegment } from './contacts'
 import { compileSegmentFilter } from '#shared/segments'
 import { deliverEmails, projectEmailSender, type DeliveryResult, type EmailActor, type EmailSender, type OutgoingEmail } from './emailDelivery'
 import { emailSendingPaused } from './emailReputation'
+import { isMailerConfigured } from './mailer'
 import { buildOutgoingEmails, type EmailSendRequest } from './emailSend'
-import { brandOf, findProjectEmail, serializeEmailTemplate } from './emails'
+import { localizeEmail } from '#shared/email/translate'
+import { blogNewsletterSnapshot } from './blogNewsletter'
+import { brandOf, emailLocaleFor, findProjectEmail, serializeEmailTemplate } from './emails'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
 import { runExclusive } from './redis'
 import { signLinkToken } from './secrets'
@@ -28,7 +31,8 @@ import { planFeatureError, projectWorkspaceId, workspacePlan } from './usage'
 
 const CHUNK = 100
 const RUN_BUDGET_MS = 25_000
-// Mailgun is down or throttling: stop, keep the cursor, try again later.
+// Mailgun is down or throttling: stop, keep the cursor, try again later. With no
+// mailer at all the campaign pauses instead (see CAMPAIGN_NO_MAILER): waiting fixes nothing.
 const PROVIDER_DOWN_RE = /Mailgun (429|5\d\d)|not configured|timed? ?out|fetch failed|ECONN/i
 const PROVIDER_RETRY_MS = 5 * 60_000
 // A suspended workspace's campaign waits where it is, and is looked at again this much later.
@@ -47,6 +51,7 @@ export function serializeCampaign(row: ParseObject): Campaign {
     status: (row.get('status') as CampaignStatus) || 'draft',
     template: String(row.get('template') || ''),
     templateName: String(row.get('templateName') || ''),
+    blogPostId: pointerId(row.get('blogPost')),
     subject: String(row.get('subject') || ''),
     audience: { segment: audience.segment || '', topic: audience.topic || '' },
     scheduledAt: iso(row.get('scheduledAt')),
@@ -83,7 +88,9 @@ export async function applyCampaignInput(project: ParseObject, row: ParseObject,
       const t = serializeEmailTemplate(template)
       row.set('template', t.key || template.id)
       row.set('templateName', t.master?.name || t.name)
-    } else {
+      // A template replaces the blog post a campaign was sending.
+      row.unset('blogPost')
+    } else if (!row.get('blogPost')) {
       row.set('template', '')
       row.set('templateName', '')
     }
@@ -140,16 +147,29 @@ export function unsubscribeLinks(base: string, projectId: string, contactId: str
 
 // ---- content -------------------------------------------------------------------------
 
-/** The design as it will go out: the master's with this project's accent, or the template's own. */
-export async function snapshotCampaign(project: ParseObject, ref: string): Promise<CampaignSnapshot> {
+/**
+ * The design as it will go out: the master's with this project's accent, or the
+ * template's own. With `locale` (a lead form's welcome email) it is in the
+ * nearest language the template has; campaigns and sequences send the original.
+ */
+export async function snapshotCampaign(project: ParseObject, ref: string, locale = ''): Promise<CampaignSnapshot> {
   if (!ref) throw createError({ statusCode: 400, statusMessage: 'Pick a template first' })
   const row = await findProjectEmail(project, ref)
   const t = serializeEmailTemplate(row)
   const source = t.master || t
   if (!source.document) throw createError({ statusCode: 400, statusMessage: 'That template has no design yet' })
-  const document = t.master ? applyProjectAccent(source.document, brandOf(project).theme?.accent) : source.document
+  const language = locale ? emailLocaleFor(source, [locale]) : source.locale
+  const words = language === source.locale ? undefined : source.translations[language]
+  const design = words ? localizeEmail(source.document, words) : source.document
+  const document = t.master ? applyProjectAccent(design, brandOf(project).theme?.accent) : design
   const defaults = Object.fromEntries(senderVariables(t, t.master).filter(v => v.defaultValue != null).map(v => [v.key, String(v.defaultValue)]))
   return { document, defaults, templateId: row.id || '', templateKey: t.key, templateName: t.master?.name || t.name }
+}
+
+/** What a campaign sends: its blog post when it carries one (blogNewsletter.ts), else its template. */
+export async function campaignContent(project: ParseObject, row: ParseObject): Promise<CampaignSnapshot> {
+  const postId = pointerId(row.get('blogPost'))
+  return postId ? await blogNewsletterSnapshot(project, postId) : await snapshotCampaign(project, String(row.get('template') || ''))
 }
 
 /** CAN-SPAM and RFC 8058: a way out and a postal address in every campaign, or it does not go. */
@@ -163,6 +183,13 @@ export function complianceProblems(project: ParseObject, document: EmailDocument
 }
 
 /** Marketing mail's own sender when the project has one, else the project's. */
+export const CAMPAIGN_NO_MAILER = 'Email sending is not configured on this server (set MAILGUN_API_KEY, MAILGUN_DOMAIN and MAILGUN_FROM_EMAIL, or the project\'s own sending domain)'
+
+/** Whether this project's campaigns have anything to send through. */
+export function campaignMailerReady(project: ParseObject): boolean {
+  return isMailerConfigured(marketingSender(project))
+}
+
 export function marketingSender(project: ParseObject): EmailSender {
   const marketing = normalizeMarketingConfig(project.get('marketing'))
   const sender = projectEmailSender(project)
@@ -276,10 +303,11 @@ const CAMPAIGN_ACTOR: EmailActor = { type: 'system', id: '', name: 'Campaign' }
 /** Freeze the design, count the audience, and move a due campaign to sending. False when it cannot start. */
 async function startCampaign(project: ParseObject, row: ParseObject): Promise<boolean> {
   try {
-    const snapshot = await snapshotCampaign(project, String(row.get('template') || ''))
+    const snapshot = await campaignContent(project, row)
     const problems = complianceProblems(project, snapshot.document)
     if (problems.length) throw createError({ statusCode: 400, statusMessage: problems.join('; ') })
     publicBaseUrl()
+    if (!campaignMailerReady(project)) throw createError({ statusCode: 503, statusMessage: CAMPAIGN_NO_MAILER })
     const audience = (row.get('audience') || {}) as { segment?: string, topic?: string }
     const count = await (await campaignAudience(project, audience)).count(MASTER)
     row.set('snapshot', snapshot)
@@ -346,6 +374,11 @@ async function sendCampaign(row: ParseObject, workspaceId: string, budgetMs: num
   const paused = await emailSendingPaused(workspaceId)
   if (paused) {
     await stopCampaign(row, 'paused', `Paused: ${paused}`)
+    return
+  }
+  // The mailer went away mid-send: pause where it is, rather than retrying every few minutes for ever. Resuming carries on from the cursor.
+  if (!campaignMailerReady(project)) {
+    await stopCampaign(row, 'paused', `Paused: ${CAMPAIGN_NO_MAILER}`)
     return
   }
 
@@ -447,10 +480,11 @@ export async function moveCampaign(project: ParseObject, row: ParseObject, to: s
 
   if (to === 'scheduled' || (to === 'sending' && (from === 'draft' || from === 'scheduled'))) {
     // Checked now, so the operator hears about a missing unsubscribe link before the send time.
-    const snapshot = await snapshotCampaign(project, String(row.get('template') || ''))
+    const snapshot = await campaignContent(project, row)
     const problems = complianceProblems(project, snapshot.document)
     if (problems.length) throw createError({ statusCode: 400, statusMessage: problems.join('; ') })
     publicBaseUrl()
+    if (!campaignMailerReady(project)) throw createError({ statusCode: 503, statusMessage: CAMPAIGN_NO_MAILER })
     let at = new Date()
     if (to === 'scheduled') {
       at = new Date(String(scheduledAt || ''))
@@ -465,6 +499,9 @@ export async function moveCampaign(project: ParseObject, row: ParseObject, to: s
     row.unset('nextAt')
     return
   }
-  if (to === 'sending') row.set('nextAt', new Date()) // resume
+  if (to === 'sending') {
+    if (!campaignMailerReady(project)) throw createError({ statusCode: 503, statusMessage: CAMPAIGN_NO_MAILER })
+    row.set('nextAt', new Date()) // resume
+  }
   row.set('status', to)
 }

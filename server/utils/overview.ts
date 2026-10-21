@@ -1,6 +1,9 @@
 // A project's Overview page: headline numbers, setup health, what needs
 // attention and the latest activity, all derived from rows that already exist.
 // `section` is a web section path (optionally with a query) both apps link to.
+// `label`, `detail` and `title` are English; the panel translates by `key`,
+// `detailKey` and `titleKey` with `params`, and keeps the English for a key it
+// does not know.
 // Below it, the workspace overview (shared/overview.ts): every project at once.
 
 import { OVERVIEW_UNREAD_LIMIT, revenueChange, type WorkspaceOverview, type WorkspaceRevenue } from '#shared/overview'
@@ -10,10 +13,10 @@ import { PAYING_STATUSES, REVENUE_RANGES, fromMinor, type RevenueRange } from '#
 export type OverviewTone = 'ok' | 'warn' | 'off'
 export type ProjectOverview = {
   stats: { key: string, label: string, value: number, section: string }[]
-  health: { key: string, label: string, state: OverviewTone, detail: string, section: string }[]
+  health: { key: string, label: string, state: OverviewTone, detail: string, detailKey?: string, params?: Record<string, string | number>, section: string }[]
   /** Only what has a non-zero count. */
   attention: { key: string, label: string, count: number, section: string }[]
-  activity: { id: string, title: string, detail: string, at: string, section: string, conversationId?: string }[]
+  activity: { id: string, title: string, titleKey?: string, params?: Record<string, string | number>, detail: string, at: string, section: string, conversationId?: string }[]
 }
 
 const OPEN_CATEGORIES = ['open', 'pending']
@@ -51,11 +54,12 @@ export async function projectOverview(project: ParseObject): Promise<ProjectOver
   const origins = p.allowedOrigins.length
   const mail = isMailerConfigured({ fromEmail: p.fromEmail, domain: p.mailDomain })
   const health: ProjectOverview['health'] = [
-    { key: 'chat', label: 'Chat widget', state: origins ? 'ok' : 'warn', detail: origins ? `${origins} allowed origin${origins === 1 ? '' : 's'}` : 'No allowed origins', section: 'dev' },
-    { key: 'email', label: 'Email sending', state: mail ? 'ok' : 'warn', detail: mail ? p.fromEmail || 'Default sender' : 'Not configured', section: 'settings' },
-    { key: 'notify', label: 'Team notifications', state: p.notifyEmails.length ? 'ok' : 'off', detail: p.notifyEmails.length ? p.notifyEmails.join(', ') : 'Nobody is emailed', section: 'settings' },
-    { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', detail: p.feedback.enabled ? 'On' : 'Off', section: 'feedback' },
-    { key: 'errors', label: 'Error tracking', state: p.errors.connected ? 'ok' : 'off', detail: p.errors.connected ? p.errors.providerName : 'Not connected', section: 'errors' }
+    // Green only once the widget has loaded on a host page: allowing an origin is not installing it.
+    { key: 'chat', label: 'Chat widget', state: origins && p.widgetSeenAt ? 'ok' : 'warn', ...(!origins ? { detail: 'No allowed origins', detailKey: 'noOrigins' } : p.widgetSeenAt ? { detail: `${origins} allowed origin${origins === 1 ? '' : 's'}`, detailKey: 'origins', params: { count: origins } } : { detail: 'Not loaded on your site yet', detailKey: 'notLoaded' }), section: 'dev' },
+    { key: 'email', label: 'Email sending', state: mail ? 'ok' : 'warn', ...(mail ? (p.fromEmail ? { detail: p.fromEmail } : { detail: 'Default sender', detailKey: 'defaultSender' }) : { detail: 'Not configured', detailKey: 'notConfigured' }), section: 'settings' },
+    { key: 'notify', label: 'Team notifications', state: p.notifyEmails.length ? 'ok' : 'off', ...(p.notifyEmails.length ? { detail: p.notifyEmails.join(', ') } : { detail: 'Nobody is emailed', detailKey: 'nobodyEmailed' }), section: 'settings' },
+    { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', ...(p.feedback.enabled ? { detail: 'On', detailKey: 'on' } : { detail: 'Off', detailKey: 'off' }), section: 'feedback' },
+    { key: 'errors', label: 'Error tracking', state: p.errors.connected ? 'ok' : 'off', ...(p.errors.connected ? { detail: p.errors.providerName } : { detail: 'Not connected', detailKey: 'notConnected' }), section: 'errors' }
   ]
 
   const attention: ProjectOverview['attention'] = [
@@ -72,8 +76,11 @@ export async function projectOverview(project: ParseObject): Promise<ProjectOver
       const user = row.get('endUser') as ParseObject | undefined
       return { id: `c:${row.id}`, title: String(user?.get('name') || user?.get('email') || row.get('subject') || 'Conversation'), detail: String(row.get('lastMessagePreview') || ''), at: iso(row.get('lastMessageAt')) || '', section: 'conversations', conversationId: row.id }
     }),
-    ...posts.map(row => ({ id: `f:${row.id}`, title: `New feedback: ${row.get('title') || 'Untitled'}`, detail: String(row.get('authorName') || ''), at: iso(row.get('postedAt')) || '', section: 'feedback' })),
-    ...completed.map(row => ({ id: `b:${row.id}`, title: `Completed ${row.get('number') ? `#${row.get('number')} ` : ''}${row.get('title') || ''}`.trim(), detail: '', at: iso(row.get('completedAt')) || '', section: 'board' }))
+    ...posts.map(row => ({ id: `f:${row.id}`, title: `New feedback: ${row.get('title') || 'Untitled'}`, titleKey: 'newFeedback', params: { title: String(row.get('title') || 'Untitled') }, detail: String(row.get('authorName') || ''), at: iso(row.get('postedAt')) || '', section: 'feedback' })),
+    ...completed.map((row) => {
+      const item = `${row.get('number') ? `#${row.get('number')} ` : ''}${row.get('title') || ''}`.trim()
+      return { id: `b:${row.id}`, title: `Completed ${item}`, titleKey: 'completed', params: { item }, detail: '', at: iso(row.get('completedAt')) || '', section: 'board' }
+    })
   ].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 20)
 
   return { stats, health, attention, activity }
