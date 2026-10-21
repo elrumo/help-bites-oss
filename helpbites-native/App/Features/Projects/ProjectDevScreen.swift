@@ -60,6 +60,7 @@ struct ProjectDevScreen: View {
             credentials(project)
             integrations(project)
             security(project)
+            WebhookEndpointsSection(projectId: projectId)
           }
         } else if !loadError.isEmpty {
           ErrorText(message: loadError)

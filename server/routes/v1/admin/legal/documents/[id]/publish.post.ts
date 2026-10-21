@@ -14,5 +14,6 @@ export default defineEventHandler(async (event) => {
   const { project, row } = await scopedLegalDocument(ctx, event)
   const body = (await readBody(event).catch(() => ({}))) || {}
   await publishLegalDocument(row, String(ctx.agent.get('name') || ctx.agent.get('username') || ''), typeof body.note === 'string' ? body.note : '')
+  await refreshLegalLinks(project)
   return { document: serializeLegalDocument(project, row) }
 })

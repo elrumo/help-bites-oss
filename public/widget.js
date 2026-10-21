@@ -21,7 +21,7 @@
   var projectKey = script.getAttribute('data-project') || ''
   var position = script.getAttribute('data-position') === 'left' ? 'left' : 'right'
   var accentGiven = script.getAttribute('data-accent')
-  var accent = accentGiven || '#5e6ad2'
+  var accent = accentGiven || '#4f46e5'
   // 'floating' is the launcher + popover; 'inline' fills an element you point at
   // with data-target (or the `target` init option) — no launcher, always open.
   var mode = script.getAttribute('data-mode') === 'inline' ? 'inline' : 'floating'

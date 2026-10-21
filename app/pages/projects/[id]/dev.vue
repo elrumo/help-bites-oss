@@ -151,6 +151,9 @@
             </div>
           </div>
         </form>
+
+        <!-- Event webhooks: filtered, one secret each -->
+        <SettingsWebhookEndpoints :project-id="id" />
       </div>
       <p v-else-if="error" class="p-8 text-[13px] text-error">{{ error }}</p>
       <div v-else class="mx-auto max-w-4xl space-y-3 px-6 py-8"><USkeleton v-for="i in 4" :key="i" class="h-20 rounded-xl" /></div>

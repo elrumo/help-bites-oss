@@ -12,7 +12,10 @@ import { normalizeBlogConfig, validateBlogConfig, type BlogConfig } from '#share
 import { normalizeFlags, validateFlags, type FeatureFlag } from '#shared/flags'
 import { normalizeMarketingConfig, validateMarketingConfig, type MarketingConfig } from '#shared/marketing'
 import { normalizeBrandConfig, validateBrandConfig } from '#shared/brand'
-import { legacyTheme, projectLook, type ProjectLook } from '#shared/projectLook'
+import { companyEntity, type CompanyProfile } from '#shared/company'
+import { applyCompany, companyOf } from './company'
+import { legalLinksOf, type LegalLinks } from './legalLinks'
+import { legacyTheme, projectLook, type ProjectLook, type ProjectLookInput } from '#shared/projectLook'
 
 export type ProjectTheme = { accent?: string, dark?: boolean }
 
@@ -70,8 +73,12 @@ export type AdminProject = PublicProject & {
   board: BoardConfig
   /** Changelog options. Admin-only; what the changelog shows publicly is the entries themselves. */
   changelog: ChangelogConfig
-  /** Legal pages: the operator's identity and the look of the hosted pages. Admin-only. */
+  /** Legal pages: the look of the hosted pages (the operator's identity is `company`; `legal.entity` mirrors it). Admin-only. */
   legal: LegalConfig
+  /** Who is behind the product, written once; Legal and campaigns read it (shared/company.ts). */
+  company: CompanyProfile
+  /** The public pages of the published legal documents, as `{{project.privacyUrl}}` and friends; '' for a type with none. */
+  legalLinks: LegalLinks
   /** Blog options. Admin-only; what readers see is the published posts and GET /v1/blog. */
   blog: BlogConfig
   /** `alertWebhookUrl` is set only for trackers whose alerts must be pointed at HelpBites by hand. */
@@ -246,13 +253,23 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     const { config, errors } = validateLegalConfig(input.legal, normalizeLegalConfig(project.get('legal')))
     if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
     project.set('legal', config)
+    // Who the operator is lives in the company profile; this older way of setting it writes there too.
+    const entity = (input.legal as { entity?: Record<string, unknown> }).entity
+    if (entity && typeof entity === 'object') {
+      const sent = (key: 'name' | 'address' | 'email' | 'dpo') => (key in entity ? { [key === 'name' ? 'legalName' : key]: config.entity[key] } : {})
+      applyCompany(project, { ...sent('name'), ...sent('address'), ...sent('email'), ...sent('dpo') })
+    }
   }
   if (input.marketing !== undefined) {
     // Partial, like `feedback`.
     const { config, errors } = validateMarketingConfig(input.marketing, normalizeMarketingConfig(project.get('marketing')))
     if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
     project.set('marketing', config)
+    // The postal address campaigns carry is the company's.
+    if (input.marketing && typeof input.marketing === 'object' && 'postalAddress' in input.marketing) applyCompany(project, { address: config.postalAddress })
   }
+  // Last, so a request that sends both the older fields and the profile gets the profile.
+  if (input.company !== undefined) applyCompany(project, input.company)
   if ('eventWebhookUrl' in input) {
     const url = safeHttpUrl(input.eventWebhookUrl)
     // Clearing it is always allowed, and so is resending the saved URL: a workspace that lost the feature can still save its other settings.
@@ -284,7 +301,7 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
 }
 
 /** The look of a project row: one read of the Brand kit, shared by every surface (shared/projectLook.ts). */
-export function lookOf(project: ParseObject): ProjectLook {
+export function lookOf(project: { get: (key: string) => unknown }, overrides: ProjectLookInput = {}): ProjectLook {
   return projectLook({
     name: project.get('name'),
     theme: project.get('theme'),
@@ -292,7 +309,8 @@ export function lookOf(project: ParseObject): ProjectLook {
     brandLogoUrl: project.get('brandLogoUrl'),
     assistantLogoUrl: project.get('assistantLogoUrl'),
     iconUrl: project.get('iconUrl'),
-    brandLook: project.get('brandLook')
+    brandLook: project.get('brandLook'),
+    ...overrides
   })
 }
 
@@ -326,6 +344,7 @@ export async function markWidgetSeen(project: ParseObject): Promise<void> {
 export function serializeAdminProject(project: ParseObject): AdminProject {
   const errors = errorConfigOf(project)
   const tracker = providerOf(errors)
+  const company = companyOf(project)
   return {
     ...serializePublicProject(project),
     // Settings edits the stored setting, not the kit's logo the embeds show.
@@ -346,11 +365,13 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
     flags: normalizeFlags(project.get('flags')),
     board: normalizeBoardConfig(project.get('board')),
     changelog: normalizeChangelogConfig(project.get('changelog')),
-    legal: normalizeLegalConfig(project.get('legal')),
+    legal: { ...normalizeLegalConfig(project.get('legal')), entity: companyEntity(company) },
+    company,
+    legalLinks: legalLinksOf(project),
     blog: normalizeBlogConfig(project.get('blog')),
     errors: { connected: Boolean(errors.dsn), provider: errors.dsn ? tracker.id : '', providerName: errors.dsn ? tracker.name : '', dsn: String(errors.dsn || ''), url: issuesUrlOf(errors), alertWebhookUrl: errors.dsn && tracker.manualAlerts ? errorWebhookUrl(project, errors) : '' },
     errorLinks: errorLinksOf(project).map(link => errorLinkView(project, link)),
-    marketing: normalizeMarketingConfig(project.get('marketing')),
+    marketing: { ...normalizeMarketingConfig(project.get('marketing')), postalAddress: company.address },
     eventWebhookUrl: String(project.get('eventWebhookUrl') || ''),
     hasEventWebhookSecret: Boolean(project.get('eventWebhookSecret')),
     widgetSeenAt: iso(project.get('widgetSeenAt')),

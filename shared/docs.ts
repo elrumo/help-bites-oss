@@ -46,6 +46,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'FEEDBACK.md'
   },
   {
+    slug: 'events',
+    title: 'Events and webhooks',
+    description: 'Every change in a project is an event: receive the ones you pick on your own server as signed webhooks, or start a sequence from one.',
+    group: 'Guides',
+    file: 'EVENTS.md'
+  },
+  {
     slug: 'flags',
     title: 'Feature flags',
     description: 'Turn parts of your app on and off from the panel without a deploy, for everyone, for your admins or for a list.',

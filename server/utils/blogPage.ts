@@ -1,6 +1,7 @@
 import { blogTitle, type BlogConfig } from '#shared/blog'
 import { poweredByHtml, type PoweredBy } from './branding'
 import { escapeHtml } from './messageEmail'
+import { lookOf } from './projects'
 
 // The hosted blog at /blog/<pk>, as plain server-rendered HTML in the style of
 // legalPage.ts: readable without JavaScript and by crawlers, and meant to be
@@ -13,12 +14,12 @@ export type BlogListItem = { title: string, path: string, excerpt: string, cover
 export type BlogPageView = BlogListItem & { bodyHtml: string, canonical: string, commentsOpen: boolean }
 
 export function blogPageProject(project: ParseObject): BlogPageProject {
-  const theme = (project.get('theme') || {}) as { accent?: string }
+  const look = lookOf(project)
   return {
-    name: String(project.get('name') || ''),
+    name: look.name,
     publicKey: String(project.get('publicKey') || ''),
-    accent: /^#[0-9a-f]{6}$/i.test(String(theme.accent || '')) ? String(theme.accent) : '#4f46e5',
-    logo: [String(project.get('brandLogoUrl') || ''), String(project.get('iconUrl') || '')].find(url => /^https?:\/\//.test(url)) || ''
+    accent: look.accent,
+    logo: look.logoUrl || look.iconUrl
   }
 }
 

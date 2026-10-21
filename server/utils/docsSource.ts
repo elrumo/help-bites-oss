@@ -6,6 +6,7 @@ import connecting from '../../docs/CONNECTING.md'
 import deployment from '../../docs/DEPLOYMENT.md'
 import errors from '../../docs/ERRORS.md'
 import feedback from '../../docs/FEEDBACK.md'
+import events from '../../docs/EVENTS.md'
 import flags from '../../docs/FLAGS.md'
 import forms from '../../docs/FORMS.md'
 import languages from '../../docs/LANGUAGES.md'
@@ -25,6 +26,7 @@ const SOURCES: Record<string, string> = {
   'DEPLOYMENT.md': deployment,
   'ERRORS.md': errors,
   'FEEDBACK.md': feedback,
+  'EVENTS.md': events,
   'FLAGS.md': flags,
   'FORMS.md': forms,
   'LANGUAGES.md': languages,

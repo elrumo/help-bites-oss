@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { createError, getQuery, getRouterParam, type H3Event } from 'h3'
 import {
-  BRAND_ASSET_BACKGROUNDS, BRAND_ASSET_KINDS, BRAND_LIMITS, brandAccent, normalizeBrandConfig, validateBrandConfig,
+  BRAND_ASSET_BACKGROUNDS, BRAND_ASSET_KINDS, BRAND_LIMITS, normalizeBrandConfig, validateBrandConfig,
   type BrandAssetBackground, type BrandAssetKind, type BrandConfig
 } from '#shared/brand'
 import type { BrandPageData } from './brandPage'
 import { renderChangelogBody } from './changelogRender'
+import { forgetProject, lookOf } from './projects'
 import { detectImageMime } from './s3'
 
 // A project's brand kit: the config on `Project.brand` and its files, one
@@ -280,20 +281,23 @@ export async function publicBrandProject(event: H3Event): Promise<ParseObject> {
   return project
 }
 
+/** The project's accent as every surface shows it (Brand kit first, see shared/projectLook.ts). */
 export function projectAccent(project: ParseObject): string {
-  return String(((project.get('theme') || {}) as { accent?: string }).accent || '')
+  return lookOf(project).accent
 }
 
 /** Everything the page renders, from a kit and the files it may show. */
 export function brandPageData(project: ParseObject, config: BrandConfig, assets: BrandAssetView[]): BrandPageData {
   const shown = assets.filter(a => a.public)
-  const icon = shown.find(a => a.kind === 'icon' && a.mime.startsWith('image/'))?.url || String(project.get('iconUrl') || '')
+  // The look is read from the config being shown (a preview carries unsaved edits), like every other surface.
+  const look = lookOf(project, { brand: config })
+  const icon = shown.find(a => a.kind === 'icon' && a.mime.startsWith('image/'))?.url || look.iconUrl
   return {
-    name: String(project.get('name') || ''),
+    name: look.name,
     iconUrl: /^https?:\/\//.test(icon) ? icon : '',
     tagline: config.tagline,
     about: config.about,
-    accent: brandAccent(config, projectAccent(project)),
+    accent: look.accent,
     config,
     guidelines: config.guidelines.map(g => ({ id: g.id, title: g.title, html: renderChangelogBody(g.body, 'markdown') })),
     assets: shown
@@ -307,7 +311,7 @@ export function toPublicBrand(project: ParseObject, config: BrandConfig, assets:
     name: String(project.get('name') || ''),
     tagline: config.tagline,
     about: config.about,
-    accent: brandAccent(config, projectAccent(project)),
+    accent: lookOf(project, { brand: config }).accent,
     colors: config.colors,
     fonts: config.fonts,
     guidelines: config.guidelines.map(g => ({ ...g, html: renderChangelogBody(g.body, 'markdown') })),

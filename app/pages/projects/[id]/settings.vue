@@ -228,7 +228,7 @@ const dirty = computed(() => !!snapshot.value && JSON.stringify(form) !== snapsh
 const validAccent = computed(() => !form.accent || /^#[0-9a-f]{6}$/i.test(form.accent.trim()))
 const fallbackColor = computed(() => projectColor(id))
 // The widget falls back to the panel's indigo, not the sidebar's hashed colour.
-const widgetAccent = computed(() => (validAccent.value && form.accent) || '#5e6ad2')
+const widgetAccent = computed(() => (validAccent.value && form.accent) || '#4f46e5')
 
 function fill(p: AdminProject) {
   project.value = p

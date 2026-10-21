@@ -142,6 +142,8 @@ export type Conversation = {
   agentReadAt: string | null
   /** Set while the team has archived it: hidden from the inbox queue, kept for history. */
   archivedAt: string | null
+  /** Feedback posts the team linked to this conversation (ids). Operators only: never sent to the customer. */
+  feedbackPostIds: string[]
   createdAt: string
 }
 

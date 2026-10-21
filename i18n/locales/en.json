@@ -1186,6 +1186,15 @@
         "wait": "Wait",
         "unit": "Unit",
         "removeStep": "Remove step"
+      },
+      "recipes": {
+        "button": "Recipes",
+        "title": "Start from a recipe",
+        "description": "Ready-made sequences. They are added as drafts: read the emails, change them, then activate.",
+        "use": "Use",
+        "installed": "“{name}” added as a draft",
+        "installError": "Could not add the recipe",
+        "loadError": "Could not load the recipes"
       }
     },
     "settings": {
@@ -4652,5 +4661,38 @@
     "backToPanel": "Back to HelpBites",
     "failed": "Could not approve the connection",
     "redirecting": "Taking you back to {client}…"
+  },
+  "webhookEndpoints": {
+    "title": "Webhook endpoints",
+    "intro": "Send the events you pick to your own server, each endpoint with its own signing secret.",
+    "docs": "Event reference",
+    "add": "Add endpoint",
+    "copySecret": "Copy the signing secret now",
+    "copySecretHint": "It is shown once. Verify the x-helpbites-signature header with it.",
+    "secret": "Signing secret",
+    "copy": "Copy",
+    "copied": "Copied",
+    "done": "Done",
+    "url": "Endpoint URL",
+    "description": "Description",
+    "events": "Events",
+    "everything": "Everything",
+    "enabled": "Send events to this endpoint",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "test": "Send a test event",
+    "rotate": "New signing secret",
+    "rotateConfirm": "The old secret stops working at once. Continue?",
+    "deleteConfirm": "Remove {url}?",
+    "empty": "No endpoints yet. Add one to get events as they happen.",
+    "recent": "Recent deliveries",
+    "off": "Switched off",
+    "failing": "Last delivery failed",
+    "working": "Last delivery worked",
+    "noDeliveries": "No deliveries yet",
+    "loadFailed": "Could not load webhook endpoints",
+    "saveFailed": "Could not save the endpoint",
+    "pickEvents": "Pick at least one event, or choose Everything"
   }
 }

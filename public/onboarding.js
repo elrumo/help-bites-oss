@@ -36,6 +36,14 @@
  *     HelpBitesOnboarding.push(['reset'])   // forget that this browser saw it
  *   </script>
  *
+ * Who finished it: hand it the person's identity token (the one the chat and
+ * the board use; a string or a function returning one, or a promise of one) and
+ * it tells HelpBites the outcome, so a segment can ask for "Finished
+ * onboarding". Best effort: with no token, or on any error, it does nothing.
+ *
+ *   <script src="…/onboarding.js" data-project="pk_…" data-token="eyJ…" defer></script>
+ *   HelpBitesOnboarding.push(['init', { token: () => fetch('/api/support/token').then(r => r.json()).then(r => r.token) }])
+ *
  * Restyle it from your CSS with variables on .help-bites-onboarding
  * (--hb-onboarding-accent, -on-accent, -bg, -text, -muted, -radius, -font,
  * -backdrop, -width) or parts (::part(card), overlay, progress, skip, media,
@@ -60,6 +68,7 @@
     font: attr('font'),
     fallback: attr('fallback'),
     locale: attr('locale'),
+    token: attr('token'),
     labels: {},
     onComplete: null,
     onSkip: null,
@@ -101,6 +110,24 @@
 
   function emit(type, flow, step) {
     try { window.dispatchEvent(new CustomEvent('helpbites:onboarding', { detail: { type: type, flow: flow.key, version: flow.version, step: step } })) } catch (e) {}
+  }
+
+  /** Tell HelpBites who finished or skipped the flow. Best effort: never throws, never blocks the dialog. */
+  function report(flow, result) {
+    try {
+      var given = options.token
+      if (!given || !options.project) return
+      Promise.resolve().then(function () { return typeof given === 'function' ? given() : given }).then(function (token) {
+        if (!token || typeof token !== 'string') return
+        return fetch(origin + '/v1/onboarding/' + encodeURIComponent(options.project) + '/' + encodeURIComponent(flow.key) + '/complete', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+          body: JSON.stringify({ outcome: result === 'complete' ? 'completed' : 'skipped' }),
+          credentials: 'omit',
+          keepalive: true
+        })
+      }).catch(function () {})
+    } catch (e) {}
   }
 
   function bundled() {
@@ -169,7 +196,7 @@
 
   function css(flow, inline, theme) {
     var style = flow.style || {}
-    var accent = /^#[0-9a-f]{6}$/i.test(options.accent) ? options.accent : style.accent || '#5e6ad2'
+    var accent = /^#[0-9a-f]{6}$/i.test(options.accent) ? options.accent : style.accent || '#4f46e5'
     var radius = options.radius !== '' && !isNaN(+options.radius) ? +options.radius : (typeof style.radius === 'number' ? style.radius : 20)
     var night = dark(theme)
     var bg = style.background || (night ? '#18181b' : '#ffffff')
@@ -327,6 +354,7 @@
       if (how.preview) return
       store(seenKey(), { version: flow.version || 0, result: result, at: Date.now() })
       emit(result, flow, index)
+      report(flow, result)
       var cb = result === 'complete' ? options.onComplete : options.onSkip
       if (cb) try { result === 'complete' ? cb(flow) : cb(flow, index) } catch (e) {}
       close()

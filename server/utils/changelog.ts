@@ -32,6 +32,7 @@ import {
 } from '#shared/changelog'
 import { feedbackStatusCategory, parsePostRef } from '#shared/feedback'
 import { deriveChangelogExcerpt, nextChangelogSlug, renderChangelogBody } from './changelogRender'
+import { emitDomainEventLater } from './domainEvents'
 
 // The changelog: entries (what shipped, in the project's own words) grouped
 // into releases, linked to the feedback posts, board items and conversations
@@ -569,6 +570,27 @@ function stampPublish(row: ParseObject, wasPublished: boolean): void {
   if (!wasPublished && entryStatus(row) === 'published' && !row.get('notifiedAt')) row.set('notifyPendingSince', new Date())
 }
 
+/**
+ * Tell the bus an entry is public (`changelog.entry.published`), which is what
+ * mails the followers of the posts it answers. Called after the save that made
+ * it public; an entry still held back by a draft release is announced when that
+ * release publishes. Fire and forget: the publish never waits on the mail, and
+ * the handler's own at-most-once claim makes announcing twice harmless.
+ */
+async function announcePublished(project: ParseObject, rows: ParseObject[]): Promise<void> {
+  for (const row of rows) {
+    if (!(await isChangelogEntryPublic(row))) continue
+    emitDomainEventLater(project, 'changelog.entry.published', {
+      entryId: row.id || '',
+      number: typeof row.get('number') === 'number' ? row.get('number') : null,
+      releaseId: pointerId(row.get('release')) || null,
+      publishedAt: iso(row.get('publishedAt')),
+      feedbackPostIds: stringList(row.get('feedbackPostIds')),
+      boardItemIds: stringList(row.get('boardItemIds'))
+    })
+  }
+}
+
 async function applyEntryValues(project: ParseObject, row: ParseObject, values: ChangelogEntryValues, config: ChangelogConfig, options: { notify?: boolean } = {}): Promise<void> {
   const wasPublished = entryStatus(row) === 'published'
   checkArea(config, values.area)
@@ -616,7 +638,7 @@ function authorOf(agent: ParseObject | undefined): Author {
  * request before anything is written. `author` is who wrote it (default: the
  * agent, else the automated caller).
  */
-export async function createChangelogEntry(project: ParseObject, agent: ParseObject | undefined, payload: unknown, author: Author = authorOf(agent)): Promise<ParseObject> {
+export async function createChangelogEntry(project: ParseObject, agent: ParseObject | undefined, payload: unknown, author: Author = authorOf(agent), options: { announce?: boolean } = {}): Promise<ParseObject> {
   const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>
   const { values, errors } = readChangelogEntryInput(raw, { create: true })
   if (errors.length) badRequest(errors)
@@ -646,6 +668,8 @@ export async function createChangelogEntry(project: ParseObject, agent: ParseObj
   row.set('number', await allocateProjectNumber(project, 'changelogSeq', 'ChangelogEntry'))
   await row.save(null, MASTER)
   for (const target of targets) await applyLink(row, target, true, agent)
+  // After the links: the event carries them.
+  if (options.announce !== false && entryStatus(row) === 'published') await announcePublished(project, [row])
   return row
 }
 
@@ -708,8 +732,10 @@ export async function createChangelogEntries(project: ParseObject, agent: ParseO
 export async function updateChangelogEntry(project: ParseObject, row: ParseObject, payload: unknown): Promise<ParseObject> {
   const { values, errors } = readChangelogEntryInput(payload, { create: false })
   if (errors.length) badRequest(errors)
+  const wasPublished = entryStatus(row) === 'published'
   await applyEntryValues(project, row, values, getChangelogConfig(project))
   await row.save(null, MASTER)
+  if (!wasPublished && entryStatus(row) === 'published') await announcePublished(project, [row])
   return row
 }
 
@@ -738,6 +764,7 @@ export async function reviewChangelogEntry(row: ParseObject, writer: ChangelogWr
     row.set('reviewStatus', 'rejected')
   }
   await row.save(null, MASTER)
+  if (action === 'approve') await announcePublished(await loadProjectUnscoped(pointerId(row.get('project'))), [row])
   return row
 }
 
@@ -780,6 +807,8 @@ export async function importChangelogEntries(project: ParseObject, writer: Chang
       // History is not news: an imported published entry never goes to subscribers (unless it says when it did).
       if (notifiedAt !== undefined) notifiedAt === null ? row.unset('notifiedAt') : row.set('notifiedAt', notifiedAt)
       else if (!existing && entryStatus(row) === 'published') row.set('notifiedAt', new Date())
+      // Nor are the followers of what it answers: the release it joins may publish later.
+      if (!existing && entryStatus(row) === 'published') row.set('followersNotifiedAt', new Date())
       if (reviewStatus !== undefined) reviewStatus === null ? row.unset('reviewStatus') : row.set('reviewStatus', reviewStatus)
       if (reviewedBy !== undefined) row.set('reviewedBy', reviewedBy)
       if (reviewedAt !== undefined) reviewedAt === null ? row.unset('reviewedAt') : row.set('reviewedAt', reviewedAt)
@@ -814,12 +843,14 @@ export async function mergeChangelogEntries(project: ParseObject, writer: Change
   }
 
   const shas = unique([...stringList(entry.commitShas), ...sources.flatMap(row => stringList(row.get('commitShas')))]).slice(0, 50)
-  const merged = await createChangelogEntry(project, writer.agent, { ...entry, commitShas: shas }, { name: writer.name, source: writer.source })
+  const merged = await createChangelogEntry(project, writer.agent, { ...entry, commitShas: shas }, { name: writer.name, source: writer.source }, { announce: false })
   for (const field of Object.values(LINK_FIELDS)) {
     const ids = unique([...stringList(merged.get(field)), ...sources.flatMap(row => stringList(row.get(field)))]).slice(0, CHANGELOG_LINKS_MAX)
     if (ids.length) merged.set(field, ids)
   }
   await merged.save(null, MASTER)
+  // Announced only now, with everything the sources linked.
+  if (entryStatus(merged) === 'published') await announcePublished(project, [merged])
 
   for (const row of sources) row.set('status', 'archived')
   await useParse().Object.saveAll(sources, MASTER)
@@ -901,6 +932,10 @@ export async function publishChangelogRelease(project: ParseObject, row: ParseOb
   }
   if (drafts.length) await Parse.Object.saveAll(drafts, MASTER)
   await stampShippedIn(project, row)
+  // Every published entry of the release is public now: the drafts just published, and those published
+  // earlier while the release was a draft. Followers already told (`followersNotifiedAt`) are not told again.
+  const shipped = await new Parse.Query('ChangelogEntry').equalTo('project', project).equalTo('release', row).equalTo('status', 'published').doesNotExist('followersNotifiedAt').limit(1000).find(MASTER)
+  await announcePublished(project, shipped)
   return row
 }
 

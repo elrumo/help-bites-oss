@@ -14,7 +14,7 @@ export type KnowledgeModelStatus = typeof KNOWLEDGE_MODEL_STATUSES[number]
 export const FAQ_STATUSES = ['draft', 'active', 'disabled', 'archived', 'outdated'] as const
 export type FaqStatus = typeof FAQ_STATUSES[number]
 
-export const FAQ_ORIGINS = ['manual', 'imported', 'ai-generated', 'api'] as const
+export const FAQ_ORIGINS = ['manual', 'imported', 'ai-generated', 'api', 'conversation'] as const
 export type FaqOrigin = typeof FAQ_ORIGINS[number]
 
 export const DOCUMENT_STATUSES = ['uploaded', 'queued', 'processing', 'processed', 'failed', 'outdated', 'archived'] as const

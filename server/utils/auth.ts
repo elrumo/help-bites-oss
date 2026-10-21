@@ -2,6 +2,7 @@ import { createError, getHeader, type H3Event } from 'h3'
 import { normalizeEmail } from '#shared/contacts'
 import { normalizeLocale } from '#shared/locales'
 import { invalidate, onInvalidate } from './cacheBus'
+import { emitDomainEvent } from './domainEvents'
 import { anonymousWriteGate, verifyAnonymousToken } from './endUserSessions'
 
 // One `Authorization: Bearer` header for everyone, split by prefix:
@@ -161,8 +162,11 @@ export async function findEndUser(project: ParseObject, externalId: string): Pro
   return row || null
 }
 
-/** Create the EndUser row on first write; refresh name/email when the token says they changed. */
-export async function ensureEndUser(project: ParseObject, claims: { sub: string, name?: string, email?: string, username?: string, avatar?: string, locale?: string }): Promise<ParseObject> {
+/**
+ * Create the EndUser row on first write; refresh name/email when the token says they changed.
+ * `touch: false` leaves `lastSeenAt` alone: the row is being used on the person's behalf, not by them.
+ */
+export async function ensureEndUser(project: ParseObject, claims: { sub: string, name?: string, email?: string, username?: string, avatar?: string, locale?: string }, options: { touch?: boolean } = {}): Promise<ParseObject> {
   const Parse = useParse()
   const name = String(claims.name || '').trim().slice(0, 120)
   const email = normalizeEmail(claims.email)
@@ -193,8 +197,10 @@ export async function ensureEndUser(project: ParseObject, claims: { sub: string,
   // The token only fills a gap: a language an operator set by hand stays.
   if (language && !row!.get('language')) { row!.set('language', language); dirty = true }
   const lastSeen = row!.get('lastSeenAt') as Date | undefined
-  if (!lastSeen || Date.now() - lastSeen.getTime() > 10 * 60 * 1000) { row!.set('lastSeenAt', new Date()); dirty = true }
+  if (options.touch !== false && (!lastSeen || Date.now() - lastSeen.getTime() > 10 * 60 * 1000)) { row!.set('lastSeenAt', new Date()); dirty = true }
+  const created = row!.isNew()
   if (dirty) { await row!.save(null, MASTER); void syncEndUserForSearch(row!) }
+  if (created) void emitDomainEvent(project, 'contact.created', { contact: { id: row!.id, externalId: claims.sub, email: row!.get('email') || '' } })
   return row!
 }
 

@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   if (campaign.status === 'draft' || campaign.status === 'scheduled') {
     audienceCount = await (await campaignAudience(project, campaign.audience)).count(MASTER).catch(() => null)
     try {
-      problems = campaign.template || campaign.blogPostId ? complianceProblems(project, (await campaignContent(project, row)).document) : ['Pick a template']
+      problems = campaign.template || campaign.blogPostId ? snapshotProblems(project, await campaignContent(project, row)) : ['Pick a template']
     } catch (error) {
       problems = [String((error as { statusMessage?: string }).statusMessage || (error as Error).message)]
     }

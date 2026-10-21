@@ -148,6 +148,10 @@ export function eventLabel(message: Message): string {
     const entry = `${event.number ? `#${String(event.number)} ` : ''}${String(event.title || 'an entry')}`
     return event.type === 'changelog.linked' ? `Linked to changelog entry ${entry}` : `Unlinked from changelog entry ${entry}`
   }
+  if (event.type === 'feedback.linked' || event.type === 'feedback.unlinked') {
+    const post = `${event.number ? `#${String(event.number)} ` : ''}${String(event.title || 'a post')}`
+    return event.type === 'feedback.linked' ? `Linked to feedback post ${post}` : `Unlinked from feedback post ${post}`
+  }
   return 'Ticket updated'
 }
 

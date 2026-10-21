@@ -107,7 +107,7 @@
 
   function mountFloating() {
     var side = options.position + ':20px;'
-    launcher = el('button', 'position:fixed;bottom:20px;' + side + 'z-index:2147482999;height:44px;padding:0 18px 0 14px;border-radius:22px;border:0;cursor:pointer;background:' + (options.accent || '#5e6ad2') + ';color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.12),0 10px 28px rgba(0,0,0,.14);display:flex;align-items:center;gap:8px;font:500 13px/1 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;transition:transform .25s ' + SPRING + ';', { type: 'button', 'aria-label': 'Open feedback', 'aria-expanded': 'false' })
+    launcher = el('button', 'position:fixed;bottom:20px;' + side + 'z-index:2147482999;height:44px;padding:0 18px 0 14px;border-radius:22px;border:0;cursor:pointer;background:' + (options.accent || '#4f46e5') + ';color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.12),0 10px 28px rgba(0,0,0,.14);display:flex;align-items:center;gap:8px;font:500 13px/1 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;transition:transform .25s ' + SPRING + ';', { type: 'button', 'aria-label': 'Open feedback', 'aria-expanded': 'false' })
     launcher.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg><span></span>'
     launcher.lastChild.textContent = options.label
     launcher.onmouseenter = function () { if (!still) launcher.style.transform = 'scale(1.04)' }

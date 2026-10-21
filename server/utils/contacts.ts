@@ -66,6 +66,9 @@ export type ContactWriteOptions = {
   origin?: { type: ContactOriginType, id?: string }
 }
 
+/** Writers that load many contacts at once: they do not publish `contact.created` per row. */
+const BULK_VIA = ['import', 'sync', 'stripe']
+
 export type ContactWriteResult = { index: number, status: 'created' | 'updated' | 'unchanged' | 'failed', id: string, error?: string }
 
 export type SubscriptionChange = { contact: ParseObject, from: ContactSubscription, to: ContactSubscription, topics?: { added: string[], removed: string[] } }
@@ -238,6 +241,10 @@ async function writeContacts(project: ParseObject, inputs: ContactInput[], optio
   for (const [row, positions] of dirty) for (const r of positions) if (results[r]!.status !== 'failed') results[r]!.id = row.id || ''
   void syncEndUsersForSearch(rows.filter(r => r.id))
   void announce(project, changes.filter(c => c.contact.id))
+  // Bulk loads (an import, a database sync, Stripe) would flood the bus with one event per row.
+  if (!BULK_VIA.includes(options.via)) {
+    for (const r of results) if (r.status === 'created' && r.id) void emitDomainEvent(project, 'contact.created', { contact: { id: r.id, externalId: inputs[r.index]?.externalId || '', email: inputs[r.index]?.email || '' } })
+  }
   return results
 }
 

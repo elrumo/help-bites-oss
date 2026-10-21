@@ -1,5 +1,6 @@
 import { createError, getHeader, getQuery, getRouterParam, type H3Event } from 'h3'
 import { extractTemplateVariables } from '#shared/email/placeholders'
+import { parseAcceptLanguage } from '#shared/locales'
 import {
   DEFAULT_LEAD_SETTINGS, LEAD_FIELD_LABELS, LEAD_FORM_KEY, LEAD_FORM_LIMITS, LEAD_FORM_PRESETS, leadFieldsOf, leadFormKeyFrom, normalizeLeadContent, normalizeLeadSettings,
   normalizeLeadStyle, presetForm, readLeadSubmission, validateLeadContent, validateLeadFields, validateLeadSettings, validateLeadStyle,
@@ -14,7 +15,7 @@ import { findProjectEmail } from './emails'
 import { escapeHtml } from './messageEmail'
 import { pageBrand, renderMarketingPage } from './marketingPages'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
-import { loadProjectUnscoped } from './projects'
+import { loadProjectUnscoped, lookOf } from './projects'
 import { LIMITS, rateLimit } from './rateLimit'
 import { runExclusive } from './redis'
 import { readLinkToken, signLinkToken } from './secrets'
@@ -251,19 +252,15 @@ export async function updateLeadForm(project: ParseObject, row: ParseObject, bod
 
 // ---- the public form ---------------------------------------------------------------
 
-/** The project's accent and logo fill what a form leaves to them. */
-function projectLook(project: ParseObject) {
-  const theme = (project.get('theme') || {}) as { accent?: string }
-  return {
-    name: String(project.get('name') || ''),
-    accent: /^#[0-9a-f]{6}$/i.test(String(theme.accent || '')) ? String(theme.accent).toLowerCase() : '#5e6ad2',
-    logoUrl: [String(project.get('iconUrl') || ''), String(project.get('brandLogoUrl') || '')].find(url => /^https?:\/\//.test(url)) || ''
-  }
+/** The project's look (Brand kit) fills what a form leaves to it. */
+export function formProjectLook(project: ParseObject) {
+  const look = lookOf(project)
+  return { name: look.name, accent: look.accent, logoUrl: look.logoUrl || look.iconUrl }
 }
 
 export function toPublicLeadForm(project: ParseObject, row: ParseObject): PublicLeadForm {
   const form = serializeLeadForm(project, row)
-  const look = projectLook(project)
+  const look = formProjectLook(project)
   return {
     key: form.key,
     name: form.name,
@@ -324,7 +321,9 @@ export async function submitLeadForm(event: H3Event, project: ParseObject, row: 
   // someone who unsubscribed comes back only through the confirmation email.
   const subscription = current === 'subscribed' ? undefined : form.settings.doubleOptIn || current === 'unsubscribed' ? 'pending' as const : 'subscribed' as const
   const attributes = Object.keys(submission.attributes).length ? submission.attributes : undefined
-  const [result] = await upsertContacts(project, [{ email: submission.email, ...(submission.name ? { name: submission.name } : {}), ...(attributes ? { attributes } : {}), tags: form.settings.tags, subscription, leadForms: [form.id] }], { via: 'lead_form', explicit: true, fillOnly: true, consent, origin: { type: 'lead_form', id: form.id } })
+  // The browser's first language fills the contact's (never replaces it), so the welcome email can come in it.
+  const language = parseAcceptLanguage(getHeader(event, 'accept-language'))[0]
+  const [result] = await upsertContacts(project, [{ email: submission.email, ...(submission.name ? { name: submission.name } : {}), ...(language ? { language } : {}), ...(attributes ? { attributes } : {}), tags: form.settings.tags, subscription, leadForms: [form.id] }], { via: 'lead_form', explicit: true, fillOnly: true, consent, origin: { type: 'lead_form', id: form.id } })
     .catch(closedAtLimit)
   if (!result || result.status === 'failed') {
     console.error('[forms] a lead was not saved:', result?.error)

@@ -388,7 +388,7 @@ async function upload(event: Event) {
 const kitImages = ref<{ id: string, name: string, url: string }[]>([])
 
 // ---- look ----
-const projectAccent = computed(() => project.value?.theme?.accent || '#5e6ad2')
+const projectAccent = computed(() => project.value?.theme?.accent || '#4f46e5')
 const colourFields = computed(() => [
   { key: 'accent' as const, label: t('projectTools.onboarding.accent'), empty: t('projectTools.onboarding.projectAccent'), fallback: projectAccent.value },
   { key: 'background' as const, label: t('projectTools.onboarding.background'), empty: t('projectTools.onboarding.followsTheme'), fallback: previewTheme.value === 'dark' ? '#18181b' : '#ffffff' },

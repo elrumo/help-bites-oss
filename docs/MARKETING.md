@@ -138,6 +138,34 @@ never expires, so unsubscribing always works, instantly; since emails get
 forwarded, "subscribe again" sends the confirmation email (valid seven days)
 rather than subscribing on the spot.
 
+## Automations
+
+A sequence can wait for any [event](EVENTS.md) HelpBites publishes, not only for your app's `POST /v1/track`: set its trigger
+to `{ "type": "event", "event": "onboarding.completed" }` and everyone the event is about starts it. The event has to say
+who: `data.contact.id` (the events that concern a person carry it). One friendlier name exists for one case,
+`conversation.resolved` (a conversation moved to a resolved or closed status).
+
+**Recipes** are ready-made sequences. Campaigns → Sequences → Recipes (or the API) adds one to your project as a *draft*
+with its emails written; read it, change it, activate it.
+
+| Recipe | Starts when | Emails |
+|---|---|---|
+| `welcome-subscribers` | someone subscribes | welcome, tips after 3 days, check-in after 10 |
+| `after-onboarding` | `onboarding.completed` | tips after a day, feedback nudge after a week |
+| `thank-for-feedback` | `feedback.post.created` | a thank-you after 10 minutes |
+| `check-in-after-support` | `conversation.resolved` | "did we solve it?" after 3 days |
+
+```sh
+curl "$HELPBITES/v1/automations/recipes" -H "Authorization: Bearer $ADMIN_KEY"
+curl -X POST "$HELPBITES/v1/automations/recipes/after-onboarding/install" \
+  -H "Authorization: Bearer $ADMIN_KEY" -H 'content-type: application/json' -d '{ "project": "'$PROJECT'" }'
+# → { "sequence": { "id": "…", "status": "draft", … } }; activate with PATCH /v1/sequences/<id> { "status": "active" }
+```
+
+Sequences are marketing mail, so only contacts who are **subscribed** are emailed: someone who posts feedback but never
+agreed to email is skipped. Activation refuses emails without an unsubscribe link and your postal address (the recipes
+include both).
+
 ## Event webhook
 
 Settings → Event webhook: a URL and a signing secret. HelpBites posts:

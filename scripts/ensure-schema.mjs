@@ -990,7 +990,10 @@ const SCHEMAS = {
       // Subscribers' mail: stamped when an entry is published (never from an import), cleared
       // by stamping `notifiedAt` once the sweep has told them. Not `publishedAt`: that can be backdated.
       notifyPendingSince: { type: 'Date' },
-      notifiedAt: { type: 'Date' }
+      notifiedAt: { type: 'Date' },
+      // The followers of the posts it answers were mailed (or it was too old to mail): claimed under a lock before sending,
+      // so they hear at most once (server/utils/changelogFollowers.ts).
+      followersNotifiedAt: { type: 'Date' }
     },
     indexes: {
       project_notify: { _p_project: 1, status: 1, notifyPendingSince: 1 },

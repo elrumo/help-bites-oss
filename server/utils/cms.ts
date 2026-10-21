@@ -408,7 +408,7 @@ export async function listPublishedCmsEntries(project: ParseObject, options: { t
 
 /** A published entry's body as HTML and the CSS it needs, for a site that shows it as is. */
 export function cmsEntryHtml(project: ParseObject, entry: ReturnType<typeof toPublicCmsEntry>, library: CmsLibrary, host: string) {
-  return renderBlocks(entry.content, entry.style, entry.style.accent || projectAccent(project) || '#5e6ad2', { library, pk: String(project.get('publicKey') || ''), host })
+  return renderBlocks(entry.content, entry.style, entry.style.accent || projectAccent(project), { library, pk: String(project.get('publicKey') || ''), host })
 }
 
 /** A hosted page: the whole HTML document and its CSP, or null for a 404. */

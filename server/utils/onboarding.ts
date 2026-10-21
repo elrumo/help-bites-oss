@@ -7,6 +7,7 @@ import {
   type OnboardingOptions, type OnboardingStep, type OnboardingStyle, type OnboardingTranslations, type PublicOnboardingFlow
 } from '#shared/onboarding'
 import { readTargetLocales, translateMissing } from './translate'
+import { lookOf } from './projects'
 
 // Onboarding flows: the store behind /v1/admin/onboarding and the public read.
 // A flow keeps a working copy (steps, style, options) and, once published, a
@@ -64,21 +65,17 @@ const contentOf = (row: ParseObject) => ({
   translations: onboardingTranslationsOf(row.get('translations'))
 })
 
-/** The project's accent and logo fill what a flow leaves to them. */
-function projectLook(project: ParseObject) {
-  const theme = (project.get('theme') || {}) as { accent?: string }
-  return {
-    name: String(project.get('name') || ''),
-    accent: /^#[0-9a-f]{6}$/i.test(String(theme.accent || '')) ? String(theme.accent).toLowerCase() : '#5e6ad2',
-    logoUrl: [String(project.get('iconUrl') || ''), String(project.get('brandLogoUrl') || '')].find(url => /^https?:\/\//.test(url)) || ''
-  }
+/** The project's look (Brand kit) fills what a flow leaves to it. */
+export function flowProjectLook(project: ParseObject) {
+  const look = lookOf(project)
+  return { name: look.name, accent: look.accent, logoUrl: look.logoUrl || look.iconUrl }
 }
 
 type Snapshot = { name: string, steps: OnboardingStep[], style: OnboardingStyle, options: OnboardingOptions, locale: string, translations: OnboardingTranslations }
 
 /** What an app receives for a published snapshot, in the first of `wanted` the flow has (its own language otherwise). */
 function toPublicFlow(project: ParseObject, row: ParseObject, snapshot: Snapshot, wanted: unknown[] = []): PublicOnboardingFlow {
-  const look = projectLook(project)
+  const look = flowProjectLook(project)
   // A language added but not yet written has nothing to show: it is not offered.
   const locales = [snapshot.locale, ...Object.entries(snapshot.translations).filter(([, t]) => t.name || Object.keys(t.steps).length).map(([tag]) => tag)]
   const locale = matchLocale(wanted, locales) || snapshot.locale

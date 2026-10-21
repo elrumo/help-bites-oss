@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   await rateLimit(`sb:rl:campaigntest:${caller.actor.id || project.id}`, LIMITS.campaignTestsPerAgent.limit, LIMITS.campaignTestsPerAgent.window)
   const row = await getProjectCampaign(project, getRouterParam(event, 'id') || '')
   const recipients = parseEmailRecipients(body.to, 5)
-  const snapshot = (row.get('snapshot') as Awaited<ReturnType<typeof snapshotCampaign>> | undefined) || await campaignContent(project, row)
+  const snapshot = row.get('snapshot') ? snapshotFromRow(row.get('snapshot')) : await campaignContent(project, row)
   // A stand-in contact for addresses that are not one, so placeholders still fill.
   const Parse = useParse()
   const contacts = await Promise.all(recipients.map(async (r) => {
