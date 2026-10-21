@@ -45,6 +45,16 @@ test('the demo answers the CRM: contacts, segments and sources', async () => {
   expect((await demoApi<any>('/admin/contact-sources', { query: { project: 'acme' } })).kinds).toHaveLength(3)
 })
 
+test('the demo answers lead forms, their leads and where each contact came from', async () => {
+  const { forms } = await demoApi<any>('/admin/lead-forms', { query: { project: 'acme' } })
+  expect(forms[0].key).toBe('waitlist')
+  const { contacts } = await demoApi<any>('/contacts', { query: { project: 'acme', leadForm: forms[0].id } })
+  expect(contacts.length).toBe(forms[0].stats.leads)
+  expect(contacts.length).toBeGreaterThan(0)
+  expect(contacts.every((c: any) => c.origin.type === 'lead_form')).toBe(true)
+  expect((await demoApi<any>('/segments', { query: { project: 'acme' } })).segments.some((s: any) => s.auto && s.id === forms[0].segment)).toBe(true)
+})
+
 test('the demo answers a project overview, the page a project lands on', async () => {
   const overview = await demoApi<any>('/admin/projects/acme/overview')
   expect(overview.stats.length).toBeGreaterThan(0)
@@ -79,6 +89,16 @@ test('the demo answers the Revenue tab with the overview\'s numbers', async () =
   expect(report.plans.reduce((sum: number, p: any) => sum + p.mrr, 0)).toBe(report.mrr)
   const { contacts } = await demoApi<any>('/contacts', { query: { project: 'acme' } })
   expect(contacts.find((c: any) => c.email === 'priya@example.com').attributes.stripe_revenue).toBe(1176)
+})
+
+test('the demo blog has Acme\'s posts, opens one, and refuses writes', async () => {
+  const { posts } = await demoApi<any>('/admin/blog/posts', { query: { project: 'acme' } })
+  expect(posts.map((post: any) => post.status)).toEqual(['published', 'draft'])
+  const { post } = await demoApi<any>(`/admin/blog/posts/${posts[0].id}`)
+  expect(post.title).toBe(posts[0].title)
+  expect(await demoApi<any>('/admin/blog/comments', { query: { project: 'acme' } })).toEqual({ comments: [], total: 0, hasMore: false })
+  expect(await demoApi<any>('/admin/blog/posts', { query: { project: 'fieldnotes' } })).toEqual({ posts: [] })
+  await expect(demoApi('/admin/blog/posts', { method: 'POST', body: { project: 'acme', title: 'x' } })).rejects.toMatchObject({ statusCode: 403 })
 })
 
 test('the demo changelog has Acme\'s release and drafts, and refuses writes', async () => {

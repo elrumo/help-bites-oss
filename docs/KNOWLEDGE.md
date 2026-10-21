@@ -2,8 +2,8 @@
 
 This is the admin-managed layer between uploaded support documentation and the
 support runtime. Administrators upload a `SUPPORT_FAQ.md`, it becomes structured,
-navigable, searchable knowledge, and it is assigned to AI assistants that can
-suggest or (optionally) send grounded answers.
+navigable, searchable knowledge, and it is assigned to AI assistants that
+(optionally) send grounded answers and hand the rest to a human.
 
 It follows the existing app's conventions: Parse classes defined in
 `scripts/ensure-schema.mjs`, auto-imported helpers in `server/utils/**`,
@@ -91,6 +91,14 @@ user-message routes) finds an active `SupportAgent` with `autoReply` on for the
 project, retrieves knowledge, calls the LLM (`server/utils/llm.ts`), and posts the
 answer via `appendMessage` — detached, so it never blocks the user's request.
 It's a no-op unless a project has an auto-reply agent with an LLM configured.
+
+**Hand-off.** A message a routing rule sends to a human, or one no knowledge
+matches (or none above `minConfidence`) when `fallbackBehavior` is `human` (the
+default), gets no AI answer. The conversation gets the `needs-human` label and an
+internal note with the reason, and the assistant answers nothing more in it while
+the label is on: removing it hands the conversation back. List them with
+`GET /v1/admin/conversations?tag=needs-human`. With `fallbackBehavior: 'silent'`
+an unsure message is simply left unanswered and unlabelled.
 
 **Prompt grounding** (`llm.ts`): the system prompt instructs the model to answer
 only from the supplied knowledge, say when it doesn't know, and treat knowledge

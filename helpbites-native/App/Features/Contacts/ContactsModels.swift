@@ -8,11 +8,57 @@ struct ContactConsent: Codable, Equatable, Sendable {
   let ip, formUrl, confirmedAt: String?
 }
 
+/// How a contact first got here (`ContactOrigin`): `id` is the lead form or the sync source, when there is one.
+struct ContactOrigin: Codable, Equatable, Sendable {
+  let type, id: String
+  let at: String?
+}
+
+/// `CONTACT_ORIGIN_TYPES` from shared/contacts.ts with the web's labels (contacts.origin.* in i18n/locales/en.json).
+enum ContactOriginKind: String, CaseIterable, Identifiable {
+  case app, leadForm = "lead_form", signup, csvImport = "import", sync, stripe, api, panel, feedback
+  var id: String { rawValue }
+  var label: String {
+    switch self {
+    case .app: "App user"
+    case .leadForm: "Lead form"
+    case .signup: "Newsletter sign-up"
+    case .csvImport: "CSV import"
+    case .sync: "Database sync"
+    case .stripe: "Stripe"
+    case .api: "API"
+    case .panel: "Added by hand"
+    case .feedback: "Feedback import"
+    }
+  }
+  var systemImage: String {
+    switch self {
+    case .app: "iphone"
+    case .leadForm: "list.bullet.clipboard"
+    case .signup: "envelope.badge"
+    case .csvImport: "square.and.arrow.down"
+    case .sync: "cylinder.split.1x2"
+    case .stripe: "creditcard"
+    case .api: "chevron.left.forwardslash.chevron.right"
+    case .panel: "person.badge.plus"
+    case .feedback: "lightbulb"
+    }
+  }
+  static func label(_ origin: ContactOrigin?, names: [String: String] = [:]) -> String {
+    guard let origin, let kind = ContactOriginKind(rawValue: origin.type) else { return "" }
+    if let name = names[origin.id], !origin.id.isEmpty { return "\(kind.label) · \(name)" }
+    return kind.label
+  }
+}
+
 struct Contact: Codable, Identifiable, Equatable, Sendable {
   let id, externalId, email, name, username, avatarUrl, subscription: String
   let attributes: [String: JSONValue]
   let tags, unsubscribedTopics, sources: [String]
   let consent: ContactConsent?
+  /// Optional for servers from before origins were kept.
+  let origin: ContactOrigin?
+  let leadForms: [String]?
   let feedbackEmails: Bool
   let lastSeenAt, createdAt, updatedAt: String?
 
@@ -57,6 +103,8 @@ struct SegmentFilter: Codable, Equatable, Sendable {
 struct ContactSegment: Codable, Identifiable, Equatable, Sendable {
   let id, projectId, name: String
   let filter: SegmentFilter
+  /// Made for a lead form (its leads, or every lead); optional for older servers.
+  let auto: Bool?
 }
 
 /// Mirrors shared/segments.ts: which fields a rule can test and what it can ask of each.
@@ -67,6 +115,7 @@ enum SegmentSpec {
     ("email", "Email", .text), ("name", "Name", .text), ("externalId", "User id", .text),
     ("subscription", "Subscription", .enumeration), ("tags", "Tags", .list),
     ("unsubscribedTopics", "Opted-out topics", .list), ("sources", "Source", .list),
+    ("origin", "Added via", .enumeration), ("leadForms", "Lead form", .list),
     ("createdAt", "Added", .date), ("lastSeenAt", "Last seen", .date), ("updatedAt", "Updated", .date)
   ]
   static func kind(_ field: String) -> Kind {

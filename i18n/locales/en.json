@@ -18,6 +18,8 @@
     "workspace": "Workspace",
     "workspaces": "Workspaces",
     "newWorkspace": "New workspace…",
+    "knowledge": "Knowledge",
+    "team": "Team & assistants",
     "developer": "Developer",
     "settings": "Settings",
     "newConversation": "New conversation",
@@ -53,7 +55,9 @@
     "errors": "Errors",
     "dev": "Dev",
     "settings": "Settings",
-    "pages": "Pages"
+    "pages": "Pages",
+    "blog": "Blog",
+    "forms": "Forms"
   },
   "overview": {
     "refresh": "Refresh",
@@ -181,7 +185,7 @@
     "languageNote": "Defaults to your system language. This only changes the panel."
   },
   "inbox": {
-    "searchPlaceholder": "Search conversations",
+    "searchPlaceholder": "Search by name, email or user ID",
     "closeSearch": "Close search",
     "filterConversations": "Filter conversations",
     "filter": "Filter",
@@ -337,7 +341,7 @@
     "settingsDescription": "The board, its statuses and labels, and the public roadmap.",
     "savesAsChange": "Saves as you change it",
     "boardOn": "Board is on",
-    "boardOnDescription": "Items, links from the inbox and feedback, and the roadmap.",
+    "boardOnDescription": "Items, links from the inbox and feedback, and the roadmap. The public roadmap keeps listing feedback posts until an item is on it.",
     "syncFeedback": "Sync linked feedback",
     "syncFeedbackDescription": "When an item moves to another status category, its linked posts follow — and their followers get the usual emails.",
     "roadmapLayout": "Roadmap layout",
@@ -520,6 +524,183 @@
     "tagRemoved": "Removed",
     "tagBreaking": "Breaking"
   },
+  "blog": {
+    "posts": "Posts",
+    "commentsTab": "Comments",
+    "newPost": "New post",
+    "openPublic": "Public blog",
+    "copyFeed": "Copy the RSS feed's address",
+    "feed": "RSS feed",
+    "snippet": "Snippet",
+    "copied": "{what} copied",
+    "liveCount": "{count} live",
+    "draftCount": "{count} draft | {count} drafts",
+    "offBefore": "Nobody can read the blog yet. Turn it on in",
+    "offAfter": ": until then posts are only here, even published ones.",
+    "nothingYet": "No posts yet",
+    "emptyDescription": "Write release notes, tutorials or stories in the editor. Published posts appear on your hosted blog, in the embed, in the RSS feed and, if you like, in your subscribers' inboxes.",
+    "search": "Search posts or tags",
+    "noMatch": "No posts match.",
+    "allPosts": "All posts",
+    "live": "Live",
+    "scheduled": "Scheduled",
+    "draft": "Draft",
+    "published": "Published",
+    "sentAsNewsletter": "Sent as a newsletter",
+    "campaign": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "sending": "Sending",
+      "paused": "Paused",
+      "sent": "Sent",
+      "canceled": "Canceled"
+    },
+    "allComments": "All comments",
+    "visible": "Visible",
+    "hidden": "Hidden",
+    "commentTotal": "{count} comment | {count} comments",
+    "noComments": "No comments yet",
+    "noCommentsDescription": "When readers comment on your posts, they show here to answer, hide or remove.",
+    "team": "Team",
+    "show": "Show the comment",
+    "hide": "Hide the comment",
+    "reply": "Reply",
+    "replyPlaceholder": "Answer as the team…",
+    "replied": "Reply posted",
+    "replyError": "Could not post the reply",
+    "delete": "Delete",
+    "clickAgainDelete": "Click again to delete",
+    "moderateError": "Could not change the comment",
+    "loadCommentsError": "Could not load the comments",
+    "loadMore": "Load more",
+    "settingsTitle": "Blog settings",
+    "settingsDescription": "Where readers find your posts and what they can do there.",
+    "adminsOnly": "Only admins change these settings.",
+    "enabled": "Public blog",
+    "enabledDescription": "The hosted blog, the embed, the API and the RSS feed show your published posts.",
+    "blogTitle": "Name",
+    "blogTitleHint": "Shown at the top of the blog and in the feed",
+    "blogDescription": "Description",
+    "reactions": "Reactions",
+    "reactionsDescription": "Signed-in readers react to posts with an emoji.",
+    "comments": "Comments",
+    "commentsDescription": "Signed-in readers comment on posts. You can still close one post's thread.",
+    "emailOnlyHint": "Readers of the hosted blog have no account with you: to let them comment with just their email, allow email-only users in the project's",
+    "emailOnlyHintEnd": ". In your own site, hand the embed your signed-in user's token instead.",
+    "commentNotify": "Tell these addresses about new comments",
+    "commentNotifyHint": "Comma-separated, up to 10",
+    "postUrl": "Post address on your site",
+    "postUrlHint": "If posts also live on your own site, where: {'{'}siteUrl{'}'} and {'{'}slug{'}'} are filled in. The feed and the newsletter link there. Empty: the hosted page.",
+    "newsletter": "Newsletter",
+    "newsletterDescription": "Send any published post to your subscribers. It goes out as a campaign, with its unsubscribe link and your postal address, and you follow it under",
+    "newsletterDescriptionEnd": ".",
+    "subscribeForm": "Sign-up form under posts",
+    "subscribeFormDescription": "Readers of the hosted blog can subscribe; they join your contacts like any sign-up.",
+    "newsletterTopic": "Default topic",
+    "newsletterTopicHint": "Who a newsletter goes to unless you pick otherwise",
+    "everySubscriber": "Every subscriber",
+    "embed": "On your site",
+    "embedDescription": "Paste this where the blog should appear. Hand it your user's identity token to let them react and comment (see the guide).",
+    "copySnippet": "Copy",
+    "readDocs": "Guide",
+    "saving": "Saving…",
+    "savesAsChange": "Saves as you change it",
+    "saveError": "Could not save",
+    "loadError": "Could not load the blog",
+    "projectNotFound": "Project not found",
+    "untitled": "Untitled post",
+    "title": "Title",
+    "titlePlaceholder": "Post title",
+    "titleRequired": "Give the post a title first",
+    "bodyPlaceholder": "Write, or type / for blocks…",
+    "viewPost": "View the post",
+    "postSettings": "Post settings",
+    "more": "More",
+    "update": "Update",
+    "publish": "Publish",
+    "schedule": "Schedule",
+    "unpublish": "Unpublish",
+    "deletePost": "Delete post",
+    "confirmDelete": "Delete this post with its comments and reactions? A newsletter it went out as stays under Campaigns.",
+    "deleteError": "Could not delete the post",
+    "unsaved": "Unsaved",
+    "unsavedLive": "Unsaved: press Update to change the live post",
+    "savedAt": "Saved {time}",
+    "leaveUnsaved": "This post is live and your changes are not saved. Leave anyway?",
+    "publishedToast": "Published",
+    "scheduledToast": "Scheduled",
+    "unpublishedToast": "Back to draft",
+    "blogOffToast": "Turn the blog on in its settings for readers to see it.",
+    "uploadingImage": "Uploading the image…",
+    "uploadError": "Could not upload the image",
+    "status": "Status",
+    "publishOn": "Publish on",
+    "publishedOn": "Published on",
+    "publishOnHint": "Leave empty to publish now; a later date schedules it",
+    "scheduledFor": "Goes live {when}",
+    "slug": "Address",
+    "slugHint": "The end of the post's link",
+    "excerpt": "Excerpt",
+    "excerptHint": "For the list, the feed and link previews; taken from the text when empty",
+    "excerptPlaceholder": "Taken from the text",
+    "cover": "Cover image",
+    "removeCover": "Remove the cover",
+    "uploadCover": "Upload a cover",
+    "tags": "Tags",
+    "tagsHint": "Up to 10; readers can filter by them",
+    "addTag": "Add a tag…",
+    "author": "Author",
+    "commentsOpen": "Comments on this post",
+    "commentsOpenDescription": "Close the thread to stop new comments; the old ones stay.",
+    "commentsOffForBlog": "Comments are off for the whole blog (Blog settings).",
+    "minRead": "{count} min read",
+    "commentCount": "{count} comment | {count} comments",
+    "newsletterState": "Newsletter: {state}",
+    "openCampaign": "Open the campaign",
+    "sendNewsletter": "Send as newsletter",
+    "newsletterReady": "Email this post to your subscribers.",
+    "newsletterPublishFirst": "Publish the post first: the email links to it.",
+    "newsletterAdmins": "Admins send newsletters.",
+    "newsletterTitle": "Send as newsletter",
+    "newsletterModalDescription": "The post goes to your subscribers as a campaign: its title, cover and text, a button to read it on the blog, and the unsubscribe footer.",
+    "subject": "Subject",
+    "topic": "Topic",
+    "topicHint": "Leaves out whoever opted out of it",
+    "segment": "Segment",
+    "segmentHint": "Narrows the audience",
+    "noSegment": "No segment",
+    "scheduleFor": "Send later",
+    "scheduleForHint": "Empty: send now",
+    "needsAddress": "Campaigns must carry your postal address. Add it under",
+    "needsAddressEnd": " → Settings first.",
+    "newsletterGoesOnce": "A post goes out once. To send a test first, save it as a draft and use Send test in the campaign.",
+    "saveDraftCampaign": "Save as a draft",
+    "sendNow": "Send now",
+    "campaignDrafted": "Draft campaign saved",
+    "newsletterScheduled": "Newsletter scheduled",
+    "newsletterSending": "Newsletter on its way",
+    "newsletterError": "Could not send the newsletter",
+    "editor": {
+      "undo": "Undo",
+      "redo": "Redo",
+      "headings": "Headings",
+      "paragraph": "Text",
+      "heading": "Heading {level}",
+      "bold": "Bold",
+      "italic": "Italic",
+      "strike": "Strikethrough",
+      "code": "Code",
+      "bulletList": "Bullet list",
+      "orderedList": "Numbered list",
+      "quote": "Quote",
+      "codeBlock": "Code block",
+      "divider": "Divider",
+      "link": "Link",
+      "image": "Image",
+      "blocks": "Blocks",
+      "insert": "Insert"
+    }
+  },
   "chat": {
     "replyingTo": "Replying to",
     "replyingToPreview": ", “{preview}”",
@@ -608,7 +789,8 @@
       "subscription": "Subscription",
       "billing": "Billing",
       "spentOver": "Spent over",
-      "spentMoreThan": "Spent more than"
+      "spentMoreThan": "Spent more than",
+      "origin": "Added via"
     },
     "billingFilter": {
       "all": "Any billing",
@@ -695,7 +877,9 @@
         "sources": "Source",
         "createdAt": "Added",
         "lastSeenAt": "Last seen",
-        "updatedAt": "Updated"
+        "updatedAt": "Updated",
+        "origin": "Added via",
+        "leadForms": "Lead form"
       },
       "op": {
         "is": "is",
@@ -720,7 +904,8 @@
         "days": "Days",
         "date": "Date",
         "removeRule": "Remove rule"
-      }
+      },
+      "pickForm": "Pick a form"
     },
     "form": {
       "email": "Email",
@@ -772,7 +957,11 @@
       "conversations": "Conversations",
       "noneYet": "None yet.",
       "nothingSent": "Nothing sent yet.",
-      "erase": "Erase this person"
+      "erase": "Erase this person",
+      "addedVia": "Added via",
+      "leadForms": "Lead forms",
+      "deletedForm": "A deleted form",
+      "files": "Files sent"
     },
     "empty": {
       "title": "No contacts yet",
@@ -825,7 +1014,9 @@
       "showPeople": "Show these people",
       "namePlaceholder": "Pro users seen this month",
       "ruleCount": "{count} rule | {count} rules",
-      "peopleCount": "{count} people"
+      "peopleCount": "{count} people",
+      "auto": "Auto",
+      "autoHint": "Made for a lead form. Rename, edit or delete it like any other segment."
     },
     "sources": {
       "connect": "Connect a database",
@@ -897,6 +1088,17 @@
       "consentSubscribed": "Everyone here agreed to marketing email",
       "consentSubscribedDescription": "Recorded as their consent. Nobody who unsubscribed is subscribed again.",
       "saveAndSync": "Save and sync"
+    },
+    "origin": {
+      "app": "App user",
+      "lead_form": "Lead form",
+      "signup": "Newsletter sign-up",
+      "import": "CSV import",
+      "sync": "Database sync",
+      "stripe": "Stripe",
+      "api": "API",
+      "panel": "Added by hand",
+      "feedback": "Feedback import"
     }
   },
   "campaigns": {
@@ -1798,7 +2000,7 @@
     "boardSettings": "Board settings",
     "boardSettingsDescription": "Statuses, post types and platforms are yours to define.",
     "changelogFirstTitle": "Turn on the changelog first",
-    "changelogFirstDescription": "The changelog is published through the feedback board: turn the board on, with its Changelog view, under Settings.",
+    "changelogFirstDescription": "Switch on “Public changelog” in Project → Changelog → Settings. It does not need the feedback board.",
     "changelogLinkCopied": "Changelog link copied",
     "yourChangelog": "Your public changelog",
     "saveError": "Could not save",
@@ -2103,7 +2305,8 @@
       "features": "Features",
       "docs": "Docs",
       "source": "Source",
-      "demo": "Demo"
+      "demo": "Demo",
+      "signUp": "Sign up"
     },
     "hero": {
       "title": "The Swiss Army knife for indie devs.",
@@ -2182,7 +2385,7 @@
         "body": "Reply as the team, leave notes the customer never sees, and see who they are and what broke for them without leaving the thread.",
         "b1": "Colour-coded projects, one unread count, live updates",
         "b2": "Assign, prioritise, label and close, with custom fields per ticket type",
-        "b3": "Their recent errors and linked feedback sit beside the chat",
+        "b3": "Their recent errors and linked board items sit beside the chat",
         "b4": "Replies also go out by email when they are away",
         "alt": "The HelpBites inbox: a conversation list, a thread with an internal note, and the customer panel."
       },
@@ -2331,7 +2534,7 @@
         },
         "notes": {
           "term": "Notes, context and errors",
-          "desc": "Internal notes your customer never sees. Their recent errors and linked feedback sit beside the conversation."
+          "desc": "Internal notes your customer never sees. Their recent errors and linked board items sit beside the conversation."
         },
         "away": {
           "term": "Email when you are away",
@@ -2347,7 +2550,7 @@
         }
       },
       "feedback": {
-        "title": "Feedback, roadmap and changelog",
+        "title": "Feedback, roadmap, changelog and blog",
         "hint": "Users tell you what to build. You tell them what shipped.",
         "board": {
           "term": "A public board",
@@ -2360,6 +2563,10 @@
         "changelog": {
           "term": "A changelog from what shipped",
           "desc": "Entries grouped into releases, drafted from finished work and reviewed before they go public. Includes RSS and digest emails."
+        },
+        "blog": {
+          "term": "A blog with a newsletter",
+          "desc": "Write posts in a rich editor, publish them on a hosted blog, in your own site or by RSS, and email them to your subscribers. Readers react and comment."
         },
         "followers": {
           "term": "Followers get the news",
@@ -2404,6 +2611,10 @@
         "contacts": {
           "term": "Contacts, segments and campaigns",
           "desc": "Sync people from Postgres, Parse or Firestore, segment them, then run broadcasts and drip sequences with double opt-in."
+        },
+        "forms": {
+          "term": "Waitlists and lead forms",
+          "desc": "Collect people before you launch with a single email box or a form of your own, with file uploads and in your visitors' language, on your site, a hosted page or in your app. Every sign-up becomes a contact with its own segment, double opt-in, a welcome email and a drip sequence."
         }
       },
       "team": {
@@ -2593,13 +2804,13 @@
     "ready": "Ready — {model} via {endpoint}.",
     "defaultEndpoint": "default endpoint",
     "customEndpoint": "custom endpoint",
-    "notConfigured": "No LLM endpoint configured. Retrieval still works for answer suggestions; auto-reply will not run.",
+    "notConfigured": "No LLM endpoint configured. Retrieval testing still works; auto-reply will not run.",
     "fallback": "Fallback when unsure",
-    "fallbackHint": "What to do when no knowledge matches",
+    "fallbackHint": "When no knowledge matches well enough. Hand to a human labels the conversation needs-human, and the assistant stays out of it until the label is removed.",
     "fallbackHuman": "Hand to a human",
     "fallbackSilent": "Stay silent",
     "autoReply": "Automatically reply to this project's users",
-    "autoReplyHint": "— off by default; sends grounded answers as this assistant",
+    "autoReplyHint": "— off by default, and only while the status is Active; sends grounded answers as this assistant",
     "whenAi": "When to answer with AI",
     "minConfidence": "Minimum confidence",
     "minConfidenceHint": "Only send an AI answer when the best knowledge match is at least this sure. 0% = always try.",
@@ -2791,7 +3002,42 @@
       "latestActivity": "Latest activity",
       "nothingYet": "Nothing yet",
       "activityEmpty": "Conversations, feedback and finished board items will show up here.",
-      "loadError": "Could not load the overview"
+      "loadError": "Could not load the overview",
+      "stats": {
+        "open": "Open conversations",
+        "new": "New this week",
+        "emails": "Emails sent · 7d",
+        "feedback": "Feedback · 7d"
+      },
+      "health": {
+        "chat": "Chat widget",
+        "email": "Email sending",
+        "notify": "Team notifications",
+        "feedback": "Feedback board",
+        "errors": "Error tracking"
+      },
+      "healthDetail": {
+        "noOrigins": "No allowed origins",
+        "notLoaded": "Not loaded on your site yet",
+        "origins": "{count} allowed origin | {count} allowed origins",
+        "defaultSender": "Default sender",
+        "notConfigured": "Not configured",
+        "nobodyEmailed": "Nobody is emailed",
+        "on": "On",
+        "off": "Off",
+        "notConnected": "Not connected"
+      },
+      "attention": {
+        "unread": "Unread conversations",
+        "errors": "Open error reports",
+        "emails": "Failed emails · 7d",
+        "documents": "Knowledge documents failed to process",
+        "feedback": "Feedback awaiting triage"
+      },
+      "activityTitle": {
+        "newFeedback": "New feedback: {title}",
+        "completed": "Completed {item}"
+      }
     },
     "settings": {
       "general": "General",
@@ -2960,6 +3206,7 @@
       "projectNotFound": "Project not found",
       "originsCount": "{count} allowed origin | {count} allowed origins",
       "noOrigins": "No allowed origins",
+      "widgetNotSeen": "Not loaded on your site yet",
       "boardOn": "Board on",
       "off": "Off",
       "flagsCount": "{count} flag | {count} flags",
@@ -3070,7 +3317,7 @@
     "assistants": {
       "newAssistant": "New assistant",
       "emptyTitle": "No assistants yet",
-      "emptyDescription": "An assistant answers this project's users from the knowledge you give it, or suggests replies for your team.",
+      "emptyDescription": "An assistant answers this project's users from the knowledge you give it, and hands the rest to your team.",
       "autoReply": "Auto-reply",
       "nameHint": "Name it after the audience it serves, like “Billing”.",
       "createAssistant": "Create assistant",
@@ -3252,7 +3499,12 @@
       "statClicked": "Clicked",
       "statUnsubscribed": "Unsubscribed",
       "statBounced": "Bounced",
-      "statSkipped": "Skipped"
+      "statSkipped": "Skipped",
+      "blogPost": "Blog post",
+      "blogPostHint": "This campaign sends a post from the blog, built from it when sending starts",
+      "sendsBlogPost": "Sends a blog post",
+      "sendsBlogPostDescription": "The email is the post: its title, cover and text, a button to read it on the blog and the unsubscribe footer. Edit the post to change it before it goes; send a test to see it.",
+      "openPost": "Open the post"
     },
     "onboarding": {
       "guide": "Guide",
@@ -3812,6 +4064,175 @@
           "faq": "Write an FAQ that answers the main objections someone in the audience would have before signing up."
         }
       }
+    },
+    "forms": {
+      "guide": "Guide",
+      "newForm": "New form",
+      "newFormDescription": "Start from a single email box, a waitlist or a longer form. You can change every field later.",
+      "title": "Lead forms",
+      "intro": "Collect people before you launch: a waitlist, a \"notify me\" box or an interest form, on your site, in your app or on a hosted page. Everyone who signs up becomes a contact, lands in the form's own segment and can get a welcome email and a sequence.",
+      "emptyTitle": "No forms yet",
+      "emptyDescription": "Make a form, add one line to your site, and watch the leads come in under Contacts.",
+      "leadCount": "{count} lead | {count} leads",
+      "confirmedCount": "{count} on the list",
+      "live": "Live",
+      "closed": "Closed",
+      "startFrom": "Start from",
+      "presets": {
+        "email": "Email only",
+        "emailHint": "One email box and a button, on one row.",
+        "waitlist": "Waitlist",
+        "waitlistHint": "Email and name.",
+        "detailed": "Interest form",
+        "detailedHint": "Email, name, company, role and a question."
+      },
+      "name": "Name",
+      "namePlaceholder": "Launch waitlist",
+      "defaultName": "Waitlist",
+      "key": "Key",
+      "keyHint": "Your site and app ask for the form by this name.",
+      "keyInvalid": "Use lowercase letters, digits and dashes, up to 40.",
+      "create": "Create form",
+      "createError": "Could not create the form",
+      "loadError": "Could not load the forms",
+      "form": "Form",
+      "notFound": "This form does not exist.",
+      "active": "Taking sign-ups",
+      "activeHint": "Off closes the form: sites and apps that load it show nothing.",
+      "fields": "Fields",
+      "types": {
+        "email": "Email",
+        "name": "Name",
+        "text": "Short text",
+        "textarea": "Long text",
+        "number": "Number",
+        "url": "Website",
+        "phone": "Phone",
+        "select": "Choice",
+        "checkbox": "Checkbox",
+        "file": "File upload"
+      },
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "removeField": "Remove field",
+      "label": "Label",
+      "placeholder": "Placeholder",
+      "fieldKey": "Saved as",
+      "fieldKeyHint": "The contact attribute the answer goes in.",
+      "fieldKeyInvalid": "Letters, digits and _, starting with a letter.",
+      "options": "Options",
+      "optionsHint": "Press Enter after each one.",
+      "addOption": "Add an option",
+      "optionA": "Option A",
+      "optionB": "Option B",
+      "required": "Required",
+      "mustTick": "Must be ticked",
+      "addField": "Add field",
+      "words": "Words",
+      "content": {
+        "title": "Title",
+        "description": "Description",
+        "buttonLabel": "Button",
+        "successTitle": "After signing up",
+        "successMessage": "Thank-you message",
+        "confirmMessage": "While they confirm",
+        "confirmMessageHint": "Shown instead of the thank-you message until they click the link in the email.",
+        "footnote": "Small print",
+        "footnotePlaceholder": "We only email about the launch. Unsubscribe any time."
+      },
+      "look": "Look",
+      "accent": "Accent",
+      "projectAccent": "The project's accent",
+      "background": "Background",
+      "noBackground": "None: sits on your page",
+      "text": "Text",
+      "followsTheme": "Follows light or dark",
+      "reset": "Reset",
+      "layout": "Layout",
+      "layouts": {
+        "stacked": "Stacked",
+        "inline": "One row"
+      },
+      "radius": "Corner radius",
+      "font": "Font",
+      "after": "After someone signs up",
+      "afterHint": "They become a contact, get the tags below and join this form's segment.",
+      "doubleOptIn": "Ask them to confirm their email",
+      "doubleOptInHint": "They get an email with a link and are pending until they click it. The welcome email and the sequence wait for that.",
+      "confirmTemplate": "Confirmation email",
+      "confirmTemplateHint": "A template with a {'{'}{'{'}confirmUrl{'}'}{'}'} button.",
+      "builtInConfirm": "HelpBites' own",
+      "welcomeTemplate": "Welcome email",
+      "welcomeTemplateHint": "Sent once, when they are on the list.",
+      "noWelcome": "None",
+      "sequence": "Start a sequence",
+      "sequenceHint": "A draft or paused sequence holds them at the first step until you activate it.",
+      "noSequence": "None",
+      "sequenceStatus": {
+        "active": "active",
+        "draft": "draft",
+        "paused": "paused"
+      },
+      "tags": "Tags",
+      "tagsHint": "Added to everyone who signs up.",
+      "addTag": "Add a tag",
+      "redirectUrl": "Then send them to",
+      "redirectUrlHint": "For a plain HTML form, the hosted page and the confirmation link. Empty shows a thank-you page.",
+      "newTemplate": "New email template",
+      "manageSequences": "Sequences",
+      "install": "Put it on your site or in your app",
+      "installTabs": {
+        "script": "Script",
+        "link": "Link"
+      },
+      "installHints": {
+        "script": "One script tag draws the form where you put it, in your colours. It needs nothing else.",
+        "html": "A plain form, styled by your own CSS. It posts straight to HelpBites and comes back to the thank-you page.",
+        "link": "A hosted page to link to, or to frame in your site.",
+        "swift": "Paste HelpBitesLeadForm.swift from the guide into your app, then show the view anywhere.",
+        "api": "Post answers from your own UI or server. Each field's answer goes under its key."
+      },
+      "saveFirst": "Save your changes first: the snippet uses the saved form.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "openPage": "Open the hosted page",
+      "openJson": "Open the form's JSON",
+      "readGuide": "Read the guide",
+      "leads": "Leads",
+      "leadsHint": "The latest people from this form. They are contacts like everyone else, in this form's segment.",
+      "noLeads": "Nobody has signed up yet.",
+      "showAll": "Show all in Contacts",
+      "emailThem": "Email them",
+      "preview": "Preview",
+      "previewStates": {
+        "form": "Form",
+        "success": "Done"
+      },
+      "toggleTheme": "Switch light and dark",
+      "previewHint": "Your unsaved changes, drawn by the same script your site loads. The Swift snippet has the same layout.",
+      "saved": "Saved",
+      "saveError": "Could not save the form",
+      "deleteConfirm": "Delete “{name}”? Sites that load it show nothing. Its leads and its segment stay.",
+      "deleteForm": "Delete form",
+      "accept": "Takes",
+      "acceptHint": "Checked by what the file really is: {types}",
+      "accepts": {
+        "images": "Pictures",
+        "documents": "Documents",
+        "any": "Pictures, documents or ZIP"
+      },
+      "maxMB": "Largest file",
+      "optionsTranslateHint": "What each option says in this language. The answer saved is still the original.",
+      "files": {
+        "title": "Files sent",
+        "loading": "Loading files…",
+        "download": "Download",
+        "delete": "Delete file",
+        "deleteConfirm": "Delete {name} for good?",
+        "downloadError": "Could not download the file.",
+        "deleteError": "Could not delete the file."
+      },
+      "fileKeyHint": "The name the file is sent under. Files are kept privately for your team, not as an attribute."
     }
   },
   "workspaceSettings": {
@@ -4056,6 +4477,9 @@
       "dailyReset": "This count starts over at midnight UTC.",
       "byoAi": "Your own AI provider (Settings → AI) uses no credits.",
       "close": "Close"
+    },
+    "planLock": {
+      "notInPlan": "{feature} is not part of the {plan} plan. Anything already here is kept, and upgrading turns it on."
     },
     "transfer": {
       "title": "Move to another HelpBites",

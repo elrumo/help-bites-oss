@@ -49,14 +49,14 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 **Languages and AI translation** [LANGUAGES.md](LANGUAGES.md)
 
-- **Onboarding, legal documents and emails in your users' languages.** A flow and
-  an email template carry a translation per language; a legal document has a
-  linked copy per language, each with its own page.
+- **Onboarding, legal documents, emails and lead forms in your users' languages.**
+  A flow, an email template and a lead form carry a translation per language; a
+  legal document has a linked copy per language, each with its own page.
 - **Translate with AI, or write it.** One button per language fills what is
   missing through the workspace's AI (or the server's gateway) and keeps what you
   edited. Placeholders, links and HTML survive, or the string stays in the
   original language.
-- **Apps pick the language.** `?locale=` on the onboarding and email reads,
+- **Apps pick the language.** `?locale=` on the onboarding, lead form and email reads,
   `locale` on the send API (per recipient too), `data-locale` on the web script
   and a `locale:` parameter on the Swift snippet. A language that is missing gets
   the original.
@@ -72,7 +72,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   its own currency. It updates as messages arrive. Web and native.
   [OVERVIEW.md](OVERVIEW.md)
 - **One inbox for every project.** Projects are colour-coded, with one unread
-  count and filters for All, Mine, Unassigned, Open, Unread and Archived. Search by text.
+  count and filters for All, Mine, Unassigned, Open, Unread and Archived. Search by
+  the customer's name, email or user ID.
 - **Triage.** Assign a teammate, set priority (low, normal, high, urgent), add
   tags, and mark a conversation open or done. A customer who writes into a done
   conversation reopens it.
@@ -86,8 +87,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Write first.** Start a conversation with a user, for example after a failed
   payment.
 - **Unsend and react.** Delete a message, or add a reaction.
-- **Customer context.** The user's record, their recent errors, and any board
-  items or feedback posts linked to the conversation.
+- **Customer context.** The user's record, their recent errors, and the board
+  items and changelog entries linked to the conversation.
 - **Email alerts.** Each project emails the addresses you choose when someone
   writes. Users who gave an address get replies by email, with a link back into
   the thread.
@@ -129,10 +130,14 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Per-project assistants.** A system prompt, a model, your own LLM endpoint,
   temperature, and a fallback behaviour. The API key is write-only.
 - **Off by default.** Auto-reply is a switch on each assistant. When it is on,
-  the assistant answers only from the knowledge it was given, and says so when it
-  does not know.
+  the assistant answers only from the knowledge it was given.
 - **Routing rules.** For each conversation type or keyword, decide AI or a human.
   Set a default action and a minimum confidence.
+- **Hand-off.** When a rule says "a human", or no knowledge matches well enough
+  and the fallback is "Hand to a human", the assistant does not answer: it labels
+  the conversation `needs-human`, leaves an internal note saying why, and stays
+  out of that conversation until a teammate removes the label. "Stay silent" just
+  does not answer.
 - **You decide what it sees.** Assign knowledge to an assistant by model, by
   path, or by single FAQ, with exclusions.
 - **Test before you turn it on.** Test retrieval in the panel, or test answers
@@ -141,7 +146,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **AI elsewhere.** The email designer (section 6), a cause-and-fix note on new
   errors (section 8), and the changelog CLI (section 11).
 
-## 5. Feedback, roadmap, changelog, brand kit and pages
+## 5. Feedback, roadmap, changelog, blog, brand kit and pages
 
 **Feedback board** [FEEDBACK.md](FEEDBACK.md)
 
@@ -172,7 +177,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   its linked posts to the matching feedback status.
 - **Public roadmap.** Items stay private until you publish them. A published item
   appears once it is planned, active or done, and shows only its public
-  description. Layouts: columns, timeline or list. It has its own page at
+  description. Until the board has a published item, the roadmap keeps listing
+  feedback posts, so switching the board on never empties it. Layouts: columns, timeline or list. It has its own page at
   `/roadmap/pk_…` and can be embedded.
 
 **Changelog** [FEEDBACK.md](FEEDBACK.md#changelog)
@@ -193,6 +199,27 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Writable by script.** Batch, import and release-publish endpoints, plus the
   `helpbites changelog` CLI, which writes entries from git history
   ([cli/README.md](../cli/README.md)).
+
+**Blog and newsletter** [BLOG.md](BLOG.md)
+
+- **A rich editor.** Nuxt UI's TipTap editor: headings, lists, quotes, code,
+  links and uploaded images, a `/` menu and a formatting bubble. Posts are saved
+  as Markdown and rendered once, through an allowlist. Drafts save themselves; a
+  live post changes only when you press Update.
+- **Publish or schedule.** A cover, an excerpt, up to 10 tags, the author and a
+  slug per post. A later date schedules it; it goes live on its own.
+- **Hosted, embedded and in RSS.** An indexable page at `/blog/pk_…` with link
+  previews, `blog.js` (MIT) drawing the blog in your own page (or only the
+  reactions and comments under posts you render yourself), the public JSON API
+  for your own UI, a SwiftUI snippet, and an RSS feed with full posts.
+- **Reactions and comments.** Readers signed in by your app (an identity token)
+  or with just their email react and comment; replies one level deep. The team
+  answers as the team, hides, shows or deletes from the panel or the app, and can
+  close one post's thread. New comments can be emailed to you.
+- **Newsletter.** Any published post goes to your subscribers as a campaign, with
+  topics, segments, test sends, the unsubscribe footer and its numbers. A sign-up
+  form can sit under each hosted post. In the cloud edition this part needs a
+  plan with campaigns.
 
 **Brand kit** [BRAND.md](BRAND.md)
 
@@ -279,13 +306,17 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 - **One record per person.** Identified by your user id or by email, with
   attributes, tags, a subscription status, and a consent record.
+- **How each person was added.** Every contact shows **Added via**: an app user, a
+  lead form (and which), the newsletter sign-up, a CSV import, a database sync,
+  Stripe, the API, by hand or a feedback import. The people list and segments filter
+  by it. Web and native.
 - **Imports.** CSV in the panel, mapped in the browser. The batch API takes up to
   1,000 rows.
 - **Sync from your database.** Reads Parse Server, Postgres or Supabase (read-only)
   and Firestore. Incremental when the table has an updated-at column. Runs every
   15 minutes to daily, or on demand.
-- **Segments.** A rule builder (match all or any, on attributes, tags, dates and
-  subscription) with a live count.
+- **Segments.** A rule builder (match all or any, on attributes, tags, dates,
+  subscription, how people were added and which lead form) with a live count.
 - **Stripe billing.** With Stripe connected, a person's page looks them up in Stripe
   live (by their linked customer, else their email) and shows when they became a
   customer, their country, credit or balance owed and an overdue flag, next to their
@@ -294,8 +325,30 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   paying customers for a period, charts the last twelve months of net revenue with
   MRR at the end of each month (hover, focus or touch a month for its numbers), and
   lists plans, top customers and recent payments. Read-only. Web and native.
-- **Erasure.** Deleting a person removes their conversations, feedback and email
-  history.
+- **Erasure.** Deleting a person removes their conversations, feedback, the files
+  they sent through forms, email history and changelog subscriptions, including
+  ones made by address alone.
+
+**Lead forms** [FORMS.md](FORMS.md)
+
+- **Waitlists and interest forms.** As many forms per project as you need, from a
+  single email box on one row to up to 12 fields (name, text, number, website,
+  phone, a choice, a checkbox, a file). Each answer is saved on the contact. Web and native.
+- **File uploads.** Up to three file fields per form (pictures, documents or
+  either, up to 20 MB), checked by their contents and kept privately: the team
+  downloads them from the contact or the form. Erasing a person deletes them.
+- **In the visitor's language.** A translation per language of the form's words,
+  written by hand or by AI. The script, the hosted page, the Swift snippet and the
+  API show the visitor's language; errors, the confirmation and the welcome email
+  follow.
+- **Anywhere.** One script tag (`forms.js`, MIT) styled by `data-*` options, CSS
+  variables and parts; a plain HTML form; a hosted page at `/f/<public key>/<key>`;
+  a copy-paste SwiftUI view; or the public API from your own UI.
+- **Leads land in Contacts.** New people are marked **Added via: Lead form**, get
+  the form's tags, and fall into a segment made for the form (plus **All leads**).
+- **After sign-up.** Optional double opt-in with your own confirmation template, a
+  welcome email from any template (sent once), a sequence to start, and where to
+  send people next.
 
 **Campaigns and sequences** [MARKETING.md](MARKETING.md)
 
@@ -435,13 +488,20 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 ## 13. Hosted edition only
 
-HelpBites Cloud, the paid hosted service, adds open sign-up, Free and Pro plans, Stripe billing, verified sending
-domains and a staff console on top of everything above. The code for it is not part of this repository.
-See [EDITIONS.md](EDITIONS.md).
+HelpBites Cloud, the paid hosted service, adds open sign-up, a pricing page, Free and Pro plans, Stripe billing,
+verified sending domains and a staff console on top of everything above. The code for it is not part of this
+repository. See [EDITIONS.md](EDITIONS.md).
+
+- **Plan locks.** On a plan that leaves a feature out, the panel says so before anyone fills in a form: a lock on
+  Campaigns and Legal in the sidebar, and a note on the pages for campaigns, sequences, database sync, event webhooks
+  and legal documents, with the Upgrade button. The native app shows the same notes. A self-hosted install is on the
+  unlimited plan, so it never shows any of this.
 
 ## 14. Not built yet, and known limits
 
-- **Native app.** No workspace picker yet, so it works in the user's default workspace.
+- **Native app.** English only: it has no translations yet, while the web panel
+  has five more languages. In the hosted edition it shows the plan, usage and locks,
+  but subscribing and managing the subscription happen in the web panel.
 - **Push.** Off until APNs credentials are set on the server.
 - **Contact sync.** Rows deleted upstream are not noticed yet. Erase them through
   the API. [CONTACTS.md](CONTACTS.md)
@@ -457,10 +517,18 @@ See [EDITIONS.md](EDITIONS.md).
 - **Pages and CMS.** Web-only for now: no native screens. No custom domains for
   hosted pages, no scripts in components, no per-field translations, scheduled
   publishing, version history or generated TypeScript types yet. [PAGES.md](PAGES.md)
-- **Translations.** Onboarding, legal documents and template emails have them;
+- **Translations.** Onboarding, legal documents, template emails and lead forms have them;
   campaigns, sequences, the mail HelpBites sends itself, the chat, feedback and
   changelog embeds and CMS pages do not yet, and a contact has no language of its
   own. [LANGUAGES.md](LANGUAGES.md)
+- **Lead forms.** No CAPTCHA (a honeypot and rate limits only) and no A/B tests
+  yet. Answers are saved on the contact, not kept as separate submissions, and a
+  form never overwrites an answer a contact already has. Files are not scanned for
+  malware (only their type and size are checked), and the sequence a form starts
+  is sent in its template's own language. [FORMS.md](FORMS.md)
+- **Blog.** The native app edits a post's Markdown as text, with a preview: the
+  rich editor is web-only. No translations of posts or the embed, no custom
+  domain for the hosted blog, and no MCP tools for it yet. [BLOG.md](BLOG.md)
 - **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
   email, campaigns, legal documents, flags or knowledge base editing, and it issues no refresh tokens, so an
   OAuth-connected assistant signs in again after a year. [MCP.md](MCP.md)

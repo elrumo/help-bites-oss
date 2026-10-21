@@ -188,8 +188,11 @@ struct ProjectDevScreen: View {
   private func summary(_ tab: Tab, _ project: ProjectsAdminProject) -> (Tone, String) {
     switch tab {
     case .chat:
+      // Green only once the widget has loaded on a host page: allowing an origin is not installing it.
       let origins = project.allowedOrigins.count
-      return (origins > 0 ? .ok : .warn, origins > 0 ? "\(origins) allowed origin\(origins == 1 ? "" : "s")" : "No allowed origins")
+      let seen = project.widgetSeenAt != nil
+      if origins == 0 { return (.warn, "No allowed origins") }
+      return seen ? (.ok, "\(origins) allowed origin\(origins == 1 ? "" : "s")") : (.warn, "Not loaded on your site yet")
     case .feedback:
       let on = project.feedback?.enabled == true
       return (on ? .ok : .off, on ? "Board on" : "Off")

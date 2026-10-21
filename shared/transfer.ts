@@ -11,6 +11,8 @@
  */
 export const IMPORT_ORDER = [
   'Project',
+  // Before the contacts and segments that name its id; its own references are fixed up at the end.
+  'LeadForm',
   'EndUser',
   'ContactSegment',
   'ConversationType',
@@ -32,6 +34,8 @@ export const IMPORT_ORDER = [
   'ChangelogComment',
   'ChangelogSubscription',
   'ChangelogNotifyRun',
+  'BlogPost',
+  'BlogComment',
   'LegalDocument',
   'LegalDocumentVersion',
   'OnboardingFlow',
@@ -67,6 +71,7 @@ export const NOT_PORTABLE: Record<string, string> = {
   WebhookDelivery: 'the old instance\'s outbox',
   BrandAsset: 'a file in the old bucket',
   CmsAsset: 'a file in the old bucket; pages keep linking to it there',
+  LeadFile: 'a file in the old bucket; download it there before you move',
   Campaign: 'could send again; recreate it from the template',
   SequenceEnrollment: 'would send the next step again',
   DataTransfer: 'the old instance\'s own bookkeeping'
@@ -88,7 +93,11 @@ export const ID_PATHS: Record<string, Record<string, string>> = {
   BoardItem: { feedbackPostIds: 'FeedbackPost', conversationIds: 'Conversation' },
   ChangelogEntry: { feedbackPostIds: 'FeedbackPost', boardItemIds: 'BoardItem', conversationIds: 'Conversation' },
   ChangelogNotifyRun: { entryIds: 'ChangelogEntry' },
-  Sequence: { 'steps.*.template': 'EmailTemplate' }
+  BlogComment: { parentId: 'BlogComment' },
+  Sequence: { 'steps.*.template': 'EmailTemplate' },
+  LeadForm: { segment: 'ContactSegment', sequence: 'Sequence', welcomeTemplate: 'EmailTemplate', confirmTemplate: 'EmailTemplate' },
+  EndUser: { 'leadForms.*': 'LeadForm', 'origin.id': 'LeadForm' },
+  ContactSegment: { 'filter.rules.*.value': 'LeadForm' }
 }
 
 /** Fields that mean something only on the instance they came from. */

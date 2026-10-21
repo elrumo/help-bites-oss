@@ -74,6 +74,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'ONBOARDING.md'
   },
   {
+    slug: 'forms',
+    title: 'Lead forms',
+    description: 'Waitlists, "notify me" boxes and interest forms on your site, in your app or on a hosted page: every sign-up becomes a contact, with double opt-in, a welcome email and a sequence.',
+    group: 'Guides',
+    file: 'FORMS.md'
+  },
+  {
     slug: 'languages',
     title: 'Languages and AI translation',
     description: 'Show onboarding, legal pages and emails in your users\' language: add languages, translate with AI or by hand, and pick one with a locale from your web app, Swift app or the API.',
@@ -86,6 +93,13 @@ export const DOCS: readonly DocPage[] = [
     description: 'Keep logos, icons, screenshots, colours, fonts and guidelines in one place, and share them on a public press page, an embed for your site, or the API.',
     group: 'Guides',
     file: 'BRAND.md'
+  },
+  {
+    slug: 'blog',
+    title: 'Blog and newsletter',
+    description: 'Write posts in a rich editor and publish them on a hosted blog, in your own site, by RSS and in your subscribers\' inboxes, with reactions and comments.',
+    group: 'Guides',
+    file: 'BLOG.md'
   },
   {
     slug: 'pages',

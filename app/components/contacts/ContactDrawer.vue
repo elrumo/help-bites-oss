@@ -1,15 +1,18 @@
 <script setup lang="ts">
 /**
  * One person, everything HelpBites knows: who they are (and in which of your
- * systems), their attributes and tags, marketing consent and the proof of it,
- * and what happened between you — conversations and every email they got.
+ * systems), how they got here, their attributes and tags, marketing consent
+ * and the proof of it, and what happened between you — conversations and
+ * every email they got.
  */
-import type { Contact, ContactAttributeValue, ContactSubscription } from '#shared/contacts'
+import { originTypeForVia, type Contact, type ContactAttributeValue, type ContactOriginType, type ContactSubscription } from '#shared/contacts'
 import type { Conversation } from '#shared/support'
 import { STRIPE_ATTR, formatMoney, fromMinor, type StripeCustomerDto, type StripePaymentDto, type StripeSubscriptionDto } from '#shared/stripe'
 import type { EmailLogEntry, EmailLogStatus } from '~~/server/utils/emailLogs'
 import type { AdminProject } from '~~/server/utils/projects'
 import { SUBSCRIPTION_STATUS } from '~/utils/contactStatus'
+import { ORIGIN_ICONS, originText } from '~/utils/contactOrigin'
+import LeadFileList from '~/components/contacts/LeadFileList.vue'
 import { EMAIL_STATUS, logTime } from '~/utils/emailStatus'
 
 const props = defineProps<{ project: AdminProject }>()
@@ -27,6 +30,11 @@ const emails = ref<EmailLogEntry[]>([])
 // Stripe: null until it says it is connected (a 403 for roles that may not see money also leaves it null).
 const billing = ref<{ currency: string, customer: StripeCustomerDto | null, subscriptions: StripeSubscriptionDto[], payments: StripePaymentDto[] } | null>(null)
 const saving = ref(false)
+// Lead forms and syncs by id, for "Added via" and "Lead forms".
+const names = ref<Record<string, string>>({})
+const originKind = (type: ContactOriginType) => t(`contacts.origin.${type}`)
+// Consent records the writer (form, import, a source id…): said the way origins are.
+const consentSource = (source: string) => (names.value[source] || originKind(/^[A-Za-z0-9]{10}$/.test(source) ? 'sync' : originTypeForVia(source)))
 
 const name = ref('')
 const tags = ref<string[]>([])
@@ -55,6 +63,10 @@ async function load() {
   }
 }
 watch(id, load, { immediate: true })
+onMounted(() => {
+  api<{ forms: { id: string, name: string }[] }>('/admin/lead-forms', { query: { project: props.project.id } }).then((r) => { for (const f of r.forms) names.value[f.id] = f.name }).catch(() => {})
+  api<{ sources: { id: string, name: string }[] }>('/admin/contact-sources', { query: { project: props.project.id } }).then((r) => { for (const s of r.sources) names.value[s.id] = s.name }).catch(() => {})
+})
 
 // What was typed back into the type it was stored as: numbers stay numbers.
 function typed(value: string, before: ContactAttributeValue | undefined): ContactAttributeValue {
@@ -140,7 +152,7 @@ const dirty = computed(() => contact.value && (name.value !== contact.value.name
             <span class="text-xs text-muted">{{ $t(`contacts.subscription.${contact.subscription}.hint`) }}</span>
           </div>
           <p v-if="contact.consent" class="text-xs text-muted">
-            {{ $t('contacts.drawer.optedIn', { source: contact.consent.source, date: fullDate(contact.consent.at) }) }}<span v-if="contact.consent.confirmedAt">{{ $t('contacts.drawer.confirmedOn', { date: fullDate(contact.consent.confirmedAt) }) }}</span><span v-if="contact.consent.formUrl">{{ $t('contacts.drawer.fromForm', { url: contact.consent.formUrl }) }}</span><span v-if="contact.consent.ip"> · {{ contact.consent.ip }}</span>
+            {{ $t('contacts.drawer.optedIn', { source: consentSource(contact.consent.source), date: fullDate(contact.consent.at) }) }}<span v-if="contact.consent.confirmedAt">{{ $t('contacts.drawer.confirmedOn', { date: fullDate(contact.consent.confirmedAt) }) }}</span><span v-if="contact.consent.formUrl">{{ $t('contacts.drawer.fromForm', { url: contact.consent.formUrl }) }}</span><span v-if="contact.consent.ip"> · {{ contact.consent.ip }}</span>
           </p>
           <p v-if="contact.unsubscribedTopics.length" class="text-xs text-muted">{{ $t('contacts.drawer.optedOutOf', { topics: contact.unsubscribedTopics.join(', ') }) }}</p>
           <p v-if="!contact.feedbackEmails" class="text-xs text-muted">{{ $t('contacts.drawer.feedbackOff') }}</p>
@@ -169,9 +181,21 @@ const dirty = computed(() => contact.value && (name.value !== contact.value.name
           <dt class="text-muted">{{ $t('contacts.form.userId') }}</dt><dd class="min-w-0 break-words font-mono text-xs">{{ contact.externalId || '—' }}</dd>
           <template v-if="contact.username"><dt class="text-muted">{{ $t('contacts.drawer.handle') }}</dt><dd>@{{ contact.username }}</dd></template>
           <dt class="text-muted">{{ $t('contacts.added') }}</dt><dd>{{ fullDate(contact.createdAt) }}</dd>
+          <template v-if="contact.origin">
+            <dt class="text-muted">{{ $t('contacts.drawer.addedVia') }}</dt>
+            <dd class="flex min-w-0 items-center gap-1.5"><UIcon :name="ORIGIN_ICONS[contact.origin.type]" class="size-3.5 shrink-0 text-muted" />{{ originText(contact.origin, originKind, names) }}</dd>
+          </template>
+          <template v-if="contact.leadForms.length">
+            <dt class="text-muted">{{ $t('contacts.drawer.leadForms') }}</dt>
+            <dd class="flex flex-wrap gap-1"><UBadge v-for="f in contact.leadForms" :key="f" :label="names[f] || $t('contacts.drawer.deletedForm')" color="neutral" variant="soft" size="sm" :to="names[f] ? `/projects/${project.id}/forms/${f}` : undefined" /></dd>
+          </template>
           <dt class="text-muted">{{ $t('contacts.lastSeen') }}</dt><dd>{{ fullDate(contact.lastSeenAt) }}</dd>
           <template v-if="contact.sources.length"><dt class="text-muted">{{ $t('contacts.drawer.syncedFrom') }}</dt><dd>{{ $t('contacts.drawer.sourceCount', contact.sources.length) }}</dd></template>
         </dl>
+
+        <LeadFileList v-if="contact.leadForms.length" :key="contact.id" :project-id="project.id" :contact="contact.id">
+          <template #title><h3 class="text-xs font-semibold text-muted">{{ $t('contacts.drawer.files') }}</h3></template>
+        </LeadFileList>
 
         <section v-if="billing" class="space-y-2">
           <div class="flex items-center gap-2">

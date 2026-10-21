@@ -157,7 +157,7 @@ const tiles = computed(() => stat.value
       <template #title><CampaignsTabs current="campaigns" /></template>
       <template v-if="campaign" #actions>
         <UBadge :icon="CAMPAIGN_STATUS[campaign.status].icon" :label="CAMPAIGN_STATUS[campaign.status].label" :color="CAMPAIGN_STATUS[campaign.status].color" variant="subtle" />
-        <UButton v-if="editable || campaign.status === 'paused'" icon="i-lucide-flask-conical" :label="$t('projectTools.campaign.test')" size="sm" color="neutral" variant="outline" :disabled="!form.template" @click="openTest" />
+        <UButton v-if="editable || campaign.status === 'paused'" icon="i-lucide-flask-conical" :label="$t('projectTools.campaign.test')" size="sm" color="neutral" variant="outline" :disabled="!form.template && !campaign.blogPostId" @click="openTest" />
         <template v-if="editable">
           <UButton v-if="campaign.status === 'scheduled'" :label="$t('projectTools.campaign.unschedule')" size="sm" color="neutral" variant="ghost" :loading="busy" @click="move('draft')" />
           <UButton v-else icon="i-lucide-calendar-clock" :label="$t('projectTools.campaign.schedule')" size="sm" color="neutral" variant="outline" :disabled="problems.length > 0" @click="scheduleOpen = true" />
@@ -193,7 +193,10 @@ const tiles = computed(() => stat.value
 
         <fieldset :disabled="!editable" class="space-y-4">
           <UFormField :label="$t('common.name')"><UInput v-model="form.name" class="w-full" /></UFormField>
-          <UFormField :label="$t('projectTools.campaign.template')" :hint="$t('projectTools.campaign.templateHint')">
+          <UFormField v-if="campaign.blogPostId" :label="$t('projectTools.campaign.blogPost')" :hint="$t('projectTools.campaign.blogPostHint')">
+            <UButton icon="i-lucide-newspaper" :label="campaign.templateName" color="neutral" variant="soft" size="sm" :to="`/projects/${projectId}/blog/${campaign.blogPostId}`" />
+          </UFormField>
+          <UFormField v-else :label="$t('projectTools.campaign.template')" :hint="$t('projectTools.campaign.templateHint')">
             <USelect v-model="form.template" :items="templateItems" value-key="value" :placeholder="$t('projectTools.campaign.pickTemplate')" class="w-full" />
           </UFormField>
           <UFormField :label="$t('projectTools.campaign.subject')" :hint="$t('projectTools.campaign.subjectHint')">
@@ -210,6 +213,9 @@ const tiles = computed(() => stat.value
 
       <div class="min-h-[28rem] bg-elevated/40 p-4 lg:overflow-y-auto">
         <iframe v-if="preview" :srcdoc="preview" sandbox="" :title="$t('projectTools.campaign.previewTitle')" class="h-full min-h-[40rem] w-full rounded-lg border border-default bg-white" />
+        <EmptyState v-else-if="campaign.blogPostId" icon="i-lucide-newspaper" :title="$t('projectTools.campaign.sendsBlogPost')" :description="$t('projectTools.campaign.sendsBlogPostDescription')">
+          <UButton icon="i-lucide-arrow-up-right" :label="$t('projectTools.campaign.openPost')" color="neutral" variant="soft" :to="`/projects/${projectId}/blog/${campaign.blogPostId}`" />
+        </EmptyState>
         <EmptyState v-else-if="!form.template" icon="i-lucide-mail" :title="$t('projectTools.campaign.pickTemplate')" :description="$t('projectTools.campaign.pickTemplateDescription')" />
         <EmptyState v-else icon="i-lucide-eye-off" :title="$t('projectTools.campaign.noPreview')" :description="$t('projectTools.campaign.noPreviewDescription')" />
       </div>

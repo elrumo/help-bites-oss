@@ -11,12 +11,12 @@ import { emitWebhooks } from './webhooks'
 
 export type EmailLogStatus = 'scheduled' | 'sent' | 'delivered' | 'opened' | 'clicked' | 'unsubscribed' | 'bounced' | 'complained' | 'failed' | 'suppressed'
 export const EMAIL_LOG_STATUSES: EmailLogStatus[] = ['scheduled', 'sent', 'delivered', 'opened', 'clicked', 'unsubscribed', 'bounced', 'complained', 'failed', 'suppressed']
-/** Campaign and sequence mail: its unsubscribes are a contact's, not the address's. */
+/** Campaign, sequence and lead form welcome mail: its unsubscribes are a contact's, not the address's. */
 export function isMarketingSource(source: unknown): boolean {
-  return source === 'campaign' || source === 'sequence'
+  return source === 'campaign' || source === 'sequence' || source === 'form'
 }
 
-export const EMAIL_LOG_SOURCES = ['api', 'admin', 'test', 'notification', 'feedback', 'system', 'campaign', 'sequence'] as const
+export const EMAIL_LOG_SOURCES = ['api', 'admin', 'test', 'notification', 'feedback', 'system', 'campaign', 'sequence', 'form'] as const
 export type EmailSuppressionReason = 'bounce' | 'complaint' | 'unsubscribe' | 'manual'
 export const EMAIL_SUPPRESSION_REASONS: EmailSuppressionReason[] = ['bounce', 'complaint', 'unsubscribe', 'manual']
 

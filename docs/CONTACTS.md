@@ -1,8 +1,8 @@
 # Contacts (CRM)
 
 A project's people: your app's users, anyone you import or sync from your own
-database, and newsletter sign-ups. Panel: **Project → Contacts** (People,
-Segments, Sources). API: `/v1/contacts`, `/v1/segments`, `/v1/track`, with the
+database, newsletter sign-ups and the people your [lead forms](FORMS.md) bring
+in. Panel: **Project → Contacts** (People, Segments, Sources). API: `/v1/contacts`, `/v1/segments`, `/v1/track`, with the
 project secret (`sk_…`) from your server, or an operator session / admin key
 with `project`.
 
@@ -32,6 +32,8 @@ and every email they got.
 | `unsubscribedTopics` | Topics they opted out of; every other topic reaches them while subscribed |
 | `consent` | `{ source, at, ip, ua, formUrl, confirmedAt }` — the proof of opt-in |
 | `sources` | Ids of the database syncs they came from |
+| `origin` | How they first got here, set once when the contact is made: `{ type, id, at }`. `type` is `app` (an identity token or email-only access), `lead_form` (`id`: the form), `signup` (the newsletter form), `import` (a CSV), `sync` (`id`: the source), `stripe`, `api`, `panel` (added by hand) or `feedback` (a feedback import). Shown as **Added via** in the people list |
+| `leadForms` | Ids of the [lead forms](FORMS.md) they signed up through |
 
 ## Consent rule
 
@@ -51,13 +53,18 @@ Batch: `{ "contacts": [ … up to 1000 ], "fillOnly": true }` returns
 `{ results: [{ index, status, id, error? }], created, updated, unchanged, failed }`.
 One bad row never stops the others.
 
+Contacts from before `origin` was kept show a best guess (a sync, how their
+consent was recorded, an app user id); `bun scripts/backfill-contacts.mjs --apply`
+stores that guess once, so the **Added via** filter and segments find them too.
+
 To mirror unsubscribes into your own database, either point the event webhook
 at your app (see [MARKETING.md](MARKETING.md#event-webhook)) or poll
 `GET /v1/contacts?updatedSince=<last poll>`.
 
 Erasing (`DELETE /v1/contacts/:id`, or `DELETE /v1/end-users/:externalId`)
-removes the person, their conversations, feedback, email log rows and sequence
-enrollments. If they had unsubscribed, the address stays on the suppression
+removes the person, their conversations, feedback, email log rows, sequence
+enrollments and changelog subscriptions (including ones made with just their
+address, signed out). If they had unsubscribed, the address stays on the suppression
 list so a later import can never mail them.
 
 ## Segments
@@ -65,8 +72,9 @@ list so a later import can never mail them.
 `{ match: 'all' | 'any', rules: [{ field, op, value }] }`
 
 - Fields: `email`, `name`, `externalId`, `subscription`, `tags`,
-  `unsubscribedTopics`, `sources`, `createdAt`, `lastSeenAt`, `updatedAt`,
-  `attributes.<key>`.
+  `unsubscribedTopics`, `sources`, `origin` (how they were added: `is` /
+  `is_not` one of the types above), `leadForms` (`includes` a form id),
+  `createdAt`, `lastSeenAt`, `updatedAt`, `attributes.<key>`.
 - Ops: `is`, `is_not`, `contains`, `starts_with`, `exists`, `not_exists`, `gt`,
   `lt`, `before`, `after`, `within_days`, `not_within_days` (includes never),
   `includes`, `excludes`.
@@ -77,6 +85,13 @@ A segment can only narrow: campaigns always add *this project, subscribed, has
 an email, not opted out of the topic* on the server.
 
 `POST /v1/segments/preview { filter }` counts before you save.
+
+A lead form makes its own segment (**Leads · <form>**), and the project's first
+form an **All leads** one. They are ordinary segments marked `auto: true`: edit,
+rename or delete them like any other.
+
+The people list filters the same way without a segment:
+`GET /v1/contacts?origin=lead_form`, `?leadForm=<form id>`.
 
 ## CSV import
 

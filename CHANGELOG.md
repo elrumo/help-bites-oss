@@ -5,6 +5,54 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- Changelog subscription emails link to hosted confirm and unsubscribe pages on this server
+  (`/u/changelog/confirm/<token>`, `/u/changelog/unsubscribe/<token>`; they need `APP_URL`) instead of
+  `{siteUrl}/changelog/confirm` and `…/unsubscribe` on the project's own site, which most projects never built.
+  Saved configs holding those old defaults now read as hosted; a project with its own pages sets
+  `changelog.confirmUrl` / `unsubscribeUrl` as before.
+- Erasing a person (`DELETE /v1/end-users/:externalId`, `/v1/contacts/:id`, `/v1/anonymous/me`) now also deletes
+  the changelog subscriptions made with just their address. Erasures run before this release may have left some
+  behind: erase those people again to remove them.
+- A campaign with no mailer configured is refused when scheduled, sent or resumed, and one already sending pauses
+  with the reason, instead of retrying every five minutes for ever.
+  Sequences too: activating one is refused, and a step that comes due with no mailer waits an hour without sending
+  (it used to log a failed email every five minutes).
+- AI hand-off: when a routing rule says "human", or no knowledge matches (well enough) and the assistant's fallback
+  is "Hand to a human", the assistant no longer answers. The conversation gets the `needs-human` label and an
+  internal note, and the assistant stays out of it until the label is removed.
+- The public roadmap keeps listing feedback posts until the project board has a public item in a roadmap status;
+  switching the board on no longer empties it.
+- New field `Project.widgetSeenAt` (needs `schema:apply`; the container does it on boot): the chat widget's setup
+  turns green only once the widget has loaded on a site.
+- `GET /v1/admin/conversations` takes `view` (`unassigned`, `mine`, `open`, `unread`, `archived`) and returns
+  `viewCounts`, each view counted under the list's own filters; the inbox views no longer filter only the loaded page.
+- `GET /v1/feedback/config` returns `changelogPublic`.
+- Lead forms: waitlist, "notify me" and interest forms under **Project → Forms** (web and native), embedded with
+  `public/forms.js`, as a plain HTML form, on a hosted page at `/f/<public key>/<key>`, in SwiftUI, or through
+  `GET`/`POST /v1/forms/{pk}/{key}`; managed at `/v1/admin/lead-forms`. Leads become contacts in a segment made for
+  each form, with optional double opt-in (confirm links at `/f/confirm/<token>`), a welcome email and a sequence. See
+  `docs/FORMS.md`. New class `LeadForm`, new fields `EndUser.origin` and `EndUser.leadForms` (with indexes) and
+  `ContactSegment.auto` (need `schema:apply`; the container does it on boot). `/f` joins `/embed`, `/s`, `/brand` and
+  `/p` as frameable. Welcome emails show in the email log with source `form`.
+- Lead forms take files and speak the visitor's language. A `file` field (up to three per form; pictures, documents or
+  either, up to 20 MB, checked by their bytes) sends the form as multipart; files are kept privately in the bucket
+  under `<projectId>/forms/<formId>/`, listed and downloaded at `/v1/admin/lead-files` and erased with the contact.
+  File fields need S3 configured (`S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`). Forms carry a
+  translation per language (`POST /v1/admin/lead-forms/{id}/translate` uses the workspace's AI); `forms.js`, the hosted
+  page and `GET /v1/forms/{pk}/{key}?locale=` show the visitor's, and errors, the confirmation page and email and the
+  welcome email follow. New class `LeadFile` and fields `LeadForm.locale` and `LeadForm.translations` (need
+  `schema:apply`; the container does it on boot). Confirmation links sent before this upgrade keep working.
+- Contacts show how they were added (**Added via**: app user, lead form, sign-up, import, sync, Stripe, API, by hand,
+  feedback import), filterable in the people list, segments (`origin`, `leadForms`) and `GET /v1/contacts?origin=`.
+  New contacts record it themselves; run `bun scripts/backfill-contacts.mjs --apply` once to store it for older ones.
+- Blog and newsletter (`docs/BLOG.md`): posts written in the panel's rich editor (Nuxt UI's TipTap, saved as
+  Markdown) or through `/v1/admin/blog/*`, scheduled or published on a hosted, indexable blog at `/blog/<public key>`,
+  drawn into any site by `public/blog.js` (MIT), served as JSON at `/v1/blog` and as RSS at
+  `/v1/projects/<public key>/blog.rss`. Readers react and comment (identity token or email-only session); the team
+  moderates and replies from the panel and the native app. Any published post can go to subscribers as a campaign,
+  which in the cloud edition needs a plan with campaigns. New classes `BlogPost` and `BlogComment`, and fields
+  `Project.blog` and `Campaign.blogPost` (need `schema:apply`; the container does it on boot). Images go to the bucket
+  under `<projectId>/blog/`. A person's blog comments and reactions are erased with the rest of their data.
 - Languages and AI translation for onboarding flows, legal documents and email templates (`docs/LANGUAGES.md`). New
   fields `OnboardingFlow.locale` and `translations`, `LegalDocument.translationOf` and `EmailTemplate.locale` and
   `translations` (need `schema:apply`; the container does it on boot). `POST …/translate` on each uses the workspace's

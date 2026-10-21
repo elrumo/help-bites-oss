@@ -1,7 +1,10 @@
 import { DEFAULT_FEEDBACK_CONFIG, type FeedbackPost } from '#shared/feedback'
 import { DEFAULT_BOARD_CONFIG, ROADMAP_CATEGORIES, type BoardItem } from '#shared/board'
 import { DEFAULT_MARKETING_CONFIG } from '#shared/marketing'
+import { presetForm } from '#shared/leadForms'
+import { ALL_LEADS_SEGMENT, leadFormSegmentFilter } from '#shared/segments'
 import { DEFAULT_CHANGELOG_CONFIG, type ChangelogEntry, type ChangelogRelease } from '#shared/changelog'
+import { DEFAULT_BLOG_CONFIG, type BlogPost } from '#shared/blog'
 import { normalizeBrandConfig } from '#shared/brand'
 import { normalizeSettings } from '#shared/cms/content'
 import { BUILTIN_COMPONENTS } from '#shared/cms/library'
@@ -81,10 +84,11 @@ function project(id: string, name: string, siteUrl: string, accent: string, flag
     feedback: { ...DEFAULT_FEEDBACK_CONFIG, enabled: true, title: `${name} feedback` },
     board: DEFAULT_BOARD_CONFIG,
     changelog: DEFAULT_CHANGELOG_CONFIG,
+    blog: DEFAULT_BLOG_CONFIG,
     inboxPath: '/inbox', fromName: `${name} Support`, notifyEmails: [`support@${new URL(siteUrl).host}`],
     fromEmail: '', replyTo: '', mailDomain: '', emailLogContent: false,
     actionWebhookUrl: '', hasActionWebhookSecret: false, flags,
-    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, errorLinks: id === 'acme' ? [{ id: 'main', label: 'Acme', name: 'Acme', team: 'helpbites', serverId: '', provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }] : [], createdAt: ago(60 * 24 * 90)
+    marketing: { ...DEFAULT_MARKETING_CONFIG, postalAddress: '1 Demo Street, Lisbon, Portugal', topics: [{ key: 'product', name: 'Product updates', description: 'What shipped this month' }] }, eventWebhookUrl: '', hasEventWebhookSecret: false, widgetSeenAt: ago(30), errors: { connected: id === 'acme', provider: id === 'acme' ? 'glitchtip' : '', providerName: id === 'acme' ? 'GlitchTip' : '', dsn: id === 'acme' ? 'https://public@example.glitchtip.com/42' : '', url: id === 'acme' ? 'https://example.glitchtip.com/helpbites/issues' : '', alertWebhookUrl: '' }, errorLinks: id === 'acme' ? [{ id: 'main', label: 'Acme', name: 'Acme', team: 'helpbites', serverId: '', provider: 'glitchtip' as const, providerName: 'GlitchTip', dsn: 'https://public@example.glitchtip.com/42', url: 'https://example.glitchtip.com/helpbites/issues', alertWebhookUrl: '' }] : [], createdAt: ago(60 * 24 * 90)
   }
 }
 
@@ -101,11 +105,16 @@ const types: Record<string, ConversationType[]> = { acme: [supportType('acme'), 
 const secrets: Record<string, string> = {}
 
 const endUsers: EndUser[] = []
-const segments: { id: string, projectId: string, name: string, filter: unknown, createdAt: string, updatedAt: string }[] = []
+// One lead form with its two segments, as a project that made a waitlist has them.
+const demoLeadForm = { ...presetForm('waitlist'), id: 'lf_demo1', projectId: 'acme', key: 'waitlist', name: 'Launch waitlist', active: true, settings: { doubleOptIn: true, confirmTemplate: '', welcomeTemplate: '', sequence: '', tags: ['waitlist'], redirectUrl: '' }, segment: 'seg_demo_leads', path: '/v1/forms/pk_demo/waitlist', pagePath: '/f/pk_demo/waitlist', createdAt: ago(60 * 24 * 40), updatedAt: ago(60 * 24 * 2) }
+const segments: { id: string, projectId: string, name: string, filter: unknown, auto: boolean, createdAt: string, updatedAt: string }[] = [
+  { id: 'seg_demo_leads', projectId: 'acme', name: 'Leads · Launch waitlist', filter: leadFormSegmentFilter('lf_demo1'), auto: true, createdAt: ago(60 * 24 * 40), updatedAt: ago(60 * 24 * 40) },
+  { id: 'seg_demo_all_leads', projectId: 'acme', name: 'All leads', filter: ALL_LEADS_SEGMENT, auto: true, createdAt: ago(60 * 24 * 40), updatedAt: ago(60 * 24 * 40) }
+]
 const contactExtras: Record<string, { tags?: string[], subscription?: string }> = {}
 const DEMO_PLANS = ['free', 'pro', 'team']
 const demoCampaigns = [{
-  id: 'cmp_demo1', projectId: 'acme', name: 'September product update', status: 'sent', template: 'newsletter', templateName: 'Editorial digest', subject: 'What shipped in September, {{firstName}}',
+  id: 'cmp_demo1', projectId: 'acme', name: 'September product update', status: 'sent', template: 'newsletter', templateName: 'Editorial digest', blogPostId: '', subject: 'What shipped in September, {{firstName}}',
   audience: { segment: '', topic: 'product' }, scheduledAt: ago(60 * 24 * 6), startedAt: ago(60 * 24 * 6), finishedAt: ago(60 * 24 * 6 - 4), testMode: false, lastError: '',
   stats: { audience: 1284, sent: 1279, failed: 0, suppressed: 5, delivered: 1262, opened: 611, clicked: 143, bounced: 9, complained: 1, unsubscribed: 7 },
   createdAt: ago(60 * 24 * 8), updatedAt: ago(60 * 24 * 6)
@@ -114,6 +123,7 @@ const demoCampaigns = [{
 function asContact(u: EndUser) {
   const n = Number(u.id.replace(/\D/g, '')) || 0
   const extra = contactExtras[u.id] || {}
+  const lead = u.projectId === 'acme' && n % 4 === 0
   // What a Stripe sync writes on a paying customer's contact.
   const paid = DEMO_REVENUE[u.projectId]?.customers.find(([email]) => email === u.email)
   const stripe = paid ? { [STRIPE_ATTR.customer]: customerId(paid[0]), [STRIPE_ATTR.revenue]: paid[1], [STRIPE_ATTR.payments]: paid[2], [STRIPE_ATTR.status]: 'active' } : {}
@@ -121,10 +131,17 @@ function asContact(u: EndUser) {
     id: u.id, externalId: u.externalId, email: u.email, name: u.name, username: '', avatarUrl: '',
     attributes: { plan: DEMO_PLANS[n % 3]!, seats: (n % 5) + 1, ...stripe }, tags: extra.tags || (n % 2 ? ['beta'] : []),
     subscription: extra.subscription || (n % 3 === 0 ? 'none' : 'subscribed'), unsubscribedTopics: [],
-    consent: n % 3 === 0 ? null : { source: 'form', at: ago(60 * 24 * 20) }, sources: [], feedbackEmails: true,
+    consent: n % 3 === 0 ? null : { source: lead ? 'lead_form' : 'form', at: ago(60 * 24 * 20) }, sources: [], feedbackEmails: true,
+    // Every fourth person came in through the waitlist; the rest are the app's own users.
+    origin: { type: lead ? 'lead_form' : 'app', id: lead ? demoLeadForm.id : '', at: ago(60 * 24 * 30 + n) }, leadForms: lead ? [demoLeadForm.id] : [],
     lastSeenAt: ago(n * 37), createdAt: ago(60 * 24 * 30 + n), updatedAt: ago(n)
   }
 }
+function demoLeadFormWithStats() {
+  const leads = endUsers.map(asContact).filter(c => c.leadForms.includes(demoLeadForm.id))
+  return { ...demoLeadForm, stats: { leads: leads.length, confirmed: leads.filter(c => c.subscription === 'subscribed').length } }
+}
+
 const conversations: Conversation[] = []
 const messages: Message[] = []
 const errorServers = [
@@ -389,6 +406,7 @@ function applyProject(p: AdminProject, body: Record<string, any>) {
   const acme = projects[0]!
   acme.board = { ...DEFAULT_BOARD_CONFIG, enabled: true, syncFeedback: true, labels: [{ key: 'web', label: 'Web', color: 'info' }, { key: 'ios', label: 'iOS', color: 'warning' }, { key: 'api', label: 'API', color: 'success' }] }
   acme.changelog = { ...DEFAULT_CHANGELOG_CONFIG, enabled: true, autoDraft: true }
+  acme.blog = { ...DEFAULT_BLOG_CONFIG, enabled: true, title: 'The Acme blog', description: 'How we build Acme, and what is new.' }
 }
 
 const feedbackPosts: FeedbackPost[] = []
@@ -454,6 +472,20 @@ const changelogReleases: ChangelogRelease[] = [
   { id: 'rel_demo1', projectId: 'acme', version: '2.4.0', title: 'Workspace URLs and faster search', summary: '', status: 'published', publishedAt: ago(60 * 24 * 2), createdAt: ago(60 * 24 * 3), updatedAt: ago(60 * 24 * 2) }
 ]
 
+// Acme's blog: a published story about the release, and a draft in progress.
+const blogPosts: BlogPost[] = []
+function blogPost(n: number, title: string, body: string, status: 'draft' | 'published', minutesAgo: number, extra: Partial<BlogPost> = {}) {
+  const published = status === 'published'
+  const excerpt = body.replace(/[#*_`>]/g, '').split('\n').find(line => line.trim())?.trim().slice(0, 200) || ''
+  blogPosts.push({
+    id: `blog_demo${n}`, projectId: 'acme', title, slug: slug(title), excerpt, excerptWritten: false, body, bodyHtml: body.split('\n\n').map(p => `<p>${p}</p>`).join(''),
+    coverImageUrl: '', tags: [], status, publishedAt: published ? ago(minutesAgo) : null, live: published, authorName: 'You', readingMinutes: 3,
+    commentsOpen: true, commentCount: 0, reactions: [], newsletter: null, url: `/blog/pk_demo_acme/${slug(title)}`, createdAt: ago(minutesAgo + 120), updatedAt: ago(minutesAgo), ...extra
+  })
+}
+blogPost(1, 'How we made notebook search work offline', 'Search used to wait for the server. In 2.4 it runs on your device first, so results show as you type, even on a plane.\n\nHere is how the index fits in a few megabytes, and what we tried first.', 'published', 60 * 24 * 2, { tags: ['Engineering'], reactions: [{ key: 'heart', count: 12 }, { key: 'rocket', count: 5 }] })
+blogPost(2, 'Markdown export is coming', 'You asked, and it is nearly done: one zip per notebook, a file per page, images included.', 'draft', 60 * 2, { tags: ['Product'] })
+
 const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/admin\/me$/, () => ({ agent: ME, workspace: WORKSPACE, role: 'owner', workspaces: [WORKSPACE], edition: 'community', plan: { id: UNLIMITED_PLAN.id, name: UNLIMITED_PLAN.name, unlimited: true }, features: { ...UNLIMITED_PLAN.features, teammatePasswords: true }, links: { sourceCode: '/source' } })],
   ['GET', /^\/admin\/workspace$/, () => ({ workspace: WORKSPACE })],
@@ -503,10 +535,13 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
         { key: 'emails', label: 'Emails sent · 7d', value: mail.length, section: 'email?view=log' }
       ],
       health: [
-        { key: 'chat', label: 'Chat widget', state: origins ? 'ok' : 'warn', detail: origins ? `${origins} allowed origin${origins === 1 ? '' : 's'}` : 'No allowed origins', section: 'dev' },
-        { key: 'email', label: 'Email sending', state: 'ok', detail: p.fromEmail || 'Default sender', section: 'settings' },
-        { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', detail: p.feedback.enabled ? 'On' : 'Off', section: 'feedback' },
-        { key: 'errors', label: 'Error tracking', state: p.errors.connected ? 'ok' : 'off', detail: p.errors.connected ? p.errors.providerName : 'Not connected', section: 'errors' }
+        // The demo's users have all written in, so an allowed origin is a working widget.
+        origins
+          ? { key: 'chat', label: 'Chat widget', state: 'ok', detail: `${origins} allowed origin${origins === 1 ? '' : 's'}`, detailKey: 'origins', params: { count: origins }, section: 'dev' }
+          : { key: 'chat', label: 'Chat widget', state: 'warn', detail: 'No allowed origins', detailKey: 'noOrigins', section: 'dev' },
+        { key: 'email', label: 'Email sending', state: 'ok', ...(p.fromEmail ? { detail: p.fromEmail } : { detail: 'Default sender', detailKey: 'defaultSender' }), section: 'settings' },
+        { key: 'feedback', label: 'Feedback board', state: p.feedback.enabled ? 'ok' : 'off', ...(p.feedback.enabled ? { detail: 'On', detailKey: 'on' } : { detail: 'Off', detailKey: 'off' }), section: 'feedback' },
+        { key: 'errors', label: 'Error tracking', state: p.errors.connected ? 'ok' : 'off', ...(p.errors.connected ? { detail: p.errors.providerName } : { detail: 'Not connected', detailKey: 'notConnected' }), section: 'errors' }
       ],
       attention: [
         { key: 'unread', label: 'Unread conversations', count: unread, section: 'conversations' },
@@ -620,20 +655,33 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const q = (query.q || '').toLowerCase()
     const scoped = conversations.filter(c => !query.project || c.projectId === query.project)
     const live = scoped.filter(c => !c.archivedAt)
-    const rows = scoped
-      .filter(c => query.archived === 'any' || (query.archived === 'true' ? c.archivedAt : !c.archivedAt))
+    // As the server: every filter but the view, then each view (and its count) from those rows.
+    const filtered = scoped
       .filter(c => (!query.status || c.status === query.status) && (!query.priority || c.priority === query.priority) && (!query.type || c.type === query.type) && (!query.endUser || c.endUserId === query.endUser))
       .filter(c => !q || Object.values(userOf(c)).some(v => v.toLowerCase().includes(q)))
+    const views = {
+      all: (c: Conversation) => !c.archivedAt,
+      unassigned: (c: Conversation) => !c.archivedAt && !c.assigneeId,
+      mine: (c: Conversation) => !c.archivedAt && c.assigneeId === ME.id,
+      open: (c: Conversation) => !c.archivedAt && c.statusCategory === 'open',
+      unread: (c: Conversation) => !c.archivedAt && c.unreadByAgent > 0,
+      archived: (c: Conversation) => Boolean(c.archivedAt)
+    }
+    const view = (query.view && query.view in views ? query.view : query.archived === 'true' ? 'archived' : 'all') as keyof typeof views
+    const rows = filtered
+      .filter(c => query.archived === 'any' && view === 'all' ? true : views[view](c))
       .sort((a, b) => String(b.lastMessageAt).localeCompare(String(a.lastMessageAt)))
     const counts = { status: {} as Record<string, number>, type: {} as Record<string, number>, assignee: {} as Record<string, number> }
     for (const c of live) for (const [bucket, key] of [['status', c.status], ['type', c.type], ['assignee', c.assigneeId || 'unassigned']] as const) counts[bucket][key] = (counts[bucket][key] || 0) + 1
+    const viewCounts = Object.fromEntries(Object.entries(views).map(([key, match]) => [key, filtered.filter(match).length]))
     return {
       conversations: rows,
       endUsers: Object.fromEntries(rows.map(c => [c.endUserId, serializeUser(userOf(c))])),
       hasMore: false,
       totalUnread: conversations.filter(c => !c.archivedAt).reduce((sum, c) => sum + c.unreadByAgent, 0),
       counts,
-      archivedCount: scoped.length - live.length
+      viewCounts,
+      archivedCount: viewCounts.archived
     }
   }],
   ['POST', /^\/admin\/conversations$/, ({ body }) => {
@@ -838,6 +886,9 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/feedback\/([^/]+)$/, ({ params }) => ({ post: find(feedbackPosts, params[0], 'Post'), comments: [] })],
   ['GET', /^\/admin\/board-items$/, ({ query }) => { find(projects, query.project, 'Project'); return { items: boardItems.filter(item => item.projectId === query.project) } }],
   ['GET', /^\/admin\/changelog\/entries$/, ({ query }) => { find(projects, query.project, 'Project'); return { entries: changelogEntries.filter(entry => entry.projectId === query.project) } }],
+  ['GET', /^\/admin\/blog\/posts$/, ({ query }) => { find(projects, query.project, 'Project'); return { posts: blogPosts.filter(post => post.projectId === query.project) } }],
+  ['GET', /^\/admin\/blog\/posts\/([^/]+)$/, ({ params }) => ({ post: find(blogPosts, params[0], 'Post') })],
+  ['GET', /^\/admin\/blog\/comments$/, ({ query }) => { find(projects, query.project, 'Project'); return { comments: [], total: 0, hasMore: false } }],
   ['GET', /^\/admin\/changelog\/releases$/, ({ query }) => { find(projects, query.project, 'Project'); return { releases: changelogReleases.filter(release => release.projectId === query.project) } }],
   ['GET', /^\/feedback\/roadmap$/, ({ query }) => {
     const { board } = find(projects, query.project, 'Project')
@@ -848,7 +899,7 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/contacts$/, ({ query }) => {
     const q = (query.q || '').toLowerCase()
     const rows = endUsers.filter(u => u.projectId === query.project && (!q || [u.name, u.email, u.externalId].some(v => v.toLowerCase().includes(q)))).map(asContact)
-    return { contacts: rows.filter(c => !query.subscription || c.subscription === query.subscription), nextCursor: null }
+    return { contacts: rows.filter(c => (!query.subscription || c.subscription === query.subscription) && (!query.origin || c.origin.type === query.origin) && (!query.leadForm || c.leadForms.includes(query.leadForm))), nextCursor: null }
   }],
   ['GET', /^\/contacts\/([^/]+)$/, ({ params }) => ({ contact: asContact(find(endUsers, params[0], 'Contact')) })],
   ['PATCH', /^\/contacts\/([^/]+)$/, ({ params, body }) => {
@@ -859,7 +910,7 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   }],
   ['GET', /^\/segments$/, ({ query }) => ({ segments: segments.filter(s => s.projectId === query.project) })],
   ['POST', /^\/segments$/, ({ body }) => {
-    const segment = { id: newId('seg'), projectId: String(body.project), name: String(body.name || 'Segment'), filter: body.filter || { match: 'all', rules: [] }, createdAt: now(), updatedAt: now() }
+    const segment = { id: newId('seg'), projectId: String(body.project), name: String(body.name || 'Segment'), filter: body.filter || { match: 'all', rules: [] }, auto: false, createdAt: now(), updatedAt: now() }
     segments.push(segment)
     return { segment }
   }],
@@ -877,6 +928,9 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     const rows = endUsers.filter(u => u.projectId === body.project).map(asContact)
     return { count: rows.length, sample: rows.slice(0, 10) }
   }],
+
+  ['GET', /^\/admin\/lead-forms$/, ({ query }) => ({ forms: query.project === 'acme' ? [demoLeadFormWithStats()] : [] })],
+  ['GET', /^\/admin\/lead-forms\/([^/]+)$/, ({ params }) => ({ form: find([demoLeadFormWithStats()], params[0], 'Form') })],
 
   ['GET', /^\/admin\/contact-sources$/, () => ({ sources: [], kinds: [{ kind: 'parse', label: 'Parse Server' }, { kind: 'postgres', label: 'Postgres / Supabase' }, { kind: 'firestore', label: 'Firebase / Firestore' }], ready: true })],
 

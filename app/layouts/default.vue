@@ -103,6 +103,8 @@ const paletteGroups = computed<CommandPaletteGroup<CommandPaletteItem>[]>(() => 
       { label: t('layout.emailTemplates'), icon: 'i-lucide-mail', kbds: ['g', 'e'], onSelect: () => go('/emails?view=templates') },
       { label: t('layout.emailLog'), icon: 'i-lucide-history', onSelect: () => go('/emails?view=log') },
       { label: t('nav.projects'), icon: 'i-lucide-boxes', kbds: ['g', 'p'], onSelect: () => go('/projects') },
+      { label: t('nav.knowledge'), icon: 'i-lucide-book-open', onSelect: () => go('/knowledge') },
+      { label: t('nav.team'), icon: 'i-lucide-users-round', onSelect: () => go('/agents') },
       { label: t('nav.developer'), icon: 'i-lucide-code-xml', onSelect: () => go('/developer') }
     ]
   },

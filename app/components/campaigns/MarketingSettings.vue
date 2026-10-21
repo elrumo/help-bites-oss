@@ -103,6 +103,7 @@ const snippet = computed(() => `<form action="${appUrl.value}/v1/subscribe" meth
         <section class="space-y-3">
           <h2 class="text-sm font-semibold text-highlighted">{{ $t('campaigns.settings.webhook') }}</h2>
           <p class="text-muted">{{ $t('campaigns.settings.webhookIntro') }} <code class="font-mono">contact.subscription_changed</code> {{ $t('campaigns.settings.and') }} <code class="font-mono">email.suppressed</code>{{ $t('campaigns.settings.signedLike') }} (<code class="font-mono">x-helpbites-signature</code>){{ $t('campaigns.settings.retried') }}</p>
+          <PlanLock feature="eventWebhooks" inline />
           <UFormField label="URL"><UInput v-model="webhookUrl" placeholder="https://api.example.com/hooks/helpbites" class="w-full" /></UFormField>
           <UFormField :label="$t('campaigns.settings.signingSecret')" :hint="project.hasEventWebhookSecret ? $t('campaigns.settings.secretSet') : $t('campaigns.settings.secretLength')"><UInput v-model="webhookSecret" type="password" autocomplete="off" class="w-full" /></UFormField>
         </section>

@@ -1,6 +1,6 @@
 import { localeName } from './locales'
 
-// Machine translation of operator-written copy (onboarding, legal documents, emails).
+// Machine translation of operator-written copy (onboarding, legal documents, emails, lead forms).
 // The model only ever sees a numbered list of strings; what makes its answer safe to
 // store is checked here, without a network: the list comes back whole, and every
 // `{{placeholder}}`, URL and HTML tag of a string survives. A string that fails is
@@ -12,7 +12,8 @@ export const TRANSLATE_LIMITS = { locales: 8, strings: 400, batchStrings: 40, ba
 export const TRANSLATE_CONTEXTS = {
   onboarding: 'short screens a mobile or web app shows a new user: titles, a sentence or two of body text, button labels, image descriptions',
   legal: 'sections of a legal document (privacy policy, terms of service) for a software product, in Markdown. Keep the legal meaning exactly; do not add, drop or soften any statement',
-  email: 'the copy of a product email: subject, preheader, headings, buttons and body text that may contain the inline HTML tags b, i, a and br'
+  email: 'the copy of a product email: subject, preheader, headings, buttons and body text that may contain the inline HTML tags b, i, a and br',
+  form: 'a sign-up form on a website or in an app (a waitlist or interest form): a title, a sentence or two, field labels and placeholders, the options of a choice, a button label and short thank-you messages'
 } as const
 export type TranslateContext = keyof typeof TRANSLATE_CONTEXTS
 

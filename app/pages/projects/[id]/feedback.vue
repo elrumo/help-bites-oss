@@ -250,7 +250,8 @@ const { t } = useI18n()
 
 // ---- the changelog link ----
 const changelogUrl = computed(() => (project.value ? `${appUrl.value}/changelog/${project.value.publicKey}` : ''))
-const changelogReady = computed(() => Boolean(config.value?.enabled && config.value.changelog))
+// The public changelog has its own switch (Changelog → Settings); it does not need the feedback board.
+const changelogReady = computed(() => Boolean(project.value?.changelog?.enabled))
 
 async function copyChangelogUrl() {
   if (!changelogReady.value) {

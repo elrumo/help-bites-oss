@@ -494,7 +494,8 @@ onMounted(async () => {
   // Standalone mode (no host frame): a token in the URL, for demos and tests.
   const direct = takeUrlToken()
   try {
-    project.value = await $fetch<PublicProject>(`/v1/projects/${pk}/public`)
+    // In a host page's frame (not opened on its own), say so: the project's setup shows the widget as installed.
+    project.value = await $fetch<PublicProject>(`/v1/projects/${pk}/public${window.parent !== window ? '?widget=1' : ''}`)
   } catch {
     waitingText.value = t('embed.chat.unknownProject')
     return

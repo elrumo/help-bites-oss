@@ -1,5 +1,5 @@
 import { createError, readBody } from 'h3'
-import { cleanAttributes, cleanTags, cleanTopicKeys, normalizeEmail, CONTACT_LIMITS, type Contact, type ContactAttributeValue, type ContactConsent, type ContactInput, type ContactSubscription } from '#shared/contacts'
+import { cleanAttributes, cleanTags, cleanTopicKeys, guessContactOrigin, normalizeEmail, originTypeForVia, readContactOrigin, CONTACT_LIMITS, type Contact, type ContactAttributeValue, type ContactConsent, type ContactInput, type ContactOriginType, type ContactSubscription } from '#shared/contacts'
 import { compileSegmentFilter, validateSegmentFilter, type ContactSegment, type SegmentFilter } from '#shared/segments'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
 import { runExclusive } from './redis'
@@ -39,6 +39,8 @@ export function serializeContact(row: ParseObject): Contact {
     unsubscribedTopics: strings(row.get('unsubscribedTopics')),
     consent: consent.at ? consent as ContactConsent : null,
     sources: strings(row.get('sources')),
+    origin: readContactOrigin(row.get('origin')) || guessContactOrigin({ externalId: row.get('externalId'), sources: row.get('sources'), consent: row.get('consent'), leadForms: row.get('leadForms'), anonymous: row.get('anonymous') }),
+    leadForms: strings(row.get('leadForms')),
     feedbackEmails: row.get('feedbackEmails') !== false,
     lastSeenAt: iso(row.get('lastSeenAt')),
     createdAt: iso(row.createdAt),
@@ -58,6 +60,8 @@ export type ContactWriteOptions = {
   /** Imports fill blanks only; the API and syncs overwrite (their data is the truth). */
   fillOnly?: boolean
   consent?: Omit<ContactConsent, 'source' | 'at'>
+  /** How someone new got here, when `via` does not say enough (a lead form and which one). */
+  origin?: { type: ContactOriginType, id?: string }
 }
 
 export type ContactWriteResult = { index: number, status: 'created' | 'updated' | 'unchanged' | 'failed', id: string, error?: string }
@@ -122,6 +126,12 @@ export function applyContactInput(row: ParseObject, input: ContactInput, options
     set('tags', tags)
   }
   if (options.sourceId && !strings(row.get('sources')).includes(options.sourceId)) set('sources', [...strings(row.get('sources')), options.sourceId])
+  if (input.leadForms?.length) {
+    const before = strings(row.get('leadForms'))
+    if (input.leadForms.some(id => !before.includes(id))) set('leadForms', [...new Set([...before, ...input.leadForms])])
+  }
+  // Set once, when the row is made: how this person first got here.
+  if (row.isNew() && !row.get('origin')) set('origin', { type: options.origin?.type || originTypeForVia(options.via), id: options.origin?.id || options.sourceId || '', at: now.toISOString() })
 
   let subscription: SubscriptionChange | null = null
   const current = (row.get('subscription') as ContactSubscription) || 'none'
@@ -278,7 +288,7 @@ function readCursor(cursor: string): { at: Date, id: string } | null {
   return id && !Number.isNaN(date.getTime()) ? { at: date, id } : null
 }
 
-export type ContactListOptions = { where?: Record<string, unknown>, q?: string, tag?: string, subscription?: string, updatedSince?: Date, cursor?: string, limit?: number }
+export type ContactListOptions = { where?: Record<string, unknown>, q?: string, tag?: string, subscription?: string, origin?: string, leadForm?: string, updatedSince?: Date, cursor?: string, limit?: number }
 
 export async function listContacts(project: ParseObject, options: ContactListOptions): Promise<{ contacts: Contact[], nextCursor: string | null }> {
   const Parse = useParse()
@@ -287,6 +297,8 @@ export async function listContacts(project: ParseObject, options: ContactListOpt
   if (options.where && Object.keys(options.where).length) where.push(options.where)
   if (options.tag) where.push({ tags: options.tag })
   if (options.subscription) where.push({ subscription: options.subscription })
+  if (options.origin) where.push({ 'origin.type': options.origin })
+  if (options.leadForm) where.push({ leadForms: options.leadForm })
   if (options.updatedSince) where.push({ updatedAt: { $gte: { __type: 'Date', iso: options.updatedSince.toISOString() } } })
 
   const term = (options.q || '').trim()
@@ -329,6 +341,7 @@ export function serializeSegment(row: ParseObject): ContactSegment {
     projectId: pointerId(row.get('project')),
     name: String(row.get('name') || ''),
     filter: validateSegmentFilter(row.get('filter')).filter,
+    auto: Boolean(row.get('auto')),
     createdAt: iso(row.createdAt),
     updatedAt: iso(row.updatedAt)
   }

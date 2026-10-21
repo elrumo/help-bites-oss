@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// One person (web: components/contacts/ContactDrawer.vue): marketing consent
-/// and its proof, name, tags and attributes, and erasing them.
+/// and its proof, how they got here, name, tags and attributes, and erasing them.
 struct ContactDetailSheet: View {
   let projectId: String
   @State var contact: Contact
@@ -18,6 +18,8 @@ struct ContactDetailSheet: View {
   @State private var confirmResubscribe = false
   @State private var confirmErase = false
   @State private var conversations: [Conversation] = []
+  /// Lead forms and syncs by id, for "Added via" and "Lead forms".
+  @State private var names: [String: String] = [:]
   @State private var emails: [EmailLogEntry] = []
 
   var body: some View {
@@ -30,7 +32,7 @@ struct ContactDetailSheet: View {
             ForEach(SubscriptionStatus.allCases.filter { $0 != .pending || contact.subscription == "pending" }) { Text($0.label).tag($0.rawValue) }
           }
           if let consent = contact.consent {
-            Text("Opted in via \(consent.source) on \(DateText.day(consent.at))\(consent.confirmedAt.map { ", confirmed \(DateText.day($0))" } ?? "")")
+            Text("Opted in via \(consentSource(consent.source)) on \(DateText.day(consent.at))\(consent.confirmedAt.map { ", confirmed \(DateText.day($0))" } ?? "")")
               .font(.lnCaption).foregroundStyle(Theme.textMuted)
           }
           if !contact.unsubscribedTopics.isEmpty {
@@ -58,7 +60,19 @@ struct ContactDetailSheet: View {
           LabeledContent("Email", value: contact.email.isEmpty ? "—" : contact.email)
           LabeledContent("User id", value: contact.externalId.isEmpty ? "—" : contact.externalId)
           LabeledContent("Added", value: DateText.day(contact.createdAt))
+          if contact.origin != nil {
+            LabeledContent("Added via", value: ContactOriginKind.label(contact.origin, names: names))
+          }
+          if let forms = contact.leadForms, !forms.isEmpty {
+            LabeledContent("Lead forms", value: forms.map { names[$0] ?? "A deleted form" }.joined(separator: ", "))
+          }
           LabeledContent("Last seen", value: contact.lastSeenAt.map { DateText.day($0) } ?? "—")
+        }
+
+        if let forms = contact.leadForms, !forms.isEmpty {
+          Section("Files sent") {
+            LeadFileRows(projectId: projectId, contactId: contact.id)
+          }
         }
 
         Section("Conversations") {
@@ -113,10 +127,11 @@ struct ContactDetailSheet: View {
       .confirmationDialog("They unsubscribed. Only subscribe them again if they asked you to.", isPresented: $confirmResubscribe, titleVisibility: .visible) {
         Button("Subscribe again") { Task { await save(subscription: "subscribed", resubscribe: true) } }
       }
-      .confirmationDialog("Erase \(contact.displayName)? Their conversations, feedback and email history go too.", isPresented: $confirmErase, titleVisibility: .visible) {
+      .confirmationDialog("Erase \(contact.displayName)? Their conversations, feedback, files and email history go too.", isPresented: $confirmErase, titleVisibility: .visible) {
         Button("Erase", role: .destructive) { Task { await erase() } }
       }
     }
+    .task { names = await ContactOriginNames.load(projectId, session: session) }
     .task {
       // Their conversations (open one in the inbox) and the email we sent them.
       if let result: InboxResponse = try? await session.get("/v1/admin/conversations", query: ["project": projectId, "endUser": contact.id, "limit": "20"]) { conversations = result.conversations }
@@ -137,6 +152,13 @@ struct ContactDetailSheet: View {
     if case .number = before, let number = Double(value) { return .number(number) }
     if case .bool = before, value == "true" || value == "false" { return .bool(value == "true") }
     return .string(value)
+  }
+
+  /// Consent records the writer (form, import, a source id…): said the way origins are.
+  private func consentSource(_ source: String) -> String {
+    if let name = names[source] { return name }
+    let via = ["form": "signup", "lead_form": "lead_form", "import": "import", "panel": "panel", "sync": "sync", "stripe": "stripe"][source] ?? (source.count == 10 ? "sync" : "api")
+    return ContactOriginKind(rawValue: via)?.label ?? source
   }
 
   private func save(subscription: String? = nil, resubscribe: Bool = false) async {

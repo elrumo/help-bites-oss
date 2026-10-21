@@ -11,6 +11,7 @@ import {
 } from '#shared/changelog'
 import { changelogConfirmVariables } from './changelogDigest'
 import { sendChangelogTemplate } from './changelogMail'
+import { loadProjectUnscoped } from './projects'
 import { CHANGELOG_LINK_SECRET_REQUIRED, changelogLinkSecret, createChangelogToken, verifyChangelogToken } from './changelogTokens'
 
 // Who gets emailed about the changelog, and how often.
@@ -37,22 +38,35 @@ export function changelogNotifyEnabled(project: ParseObject): boolean {
   return getChangelogConfig(project).notify
 }
 
-/** Subscriptions need the project to have them on and the link secret to sign with. */
+/** Subscriptions need the project to have them on, the link secret to sign with and an address for the links. */
 export function requireChangelogNotify(project: ParseObject): void {
   if (!changelogNotifyEnabled(project)) throw createError({ statusCode: 404, statusMessage: 'This changelog has no notifications' })
   if (!changelogLinkSecret()) throw createError({ statusCode: 503, statusMessage: CHANGELOG_LINK_SECRET_REQUIRED })
+  const config = getChangelogConfig(project)
+  if ((!config.confirmUrl || !config.unsubscribeUrl) && !appBase()) throw createError({ statusCode: 503, statusMessage: 'Set APP_URL on the server: changelog confirm and unsubscribe links need a public address' })
 }
 
 function siteUrlOf(project: ParseObject): string {
   return String(project.get('siteUrl') || '')
 }
 
+function appBase(): string {
+  return String(process.env.APP_URL || '').trim().replace(/\/+$/, '')
+}
+
+/** The project's own page when it set one, else the hosted page on this server (`/u/changelog/…`). */
+function linkUrl(project: ParseObject, template: string, purpose: 'confirm' | 'unsubscribe', subscriptionId: string): string {
+  const token = createChangelogToken(purpose === 'confirm' ? 'confirm' : 'unsub', subscriptionId)
+  if (template) return fillChangelogTokenUrl(template, siteUrlOf(project), token)
+  return `${appBase()}/u/changelog/${purpose}/${encodeURIComponent(token)}`
+}
+
 export function changelogConfirmUrl(project: ParseObject, subscriptionId: string): string {
-  return fillChangelogTokenUrl(getChangelogConfig(project).confirmUrl, siteUrlOf(project), createChangelogToken('confirm', subscriptionId))
+  return linkUrl(project, getChangelogConfig(project).confirmUrl, 'confirm', subscriptionId)
 }
 
 export function changelogUnsubscribeUrl(project: ParseObject, subscriptionId: string): string {
-  return fillChangelogTokenUrl(getChangelogConfig(project).unsubscribeUrl, siteUrlOf(project), createChangelogToken('unsub', subscriptionId))
+  return linkUrl(project, getChangelogConfig(project).unsubscribeUrl, 'unsubscribe', subscriptionId)
 }
 
 /**
@@ -60,8 +74,16 @@ export function changelogUnsubscribeUrl(project: ParseObject, subscriptionId: st
  * and no script, so it is this server's own route and not the project's site.
  */
 export function changelogOneClickUnsubscribeUrl(subscriptionId: string): string {
-  const base = String(process.env.APP_URL || '').replace(/\/+$/, '')
-  return `${base}/v1/changelog/subscribe/unsubscribe?token=${encodeURIComponent(createChangelogToken('unsub', subscriptionId))}`
+  return `${appBase()}/v1/changelog/subscribe/unsubscribe?token=${encodeURIComponent(createChangelogToken('unsub', subscriptionId))}`
+}
+
+/** The project a hosted link page is for, to brand it; null for a link that is forged, expired or for a vanished row. */
+export async function changelogLinkProject(token: string, purpose: 'confirm' | 'unsub'): Promise<ParseObject | null> {
+  const result = verifyChangelogToken(token)
+  if (!result.valid || result.purpose !== purpose) return null
+  const row = await findSubscriptionById(result.subscriptionId)
+  const project = row?.get('project') as ParseObject | undefined
+  return project ? await loadProjectUnscoped(project.id || '').catch(() => null) : null
 }
 
 function newSubscription(project: ParseObject, email: string): ParseObject {
@@ -281,9 +303,24 @@ export async function importChangelogSubscriptions(project: ParseObject, payload
   return out
 }
 
-/** Delete a person's subscriptions (their account is being erased). */
-export async function eraseChangelogSubscriptions(project: ParseObject, externalId: string): Promise<number> {
-  const rows = await new (useParse()).Query('ChangelogSubscription').equalTo('project', project).equalTo('userId', externalId).limit(100).find(MASTER)
-  if (rows.length) await useParse().Object.destroyAll(rows, MASTER)
-  return rows.length
+/**
+ * Delete a person's subscriptions (their account is being erased): the rows
+ * their user id claimed and the ones they made by address alone, signed out or
+ * before they had an account. A page at a time until none are left.
+ */
+export async function eraseChangelogSubscriptions(project: ParseObject, who: { externalId?: string, emails?: string[] }): Promise<number> {
+  const Parse = useParse()
+  const emails = [...new Set((who.emails || []).map(normalizeSubscriberEmail).filter(Boolean))]
+  const queries = [
+    who.externalId ? new Parse.Query('ChangelogSubscription').equalTo('project', project).equalTo('userId', who.externalId) : null,
+    emails.length ? new Parse.Query('ChangelogSubscription').equalTo('project', project).containedIn('email', emails) : null
+  ].filter(query => query !== null)
+  if (!queries.length) return 0
+  let erased = 0
+  for (;;) {
+    const rows = await Parse.Query.or(...queries).limit(500).find(MASTER)
+    if (rows.length) await Parse.Object.destroyAll(rows, MASTER)
+    erased += rows.length
+    if (rows.length < 500) return erased
+  }
 }
