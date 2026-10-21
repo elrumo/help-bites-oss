@@ -68,12 +68,13 @@ test('the demo answers the workspace overview, the page the panel opens on', asy
   expect((await demoApi<any>('/admin/overview', { query: { range: 'all' } })).revenue.totals[0].change).toBeNull()
 })
 
-test('the demo changelog has sample entries and refuses writes', async () => {
+test('the demo changelog has Acme\'s release and drafts, and refuses writes', async () => {
   const { entries } = await demoApi<any>('/admin/changelog/entries', { query: { project: 'acme' } })
-  expect(entries.length).toBeGreaterThan(0)
-  expect(entries.every((entry: any) => entry.projectId === 'acme')).toBe(true)
+  expect(entries.some((e: any) => e.status === 'published')).toBe(true)
+  expect(entries.some((e: any) => e.status === 'draft')).toBe(true)
   const { releases } = await demoApi<any>('/admin/changelog/releases', { query: { project: 'acme' } })
-  expect(releases.length).toBeGreaterThan(0)
+  expect(entries.filter((e: any) => e.releaseId).every((e: any) => releases.some((r: any) => r.id === e.releaseId))).toBe(true)
+  expect(await demoApi<any>('/admin/changelog/entries', { query: { project: 'fieldnotes' } })).toEqual({ entries: [] })
   await expect(demoApi('/admin/changelog/entries', { method: 'POST', query: { project: 'acme' }, body: { title: 'x' } })).rejects.toMatchObject({ statusCode: 403 })
 })
 
