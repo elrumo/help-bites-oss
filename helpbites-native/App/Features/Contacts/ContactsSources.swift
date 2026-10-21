@@ -22,6 +22,7 @@ struct SourcesList: View {
         Label("Set HELPBITES_SECRET on the server first: database credentials are stored encrypted with it (32+ random characters, e.g. openssl rand -base64 48), then restart.", systemImage: "key")
           .font(.lnMeta).foregroundStyle(Theme.warning).linearRow()
       }
+      if session.isLocked("contactSources") { PlanLockNotice(feature: "contactSources").linearRow() }
       if !error.isEmpty { ErrorText(message: error).linearRow() }
       if loading && sources.isEmpty { SkeletonRows(count: 2).linearRow() }
       else if sources.isEmpty {

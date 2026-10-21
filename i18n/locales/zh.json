@@ -2102,7 +2102,8 @@
       "features": "功能",
       "docs": "文档",
       "source": "源码",
-      "demo": "演示"
+      "demo": "演示",
+      "signUp": "注册"
     },
     "hero": {
       "title": "独立开发者的瑞士军刀。",
@@ -3748,6 +3749,9 @@
       "dailyReset": "该计数将于 UTC 午夜重置。",
       "byoAi": "你自己的 AI 提供商（设置 → AI）不消耗积分。",
       "close": "关闭"
+    },
+    "planLock": {
+      "notInPlan": "{feature}不包含在{plan}方案中。已有的内容会保留，升级后即可使用。"
     },
     "transfer": {
       "title": "迁移到另一个 HelpBites",

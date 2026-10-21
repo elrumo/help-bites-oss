@@ -91,8 +91,9 @@ answer at boot.
 **Client**: `app/utils/editionUi.ts`:
 - `registerSettingsTab` for a tab in Settings;
 - `registerBanner` for a strip above every panel page;
-- `setUpgradeAction` for what the plan-limit dialog's Upgrade button does (no action: no button);
-- `registerSidebarItem` for a link in the sidebar.
+- `setUpgradeAction` for what the plan-limit dialog's and plan locks' Upgrade button does (no action: no button);
+- `registerSidebarItem` for a link in the sidebar;
+- `registerLandingLink` for a link in the landing page's header (the cloud edition's pricing page).
 
 ## Plans and limits
 
@@ -106,6 +107,10 @@ answer at boot.
 
 The community edition puts every workspace on `UNLIMITED_PLAN`, so none of this is visible there. The Plan & usage tab
 hides itself, and nothing answers 402.
+
+**Plan locks**: on a plan without a feature, the panel marks it before anyone meets the 402 (`usePlanLocks`,
+`PlanLock.vue`; native `PlanLockNotice`). A project section names the feature it needs in `app/utils/projectSections.ts`
+and the sidebar shows a lock; gated pages show a note under their header with the Upgrade action.
 
 In the cloud edition a workspace's plan comes from, in order:
 1. a comp plan given by staff, until its end date;

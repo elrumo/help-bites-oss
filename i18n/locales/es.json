@@ -2102,7 +2102,8 @@
       "features": "Funciones",
       "docs": "Docs",
       "source": "Código",
-      "demo": "Demo"
+      "demo": "Demo",
+      "signUp": "Regístrate"
     },
     "hero": {
       "title": "La navaja suiza para desarrolladores indie.",
@@ -3748,6 +3749,9 @@
       "dailyReset": "Este recuento se reinicia a medianoche UTC.",
       "byoAi": "Tu propio proveedor de IA (Ajustes → IA) no usa créditos.",
       "close": "Cerrar"
+    },
+    "planLock": {
+      "notInPlan": "{feature} no está incluido en el plan {plan}. Todo lo que ya hay se conserva, y mejorar el plan lo activa."
     },
     "transfer": {
       "title": "Llevar a otro HelpBites",

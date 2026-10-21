@@ -111,6 +111,7 @@ const STATUS_COLOR = { draft: 'neutral', active: 'success', paused: 'warning' } 
       <template #title><CampaignsTabs current="sequences" /></template>
       <template #actions><UButton icon="i-lucide-plus" :label="$t('campaigns.sequences.new')" size="sm" @click="edit(null)" /></template>
     </PageHeader>
+    <PlanLock feature="sequences" />
 
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div v-if="loading" class="space-y-1 p-4"><USkeleton v-for="i in 3" :key="i" class="h-14" /></div>

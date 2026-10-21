@@ -435,13 +435,19 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 ## 13. Hosted edition only
 
-HelpBites Cloud, the paid hosted service, adds open sign-up, Free and Pro plans, Stripe billing, verified sending
-domains and a staff console on top of everything above. The code for it is not part of this repository.
-See [EDITIONS.md](EDITIONS.md).
+HelpBites Cloud, the paid hosted service, adds open sign-up, a pricing page, Free and Pro plans, Stripe billing,
+verified sending domains and a staff console on top of everything above. The code for it is not part of this
+repository. See [EDITIONS.md](EDITIONS.md).
+
+- **Plan locks.** On a plan that leaves a feature out, the panel says so before anyone fills in a form: a lock on
+  Campaigns and Legal in the sidebar, and a note on the pages for campaigns, sequences, database sync, event webhooks
+  and legal documents, with the Upgrade button. The native app shows the same notes. A self-hosted install is on the
+  unlimited plan, so it never shows any of this.
 
 ## 14. Not built yet, and known limits
 
-- **Native app.** No workspace picker yet, so it works in the user's default workspace.
+- **Native app.** No workspace picker yet, so it works in the user's default workspace. In the hosted edition it
+  shows the plan, usage and locks, but subscribing and managing the subscription happen in the web panel.
 - **Push.** Off until APNs credentials are set on the server.
 - **Contact sync.** Rows deleted upstream are not noticed yet. Erase them through
   the API. [CONTACTS.md](CONTACTS.md)

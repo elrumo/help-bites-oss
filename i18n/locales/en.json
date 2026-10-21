@@ -2103,7 +2103,8 @@
       "features": "Features",
       "docs": "Docs",
       "source": "Source",
-      "demo": "Demo"
+      "demo": "Demo",
+      "signUp": "Sign up"
     },
     "hero": {
       "title": "The Swiss Army knife for indie devs.",
@@ -4056,6 +4057,9 @@
       "dailyReset": "This count starts over at midnight UTC.",
       "byoAi": "Your own AI provider (Settings → AI) uses no credits.",
       "close": "Close"
+    },
+    "planLock": {
+      "notInPlan": "{feature} is not part of the {plan} plan. Anything already here is kept, and upgrading turns it on."
     },
     "transfer": {
       "title": "Move to another HelpBites",

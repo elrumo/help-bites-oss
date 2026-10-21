@@ -7,6 +7,7 @@
         <UButton icon="i-lucide-plus" :label="$t('projectTools.legal.newDocument')" size="sm" @click="wizardOpen = true" />
       </template>
     </PageHeader>
+    <PlanLock feature="legalDocs" />
 
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div class="mx-auto max-w-3xl space-y-6 px-6 py-8">

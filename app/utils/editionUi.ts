@@ -9,11 +9,14 @@ import type { Component } from 'vue'
 export type SettingsTab = { key: string, label: string, icon: string, component: Component }
 /** A link at the bottom of the sidebar. `visible` is read on every render, so it can follow `/admin/me`. */
 export type SidebarItem = { key: string, label: string, icon: string, to: string, visible?: () => boolean }
+/** A link in the landing page's header (the cloud edition's pricing). */
+export type LandingLink = { key: string, label: string, to: string }
 
 const settingsTabs = shallowReactive<SettingsTab[]>([])
 const banners = shallowReactive<Component[]>([])
 const upgrade = shallowRef<(() => void) | null>(null)
 const sidebarItems = shallowReactive<SidebarItem[]>([])
+const landingLinks = shallowReactive<LandingLink[]>([])
 
 export function registerSettingsTab(tab: SettingsTab): void {
   if (!settingsTabs.some(item => item.key === tab.key)) settingsTabs.push({ ...tab, component: markRaw(tab.component) })
@@ -33,6 +36,10 @@ export function registerSidebarItem(item: SidebarItem): void {
   if (!sidebarItems.some(entry => entry.key === item.key)) sidebarItems.push(item)
 }
 
+export function registerLandingLink(link: LandingLink): void {
+  if (!landingLinks.some(entry => entry.key === link.key)) landingLinks.push(link)
+}
+
 export function editionUi() {
-  return { settingsTabs, banners, upgrade, sidebarItems }
+  return { settingsTabs, banners, upgrade, sidebarItems, landingLinks }
 }
