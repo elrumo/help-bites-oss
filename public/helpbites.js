@@ -58,13 +58,15 @@
 
   // ---- the HelpBites.push queue --------------------------------------------------
   // widget.js reads window.HelpBites as an array when it loads and then replaces
-  // it, so until then this is an array whose push also routes module calls.
-  var chat = null
-  var sawInit = false
-  var queue = Array.isArray(window.HelpBites) ? window.HelpBites : []
+  // it with its own object, so until then this is an array whose push also routes
+  // module calls; once the chat is there, a router in front of it does the same.
+  var existing = window.HelpBites
+  var chat = existing && !Array.isArray(existing) && typeof existing.push === 'function' ? existing : null
+  var queue = Array.isArray(existing) ? existing : []
+  var sawInit = !!chat
   var plainPush = Array.prototype.push
 
-  function module(name) {
+  function queueFor(name) {
     var key = QUEUES[name]
     if (!key) return null
     window[key] = window[key] || []
@@ -77,7 +79,7 @@
     if (MODULES.indexOf(target) !== -1 && cmd.length > 1 && typeof cmd[1] === 'string') {
       var rest = cmd.slice(1)
       if (target === 'chat') return chat ? chat.push(rest) : plainPush.call(queue, rest)
-      var q = module(target)
+      var q = queueFor(target)
       if (q) return q.push(rest)
       return console.warn('[help-bites] ' + target + ' has no calls to forward to')
     }
@@ -86,11 +88,21 @@
     plainPush.call(queue, cmd)
   }
 
-  for (var i = 0; i < queue.length; i++) if (queue[i] && queue[i][0] === 'init') sawInit = true
-  queue.push = function () { for (var j = 0; j < arguments.length; j++) route(arguments[j]); return queue.length }
-  window.HelpBites = queue
-  module('feedback')
-  module('onboarding')
+  var router = {
+    push: route,
+    open: function () { route(['open']) },
+    close: function () { route(['close']) }
+  }
+
+  if (chat) {
+    window.SupportBites = window.HelpBites = router
+  } else {
+    for (var i = 0; i < queue.length; i++) if (queue[i] && queue[i][0] === 'init') sawInit = true
+    queue.push = function () { for (var j = 0; j < arguments.length; j++) route(arguments[j]); return queue.length }
+    window.HelpBites = queue
+  }
+  queueFor('feedback')
+  queueFor('onboarding')
 
   // ---- which modules ---------------------------------------------------------------
 
@@ -150,11 +162,6 @@
       // widget.js has replaced window.HelpBites with its own; keep the routing in front of it.
       chat = window.HelpBites && window.HelpBites !== queue ? window.HelpBites : null
       if (!chat) return
-      var router = {
-        push: route,
-        open: function () { route(['open']) },
-        close: function () { route(['close']) }
-      }
       window.SupportBites = window.HelpBites = router
       // The page did not call init itself: start the chat, wearing data-token when there is one.
       if (!sawInit) {

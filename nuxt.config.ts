@@ -77,6 +77,7 @@ export default defineNuxtConfig({
     // The loaders talk to /embed from the same deploy, so a stale one must not
     // outlive a release by long: public/ otherwise gets no Cache-Control and
     // browsers guess a freshness of days.
+    '/helpbites.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/widget.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/feedback.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/changelog.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
