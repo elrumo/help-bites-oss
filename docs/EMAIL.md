@@ -19,7 +19,7 @@ A project that links a master stores no design of its own. It keeps:
 
 | Per project | Where it comes from |
 |---|---|
-| Brand | The project settings. `{{project.name}}`, `{{project.logoUrl}}` (logo URL) and `{{project.url}}` (site URL) fill in automatically. The project accent replaces the master's brand colour on buttons; buttons in any other colour keep it. |
+| Brand | The project's Brand kit and settings. `{{project.name}}`, `{{project.logoUrl}}` (the kit's logo URL) and `{{project.url}}` (site URL) fill in automatically, and so do the company and legal-page placeholders under [Variables](#variables). The project accent (the kit's) replaces the master's brand colour on buttons; buttons in any other colour keep it. |
 | Values | One value per master variable (`{{footer}}`, `{{supportEmail}}`…). A blank value falls back to the master's default. |
 | Send key | The name your server sends it by, e.g. `welcome`. It is unique within the project. |
 
@@ -63,7 +63,19 @@ themselves: each recipient gets the translation closest to their contact's `lang
 buttons, links, image URLs, custom HTML and the plain-text version.
 
 - **`{{key}}` or `{{{key}}}`.** In custom HTML (an HTML block, or HTML you send through the API), `{{key}}` fills in **HTML-escaped**, so a name like `<b>Ada</b>` arrives as text, and `{{{key}}}` fills in **raw**, for values that are HTML on purpose (a pre-rendered list, a button row). Everywhere else the renderer escapes or sanitizes the value, so both forms behave the same. Text blocks take the inline subset (bold, italic, links).
-- **Reserved**: `{{project.name}}`, `{{project.logoUrl}}`, `{{project.url}}` and `{{project.address}}` (the postal address from the marketing settings) come from the project; `{{recipient.email}}` and `{{recipient.name}}` fill in per message at send time. A call can't set either kind.
+- **Reserved**: these come from the project, and `{{recipient.email}}` and `{{recipient.name}}` fill in per message at send time. A call can't set either kind.
+
+  | Placeholder | Value |
+  |---|---|
+  | `{{project.name}}` | The project's name. |
+  | `{{project.logoUrl}}` | The logo from the Brand kit. |
+  | `{{project.url}}` | The project's site URL. |
+  | `{{project.company}}` | The company name from Project settings → Company (its legal name, then the project name, when that is blank). |
+  | `{{project.address}}` | The company's postal address: what a marketing email must carry. |
+  | `{{project.email}}` | The company's contact email. |
+  | `{{project.privacyUrl}}`, `{{project.termsUrl}}`, `{{project.cookiesUrl}}`, `{{project.refundUrl}}` | The public page of the project's published legal document of that type, as a full address. Blank when the project has none; they update whenever a document is published, unpublished, renamed or deleted. |
+
+  A reserved placeholder with no value is replaced with nothing, never left as `{{project.privacyUrl}}` in the mail, so wrap a legal link in your design only where the document exists. A starter's footer such as `{{project.name}} · {{project.address}}` can become `{{project.company}} · {{project.address}} · <a href="{{project.privacyUrl}}">Privacy</a>`.
 - **Unknown placeholders stay as written**, so a missing value shows up in a test instead of vanishing.
 
 ## Editor

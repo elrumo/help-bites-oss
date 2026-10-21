@@ -10,6 +10,7 @@ struct InboxPropertiesPanel: View {
   let compact: Bool
   @Environment(Workspace.self) private var workspace
   @Environment(\.dismiss) private var dismiss
+  @State private var openContact: InboxOpenContact?
 
   var body: some View {
     if compact {
@@ -37,8 +38,18 @@ struct InboxPropertiesPanel: View {
         }
         section("Labels") { InboxLabels(tags: conversation.tags ?? []) }
         section("Customer") { customer(store) }
+        // Only when the Stripe sync found this person.
+        if let billing = hub(store)?.billing {
+          section("Billing") { billingCard(billing) }
+        }
+        if let past = hub(store)?.pastConversations, !past.isEmpty {
+          section("Past conversations") { ForEach(past) { pastRow($0, store: store) } }
+        }
         if let type, !type.fields.isEmpty {
           section("\(type.name) fields") { InboxFieldEditors(fields: type.fields) }
+        }
+        section("Feedback") {
+          FeedbackLinksSection(projectId: conversation.projectId, conversationId: conversation.id, title: conversation.subject, description: lastCustomerMessage(store))
         }
         if workspace.project(conversation.projectId)?.board != nil {
           section("Board") {
@@ -59,6 +70,12 @@ struct InboxPropertiesPanel: View {
     }
     .scrollDismissesKeyboard(.interactively)
     .background(Theme.panel)
+    .sheet(item: $openContact) { ContactSheetByID(projectId: conversation.projectId, contactId: $0.id).environment(workspace).environment(workspace.session) }
+  }
+
+  /// The customer panel's read, once it is for this conversation.
+  private func hub(_ store: InboxStore) -> ConversationHubContext? {
+    store.selectedId == conversation.id ? store.context : nil
   }
 
   /// What a board item filed from here starts with: the customer's latest words.
@@ -156,8 +173,61 @@ struct InboxPropertiesPanel: View {
         }
       }
       .font(.lnMeta)
+      if let contact = hub(store)?.contact {
+        Button { openContact = InboxOpenContact(id: contact.id) } label: {
+          HStack(spacing: 8) {
+            Image(systemName: "person.crop.circle").font(.system(size: 13)).foregroundStyle(Theme.textMuted)
+            Text("Open contact").foregroundStyle(Theme.text)
+            Spacer(minLength: 0)
+            Image(systemName: "arrow.up.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+          }
+          .font(.lnMeta)
+          .frame(height: 32)
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+      }
     }
     .padding(.horizontal, 8)
+  }
+
+  /// Plan, what they pay a month and where the subscription stands (web: the billing card in ConversationContext.vue).
+  private func billingCard(_ billing: HubBilling) -> some View {
+    let mrr = billing.currency.isEmpty ? billing.mrr.formatted() : Money.format(billing.mrr, billing.currency)
+    return VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 8) {
+        Text(billing.plan.isEmpty ? "No plan" : billing.plan).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+        Spacer(minLength: 0)
+        if billing.status != "none" { Tag(text: billing.status.replacingOccurrences(of: "_", with: " ").capitalized) }
+      }
+      HStack {
+        Text("MRR").foregroundStyle(Theme.textMuted)
+        Spacer(minLength: 0)
+        Text(mrr).monospacedDigit().foregroundStyle(Theme.text)
+      }
+      .font(.lnMeta)
+    }
+    .padding(10)
+    .overlay(RoundedRectangle(cornerRadius: Metrics.radius, style: .continuous).strokeBorder(Theme.border))
+    .padding(.horizontal, 8)
+  }
+
+  private func pastRow(_ past: HubPastConversation, store: InboxStore) -> some View {
+    Button {
+      Task { await store.select(past.id) }
+      if compact { dismiss() }
+    } label: {
+      HStack(spacing: 8) {
+        StatusIcon(category: past.statusCategory)
+        Text(past.subject.isEmpty ? (past.lastMessagePreview.isEmpty ? "Conversation" : past.lastMessagePreview) : past.subject).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
+        Spacer(minLength: 0)
+        Text(DateText.short(past.lastMessageAt ?? past.createdAt)).font(.lnCaption).foregroundStyle(Theme.textDimmed)
+      }
+      .padding(.horizontal, 8)
+      .frame(height: 32)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
   }
 
   @ViewBuilder
@@ -183,6 +253,8 @@ struct InboxPropertiesPanel: View {
     if let raw = ref.url, let url = URL(string: raw) { Link(destination: url) { row } } else { row }
   }
 }
+
+private struct InboxOpenContact: Identifiable { let id: String }
 
 /// The customer's latest errors from the project's tracker, matched by the
 /// Sentry user id the host app sets to the same identity id. Hidden when the
