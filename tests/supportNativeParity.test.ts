@@ -37,7 +37,7 @@ describe('native saved replies', () => {
     expect(replies).toContain('split(whereSeparator: \\.isWhitespace)')
 
     // Swift's NSRegularExpression with .caseInsensitive, run here as the JS equivalent.
-    const pattern = new RegExp(swiftString(replies, 'private static let pattern').replace(/\\\\/g, '\\'), 'gi')
+    const pattern = new RegExp(swiftString(replies, 'private static let pattern'), 'gi')
     const swiftFill = (body: string, name: string | null) => {
       const first = (name ?? '').trim().split(/\s+/)[0] || REPLY_FALLBACK_NAME
       const full = (name ?? '').trim() || REPLY_FALLBACK_NAME
