@@ -39,6 +39,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'CONNECTING.md'
   },
   {
+    slug: 'support',
+    title: 'The conversation panel',
+    description: 'Everything about the customer beside a conversation: plan and MRR, past conversations, linked feedback, saved replies, FAQ suggestions, AI drafts and saving an answer as an FAQ.',
+    group: 'Guides',
+    file: 'SUPPORT.md'
+  },
+  {
     slug: 'feedback',
     title: 'Feedback boards',
     description: 'A public board per project with posts, votes, comments, a roadmap and a changelog: drop it into your site or build on the API.',
@@ -100,6 +107,13 @@ export const DOCS: readonly DocPage[] = [
     description: 'Keep logos, icons, screenshots, colours, fonts and guidelines in one place, and share them on a public press page, an embed for your site, or the API.',
     group: 'Guides',
     file: 'BRAND.md'
+  },
+  {
+    slug: 'hub',
+    title: 'Public hub and one-tag loader',
+    description: 'One public page per project, a Home tab in the chat widget and a single script tag that adds the chat, feedback, changelog and onboarding. Web and Swift snippets.',
+    group: 'Guides',
+    file: 'HUB.md'
   },
   {
     slug: 'blog',

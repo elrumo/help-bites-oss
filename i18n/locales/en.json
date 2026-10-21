@@ -277,13 +277,10 @@
     "actions": "Actions",
     "hub": {
       "billing": "Billing",
-      "plan": "Plan",
       "mrr": "MRR",
       "noPlan": "No plan",
-      "status": "Status",
       "openContact": "Open contact",
       "pastConversations": "Past conversations",
-      "noPastConversations": "No earlier conversations.",
       "feedbackNoPosts": "No post linked yet.",
       "feedbackFileNew": "File a post",
       "feedbackAddExisting": "Add an existing post",
@@ -292,7 +289,6 @@
       "feedbackNotFollowing": "Not following",
       "feedbackUnlink": "Unlink #{number} {title}",
       "feedbackNoUserId": "This contact has no user id, so they cannot follow a post or file one. You can still link an existing post.",
-      "feedbackNewTitle": "File as feedback",
       "feedbackNewDescription": "Creates a post written by {name}. They follow it and hear when it changes.",
       "feedbackTitleLabel": "Title",
       "feedbackBodyLabel": "Details",
@@ -301,7 +297,6 @@
       "feedbackUnlinkError": "Could not unlink the post",
       "feedbackCreateError": "Could not file the post",
       "feedbackLoadError": "Could not load posts",
-      "contextError": "Could not load the customer details",
       "pickerOpen": "Insert a saved reply or FAQ",
       "pickerSearch": "Search saved replies and FAQs",
       "pickerSavedReplies": "Saved replies",
@@ -321,7 +316,6 @@
       "savedReplyDelete": "Delete",
       "savedReplyDeleteConfirm": "Delete this saved reply?",
       "savedReplyEmpty": "No saved replies yet.",
-      "savedReplyLimit": "A project has at most {max} saved replies.",
       "savedReplyLoadError": "Could not load saved replies",
       "savedReplySaveError": "Could not save the reply",
       "savedReplyDeleteError": "Could not delete the reply",
@@ -2666,11 +2660,15 @@
         },
         "colours": {
           "term": "Your colours",
-          "desc": "Set an accent colour per project and the chat takes it on."
+          "desc": "Your Brand kit sets the accent, logo, typefaces and corner radius once. The chat, boards, forms, legal and blog pages and campaign mail all wear them."
         },
         "none": {
           "term": "Or none of it",
           "desc": "Every endpoint is public and documented. Build your own chat UI on /v1/* instead."
+        },
+        "hub": {
+          "term": "One tag, one public page",
+          "desc": "helpbites.js adds the chat, feedback board, changelog and onboarding your project has. A page at /hub gathers your changelog, roadmap, feedback, blog and legal documents, and the chat can open on a Home tab with what is new."
         }
       },
       "inbox": {
@@ -2699,6 +2697,10 @@
         "native": {
           "term": "iPhone, iPad and Mac",
           "desc": "A native app for the inbox, replies and most of the panel, with push notifications once your server has APNs set up."
+        },
+        "hub": {
+          "term": "The customer, beside the chat",
+          "desc": "Their plan and MRR from Stripe, their earlier conversations and the feedback they asked for, which they follow. Reply from saved replies and FAQs, or have AI draft an answer from your knowledge for you to edit."
         }
       },
       "feedback": {

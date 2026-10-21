@@ -106,7 +106,7 @@ describe('linking a feedback post', () => {
     expect(result.post).toEqual({ id: 'p10', number: 10, title: 'Dark mode', status: 'planned', statusLabel: 'Planned', statusCategory: 'planned', following: true })
     expect(conversation.get('feedbackPostIds')).toEqual(['p10'])
     expect(events).toEqual([{ type: 'feedback.linked', postId: 'p10', number: 10, title: 'Dark mode', created: false }])
-    expect(emitted).toEqual([{ type: 'conversation.feedback_linked', data: { conversationId: 'c1', contactId: 'u1', postId: 'p10', created: false } }])
+    expect(emitted).toEqual([{ type: 'conversation.feedback_linked', data: { conversationId: 'c1', postId: 'p10', linked: true, created: false } }])
     expect(followed).toEqual(['p10:ext1'])
   })
 
@@ -153,14 +153,14 @@ describe('linking a feedback post', () => {
 })
 
 describe('unlinking', () => {
-  test('takes the id off, notes it, emits nothing and leaves the customer following', async () => {
+  test('takes the id off, notes it, emits the event with linked: false and leaves the customer following', async () => {
     await link({ kind: 'link', postId: 'p10', linked: true, follow: true })
     events = []
     emitted = []
     const result = await link({ kind: 'link', postId: 'p10', linked: false, follow: true })
     expect(result).toMatchObject({ feedbackPostIds: [], linked: false })
     expect(events).toEqual([{ type: 'feedback.unlinked', postId: 'p10', number: 10, title: 'Dark mode', created: false }])
-    expect(emitted).toEqual([])
+    expect(emitted).toEqual([{ type: 'conversation.feedback_linked', data: { conversationId: 'c1', postId: 'p10', linked: false, created: false } }])
     expect(result.following).toBe(true)
   })
 
@@ -185,7 +185,7 @@ describe('filing a post as the customer', () => {
     expect(result).toMatchObject({ feedbackPostIds: ['new1'], linked: true, created: true, following: true })
     expect(followed).toEqual([])
     expect(events[0]).toMatchObject({ type: 'feedback.linked', postId: 'new1', created: true })
-    expect(emitted[0]).toMatchObject({ type: 'conversation.feedback_linked', data: { postId: 'new1', created: true } })
+    expect(emitted[0]).toMatchObject({ type: 'conversation.feedback_linked', data: { postId: 'new1', linked: true, created: true } })
   })
 
   test('leaves the type out when none is given', async () => {

@@ -24,9 +24,9 @@ timeout can arrive twice) and ignore old `createdAt`s.
 |---|---|
 | `contact.created` | `{ contact: { id, externalId, email } }` |
 | `contact.subscription_changed` | `{ contact: { id, externalId, email }, from, to, unsubscribedTopics, topics?: { added, removed } }` |
-| `conversation.created` | `{ conversationId, contact: { id, externalId, email } }` |
+| `conversation.created` | `{ conversationId, contact: { id, externalId, email }, type }` |
 | `conversation.status_changed` | `{ conversationId, from, to, statusCategory }` |
-| `conversation.feedback_linked` | `{ conversationId, postId, linked }` |
+| `conversation.feedback_linked` | `{ conversationId, postId, linked, created }` (`linked` is false when an operator unlinks it; `created` when the post was filed from the conversation) |
 | `feedback.post.created` | `{ postId, number }` |
 | `feedback.post.status_changed` | `{ postId, number, from, to }` |
 | `feedback.post.voted` | `{ postId, number }` |

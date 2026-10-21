@@ -15,7 +15,9 @@ contacts ([CONTACTS.md](CONTACTS.md)).
 | `APP_URL` | Required. The public origin unsubscribe and preference links point at. |
 | `MAILGUN_*` | As for all email. Optionally a separate sending domain for marketing (Settings → Sender), which must belong to the same Mailgun account. |
 
-In **Settings**: the **postal address** (required in every campaign), the
+In **Settings**: the **postal address** (required in every campaign; it is the
+address of the project's company profile, Project settings → Company, which legal
+documents use too, and `{{project.address}}` in a template), the
 **topics**, double opt-in, the thank-you URL, the marketing sender, and the
 event webhook.
 

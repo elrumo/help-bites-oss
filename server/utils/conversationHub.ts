@@ -119,9 +119,9 @@ async function setLink(conversation: ParseObject, postId: string, linked: boolea
  * customer and link that. The customer follows what is linked (unless the call
  * says `follow: false`), but a contact with no user id cannot follow anything: a
  * link is still made, and filing a new post is refused (409), since a post needs
- * an author with an id. Linking leaves a line on the timeline and emits
- * `conversation.feedback_linked`; unlinking leaves a line only, and does not
- * unfollow, since they may still want to hear about it.
+ * an author with an id. Every change (not a repeat) leaves a line on the timeline
+ * and emits `conversation.feedback_linked` with `linked` true or false; unlinking
+ * does not unfollow, since they may still want to hear about it.
  */
 export async function changeFeedbackLink(project: ParseObject, conversation: ParseObject, endUser: ParseObject, agent: ParseObject, input: FeedbackLinkInput): Promise<FeedbackLinkResponse> {
   const externalId = String(endUser.get('externalId') || '')
@@ -152,7 +152,7 @@ export async function changeFeedbackLink(project: ParseObject, conversation: Par
   if (already !== linked) {
     const ref = feedbackPostRef(post, getFeedbackConfig(project))
     await appendEvent(conversation, { type: linked ? 'feedback.linked' : 'feedback.unlinked', postId, number: ref.number, title: ref.title, created }, agent)
-    if (linked) await emitDomainEvent(project, 'conversation.feedback_linked', { conversationId: conversation.id, contactId: endUser.id, postId, created })
+    await emitDomainEvent(project, 'conversation.feedback_linked', { conversationId: conversation.id, postId, linked, created })
   }
   // A new post is followed by its author already; a linked one, when asked and possible.
   if (linked && !created && input.kind === 'link' && input.follow && externalId) await followFeedbackPost(project, post, externalId)

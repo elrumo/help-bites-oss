@@ -29,6 +29,28 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   in the OpenAPI docs at `/_docs/scalar`.
 - **Feedback board embed.** One script (`feedback.js`) renders the board,
   roadmap, changelog, post pages and composer. [FEEDBACK.md](FEEDBACK.md)
+- **Your Brand kit's look.** The chat, boards, forms, onboarding, legal and blog
+  pages and campaign mail all wear the project's Brand kit: its accent, logo,
+  typefaces and corner radius, set once. [BRAND.md](BRAND.md)
+- **A Home tab.** Turn it on and the chat opens on Home, with what is new, the top
+  feedback and a button per onboarding flow, next to Messages. [HUB.md](HUB.md)
+- **One tag for everything.** `helpbites.js` asks the project which embeds it has
+  and adds the chat, feedback board, changelog and onboarding scripts, with your
+  `data-*` attributes and one `HelpBites.push` queue, never adding a script twice.
+  [HUB.md](HUB.md)
+
+**Public hub** [HUB.md](HUB.md)
+
+- **One public page per project.** `/hub/pk_…` gathers the latest changelog
+  entries, the roadmap, the top feedback, the latest blog posts, the published
+  legal documents and the brand kit, a **Start a chat** button and up to 8 links of
+  your own. A section appears only when its feature has something public. Pick the
+  sections and their order; off until you turn it on.
+- **In the project's look.** Accent, logo, typefaces, corner radius and light or
+  dark come from the Brand kit; the page is plain HTML under a strict Content
+  Security Policy.
+- **The same data as JSON.** `GET /v1/hub/{pk}` (public, cached, rate limited) is
+  what the Home tab and the web and SwiftUI snippets read, or build your own UI on.
 
 **Onboarding** [ONBOARDING.md](ONBOARDING.md)
 
@@ -97,6 +119,19 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Unsend and react.** Delete a message, or add a reaction.
 - **Customer context.** The user's record, their recent errors, and the board
   items and changelog entries linked to the conversation.
+- **The customer hub.** The panel beside a conversation also shows the customer's
+  Stripe plan, MRR and subscription status (only when Stripe found them), their
+  earlier conversations, and an Open contact link. [SUPPORT.md](SUPPORT.md)
+- **Feedback they follow.** Link a feedback post to a conversation, or file one as
+  the customer; they follow it and hear when it ships. Web and native.
+  [SUPPORT.md](SUPPORT.md)
+- **Saved replies and FAQs.** A picker beside the reply box searches the project's
+  saved replies (`{{firstName}}` and `{{name}}` are filled from the customer) and
+  FAQs from the assistants' knowledge. Web and native. [SUPPORT.md](SUPPORT.md)
+- **AI draft.** One button writes a reply from the assistant's knowledge and the
+  public thread for you to edit; nothing is sent. [SUPPORT.md](SUPPORT.md)
+- **Save as FAQ.** Turn one of your replies into an FAQ in a knowledge model.
+  [SUPPORT.md](SUPPORT.md)
 - **Email alerts.** Each project emails the addresses you choose when someone
   writes. Users who gave an address get replies by email, with a link back into
   the thread.
@@ -256,7 +291,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   with the template, theme, accent and sections as options; `GET /v1/brand/pk_…`
   for your own press page; a SwiftUI snippet for an in-app kit.
 - **Feeds the rest of HelpBites.** Make any logo the project's logo or icon, and
-  use kit images in onboarding steps.
+  use kit images in onboarding steps. The kit is the project's look: its accent
+  (the one in project Settings), logo, fonts and corner radius are what every public
+  page, the widget and campaign mail wear.
 
 **Pages and headless CMS** [PAGES.md](PAGES.md)
 
@@ -387,7 +424,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   honeypot field and rate limits.
 - **Preferences page.** Topics, unsubscribe from all, and resubscribe.
 - **Compliance by default.** Campaigns require an unsubscribe link and a postal
-  address, and send RFC 8058 one-click unsubscribe headers.
+  address (the project's company profile), and send RFC 8058 one-click
+  unsubscribe headers.
 - **Event webhook.** Signed notifications when a subscription or suppression
   changes.
 
@@ -442,8 +480,18 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   light, dark or system theme, and sign out.
 - **Admin API keys.** Create, rename and revoke `ak_…` keys for scripts and tools.
 - **Projects.** Create a project, then set its site URL, allowed widget origins,
-  reply name, notification addresses, accent colour and logo. See and rotate its
-  secret. An overview page summarises it. [CONNECTING.md](CONNECTING.md)
+  reply name, notification addresses, accent colour (the Brand kit's) and logo.
+  See and rotate its secret. An overview page summarises it. [CONNECTING.md](CONNECTING.md)
+- **Company profile.** Who is behind the product (name, legal name, postal
+  address, email, phone, website, data protection officer), written once in project
+  Settings. Legal documents name it as the operator, campaign footers print its
+  address, and email templates fill in `{{project.company}}`, `{{project.address}}`
+  and `{{project.email}}`. Projects that predate it start from their legal identity
+  and postal address. [LEGAL.md](LEGAL.md)
+- **Legal links in email.** `{{project.privacyUrl}}`, `{{project.termsUrl}}`,
+  `{{project.cookiesUrl}}` and `{{project.refundUrl}}` fill in with the public page
+  of the project's published legal document, kept up to date as documents are
+  published, renamed or deleted. [EMAIL.md](EMAIL.md)
 
 ## 10. Native apps (iPhone, iPad, Mac)
 
@@ -528,6 +576,11 @@ repository. See [EDITIONS.md](EDITIONS.md).
 
 ## 14. Not built yet, and known limits
 
+- **Conversation panel.** A contact with no user id cannot follow a feedback post
+  or have one filed as them (linking still works). Saved replies are inserted from
+  the picker, not by typing `/shortcut`; Save as FAQ lives on a reply's context menu;
+  the AI draft answers the latest customer message only and takes no instructions.
+  [SUPPORT.md](SUPPORT.md)
 - **Native app.** English only: it has no translations yet, while the web panel
   has five more languages. In the hosted edition it shows the plan, usage and locks,
   but subscribing and managing the subscription happen in the web panel.
@@ -556,6 +609,17 @@ repository. See [EDITIONS.md](EDITIONS.md).
   per-step drop-off yet. [ONBOARDING.md](ONBOARDING.md)
 - **Brand kit.** No download-everything archive yet; files download one by one.
   [BRAND.md](BRAND.md)
+- **Public hub and Home tab.** The hub page is English only, has no custom domain
+  (it lives at `/hub/<public key>`) and fixed sections plus up to 8 links. The chat
+  widget's Home tab is web only (the native operator app edits its settings), is
+  not shown in the wide inline layout, and offers every published onboarding flow.
+  `helpbites.js` adds the chat, feedback, changelog and onboarding scripts only,
+  and cannot fetch an identity token for you. [HUB.md](HUB.md)
+- **Company profile and legal links.** Every legal document names the same
+  operator. The legal page links used in email are rebuilt when a document is
+  published, unpublished, renamed or deleted, are not carried by an export or
+  import until the next publish, and are blank while `APP_URL` is unset.
+  [LEGAL.md](LEGAL.md)
 - **Pages and CMS.** Web-only for now: no native screens. No custom domains for
   hosted pages, no scripts in components, no per-field translations, scheduled
   publishing, version history or generated TypeScript types yet. [PAGES.md](PAGES.md)

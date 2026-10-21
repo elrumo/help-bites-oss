@@ -5,6 +5,31 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- The project's look is read one way everywhere (the Brand kit first, then the older Settings accent and logos): the
+  widget, boards, forms, onboarding, legal and blog pages, campaign mail and brand page all agree. **The default accent is
+  now `#4f46e5` everywhere** (forms and onboarding used `#5e6ad2` when a project had no colour); a project that never set a
+  colour sees that change on its forms and flows. Saving the accent in project Settings writes the kit's page accent, and the
+  panel and native app send it only when it changed. `legal.accent`, `legal.logoUrl` and `legal.font` stay as optional overrides
+  for the legal pages. New field `Project.brandLook` (kept by the kit's files).
+- One company profile. New field `Project.company` `{ name, legalName, address, email, phone, website, dpo }`, set with
+  `PATCH /v1/admin/projects/{id}` `{ company }` and shown in project Settings. Legal documents and campaigns read it;
+  `legal.entity` and `marketing.postalAddress` still work (they write to it, and mirror it). Nothing to run: a project that
+  predates it is read from those two fields and the first read of the project list copies them into the profile.
+- Email templates get `{{project.company}}`, `{{project.email}}`, `{{project.privacyUrl}}`, `{{project.termsUrl}}`,
+  `{{project.cookiesUrl}}` and `{{project.refundUrl}}`. The links come from the new field `Project.legalLinks`, rebuilt when
+  a legal document is published, unpublished, renamed or deleted (it needs `APP_URL`; a project whose documents were already
+  published gets its links the next time one is touched). Not carried by exports.
+- Public hub. New field `Project.hub` `{ enabled, title, tagline, sections, links, widgetHome }` (off by default); the page
+  `/hub/{pk}`, `GET /v1/hub/{pk}` and `GET /v1/hub/{pk}/loader`; a Home tab in the chat widget (`hub.widgetHome`); and
+  `public/helpbites.js`, one script tag that adds the chat, feedback, changelog and onboarding scripts (`docs/HUB.md`).
+  Schema (needs `schema:apply`; the container does it on boot): `Project.company`, `Project.hub`, `Project.legalLinks`.
+- The conversation panel is the customer's hub (`docs/SUPPORT.md`). New: `GET /v1/admin/conversations/{id}/context`
+  (plan and MRR from the Stripe attributes, past conversations, linked feedback), `POST …/feedback-posts` (link, unlink or
+  file a post as the customer, who follows it), `POST …/faq` (save an answer as an FAQ, origin `conversation`),
+  `GET …/suggestions` and `POST …/draft` (FAQ and saved-reply picker, AI draft), and `/v1/admin/saved-replies`. Schema
+  (needs `schema:apply`; the container does it on boot): new class `SavedReply`, new fields `Conversation.feedbackPostIds` and
+  `Faq.conversationId`. `conversation.created`, `conversation.status_changed` and `conversation.feedback_linked` are now
+  published. Exports now write feedback posts before conversations, so a link can be carried; older export files have no links and import as before.
 - Shipping connects the features. When a changelog entry goes public, the followers of the feedback posts it
   links (and of the posts of the board items it links) get one "Shipped" email, once (new field
   `ChangelogEntry.followersNotifiedAt`; new domain event `changelog.entry.published`; it needs the feedback board's

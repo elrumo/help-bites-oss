@@ -113,6 +113,7 @@ const { post } = await api('/v1/feedback', { token: userToken, method: 'POST', b
 const keyA = await api('/v1/admin/api-keys', { ...A, method: 'POST', body: { name: `${MARK} key` } })
 const { flow } = await api('/v1/admin/onboarding/flows', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} flow` } })
 const { form: leadForm } = await api('/v1/admin/lead-forms', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} form` } })
+const { reply: savedReply } = await api('/v1/admin/saved-replies', { ...A, method: 'POST', body: { project: project.id, title: `${MARK} reply`, body: `${MARK} text`, shortcut: MARK } })
 await api(`/v1/admin/brand?project=${project.id}`, { ...A, method: 'PATCH', body: { tagline: `${MARK} tagline` } })
 const brandUpload = await maybe('brand file (needs S3)', async () => {
   const res = await upload('/v1/admin/brand/assets', { project: project.id, name: `${MARK} logo` }, A)
@@ -166,6 +167,17 @@ await attempt('mark A\'s conversation read', `/v1/admin/conversations/${conversa
 await attempt('close A\'s conversation', `/v1/admin/conversations/${conversationId}/status`, { method: 'POST', body: { status: 'done' } })
 await attempt('delete A\'s message', `/v1/admin/messages/${messageId}`, { method: 'DELETE' })
 await attempt('react to A\'s message', `/v1/admin/messages/${messageId}/reactions`, { method: 'POST', body: { emoji: '👍' } })
+// The customer panel and what hangs off it.
+await attempt('read the customer panel of A\'s conversation', `/v1/admin/conversations/${conversationId}/context`)
+await attempt('search replies and FAQs for A\'s conversation', `/v1/admin/conversations/${conversationId}/suggestions?q=${MARK}`)
+await attempt('draft a reply in A\'s conversation', `/v1/admin/conversations/${conversationId}/draft`, { method: 'POST' })
+await attempt('link a post to A\'s conversation', `/v1/admin/conversations/${conversationId}/feedback-posts`, { method: 'POST', body: { postId: post.id } })
+await attempt('file a post from A\'s conversation', `/v1/admin/conversations/${conversationId}/feedback-posts`, { method: 'POST', body: { create: { title: 'pwned' } } })
+await attempt('save A\'s conversation as an FAQ', `/v1/admin/conversations/${conversationId}/faq`, { method: 'POST', body: { question: 'pwned?', answer: 'pwned' } })
+await attempt('list A\'s saved replies', `/v1/admin/saved-replies?project=${project.id}`)
+await attempt('add a saved reply to A\'s project', '/v1/admin/saved-replies', { method: 'POST', body: { project: project.id, title: 'pwned', body: 'pwned' } })
+await attempt('edit A\'s saved reply', `/v1/admin/saved-replies/${savedReply.id}`, { method: 'PATCH', body: { body: 'pwned' } })
+await attempt('delete A\'s saved reply', `/v1/admin/saved-replies/${savedReply.id}`, { method: 'DELETE' })
 await attempt('rename A\'s project', `/v1/admin/projects/${project.id}`, { method: 'PATCH', body: { name: 'pwned' } })
 await attempt('read A\'s project secret', `/v1/admin/projects/${project.id}/secret`)
 await attempt('rotate A\'s project secret', `/v1/admin/projects/${project.id}/rotate-secret`, { method: 'POST' })
@@ -339,6 +351,7 @@ check((await call(`/v1/admin/conversations/${conversationId}`, A)).json.conversa
 check((await call(`/v1/admin/projects/${project.id}/secret`, A)).json.secret === secret, 'A\'s project secret is unchanged')
 check((await call(`/v1/admin/emails/${master.template.id}`, A)).json.template?.name === `${MARK} master`, 'A\'s master template is untouched')
 check((await call(`/v1/admin/support-agents/${assistant.id}`, A)).status === 200, 'A\'s assistant still exists')
+check((await call(`/v1/admin/saved-replies?project=${project.id}`, A)).json.replies?.some(reply => reply.id === savedReply.id && reply.body === `${MARK} text`), 'A\'s saved reply is untouched')
 check((await call(`/v1/admin/knowledge/models/${model.id}`, A)).json.model?.name === `${MARK} model`, 'A\'s knowledge model is untouched')
 const flowAfter = (await call(`/v1/admin/onboarding/flows/${flow.id}`, A)).json.flow
 check(flowAfter?.name === `${MARK} flow` && flowAfter.status === 'draft', 'A\'s onboarding flow is untouched')

@@ -273,7 +273,7 @@ export async function createConversation(project: ParseObject, endUser: ParseObj
   if (actor === 'user') await reserveUsage(await projectWorkspaceId(project), 'conversations')
   await row.save(null, MASTER)
   void syncConversationForSearch(row)
-  emitDomainEventLater(project, 'conversation.created', { conversationId: row.id, contactId: endUser.id, type: type.key, startedBy: actor })
+  emitDomainEventLater(project, 'conversation.created', { conversationId: row.id, contact: { id: endUser.id, externalId: endUser.get('externalId') || '', email: endUser.get('email') || '' }, type: type.key })
   return row
 }
 
@@ -501,7 +501,7 @@ export async function updateConversation(conversation: ParseObject, input: Recor
 
 /** The `conversation.status_changed` domain event. Fire and forget: the status is already saved. */
 function emitStatusChanged(conversation: ParseObject, from: string, to: string, statusCategory: string): void {
-  emitDomainEventLater(conversation.get('project'), 'conversation.status_changed', { conversationId: conversation.id, contactId: pointerId(conversation.get('endUser')), from, to, statusCategory })
+  emitDomainEventLater(conversation.get('project'), 'conversation.status_changed', { conversationId: conversation.id, from, to, statusCategory })
 }
 
 export async function appendInternalNote(conversation: ParseObject, senderName: string, agent: ParseObject, body: string): Promise<ParseObject> {

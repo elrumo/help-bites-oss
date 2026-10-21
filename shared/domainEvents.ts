@@ -14,7 +14,7 @@ export const DOMAIN_EVENTS: DomainEventDef[] = [
   { type: 'contact.subscription_changed', group: 'contact', label: 'Subscription changed', description: 'Someone subscribed, unsubscribed or changed the topics they opted out of.' },
   { type: 'conversation.created', group: 'conversation', label: 'Conversation started', description: 'A customer opened a new conversation.' },
   { type: 'conversation.status_changed', group: 'conversation', label: 'Conversation status changed', description: 'A conversation was resolved, closed or reopened.' },
-  { type: 'conversation.feedback_linked', group: 'conversation', label: 'Conversation linked to a post', description: 'An operator linked a conversation to a feedback post.' },
+  { type: 'conversation.feedback_linked', group: 'conversation', label: 'Conversation linked to a post', description: 'An operator linked a conversation to a feedback post, or took the link off (data.linked).' },
   { type: 'feedback.post.created', group: 'feedback', label: 'Feedback post created', description: 'A new post on the feedback board.' },
   { type: 'feedback.post.status_changed', group: 'feedback', label: 'Feedback status changed', description: 'A post moved to another status (planned, in progress, done).' },
   { type: 'feedback.post.voted', group: 'feedback', label: 'Feedback vote', description: 'Someone voted on a post.' },
