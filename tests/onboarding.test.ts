@@ -12,7 +12,7 @@ describe('onboarding flows', () => {
       { id: 'a', title: 'Second' },
       { title: '', body: '' }
     ])
-    expect(steps[0]).toEqual({ id: 'a', title: 'Hello', body: 'World', imageUrl: 'https://cdn.test/a.png', imageAlt: '', buttonLabel: '' })
+    expect(steps[0]).toEqual({ id: 'a', title: 'Hello', body: 'World', imageUrl: 'https://cdn.test/a.png', imageAlt: '', buttonLabel: '', pricingTable: '' })
     expect(steps[1]!.id).not.toBe('a')
     expect(errors).toEqual(['Step 3 is empty'])
 

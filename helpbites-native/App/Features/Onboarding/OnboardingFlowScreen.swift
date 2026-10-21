@@ -15,6 +15,8 @@ struct OnboardingFlowScreen: View {
   @State private var draft: OnboardingDraft?
   /// The project's brand kit images, offered as step pictures.
   @State private var brandImages: [BrandAsset] = []
+  /// The project's pricing tables, offered under a step (a paywall at the end of the tour).
+  @State private var pricingTables: [PricingTableChoice] = []
   @State private var loading = true
   @State private var error = ""
   /// save, publish, unpublish or delete while that request runs.
@@ -118,7 +120,10 @@ struct OnboardingFlowScreen: View {
   }
 
   private func preview(_ draft: OnboardingDraft) -> some View {
-    OnboardingPreview(source: draft.steps, locale: draft.locale, translations: draft.translations, style: draft.style, options: draft.options, projectAccent: projectAccent)
+    OnboardingPreview(
+      source: draft.steps, locale: draft.locale, translations: draft.translations, style: draft.style, options: draft.options, projectAccent: projectAccent,
+      pricing: Dictionary(pricingTables.compactMap { table in table.published.map { (table.key, $0) } }, uniquingKeysWith: { first, _ in first })
+    )
   }
 
   private func form(_ flow: OnboardingFlow, _ draft: Binding<OnboardingDraft>) -> some View {
@@ -148,7 +153,7 @@ struct OnboardingFlowScreen: View {
       ForEach(draft.steps) { $step in
         let index = draft.wrappedValue.steps.firstIndex { $0.id == step.id } ?? 0
         OnboardingStepCard(
-          step: $step, index: index, count: draft.wrappedValue.steps.count, projectId: projectId, brandImages: brandImages,
+          step: $step, index: index, count: draft.wrappedValue.steps.count, projectId: projectId, brandImages: brandImages, pricingTables: pricingTables,
           move: { draft.wrappedValue.steps.move(index, by: $0) },
           remove: { draft.wrappedValue.steps.removeAll { $0.id == step.id } }
         )
@@ -216,6 +221,10 @@ struct OnboardingFlowScreen: View {
     struct Kit: Decodable, Sendable { let assets: [BrandAsset] }
     if let kit: Kit = try? await session.get("/v1/admin/brand", query: ["project": projectId]) {
       brandImages = kit.assets.filter { $0.mime.hasPrefix("image/") }
+    }
+    struct Tables: Decodable, Sendable { let tables: [PricingTableChoice] }
+    if let list: Tables = try? await session.get("/v1/admin/pricing-tables", query: ["project": projectId]) {
+      pricingTables = list.tables
     }
   }
 
@@ -316,6 +325,7 @@ private struct OnboardingStepCard: View {
   let count: Int
   let projectId: String
   let brandImages: [BrandAsset]
+  let pricingTables: [PricingTableChoice]
   let move: (Int) -> Void
   let remove: () -> Void
   @Environment(SessionStore.self) private var session
@@ -335,7 +345,26 @@ private struct OnboardingStepCard: View {
         OnboardingTextField(label: "Image description", text: $step.imageAlt, limit: OnboardingLimits.alt, placeholder: "What the picture shows, for screen readers")
       }
       OnboardingTextField(label: "Button label", text: $step.buttonLabel, limit: OnboardingLimits.label, placeholder: index == count - 1 ? "Get started" : "Continue")
+      if !pricingTables.isEmpty || !step.pricingTable.isEmpty { pricing }
     })
+  }
+
+  /// A pricing table of the project under the text; the step's button becomes the quiet way on.
+  private var pricing: some View {
+    let chosen = pricingTables.first { $0.key == step.pricingTable }
+    let draftOnly = !step.pricingTable.isEmpty && chosen?.isPublished != true
+    return LabeledField(label: "Pricing table", hint: draftOnly
+      ? "This table is a draft: the step shows its text only until you publish the table."
+      : "Shows the table under the text: a paywall at the end of the tour. The step's button becomes the quiet way on.") {
+      Picker("Pricing table", selection: $step.pricingTable) {
+        Text("None").tag("")
+        ForEach(pricingTables, id: \.key) { table in
+          Text(table.isPublished ? table.name : "\(table.name) (draft)").tag(table.key)
+        }
+        if !step.pricingTable.isEmpty && chosen == nil { Text(step.pricingTable).tag(step.pricingTable) }
+      }
+      .pickerStyle(.menu).labelsHidden()
+    }
   }
 
   private var image: some View {

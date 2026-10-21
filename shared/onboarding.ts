@@ -1,4 +1,5 @@
 import { DEFAULT_CONTENT_LOCALE, normalizeLocale } from './locales'
+import { PRICING_KEY, type PublicPricingTable } from './pricing'
 import { safeHttpUrl } from './support'
 
 // Onboarding flows: a few screens an app shows a new user. The operator edits a
@@ -28,7 +29,12 @@ export type OnboardingStep = {
   imageAlt: string
   /** '' uses the client's own: Continue, and Get started on the last step. */
   buttonLabel: string
+  /** The key of a pricing table of the same project the step shows (a paywall at the end of a tour), or ''. */
+  pricingTable: string
 }
+
+/** A step as apps get it: a step with a pricing table carries the published table, or null while it is not published. */
+export type PublicOnboardingStep = OnboardingStep & { pricing?: PublicPricingTable | null }
 
 export type OnboardingStyle = {
   /** '#rrggbb', or '' for the project's accent. */
@@ -62,7 +68,7 @@ export type PublicOnboardingFlow = {
   project: { name: string, logoUrl: string }
   style: OnboardingStyle
   options: OnboardingOptions
-  steps: OnboardingStep[]
+  steps: PublicOnboardingStep[]
 }
 
 export const DEFAULT_ONBOARDING_STYLE: OnboardingStyle = { accent: '', background: '', text: '', radius: 20, font: 'system' }
@@ -89,9 +95,9 @@ export function onboardingKeyFrom(name: string): string {
 export function starterSteps(appName: string): OnboardingStep[] {
   const app = appName.trim() || 'the app'
   return [
-    { id: newStepId(), title: `Welcome to ${app}`, body: 'Say in one sentence what people can do here that they could not before.', imageUrl: '', imageAlt: '', buttonLabel: '' },
-    { id: newStepId(), title: 'Show the one thing that matters', body: 'Point at the feature people should try first, and what they get from it.', imageUrl: '', imageAlt: '', buttonLabel: '' },
-    { id: newStepId(), title: 'You are all set', body: 'Tell people where to find help if they get stuck.', imageUrl: '', imageAlt: '', buttonLabel: '' }
+    { id: newStepId(), title: `Welcome to ${app}`, body: 'Say in one sentence what people can do here that they could not before.', imageUrl: '', imageAlt: '', buttonLabel: '', pricingTable: '' },
+    { id: newStepId(), title: 'Show the one thing that matters', body: 'Point at the feature people should try first, and what they get from it.', imageUrl: '', imageAlt: '', buttonLabel: '', pricingTable: '' },
+    { id: newStepId(), title: 'You are all set', body: 'Tell people where to find help if they get stuck.', imageUrl: '', imageAlt: '', buttonLabel: '', pricingTable: '' }
   ]
 }
 
@@ -118,15 +124,18 @@ export function validateOnboardingSteps(value: unknown): { steps: OnboardingStep
     seen.add(id)
     const imageUrl = raw.imageUrl ? safeHttpUrl(raw.imageUrl) : ''
     if (raw.imageUrl && !imageUrl) errors.push(`Step ${n}: imageUrl must be an http(s) URL`)
+    const pricingTable = typeof raw.pricingTable === 'string' ? raw.pricingTable.trim().toLowerCase() : ''
+    if (pricingTable && !PRICING_KEY.test(pricingTable)) errors.push(`Step ${n}: pricingTable is the key of a pricing table`)
     const step: OnboardingStep = {
       id,
       title: text(raw, 'title', ONBOARDING_LIMITS.title, errors, `Step ${n}: title`),
       body: text(raw, 'body', ONBOARDING_LIMITS.body, errors, `Step ${n}: body`),
       imageUrl,
       imageAlt: text(raw, 'imageAlt', ONBOARDING_LIMITS.alt, errors, `Step ${n}: imageAlt`),
-      buttonLabel: text(raw, 'buttonLabel', ONBOARDING_LIMITS.label, errors, `Step ${n}: buttonLabel`)
+      buttonLabel: text(raw, 'buttonLabel', ONBOARDING_LIMITS.label, errors, `Step ${n}: buttonLabel`),
+      pricingTable: PRICING_KEY.test(pricingTable) ? pricingTable : ''
     }
-    if (!step.title && !step.body && !step.imageUrl) errors.push(`Step ${n} is empty`)
+    if (!step.title && !step.body && !step.imageUrl && !step.pricingTable) errors.push(`Step ${n} is empty`)
     return step
   })
   return { steps, errors }
@@ -178,7 +187,7 @@ export function onboardingStepsOf(value: unknown): OnboardingStep[] {
   if (!Array.isArray(value)) return []
   return value.map((item) => {
     const s = record(item)
-    return { id: String(s.id || ''), title: String(s.title || ''), body: String(s.body || ''), imageUrl: String(s.imageUrl || ''), imageAlt: String(s.imageAlt || ''), buttonLabel: String(s.buttonLabel || '') }
+    return { id: String(s.id || ''), title: String(s.title || ''), body: String(s.body || ''), imageUrl: String(s.imageUrl || ''), imageAlt: String(s.imageAlt || ''), buttonLabel: String(s.buttonLabel || ''), pricingTable: String(s.pricingTable || '') }
   })
 }
 

@@ -124,3 +124,15 @@ test('the demo is on the unlimited plan, so the panel shows no plan or limits', 
   expect(await demoApi<any>('/admin/workspace/ai')).toEqual({ ai: null, platform: { available: true, metered: false }, allowed: true })
   await expect(demoApi('/admin/workspace/ai', { method: 'PUT', body: { endpoint: 'https://api.openai.com/v1' } })).rejects.toMatchObject({ statusCode: 403 })
 })
+
+test('the demo shows a published pricing table with written prices', async () => {
+  const { tables } = await demoApi<any>('/admin/pricing-tables', { query: { project: 'acme' } })
+  expect(tables).toHaveLength(1)
+  const { table } = await demoApi<any>(`/admin/pricing-tables/${tables[0].id}`)
+  expect(table.published.plans.map((p: any) => p.key)).toEqual(['starter', 'pro', 'team'])
+  expect(table.published.plans[1].prices.year.amount).toBe(120)
+  expect((await demoApi<any>('/admin/stripe/catalog', { query: { project: 'acme' } })).connected).toBe(false)
+  const stats = await demoApi<any>(`/admin/pricing-tables/${tables[0].id}/stats`, { query: { days: 30 } })
+  expect(stats.total.visitors).toBe(stats.days.reduce((sum: number, d: any) => sum + d.visitors, 0))
+  expect(stats.total.revenue.usd).toBeGreaterThan(0)
+})

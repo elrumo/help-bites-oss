@@ -39,6 +39,8 @@ export const IMPORT_ORDER = [
   'LegalDocument',
   'LegalDocumentVersion',
   'OnboardingFlow',
+  'PricingTable',
+  'PricingStat',
   'CmsComponent',
   'CmsEntry',
   'CmsChatMessage',
@@ -97,14 +99,18 @@ export const ID_PATHS: Record<string, Record<string, string>> = {
   Sequence: { 'steps.*.template': 'EmailTemplate' },
   LeadForm: { segment: 'ContactSegment', sequence: 'Sequence', welcomeTemplate: 'EmailTemplate', confirmTemplate: 'EmailTemplate' },
   EndUser: { 'leadForms.*': 'LeadForm', 'origin.id': 'LeadForm' },
-  ContactSegment: { 'filter.rules.*.value': 'LeadForm' }
+  ContactSegment: { 'filter.rules.*.value': 'LeadForm' },
+  // Its pointers move by themselves; the copies the reports query by need the same new ids.
+  PricingStat: { tableId: 'PricingTable', projectId: 'Project' }
 }
 
 /** Fields that mean something only on the instance they came from. */
 export const DROP_FIELDS: Record<string, string[]> = {
   Project: ['repos', 'repoIds', 'telegram', 'changelogRun'],
   EmailTemplate: ['lastActorId'],
-  EmailLog: ['actorId']
+  EmailLog: ['actorId'],
+  // The old instance's Stripe refusal; the next checkout tells the new one.
+  PricingTable: ['checkoutError']
 }
 
 /** A plan feature a class needs: without it the class is left out of the import, with a note. */

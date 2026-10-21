@@ -8,7 +8,7 @@ every feature change must update (see [CLAUDE.md](../CLAUDE.md)).
 Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 [EDITIONS.md](EDITIONS.md). Section 14 lists what is not built yet.
 
-## 1. Chat widget and onboarding in your app
+## 1. Chat widget, onboarding and pricing in your app
 
 **Chat widget** [CONNECTING.md](CONNECTING.md)
 
@@ -46,17 +46,54 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   the web script also takes CSS variables and `::part()` styles, and calls you
   back on each step, completion and skip.
 - **A live preview** in the panel, drawn by the same script your site loads.
+- **A paywall at the end.** A step can show a pricing table under its text;
+  choosing a plan finishes the tour.
+
+**Pricing tables** [PRICING.md](PRICING.md)
+
+- **Five templates.** Cards side by side, compact rows, a mobile paywall with
+  selectable prices, a comparison table, or one wide spotlight plan; your site
+  can pick another when it shows the table.
+- **Stripe as the source of truth, optionally.** Link a plan to a Stripe product
+  or price and its prices come from Stripe (read live, kept five minutes); the
+  names, descriptions, features and buttons stay yours. Plans without Stripe show
+  the prices you write. **Check before publishing** names what would not work.
+- **Weekly, monthly, yearly and one-time prices**, with a toggle and the best
+  yearly saving as a badge, trials, a label for plans with no price, and a line
+  under the price.
+- **Currencies.** Stripe's currency options and written prices in other
+  currencies; a visitor's own currency (`data-currency="auto"`) when every price
+  has it, and a switcher.
+- **Buttons.** Stripe Checkout (HelpBites opens the session, with trials and
+  promotion codes), a Stripe Payment Link, or any link of yours with `{plan}` and
+  `{interval}` filled in.
+- **One script tag, a hosted page or one Swift file.** `pricing.js` (MIT) draws
+  the table in a shadow root with `data-*` options, CSS variables and `::part()`
+  hooks; a copy-paste SwiftUI file draws the cards and buys through StoreKit or a
+  link.
+- **Features by plan.** Ticks or values ("10", "Unlimited"), headings,
+  tooltips, and "Everything in Starter, plus" lists.
+- **Numbers and A/B tests.** Views, visitors, clicks, checkouts, purchases and
+  revenue (read from Stripe) by day and plan. Split visitors between up to four
+  tables by weight, each visitor kept on one; the results give lift and how sure
+  a two-proportion test is, and the winner can replace the original.
+- **Suggest with AI.** Proposes plans, features and prices from the project's
+  GitHub repos, Stripe, revenue and the table's numbers; nothing changes until
+  you apply it.
+- **A live preview** in the panel and the native app, light and dark, desktop and
+  phone.
 
 **Languages and AI translation** [LANGUAGES.md](LANGUAGES.md)
 
-- **Onboarding, legal documents, emails and lead forms in your users' languages.**
-  A flow, an email template and a lead form carry a translation per language; a
-  legal document has a linked copy per language, each with its own page.
+- **Onboarding, pricing, legal documents, emails and lead forms in your users'
+  languages.** A flow, a pricing table, an email template and a lead form carry a
+  translation per language; a legal document has a linked copy per language, each
+  with its own page.
 - **Translate with AI, or write it.** One button per language fills what is
   missing through the workspace's AI (or the server's gateway) and keeps what you
   edited. Placeholders, links and HTML survive, or the string stays in the
   original language.
-- **Apps pick the language.** `?locale=` on the onboarding, lead form and email reads,
+- **Apps pick the language.** `?locale=` on the onboarding, pricing, lead form and email reads,
   `locale` on the send API (per recipient too), `data-locale` on the web script
   and a `locale:` parameter on the Swift snippet. A language that is missing gets
   the original.
@@ -444,7 +481,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   starting a new conversation.
 - **Most of the panel.** Projects and their settings, team, API keys, the developer
   page, contacts, knowledge, assistants, tickets, feedback, board, changelog, legal,
-  onboarding (with a live preview), the brand kit, the email editor with its AI
+  onboarding (with a live preview), pricing tables (with a live preview, results,
+  A/B tests and AI suggestions), the brand kit, the email editor with its AI
   designer, email log and suppressions, campaigns, flags, and errors.
 - **Push notifications.** A new customer message can notify the device. This needs
   Apple push (APNs) credentials on the server.
@@ -459,7 +497,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **AI assistants (MCP).** An MCP server at `/mcp` lets Claude, ChatGPT, Cursor or
   any MCP client work in a workspace as the operator who connected it: read and reply
   in the inbox, add notes, triage the feedback board, move board items, write and
-  publish changelog entries, browse errors. Sign in with the browser (OAuth with
+  publish changelog entries, browse errors, and edit, publish, A/B test and get AI
+  suggestions for pricing tables. Sign in with the browser (OAuth with
   PKCE and dynamic registration, for claude.ai and ChatGPT) or paste an admin API
   key. Each tool is a `/v1` call, so the operator's role, the workspace and a key's
   project limit apply; connections are API keys you can revoke in **Settings → API
@@ -472,10 +511,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   webhooks.
 - **Idempotency.** Message sends and email sends accept idempotency keys.
 - **Health checks.** `/v1/health` and `/v1/health/live`.
-- **Embed scripts.** `widget.js`, `feedback.js`, `changelog.js`, `onboarding.js`
-  and `brand.js`, all MIT-licensed, so the site that embeds them carries no
-  copyleft obligations. Onboarding and the brand kit also have copy-paste SwiftUI
-  snippets.
+- **Embed scripts.** `widget.js`, `feedback.js`, `changelog.js`, `onboarding.js`,
+  `pricing.js`, `forms.js` and `brand.js`, all MIT-licensed, so the site that embeds
+  them carries no copyleft obligations. Onboarding, pricing tables, lead forms and
+  the brand kit also have copy-paste SwiftUI snippets.
 - **CLI.** `helpbites changelog` turns git changes into changelog entries. It never
   pushes. [cli/README.md](../cli/README.md)
 - **Scripts.** Backfills for feedback, changelog and contacts; a reindex; a demo
@@ -533,7 +572,7 @@ repository. See [EDITIONS.md](EDITIONS.md).
 - **Pages and CMS.** Web-only for now: no native screens. No custom domains for
   hosted pages, no scripts in components, no per-field translations, scheduled
   publishing, version history or generated TypeScript types yet. [PAGES.md](PAGES.md)
-- **Translations.** Onboarding, legal documents, template emails and lead forms have them;
+- **Translations.** Onboarding, pricing tables, legal documents, template emails and lead forms have them;
   campaigns, sequences, the mail HelpBites sends itself, the chat, feedback and
   changelog embeds and CMS pages do not yet, and a contact has no language of its
   own. [LANGUAGES.md](LANGUAGES.md)
@@ -542,6 +581,10 @@ repository. See [EDITIONS.md](EDITIONS.md).
   form never overwrites an answer a contact already has. Files are not scanned for
   malware (only their type and size are checked), and the sequence a form starts
   is sent in its template's own language. [FORMS.md](FORMS.md)
+- **Pricing tables.** Fixed prices only: metered and tiered Stripe prices are left
+  out. No Stripe Customer Portal button (a "Manage plan" button is a link of
+  yours). Purchases are counted from Stripe, not the App Store, and the Swift
+  snippet draws the cards template only. [PRICING.md](PRICING.md)
 - **Blog.** The native app edits a post's Markdown (or an imported post's HTML)
   as text, with a preview: the rich editor is web-only. No translations of posts
   or the embed, no custom domain for the hosted blog, no paid tiers for
