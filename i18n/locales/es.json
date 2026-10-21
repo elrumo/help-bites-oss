@@ -2692,7 +2692,7 @@
         },
         "blog": {
           "term": "Un blog con boletín",
-          "desc": "Escribe entradas y páginas en un editor enriquecido y publícalas en un blog alojado con tu propio diseño, en tu propio sitio o por RSS, y envíalas por correo a tus suscriptores. Entradas solo para miembros, campos SEO, un sitemap y una importación desde Ghost. Los lectores reaccionan y comentan."
+          "desc": "Escribe entradas y páginas en un editor enriquecido y publícalas en un blog alojado con tu propio diseño, en tu propio sitio o por RSS, y envíalas por correo a tus suscriptores. Un asistente de IA redacta o mejora entradas a partir de tus repos de GitHub. Entradas solo para miembros, campos SEO, un sitemap y una importación desde Ghost. Los lectores reaccionan y comentan."
         },
         "followers": {
           "term": "Los seguidores reciben las novedades",

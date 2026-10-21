@@ -2845,7 +2845,7 @@
         },
         "blog": {
           "term": "A blog with a newsletter",
-          "desc": "Write posts and pages in a rich editor and publish them on a hosted blog in your own design, in your own site or by RSS, and email them to your subscribers. Members-only posts, SEO fields, a sitemap and an import from Ghost. Readers react and comment."
+          "desc": "Write posts and pages in a rich editor and publish them on a hosted blog in your own design, in your own site or by RSS, and email them to your subscribers. An AI writing helper drafts or improves posts from your GitHub repos. Members-only posts, SEO fields, a sitemap and an import from Ghost. Readers react and comment."
         },
         "followers": {
           "term": "Followers get the news",

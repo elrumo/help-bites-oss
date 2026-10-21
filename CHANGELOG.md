@@ -5,6 +5,9 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Write with AI in the blog editor** (`POST /v1/admin/blog/ai`, `docs/BLOG.md`). Drafts, continues or improves a post, or suggests
+  its title, excerpt, search description and tags, from the project's linked GitHub repos (read-only). It uses the workspace's AI
+  provider or the server's gateway, so a self-hoster needs one configured (as for the other AI features); no schema or env changes.
 - Events and webhook endpoints (`docs/EVENTS.md`). Everything that happens in a project is published as a domain event; the
   project's original single event webhook keeps the events it always had, and `WebhookEndpoint` rows (up to 10 a project, each with its
   own secret and an event filter) receive any of them: `/v1/admin/projects/{id}/webhooks`. A sequence can now start from any
