@@ -408,7 +408,7 @@ export function parsePostRef(value: unknown): number | null {
  * removed, so `#404` in a code sample or `https://x.dev/a#12` never reads as a
  * reference and `mailto:a@b.c` never reads as a mention.
  */
-function stripNonProse(body: string): string {
+export function stripNonProse(body: string): string {
   return String(body || '')
     .replace(/^[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:^[ \t]*\1[^\n]*$|(?![\s\S]))/gm, ' ')
     .replace(/(`+)[\s\S]*?\1/g, ' ')

@@ -12,6 +12,7 @@ import { normalizeBlogConfig, validateBlogConfig, type BlogConfig } from '#share
 import { normalizeFlags, validateFlags, type FeatureFlag } from '#shared/flags'
 import { normalizeMarketingConfig, validateMarketingConfig, type MarketingConfig } from '#shared/marketing'
 import { normalizeBrandConfig, validateBrandConfig } from '#shared/brand'
+import { normalizeHubConfig, validateHubConfig, type HubConfig } from '#shared/hub'
 import { companyEntity, type CompanyProfile } from '#shared/company'
 import { applyCompany, companyOf } from './company'
 import { legalLinksOf, type LegalLinks } from './legalLinks'
@@ -77,6 +78,8 @@ export type AdminProject = PublicProject & {
   legal: LegalConfig
   /** Who is behind the product, written once; Legal and campaigns read it (shared/company.ts). */
   company: CompanyProfile
+  /** The public hub page and the chat widget's Home tab (shared/hub.ts). */
+  hub: HubConfig
   /** The public pages of the published legal documents, as `{{project.privacyUrl}}` and friends; '' for a type with none. */
   legalLinks: LegalLinks
   /** Blog options. Admin-only; what readers see is the published posts and GET /v1/blog. */
@@ -268,6 +271,12 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     // The postal address campaigns carry is the company's.
     if (input.marketing && typeof input.marketing === 'object' && 'postalAddress' in input.marketing) applyCompany(project, { address: config.postalAddress })
   }
+  if (input.hub !== undefined) {
+    // Partial: only the keys sent change (`sections` and `links` are whole lists).
+    const { config, errors } = validateHubConfig(input.hub, normalizeHubConfig(project.get('hub')))
+    if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
+    project.set('hub', config)
+  }
   // Last, so a request that sends both the older fields and the profile gets the profile.
   if (input.company !== undefined) applyCompany(project, input.company)
   if ('eventWebhookUrl' in input) {
@@ -368,6 +377,7 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
     legal: { ...normalizeLegalConfig(project.get('legal')), entity: companyEntity(company) },
     company,
     legalLinks: legalLinksOf(project),
+    hub: normalizeHubConfig(project.get('hub')),
     blog: normalizeBlogConfig(project.get('blog')),
     errors: { connected: Boolean(errors.dsn), provider: errors.dsn ? tracker.id : '', providerName: errors.dsn ? tracker.name : '', dsn: String(errors.dsn || ''), url: issuesUrlOf(errors), alertWebhookUrl: errors.dsn && tracker.manualAlerts ? errorWebhookUrl(project, errors) : '' },
     errorLinks: errorLinksOf(project).map(link => errorLinkView(project, link)),
