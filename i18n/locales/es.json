@@ -789,7 +789,8 @@
       "subscription": "Suscripción",
       "billing": "Facturación",
       "spentOver": "Gasto superior a",
-      "spentMoreThan": "Gasto superior a"
+      "spentMoreThan": "Gasto superior a",
+      "origin": "Añadido mediante"
     },
     "billingFilter": {
       "all": "Cualquier facturación",
@@ -876,7 +877,9 @@
         "sources": "Fuente",
         "createdAt": "Añadido",
         "lastSeenAt": "Visto por última vez",
-        "updatedAt": "Actualizado"
+        "updatedAt": "Actualizado",
+        "origin": "Añadido mediante",
+        "leadForms": "Formulario"
       },
       "op": {
         "is": "es",
@@ -901,7 +904,8 @@
         "days": "Días",
         "date": "Fecha",
         "removeRule": "Quitar regla"
-      }
+      },
+      "pickForm": "Elige un formulario"
     },
     "form": {
       "email": "Correo",
@@ -953,7 +957,11 @@
       "conversations": "Conversaciones",
       "noneYet": "Todavía ninguna.",
       "nothingSent": "Aún no se ha enviado nada.",
-      "erase": "Borrar a esta persona"
+      "erase": "Borrar a esta persona",
+      "addedVia": "Añadido mediante",
+      "leadForms": "Formularios",
+      "deletedForm": "Un formulario eliminado",
+      "files": "Archivos enviados"
     },
     "empty": {
       "title": "Aún no hay contactos",
@@ -1006,7 +1014,9 @@
       "showPeople": "Ver estas personas",
       "namePlaceholder": "Usuarios Pro vistos este mes",
       "ruleCount": "{count} regla | {count} reglas",
-      "peopleCount": "{count} personas"
+      "peopleCount": "{count} personas",
+      "auto": "Auto",
+      "autoHint": "Creado para un formulario. Cámbiale el nombre, edítalo o elimínalo como cualquier otro segmento."
     },
     "sources": {
       "connect": "Conectar una base de datos",
@@ -1078,6 +1088,17 @@
       "consentSubscribed": "Todas aquí aceptaron el correo de marketing",
       "consentSubscribedDescription": "Se registra como su consentimiento. Nadie que se haya dado de baja vuelve a suscribirse.",
       "saveAndSync": "Guardar y sincronizar"
+    },
+    "origin": {
+      "app": "Usuario de la app",
+      "lead_form": "Formulario",
+      "signup": "Alta en la newsletter",
+      "import": "Importación CSV",
+      "sync": "Sincronización de base de datos",
+      "stripe": "Stripe",
+      "api": "API",
+      "panel": "Añadido a mano",
+      "feedback": "Importado de comentarios"
     }
   },
   "campaigns": {
@@ -2593,7 +2614,7 @@
         },
         "forms": {
           "term": "Listas de espera y formularios de contacto",
-          "desc": "Reúne interesados antes de lanzar con un simple campo de email o un formulario a tu medida, en tu web, en una página alojada o en tu app. Cada registro se convierte en un contacto con su propio segmento, doble confirmación, un email de bienvenida y una secuencia."
+          "desc": "Reúne interesados antes de lanzar con un simple campo de email o un formulario a tu medida, con subida de archivos y en el idioma de tus visitantes, en tu web, en una página alojada o en tu app. Cada registro se convierte en un contacto con su propio segmento, doble confirmación, un email de bienvenida y una secuencia."
         }
       },
       "team": {
@@ -3736,6 +3757,175 @@
         "mobile": "Ancho de móvil",
         "previewHint": "Tus cambios sin guardar, sin los archivos privados, igual que los omite la página pública."
       }
+    },
+    "forms": {
+      "guide": "Guía",
+      "newForm": "Nuevo formulario",
+      "newFormDescription": "Empieza con un solo campo de correo, una lista de espera o un formulario más largo. Podrás cambiar cada campo después.",
+      "title": "Formularios de contacto",
+      "intro": "Reúne interesados antes de lanzar: una lista de espera, un campo de “avísame” o un formulario de interés, en tu web, en tu app o en una página alojada. Quien se registra se convierte en un contacto, entra en el segmento del formulario y puede recibir un correo de bienvenida y una secuencia.",
+      "emptyTitle": "Aún no hay formularios",
+      "emptyDescription": "Crea un formulario, añade una línea a tu web y verás llegar a los interesados en Contactos.",
+      "leadCount": "{count} interesado | {count} interesados",
+      "confirmedCount": "{count} en la lista",
+      "live": "Activo",
+      "closed": "Cerrado",
+      "startFrom": "Empezar con",
+      "presets": {
+        "email": "Solo correo",
+        "emailHint": "Un campo de correo y un botón, en una fila.",
+        "waitlist": "Lista de espera",
+        "waitlistHint": "Correo y nombre.",
+        "detailed": "Formulario de interés",
+        "detailedHint": "Correo, nombre, empresa, cargo y una pregunta."
+      },
+      "name": "Nombre",
+      "namePlaceholder": "Lista de espera del lanzamiento",
+      "defaultName": "Lista de espera",
+      "key": "Clave",
+      "keyHint": "Tu web y tu app piden el formulario por este nombre.",
+      "keyInvalid": "Usa letras minúsculas, dígitos y guiones, hasta 40.",
+      "create": "Crear formulario",
+      "createError": "No se pudo crear el formulario",
+      "loadError": "No se pudieron cargar los formularios",
+      "form": "Formulario",
+      "notFound": "Este formulario no existe.",
+      "active": "Acepta registros",
+      "activeHint": "Desactivado, el formulario se cierra: las webs y apps que lo cargan no muestran nada.",
+      "fields": "Campos",
+      "types": {
+        "email": "Correo",
+        "name": "Nombre",
+        "text": "Texto corto",
+        "textarea": "Texto largo",
+        "number": "Número",
+        "url": "Sitio web",
+        "phone": "Teléfono",
+        "select": "Opción",
+        "checkbox": "Casilla",
+        "file": "Subida de archivo"
+      },
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "removeField": "Quitar campo",
+      "label": "Etiqueta",
+      "placeholder": "Texto de ejemplo",
+      "fieldKey": "Se guarda como",
+      "fieldKeyHint": "El atributo del contacto donde va la respuesta.",
+      "fieldKeyInvalid": "Letras, dígitos y _, empezando por una letra.",
+      "options": "Opciones",
+      "optionsHint": "Pulsa Intro después de cada una.",
+      "addOption": "Añadir una opción",
+      "optionA": "Opción A",
+      "optionB": "Opción B",
+      "required": "Obligatorio",
+      "mustTick": "Debe marcarse",
+      "addField": "Añadir campo",
+      "words": "Textos",
+      "content": {
+        "title": "Título",
+        "description": "Descripción",
+        "buttonLabel": "Botón",
+        "successTitle": "Tras registrarse",
+        "successMessage": "Mensaje de agradecimiento",
+        "confirmMessage": "Mientras confirman",
+        "confirmMessageHint": "Se muestra en lugar del agradecimiento hasta que hacen clic en el enlace del correo.",
+        "footnote": "Letra pequeña",
+        "footnotePlaceholder": "Solo te escribiremos sobre el lanzamiento. Date de baja cuando quieras."
+      },
+      "look": "Aspecto",
+      "accent": "Acento",
+      "projectAccent": "El acento del proyecto",
+      "background": "Fondo",
+      "noBackground": "Ninguno: se integra en tu página",
+      "text": "Texto",
+      "followsTheme": "Sigue el modo claro u oscuro",
+      "reset": "Restablecer",
+      "layout": "Disposición",
+      "layouts": {
+        "stacked": "Apilado",
+        "inline": "En una fila"
+      },
+      "radius": "Radio de las esquinas",
+      "font": "Tipografía",
+      "after": "Cuando alguien se registra",
+      "afterHint": "Se convierte en un contacto, recibe las etiquetas de abajo y entra en el segmento de este formulario.",
+      "doubleOptIn": "Pedir que confirmen su correo",
+      "doubleOptInHint": "Reciben un correo con un enlace y quedan pendientes hasta que hacen clic. El correo de bienvenida y la secuencia esperan a eso.",
+      "confirmTemplate": "Correo de confirmación",
+      "confirmTemplateHint": "Una plantilla con un botón {'{'}{'{'}confirmUrl{'}'}{'}'}.",
+      "builtInConfirm": "El de HelpBites",
+      "welcomeTemplate": "Correo de bienvenida",
+      "welcomeTemplateHint": "Se envía una vez, cuando ya están en la lista.",
+      "noWelcome": "Ninguno",
+      "sequence": "Iniciar una secuencia",
+      "sequenceHint": "Una secuencia en borrador o en pausa los mantiene en el primer paso hasta que la actives.",
+      "noSequence": "Ninguna",
+      "sequenceStatus": {
+        "active": "activa",
+        "draft": "borrador",
+        "paused": "en pausa"
+      },
+      "tags": "Etiquetas",
+      "tagsHint": "Se añaden a todos los que se registran.",
+      "addTag": "Añadir una etiqueta",
+      "redirectUrl": "Después, enviarlos a",
+      "redirectUrlHint": "Para un formulario HTML simple, la página alojada y el enlace de confirmación. Vacío muestra una página de agradecimiento.",
+      "newTemplate": "Nueva plantilla de correo",
+      "manageSequences": "Secuencias",
+      "install": "Ponlo en tu web o en tu app",
+      "installTabs": {
+        "script": "Script",
+        "link": "Enlace"
+      },
+      "installHints": {
+        "script": "Una etiqueta script dibuja el formulario donde la pongas, con tus colores. No necesita nada más.",
+        "html": "Un formulario simple, con el estilo de tu propio CSS. Envía directamente a HelpBites y vuelve a la página de agradecimiento.",
+        "link": "Una página alojada a la que enlazar o que insertar en tu web.",
+        "swift": "Pega HelpBitesLeadForm.swift de la guía en tu app y muestra la vista donde quieras.",
+        "api": "Envía las respuestas desde tu propia interfaz o servidor. La respuesta de cada campo va bajo su clave."
+      },
+      "saveFirst": "Guarda antes tus cambios: el fragmento usa el formulario guardado.",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "openPage": "Abrir la página alojada",
+      "openJson": "Abrir el JSON del formulario",
+      "readGuide": "Leer la guía",
+      "leads": "Interesados",
+      "leadsHint": "Las últimas personas de este formulario. Son contactos como los demás, en el segmento de este formulario.",
+      "noLeads": "Todavía no se ha registrado nadie.",
+      "showAll": "Ver todos en Contactos",
+      "emailThem": "Escribirles",
+      "preview": "Vista previa",
+      "previewStates": {
+        "form": "Formulario",
+        "success": "Hecho"
+      },
+      "toggleTheme": "Cambiar entre claro y oscuro",
+      "previewHint": "Tus cambios sin guardar, dibujados por el mismo script que carga tu web. El fragmento de Swift tiene la misma disposición.",
+      "saved": "Guardado",
+      "saveError": "No se pudo guardar el formulario",
+      "deleteConfirm": "¿Eliminar “{name}”? Las webs que lo cargan no mostrarán nada. Sus interesados y su segmento se mantienen.",
+      "deleteForm": "Eliminar formulario",
+      "accept": "Acepta",
+      "acceptHint": "Se comprueba qué es realmente el archivo: {types}",
+      "accepts": {
+        "images": "Imágenes",
+        "documents": "Documentos",
+        "any": "Imágenes, documentos o ZIP"
+      },
+      "maxMB": "Tamaño máximo",
+      "optionsTranslateHint": "Lo que dice cada opción en este idioma. La respuesta guardada sigue siendo la original.",
+      "files": {
+        "title": "Archivos enviados",
+        "loading": "Cargando archivos…",
+        "download": "Descargar",
+        "delete": "Eliminar archivo",
+        "deleteConfirm": "¿Eliminar {name} para siempre?",
+        "downloadError": "No se pudo descargar el archivo.",
+        "deleteError": "No se pudo eliminar el archivo."
+      },
+      "fileKeyHint": "El nombre con el que se envía el archivo. Los archivos se guardan en privado para tu equipo, no como atributo."
     }
   },
   "workspaceSettings": {
