@@ -976,7 +976,8 @@
       "activityNone": "Nothing yet.",
       "activityError": "Could not load their activity",
       "showOlder": "Show older",
-      "addToSequence": "Add to sequence"
+      "addToSequence": "Add to sequence",
+      "languageNone": "Not set"
     },
     "empty": {
       "title": "No contacts yet",

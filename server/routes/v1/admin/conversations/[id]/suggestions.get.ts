@@ -7,7 +7,7 @@ defineRouteMeta({
     security: [{ AgentSession: [] }, { AdminApiKey: [] }],
     parameters: [
       { name: 'id', in: 'path', required: true, schema: { type: 'string', example: 'conv_123' } },
-      { name: 'q', in: 'query', schema: { type: 'string', maxLength: 200 }, description: 'What to look for.' }
+      { name: 'q', in: 'query', schema: { type: 'string' }, description: 'What to look for (up to 200 characters).' }
     ],
     responses: { 200: { description: '`{ faqs: [{ id, question, answer }], savedReplies: [{ id, title, body, shortcut }] }`' }, 404: { description: 'Conversation not found.' } }
   }

@@ -1378,6 +1378,31 @@ const SCHEMAS = {
       project_window: { _p_project: 1, kind: 1, windowEnd: -1 }
     }
   },
+  // --- GitHub activity that names a project's items: a commit pushed to the default branch or a pull
+  // request merged into it that mentions `#12` (server/utils/githubRefs.ts). One row per
+  // (target, kind, ref), checked on write. `targetId` is a BoardItem or FeedbackPost id per `targetKind`. ---
+  GithubRef: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      // board | feedback
+      targetKind: { type: 'String' },
+      targetId: { type: 'String' },
+      // commit | pull_request
+      kind: { type: 'String' },
+      // The commit sha, or the pull request number.
+      ref: { type: 'String' },
+      repo: { type: 'String' },
+      title: { type: 'String' },
+      url: { type: 'String' },
+      // A closing keyword (fixes #12) came with it.
+      closes: { type: 'Boolean' },
+      at: { type: 'Date' }
+    },
+    indexes: {
+      project_target: { _p_project: 1, targetKind: 1, targetId: 1, at: -1 },
+      project_target_ref: { _p_project: 1, targetKind: 1, targetId: 1, kind: 1, ref: 1 }
+    }
+  },
   // --- Email templates. No project = a master; `master` set = a project's
   // link to one (no document of its own, only its variable values). ---
   EmailFolder: {

@@ -119,7 +119,10 @@ watchDebounced(query, load, { debounce: 300, deep: true })
 watch(segment, (value) => { router.replace({ query: { ...route.query, segment: value === 'all' ? undefined : value } }) })
 watch(origin, (value) => { router.replace({ query: { ...route.query, origin: value === 'all' ? undefined : value } }) })
 
-const openId = ref('')
+// `?contact=<id>` opens that person (the revenue report and other pages link here); opening someone puts it in the address.
+const openId = ref(String(route.query.contact || ''))
+watch(() => route.query.contact, (value) => { openId.value = String(value || '') })
+watch(openId, (value) => { if (String(route.query.contact || '') !== value) router.replace({ query: { ...route.query, contact: value || undefined } }) })
 const importOpen = ref(false)
 
 // ---- adding one by hand ---------------------------------------------------------

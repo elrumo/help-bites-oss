@@ -77,7 +77,8 @@ export const NOT_PORTABLE: Record<string, string> = {
   CmsAsset: 'a file in the old bucket; pages keep linking to it there',
   Campaign: 'could send again; recreate it from the template',
   SequenceEnrollment: 'would send the next step again',
-  DataTransfer: 'the old instance\'s own bookkeeping'
+  DataTransfer: 'the old instance\'s own bookkeeping',
+  GithubRef: 'rebuilt from new pushes and merges: the repos a project reads are not carried over either'
 }
 
 /** Workspace-level classes that belong to one project when they carry its pointer: what a project export takes besides its project-scoped rows. */

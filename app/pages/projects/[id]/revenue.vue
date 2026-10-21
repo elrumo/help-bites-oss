@@ -104,7 +104,8 @@
                 <p v-if="!report.topCustomers.length" class="text-xs text-dimmed">{{ $t('projectTools.revenue.noPayments') }}</p>
                 <ul v-else class="divide-y divide-default rounded-xl border border-default text-[13px]">
                   <li v-for="c in report.topCustomers" :key="c.customerId" class="flex items-center gap-3 px-3 py-2">
-                    <span class="min-w-0 flex-1 truncate">{{ c.email || c.customerId }}</span>
+                    <NuxtLink v-if="c.contactId" :to="contactLink(c.contactId)" class="min-w-0 flex-1 truncate hover:underline" :title="$t('projectTools.revenue.openContact')">{{ c.email || c.customerId }}</NuxtLink>
+                    <span v-else class="min-w-0 flex-1 truncate">{{ c.email || c.customerId }}</span>
                     <span class="text-xs text-muted">{{ $t('projectTools.revenue.payments', c.payments) }}</span>
                     <span class="w-24 text-right tabular-nums">{{ money(c.net) }}</span>
                   </li>
@@ -116,7 +117,8 @@
               <h2 class="text-xs font-semibold text-muted">{{ $t('projectTools.revenue.recentPayments') }}</h2>
               <ul class="divide-y divide-default rounded-xl border border-default text-[13px]">
                 <li v-for="p in report.recent" :key="p.id" class="flex items-center gap-3 px-3 py-2">
-                  <span class="min-w-0 flex-1 truncate">{{ p.email || p.customerId || $t('projectTools.revenue.guest') }}<span v-if="p.description" class="text-muted"> · {{ p.description }}</span></span>
+                  <NuxtLink v-if="p.contactId" :to="contactLink(p.contactId)" class="min-w-0 flex-1 truncate hover:underline" :title="$t('projectTools.revenue.openContact')">{{ p.email || p.customerId || $t('projectTools.revenue.guest') }}<span v-if="p.description" class="text-muted"> · {{ p.description }}</span></NuxtLink>
+                  <span v-else class="min-w-0 flex-1 truncate">{{ p.email || p.customerId || $t('projectTools.revenue.guest') }}<span v-if="p.description" class="text-muted"> · {{ p.description }}</span></span>
                   <UBadge v-if="p.status !== 'succeeded'" :label="p.status" color="error" variant="subtle" size="sm" />
                   <UBadge v-else-if="p.refunded" :label="p.refunded >= p.amount ? $t('projectTools.revenue.refunded') : $t('projectTools.revenue.partRefunded')" color="neutral" variant="subtle" size="sm" />
                   <span class="w-24 text-right tabular-nums">{{ formatMoney(fromMinor(p.amount, p.currency), p.currency) }}</span>
@@ -151,6 +153,8 @@ const apiKey = ref('')
 const connecting = ref(false)
 
 const money = (amount: number) => formatMoney(amount, report.value?.currency || 'usd')
+// A customer who is also a contact opens in the people list.
+const contactLink = (contactId: string) => `/projects/${id}/contacts?contact=${contactId}`
 // Net revenue and MRR share the one axis: both are money in the same currency.
 const peak = computed(() => Math.max(1, ...(report.value?.months.flatMap(m => [m.net, m.mrr]) || [])))
 const mrrLine = computed(() => (report.value?.months || []).map((m, i) => `${i + 0.5},${100 - (m.mrr / peak.value) * 100}`).join(' '))

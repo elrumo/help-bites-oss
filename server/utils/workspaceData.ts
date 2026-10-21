@@ -94,6 +94,7 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   ChangelogComment: { scope: 'project' },
   ChangelogSubscription: { scope: 'project' },
   ChangelogNotifyRun: { scope: 'project' },
+  GithubRef: { scope: 'project' },
   BlogPost: { scope: 'project' },
   BlogComment: { scope: 'project' },
   LegalDocument: { scope: 'project' },

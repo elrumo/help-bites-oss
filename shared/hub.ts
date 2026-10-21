@@ -112,3 +112,53 @@ export const hubTitle = (config: Pick<HubConfig, 'title'>, projectName: string):
 
 /** Whether the page lists `section` at all (it still needs content to appear). */
 export const hubShows = (config: HubConfig, section: HubSection): boolean => config.sections.includes(section)
+
+// ---- what GET /v1/hub/{pk} returns ---------------------------------------------------
+
+export type HubItem = { title: string, url: string, /** A date or a count, as text. */ meta: string }
+
+/** What one section shows. Empty strings and lists mean "nothing": `action: 'chat'` opens the chat widget. */
+export type HubSectionContent = { title: string, url: string, text: string, items: HubItem[], action: '' | 'chat' }
+export type HubSectionView = HubSectionContent & { key: HubSection }
+
+export const HUB_SECTION_TITLES: Record<HubSection, string> = {
+  about: 'About',
+  changelog: 'What is new',
+  roadmap: 'Roadmap',
+  feedback: 'Feedback',
+  blog: 'Blog',
+  legal: 'Legal',
+  brand: 'Brand',
+  contact: 'Contact us'
+}
+
+/** The sections the config lists, in its order, each only when the project has something public to put in it. */
+export function composeHubSections(config: HubConfig, content: Partial<Record<HubSection, HubSectionContent | null>>): HubSectionView[] {
+  const out: HubSectionView[] = []
+  for (const key of config.sections) {
+    const section = content[key]
+    if (section && (section.text || section.url || section.items.length || section.action)) out.push({ key, ...section })
+  }
+  return out
+}
+
+/** The chat widget's Home tab: only the parts the project turned on and that have something to show. */
+export type HubHome = {
+  sections: HubHomeSection[]
+  changelog: { url: string, entries: { title: string, summary: string, tag: string, publishedAt: string | null, url: string }[] } | null
+  feedback: { url: string, posts: { title: string, votes: number, url: string }[] } | null
+  onboarding: { flows: { key: string, name: string }[] } | null
+}
+
+/** The loader's answer (GET /v1/hub/{pk}/loader): which modules public/helpbites.js may inject. */
+export type HubLoader = {
+  project: { name: string, publicKey: string }
+  modules: {
+    chat: { enabled: boolean, home: boolean }
+    feedback: { enabled: boolean }
+    changelog: { enabled: boolean }
+    onboarding: { enabled: boolean, flows: string[] }
+  }
+  hub: { enabled: boolean, url: string }
+  accent: string
+}
