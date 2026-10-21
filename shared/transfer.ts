@@ -32,6 +32,8 @@ export const IMPORT_ORDER = [
   'ChangelogComment',
   'ChangelogSubscription',
   'ChangelogNotifyRun',
+  'BlogPost',
+  'BlogComment',
   'LegalDocument',
   'LegalDocumentVersion',
   'OnboardingFlow',
@@ -88,6 +90,7 @@ export const ID_PATHS: Record<string, Record<string, string>> = {
   BoardItem: { feedbackPostIds: 'FeedbackPost', conversationIds: 'Conversation' },
   ChangelogEntry: { feedbackPostIds: 'FeedbackPost', boardItemIds: 'BoardItem', conversationIds: 'Conversation' },
   ChangelogNotifyRun: { entryIds: 'ChangelogEntry' },
+  BlogComment: { parentId: 'BlogComment' },
   Sequence: { 'steps.*.template': 'EmailTemplate' }
 }
 

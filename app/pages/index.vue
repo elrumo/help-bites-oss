@@ -481,6 +481,7 @@ const features = computed(() => [
       { term: t('landing.features.feedback.board.term'), desc: t('landing.features.feedback.board.desc') },
       { term: t('landing.features.feedback.roadmap.term'), desc: t('landing.features.feedback.roadmap.desc') },
       { term: t('landing.features.feedback.changelog.term'), desc: t('landing.features.feedback.changelog.desc') },
+      { term: t('landing.features.feedback.blog.term'), desc: t('landing.features.feedback.blog.desc') },
       { term: t('landing.features.feedback.followers.term'), desc: t('landing.features.feedback.followers.desc') }
     ]
   },

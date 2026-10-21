@@ -2,6 +2,7 @@ import { DEFAULT_FEEDBACK_CONFIG, type FeedbackPost } from '#shared/feedback'
 import { DEFAULT_BOARD_CONFIG, ROADMAP_CATEGORIES, type BoardItem } from '#shared/board'
 import { DEFAULT_MARKETING_CONFIG } from '#shared/marketing'
 import { DEFAULT_CHANGELOG_CONFIG, type ChangelogEntry, type ChangelogRelease } from '#shared/changelog'
+import { DEFAULT_BLOG_CONFIG, type BlogPost } from '#shared/blog'
 import { normalizeBrandConfig } from '#shared/brand'
 import { normalizeSettings } from '#shared/cms/content'
 import { BUILTIN_COMPONENTS } from '#shared/cms/library'
@@ -81,6 +82,7 @@ function project(id: string, name: string, siteUrl: string, accent: string, flag
     feedback: { ...DEFAULT_FEEDBACK_CONFIG, enabled: true, title: `${name} feedback` },
     board: DEFAULT_BOARD_CONFIG,
     changelog: DEFAULT_CHANGELOG_CONFIG,
+    blog: DEFAULT_BLOG_CONFIG,
     inboxPath: '/inbox', fromName: `${name} Support`, notifyEmails: [`support@${new URL(siteUrl).host}`],
     fromEmail: '', replyTo: '', mailDomain: '', emailLogContent: false,
     actionWebhookUrl: '', hasActionWebhookSecret: false, flags,
@@ -105,7 +107,7 @@ const segments: { id: string, projectId: string, name: string, filter: unknown, 
 const contactExtras: Record<string, { tags?: string[], subscription?: string }> = {}
 const DEMO_PLANS = ['free', 'pro', 'team']
 const demoCampaigns = [{
-  id: 'cmp_demo1', projectId: 'acme', name: 'September product update', status: 'sent', template: 'newsletter', templateName: 'Editorial digest', subject: 'What shipped in September, {{firstName}}',
+  id: 'cmp_demo1', projectId: 'acme', name: 'September product update', status: 'sent', template: 'newsletter', templateName: 'Editorial digest', blogPostId: '', subject: 'What shipped in September, {{firstName}}',
   audience: { segment: '', topic: 'product' }, scheduledAt: ago(60 * 24 * 6), startedAt: ago(60 * 24 * 6), finishedAt: ago(60 * 24 * 6 - 4), testMode: false, lastError: '',
   stats: { audience: 1284, sent: 1279, failed: 0, suppressed: 5, delivered: 1262, opened: 611, clicked: 143, bounced: 9, complained: 1, unsubscribed: 7 },
   createdAt: ago(60 * 24 * 8), updatedAt: ago(60 * 24 * 6)
@@ -389,6 +391,7 @@ function applyProject(p: AdminProject, body: Record<string, any>) {
   const acme = projects[0]!
   acme.board = { ...DEFAULT_BOARD_CONFIG, enabled: true, syncFeedback: true, labels: [{ key: 'web', label: 'Web', color: 'info' }, { key: 'ios', label: 'iOS', color: 'warning' }, { key: 'api', label: 'API', color: 'success' }] }
   acme.changelog = { ...DEFAULT_CHANGELOG_CONFIG, enabled: true, autoDraft: true }
+  acme.blog = { ...DEFAULT_BLOG_CONFIG, enabled: true, title: 'The Acme blog', description: 'How we build Acme, and what is new.' }
 }
 
 const feedbackPosts: FeedbackPost[] = []
@@ -453,6 +456,20 @@ changelogEntry(5, 'Calendar dates no longer shift in Safari', 'Tasks showed up a
 const changelogReleases: ChangelogRelease[] = [
   { id: 'rel_demo1', projectId: 'acme', version: '2.4.0', title: 'Workspace URLs and faster search', summary: '', status: 'published', publishedAt: ago(60 * 24 * 2), createdAt: ago(60 * 24 * 3), updatedAt: ago(60 * 24 * 2) }
 ]
+
+// Acme's blog: a published story about the release, and a draft in progress.
+const blogPosts: BlogPost[] = []
+function blogPost(n: number, title: string, body: string, status: 'draft' | 'published', minutesAgo: number, extra: Partial<BlogPost> = {}) {
+  const published = status === 'published'
+  const excerpt = body.replace(/[#*_`>]/g, '').split('\n').find(line => line.trim())?.trim().slice(0, 200) || ''
+  blogPosts.push({
+    id: `blog_demo${n}`, projectId: 'acme', title, slug: slug(title), excerpt, excerptWritten: false, body, bodyHtml: body.split('\n\n').map(p => `<p>${p}</p>`).join(''),
+    coverImageUrl: '', tags: [], status, publishedAt: published ? ago(minutesAgo) : null, live: published, authorName: 'You', readingMinutes: 3,
+    commentsOpen: true, commentCount: 0, reactions: [], newsletter: null, url: `/blog/pk_demo_acme/${slug(title)}`, createdAt: ago(minutesAgo + 120), updatedAt: ago(minutesAgo), ...extra
+  })
+}
+blogPost(1, 'How we made notebook search work offline', 'Search used to wait for the server. In 2.4 it runs on your device first, so results show as you type, even on a plane.\n\nHere is how the index fits in a few megabytes, and what we tried first.', 'published', 60 * 24 * 2, { tags: ['Engineering'], reactions: [{ key: 'heart', count: 12 }, { key: 'rocket', count: 5 }] })
+blogPost(2, 'Markdown export is coming', 'You asked, and it is nearly done: one zip per notebook, a file per page, images included.', 'draft', 60 * 2, { tags: ['Product'] })
 
 const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/admin\/me$/, () => ({ agent: ME, workspace: WORKSPACE, role: 'owner', workspaces: [WORKSPACE], edition: 'community', plan: { id: UNLIMITED_PLAN.id, name: UNLIMITED_PLAN.name, unlimited: true }, features: { ...UNLIMITED_PLAN.features, teammatePasswords: true }, links: { sourceCode: '/source' } })],
@@ -838,6 +855,9 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
   ['GET', /^\/feedback\/([^/]+)$/, ({ params }) => ({ post: find(feedbackPosts, params[0], 'Post'), comments: [] })],
   ['GET', /^\/admin\/board-items$/, ({ query }) => { find(projects, query.project, 'Project'); return { items: boardItems.filter(item => item.projectId === query.project) } }],
   ['GET', /^\/admin\/changelog\/entries$/, ({ query }) => { find(projects, query.project, 'Project'); return { entries: changelogEntries.filter(entry => entry.projectId === query.project) } }],
+  ['GET', /^\/admin\/blog\/posts$/, ({ query }) => { find(projects, query.project, 'Project'); return { posts: blogPosts.filter(post => post.projectId === query.project) } }],
+  ['GET', /^\/admin\/blog\/posts\/([^/]+)$/, ({ params }) => ({ post: find(blogPosts, params[0], 'Post') })],
+  ['GET', /^\/admin\/blog\/comments$/, ({ query }) => { find(projects, query.project, 'Project'); return { comments: [], total: 0, hasMore: false } }],
   ['GET', /^\/admin\/changelog\/releases$/, ({ query }) => { find(projects, query.project, 'Project'); return { releases: changelogReleases.filter(release => release.projectId === query.project) } }],
   ['GET', /^\/feedback\/roadmap$/, ({ query }) => {
     const { board } = find(projects, query.project, 'Project')

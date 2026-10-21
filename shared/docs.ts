@@ -88,6 +88,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'BRAND.md'
   },
   {
+    slug: 'blog',
+    title: 'Blog and newsletter',
+    description: 'Write posts in a rich editor and publish them on a hosted blog, in your own site, by RSS and in your subscribers\' inboxes, with reactions and comments.',
+    group: 'Guides',
+    file: 'BLOG.md'
+  },
+  {
     slug: 'pages',
     title: 'Pages and headless CMS',
     description: 'Design landing pages in a visual editor and host them, or read the same copy, images and components from your Vue, JavaScript or Swift app. An assistant writes pages, copy and components.',

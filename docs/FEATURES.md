@@ -141,7 +141,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **AI elsewhere.** The email designer (section 6), a cause-and-fix note on new
   errors (section 8), and the changelog CLI (section 11).
 
-## 5. Feedback, roadmap, changelog, brand kit and pages
+## 5. Feedback, roadmap, changelog, blog, brand kit and pages
 
 **Feedback board** [FEEDBACK.md](FEEDBACK.md)
 
@@ -193,6 +193,27 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Writable by script.** Batch, import and release-publish endpoints, plus the
   `helpbites changelog` CLI, which writes entries from git history
   ([cli/README.md](../cli/README.md)).
+
+**Blog and newsletter** [BLOG.md](BLOG.md)
+
+- **A rich editor.** Nuxt UI's TipTap editor: headings, lists, quotes, code,
+  links and uploaded images, a `/` menu and a formatting bubble. Posts are saved
+  as Markdown and rendered once, through an allowlist. Drafts save themselves; a
+  live post changes only when you press Update.
+- **Publish or schedule.** A cover, an excerpt, up to 10 tags, the author and a
+  slug per post. A later date schedules it; it goes live on its own.
+- **Hosted, embedded and in RSS.** An indexable page at `/blog/pk_…` with link
+  previews, `blog.js` (MIT) drawing the blog in your own page (or only the
+  reactions and comments under posts you render yourself), the public JSON API
+  for your own UI, a SwiftUI snippet, and an RSS feed with full posts.
+- **Reactions and comments.** Readers signed in by your app (an identity token)
+  or with just their email react and comment; replies one level deep. The team
+  answers as the team, hides, shows or deletes from the panel or the app, and can
+  close one post's thread. New comments can be emailed to you.
+- **Newsletter.** Any published post goes to your subscribers as a campaign, with
+  topics, segments, test sends, the unsubscribe footer and its numbers. A sign-up
+  form can sit under each hosted post. In the cloud edition this part needs a
+  plan with campaigns.
 
 **Brand kit** [BRAND.md](BRAND.md)
 
@@ -461,6 +482,9 @@ See [EDITIONS.md](EDITIONS.md).
   campaigns, sequences, the mail HelpBites sends itself, the chat, feedback and
   changelog embeds and CMS pages do not yet, and a contact has no language of its
   own. [LANGUAGES.md](LANGUAGES.md)
+- **Blog.** The native app edits a post's Markdown as text, with a preview: the
+  rich editor is web-only. No translations of posts or the embed, no custom
+  domain for the hosted blog, and no MCP tools for it yet. [BLOG.md](BLOG.md)
 - **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
   email, campaigns, legal documents, flags or knowledge base editing, and it issues no refresh tokens, so an
   OAuth-connected assistant signs in again after a year. [MCP.md](MCP.md)

@@ -9,6 +9,7 @@ import { compileSegmentFilter } from '#shared/segments'
 import { deliverEmails, projectEmailSender, type DeliveryResult, type EmailActor, type EmailSender, type OutgoingEmail } from './emailDelivery'
 import { emailSendingPaused } from './emailReputation'
 import { buildOutgoingEmails, type EmailSendRequest } from './emailSend'
+import { blogNewsletterSnapshot } from './blogNewsletter'
 import { brandOf, findProjectEmail, serializeEmailTemplate } from './emails'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
 import { runExclusive } from './redis'
@@ -47,6 +48,7 @@ export function serializeCampaign(row: ParseObject): Campaign {
     status: (row.get('status') as CampaignStatus) || 'draft',
     template: String(row.get('template') || ''),
     templateName: String(row.get('templateName') || ''),
+    blogPostId: pointerId(row.get('blogPost')),
     subject: String(row.get('subject') || ''),
     audience: { segment: audience.segment || '', topic: audience.topic || '' },
     scheduledAt: iso(row.get('scheduledAt')),
@@ -83,7 +85,9 @@ export async function applyCampaignInput(project: ParseObject, row: ParseObject,
       const t = serializeEmailTemplate(template)
       row.set('template', t.key || template.id)
       row.set('templateName', t.master?.name || t.name)
-    } else {
+      // A template replaces the blog post a campaign was sending.
+      row.unset('blogPost')
+    } else if (!row.get('blogPost')) {
       row.set('template', '')
       row.set('templateName', '')
     }
@@ -150,6 +154,12 @@ export async function snapshotCampaign(project: ParseObject, ref: string): Promi
   const document = t.master ? applyProjectAccent(source.document, brandOf(project).theme?.accent) : source.document
   const defaults = Object.fromEntries(senderVariables(t, t.master).filter(v => v.defaultValue != null).map(v => [v.key, String(v.defaultValue)]))
   return { document, defaults, templateId: row.id || '', templateKey: t.key, templateName: t.master?.name || t.name }
+}
+
+/** What a campaign sends: its blog post when it carries one (blogNewsletter.ts), else its template. */
+export async function campaignContent(project: ParseObject, row: ParseObject): Promise<CampaignSnapshot> {
+  const postId = pointerId(row.get('blogPost'))
+  return postId ? await blogNewsletterSnapshot(project, postId) : await snapshotCampaign(project, String(row.get('template') || ''))
 }
 
 /** CAN-SPAM and RFC 8058: a way out and a postal address in every campaign, or it does not go. */
@@ -276,7 +286,7 @@ const CAMPAIGN_ACTOR: EmailActor = { type: 'system', id: '', name: 'Campaign' }
 /** Freeze the design, count the audience, and move a due campaign to sending. False when it cannot start. */
 async function startCampaign(project: ParseObject, row: ParseObject): Promise<boolean> {
   try {
-    const snapshot = await snapshotCampaign(project, String(row.get('template') || ''))
+    const snapshot = await campaignContent(project, row)
     const problems = complianceProblems(project, snapshot.document)
     if (problems.length) throw createError({ statusCode: 400, statusMessage: problems.join('; ') })
     publicBaseUrl()
@@ -447,7 +457,7 @@ export async function moveCampaign(project: ParseObject, row: ParseObject, to: s
 
   if (to === 'scheduled' || (to === 'sending' && (from === 'draft' || from === 'scheduled'))) {
     // Checked now, so the operator hears about a missing unsubscribe link before the send time.
-    const snapshot = await snapshotCampaign(project, String(row.get('template') || ''))
+    const snapshot = await campaignContent(project, row)
     const problems = complianceProblems(project, snapshot.document)
     if (problems.length) throw createError({ statusCode: 400, statusMessage: problems.join('; ') })
     publicBaseUrl()

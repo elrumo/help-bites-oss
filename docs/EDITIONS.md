@@ -12,8 +12,8 @@ HelpBites is built in two editions. This repository is the community edition; th
 | Branding | None | "Powered by HelpBites" on the Free plan |
 
 Everything a team uses day to day is in the core and therefore in both: the inbox, the widget, knowledge and AI
-assistants, email, campaigns, the feedback board, the roadmap and the changelog. The cloud edition adds what running a
-public service needs. It does not unlock features that community lacks.
+assistants, email, campaigns, the feedback board, the roadmap, the changelog and the blog. The cloud edition adds what
+running a public service needs. It does not unlock features that community lacks.
 
 ## Licensing
 
@@ -102,7 +102,8 @@ answer at boot.
 - **Counters**: conversations, emails and AI credits per month, and emails per day. They are counted in Redis by
   `server/utils/usage.ts`.
 - **Features**: campaigns, sequences, database sync, event webhooks, custom sending domain, removing the branding, your
-  own AI provider, the Ultra designer, and more workspaces.
+  own AI provider, the Ultra designer, and more workspaces. Sending a blog post as a newsletter is a campaign, so it follows
+  `campaigns`; the blog itself, its comments, reactions and RSS feed are on every plan.
 
 The community edition puts every workspace on `UNLIMITED_PLAN`, so none of this is visible there. The Plan & usage tab
 hides itself, and nothing answers 402.

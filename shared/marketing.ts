@@ -135,6 +135,8 @@ export type Campaign = {
   /** The template it sends (send key or id); its design is frozen when sending starts. */
   template: string
   templateName: string
+  /** A blog post it sends instead of a template (Project → Blog → Send as newsletter); '' for a template campaign. */
+  blogPostId: string
   subject: string
   audience: { segment: string, topic: string }
   scheduledAt: string | null

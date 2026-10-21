@@ -222,6 +222,8 @@ const SCHEMAS = {
       // Changelog options (`autoDraft`) and its entries' `#N` counter.
       changelog: { type: 'Object' },
       changelogSeq: { type: 'Number' },
+      // Blog options: on/off, title, comments, reactions, the newsletter's topic (shared/blog.ts).
+      blog: { type: 'Object' },
       // Legal pages: the operator's identity and the look of the hosted pages (shared/legal/config.ts).
       legal: { type: 'Object' },
       // Wizard answers saved for reuse by the next legal document (server/utils/legal.ts saveSharedAnswers).
@@ -461,7 +463,9 @@ const SCHEMAS = {
       startedAt: { type: 'Date' },
       finishedAt: { type: 'Date' },
       nextAt: { type: 'Date' },
-      lastError: { type: 'String' }
+      lastError: { type: 'String' },
+      // A blog post sent as a newsletter, in place of a template (server/utils/blogNewsletter.ts).
+      blogPost: { type: 'Pointer', targetClass: 'BlogPost' }
     },
     indexes: {
       project_created: { _p_project: 1, _created_at: -1 },
@@ -1189,6 +1193,65 @@ const SCHEMAS = {
     }
   },
   // The ledger of sends: what stops a tick (or a second instance) mailing the same week twice.
+  // Blog posts (server/utils/blog.ts): Markdown written by the team, rendered
+  // once into bodyHtml. Reactions are "key:actor" strings on the row, as on
+  // feedback posts.
+  BlogPost: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      title: { type: 'String' },
+      slug: { type: 'String' },
+      excerpt: { type: 'String' },
+      excerptWritten: { type: 'Boolean' },
+      body: { type: 'String' },
+      bodyHtml: { type: 'String' },
+      readingMinutes: { type: 'Number' },
+      coverImageUrl: { type: 'String' },
+      tags: { type: 'Array' },
+      // The tags lowercased, for ?tag= in any case.
+      tagKeys: { type: 'Array' },
+      // draft | published; a published post with a future publishedAt is scheduled.
+      status: { type: 'String' },
+      publishedAt: { type: 'Date' },
+      author: { type: 'Pointer', targetClass: '_User' },
+      authorName: { type: 'String' },
+      commentsOpen: { type: 'Boolean' },
+      commentCount: { type: 'Number' },
+      reactions: { type: 'Array' },
+      newsletterCampaign: { type: 'Pointer', targetClass: 'Campaign' }
+    },
+    indexes: {
+      project_slug: { _p_project: 1, slug: 1 },
+      project_status_published: { _p_project: 1, status: 1, publishedAt: -1 },
+      project_tags: { _p_project: 1, tagKeys: 1 },
+      project_updated: { _p_project: 1, _updated_at: -1 }
+    }
+  },
+  // Readers' comments on blog posts (server/utils/blogComments.ts). A reply's
+  // parentId names the top-level comment it answers.
+  BlogComment: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      post: { type: 'Pointer', targetClass: 'BlogPost' },
+      parentId: { type: 'String' },
+      body: { type: 'String' },
+      bodyHtml: { type: 'String' },
+      // visible | hidden | deleted
+      status: { type: 'String' },
+      postedAt: { type: 'Date' },
+      editedAt: { type: 'Date' },
+      endUser: { type: 'Pointer', targetClass: 'EndUser' },
+      authorExternalId: { type: 'String' },
+      authorName: { type: 'String' },
+      authorAvatar: { type: 'String' },
+      authorIsStaff: { type: 'Boolean' }
+    },
+    indexes: {
+      post_status_posted: { _p_post: 1, status: 1, postedAt: 1 },
+      project_posted: { _p_project: 1, postedAt: -1 },
+      author_recent: { _p_project: 1, authorExternalId: 1, postedAt: -1 }
+    }
+  },
   ChangelogNotifyRun: {
     fields: {
       project: { type: 'Pointer', targetClass: 'Project' },
