@@ -127,7 +127,7 @@
       "editions": ["community", "cloud"],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/changelog.vue"], "public": ["/changelog/:pk", "/embed/changelog"] },
+      "web": { "panel": ["app/pages/projects/[id]/changelog.vue"], "public": ["/changelog/:pk", "/embed/changelog", "/u/changelog"] },
       "native": { "folders": ["helpbites-native/App/Features/Changelog"] },
       "api": { "prefixes": ["/v1/changelog", "/v1/admin/changelog"], "docs": "docs/FEEDBACK.md" },
       "embed": { "web": "public/changelog.js", "swift": null, "customize": ["data-target", "data-theme"] },
