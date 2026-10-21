@@ -49,7 +49,7 @@ struct ContactActivityPage: Decodable, Sendable {
 enum ActivityText {
   /// The kinds the Billing section already shows in more detail, live from Stripe.
   static let billingTypes: Set<String> = ["payment", "subscription"]
-  static let shownTypes = ["joined", "conversation", "feedback_post", "feedback_comment", "vote", "email", "sequence", "onboarding"].filter { !billingTypes.contains($0) }
+  static let shownTypes = ["joined", "conversation", "feedback_post", "feedback_comment", "vote", "email", "sequence", "onboarding"].filter { !ActivityText.billingTypes.contains($0) }
 
   /// "5 minutes ago", "yesterday", "3 weeks ago".
   @MainActor static func relative(_ raw: String) -> String {

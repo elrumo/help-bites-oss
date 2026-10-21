@@ -36,7 +36,9 @@ struct ProjectSettingsScreen: View {
           VStack(alignment: .leading, spacing: 40) {
             general
             branding(project)
+            companyCard
             widget
+            hubCard(project)
             email
             collaborators
             section("GitHub repos", "The code behind \(form.name.isEmpty ? "this project" : form.name). AI error notes and legal documents read these; HelpBites never writes to them.") {
@@ -106,6 +108,9 @@ struct ProjectSettingsScreen: View {
       divider
       row("Colour", "The sidebar tile, the widget's send button and your chat bubbles.") {
         VStack(alignment: .leading, spacing: 10) {
+          Text("This is the accent of your Brand kit: widgets, boards, forms, legal, blog and hub pages and campaign mail all follow it.")
+            .font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
+          Button { workspace.go(.project(projectId, .brand)) } label: { Label("Open the Brand kit", systemImage: "paintpalette") }.buttonStyle(.lnSecondaryCompact)
           LazyVGrid(columns: [GridItem(.adaptive(minimum: 30, maximum: 30), spacing: 8)], alignment: .leading, spacing: 8) {
             ForEach(Self.swatches, id: \.self) { swatch in
               Button { form.accent = swatch } label: {
@@ -146,6 +151,18 @@ struct ProjectSettingsScreen: View {
       }
       divider
       widgetPreview
+    }
+  }
+
+  private var companyCard: some View {
+    section("Company", "Who is behind the product, written once.") {
+      cardBody { CompanyFields(company: $form.company) }
+    }
+  }
+
+  private func hubCard(_ project: ProjectsAdminProject) -> some View {
+    section("Public hub", "One page that gathers what you publish, and a Home tab for the chat widget.") {
+      cardBody { HubFields(hub: $form.hub, publicKey: project.publicKey, projectName: form.name) }
     }
   }
 
@@ -448,8 +465,10 @@ struct ProjectSettingsScreen: View {
       fromName: form.fromName, notifyEmails: form.notifyEmails,
       fromEmail: form.fromEmail.trimmingCharacters(in: .whitespaces), replyTo: form.replyTo.trimmingCharacters(in: .whitespaces), mailDomain: form.mailDomain.trimmingCharacters(in: .whitespaces),
       emailLogContent: form.emailLogContent,
+      company: form.company, hub: form.hub,
+      // The accent is the Brand kit's: send it only when it changed here, so saving something else never pins it.
       // `theme` is replaced whole on the server: send `dark` back so saving here keeps it.
-      theme: ProjectTheme(accent: accent.isEmpty ? nil : accent, dark: project?.theme.dark)
+      theme: accent == (project?.theme.accent ?? "") ? nil : ProjectTheme(accent: accent.isEmpty ? nil : accent, dark: project?.theme.dark)
     )
     do {
       fill(try await ProjectsAdminProject.save(projectId, body, workspace: workspace))
@@ -529,6 +548,8 @@ private struct SettingsForm: Equatable {
   var name = "", siteUrl = "", inboxPath = "", iconUrl = "", brandLogoUrl = "", assistantLogoUrl = "", accent = "", chatNotice = ""
   var fromName = "", notifyEmails = "", fromEmail = "", replyTo = "", mailDomain = ""
   var allowAttachments = true, allowAnonymousUsers = false, letUsersChooseType = false, allowOtherType = false, emailLogContent = false
+  var company = CompanyProfile()
+  var hub = HubConfig()
 
   init() {}
   init(_ project: ProjectsAdminProject) {
@@ -550,6 +571,8 @@ private struct SettingsForm: Equatable {
     replyTo = project.replyTo ?? ""
     mailDomain = project.mailDomain ?? ""
     emailLogContent = project.emailLogContent ?? false
+    company = project.company ?? CompanyProfile()
+    hub = project.hub ?? HubConfig()
   }
 }
 
@@ -559,5 +582,8 @@ private struct SettingsInput: Encodable, Sendable {
   let allowAttachments, allowAnonymousUsers, letUsersChooseType, allowOtherType: Bool
   let fromName, notifyEmails, fromEmail, replyTo, mailDomain: String
   let emailLogContent: Bool
-  let theme: ProjectTheme
+  let company: CompanyProfile
+  let hub: HubConfig
+  /// Sent only when the accent changed (it is the Brand kit's).
+  let theme: ProjectTheme?
 }

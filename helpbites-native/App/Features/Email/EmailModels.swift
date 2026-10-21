@@ -71,7 +71,16 @@ struct EmailBrand: Decodable, Sendable {
   let brandLogoUrl: String?
   let siteUrl: String?
   let theme: ProjectTheme?
-  /// The postal address marketing email carries (`{{project.address}}`).
+  /// The project's look (Brand kit); wins over `brandLogoUrl` and `theme.accent`, which Settings edits as stored.
+  let look: Look?
+  struct Look: Decodable, Sendable { let accent, logoUrl: String? }
+  /// The company profile (`{{project.company}}`, `{{project.address}}`, `{{project.email}}`).
+  let company: Company?
+  struct Company: Decodable, Sendable { let name, legalName, address, email: String? }
+  /// The public pages of the published legal documents (`{{project.privacyUrl}}` and friends).
+  let legalLinks: LegalLinks?
+  struct LegalLinks: Decodable, Sendable { let privacyUrl, termsUrl, cookiesUrl, refundUrl: String? }
+  /// The older postal address; the company's wins.
   let marketing: Marketing?
   struct Marketing: Decodable, Sendable { let postalAddress: String? }
 }

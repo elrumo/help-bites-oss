@@ -1,5 +1,5 @@
 import { createError } from 'h3'
-import { BOARD_ERROR_REFS_MAX, errorRefKey, readErrorRefs, type BoardErrorRef } from '#shared/board'
+import { BOARD_ERROR_REFS_MAX, errorRefKey, type BoardErrorRef } from '#shared/board'
 import { errorBoardDraft, errorDetailOf, flattenEvent, trackerIssueUrl } from '#shared/errors'
 import { createBoardItem, getBoardConfig, linkBoardItem } from './board'
 import { emitDomainEvent } from './domainEvents'
@@ -67,6 +67,3 @@ export async function fileErrorOnBoard(project: ParseObject, agent: ParseObject,
   if (!held.ran) throw createError({ statusCode: 409, statusMessage: 'This error is being filed right now. Try again in a moment.' })
   return held.value
 }
-
-/** Refs as stored on an item, for callers that only have the row. */
-export const errorRefsOf = (item: ParseObject): BoardErrorRef[] => readErrorRefs(item.get('errorRefs'))

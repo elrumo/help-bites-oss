@@ -482,6 +482,9 @@
     "The CMS generates no TypeScript types from component schemas.",
     "The native app shows the plan, usage and plan locks but has no billing: subscribing and managing the subscription happen in the web panel's Settings → Billing.",
     "Lead forms have no CAPTCHA (a honeypot and rate limits only), no file uploads, no translations and no A/B tests; answers are saved on the contact rather than kept as separate submissions, and never overwrite an answer the contact already has.",
-    "The native app edits a blog post's Markdown as text with a preview; the rich (TipTap) editor and its slash menu are web-only. Blog posts, comments and the embed have no translations, the blog has no custom domain (it lives at /blog/<public key>), and the MCP server has no blog tools yet."
+    "The native app edits a blog post's Markdown as text with a preview; the rich (TipTap) editor and its slash menu are web-only. Blog posts, comments and the embed have no translations, the blog has no custom domain (it lives at /blog/<public key>), and the MCP server has no blog tools yet.",
+    "The people list has no row selection, so adding people to a sequence works for one contact or for a whole segment, not for hand-picked rows.",
+    "The Has errors segment field is best effort: the latest event of the newest 50 open issues in the connected tracker, cached for 10 minutes, matched to contacts by the user id the app reports to the tracker.",
+    "A contact's activity timeline links to a section of the panel (the feedback page, the email log), not to the post or log row itself, and its titles are English text written by the server."
   ]
 }

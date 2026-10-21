@@ -33,7 +33,7 @@ struct MarketingSettingsView: View {
       else if let project {
         Section {
           TextField("Postal address", text: $form.postalAddress, axis: .vertical)
-        } header: { Text("Required in every campaign") } footer: { Text("Shown as {{project.address}}; the law requires it in marketing email.") }
+        } header: { Text("Required in every campaign") } footer: { Text("Shown as {{project.address}}; the law requires it in marketing email. This is your company profile's address (Project settings → Company), which legal documents use too.") }
 
         Section {
           ForEach($form.topics) { $topic in

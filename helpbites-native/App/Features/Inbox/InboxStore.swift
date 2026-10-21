@@ -79,6 +79,8 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   private(set) var project: InboxProjectInfo?
   /// Field values from the detail; live events always carry `fields: {}`.
   private(set) var fields: [String: JSONValue] = [:]
+  /// The customer panel's read for the open conversation (plan, earlier conversations, linked feedback); nil until it loads.
+  private(set) var context: ConversationHubContext?
   private(set) var threadLoading = false
   var threadError = ""
   var propertiesError = ""
@@ -275,8 +277,10 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
       endUser = nil
       project = nil
       fields = [:]
+      context = nil
     }
     threadLoading = true
+    Task { await loadContext(id) }
     defer { if selectedId == id { threadLoading = false } }
     do {
       async let detailRequest: DetailResponse = session.get("/v1/admin/conversations/\(id)")
@@ -403,6 +407,58 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
     }
   }
 
+  // MARK: - The customer panel
+
+  func loadContext(_ id: String) async {
+    guard !id.isEmpty else { return }
+    // The panel's extra sections just stay out when this fails; the thread itself still works.
+    if let result: ConversationHubContext = try? await session.get("/v1/admin/conversations/\(id)/context"), selectedId == id { context = result }
+  }
+
+  /// Link or unlink a feedback post (a post id or `#12`). Linking makes the customer follow it when they can.
+  func linkFeedbackPost(_ postId: String, linked: Bool) async throws {
+    let id = selectedId
+    guard !id.isEmpty else { return }
+    struct Input: Encodable, Sendable { let postId: String; let linked: Bool }
+    let result: HubFeedbackLink = try await session.send("/v1/admin/conversations/\(id)/feedback-posts", body: Input(postId: postId, linked: linked))
+    applyFeedbackLink(result, to: id)
+  }
+
+  /// File a new post written by the customer, who follows it, and link it here.
+  func fileFeedbackPost(title: String, body: String) async throws {
+    let id = selectedId
+    guard !id.isEmpty else { return }
+    struct Create: Encodable, Sendable { let title: String; let body: String }
+    struct Input: Encodable, Sendable { let create: Create }
+    let result: HubFeedbackLink = try await session.send("/v1/admin/conversations/\(id)/feedback-posts", body: Input(create: Create(title: title, body: body)))
+    applyFeedbackLink(result, to: id)
+  }
+
+  private func applyFeedbackLink(_ result: HubFeedbackLink, to id: String) {
+    guard selectedId == id, var panel = context else { return }
+    if result.linked {
+      if let index = panel.feedbackPosts.firstIndex(where: { $0.id == result.post.id }) { panel.feedbackPosts[index] = result.post } else { panel.feedbackPosts.append(result.post) }
+    } else {
+      panel.feedbackPosts.removeAll { $0.id == result.post.id }
+    }
+    context = panel
+  }
+
+  /// "Save as FAQ": a new active FAQ in a knowledge model, from a reply and the question it answered.
+  func saveFaq(modelId: String, question: String, answer: String) async throws {
+    let id = selectedId
+    guard !id.isEmpty else { return }
+    struct Input: Encodable, Sendable { let modelId: String?; let question: String; let answer: String }
+    struct Saved: Decodable, Sendable {}
+    let _: Saved = try await session.send("/v1/admin/conversations/\(id)/faq", body: Input(modelId: modelId.isEmpty ? nil : modelId, question: question, answer: answer))
+  }
+
+  /// An AI draft of a reply for the operator to edit. Nothing is stored or sent.
+  func draftReply() async throws -> HubDraft {
+    let id = selectedId
+    return try await session.send("/v1/admin/conversations/\(id)/draft")
+  }
+
   /// Start a conversation as the team; returns its id.
   func createConversation(_ input: InboxStartInput) async throws -> String {
     struct Output: Decodable, Sendable { let conversation: Conversation; let endUser: EndUser }
@@ -483,6 +539,8 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
       if message.sender == "user" { Task { await markRead(event.conversationId) } }
       // A teammate changed field values; events carry only the keys.
       if message.kind == "event", message.event?["fields"] != nil { Task { await reloadFields(event.conversationId) } }
+      // A teammate linked or unlinked a feedback post from another window.
+      if message.kind == "event", message.event?["type"]?.inboxText.hasPrefix("feedback.") == true { Task { await loadContext(event.conversationId) } }
     case "message.updated":
       if open, let message = event.message { upsertMessage(message) }
     case "message.deleted":

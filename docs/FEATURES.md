@@ -546,6 +546,11 @@ repository. See [EDITIONS.md](EDITIONS.md).
   [GITHUB.md](GITHUB.md)
 - **Shipped mail.** The email to a changelog entry's followers is the feedback
   board's plain message mail, with no per-project wording yet. [FEEDBACK.md](FEEDBACK.md)
+- **Contacts.** The people list has no row selection, so adding people to a sequence
+  works for one contact or for a whole segment, not for hand-picked rows. The
+  **Has errors** segment field is best effort (the newest 50 open issues of the
+  connected tracker, cached 10 minutes), and the activity timeline links to a section of
+  the panel, not to the exact post or log row. [CONTACTS.md](CONTACTS.md)
 - **Onboarding.** HelpBites keeps only the latest outcome (finished or skipped) per
   person and flow, for apps that send the identity token: no funnel statistics or
   per-step drop-off yet. [ONBOARDING.md](ONBOARDING.md)
