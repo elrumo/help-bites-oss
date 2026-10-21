@@ -47,6 +47,22 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   back on each step, completion and skip.
 - **A live preview** in the panel, drawn by the same script your site loads.
 
+**Languages and AI translation** [LANGUAGES.md](LANGUAGES.md)
+
+- **Onboarding, legal documents and emails in your users' languages.** A flow and
+  an email template carry a translation per language; a legal document has a
+  linked copy per language, each with its own page.
+- **Translate with AI, or write it.** One button per language fills what is
+  missing through the workspace's AI (or the server's gateway) and keeps what you
+  edited. Placeholders, links and HTML survive, or the string stays in the
+  original language.
+- **Apps pick the language.** `?locale=` on the onboarding and email reads,
+  `locale` on the send API (per recipient too), `data-locale` on the web script
+  and a `locale:` parameter on the Swift snippet. A language that is missing gets
+  the original.
+- **Legal pages link their languages** with a switcher and `hreflang`, and speak
+  the document's language.
+
 ## 2. Operator inbox
 
 - **Overview first.** Signing in opens the workspace overview: a card per project
@@ -125,7 +141,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **AI elsewhere.** The email designer (section 6), a cause-and-fix note on new
   errors (section 8), and the changelog CLI (section 11).
 
-## 5. Feedback, roadmap, changelog and brand kit
+## 5. Feedback, roadmap, changelog, brand kit and pages
 
 **Feedback board** [FEEDBACK.md](FEEDBACK.md)
 
@@ -195,6 +211,30 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   for your own press page; a SwiftUI snippet for an in-app kit.
 - **Feeds the rest of HelpBites.** Make any logo the project's logo or icon, and
   use kit images in onboarding steps.
+
+**Pages and headless CMS** [PAGES.md](PAGES.md)
+
+- **Landing pages in a visual editor.** Start from a template (SaaS launch, mobile
+  app, waitlist, developer tool, design tool) or blank; drag blocks in Layers or on
+  the page, edit fields in the inspector, set the accent, mode, fonts and width,
+  undo anything. Drafts and published versions, like onboarding flows.
+- **Components, built in or your own.** Forty-seven built-ins (hero, gradient hero,
+  features, bento, pricing, FAQ, sign-up, Dock mockup, code window…), or write one
+  as HTML and CSS with `{{@field}}` slots and a field schema. Components with no
+  template are data for your own app. No scripts, ever: hosted pages share the
+  HelpBites address.
+- **Files and animations.** A file library (images, SVG, MP4, WebM, PDF) with alt
+  text, and the brand kit in the picker. Entrance, stagger, scroll-scrubbed and
+  parallax animations played by Motion from HelpBites itself.
+- **An assistant and a wizard.** It builds layouts, writes the copy and new
+  components, adds animations, reads the project's GitHub repos and keeps a
+  messaging brief (audience, problem, value proposition, key messages, proof) that
+  every turn reads. The wizard turns a few answers into a first draft.
+- **Hosted, embedded or headless.** Pages live at `/p/pk_…/slug` with link preview
+  tags and a working email sign-up; `pages.js` (MIT) frames one into your site; the
+  delivery API serves published content as JSON or rendered HTML, `cms.mjs` reads it
+  from Vue or any JavaScript, and its bridge lets the editor live-edit your own
+  site. Publishing sends a webhook so static sites can rebuild.
 
 ## 6. Email
 
@@ -405,4 +445,11 @@ See [EDITIONS.md](EDITIONS.md).
   [ONBOARDING.md](ONBOARDING.md)
 - **Brand kit.** No download-everything archive yet; files download one by one.
   [BRAND.md](BRAND.md)
+- **Pages and CMS.** Web-only for now: no native screens. No custom domains for
+  hosted pages, no scripts in components, no per-field translations, scheduled
+  publishing, version history or generated TypeScript types yet. [PAGES.md](PAGES.md)
+- **Translations.** Onboarding, legal documents and template emails have them;
+  campaigns, sequences, the mail HelpBites sends itself, the chat, feedback and
+  changelog embeds and CMS pages do not yet, and a contact has no language of its
+  own. [LANGUAGES.md](LANGUAGES.md)
 - **Language.** The panel is translated into Spanish, Catalan, Chinese, Japanese and Korean; the widgets are English only.

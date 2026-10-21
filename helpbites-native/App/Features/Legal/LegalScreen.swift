@@ -82,6 +82,7 @@ struct LegalScreen: View {
           Text("/legal/…/\(doc.slug)").font(.lnMono).foregroundStyle(Theme.textMuted).lineLimit(1)
           HStack(spacing: 6) {
             Tag(text: doc.kind.label)
+            if doc.language != ContentLocale.defaultTag || doc.translationOf != nil { Tag(text: ContentLocale.name(doc.language)) }
             Tag(text: doc.isPublished ? "Published v\(doc.version)" : "Draft", tint: doc.isPublished ? Theme.success : Theme.textDimmed)
           }
           .padding(.top, 4)

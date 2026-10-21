@@ -16,6 +16,9 @@ struct EmailMasterSummary: Decodable, Equatable, Sendable {
   let document: JSONValue?
   let variables: [EmailVariable]
   let updatedAt: Double
+  /// The language the design is written in, and its translations by language (key → text, shared/email/translate.ts).
+  var locale: String? = nil
+  var translations: [String: [String: String]]? = nil
 }
 
 struct EmailTemplateItem: Decodable, Identifiable, Equatable, Sendable {
@@ -28,6 +31,10 @@ struct EmailTemplateItem: Decodable, Identifiable, Equatable, Sendable {
   var document: JSONValue?
   var variables: [EmailVariable]
   var variableValues: [String: String]
+  /// The language the design is written in, and its translations by language (key → text, shared/email/translate.ts).
+  /// A linked template has neither of its own: it sends the master's.
+  var locale: String?
+  var translations: [String: [String: String]]?
   var shareMode: String?
   var shareToken: String?
   /// When the share link stops working (epoch ms); nil when it has no date, which the server treats as expired.
@@ -42,6 +49,9 @@ struct EmailTemplateItem: Decodable, Identifiable, Equatable, Sendable {
   struct SharedEdit: Decodable, Equatable, Sendable { let at: String?; let ip: String? }
 
   var isLinked: Bool { masterId != nil }
+  /// The language the design is written in.
+  var contentLocale: String { (locale ?? "").isEmpty ? ContentLocale.defaultTag : locale! }
+  var languages: [String: [String: String]] { translations ?? [:] }
   /// A project's link goes by its master's name.
   var title: String { master.map(\.name).flatMap { $0.isEmpty ? nil : $0 } ?? name }
   /// The panel shows the later of the row's and its master's saves.

@@ -10,7 +10,13 @@ struct OnboardingPreview: View {
   let projectAccent: String?
   @State private var index = 0
   @State private var dark = false
+  /// A language of `translations`; nil shows the flow's own.
+  @State private var language: String?
 
+  private var steps: [OnboardingStep] {
+    guard let language, let translation = translations[language] else { return source }
+    return translation.localized(name: "", steps: source).steps
+  }
   private var current: Int { min(index, max(steps.count - 1, 0)) }
 
   var body: some View {
@@ -20,6 +26,14 @@ struct OnboardingPreview: View {
         Label("Dark", systemImage: "moon").tag(true)
       }
       .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 200)
+
+      if !translations.isEmpty {
+        Picker("Language", selection: $language) {
+          Text(ContentLocale.name(locale)).tag(String?.none)
+          ForEach(translations.keys.sorted(), id: \.self) { Text(ContentLocale.name($0)).tag(Optional($0)) }
+        }
+        .pickerStyle(.menu).labelsHidden()
+      }
 
       Group {
         if steps.isEmpty {
@@ -41,6 +55,9 @@ struct OnboardingPreview: View {
       }
     }
     .frame(maxWidth: .infinity)
+    .onChange(of: translations.keys.sorted()) { _, tags in
+      if let language, !tags.contains(language) { self.language = nil }
+    }
   }
 
   private func screen(_ step: OnboardingStep, at index: Int) -> some View {

@@ -3908,5 +3908,38 @@
       "loadFailed": "No se pudieron cargar los servidores de seguimiento de errores",
       "connectFailed": "No se pudo conectar el seguimiento de errores"
     }
+  },
+  "translations": {
+    "title": "Idiomas",
+    "intro": "Muéstralo en el idioma de tus usuarios. Añade un idioma y tradúcelo con IA, o escríbelo tú. Lo que dejes vacío se muestra en {language}.",
+    "original": "original",
+    "writtenIn": "Escrito en",
+    "add": "Añadir un idioma",
+    "addTag": "Añadir \"{tag}\"",
+    "badTag": "Usa una etiqueta de idioma como es o pt-BR.",
+    "translate": "Traducir con IA",
+    "retranslate": "Volver a traducir todo",
+    "remove": "Quitar idioma",
+    "removeConfirm": "¿Quitar la traducción a {language}?",
+    "editing": "Editando la traducción a {language}. Los campos vacíos usan el texto en {original}.",
+    "translated": "Traducido a {n} idioma(s)",
+    "translateError": "No se pudo traducir. Inténtalo de nuevo.",
+    "legalIntro": "El mismo documento en otro idioma es una página aparte, enlazada con esta. Tradúcelo con IA o escríbelo tú.",
+    "thisLanguage": "Idioma de este documento",
+    "legalReview": "Las traducciones con IA son borradores. Haz que un abogado las revise antes de publicar; esto no es asesoramiento legal.",
+    "published": "Publicado",
+    "draft": "Borrador",
+    "email": {
+      "subject": "Asunto",
+      "preheader": "Texto de vista previa",
+      "plainText": "Versión en texto plano",
+      "heading": "Título",
+      "body": "Texto",
+      "button": "Texto del botón",
+      "imageAlt": "Descripción de la imagen",
+      "component": "Componente: {field}",
+      "linked": "Una plantilla enlazada envía las traducciones de su plantilla maestra. Traduce el diseño maestro.",
+      "sendHint": "Elige un idioma para editarlo. Envía en un idioma con \"locale\" en la API de envío, o fija el idioma de cada destinatario."
+    }
   }
 }

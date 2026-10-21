@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { createHash } from 'node:crypto'
+import type { UIMessageStreamWriter } from 'ai'
 import {
-  addBlock, duplicateBlock, findBlock, moveBlock, newBlock, normalizeComponentInput, normalizeContent, normalizeStyle, removeBlock, type CmsBlock, type CmsComponentDef
+  EMPTY_BRIEF, addBlock, duplicateBlock, findBlock, moveBlock, newBlock, normalizeComponentInput, normalizeContent, normalizeStyle, removeBlock, type CmsBlock, type CmsComponentDef
 } from '../shared/cms/content'
 import { BUILTIN_COMPONENTS, BUILTIN_KEYS, CMS_TEMPLATES, libraryOf, templateContent, wizardPrompt } from '../shared/cms/library'
 import { PAGE_RUNTIME, pageCsp, renderBlocks, renderMarkdown, renderPage } from '../shared/cms/render'
+import { cmsAiTools, type CmsAiContext, type CmsAiState } from '../server/utils/cmsAi'
 
 const ctx = (library = libraryOf()) => ({ library, pk: 'pk_test', host: 'https://hb.test' })
 const custom = (over: Partial<CmsComponentDef>): CmsComponentDef => ({ id: 'c1', key: 'card', name: 'Card', description: '', root: false, nestable: true, fields: [], html: '', css: '', ...over })
@@ -153,4 +155,63 @@ test('the wizard turns answers into a first message for the assistant', () => {
   expect(text).toContain('Join a waitlist')
   expect(text).toContain('acme/rocket')
   expect(wizardPrompt({ layout: 'new' })).toContain('new layout')
+})
+
+describe('the assistant\'s tools', () => {
+  const setup = (rootType = 'page') => {
+    const written: { type: string, data: unknown }[] = []
+    const writer = { write: (part: { type: string, data: unknown }) => written.push(part) } as unknown as UIMessageStreamWriter
+    const library = libraryOf()
+    const state: CmsAiState = { library, rootType, content: normalizeContent({ component: rootType, body: [] }, library, rootType).content, name: 'Home', slug: 'home', style: normalizeStyle({}), changed: false, pageChanged: false, brief: EMPTY_BRIEF, saved: 0 }
+    const saved: unknown[] = []
+    const ctx: CmsAiContext = { project: { get: () => 'Rocket' } as never, saveComponent: async (input) => { saved.push(input); return { ...(input as never), id: 'c9', builtin: false } }, saveBrief: async () => {} }
+    const tools = cmsAiTools(state, writer, ctx) as Record<string, { execute: (input: unknown, options: unknown) => Promise<string> }>
+    const run = (name: string, input: unknown) => tools[name]!.execute(input, {})
+    return { state, written, saved, run }
+  }
+
+  test('set_content builds the tree with defaults and streams it', async () => {
+    const { state, written, run } = setup()
+    const said = await run('set_content', { content: { title: 'Rocket', body: [{ component: 'hero', headline: 'Launch faster' }, { component: 'features', items: [{ component: 'feature', title: 'Fast' }] }] } })
+    expect(said).toContain('hero')
+    const [hero, features] = state.content!.body as CmsBlock[]
+    expect(hero).toMatchObject({ component: 'hero', headline: 'Launch faster', primaryLabel: 'Get started' })
+    // Explicit children replace a built-in's example ones.
+    expect((features!.items as CmsBlock[]).map(b => b.title)).toEqual(['Fast'])
+    expect(written.at(-1)!.type).toBe('data-content')
+    expect(await run('set_content', { content: { body: [{ component: 'nope' }] } })).toContain('There is no component')
+  })
+
+  test('blocks are added, edited by uid and refused where their field does not take them', async () => {
+    const { state, run } = setup()
+    await run('add_block', { block: { component: 'faq', items: [] } })
+    const faq = (state.content!.body as CmsBlock[])[0]!
+    expect(await run('add_block', { block: { component: 'qa', question: 'Free?' }, parent: faq._uid, field: 'items' })).toContain('Added')
+    expect(await run('add_block', { block: { component: 'hero' }, parent: faq._uid, field: 'items' })).toContain('takes only qa')
+    const qa = (state.content!.body as CmsBlock[])[0]!.items as CmsBlock[]
+    expect(qa.map(b => b.question)).toEqual(['Free?'])
+    await run('update_blocks', { updates: [{ uid: qa[0]!._uid, values: { answer: 'Yes.', _anim: { effect: 'fade' } } }] })
+    const updated = ((state.content!.body as CmsBlock[])[0]!.items as CmsBlock[])[0]!
+    expect(updated).toMatchObject({ answer: 'Yes.', _anim: { effect: 'fade' } })
+  })
+
+  test('components it writes are checked before they are saved', async () => {
+    const { state, saved, run } = setup()
+    expect(await run('save_component', { key: 'hero', name: 'Mine', description: '', fields: [], html: '<div></div>', css: '' })).toContain('built-in')
+    expect(await run('save_component', { key: 'evil', name: 'Evil', description: '', fields: [], html: '<div onclick="x()"></div>', css: '' })).toContain('Not saved')
+    expect(saved).toHaveLength(0)
+    expect(await run('save_component', { key: 'banner', name: 'Banner', description: 'A strip', fields: [{ key: 'text', type: 'text' }], html: '<div class="banner">{{@text}}</div>', css: '' })).toContain('Saved')
+    expect(state.library.get('banner')).toBeDefined()
+    expect(await run('add_block', { block: { component: 'banner', text: 'Hi' } })).toContain('Added')
+  })
+
+  test('templates restyle the page; a slug must be a slug', async () => {
+    const { state, run } = setup()
+    await run('apply_template', { template: 'waitlist' })
+    expect(state.style.mode).toBe('dark')
+    expect(JSON.stringify(state.content)).toContain('Rocket')
+    expect(await run('update_page', { slug: 'Not A Slug' })).toContain('Not changed')
+    await run('update_page', { slug: 'launch', style: { accent: '#ff0066' } })
+    expect(state).toMatchObject({ slug: 'launch', pageChanged: true, style: { accent: '#ff0066' } })
+  })
 })

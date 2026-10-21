@@ -3908,5 +3908,38 @@
       "loadFailed": "No s'han pogut carregar els servidors de seguiment d'errors",
       "connectFailed": "No s'ha pogut connectar el seguiment d'errors"
     }
+  },
+  "translations": {
+    "title": "Idiomes",
+    "intro": "Mostra-ho en l'idioma dels teus usuaris. Afegeix un idioma i tradueix-lo amb IA, o escriu-lo tu. El que deixis buit es mostra en {language}.",
+    "original": "original",
+    "writtenIn": "Escrit en",
+    "add": "Afegeix un idioma",
+    "addTag": "Afegeix \"{tag}\"",
+    "badTag": "Fes servir una etiqueta d'idioma com ara es o pt-BR.",
+    "translate": "Tradueix amb IA",
+    "retranslate": "Torna a traduir-ho tot",
+    "remove": "Treu idioma",
+    "removeConfirm": "Vols treure la traducció a {language}?",
+    "editing": "Editant la traducció a {language}. Els camps buits fan servir el text en {original}.",
+    "translated": "Traduït a {n} idioma(es)",
+    "translateError": "No s'ha pogut traduir. Torna-ho a provar.",
+    "legalIntro": "El mateix document en un altre idioma és una pàgina a part, enllaçada amb aquesta. Tradueix-lo amb IA o escriu-lo tu.",
+    "thisLanguage": "Idioma d'aquest document",
+    "legalReview": "Les traduccions amb IA són esborranys. Fes que un advocat les revisi abans de publicar; això no és assessorament legal.",
+    "published": "Publicat",
+    "draft": "Esborrany",
+    "email": {
+      "subject": "Assumpte",
+      "preheader": "Text de previsualització",
+      "plainText": "Versió en text pla",
+      "heading": "Títol",
+      "body": "Text",
+      "button": "Text del botó",
+      "imageAlt": "Descripció de la imatge",
+      "component": "Component: {field}",
+      "linked": "Una plantilla enllaçada envia les traduccions de la seva plantilla mestra. Tradueix el disseny mestre.",
+      "sendHint": "Tria un idioma per editar-lo. Envia en un idioma amb \"locale\" a l'API d'enviament, o fixa l'idioma de cada destinatari."
+    }
   }
 }

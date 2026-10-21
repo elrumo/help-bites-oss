@@ -7,6 +7,7 @@ import {
 import { BUILTIN_KEYS, CMS_TEMPLATES, CMS_WIZARD_QUESTIONS, libraryOf, templateContent, type WizardAnswers } from '#shared/cms/library'
 import { CMS_ICON_NAMES } from '#shared/cms/icons'
 import { extractJson } from '#shared/legal/compose'
+import { withParsedArgs } from './emailAi'
 import { fetchRepoSnapshot, projectRepos, readRepoFile, type ProjectRepo } from './github'
 
 // The Pages assistant. It edits an entry's content tree only through tools

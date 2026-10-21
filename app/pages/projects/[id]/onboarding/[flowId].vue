@@ -207,7 +207,7 @@ const publishLabel = computed(() => flow.value?.status !== 'published' ? t('proj
 
 function fill(next: Flow) {
   flow.value = next
-  form.value = JSON.parse(JSON.stringify({ name: next.name, key: next.key, steps: next.steps, style: next.style, options: next.options, locale: next.locale, translations: next.translations }))
+  form.value = JSON.parse(JSON.stringify({ name: next.name, key: next.key, steps: next.steps, style: next.style, options: next.options, locale: next.locale || 'en', translations: next.translations || {} }))
   if (lang.value && !form.value.translations[lang.value]) lang.value = ''
   saved.value = snapshot(form.value)
   previewStep.value = Math.min(previewStep.value, Math.max(0, next.steps.length - 1))
@@ -441,7 +441,7 @@ function drawPreview() {
     target: previewEl.value,
     step: previewStep.value,
     theme: previewTheme.value,
-    flow: { key: form.value.key, version: flow.value.version, style, options: form.value.options, ...localizeOnboarding(form.value.name, form.value.steps, lang.value ? form.value.translations[lang.value] : undefined) }
+    flow: { key: form.value.key, locale: lang.value || form.value.locale, version: flow.value.version, style, options: form.value.options, ...localizeOnboarding(form.value.name, form.value.steps, lang.value ? form.value.translations[lang.value] : undefined) }
   }])
 }
 

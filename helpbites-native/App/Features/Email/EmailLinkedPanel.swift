@@ -49,6 +49,7 @@ struct EmailLinkedPanel: View {
               .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
           }
           brandSection
+          languagesSection
           valuesSection
           VStack(alignment: .leading, spacing: 8) {
             heading("Send it")
@@ -108,6 +109,21 @@ struct EmailLinkedPanel: View {
     }
   }
 
+  /// A linked template has no languages of its own: it sends the master's, picked by the send API's `locale`.
+  private var languagesSection: some View {
+    let tags = (master?.translations ?? [:]).keys.sorted()
+    let own = ContentLocale.name(master?.locale ?? ContentLocale.defaultTag)
+    return VStack(alignment: .leading, spacing: 8) {
+      heading("Languages")
+      if tags.isEmpty {
+        Text("The master is written in \(own) and has no translations. Add them in the master and this project sends them too.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+      } else {
+        Text("This template uses the master's translations. Pass `locale` to the send API to pick one; without it, or for a language the master lacks, the email goes out in \(own). Edit them in the master.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+        FlowLayout(spacing: 6) { ForEach(tags, id: \.self) { Tag(text: ContentLocale.name($0)) } }
+      }
+    }
+  }
+
   private var valuesSection: some View {
     VStack(alignment: .leading, spacing: 14) {
       heading("Values for this project")
@@ -151,12 +167,13 @@ struct EmailLinkedPanel: View {
 
   /// What the send API call looks like for this template, with the first sample values.
   private var snippet: String {
+    let locale = (master?.translations ?? [:]).keys.sorted().first.map { ",\"locale\":\(json($0))" } ?? ""
     let variables = fields.prefix(3).map { "\(json($0.key)):\(json($0.defaultValue?.isEmpty == false ? $0.defaultValue! : "…"))" }.joined(separator: ",")
     return """
     curl -X POST \(session.endpoint)/v1/emails/send \\
       -H "Authorization: Bearer $HELPBITES_SECRET" \\
       -H "Content-Type: application/json" \\
-      -d '{"template":\(json(saved.key)),"to":"user@example.com","variables":{\(variables)}}'
+      -d '{"template":\(json(saved.key)),"to":"user@example.com"\(locale),"variables":{\(variables)}}'
     """
   }
 
@@ -254,7 +271,9 @@ struct EmailLinkedPanel: View {
       name: template.name ?? current.name,
       document: template.document ?? current.document,
       variables: template.variables ?? current.variables,
-      updatedAt: template.updatedAt ?? current.updatedAt
+      updatedAt: template.updatedAt ?? current.updatedAt,
+      locale: current.locale,
+      translations: current.translations
     )
     onSaved(saved)
   }

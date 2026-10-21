@@ -118,6 +118,14 @@ const brandUpload = await maybe('brand file (needs S3)', async () => {
   if (res.status >= 300) throw new Error(`${res.status} ${res.json.statusMessage || ''}`)
   return res.json.asset
 })
+const { component: cmsComponent } = await api('/v1/admin/cms/components', { ...A, method: 'POST', body: { project: project.id, key: `${MARK}_card`.toLowerCase(), name: `${MARK} card`, fields: [{ key: 'text', type: 'text' }], html: '<div>{{@text}}</div>' } })
+const { entry: cmsEntry } = await api('/v1/admin/cms/entries', { ...A, method: 'POST', body: { project: project.id, name: `${MARK} page`, template: 'waitlist' } })
+await api(`/v1/admin/cms/settings`, { ...A, method: 'PATCH', body: { project: project.id, brief: { audience: `${MARK} audience` } } })
+const cmsUpload = await maybe('pages file (needs S3)', async () => {
+  const res = await upload('/v1/admin/cms/assets', { project: project.id, name: `${MARK} shot` }, A)
+  if (res.status >= 300) throw new Error(`${res.status} ${res.json.statusMessage || ''}`)
+  return res.json.asset
+})
 
 // ---- workspace B: the attacker -------------------------------------------------
 
@@ -239,6 +247,31 @@ if (brandUpload) {
   await attempt('edit A\'s brand file', `/v1/admin/brand/assets/${brandUpload.id}`, { method: 'PATCH', body: { name: 'pwned' } })
   await attempt('delete A\'s brand file', `/v1/admin/brand/assets/${brandUpload.id}`, { method: 'DELETE' })
 }
+await attempt('list A\'s pages', `/v1/admin/cms/entries?project=${project.id}`)
+await attempt('read A\'s page', `/v1/admin/cms/entries/${cmsEntry.id}`)
+await attempt('edit A\'s page', `/v1/admin/cms/entries/${cmsEntry.id}`, { method: 'PATCH', body: { name: 'pwned' } })
+await attempt('publish A\'s page', `/v1/admin/cms/entries/${cmsEntry.id}/publish`, { method: 'POST' })
+await attempt('delete A\'s page', `/v1/admin/cms/entries/${cmsEntry.id}`, { method: 'DELETE' })
+await attempt('create a page in A\'s project', '/v1/admin/cms/entries', { method: 'POST', body: { project: project.id, name: 'pwned' } })
+await attempt('list A\'s components', `/v1/admin/cms/components?project=${project.id}`)
+await attempt('read A\'s component', `/v1/admin/cms/components/${cmsComponent.id}`)
+await attempt('edit A\'s component', `/v1/admin/cms/components/${cmsComponent.id}`, { method: 'PATCH', body: { name: 'pwned' } })
+await attempt('delete A\'s component', `/v1/admin/cms/components/${cmsComponent.id}`, { method: 'DELETE' })
+await attempt('list A\'s page files', `/v1/admin/cms/assets?project=${project.id}`)
+await attempt('read A\'s Pages settings', `/v1/admin/cms/settings?project=${project.id}`)
+await attempt('edit A\'s Pages settings', '/v1/admin/cms/settings', { method: 'PATCH', body: { project: project.id, brief: { audience: 'pwned' } } })
+await attempt('read A\'s page assistant chat', `/v1/admin/cms/chat?entry=${cmsEntry.id}`)
+await attempt('talk to the assistant on A\'s page', '/v1/admin/cms/chat', { method: 'POST', body: { entry: cmsEntry.id, messages: [{ id: 'm1', role: 'user', parts: [{ type: 'text', text: 'hi' }] }] } })
+await attempt('clear A\'s page assistant chat', `/v1/admin/cms/chat?entry=${cmsEntry.id}`, { method: 'DELETE' })
+await attempt('read A\'s linked repos', `/v1/admin/cms/repos?project=${project.id}`)
+for (const who of [{ name: 'session', auth: B }, { name: 'api key', auth: { token: keyB } }]) {
+  const res = await upload('/v1/admin/cms/assets', { project: project.id }, who.auth)
+  check(refused(res.status) && !res.text.includes(MARK), `upload into A's page files (${who.name}) → ${res.status}`)
+}
+if (cmsUpload) {
+  await attempt('edit A\'s page file', `/v1/admin/cms/assets/${cmsUpload.id}`, { method: 'PATCH', body: { alt: 'pwned' } })
+  await attempt('delete A\'s page file', `/v1/admin/cms/assets/${cmsUpload.id}`, { method: 'DELETE' })
+}
 await attempt('revoke A\'s API key', `/v1/admin/api-keys/${keyA.apiKey.id}`, { method: 'DELETE' })
 await attempt('demote A\'s owner', `/v1/admin/agents/${me.agent.id}`, { method: 'PATCH', body: { role: 'agent' } })
 
@@ -286,6 +319,11 @@ check(flowAfter?.name === `${MARK} flow` && flowAfter.status === 'draft', 'A\'s 
 const kitAfter = (await call(`/v1/admin/brand?project=${project.id}`, A)).json
 check(kitAfter.brand?.tagline === `${MARK} tagline` && kitAfter.brand.page.public === false, 'A\'s brand kit is untouched')
 if (brandUpload) check(kitAfter.assets?.some(a => a.id === brandUpload.id && a.name === `${MARK} logo`), 'A\'s brand file is untouched')
+const pageAfter = (await call(`/v1/admin/cms/entries/${cmsEntry.id}`, A)).json.entry
+check(pageAfter?.name === `${MARK} page` && pageAfter.status === 'draft', 'A\'s page is untouched')
+check((await call(`/v1/admin/cms/components/${cmsComponent.id}`, A)).json.component?.name === `${MARK} card`, 'A\'s component is untouched')
+check((await call(`/v1/admin/cms/settings?project=${project.id}`, A)).json.settings?.brief?.audience === `${MARK} audience`, 'A\'s messaging brief is untouched')
+if (cmsUpload) check((await call(`/v1/admin/cms/assets?project=${project.id}`, A)).json.assets?.some(a => a.id === cmsUpload.id && a.alt === ''), 'A\'s page file is untouched')
 
 if (failures) {
   console.log(`\n${failures} isolation check(s) FAILED`)

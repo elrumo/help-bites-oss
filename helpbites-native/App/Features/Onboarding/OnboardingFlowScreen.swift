@@ -118,7 +118,7 @@ struct OnboardingFlowScreen: View {
   }
 
   private func preview(_ draft: OnboardingDraft) -> some View {
-    OnboardingPreview(steps: draft.steps, style: draft.style, options: draft.options, projectAccent: projectAccent)
+    OnboardingPreview(source: draft.steps, locale: draft.locale, translations: draft.translations, style: draft.style, options: draft.options, projectAccent: projectAccent)
   }
 
   private func form(_ flow: OnboardingFlow, _ draft: Binding<OnboardingDraft>) -> some View {
@@ -155,6 +155,8 @@ struct OnboardingFlowScreen: View {
       }
       Button { draft.wrappedValue.steps.append(.blank()) } label: { Label("Add step", systemImage: "plus") }
         .buttonStyle(.lnSecondaryCompact).disabled(draft.wrappedValue.steps.count >= OnboardingLimits.steps)
+
+      OnboardingLanguagesPanel(draft: draft, canTranslate: !dirty && busy == "", translate: translate)
 
       LegalPanel("Look") {
         OptionalColorField(label: "Accent", hex: draft.style.accent, fallback: Color(hexString: projectAccent) ?? Theme.accent, empty: "Project accent")
@@ -234,6 +236,13 @@ struct OnboardingFlowScreen: View {
     }
   }
 
+  /// `POST …/translate`: the AI fills the saved working copy's translations; the flow comes back with them.
+  private func translate(_ locales: [String], overwrite: Bool) async throws {
+    struct Body: Encodable, Sendable { let locales: [String]; let overwrite: Bool }
+    let response: OnboardingFlowResponse = try await LegalAPI.slow(session, "/v1/admin/onboarding/flows/\(flowId)/translate", Body(locales: locales, overwrite: overwrite))
+    apply(response.flow)
+  }
+
   /// publish or unpublish.
   private func run(_ action: String) async {
     busy = action
@@ -274,7 +283,7 @@ struct OnboardingFlowScreen: View {
 }
 
 /// A text field with its character count against the server's limit, which it never lets the text pass.
-private struct OnboardingTextField: View {
+struct OnboardingTextField: View {
   let label: String
   @Binding var text: String
   let limit: Int

@@ -6,11 +6,14 @@ import Observation
 /// differs from what the server has. The AI actions work on the saved copy.
 @MainActor @Observable final class LegalDocumentStore {
   let documentId: String
+  let projectId: String
   @ObservationIgnored private let session: SessionStore
 
   private(set) var document: LegalDocument?
   private(set) var coverage: LegalCoverage?
   private(set) var versions: [LegalVersion] = []
+  /// The project's other documents that are this text in another language (`translationOf`).
+  private(set) var otherLanguages: [LegalDocument] = []
   private(set) var findings: [LegalFinding]?
   private(set) var loading = true
   private(set) var busy = ""
@@ -32,8 +35,9 @@ import Observation
   var instruction = ""
   var proposal = ""
 
-  init(documentId: String, session: SessionStore) {
+  init(documentId: String, projectId: String, session: SessionStore) {
     self.documentId = documentId
+    self.projectId = projectId
     self.session = session
   }
 
@@ -85,6 +89,15 @@ import Observation
       self.error = error.localizedDescription
     }
     loading = false
+    await loadOtherLanguages()
+  }
+
+  /// The languages of this text: documents of the project in the same group, found in the project's list.
+  private func loadOtherLanguages() async {
+    struct Documents: Decodable, Sendable { let documents: [LegalDocument] }
+    guard let current = document, let list: Documents = try? await session.get("/v1/admin/legal/documents", query: ["project": projectId]) else { return }
+    otherLanguages = list.documents.filter { $0.id != current.id && $0.group == current.group }
+      .sorted { $0.language.localizedCompare($1.language) == .orderedAscending }
   }
 
   // MARK: Editing
@@ -148,6 +161,24 @@ import Observation
     if let result: Loaded = await run("restore", { try await session.send(path + "/versions/\(version)/restore") }) {
       adopt(result.document, result.coverage)
     }
+  }
+
+  /// The language of this document (`locale`). Takes the saved copy, so only without unsaved edits.
+  func setLocale(_ tag: String) async {
+    struct Body: Encodable, Sendable { let locale: String }
+    if let result: Loaded = await run("locale", { try await session.send(path, method: "PATCH", body: Body(locale: tag)) }) {
+      adopt(result.document, result.coverage)
+      await loadOtherLanguages()
+    }
+  }
+
+  /// `POST …/translate`: a new linked draft in `tag`. Throws the server's message (409 when that language exists, 501 without an AI provider).
+  func translate(to tag: String) async throws -> LegalDocument {
+    struct Body: Encodable, Sendable { let locale: String }
+    struct Created: Decodable, Sendable { let document: LegalDocument }
+    let created: Created = try await LegalAPI.slow(session, path + "/translate", Body(locale: tag))
+    await loadOtherLanguages()
+    return created.document
   }
 
   func generateTldr() async {

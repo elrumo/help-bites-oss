@@ -74,6 +74,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'ONBOARDING.md'
   },
   {
+    slug: 'languages',
+    title: 'Languages and AI translation',
+    description: 'Show onboarding, legal pages and emails in your users\' language: add languages, translate with AI or by hand, and pick one with a locale from your web app, Swift app or the API.',
+    group: 'Guides',
+    file: 'LANGUAGES.md'
+  },
+  {
     slug: 'brand',
     title: 'Brand kit',
     description: 'Keep logos, icons, screenshots, colours, fonts and guidelines in one place, and share them on a public press page, an embed for your site, or the API.',

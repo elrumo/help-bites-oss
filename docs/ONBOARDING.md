@@ -73,6 +73,7 @@ Set them as `data-*` attributes or in `init`:
 | `theme` | `system`, `light` or `dark`. Defaults to a `dark` or `light` class on your `<html>`, then the visitor's system setting. |
 | `accent`, `radius`, `font` | Override the flow's style. |
 | `fallback` | A selector for a `<script type="application/json">` holding an offline copy (see below), or the copy itself in `init`. |
+| `locale` | The translation to show, a language tag such as `es` or `pt-BR`. Defaults to your `<html lang>`, then the browser's language. A flow without that translation shows in its own language. See [Languages](LANGUAGES.md). |
 | `host` | Where HelpBites is, when you serve `onboarding.js` from your own site. |
 
 ```html
@@ -156,7 +157,7 @@ struct HelpBitesFlow: Codable, Identifiable, Equatable {
   struct Step: Codable, Identifiable, Equatable { let id, title, body, imageUrl, imageAlt, buttonLabel: String }
   struct Style: Codable, Equatable { let accent, background, text, font: String; let radius: Double }
   struct Options: Codable, Equatable { let skippable: Bool; let progress: String }
-  let key, name: String
+  let key, name, locale: String
   let version: Int
   let style: Style
   let options: Options
@@ -166,9 +167,12 @@ struct HelpBitesFlow: Codable, Identifiable, Equatable {
 
 enum HelpBitesOnboarding {
   /// The freshest copy that answers: HelpBites (4 s), then the last good copy, then `onboarding-<key>.json` in your bundle.
-  static func load(host: URL, projectKey: String, flow key: String) async -> HelpBitesFlow? {
-    let saved = URL.cachesDirectory.appending(path: "helpbites-onboarding-\(key).json")
-    let request = URLRequest(url: host.appending(path: "v1/onboarding/\(projectKey)/\(key)"), cachePolicy: .reloadRevalidatingCacheData, timeoutInterval: 4)
+  /// `locale` is the translation to ask for: the user's first language unless you say otherwise.
+  static func load(host: URL, projectKey: String, flow key: String, locale: String = Locale.preferredLanguages.first ?? "en") async -> HelpBitesFlow? {
+    let saved = URL.cachesDirectory.appending(path: "helpbites-onboarding-\(key)-\(locale).json")
+    var url = URLComponents(url: host.appending(path: "v1/onboarding/\(projectKey)/\(key)"), resolvingAgainstBaseURL: false)!
+    url.queryItems = [URLQueryItem(name: "locale", value: locale)]
+    let request = URLRequest(url: url.url!, cachePolicy: .reloadRevalidatingCacheData, timeoutInterval: 4)
     if let answer = try? await URLSession.shared.data(for: request), let status = (answer.1 as? HTTPURLResponse)?.statusCode {
       if status == 404 { try? FileManager.default.removeItem(at: saved); return nil }
       if status == 200, let flow = decode(answer.0) { try? answer.0.write(to: saved); return flow }
@@ -184,16 +188,16 @@ enum HelpBitesOnboarding {
 
 extension View {
   /// Shows the flow once, or again after each publish with `everyVersion`. `onFinish(true)` when completed, `false` when skipped.
-  func helpBitesOnboarding(host: URL, projectKey: String, flow key: String, everyVersion: Bool = false,
+  func helpBitesOnboarding(host: URL, projectKey: String, flow key: String, locale: String? = nil, everyVersion: Bool = false,
                            accent: Color? = nil, cornerRadius: CGFloat? = nil, design: Font.Design? = nil,
                            onFinish: @escaping (Bool) -> Void = { _ in }) -> some View {
-    modifier(HelpBitesOnboardingPresenter(host: host, projectKey: projectKey, key: key, everyVersion: everyVersion,
+    modifier(HelpBitesOnboardingPresenter(host: host, projectKey: projectKey, key: key, locale: locale, everyVersion: everyVersion,
                                           accent: accent, cornerRadius: cornerRadius, design: design, onFinish: onFinish))
   }
 }
 
 private struct HelpBitesOnboardingPresenter: ViewModifier {
-  let host: URL, projectKey: String, key: String, everyVersion: Bool
+  let host: URL, projectKey: String, key: String, locale: String?, everyVersion: Bool
   let accent: Color?, cornerRadius: CGFloat?, design: Font.Design?
   let onFinish: (Bool) -> Void
   @State private var flow: HelpBitesFlow?
@@ -201,7 +205,7 @@ private struct HelpBitesOnboardingPresenter: ViewModifier {
   func body(content: Content) -> some View {
     content
       .task {
-        guard let loaded = await HelpBitesOnboarding.load(host: host, projectKey: projectKey, flow: key), !loaded.steps.isEmpty else { return }
+        guard let loaded = await HelpBitesOnboarding.load(host: host, projectKey: projectKey, flow: key, locale: locale ?? Locale.preferredLanguages.first ?? "en"), !loaded.steps.isEmpty else { return }
         let seen = UserDefaults.standard.integer(forKey: "helpbites.onboarding.\(key)")
         if seen == 0 || (everyVersion && seen < loaded.version) { flow = loaded }
       }
@@ -257,7 +261,8 @@ struct HelpBitesOnboardingView: View {
         Button {
           if last { onFinish(true) } else { withAnimation { index += 1 } }
         } label: {
-          Text(step.buttonLabel.isEmpty ? (last ? "Get started" : "Continue") : step.buttonLabel).fontWeight(.semibold)
+          // A step's own label is shown as written; the defaults are your app's own strings, so they follow its localisation.
+          (step.buttonLabel.isEmpty ? Text(LocalizedStringKey(last ? "Get started" : "Continue")) : Text(verbatim: step.buttonLabel)).fontWeight(.semibold)
             .frame(maxWidth: .infinity, minHeight: 46)
             .background(tint, in: .rect(cornerRadius: max(6, radius * 0.6))).foregroundStyle(onTint)
         }
@@ -295,6 +300,13 @@ ContentView()
   .helpBitesOnboarding(host: URL(string: "https://YOUR-SUPPORT-HOST")!, projectKey: "pk_…", flow: "welcome")
 ```
 
+**Languages.** The flow is requested in the user's first language
+(`Locale.preferredLanguages`), or the one you pass as `locale:`. HelpBites answers
+with that translation when the flow has it and with the flow's own language
+otherwise (see [Languages](LANGUAGES.md)). The words the snippet itself adds
+("Continue", "Get started", "Skip", "Back") are your app's strings: add them to
+your `Localizable.xcstrings`.
+
 **Customise it** with `accent`, `cornerRadius` and `design` (`.rounded`,
 `.serif`…), or skip the presenter and put `HelpBitesOnboardingView` wherever you
 like: in a `fullScreenCover`, a page of your own, or a `TabView`. It is your
@@ -318,7 +330,7 @@ curl -s https://YOUR-SUPPORT-HOST/v1/onboarding/PROJECT_PUBLIC_KEY/welcome
 ```json
 {
   "flow": {
-    "key": "welcome", "name": "Welcome", "version": 3, "publishedAt": "2026-10-21T09:00:00.000Z",
+    "key": "welcome", "name": "Welcome", "locale": "en", "locales": ["en", "es"], "version": 3, "publishedAt": "2026-10-21T09:00:00.000Z",
     "project": { "name": "Acme", "logoUrl": "https://cdn.acme.test/icon.png" },
     "style": { "accent": "#0ea5e9", "background": "", "text": "", "radius": 20, "font": "system" },
     "options": { "skippable": true, "progress": "bar" },
@@ -329,6 +341,10 @@ curl -s https://YOUR-SUPPORT-HOST/v1/onboarding/PROJECT_PUBLIC_KEY/welcome
 
 - `404` for an unknown project, an unknown key, or a flow that is not published.
   Treat it as "show nothing", and drop any copy you saved.
+- `?locale=es` (or an `Accept-Language` header) asks for a translation. You get
+  the first language the flow has, matching `es-MX` to `es`, and the flow's own
+  language when it has none; `locale` says which one you got and `locales` lists
+  every language the flow has. Answers `Vary` on `Accept-Language`.
 - Answers carry an `ETag` (send it back as `If-None-Match` for a `304`) and may be
   cached for 60 seconds. A CDN in front of HelpBites may serve a stale answer for
   a day while it refreshes, and for a week if HelpBites is down
@@ -371,7 +387,8 @@ curl -s -X POST $HOST/v1/admin/onboarding/flows/FLOW_ID/publish -H "authorizatio
 | `GET /v1/admin/onboarding/flows?project=` | Every flow, with its working copy, `published` (what apps get, or `null`) and `changed`. |
 | `POST /v1/admin/onboarding/flows` | Create a draft. `key` must be unused in the project (`409`). |
 | `GET /v1/admin/onboarding/flows/{id}` | One flow. |
-| `PATCH /v1/admin/onboarding/flows/{id}` | Change `name`, `key`, `steps` (the full list), `style` or `options` (merged). |
+| `PATCH /v1/admin/onboarding/flows/{id}` | Change `name`, `key`, `steps` (the full list), `style` or `options` (merged), `locale` (the language it is written in) or `translations` (below). |
+| `POST /v1/admin/onboarding/flows/{id}/translate` | Translate the working copy with AI into `locales`, e.g. `["es","fr"]`; `overwrite: true` redoes strings that already have a translation. |
 | `POST /v1/admin/onboarding/flows/{id}/publish` | Publish the working copy as the next version. `400` with no steps. |
 | `POST /v1/admin/onboarding/flows/{id}/unpublish` | Back to a draft; the public URL answers `404`. |
 | `DELETE /v1/admin/onboarding/flows/{id}` | Delete it. |
@@ -379,3 +396,23 @@ curl -s -X POST $HOST/v1/admin/onboarding/flows/FLOW_ID/publish -H "authorizatio
 
 Invalid values answer `400` with every problem listed. The full schema is in the
 OpenAPI docs at `/_docs/scalar`.
+
+## Languages
+
+A flow is written in one language (`locale`, default `en`) and can carry a
+translation per language: its name and, for each step, the `title`, `body`,
+`imageAlt` and `buttonLabel`. A word a translation leaves out is shown in the
+flow's own language, so a half-translated flow never shows a blank.
+
+```json
+"locale": "en",
+"translations": {
+  "es": { "name": "Bienvenida", "steps": { "st_1": { "title": "Te damos la bienvenida a Acme", "body": "Sigue todos tus pedidos en un solo lugar." } } }
+}
+```
+
+Send `translations` to `PATCH` to write them yourself: a language you send
+replaces that language, and `null` removes it. **Translate with AI** (in the
+panel, or `POST …/translate`) fills the missing words and keeps what you wrote.
+Translations are part of the version you publish, so they reach apps with it.
+See [Languages](LANGUAGES.md) for how the AI translation works.

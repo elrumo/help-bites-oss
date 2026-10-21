@@ -3908,5 +3908,38 @@
       "loadFailed": "エラートラッキングサーバーを読み込めませんでした",
       "connectFailed": "エラートラッキングを接続できませんでした"
     }
+  },
+  "translations": {
+    "title": "言語",
+    "intro": "ユーザーの言語で表示できます。言語を追加して AI で翻訳するか、自分で書いてください。空欄の部分は {language} で表示されます。",
+    "original": "原文",
+    "writtenIn": "原文の言語",
+    "add": "言語を追加",
+    "addTag": "「{tag}」を追加",
+    "badTag": "es や pt-BR のような言語タグを使ってください。",
+    "translate": "AI で翻訳",
+    "retranslate": "すべて翻訳し直す",
+    "remove": "言語を削除",
+    "removeConfirm": "{language}の翻訳を削除しますか?",
+    "editing": "{language}の翻訳を編集中です。空欄は {original} のテキストになります。",
+    "translated": "{n} 言語に翻訳しました",
+    "translateError": "翻訳できませんでした。もう一度お試しください。",
+    "legalIntro": "別の言語の同じ文書は、この文書にリンクされた別のページになります。AI で翻訳するか、自分で書いてください。",
+    "thisLanguage": "この文書の言語",
+    "legalReview": "AI による翻訳は下書きです。公開前に弁護士の確認を受けてください。これは法的助言ではありません。",
+    "published": "公開中",
+    "draft": "下書き",
+    "email": {
+      "subject": "件名",
+      "preheader": "プレヘッダー",
+      "plainText": "テキスト版",
+      "heading": "見出し",
+      "body": "本文",
+      "button": "ボタンのラベル",
+      "imageAlt": "画像の説明",
+      "component": "コンポーネント: {field}",
+      "linked": "リンクされたテンプレートは、元のテンプレートの翻訳を送信します。元のデザインを翻訳してください。",
+      "sendHint": "編集する言語を選んでください。送信 API の \"locale\" で言語を指定するか、宛先ごとに言語を設定できます。"
+    }
   }
 }

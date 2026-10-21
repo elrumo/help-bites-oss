@@ -5,6 +5,20 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- Languages and AI translation for onboarding flows, legal documents and email templates (`docs/LANGUAGES.md`). New
+  fields `OnboardingFlow.locale` and `translations`, `LegalDocument.translationOf` and `EmailTemplate.locale` and
+  `translations` (need `schema:apply`; the container does it on boot). `POST …/translate` on each uses the workspace's
+  AI, or the gateway (`LITELLM_API_BASE_URL`), and is rate limited; `GET /v1/onboarding/<pk>/<key>?locale=`,
+  `locale` on `POST /v1/emails/send` and `translations` on the public legal document pick a language. `onboarding.js`
+  now asks for the visitor's language (`<html lang>`, else the browser's) and the Swift snippet for the user's first.
+- Pages and headless CMS: landing pages built in a visual editor from templates and components, hosted at
+  `/p/<public key>/<slug>`, embedded with `public/pages.js`, and served as JSON or HTML by the delivery API
+  (`/v1/cms/{pk}/…`, read with `public/cms.mjs`); an AI assistant and wizard write pages, copy and components and can
+  read the project's GitHub repos. See `docs/PAGES.md`. New classes `CmsComponent`, `CmsEntry`, `CmsAsset` and
+  `CmsChatMessage`, and field `Project.cms` (needs `schema:apply`; the container does it on boot). Files go to the bucket
+  under `<projectId>/cms/`. `/p` joins `/embed`, `/s` and `/brand` as frameable. Motion 14.5.0 (MIT) is vendored at
+  `public/vendor/motion-14.5.0.js` and served by HelpBites for page animations. New event webhook types
+  `cms.entry.published` and `cms.entry.unpublished`.
 - The panel and the native app now open on **Overview** (`/overview`) instead of the inbox: a card per project, unread
   and open conversations, the latest unread messages, total revenue and revenue by project. Its data is
   `GET /v1/admin/overview` (see `docs/OVERVIEW.md`). No schema change; bookmarks to `/inbox` still work.
