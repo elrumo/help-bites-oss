@@ -15,6 +15,8 @@ All notable changes to the community edition. Versions are Docker image tags
   behind: erase those people again to remove them.
 - A campaign with no mailer configured is refused when scheduled, sent or resumed, and one already sending pauses
   with the reason, instead of retrying every five minutes for ever.
+  Sequences too: activating one is refused, and a step that comes due with no mailer waits an hour without sending
+  (it used to log a failed email every five minutes).
 - AI hand-off: when a routing rule says "human", or no knowledge matches (well enough) and the assistant's fallback
   is "Hand to a human", the assistant no longer answers. The conversation gets the `needs-human` label and an
   internal note, and the assistant stays out of it until the label is removed.

@@ -49,6 +49,7 @@
     "onboarding": "新手引导",
     "legal": "法务",
     "brand": "品牌",
+    "pages": "页面",
     "email": "邮件",
     "campaigns": "营销活动",
     "flags": "功能开关",
@@ -2784,7 +2785,7 @@
     "fallbackHuman": "转交人工",
     "fallbackSilent": "保持沉默",
     "autoReply": "自动回复此项目的用户",
-    "autoReplyHint": "— 默认关闭；以此助手的身份发送有依据的回答",
+    "autoReplyHint": "— 默认关闭，且仅在状态为“启用”时生效；以此助手的身份发送有依据的回答",
     "whenAi": "何时使用 AI 回答",
     "minConfidence": "最低置信度",
     "minConfidenceHint": "仅当最佳知识匹配的把握至少达到此值时才发送 AI 回答。0% = 始终尝试。",
@@ -2976,7 +2977,42 @@
       "latestActivity": "最新动态",
       "nothingYet": "暂无内容",
       "activityEmpty": "会话、反馈和看板中已完成的事项都会显示在这里。",
-      "loadError": "无法加载概览"
+      "loadError": "无法加载概览",
+      "stats": {
+        "open": "未结束的会话",
+        "new": "本周新增",
+        "emails": "已发送邮件 · 7 天",
+        "feedback": "反馈 · 7 天"
+      },
+      "health": {
+        "chat": "聊天组件",
+        "email": "邮件发送",
+        "notify": "团队通知",
+        "feedback": "反馈看板",
+        "errors": "错误追踪"
+      },
+      "healthDetail": {
+        "noOrigins": "没有允许的来源",
+        "notLoaded": "尚未在你的网站上加载",
+        "origins": "{count} 个允许的来源",
+        "defaultSender": "默认发件人",
+        "notConfigured": "未配置",
+        "nobodyEmailed": "不会通知任何人",
+        "on": "开启",
+        "off": "关闭",
+        "notConnected": "未连接"
+      },
+      "attention": {
+        "unread": "未读会话",
+        "errors": "未处理的错误报告",
+        "emails": "发送失败的邮件 · 7 天",
+        "documents": "处理失败的知识文档",
+        "feedback": "待分类的反馈"
+      },
+      "activityTitle": {
+        "newFeedback": "新反馈：{title}",
+        "completed": "已完成 {item}"
+      }
     },
     "settings": {
       "general": "通用",

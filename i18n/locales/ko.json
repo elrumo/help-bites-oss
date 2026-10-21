@@ -49,6 +49,7 @@
     "onboarding": "온보딩",
     "legal": "법무",
     "brand": "브랜드",
+    "pages": "페이지",
     "email": "이메일",
     "campaigns": "캠페인",
     "flags": "플래그",
@@ -2784,7 +2785,7 @@
     "fallbackHuman": "상담원에게 넘기기",
     "fallbackSilent": "응답하지 않기",
     "autoReply": "이 프로젝트의 사용자에게 자동 답장",
-    "autoReplyHint": "— 기본값은 꺼짐. 근거 있는 답변을 이 어시스턴트 이름으로 보냅니다",
+    "autoReplyHint": "— 기본값은 꺼짐이며 상태가 활성일 때만 작동합니다. 근거 있는 답변을 이 어시스턴트 이름으로 보냅니다",
     "whenAi": "AI로 답변할 때",
     "minConfidence": "최소 신뢰도",
     "minConfidenceHint": "가장 좋은 지식 일치 결과의 확신도가 이 값 이상일 때만 AI 답변을 보냅니다. 0% = 항상 시도.",
@@ -2976,7 +2977,42 @@
       "latestActivity": "최근 활동",
       "nothingYet": "아직 없습니다",
       "activityEmpty": "대화, 피드백, 보드에서 완료된 항목이 여기에 표시됩니다.",
-      "loadError": "개요를 불러올 수 없습니다"
+      "loadError": "개요를 불러올 수 없습니다",
+      "stats": {
+        "open": "열린 대화",
+        "new": "이번 주 신규",
+        "emails": "보낸 이메일 · 7일",
+        "feedback": "피드백 · 7일"
+      },
+      "health": {
+        "chat": "채팅 위젯",
+        "email": "이메일 발송",
+        "notify": "팀 알림",
+        "feedback": "피드백 보드",
+        "errors": "오류 추적"
+      },
+      "healthDetail": {
+        "noOrigins": "허용된 출처 없음",
+        "notLoaded": "아직 사이트에서 로드되지 않았습니다",
+        "origins": "허용된 출처 {count}개",
+        "defaultSender": "기본 발신자",
+        "notConfigured": "설정되지 않음",
+        "nobodyEmailed": "알림 받는 사람 없음",
+        "on": "켜짐",
+        "off": "꺼짐",
+        "notConnected": "연결되지 않음"
+      },
+      "attention": {
+        "unread": "읽지 않은 대화",
+        "errors": "열린 오류 보고",
+        "emails": "실패한 이메일 · 7일",
+        "documents": "처리에 실패한 지식 문서",
+        "feedback": "분류 대기 중인 피드백"
+      },
+      "activityTitle": {
+        "newFeedback": "새 피드백: {title}",
+        "completed": "완료: {item}"
+      }
     },
     "settings": {
       "general": "일반",
