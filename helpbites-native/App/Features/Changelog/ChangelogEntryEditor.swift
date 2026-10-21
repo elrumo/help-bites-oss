@@ -400,7 +400,7 @@ struct ChangelogEntryEditor: View {
     if store.state(entry) == .live, let linked = linkedConversations, linked.count > 0 {
       HStack(spacing: 10) {
         Image(systemName: "bubble.left.and.bubble.right").font(.system(size: 14)).foregroundStyle(Theme.accentText)
-        Text("This entry answers \(linked.count) \(linked.count == 1 ? "conversation" : "conversations"). You can tell \(linked.count == 1 ? "them" : "them") it shipped.")
+        Text("This entry answers \(linked.count) \(linked.count == 1 ? "conversation" : "conversations"). You can tell them it shipped.")
           .font(.lnMeta).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
         Spacer(minLength: 4)
         Button { replying = true } label: { Label("Reply to \(linked.count) linked \(linked.count == 1 ? "conversation" : "conversations")", systemImage: "paperplane") }

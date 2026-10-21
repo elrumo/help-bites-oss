@@ -63,6 +63,11 @@ const snippet = computed(() => `<form action="${appUrl.value}/v1/subscribe" meth
           <UFormField :label="$t('campaigns.settings.postalAddress')" :hint="$t('campaigns.settings.postalAddressHint')">
             <UInput v-model="form.postalAddress" placeholder="Acme Inc, 1 Main Street, Lisbon, Portugal" class="w-full" />
           </UFormField>
+          <p class="text-xs text-muted">
+            <i18n-t keypath="campaigns.settings.postalAddressCompany" tag="span">
+              <template #company><NuxtLink :to="`/projects/${project.id}/settings#company`" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('campaigns.settings.postalAddressCompanyLink') }}</NuxtLink></template>
+            </i18n-t>
+          </p>
         </section>
 
         <section class="space-y-3">

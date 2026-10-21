@@ -2,6 +2,11 @@
   <UModal v-model:open="open" :title="$t('legal.look.title')" :description="$t('legal.look.description')">
     <template #body>
       <form class="space-y-4" @submit.prevent="save">
+        <p class="text-xs text-muted">
+          <i18n-t keypath="legal.look.companyNote" tag="span">
+            <template #company><NuxtLink :to="`/projects/${projectId}/settings#company`" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('legal.look.companyLink') }}</NuxtLink></template>
+          </i18n-t>
+        </p>
         <UFormField :label="$t('legal.look.entity')" :hint="$t('legal.look.entityHint')"><UInput v-model="form.entity.name" class="w-full" /></UFormField>
         <UFormField :label="$t('legal.look.address')"><UInput v-model="form.entity.address" class="w-full" /></UFormField>
         <div class="grid gap-4 sm:grid-cols-2">

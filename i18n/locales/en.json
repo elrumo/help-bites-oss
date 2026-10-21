@@ -1348,7 +1348,9 @@
       "retried": ", retried for a day.",
       "signingSecret": "Signing secret",
       "secretSet": "Set; type a new one to replace it",
-      "secretLength": "16+ characters"
+      "secretLength": "16+ characters",
+      "postalAddressCompany": "This is the address in your {company}: legal documents use it too.",
+      "postalAddressCompanyLink": "company profile"
     }
   },
   "emailEditor": {
@@ -2916,14 +2918,16 @@
       "email": "Legal contact email",
       "dpo": "Data protection officer",
       "accent": "Accent colour",
-      "accentHint": "Empty uses the project's",
+      "accentHint": "Empty uses your Brand kit accent",
       "font": "Font",
       "fontSans": "Sans-serif",
       "fontSerif": "Serif",
       "fontMono": "Monospace",
       "logo": "Logo URL",
-      "logoHint": "Empty uses the project's logo",
-      "footer": "Footer text"
+      "logoHint": "Empty uses your Brand kit logo",
+      "footer": "Footer text",
+      "companyNote": "Your name, address, email and data protection officer come from the {company}, shared with campaigns. Editing them here updates it.",
+      "companyLink": "company profile"
     }
   },
   "assistants": {
