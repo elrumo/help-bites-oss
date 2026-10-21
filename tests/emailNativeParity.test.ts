@@ -45,8 +45,14 @@ describe('native email parity', () => {
 
   // Skipped until EmailChatPanel.swift exists.
   test.skipIf(!existsSync(swiftPath('EmailChatPanel.swift')))('EmailChatPanel.swift has the chat starters and quick actions verbatim', () => {
+    // The panel sends t('emailEditor.…Prompt', { name: '{{name}}' }): resolve each the way vue-i18n does.
     const vue = readFileSync(join(root, 'app/components/email/EmailChat.vue'), 'utf8')
-    const prompts = [...vue.matchAll(/prompt: '((?:[^'\\]|\\.)*)'/g)].map(m => m[1]!.replace(/\\(.)/g, '$1'))
+    const en = JSON.parse(readFileSync(join(root, 'i18n/locales/en.json'), 'utf8'))
+    const prompts = [...vue.matchAll(/prompt: t\('([\w.]+)'([^)]*)\)/g)].map(([, key, args]) => {
+      const values = Object.fromEntries([...args!.matchAll(/(\w+): '([^']*)'/g)].map(m => [m[1], m[2]]))
+      const message: string = key!.split('.').reduce((node, part) => node[part], en)
+      return message.replace(/\{(\w+)\}/g, (_, name) => values[name])
+    })
     expect(prompts.length).toBeGreaterThanOrEqual(12)
     const src = swift('EmailChatPanel.swift')
     expect(prompts.filter(p => !src.includes(p))).toEqual([])
