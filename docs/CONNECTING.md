@@ -191,3 +191,9 @@ Set `actionWebhookUrl` and `actionWebhookSecret` on the project. Operator
 actions POST JSON to that URL with `X-HelpBites-Signature:
 sha256=<HMAC-SHA256(body)>`; verify it before applying the host-side effect.
 The payload includes `actionKey`, the ticket snapshot, and an idempotency key.
+
+## Work with an AI assistant
+
+The operator side has an [MCP server](MCP.md) too: connect Claude, ChatGPT or
+Cursor to `https://YOUR-SUPPORT-HOST/mcp` and it can read the inbox, reply,
+triage feedback and write changelog entries as you.

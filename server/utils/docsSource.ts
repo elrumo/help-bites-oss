@@ -7,6 +7,7 @@ import errors from '../../docs/ERRORS.md'
 import feedback from '../../docs/FEEDBACK.md'
 import flags from '../../docs/FLAGS.md'
 import legal from '../../docs/LEGAL.md'
+import mcp from '../../docs/MCP.md'
 import onboarding from '../../docs/ONBOARDING.md'
 import transfer from '../../docs/TRANSFER.md'
 
@@ -21,6 +22,7 @@ const SOURCES: Record<string, string> = {
   'FEEDBACK.md': feedback,
   'FLAGS.md': flags,
   'LEGAL.md': legal,
+  'MCP.md': mcp,
   'ONBOARDING.md': onboarding,
   'TRANSFER.md': transfer
 }

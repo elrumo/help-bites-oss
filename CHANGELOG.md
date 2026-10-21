@@ -5,6 +5,12 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- MCP server at `/mcp`: Claude, ChatGPT, Cursor and other MCP clients can read the inbox, reply, triage feedback, move
+  board items, write changelog entries and browse errors as the operator who connected them, with that operator's role
+  and a key's project limit. Connect with an admin API key as a bearer header, or with the browser (OAuth, which
+  claude.ai and ChatGPT need): that needs `HELPBITES_SECRET` set, a public https `APP_URL`, and your proxy to pass
+  `/mcp`, `/.well-known/*` and `/oauth/authorize` through (the bundled Caddyfile already does). No schema change.
+  See `docs/MCP.md`.
 - The panel and the native app now open on **Overview** (`/overview`) instead of the inbox: a card per project, unread
   and open conversations, the latest unread messages, total revenue and revenue by project. Its data is
   `GET /v1/admin/overview` (see `docs/OVERVIEW.md`). No schema change; bookmarks to `/inbox` still work.

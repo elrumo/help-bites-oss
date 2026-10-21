@@ -41,6 +41,30 @@ export function readKeyExpiry(value: unknown, now = new Date()): Date | null {
   return new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
 }
 
+/** A request's `projectIds`: null (absent) for every project, else a non-empty list of this workspace's own. */
+export async function readKeyProjectIds(value: unknown, workspaceId: string): Promise<string[] | null> {
+  if (value === undefined || value === null) return null
+  const own = await workspaceProjectIds(workspaceId)
+  const ids = Array.isArray(value) ? [...new Set(value.map(String))] : []
+  if (!ids.length || ids.some(id => !own.includes(id))) throw createError({ statusCode: 400, statusMessage: 'Pick at least one project of this workspace' })
+  return ids
+}
+
+/** Store a new key for an operator in one workspace. The token comes back once; only its hash is kept. */
+export async function saveAdminApiKey(input: { agent: ParseObject, workspace: ParseObject, name: string, projectIds: string[] | null, expiresAt: Date | null }): Promise<{ row: ParseObject, token: string }> {
+  const value = newAdminApiKey()
+  const row = new (useParse().Object.extend('AdminApiKey'))()
+  row.set('agent', input.agent)
+  row.set('workspace', input.workspace)
+  row.set('name', input.name)
+  row.set('hash', value.hash)
+  row.set('prefix', value.prefix)
+  if (input.projectIds) row.set('projectIds', input.projectIds)
+  if (input.expiresAt) row.set('expiresAt', input.expiresAt)
+  await row.save(null, MASTER)
+  return { row, token: value.token }
+}
+
 export function adminApiKeyExpired(row: ParseObject, now = Date.now()): boolean {
   const expiresAt = row.get('expiresAt')
   return expiresAt instanceof Date && expiresAt.getTime() <= now

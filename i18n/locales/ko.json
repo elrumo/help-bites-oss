@@ -2431,6 +2431,10 @@
         "roles": {
           "term": "팀을 위한 역할",
           "desc": "에이전트는 답장하고, 관리자는 프로젝트와 팀을 운영하며, 소유자는 결제를 맡습니다. 이메일로 사람을 초대하세요. 워크스페이스나 프로젝트 하나를 내보내거나, 셀프 호스팅과 클라우드 사이에서 한 번에 옮길 수 있습니다."
+        },
+        "mcp": {
+          "term": "Claude나 ChatGPT에서 조작",
+          "desc": "MCP를 지원하는 어시스턴트를 주소 하나로 연결하세요. 내 역할로 받은편지함을 읽고, 답장하고, 피드백을 분류하고, 변경 내역을 작성합니다. 클릭 한 번으로 연결을 해제할 수 있습니다."
         }
       }
     },
@@ -3556,7 +3560,11 @@
       "createFailed": "API 키를 만들 수 없습니다",
       "renameFailed": "API 키 이름을 바꿀 수 없습니다",
       "revokeFailed": "API 키를 해지할 수 없습니다",
-      "loadFailed": "API 키를 불러올 수 없습니다"
+      "loadFailed": "API 키를 불러올 수 없습니다",
+      "mcpTitle": "AI 어시스턴트 연결",
+      "mcpDescription": "Claude, ChatGPT 또는 Cursor가 내 권한으로 이 워크스페이스에서 작업하게 합니다. 이 주소를 어시스턴트의 커넥터에 추가하고 로그인하거나, 아래 키 중 하나를 전달하세요.",
+      "mcpAddress": "MCP 서버 주소",
+      "mcpDocs": "연결 방법"
     },
     "team": {
       "description": "여기 있는 모든 사람이 이 워크스페이스에 로그인하고 모든 프로젝트에서 작업할 수 있습니다.",
@@ -3908,5 +3916,24 @@
       "loadFailed": "오류 추적 서버를 불러올 수 없습니다",
       "connectFailed": "오류 추적을 연결할 수 없습니다"
     }
+  },
+  "oauth": {
+    "title": "{client}을(를) HelpBites에 연결",
+    "description": "{client}은(는) 내 역할로, 나로서 이 워크스페이스의 내용을 읽고 변경할 수 있게 됩니다. 언제든 설정 → API 키에서 연결을 해제할 수 있습니다.",
+    "workspace": "워크스페이스",
+    "scopeAll": "이 워크스페이스 전체",
+    "scopeAllDescription": "내 역할이 허용하는 범위에서 모든 프로젝트와 워크스페이스 자체.",
+    "scopeProjects": "특정 프로젝트만",
+    "scopeProjectsDescription": "선택한 프로젝트 안에서 일어나는 일만.",
+    "projects": "연결할 프로젝트",
+    "redirectsTo": "결정하면 {host}(으)로 돌아갑니다.",
+    "approve": "승인",
+    "deny": "거부",
+    "notAllowed": "이 워크스페이스에서 내 역할은 API 키를 만들 수 없어 어시스턴트를 연결할 수 없습니다. 소유자나 관리자에게 요청하세요.",
+    "invalidTitle": "이 링크는 사용할 수 없습니다",
+    "invalid": "연결 요청이 불완전하거나 알 수 없는 어시스턴트의 요청입니다. 어시스턴트에서 다시 시작하세요.",
+    "backToPanel": "HelpBites로 돌아가기",
+    "failed": "연결을 승인하지 못했습니다",
+    "redirecting": "{client}(으)로 돌아가는 중…"
   }
 }

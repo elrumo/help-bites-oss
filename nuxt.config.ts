@@ -87,7 +87,10 @@ export default defineNuxtConfig({
     '/cms.mjs': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     // Versioned file names: a new version is a new path.
     '/vendor/**': { headers: { 'Cache-Control': 'public, max-age=31536000, immutable' } },
-    '/v1/**': { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Workspace', 'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS' } }
+    '/v1/**': { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Workspace', 'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS' } },
+    // The MCP server and its sign-in documents: a browser-based assistant or inspector calls them cross-origin too.
+    '/mcp': { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Workspace, Mcp-Protocol-Version', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Expose-Headers': 'WWW-Authenticate' } },
+    '/.well-known/**': { headers: { 'Access-Control-Allow-Origin': '*' } }
   },
 
   nitro: {

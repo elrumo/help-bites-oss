@@ -347,6 +347,15 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Four ways in.** The project secret (server only), the public key (browser
   reads), an identity token (one user), and an admin API key (operators and tools).
   [CONNECTING.md](CONNECTING.md)
+- **AI assistants (MCP).** An MCP server at `/mcp` lets Claude, ChatGPT, Cursor or
+  any MCP client work in a workspace as the operator who connected it: read and reply
+  in the inbox, add notes, triage the feedback board, move board items, write and
+  publish changelog entries, browse errors. Sign in with the browser (OAuth with
+  PKCE and dynamic registration, for claude.ai and ChatGPT) or paste an admin API
+  key. Each tool is a `/v1` call, so the operator's role, the workspace and a key's
+  project limit apply; connections are API keys you can revoke in **Settings → API
+  keys**, where the panel and the native app show the address to copy.
+  [MCP.md](MCP.md)
 - **Realtime streams.** Server-sent events for end users, operators, the feedback
   board, and shared email previews.
 - **Webhooks.** A signed action webhook for ticket actions, a signed event webhook
@@ -405,4 +414,7 @@ See [EDITIONS.md](EDITIONS.md).
   [ONBOARDING.md](ONBOARDING.md)
 - **Brand kit.** No download-everything archive yet; files download one by one.
   [BRAND.md](BRAND.md)
+- **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
+  email, campaigns, legal documents, flags or knowledge base editing, and it issues no refresh tokens, so an
+  OAuth-connected assistant signs in again after a year. [MCP.md](MCP.md)
 - **Language.** The panel is translated into Spanish, Catalan, Chinese, Japanese and Korean; the widgets are English only.

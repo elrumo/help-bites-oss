@@ -2432,6 +2432,10 @@
         "roles": {
           "term": "Roles for your team",
           "desc": "Agents answer, admins run projects and the team, owners handle billing. Invite people by email. Export a workspace or one project, or move it between self-hosted and cloud in one click."
+        },
+        "mcp": {
+          "term": "Drive it from Claude or ChatGPT",
+          "desc": "Connect any MCP assistant with one address. It reads the inbox, replies, triages feedback and writes changelog entries as you, with your role. Revoke it with one click."
         }
       }
     },
@@ -3861,7 +3865,11 @@
       "createFailed": "Could not create the API key",
       "renameFailed": "Could not rename the API key",
       "revokeFailed": "Could not revoke the API key",
-      "loadFailed": "Could not load API keys"
+      "loadFailed": "Could not load API keys",
+      "mcpTitle": "Connect an AI assistant",
+      "mcpDescription": "Let Claude, ChatGPT or Cursor work in this workspace as you. Add this address to the assistant's connectors and sign in, or give it one of the keys below.",
+      "mcpAddress": "MCP server address",
+      "mcpDocs": "How to connect"
     },
     "team": {
       "description": "Everyone here signs in to this workspace and can work on every project in it.",
@@ -4213,5 +4221,24 @@
       "loadFailed": "Could not load error tracking servers",
       "connectFailed": "Could not connect error tracking"
     }
+  },
+  "oauth": {
+    "title": "Connect {client} to HelpBites",
+    "description": "{client} will be able to read and change things in this workspace as you, with your role. Disconnect it any time under Settings → API keys.",
+    "workspace": "Workspace",
+    "scopeAll": "Everything in this workspace",
+    "scopeAllDescription": "Every project, and the workspace itself, as far as your role allows.",
+    "scopeProjects": "Only specific projects",
+    "scopeProjectsDescription": "Just what happens inside the projects you pick.",
+    "projects": "Projects to connect",
+    "redirectsTo": "After you decide, you go back to {host}.",
+    "approve": "Approve",
+    "deny": "Deny",
+    "notAllowed": "Your role in this workspace can't create API keys, so it can't connect an assistant. Ask an owner or admin.",
+    "invalidTitle": "This link can't be used",
+    "invalid": "The connection request is incomplete or from an unknown assistant. Start again from the assistant.",
+    "backToPanel": "Back to HelpBites",
+    "failed": "Could not approve the connection",
+    "redirecting": "Taking you back to {client}…"
   }
 }
