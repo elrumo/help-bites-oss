@@ -26,7 +26,7 @@ export async function linkedConversationRows(project: ParseObject, entry: ParseO
   if (!ids.length) return []
   const rows = await collectAll(() => new Parse.Query('Conversation').equalTo('project', project).containedIn('objectId', ids).include('endUser'), { max: ids.length })
   const byId = new Map(rows.map(row => [row.id || '', row]))
-  return ids.map(id => byId.get(id)).filter((row): row is ParseObject => Boolean(row) && row.get('type') !== 'error')
+  return ids.flatMap((id) => { const row = byId.get(id); return row && row.get('type') !== 'error' ? [row] : [] })
 }
 
 function endUserNameOf(conversation: ParseObject): string {
