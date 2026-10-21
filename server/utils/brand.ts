@@ -25,6 +25,28 @@ export async function brandProject(ctx: MemberContext, event: H3Event, body?: Re
 
 export const brandConfigOf = (project: ParseObject): BrandConfig => normalizeBrandConfig(project.get('brand'))
 
+const looksLikeImage = (mime: unknown) => typeof mime === 'string' && mime.startsWith('image/') && mime !== 'image/x-icon'
+
+/**
+ * Keep the kit's own logo and icon on the project (`Project.brandLook`), so
+ * the pages that wear the project's look need no file query: the first logo
+ * (one drawn for dark backgrounds fills `logoDarkUrl`) and the first icon.
+ * Called after a file is added, changed or removed.
+ */
+export async function refreshBrandLook(project: ParseObject): Promise<void> {
+  const assets = (await listBrandAssets(project)).map(row => serializeBrandAsset(project, row)).filter(a => looksLikeImage(a.mime))
+  const logos = assets.filter(a => a.kind === 'logo')
+  const logo = logos.find(a => a.background !== 'dark') || logos[0]
+  const dark = logos.find(a => a.background === 'dark')
+  const icon = assets.find(a => a.kind === 'icon')
+  const look = { logoUrl: logo?.url || '', logoDarkUrl: dark?.url || '', iconUrl: icon?.url || '' }
+  const before = (project.get('brandLook') || {}) as Record<string, string>
+  if (look.logoUrl === (before.logoUrl || '') && look.logoDarkUrl === (before.logoDarkUrl || '') && look.iconUrl === (before.iconUrl || '')) return
+  project.set('brandLook', look)
+  await project.save(null, MASTER)
+  forgetProject(String(project.get('publicKey') || ''))
+}
+
 export async function saveBrandConfig(project: ParseObject, input: unknown): Promise<BrandConfig> {
   const { config, errors } = validateBrandConfig(input, brandConfigOf(project))
   if (errors.length) badRequest(errors.join('; '))

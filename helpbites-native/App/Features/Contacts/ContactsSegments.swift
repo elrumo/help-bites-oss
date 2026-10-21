@@ -188,6 +188,11 @@ struct SegmentEditor: View {
         Picker("Value", selection: textBinding(rule)) {
           ForEach(ContactOriginKind.allCases) { Text($0.label).tag($0.rawValue) }
         }
+      } else if kind == .flag {
+        Picker("Value", selection: textBinding(rule)) {
+          Text("Yes").tag("yes")
+          Text("No").tag("no")
+        }
       } else if rule.wrappedValue.field == "leadForms", !forms.isEmpty {
         Picker("Form", selection: textBinding(rule)) {
           Text("Pick a form").tag("")
@@ -230,7 +235,7 @@ struct SegmentEditor: View {
     rule.wrappedValue.field = token == Self.attributeToken ? SegmentSpec.attributePrefix : token
     let ops = SegmentSpec.ops(SegmentSpec.kind(rule.wrappedValue.field))
     if !ops.contains(rule.wrappedValue.op) { rule.wrappedValue.op = ops[0] }
-    rule.wrappedValue.value = .string(rule.wrappedValue.field == "subscription" ? "subscribed" : rule.wrappedValue.field == "origin" ? "lead_form" : "")
+    rule.wrappedValue.value = .string(rule.wrappedValue.field == "subscription" ? "subscribed" : rule.wrappedValue.field == "origin" ? "lead_form" : SegmentSpec.kind(rule.wrappedValue.field) == .flag ? "yes" : "")
   }
 
   /// Rules still waiting for their value don't count yet, as on the web.

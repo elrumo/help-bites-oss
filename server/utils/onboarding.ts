@@ -242,3 +242,21 @@ export async function publicOnboardingFlow(event: H3Event): Promise<PublicOnboar
   const wanted = [getQuery(event).locale, ...parseAcceptLanguage(getHeader(event, 'accept-language'))]
   return toPublicFlow(project, row, published, wanted)
 }
+
+// ---- who finished it ---------------------------------------------------------------
+
+/** Remember that a person finished or skipped a published flow; the latest outcome replaces the one before. */
+export async function recordOnboardingOutcome(project: ParseObject, endUser: ParseObject, flowKey: string, outcome: 'completed' | 'skipped'): Promise<void> {
+  const flow = ONBOARDING_KEY.test(flowKey) ? await findFlowByKey(project, flowKey) : null
+  if (!flow) throw createError({ statusCode: 404, statusMessage: 'Flow not found' })
+  const Parse = useParse()
+  const row = (await new Parse.Query('OnboardingCompletion').equalTo('project', project).equalTo('endUser', endUser).equalTo('flow', flowKey).first(MASTER)) || new (Parse.Object.extend('OnboardingCompletion'))() as ParseObject
+  row.set('project', project)
+  row.set('endUser', endUser)
+  row.set('flow', flowKey)
+  row.set('outcome', outcome)
+  row.set('version', Number(flow.get('version') || 0))
+  row.set('at', new Date())
+  await row.save(null, MASTER)
+  await emitDomainEvent(project, 'onboarding.completed', { flow: flowKey, outcome, contact: { id: endUser.id, externalId: endUser.get('externalId') || '', email: endUser.get('email') || '' } })
+}

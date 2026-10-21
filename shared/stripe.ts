@@ -34,7 +34,8 @@ export type StripeConnection = {
 
 /** A Stripe customer as read live; `balance` is in the smallest unit of `currency`, negative when they have credit. */
 export type StripeCustomerDto = { id: string, name: string, email: string, createdAt: string | null, country: string, delinquent: boolean, balance: number, currency: string, livemode: boolean }
-export type StripePaymentDto = { id: string, customerId: string, email: string, amount: number, refunded: number, currency: string, status: string, description: string, receiptUrl: string, paidAt: string }
+/** `contactId` is the person in HelpBites this belongs to ('' when nobody matches); added by the revenue report so a row can open them. */
+export type StripePaymentDto = { id: string, customerId: string, contactId?: string, email: string, amount: number, refunded: number, currency: string, status: string, description: string, receiptUrl: string, paidAt: string }
 export type StripeSubscriptionDto = { id: string, customerId: string, email: string, status: StripeSubscriptionStatus, plan: string, mrr: number, amount: number, interval: string, intervalCount: number, currency: string, startedAt: string | null, canceledAt: string | null, currentPeriodEnd: string | null, cancelAtPeriodEnd: boolean }
 
 export type RevenueRange = '30d' | '90d' | '12m' | 'all'
@@ -62,7 +63,7 @@ export type RevenueReport = {
   /** `mrr` is the MRR at the end of the month (this month: today). */
   months: { month: string, net: number, payments: number, mrr: number }[]
   plans: { plan: string, subscribers: number, mrr: number }[]
-  topCustomers: { customerId: string, email: string, net: number, payments: number }[]
+  topCustomers: { customerId: string, contactId: string, email: string, net: number, payments: number }[]
   recent: StripePaymentDto[]
   otherCurrencies: { currency: string, net: number }[]
 }

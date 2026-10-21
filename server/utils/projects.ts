@@ -11,6 +11,8 @@ import { normalizeLegalConfig, validateLegalConfig, type LegalConfig } from '#sh
 import { normalizeBlogConfig, validateBlogConfig, type BlogConfig } from '#shared/blog'
 import { normalizeFlags, validateFlags, type FeatureFlag } from '#shared/flags'
 import { normalizeMarketingConfig, validateMarketingConfig, type MarketingConfig } from '#shared/marketing'
+import { normalizeBrandConfig, validateBrandConfig } from '#shared/brand'
+import { legacyTheme, projectLook, type ProjectLook } from '#shared/projectLook'
 
 export type ProjectTheme = { accent?: string, dark?: boolean }
 
@@ -21,7 +23,10 @@ export type PublicProject = {
   publicKey: string
   name: string
   allowedOrigins: string[]
+  /** The accent (and dark flag) as older clients read it; always the same colour as `look.accent`. */
   theme: ProjectTheme
+  /** The project's look, built from its Brand kit (shared/projectLook.ts): accent, logo, fonts, radius. Embeds wear this. */
+  look: ProjectLook
   allowAttachments: boolean
   /** Chat and feedback work with only an email address, no host-signed identity token (POST /v1/anonymous/session). */
   allowAnonymousUsers: boolean
@@ -270,19 +275,39 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     const theme = input.theme as Record<string, unknown>
     const accent = typeof theme.accent === 'string' && /^#[0-9a-f]{6}$/i.test(theme.accent.trim()) ? theme.accent.trim() : ''
     project.set('theme', { ...(accent ? { accent } : {}), ...(typeof theme.dark === 'boolean' ? { dark: theme.dark } : {}) })
+    // The Brand kit is where the accent lives; Settings edits it from here.
+    if ('accent' in theme) {
+      const { config } = validateBrandConfig({ page: { accent } }, normalizeBrandConfig(project.get('brand')))
+      project.set('brand', config)
+    }
   }
 }
 
+/** The look of a project row: one read of the Brand kit, shared by every surface (shared/projectLook.ts). */
+export function lookOf(project: ParseObject): ProjectLook {
+  return projectLook({
+    name: project.get('name'),
+    theme: project.get('theme'),
+    brand: project.get('brand'),
+    brandLogoUrl: project.get('brandLogoUrl'),
+    assistantLogoUrl: project.get('assistantLogoUrl'),
+    iconUrl: project.get('iconUrl'),
+    brandLook: project.get('brandLook')
+  })
+}
+
 export function serializePublicProject(project: ParseObject): PublicProject {
+  const look = lookOf(project)
   return {
     publicKey: String(project.get('publicKey') || ''),
     name: String(project.get('name') || ''),
     allowedOrigins: stringList(project.get('allowedOrigins')),
-    theme: (project.get('theme') as ProjectTheme) || {},
+    theme: legacyTheme(look, project.get('theme')),
+    look,
     allowAttachments: project.get('allowAttachments') !== false,
     allowAnonymousUsers: project.get('allowAnonymousUsers') === true,
     chatNotice: String(project.get('chatNotice') || ''),
-    brandLogoUrl: String(project.get('brandLogoUrl') || ''),
+    brandLogoUrl: look.logoUrl,
     assistantLogoUrl: String(project.get('assistantLogoUrl') || ''),
     letUsersChooseType: project.get('letUsersChooseType') === true,
     allowOtherType: project.get('allowOtherType') === true,
@@ -303,6 +328,8 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
   const tracker = providerOf(errors)
   return {
     ...serializePublicProject(project),
+    // Settings edits the stored setting, not the kit's logo the embeds show.
+    brandLogoUrl: String(project.get('brandLogoUrl') || ''),
     id: project.id || '',
     slug: String(project.get('slug') || ''),
     siteUrl: String(project.get('siteUrl') || ''),

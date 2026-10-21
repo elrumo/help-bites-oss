@@ -235,14 +235,14 @@ export async function publishCmsEntry(project: ParseObject, row: ParseObject): P
   row.set('status', 'published')
   row.set('publishedAt', new Date())
   await row.save(null, MASTER)
-  await emitWebhooks(project, [{ type: 'cms.entry.published', data: { entry: { id: row.id, slug: row.get('slug'), type: row.get('type'), version: row.get('version'), publishedAt: iso(row.get('publishedAt')) } } }])
+  await emitDomainEvent(project, 'cms.entry.published', { entry: { id: row.id, slug: row.get('slug'), type: row.get('type'), version: row.get('version'), publishedAt: iso(row.get('publishedAt')) } })
 }
 
 /** Visitors get a 404; the published copy is kept for the next publish to replace. */
 export async function unpublishCmsEntry(project: ParseObject, row: ParseObject): Promise<void> {
   row.set('status', 'draft')
   await row.save(null, MASTER)
-  await emitWebhooks(project, [{ type: 'cms.entry.unpublished', data: { entry: { id: row.id, slug: row.get('slug'), type: row.get('type') } } }])
+  await emitDomainEvent(project, 'cms.entry.unpublished', { entry: { id: row.id, slug: row.get('slug'), type: row.get('type') } })
 }
 
 // ---- settings --------------------------------------------------------------------

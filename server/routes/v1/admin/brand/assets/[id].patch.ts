@@ -13,5 +13,6 @@ export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'content' })
   const { project, row } = await scopedBrandAsset(ctx, event)
   await updateBrandAsset(row, (await readBody(event).catch(() => ({}))) || {})
+  await refreshBrandLook(project)
   return { asset: serializeBrandAsset(project, row) }
 })

@@ -230,6 +230,8 @@ const SCHEMAS = {
       legalAnswers: { type: 'Object' },
       // The brand kit: words, colours, fonts, guidelines and the public page's look (shared/brand.ts). Files are BrandAsset rows.
       brand: { type: 'Object' },
+      // The kit's own logo and icon files { logoUrl, logoDarkUrl, iconUrl }, kept here so pages that wear the project's look need no file query (shared/projectLook.ts).
+      brandLook: { type: 'Object' },
       // Pages and CMS settings { previewUrl, brief } (shared/cms/content.ts).
       cms: { type: 'Object' },
       flags: { type: 'Array' },
@@ -304,6 +306,8 @@ const SCHEMAS = {
       // From the identity token: what feedback boards show and mention by.
       username: { type: 'String' },
       avatarUrl: { type: 'String' },
+      // The language to write to them in, a tag such as 'es' or 'pt-BR' (shared/locales.ts).
+      language: { type: 'String' },
       // false = opted out of feedback email (status changes, comments, mentions).
       feedbackEmails: { type: 'Boolean' },
       lastSeenAt: { type: 'Date' },
@@ -480,11 +484,31 @@ const SCHEMAS = {
       status_scheduled: { status: 1, scheduledAt: 1 }
     }
   },
-  // The event webhook's outbox (server/utils/webhooks.ts): one row per event,
+  // A webhook destination with its own signing secret and event filter
+  // (server/utils/webhooks.ts): `events` holds `*`, `group.*` or exact types
+  // from shared/domainEvents.ts. The project's original single URL stays on Project.
+  WebhookEndpoint: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      url: { type: 'String' },
+      secret: { type: 'String' },
+      description: { type: 'String' },
+      events: { type: 'Array' },
+      enabled: { type: 'Boolean' },
+      lastStatus: { type: 'String' },
+      lastDeliveryAt: { type: 'Date' }
+    },
+    indexes: {
+      project_created: { _p_project: 1, _created_at: 1 }
+    }
+  },
+  // The event webhook's outbox (server/utils/webhooks.ts): one row per event
+  // and destination (`endpoint`, or none for the project's original URL),
   // retried with backoff until delivered or given up on.
   WebhookDelivery: {
     fields: {
       project: { type: 'Pointer', targetClass: 'Project' },
+      endpoint: { type: 'Pointer', targetClass: 'WebhookEndpoint' },
       type: { type: 'String' },
       payload: { type: 'Object' },
       status: { type: 'String' },
@@ -1050,6 +1074,23 @@ const SCHEMAS = {
     },
     indexes: {
       project_key: { _p_project: 1, key: 1 }
+    }
+  },
+  // Who finished (or skipped) an onboarding flow, reported by the client with the person's identity
+  // token (POST /v1/onboarding/<pk>/<key>/complete). One row per person and flow; the latest outcome wins.
+  OnboardingCompletion: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      endUser: { type: 'Pointer', targetClass: 'EndUser' },
+      flow: { type: 'String' },
+      // completed | skipped
+      outcome: { type: 'String' },
+      version: { type: 'Number' },
+      at: { type: 'Date' }
+    },
+    indexes: {
+      project_user_flow: { _p_project: 1, _p_endUser: 1, flow: 1 },
+      project_outcome: { _p_project: 1, outcome: 1 }
     }
   },
   // A lead form (server/utils/leadForms.ts): a waitlist or interest form read and posted at

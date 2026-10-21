@@ -109,13 +109,16 @@ struct ContactSegment: Codable, Identifiable, Equatable, Sendable {
 
 /// Mirrors shared/segments.ts: which fields a rule can test and what it can ask of each.
 enum SegmentSpec {
-  enum Kind { case text, enumeration, list, date, attribute }
+  /// `flag`: a yes/no question the server answers by looking at the person's other records.
+  enum Kind { case text, enumeration, list, date, attribute, flag }
   static let attributePrefix = "attributes."
   static let fields: [(key: String, label: String, kind: Kind)] = [
     ("email", "Email", .text), ("name", "Name", .text), ("externalId", "User id", .text),
     ("subscription", "Subscription", .enumeration), ("tags", "Tags", .list),
     ("unsubscribedTopics", "Opted-out topics", .list), ("sources", "Source", .list),
-    ("origin", "Added via", .enumeration), ("leadForms", "Lead form", .list),
+    ("origin", "Added via", .enumeration), ("language", "Language", .text), ("leadForms", "Lead form", .list),
+    ("stripePlan", "Stripe plan", .text), ("hasOpenConversation", "Has an open conversation", .flag),
+    ("votedOnPost", "Voted on a post", .flag), ("hasErrors", "Has errors", .flag), ("finishedOnboarding", "Finished onboarding", .flag),
     ("createdAt", "Added", .date), ("lastSeenAt", "Last seen", .date), ("updatedAt", "Updated", .date)
   ]
   static func kind(_ field: String) -> Kind {
@@ -129,6 +132,7 @@ enum SegmentSpec {
     case .list: ["includes", "excludes", "exists", "not_exists"]
     case .date: ["before", "after", "within_days", "not_within_days", "exists", "not_exists"]
     case .attribute: ["is", "is_not", "contains", "starts_with", "gt", "lt", "before", "after", "exists", "not_exists"]
+    case .flag: ["is"]
     }
   }
   static let opLabels: [String: String] = [

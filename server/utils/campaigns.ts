@@ -5,7 +5,7 @@ import { extractTemplateVariables } from '#shared/email/placeholders'
 import { campaignBatchId, campaignStatsFrom, canMoveCampaign, CAMPAIGN_STATUSES, EMPTY_CAMPAIGN_STATS, normalizeMarketingConfig, type Campaign, type CampaignStats, type CampaignStatus } from '#shared/marketing'
 import type { ContactAttributeValue } from '#shared/contacts'
 import { contactQuery, getProjectSegment, serializeSegment } from './contacts'
-import { compileSegmentFilter } from '#shared/segments'
+import { resolveSegmentWhere } from './segmentRelations'
 import { deliverEmails, projectEmailSender, type DeliveryResult, type EmailActor, type EmailSender, type OutgoingEmail } from './emailDelivery'
 import { emailSendingPaused } from './emailReputation'
 import { isMailerConfigured } from './mailer'
@@ -111,7 +111,7 @@ export async function applyCampaignInput(project: ParseObject, row: ParseObject,
  * segment can never lift: this project, subscribed, not opted out of the topic.
  */
 export async function campaignAudience(project: ParseObject, audience: { segment?: string, topic?: string }) {
-  const where = audience.segment ? compileSegmentFilter(serializeSegment(await getProjectSegment(project, audience.segment)).filter) : {}
+  const where = audience.segment ? await resolveSegmentWhere(project, serializeSegment(await getProjectSegment(project, audience.segment)).filter) : {}
   const query = contactQuery(project, where).equalTo('subscription', 'subscribed').exists('email')
   if (audience.topic) query.notEqualTo('unsubscribedTopics', audience.topic)
   return query

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { compileSegmentFilter, validateSegmentFilter } from '../shared/segments'
+import { compileSegmentFilter, segmentRelationsNeeded, validateSegmentFilter } from '../shared/segments'
 
 const now = new Date('2026-10-01T00:00:00.000Z')
 const compile = (filter: unknown) => {
@@ -49,5 +49,30 @@ describe('segments', () => {
 
   test('a regex value is escaped, not interpreted', () => {
     expect(compile({ rules: [{ field: 'email', op: 'starts_with', value: '.*' }] })).toEqual({ email: { $regex: '^\\.\\*', $options: 'i' } })
+  })
+})
+
+describe('relation and built-in fields', () => {
+  const rule = (field: string, op: string, value?: unknown) => ({ match: 'all' as const, rules: [{ field, op, value }] })
+
+  test('the Stripe plan reads the attribute the Stripe sync keeps', () => {
+    const { filter, errors } = validateSegmentFilter(rule('stripePlan', 'is', 'Pro'))
+    expect(errors).toEqual([])
+    expect(compileSegmentFilter(filter)).toEqual({ 'attributes.stripe_plan': 'Pro' })
+    expect(compileSegmentFilter(validateSegmentFilter(rule('stripePlan', 'not_exists')).filter)).toEqual({ 'attributes.stripe_plan': { $exists: false } })
+  })
+
+  test('yes/no fields only take yes or no, and booleans are accepted', () => {
+    expect(validateSegmentFilter(rule('hasErrors', 'is', 'maybe')).errors).toHaveLength(1)
+    expect(validateSegmentFilter(rule('hasErrors', 'contains', 'yes')).errors).toHaveLength(1)
+    expect(validateSegmentFilter(rule('hasErrors', 'is', true)).filter.rules[0]).toEqual({ field: 'hasErrors', op: 'is', value: 'yes' })
+  })
+
+  test('a relation compiles to the ids looked up for it, and refuses to compile without them', () => {
+    const filter = validateSegmentFilter({ match: 'all', rules: [{ field: 'hasOpenConversation', op: 'is', value: 'yes' }, { field: 'votedOnPost', op: 'is', value: 'no' }] }).filter
+    expect(segmentRelationsNeeded(filter)).toEqual(['hasOpenConversation', 'votedOnPost'])
+    expect(() => compileSegmentFilter(filter)).toThrow('looked up')
+    expect(compileSegmentFilter(filter, new Date(), { hasOpenConversation: ['a', 'b'], votedOnPost: ['c'] })).toEqual({ $and: [{ objectId: { $in: ['a', 'b'] } }, { objectId: { $nin: ['c'] } }] })
+    expect(compileSegmentFilter(validateSegmentFilter(rule('finishedOnboarding', 'is', 'yes')).filter, new Date(), { finishedOnboarding: [] })).toEqual({ objectId: { $in: [] } })
   })
 })

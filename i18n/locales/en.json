@@ -879,7 +879,13 @@
         "lastSeenAt": "Last seen",
         "updatedAt": "Updated",
         "origin": "Added via",
-        "leadForms": "Lead form"
+        "leadForms": "Lead form",
+        "language": "Language",
+        "stripePlan": "Stripe plan",
+        "hasOpenConversation": "Has an open conversation",
+        "votedOnPost": "Voted on a post",
+        "hasErrors": "Has errors",
+        "finishedOnboarding": "Finished onboarding"
       },
       "op": {
         "is": "is",
@@ -905,7 +911,9 @@
         "date": "Date",
         "removeRule": "Remove rule"
       },
-      "pickForm": "Pick a form"
+      "pickForm": "Pick a form",
+      "yes": "Yes",
+      "no": "No"
     },
     "form": {
       "email": "Email",
