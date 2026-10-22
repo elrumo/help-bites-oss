@@ -1,5 +1,13 @@
 {
   "common": {
+    "uploadCompression": {
+      "label": "Pujada d'imatges",
+      "off": "Original",
+      "webp": "Més petita (WebP)",
+      "modern": "Formats moderns + alternativa",
+      "hint": "Recodifica les imatges noves perquè pesin menys i les redueix a 2560 px. No es desa l'original.",
+      "hintModern": "AVIF i WebP per als navegadors que els llegeixen, i un JPEG o PNG que llegeix qualsevol navegador, app o client de correu."
+    },
     "name": "Nom",
     "cancel": "Cancel·la",
     "sourceCode": "Codi font",

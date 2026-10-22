@@ -1,5 +1,13 @@
 {
   "common": {
+    "uploadCompression": {
+      "label": "画像のアップロード",
+      "off": "オリジナル",
+      "webp": "小さく(WebP)",
+      "modern": "最新形式 + 代替",
+      "hint": "新しい画像を小さく再エンコードし、2560 px に縮小します。元の画像は保存されません。",
+      "hintModern": "対応ブラウザ向けの AVIF と WebP、そしてどのブラウザ・アプリ・メールでも読める JPEG または PNG。"
+    },
     "name": "名前",
     "cancel": "キャンセル",
     "sourceCode": "ソースコード",

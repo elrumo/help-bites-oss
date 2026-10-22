@@ -33,6 +33,7 @@
           <UInput v-model="draft.coverImageUrl" class="min-w-0 flex-1" placeholder="https://…" />
           <UButton icon="i-lucide-upload" color="neutral" variant="soft" :loading="uploading" :aria-label="$t('blog.uploadCover')" @click="coverInput?.click()" />
         </div>
+        <MediaUploadCompression />
         <input ref="coverInput" type="file" accept="image/png,image/jpeg,image/gif,image/webp" class="hidden" @change="uploadCover">
         <UInput v-if="draft.coverImageUrl" v-model="draft.coverImageAlt" class="w-full" :maxlength="300" :placeholder="$t('blog.coverAlt')" :aria-label="$t('blog.coverAlt')" />
         <p v-if="uploadError" class="text-xs text-error">{{ uploadError }}</p>
@@ -122,6 +123,7 @@ const emit = defineEmits<{ newsletter: [] }>()
 const draft = defineModel<BlogPostDraft>('draft', { required: true })
 
 const { api } = useAgent()
+const compression = useUploadCompression()
 const { t, locale } = useI18n()
 const { locked } = usePlanLocks()
 const seoOpen = ref(false)
@@ -151,6 +153,7 @@ async function uploadCover(event: Event) {
     const form = new FormData()
     form.append('project', props.projectId)
     form.append('file', file)
+    compression.apply(form)
     draft.value.coverImageUrl = (await api<{ url: string }>('/admin/blog/images', { method: 'POST', body: form })).url
   } catch (e: any) {
     uploadError.value = e?.message || t('blog.uploadError')

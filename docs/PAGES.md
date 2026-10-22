@@ -407,7 +407,7 @@ curl -H "authorization: Bearer $KEY" -F project=PROJECT_ID -F file=@hero.png -F 
 | `GET` / `POST /v1/admin/cms/entries` | List (`type`) or create an entry (`template`, `content`, `slug`, `type`). |
 | `GET` / `PATCH` / `DELETE /v1/admin/cms/entries/{id}` | The working copy; changes report what was fixed in `issues`. |
 | `POST /v1/admin/cms/entries/{id}/publish`, `…/unpublish` | Publish the next version, or take it offline. |
-| `GET` / `POST /v1/admin/cms/assets`, `PATCH` / `DELETE …/{id}` | The file library (multipart upload). |
+| `GET` / `POST /v1/admin/cms/assets`, `PATCH` / `DELETE …/{id}` | The file library (multipart upload). Add `compress=true` to store a PNG, JPEG or WebP smaller as WebP, or `formats=avif,webp` to store those modern formats next to the file, whose `url` is then a JPEG or PNG fallback every client reads; they come back as the asset's `variants`. See [BLOG.md](BLOG.md#smaller-images-and-modern-formats). |
 | `GET /v1/admin/cms/templates` | The page templates. |
 | `GET` / `PATCH /v1/admin/cms/settings` | The preview URL and the messaging brief. |
 | `POST /v1/admin/cms/chat` (and `GET`, `DELETE`, `…/chat/stream`) | The assistant, as an AI SDK UI message stream. |

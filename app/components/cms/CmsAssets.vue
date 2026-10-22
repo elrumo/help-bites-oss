@@ -17,6 +17,7 @@ const { api } = useAgent()
 const { t } = useI18n()
 const toast = useToast()
 const { copy } = useClipboard()
+const compression = useUploadCompression()
 
 const assets = ref<Asset[]>([])
 const loading = ref(true)
@@ -54,6 +55,8 @@ async function upload(files: FileList | File[] | null) {
       const body = new FormData()
       body.append('project', props.projectId)
       body.append('file', file)
+      // Only a picture is re-encoded; a PDF or video goes as it is.
+      if (file.type.startsWith('image/') && !file.type.includes('svg') && !file.type.includes('icon')) compression.apply(body, { sets: true })
       const { asset } = await api<{ asset: Asset }>('/admin/cms/assets', { method: 'POST', body })
       assets.value = [asset, ...assets.value]
       if (props.pick && files && [...files].length === 1) emit('pick', ref_(asset))
@@ -109,6 +112,8 @@ function copyUrl(a: Asset) {
       <UButton icon="i-lucide-upload" :label="$t('projectTools.pages.upload')" size="sm" :loading="uploading > 0" @click="input?.click()" />
       <input ref="input" type="file" multiple accept="image/*,video/mp4,video/webm,application/pdf" class="hidden" @change="upload(($event.target as HTMLInputElement).files)">
     </div>
+
+    <MediaUploadCompression sets class="max-w-sm" />
 
     <p v-if="error" class="text-[13px] text-error">{{ error }}</p>
     <div v-if="loading" class="grid grid-cols-3 gap-3 sm:grid-cols-4"><USkeleton v-for="n in 8" :key="n" class="aspect-square w-full" /></div>

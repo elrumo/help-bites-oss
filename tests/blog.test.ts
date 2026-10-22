@@ -7,6 +7,7 @@ import {
   isBlogPostLive,
   normalizeBlogConfig,
   readBlogCommentInput,
+  readBlogData,
   readBlogPostInput,
   summarizeBlogReactions,
   threadBlogComments,
@@ -42,6 +43,13 @@ describe('blog rules', () => {
     // `data` is an object of the caller's own, or null to clear it
     expect(readBlogPostInput({ data: { steps: [1, 2] } }, { create: false }).values.data).toEqual({ steps: [1, 2] })
     expect(readBlogPostInput({ data: null }, { create: false }).values.data).toBeNull()
+    // stored as text, so keys with dots (which the database refuses in objects) survive
+    const settings = { set: { 'light.exposure': 0.5, '$odd': 1 } }
+    expect(readBlogData(JSON.stringify(settings))).toEqual(settings)
+    expect(readBlogData(settings)).toEqual(settings)
+    expect(readBlogData('not json')).toBeNull()
+    expect(readBlogData('[1]')).toBeNull()
+    expect(readBlogData(undefined)).toBeNull()
     expect(readBlogPostInput({ data: [1] }, { create: false }).errors[0]).toMatch(/data must be a JSON object/)
     expect(readBlogPostInput({ data: { big: 'x'.repeat(200_001) } }, { create: false }).errors[0]).toMatch(/data is up to/)
     expect(readBlogPostInput({ coverImageUrl: 'javascript:alert(1)' }, { create: false }).errors[0]).toMatch(/http/)

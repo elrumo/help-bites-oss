@@ -46,6 +46,7 @@
         </div>
       </div>
     </UFormField>
+    <MediaUploadCompression />
     <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/gif,image/webp" class="hidden" @change="upload">
 
     <USeparator :label="$t('blog.design.navigation')" />
@@ -88,6 +89,7 @@ const props = defineProps<{ project: AdminProject, canManage: boolean }>()
 const emit = defineEmits<{ saved: [project: AdminProject] }>()
 
 const { api } = useAgent()
+const compression = useUploadCompression()
 const { t } = useI18n()
 
 const SOCIAL_LABELS: Record<BlogSocialNetwork, string> = { x: 'X', bluesky: 'Bluesky', mastodon: 'Mastodon', github: 'GitHub', linkedin: 'LinkedIn', instagram: 'Instagram', youtube: 'YouTube', website: t('blog.design.website') }
@@ -166,6 +168,7 @@ async function upload(event: Event) {
     const form = new FormData()
     form.append('project', props.project.id)
     form.append('file', file)
+    compression.apply(form)
     const { url } = await api<{ url: string }>('/admin/blog/images', { method: 'POST', body: form })
     text[target] = url
     await save({ [target]: url })

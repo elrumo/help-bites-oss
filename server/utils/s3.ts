@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Client } from 'minio'
 import { ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_TYPES, type Attachment } from '#shared/support'
+import { compressImage, imageVariants, type ImageVariant, type ModernFormat } from './imageCompress'
 import { KNOWLEDGE_DOC_MAX_BYTES, KNOWLEDGE_DOC_EXTENSIONS } from '#shared/knowledge'
 
 // Attachments go straight to any S3-compatible bucket; Parse never sees them.
@@ -67,24 +68,58 @@ export function detectImageMime(data: Buffer): string {
   return ''
 }
 
-/** Store an image. Its bytes count against the workspace's storage: the project's, or `workspaceId` for an upload that has no project. */
-export async function storeAttachment(data: Buffer, projectId: string, ownerId: string, workspaceId = ''): Promise<Attachment> {
+/**
+ * Store an image. Its bytes count against the workspace's storage: the project's, or `workspaceId` for an upload that has no project.
+ * With `compress`, it is first re-encoded smaller; with `formats`, it is stored as a set for a <picture> (modern formats, then a
+ * fallback every client reads; `url` is the fallback). See imageCompress.ts. The 8 MB limit is on what was sent.
+ */
+export async function storeAttachment(data: Buffer, projectId: string, ownerId: string, workspaceId = '', options: { compress?: boolean, formats?: readonly ModernFormat[] } = {}): Promise<Attachment> {
   if (data.length > ATTACHMENT_MAX_BYTES) throw createError({ statusCode: 413, statusMessage: 'Image is larger than 8 MB' })
-  const mime = detectImageMime(data)
+  let mime = detectImageMime(data)
   if (!mime) throw createError({ statusCode: 415, statusMessage: 'Only PNG, JPEG, GIF and WebP images are accepted' })
+  const sent = data.length
+  const asked = Boolean(options.compress || options.formats?.length)
+  const set = options.formats?.length ? await imageVariants(data, mime, options.formats) : null
+  let compressed = false
+  if (!set && asked) ({ data, mime, compressed } = await compressImage(data, mime))
+  const files: ImageVariant[] = set ?? [{ format: 'png', mime, data }]
 
   const workspace = workspaceId || await workspaceIdOfProject(projectId)
-  await reserveUsage(workspace, 'storageBytes', data.length)
-  const key = `${projectId}/${ownerId}/${randomUUID()}.${EXT[mime]}`
+  const total = files.reduce((sum, file) => sum + file.data.length, 0)
+  await reserveUsage(workspace, 'storageBytes', total)
+  const name = `${projectId}/${ownerId}/${randomUUID()}`
+  const keys: string[] = []
   try {
     await ensureBucket()
-    await useS3().putObject(bucket(), key, data, data.length, { 'Content-Type': mime, 'Cache-Control': 'public, max-age=31536000, immutable' })
+    for (const file of files) {
+      const key = `${name}.${EXT[file.mime]}`
+      await useS3().putObject(bucket(), key, file.data, file.data.length, { 'Content-Type': file.mime, 'Cache-Control': 'public, max-age=31536000, immutable' })
+      keys.push(key)
+    }
   } catch (error) {
-    await chargeUsage(workspace, 'storageBytes', -data.length)
+    await Promise.all(keys.map(deleteDocumentObject))
+    await chargeUsage(workspace, 'storageBytes', -total)
     throw error
   }
   const base = String(process.env.S3_PUBLIC_URL || '').replace(/\/+$/, '')
-  return { url: `${base}/${key}`, mime, size: data.length }
+  const urlOf = (file: ImageVariant) => `${base}/${name}.${EXT[file.mime]}`
+  const fallback = files[files.length - 1]!
+  const result: Attachment = { url: urlOf(fallback), mime: fallback.mime, size: fallback.data.length }
+  if (asked) Object.assign(result, { compressed: set ? true : compressed, originalSize: sent })
+  if (set) {
+    result.variants = set.map(file => ({ format: file.format, mime: file.mime, url: urlOf(file), size: file.data.length }))
+    result.picture = pictureHtml(result.variants, '')
+  }
+  return result
+}
+
+/** A <picture> of stored variants (modern first, the fallback last as the <img>), for a post's HTML or a page. */
+export function pictureHtml(variants: { mime: string, url: string }[], alt: string): string {
+  const esc = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+  const fallback = variants[variants.length - 1]
+  if (!fallback) return ''
+  const sources = variants.slice(0, -1).map(v => `<source type="${esc(v.mime)}" srcset="${esc(v.url)}">`).join('')
+  return `<picture>${sources}<img src="${esc(fallback.url)}" alt="${esc(alt)}" loading="lazy"></picture>`
 }
 
 /** Store a public file under `key` (a brand kit's logo, PDF or favicon), counting its bytes against the workspace's storage. Returns its public URL. */

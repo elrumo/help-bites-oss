@@ -320,6 +320,8 @@ const handlers: EditorCustomHandlers = {
   }
 }
 
+const compression = useUploadCompression()
+
 async function insertImage(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -331,6 +333,7 @@ async function insertImage(event: Event) {
     const form = new FormData()
     form.append('project', id)
     form.append('file', file)
+    compression.apply(form)
     const { url } = await api<{ url: string }>('/admin/blog/images', { method: 'POST', body: form })
     editor.chain().focus().setImage({ src: url, alt: file.name.replace(/\.[a-z0-9]+$/i, '') }).run()
   } catch (e: any) {

@@ -34,7 +34,8 @@ The editor is Nuxt UI's (TipTap): headings, bold, italic, strikethrough, code,
 lists, quotes, code blocks, dividers, links and images. Type `/` for blocks;
 select text for the formatting bubble. Images are uploaded to the project's
 storage (8 MB each, PNG, JPEG, GIF or WebP); they count against the workspace's
-storage.
+storage. See [Smaller images](#smaller-images-and-modern-formats) to send them
+smaller.
 
 - **Saved as Markdown.** That is what the API takes and returns as `body`. It is
   rendered once on save into `bodyHtml`, through an allowlist: no scripts,
@@ -65,6 +66,34 @@ storage.
   engines (with a preview), the image link previews show, and a canonical
   address for a post that first appeared elsewhere. Each falls back to the
   post's own when empty.
+
+## Smaller images and modern formats
+
+An upload can be re-encoded on the way in (**Image uploads** in the panel, next to
+the cover and design pickers and in the editor; remembered in the browser, smaller
+by default). Over the API it is off unless asked, with `POST /v1/admin/blog/images`:
+
+| Field (or query parameter) | |
+|---|---|
+| `compress=true` | One file: WebP at quality 80, scaled down to 2560 px when larger. A GIF is kept as sent, and so is any file that would not come out smaller. |
+| `formats=avif,webp` | A set for a `<picture>`: the formats asked for that came out smaller than the fallback (AVIF, then WebP), and the **fallback** every browser, app and mail client reads: a JPEG for a JPEG, a PNG for anything else (so transparency survives). Implies `compress`. |
+
+The answer adds `compressed` and `originalSize`; with `formats`, `url` is the
+fallback, `variants` lists every stored file (most efficient first, the fallback
+last) and `picture` is a ready-made `<picture>`. Every file counts against the
+storage; the 8 MB limit is on what was sent.
+
+```bash
+curl -s -X POST https://YOUR-SUPPORT-HOST/v1/admin/blog/images \
+  -H "Authorization: Bearer $HELPBITES_ADMIN_KEY" -F project=PROJECT_ID -F formats=avif,webp -F file=@shot.png
+# { "url": ".../x.png", "variants": [{ "format": "avif", "url": ".../x.avif", … }, { "format": "webp", … }, { "format": "png", … }],
+#   "picture": "<picture><source type=\"image/avif\" srcset=\".../x.avif\"><source type=\"image/webp\" …><img src=\".../x.png\" …></picture>", … }
+```
+
+A post's body allows `<picture>` and `<source>`, so paste `picture` into an HTML
+post (or into Markdown, which passes it through the same filter) and readers get
+the smallest format their browser reads. The editor's own uploads always send one
+smaller file. The newsletter keeps only the fallback `<img>`.
 
 ## Your own data on a post
 

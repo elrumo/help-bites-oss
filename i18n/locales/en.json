@@ -1,5 +1,13 @@
 {
   "common": {
+    "uploadCompression": {
+      "label": "Image uploads",
+      "off": "Original",
+      "webp": "Smaller (WebP)",
+      "modern": "Modern formats + fallback",
+      "hint": "Re-encodes new images smaller and scales them down to 2560 px. The original is not kept.",
+      "hintModern": "AVIF and WebP for browsers that read them, and a JPEG or PNG every browser, app and mail client reads."
+    },
     "name": "Name",
     "cancel": "Cancel",
     "sourceCode": "Source code",

@@ -10,6 +10,7 @@ import {
   fillBlogPostUrl,
   isBlogReaction,
   normalizeBlogConfig,
+  readBlogData,
   readBlogPostInput,
   summarizeBlogReactions,
   type BlogBodyFormat,
@@ -198,10 +199,7 @@ export function blogPostUrl(project: ParseObject, row: ParseObject): string {
 
 // ---- serialize -------------------------------------------------------------------
 
-function dataOf(row: ParseObject): Record<string, unknown> | null {
-  const data = row.get('data')
-  return data && typeof data === 'object' && !Array.isArray(data) ? data as Record<string, unknown> : null
-}
+const dataOf = (row: ParseObject) => readBlogData(row.get('data'))
 
 function seoOf(row: ParseObject) {
   return {
@@ -421,7 +419,7 @@ async function applyBlogPostInput(project: ParseObject, row: ParseObject, payloa
     row.set('readingMinutes', blogBodyStats(body, formatOf(row)).readingMinutes)
   }
   if (values.data !== undefined) {
-    if (values.data) row.set('data', values.data)
+    if (values.data) row.set('data', JSON.stringify(values.data))
     else row.unset('data')
   }
   if (values.excerpt !== undefined) row.set('excerptWritten', Boolean(values.excerpt))

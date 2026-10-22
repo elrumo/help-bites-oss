@@ -26,12 +26,13 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     'strong', 'em', 'b', 'i', 'u', 'del', 's', 'mark', 'sup', 'sub',
     'code', 'pre', 'kbd',
     'ul', 'ol', 'li', 'blockquote',
-    'a', 'img', 'figure', 'figcaption', 'iframe',
+    'a', 'img', 'picture', 'source', 'figure', 'figcaption', 'iframe',
     'table', 'thead', 'tbody', 'tr', 'th', 'td'
   ],
   allowedAttributes: {
     a: ['href', 'title', 'target', 'rel'],
     img: ['src', 'alt', 'title', 'width', 'height', 'loading'],
+    source: ['srcset', 'type', 'media', 'sizes', 'width', 'height'],
     iframe: ['src', 'title', 'width', 'height', 'allow', 'allowfullscreen', 'loading', 'sandbox', 'referrerpolicy'],
     code: ['class'],
     ol: ['start'],
@@ -125,7 +126,8 @@ export function blogEmailHtml(bodyHtml: string, accent: string): string {
     a: `color:${/^#[0-9a-f]{6}$/i.test(accent) ? accent : '#4f46e5'};text-decoration:underline;`
   }
   return sanitizeHtml(bodyHtml, {
-    allowedTags: SANITIZE_OPTIONS.allowedTags,
+    // Mail clients ignore <source>: the <picture> goes and its <img> (the fallback) stays.
+    allowedTags: (SANITIZE_OPTIONS.allowedTags as string[]).filter(tag => tag !== 'picture' && tag !== 'source'),
     allowedAttributes: { '*': ['style'], 'a': ['href', 'title', 'target', 'rel', 'style'], 'img': ['src', 'alt', 'width', 'height', 'style'], 'ol': ['start', 'style'], 'th': ['colspan', 'rowspan', 'style'], 'td': ['colspan', 'rowspan', 'style'] },
     allowedSchemes: ['http', 'https', 'mailto'],
     allowProtocolRelative: false,

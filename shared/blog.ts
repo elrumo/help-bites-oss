@@ -390,6 +390,18 @@ export type BlogPostValues = Partial<BlogSeo> & {
   commentsOpen?: boolean
 }
 
+/**
+ * A post's `data` as stored: JSON text, because the database refuses object keys with a dot or a leading `$`,
+ * which JSON of your own (`"light.exposure"`) is full of. Reads the text, or an object saved before it was text.
+ */
+export function readBlogData(stored: unknown): Record<string, unknown> | null {
+  let value = stored
+  if (typeof stored === 'string') {
+    try { value = JSON.parse(stored) } catch { return null }
+  }
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+}
+
 /** Up to ten tags, trimmed, each once (whatever its case). */
 export function readBlogTags(raw: unknown, errors: string[]): string[] | undefined {
   const list = typeof raw === 'string' ? raw.split(',') : Array.isArray(raw) ? raw : null

@@ -1,5 +1,13 @@
 {
   "common": {
+    "uploadCompression": {
+      "label": "Subida de imágenes",
+      "off": "Original",
+      "webp": "Más pequeña (WebP)",
+      "modern": "Formatos modernos + alternativa",
+      "hint": "Recodifica las imágenes nuevas para que pesen menos y las reduce a 2560 px. No se guarda el original.",
+      "hintModern": "AVIF y WebP para los navegadores que los leen, y un JPEG o PNG que lee cualquier navegador, app o cliente de correo."
+    },
     "name": "Nombre",
     "cancel": "Cancelar",
     "sourceCode": "Código fuente",

@@ -88,6 +88,13 @@ export type Attachment = {
   url: string
   mime: string
   size: number
+  /** Only when compression was asked for: whether the file was re-encoded, and its size as sent. */
+  compressed?: boolean
+  originalSize?: number
+  /** With `formats`: every stored file, most efficient first and the fallback (the `url` above) last. */
+  variants?: { format: string, mime: string, url: string, size: number }[]
+  /** With `formats`: a ready-made `<picture>` of the variants. */
+  picture?: string
 }
 
 /** One tapback on a message. `actor` is stable per reactor ('user' or 'agent:<id>'). */

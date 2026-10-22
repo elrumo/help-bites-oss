@@ -304,6 +304,7 @@ export function serializeCmsAsset(row: ParseObject) {
     url: String(row.get('url') || ''),
     mime: String(row.get('mime') || ''),
     size: Number(row.get('size') || 0),
+    ...(Array.isArray(row.get('variants')) ? { variants: row.get('variants') } : {}),
     ...(row.get('width') ? { width: Number(row.get('width')), height: Number(row.get('height')) } : {}),
     createdAt: iso(row.createdAt)
   }
@@ -319,17 +320,41 @@ export async function createCmsAsset(project: ParseObject, workspaceId: string, 
   const count = await new (useParse()).Query('CmsAsset').equalTo('project', project).count(MASTER)
   if (count >= CMS_LIMITS.assets) badRequest(`A project holds at most ${CMS_LIMITS.assets} files`)
 
-  const size = mime.startsWith('image/') ? imageSize(file.data, mime) : null
-  const key = `${project.id}/cms/${randomUUID()}.${EXT[mime]}`
-  const url = await storePublicFile(key, file.data, mime, workspaceId)
+  // `compress`: a PNG, JPEG or WebP is stored smaller (imageCompress.ts); the limit above is on what was sent.
+  // `formats` (avif, webp) stores a set for a <picture> instead: the asset's own file is the fallback, and `variants` lists the rest.
+  const photo = ['image/png', 'image/jpeg', 'image/webp'].includes(mime)
+  const formats = photo ? parseFormats(fields.formats) : []
+  const set = formats.length ? await imageVariants(file.data, mime, formats) : null
+  const { data, mime: stored } = set
+    ? { data: set[set.length - 1]!.data, mime: set[set.length - 1]!.mime }
+    : photo && isTruthy(fields.compress) ? await compressImage(file.data, mime) : { data: file.data, mime }
+  const size = stored.startsWith('image/') ? imageSize(data, stored) : null
+  const name = `${project.id}/cms/${randomUUID()}`
+  const key = `${name}.${EXT[stored]}`
+  const url = await storePublicFile(key, data, stored, workspaceId)
+  const variants: { format: string, mime: string, url: string, size: number }[] = []
+  const variantKeys: string[] = []
+  for (const extra of set?.slice(0, -1) ?? []) {
+    try {
+      const variantKey = `${name}.${EXT[extra.mime]}`
+      variants.push({ format: extra.format, mime: extra.mime, size: extra.data.length, url: await storePublicFile(variantKey, extra.data, extra.mime, workspaceId) })
+      variantKeys.push(variantKey)
+    } catch {
+      // A modern copy that could not be stored (the storage is full) is left out; the asset still has its fallback.
+    }
+  }
   const row = new (useParse().Object.extend('CmsAsset'))() as ParseObject
   row.set('project', project)
   row.set('name', cleanText(fields.name, CMS_LIMITS.assetName) || file.filename.replace(/\.[a-z0-9]+$/i, '').slice(0, CMS_LIMITS.assetName) || 'File')
   row.set('alt', cleanText(fields.alt, CMS_LIMITS.alt))
   row.set('storageKey', key)
   row.set('url', url)
-  row.set('mime', mime)
-  row.set('size', file.data.length)
+  row.set('mime', stored)
+  row.set('size', data.length)
+  if (variants.length) {
+    row.set('variants', variants)
+    row.set('variantKeys', variantKeys)
+  }
   if (size) {
     row.set('width', size.width)
     row.set('height', size.height)
@@ -337,8 +362,8 @@ export async function createCmsAsset(project: ParseObject, workspaceId: string, 
   try {
     await row.save(null, MASTER)
   } catch (error) {
-    await deleteDocumentObject(key)
-    await chargeUsage(workspaceId, 'storageBytes', -file.data.length)
+    await Promise.all([key, ...variantKeys].map(deleteDocumentObject))
+    await chargeUsage(workspaceId, 'storageBytes', -(data.length + variants.reduce((sum, v) => sum + v.size, 0)))
     throw error
   }
   return row
@@ -360,8 +385,9 @@ export async function updateCmsAsset(row: ParseObject, body: Record<string, unkn
 /** Pages that use the file keep its URL and show it broken from then on. */
 export async function deleteCmsAsset(row: ParseObject, workspaceId: string): Promise<void> {
   await row.destroy(MASTER)
-  await deleteDocumentObject(String(row.get('storageKey') || ''))
-  await chargeUsage(workspaceId, 'storageBytes', -Number(row.get('size') || 0))
+  const variants = (row.get('variants') as { size?: number }[] | undefined) ?? []
+  await Promise.all([String(row.get('storageKey') || ''), ...((row.get('variantKeys') as string[] | undefined) ?? [])].map(deleteDocumentObject))
+  await chargeUsage(workspaceId, 'storageBytes', -(Number(row.get('size') || 0) + variants.reduce((sum, v) => sum + Number(v.size || 0), 0)))
 }
 
 // ---- public reads ----------------------------------------------------------------

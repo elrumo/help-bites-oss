@@ -1,5 +1,13 @@
 {
   "common": {
+    "uploadCompression": {
+      "label": "이미지 업로드",
+      "off": "원본",
+      "webp": "더 작게(WebP)",
+      "modern": "최신 형식 + 대체 형식",
+      "hint": "새 이미지를 더 작게 다시 인코딩하고 2560 px로 줄입니다. 원본은 보관되지 않습니다.",
+      "hintModern": "지원하는 브라우저를 위한 AVIF와 WebP, 그리고 모든 브라우저·앱·메일이 읽는 JPEG 또는 PNG."
+    },
     "name": "이름",
     "cancel": "취소",
     "sourceCode": "소스 코드",
