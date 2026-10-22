@@ -565,6 +565,22 @@ curl -s -X PATCH https://YOUR-SUPPORT-HOST/v1/admin/projects/PROJECT_ID \
   -d '{"blog":{"design":{"layout":"magazine","font":"serif","navigation":[{"label":"About","url":"/about"}]}}}'
 ```
 
+### Preview over the API
+
+`POST /v1/admin/blog/preview` is what the editor's **Preview** and **Live preview**
+call. Send the fields of a post (`title`, `body`, `bodyFormat`, `excerpt`,
+`coverImageUrl`, `tags`, `authorName`, `publishedAt`, `type`) and get `{ html }`:
+the whole page in the blog's design, as readers will see it. Nothing is read from
+or saved to a stored post, so it works for a draft that was never saved; reactions,
+comments and the sign-up form are left out. Show it in an `iframe` with `sandbox=""`
+(`srcdoc`); a Live preview is that call repeated as you type.
+
+```bash
+curl -X POST https://your-helpbites.example/v1/admin/blog/preview \
+  -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{ "project": "PROJECT_ID", "title": "Offline mode", "body": "It **works** on a plane." }'
+```
+
 ### Write with AI over the API
 
 `POST /v1/admin/blog/ai` is what the editor's button calls. Nothing is saved: you

@@ -638,6 +638,12 @@
     "bodyPlaceholder": "开始写作，或输入 / 插入模块…",
     "viewPost": "查看文章",
     "postSettings": "文章设置",
+    "preview": {
+      "button": "预览",
+      "live": "实时预览",
+      "hint": "读者将看到的文章样子，包含未保存的更改。",
+      "error": "无法生成预览"
+    },
     "more": "更多",
     "update": "更新",
     "publish": "发布",

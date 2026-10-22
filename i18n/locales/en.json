@@ -717,6 +717,12 @@
     "bodyPlaceholder": "Write, or type / for blocks…",
     "viewPost": "View the post",
     "postSettings": "Post settings",
+    "preview": {
+      "button": "Preview",
+      "live": "Live preview",
+      "hint": "The post as readers will see it, with your unsaved changes.",
+      "error": "Could not render the preview"
+    },
     "more": "More",
     "update": "Update",
     "publish": "Publish",

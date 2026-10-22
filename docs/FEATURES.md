@@ -707,6 +707,9 @@ repository. See [EDITIONS.md](EDITIONS.md).
   from the server (error messages, names, AI output) stays as the server wrote it.
   In the hosted edition it shows the plan, usage, locks and
   sending domains, and opens Stripe's Checkout and customer portal in the browser.
+- **Blog preview.** The web editor has Preview and Live preview (the draft in the
+  blog's design, `POST /v1/admin/blog/preview`); the native editor has neither yet.
+  [BLOG.md](BLOG.md)
 - **Push.** Off until APNs credentials are set on the server.
 - **Contact sync.** Rows deleted upstream are not noticed yet. Erase them through
   the API. [CONTACTS.md](CONTACTS.md)
