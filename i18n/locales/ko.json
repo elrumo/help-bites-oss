@@ -638,6 +638,12 @@
     "bodyPlaceholder": "글을 쓰거나 /를 입력해 블록 추가…",
     "viewPost": "게시물 보기",
     "postSettings": "게시물 설정",
+    "preview": {
+      "button": "미리보기",
+      "live": "실시간 미리보기",
+      "hint": "독자에게 보이는 모습입니다. 저장하지 않은 변경 사항도 반영됩니다.",
+      "error": "미리보기를 표시할 수 없습니다"
+    },
     "more": "더보기",
     "update": "업데이트",
     "publish": "게시",

@@ -638,6 +638,12 @@
     "bodyPlaceholder": "Escribe, o teclea / para insertar bloques…",
     "viewPost": "Ver la entrada",
     "postSettings": "Ajustes de la entrada",
+    "preview": {
+      "button": "Vista previa",
+      "live": "Vista previa en vivo",
+      "hint": "La entrada como la verán los lectores, con tus cambios sin guardar.",
+      "error": "No se pudo generar la vista previa"
+    },
     "more": "Más",
     "update": "Actualizar",
     "publish": "Publicar",

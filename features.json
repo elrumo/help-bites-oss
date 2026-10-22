@@ -207,7 +207,7 @@
       "id": "blog",
       "name": "Blog and newsletter",
       "category": "product",
-      "summary": "A Ghost-like blog: posts and standalone pages in a rich editor (Nuxt UI's TipTap), featured or members-only, scheduled or published on a designed hosted blog (layouts, navigation, search, SEO fields, sitemap, structured data), an embed and RSS; readers react and comment (moderated, threaded); any post can go to subscribers as a newsletter campaign (publish and email in one step); webhooks when posts go live; an import from Ghost; Write with AI drafts, continues or improves a post, or suggests its title, excerpt and tags, from the project's GitHub repos.",
+      "summary": "A Ghost-like blog: posts and standalone pages in a rich editor (Nuxt UI's TipTap) with a preview of the draft in the blog's design, featured or members-only, scheduled or published on a designed hosted blog (layouts, navigation, search, SEO fields, sitemap, structured data), an embed and RSS; readers react and comment (moderated, threaded); any post can go to subscribers as a newsletter campaign (publish and email in one step); webhooks when posts go live; an import from Ghost; Write with AI drafts, continues or improves a post, or suggests its title, excerpt and tags, from the project's GitHub repos.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "entitlement": "campaigns",
@@ -579,6 +579,7 @@
     }
   ],
   "notBuilt": [
+    "The native blog editor has no Preview or Live preview yet (the web panel renders the draft with POST /v1/admin/blog/preview, shown in a frame; native opens the hosted post after publishing).",
     "Contact sync does not notice rows deleted upstream.",
     "The MCP server offers tools only (no prompts, resources or live notifications), has no tools yet for email, campaigns, legal documents, flags or knowledge base editing, and issues no refresh tokens: an OAuth-connected assistant signs in again after a year.",
     "No Swift package. Onboarding, pricing tables and the brand kit have copy-paste Swift snippets; the chat, feedback and changelog embeds are web-only (widget.js, feedback.js, changelog.js).",

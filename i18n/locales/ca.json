@@ -638,6 +638,12 @@
     "bodyPlaceholder": "Escriu, o tecleja / per inserir blocs…",
     "viewPost": "Mostra l'entrada",
     "postSettings": "Configuració de l'entrada",
+    "preview": {
+      "button": "Previsualització",
+      "live": "Previsualització en directe",
+      "hint": "L'entrada tal com la veuran els lectors, amb els canvis sense desar.",
+      "error": "No s'ha pogut generar la previsualització"
+    },
     "more": "Més",
     "update": "Actualitza",
     "publish": "Publica",

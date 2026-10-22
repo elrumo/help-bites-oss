@@ -7,6 +7,9 @@
       </template>
       <template #actions>
         <UButton v-if="post?.live" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="post.url" target="_blank" :aria-label="$t('blog.viewPost')" />
+        <UButton icon="i-lucide-eye" :label="$t('blog.preview.button')" color="neutral" variant="ghost" size="sm" class="max-sm:hidden" @click="openPreview()" />
+        <UButton icon="i-lucide-eye" color="neutral" variant="ghost" size="sm" square class="sm:hidden" :aria-label="$t('blog.preview.button')" @click="openPreview()" />
+        <UButton icon="i-lucide-panel-right" :label="$t('blog.preview.live')" color="neutral" :variant="livePreview ? 'soft' : 'ghost'" size="sm" class="max-lg:hidden" :aria-pressed="livePreview" @click="livePreview = !livePreview" />
         <UButton v-if="aiAllowed" :label="$t('blog.ai.button')" icon="i-lucide-sparkles" color="neutral" variant="soft" size="sm" class="max-sm:hidden" @click="openAi()" />
         <UButton v-if="aiAllowed" icon="i-lucide-sparkles" color="neutral" variant="ghost" size="sm" square class="sm:hidden" :aria-label="$t('blog.ai.button')" @click="openAi()" />
         <UButton icon="i-lucide-panel-right" color="neutral" variant="ghost" size="sm" square class="lg:hidden" :aria-label="$t('blog.postSettings')" @click="settingsOpen = true" />
@@ -62,7 +65,14 @@
           <p v-if="saveError" class="mt-3 text-sm text-error">{{ saveError }}</p>
         </div>
       </main>
-      <aside class="hidden w-80 shrink-0 overflow-y-auto border-l border-default p-4 lg:block">
+      <aside v-if="livePreview" class="hidden w-[32rem] shrink-0 flex-col border-l border-default lg:flex xl:w-[40rem]">
+        <p class="flex items-center justify-between border-b border-default px-4 py-2 text-xs font-medium text-muted">
+          {{ $t('blog.preview.live') }}
+          <UIcon v-if="previewLoading" name="i-lucide-loader-circle" class="size-3.5 animate-spin" />
+        </p>
+        <iframe sandbox="" :srcdoc="previewHtml" :title="$t('blog.preview.live')" class="min-h-0 w-full flex-1 bg-white" />
+      </aside>
+      <aside v-else class="hidden w-80 shrink-0 overflow-y-auto border-l border-default p-4 lg:block">
         <BlogPostSettings v-model:draft="draft" :post="post" :project-id="id" :comments-allowed="blogConfig.comments" :can-market="canMarket" :blog-url="blogUrl" @newsletter="newsletterOpen = true" />
       </aside>
     </div>
@@ -72,6 +82,12 @@
         <BlogPostSettings v-model:draft="draft" :post="post" :project-id="id" :comments-allowed="blogConfig.comments" :can-market="canMarket" :blog-url="blogUrl" @newsletter="newsletterOpen = true" />
       </template>
     </USlideover>
+
+    <UModal v-model:open="previewOpen" :title="$t('blog.preview.button')" :description="$t('blog.preview.hint')" :ui="{ content: 'sm:max-w-4xl' }">
+      <template #body>
+        <iframe sandbox="" :srcdoc="previewHtml" :title="$t('blog.preview.button')" class="h-[70vh] w-full rounded-md border border-default bg-white" />
+      </template>
+    </UModal>
 
     <BlogAiModal v-model:open="aiOpen" :scope="aiScope" :selection="aiSelection" :project-id="id" :title="draft.title" :body="draft.body" @apply="applyAi" />
 
@@ -85,7 +101,7 @@ import type { Editor } from '@tiptap/vue-3'
 import { DEFAULT_BLOG_CONFIG, isBlogPostLive, type BlogPost } from '#shared/blog'
 import { can } from '#shared/roles'
 import type { AdminProject } from '~~/server/utils/projects'
-import { blogPostCreateBody, blogPostPatch, draftFromPost, emptyBlogDraft, type BlogAiResult, type BlogPostDraft } from '~/utils/blogDraft'
+import { blogPostCreateBody, blogPostPatch, draftFromPost, emptyBlogDraft, fromLocalInput, type BlogAiResult, type BlogPostDraft } from '~/utils/blogDraft'
 
 // One blog post or page in Nuxt UI's editor (TipTap), saved as Markdown (a
 // post imported from Ghost stays HTML). A draft saves itself a moment after
@@ -266,6 +282,46 @@ function applyAi(mode: 'write' | 'continue' | 'improve' | 'meta' | 'insert', res
   }
   toast.add({ title: t('blog.ai.applied'), icon: 'i-lucide-sparkles' })
 }
+
+// ---- preview ----
+// The unsaved draft, rendered by the server in the blog's own design (the same
+// page readers get), shown in a script-less frame: one-off in a dialog, or
+// beside the editor in place of the settings while "Live preview" is on.
+const previewOpen = ref(false)
+const livePreview = ref(false)
+const previewHtml = ref('')
+const previewLoading = ref(false)
+let previewTimer: ReturnType<typeof setTimeout> | undefined
+let previewRun = 0
+
+async function renderPreview() {
+  const run = ++previewRun
+  const d = draft.value
+  previewLoading.value = true
+  try {
+    const { html } = await api<{ html: string }>('/admin/blog/preview', {
+      method: 'POST',
+      body: { project: id, type: d.type, title: d.title, body: d.body, bodyFormat: d.bodyFormat, excerpt: d.excerpt, coverImageUrl: d.coverImageUrl, coverImageAlt: d.coverImageAlt, tags: d.tags, authorName: d.authorName, publishedAt: fromLocalInput(d.publishedAt) }
+    })
+    if (run === previewRun) previewHtml.value = html
+  } catch (e: any) {
+    if (run === previewRun) toast.add({ title: t('blog.preview.error'), description: e?.message, color: 'error', icon: 'i-lucide-circle-alert' })
+  } finally {
+    if (run === previewRun) previewLoading.value = false
+  }
+}
+
+function openPreview() {
+  previewOpen.value = true
+  void renderPreview()
+}
+
+// While a preview is showing it follows the typing, a moment after you pause.
+watch([() => draft.value, livePreview], () => {
+  if (loading.value || !(livePreview.value || previewOpen.value)) return
+  clearTimeout(previewTimer)
+  previewTimer = setTimeout(() => void renderPreview(), 500)
+}, { deep: true })
 
 // ---- the editor ----
 const editorRef = ref<{ editor?: Editor } | null>(null)
@@ -452,6 +508,7 @@ watch(() => draft.value.title, () => nextTick(fitTitle), { flush: 'post' })
 
 onBeforeUnmount(() => {
   clearTimeout(saveTimer)
+  clearTimeout(previewTimer)
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('beforeunload', beforeUnload)
 })
