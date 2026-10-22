@@ -5,6 +5,8 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Optional Plausible stats** for HelpBites' own site and panel: set `NUXT_PUBLIC_PLAUSIBLE_SRC` to the script's address (off by default; the panel reads it at run
+  time, the prerendered landing page and docs need it as a Docker build arg too). It is not loaded in the embeds or on the invite and OAuth pages, and its origin joins the panel's script policy. No schema changes.
 - **Guest access (no account, no email)**: an admin can open chat, feedback and blog or changelog comments to visitors who sign in with
   nothing (Project → Settings → Chat widget → Guest access, web and native; `guestSurfaces` on `PATCH /v1/admin/projects/{id}`; off by
   default). `POST /v1/anonymous/guest` makes a session; guests are rate limited per IP, per project and per guest, cannot upload, carry no

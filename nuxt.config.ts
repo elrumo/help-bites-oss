@@ -56,6 +56,8 @@ export default defineNuxtConfig({
       // (see useAppUrl) instead of showing a baked-in localhost URL.
       appUrl: process.env.APP_URL || '',
       sentryDsn: process.env.NUXT_PUBLIC_SENTRY_DSN || '',
+      // Plausible's script for this deployment's own site and panel (app/plugins/plausible.client.ts). Empty: no stats.
+      plausibleSrc: process.env.NUXT_PUBLIC_PLAUSIBLE_SRC || '',
       // Fixed at build time: which edition this bundle is.
       edition
     }

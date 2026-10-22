@@ -425,6 +425,7 @@ runs a single-container Bugsink on SQLite; attach a public domain to
 | `BUGSINK_SECRET_KEY` | With bundled service | — | Set a strong random value. |
 | `ERRORS_WEBHOOK_BASE` | No | `APP_URL` | Reachable HelpBites base URL for alert callbacks. `GLITCHTIP_WEBHOOK_BASE` is still read as a fallback. |
 | `NUXT_PUBLIC_SENTRY_DSN` | No | _(off)_ | A project DSN for HelpBites' own browser and server errors. |
+| `NUXT_PUBLIC_PLAUSIBLE_SRC` | No | _(off)_ | The address of a [Plausible](https://plausible.io) script (`https://stats.example.com/js/pa-….js`) for page-view stats of HelpBites' own site and panel. Not loaded in the embeds or on invite and OAuth pages; the script's origin is added to the panel's script policy. The panel reads it at run time; the landing page and docs are prerendered, so also pass it as a Docker build arg to track them. |
 
 An external GlitchTip installation works too: set `GLITCHTIP_URL` and, if its
 API is on another origin, `GLITCHTIP_API_URL` (or the API URL field in Connect
