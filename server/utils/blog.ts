@@ -199,7 +199,8 @@ export function blogPostUrl(project: ParseObject, row: ParseObject): string {
 
 // ---- serialize -------------------------------------------------------------------
 
-const dataOf = (row: ParseObject) => readBlogData(row.get('data'))
+// `dataJson` is the text field; `data` held an object in the first version, and the database column keeps that type.
+const dataOf = (row: ParseObject) => readBlogData(row.get('dataJson') ?? row.get('data'))
 
 function seoOf(row: ParseObject) {
   return {
@@ -419,8 +420,9 @@ async function applyBlogPostInput(project: ParseObject, row: ParseObject, payloa
     row.set('readingMinutes', blogBodyStats(body, formatOf(row)).readingMinutes)
   }
   if (values.data !== undefined) {
-    if (values.data) row.set('data', JSON.stringify(values.data))
-    else row.unset('data')
+    if (values.data) row.set('dataJson', JSON.stringify(values.data))
+    else row.unset('dataJson')
+    row.unset('data')
   }
   if (values.excerpt !== undefined) row.set('excerptWritten', Boolean(values.excerpt))
   // A written lead-in stays as written; otherwise it follows the body.

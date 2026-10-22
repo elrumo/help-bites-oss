@@ -392,7 +392,7 @@ export type BlogPostValues = Partial<BlogSeo> & {
 
 /**
  * A post's `data` as stored: JSON text, because the database refuses object keys with a dot or a leading `$`,
- * which JSON of your own (`"light.exposure"`) is full of. Reads the text, or an object saved before it was text.
+ * which JSON of your own (`"light.exposure"`) is full of. Kept in the field `dataJson`; reads the text, or an object saved before it was text (the field `data`).
  */
 export function readBlogData(stored: unknown): Record<string, unknown> | null {
   let value = stored
