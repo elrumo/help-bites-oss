@@ -11,6 +11,7 @@ defineRouteMeta({
       type: { type: 'string', enum: ['post', 'page'], default: 'post' },
       body: { type: 'string', description: 'Markdown (or HTML), up to 200,000 characters' },
       bodyFormat: { type: 'string', enum: ['markdown', 'html'], default: 'markdown' },
+      data: { type: 'object', additionalProperties: true, nullable: true, description: 'JSON of your own (up to 200,000 characters), returned as `data` on the post and on its public read, for a site that renders posts itself from the API. Not shown on the hosted blog.' },
       coverImageUrl: { type: 'string', format: 'uri' },
       coverImageAlt: { type: 'string', maxLength: 300 },
       tags: { type: 'array', items: { type: 'string', maxLength: 40 }, maxItems: 10 },

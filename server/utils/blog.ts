@@ -198,6 +198,11 @@ export function blogPostUrl(project: ParseObject, row: ParseObject): string {
 
 // ---- serialize -------------------------------------------------------------------
 
+function dataOf(row: ParseObject): Record<string, unknown> | null {
+  const data = row.get('data')
+  return data && typeof data === 'object' && !Array.isArray(data) ? data as Record<string, unknown> : null
+}
+
 function seoOf(row: ParseObject) {
   return {
     metaTitle: String(row.get('metaTitle') || ''),
@@ -220,6 +225,7 @@ export function serializeBlogPost(project: ParseObject, row: ParseObject): BlogP
     body: String(row.get('body') || ''),
     bodyFormat: formatOf(row),
     bodyHtml: String(row.get('bodyHtml') || ''),
+    data: dataOf(row),
     coverImageUrl: String(row.get('coverImageUrl') || ''),
     coverImageAlt: String(row.get('coverImageAlt') || ''),
     tags: stringList(row.get('tags')),
@@ -256,7 +262,7 @@ export function serializePublicBlogPost(project: ParseObject, config: BlogConfig
     slug: String(row.get('slug') || ''),
     title: String(row.get('title') || ''),
     excerpt: String(row.get('excerpt') || ''),
-    ...(options.body && !locked ? { bodyHtml: String(row.get('bodyHtml') || '') } : {}),
+    ...(options.body && !locked ? { bodyHtml: String(row.get('bodyHtml') || ''), data: dataOf(row) } : {}),
     coverImageUrl: String(row.get('coverImageUrl') || ''),
     coverImageAlt: String(row.get('coverImageAlt') || ''),
     tags: stringList(row.get('tags')),
@@ -413,6 +419,10 @@ async function applyBlogPostInput(project: ParseObject, row: ParseObject, payloa
     row.set('body', body)
     row.set('bodyHtml', renderBlogBody(body, formatOf(row)))
     row.set('readingMinutes', blogBodyStats(body, formatOf(row)).readingMinutes)
+  }
+  if (values.data !== undefined) {
+    if (values.data) row.set('data', values.data)
+    else row.unset('data')
   }
   if (values.excerpt !== undefined) row.set('excerptWritten', Boolean(values.excerpt))
   // A written lead-in stays as written; otherwise it follows the body.

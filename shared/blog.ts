@@ -16,6 +16,8 @@ export const BLOG_BODY_MAX_LENGTH = 200_000
 export const BLOG_META_TITLE_MAX_LENGTH = 300
 export const BLOG_META_DESCRIPTION_MAX_LENGTH = 500
 export const BLOG_ALT_MAX_LENGTH = 300
+/** A post's `data`: JSON of your own for a site that renders posts itself, as serialised text. */
+export const BLOG_DATA_MAX_LENGTH = 200_000
 export const BLOG_TAGS_MAX = 10
 export const BLOG_TAG_MAX_LENGTH = 40
 export const BLOG_PAGE_MAX = 50
@@ -300,6 +302,8 @@ export type BlogPost = BlogSeo & {
   bodyFormat: BlogBodyFormat
   /** Sanitised HTML, rendered once on write. */
   bodyHtml: string
+  /** JSON of your own (an object), for a site that renders its posts from the API; `null` when none. */
+  data: Record<string, unknown> | null
   coverImageUrl: string
   coverImageAlt: string
   tags: string[]
@@ -333,6 +337,8 @@ export type PublicBlogPost = BlogSeo & {
   title: string
   excerpt: string
   bodyHtml?: string
+  /** Your own JSON, on one post only (like `bodyHtml`), not in the list, and not when `locked`. */
+  data?: Record<string, unknown> | null
   coverImageUrl: string
   coverImageAlt: string
   tags: string[]
@@ -373,6 +379,7 @@ export type BlogPostValues = Partial<BlogSeo> & {
   excerpt?: string
   body?: string
   bodyFormat?: BlogBodyFormat
+  data?: Record<string, unknown> | null
   coverImageUrl?: string
   coverImageAlt?: string
   tags?: string[]
@@ -427,6 +434,12 @@ export function readBlogPostInput(payload: unknown, options: { create: boolean }
     const body = raw.body === null ? '' : typeof raw.body === 'string' ? raw.body : null
     if (body === null || body.length > BLOG_BODY_MAX_LENGTH) errors.push(`body is up to ${BLOG_BODY_MAX_LENGTH} characters`)
     else values.body = body
+  }
+  if (has('data')) {
+    if (raw.data === null) values.data = null
+    else if (!raw.data || typeof raw.data !== 'object' || Array.isArray(raw.data)) errors.push('data must be a JSON object, or null to clear it')
+    else if (JSON.stringify(raw.data).length > BLOG_DATA_MAX_LENGTH) errors.push(`data is up to ${BLOG_DATA_MAX_LENGTH} characters as JSON`)
+    else values.data = raw.data as Record<string, unknown>
   }
   if (has('coverImageUrl')) {
     const url = raw.coverImageUrl === null ? '' : safeHttpUrl(raw.coverImageUrl)
