@@ -544,7 +544,7 @@ function blogPost(n: number, title: string, body: string, status: 'draft' | 'pub
   const published = status === 'published'
   const excerpt = body.replace(/[#*_`>]/g, '').split('\n').find(line => line.trim())?.trim().slice(0, 200) || ''
   blogPosts.push({
-    id: `blog_demo${n}`, projectId: 'acme', type: 'post', title, slug: slug(title), excerpt, excerptWritten: false, body, bodyFormat: 'markdown', bodyHtml: body.split('\n\n').map(p => `<p>${p}</p>`).join(''),
+    id: `blog_demo${n}`, projectId: 'acme', type: 'post', title, slug: slug(title), excerpt, excerptWritten: false, body, bodyFormat: 'markdown', bodyHtml: body.split('\n\n').map(p => `<p>${p}</p>`).join(''), data: null,
     coverImageUrl: '', coverImageAlt: '', tags: [], featured: false, visibility: 'public', metaTitle: '', metaDescription: '', ogImageUrl: '', canonicalUrl: '', status, publishedAt: published ? ago(minutesAgo) : null, live: published, authorName: 'You', readingMinutes: 3,
     commentsOpen: true, commentCount: 0, reactions: [], newsletter: null, url: `/blog/pk_demo_acme/${slug(title)}`, createdAt: ago(minutesAgo + 120), updatedAt: ago(minutesAgo), ...extra
   })

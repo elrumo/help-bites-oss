@@ -66,6 +66,17 @@ storage.
   address for a post that first appeared elsewhere. Each falls back to the
   post's own when empty.
 
+## Your own data on a post
+
+A post can carry a JSON object of your own, `data` (up to 200,000 characters as
+JSON), for a site that renders its posts itself from the API: steps, a gallery,
+settings, anything the Markdown body can't say. It is saved with `POST` /
+`PATCH /v1/admin/blog/posts`, `null` clears it, and it comes back as `data` on
+the post (admin) and on `GET /v1/blog/<slug>` (public, with `bodyHtml`; not in
+the list, and not on a post that is `locked`). The hosted blog, the embed, the
+feed and the newsletter ignore it. Keep the body readable on its own: that is
+what they show.
+
 ## Publishing
 
 | | |
@@ -606,6 +617,7 @@ curl -s -X POST https://YOUR-SUPPORT-HOST/v1/admin/blog/import \
 |---|---|
 | Title | 200 characters |
 | Body | 200,000 characters (Markdown or HTML) |
+| `data` | 200,000 characters as JSON |
 | Search and social | title 300, description 500, alt text 300 characters |
 | Navigation | 8 links |
 | Ghost import | 2,000 posts per file |

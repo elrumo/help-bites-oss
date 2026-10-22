@@ -39,6 +39,11 @@ describe('blog rules', () => {
     expect(created.values).toEqual({ title: 'Hello there', tags: [], status: 'draft', type: 'post', visibility: 'public', bodyFormat: 'markdown' })
     expect(readBlogPostInput({ excerpt: null }, { create: false }).values).toEqual({ excerpt: '' })
     expect(readBlogPostInput({ status: 'live' }, { create: false }).errors[0]).toMatch(/status must be one of/)
+    // `data` is an object of the caller's own, or null to clear it
+    expect(readBlogPostInput({ data: { steps: [1, 2] } }, { create: false }).values.data).toEqual({ steps: [1, 2] })
+    expect(readBlogPostInput({ data: null }, { create: false }).values.data).toBeNull()
+    expect(readBlogPostInput({ data: [1] }, { create: false }).errors[0]).toMatch(/data must be a JSON object/)
+    expect(readBlogPostInput({ data: { big: 'x'.repeat(200_001) } }, { create: false }).errors[0]).toMatch(/data is up to/)
     expect(readBlogPostInput({ coverImageUrl: 'javascript:alert(1)' }, { create: false }).errors[0]).toMatch(/http/)
     expect(readBlogPostInput({ publishedAt: 'not a date' }, { create: false }).errors[0]).toMatch(/publishedAt/)
     expect(readBlogPostInput({ slug: 'Mi Entrada' }, { create: false }).values.slug).toBe('mi-entrada')
