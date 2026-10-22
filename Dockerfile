@@ -7,6 +7,8 @@ COPY . .
 # Declared after the install so `nuxt prepare` in postinstall never sees it.
 ARG HELPBITES_EDITION=community
 ARG GIT_SHA=
+# The landing page and docs are prerendered, so their stats script (docs/DEPLOYMENT.md) is a build arg too; the panel reads it at run time.
+ARG NUXT_PUBLIC_PLAUSIBLE_SRC=
 # A community image must not contain the commercial ee/ code, not even unused.
 RUN if [ "$HELPBITES_EDITION" != "cloud" ]; then rm -rf ee; fi
 RUN HELPBITES_EDITION=$HELPBITES_EDITION bun run build

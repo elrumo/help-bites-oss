@@ -12,6 +12,7 @@ import { PAGE_RUNTIME } from '#shared/cms/render'
 // Pages editor's preview runtime and the hosted page runtime it plays animations with.
 // Only script directives: styles, images and API calls stay as they were. The
 // frame-ancestors that securityHeaders or the /embed route rules set is kept.
+// The stats script (NUXT_PUBLIC_PLAUSIBLE_SRC) is allowed by its origin when it is set.
 // Dev goes without: Vite's HMR needs inline scripts and eval.
 const INLINE_SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi
 const NOT_RUN = /(?:^|\s)(?:src\s*=|type\s*=\s*["']?application\/(?:ld\+)?json)/i
@@ -21,6 +22,8 @@ const sha256 = (text: string) => `'sha256-${createHash('sha256').update(text).di
 export default defineNitroPlugin((nitroApp) => {
   if (import.meta.dev) return
   const previews = [EMAIL_PREVIEW_RUNTIME, CMS_PREVIEW_RUNTIME, PAGE_RUNTIME].map(sha256)
+  let statsOrigin = ''
+  try { statsOrigin = new URL(String(useRuntimeConfig().public.plausibleSrc || '')).origin } catch { /* unset or not a URL: none */ }
 
   nitroApp.hooks.hook('render:response', (response, { event }) => {
     if (typeof response.body !== 'string' || !String(response.headers?.['content-type'] || '').startsWith('text/html')) return
@@ -28,7 +31,7 @@ export default defineNitroPlugin((nitroApp) => {
     for (const [, attrs = '', text = ''] of response.body.matchAll(INLINE_SCRIPT)) {
       if (!NOT_RUN.test(attrs)) hashes.add(sha256(text))
     }
-    const policy = [String(getResponseHeader(event, 'content-security-policy') || ''), `script-src 'self' ${[...hashes].join(' ')}`, "object-src 'none'", "base-uri 'self'"]
+    const policy = [String(getResponseHeader(event, 'content-security-policy') || ''), `script-src 'self' ${[statsOrigin, ...hashes].filter(Boolean).join(' ')}`, "object-src 'none'", "base-uri 'self'"]
     response.headers = { ...response.headers, 'content-security-policy': policy.filter(Boolean).join('; ') }
   })
 })
