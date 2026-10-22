@@ -25,7 +25,7 @@ struct TransferSection: View {
         CardRow(divider: projectId == nil) {
           HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-              Text(projectId == nil ? "Download everything, ready to import elsewhere" : "Download this project, ready to import elsewhere").font(.lnRow).foregroundStyle(Theme.textHighlighted)
+              Text(projectId == nil ? String(localized: "Download everything, ready to import elsewhere") : String(localized: "Download this project, ready to import elsewhere")).font(.lnRow).foregroundStyle(Theme.textHighlighted)
               Text("Conversations, contacts, knowledge, email, changelog and settings as one file another HelpBites can import. Passwords, API keys, Stripe and GitHub connections and uploaded files stay behind.").font(.lnCaption).foregroundStyle(Theme.textMuted)
             }
             Spacer(minLength: 8)
@@ -64,7 +64,7 @@ struct TransferSection: View {
     // Follow a running import until it ends.
     .task(id: busy) { while busy && !Task.isCancelled { try? await Task.sleep(for: .seconds(3)); await load() } }
     .fileImporter(isPresented: $picking, allowedContentTypes: [.data]) { result in Task { await upload(result) } }
-    .sheet(isPresented: $connecting) { TransferConnectSheet { notice = "Import started"; await load() } }
+    .sheet(isPresented: $connecting) { TransferConnectSheet { notice = String(localized: "Import started"); await load() } }
   }
 
   private func load() async {
@@ -92,7 +92,7 @@ struct TransferSection: View {
     defer { if scoped { url.stopAccessingSecurityScopedResource() } }
     do {
       let _: Output = try await session.uploadRaw("/v1/admin/transfers/upload", file: try Data(contentsOf: url))
-      notice = "Import started"
+      notice = String(localized: "Import started")
       await load()
     } catch { self.error = error.localizedDescription }
   }
@@ -133,8 +133,8 @@ private struct TransferRow: View {
           HStack(spacing: 6) {
             Image(systemName: record.status == "done" ? "checkmark.circle" : record.status == "failed" ? "exclamationmark.circle" : "arrow.triangle.2.circlepath")
               .foregroundStyle(record.status == "done" ? Theme.success : record.status == "failed" ? Theme.error : Theme.textMuted)
-            Text(record.source == "file" ? "A file" : record.host).font(.lnRow).foregroundStyle(Theme.textHighlighted)
-            Text("\(record.scope == "project" ? "One project" : "Whole workspace") · \(DateText.short(record.createdAt))").font(.lnCaption).foregroundStyle(Theme.textMuted)
+            Text(record.source == "file" ? String(localized: "A file") : record.host).font(.lnRow).foregroundStyle(Theme.textHighlighted)
+            Text("\(record.scope == "project" ? String(localized: "One project") : String(localized: "Whole workspace")) · \(DateText.short(record.createdAt))").font(.lnCaption).foregroundStyle(Theme.textMuted)
           }
           switch record.status {
           case "queued": caption("Waiting to start…")
@@ -159,7 +159,7 @@ private struct TransferRow: View {
     }
   }
 
-  private func caption(_ text: String) -> some View { Text(text).font(.lnCaption).foregroundStyle(Theme.textMuted) }
+  private func caption(_ text: LocalizedStringKey) -> some View { Text(text).font(.lnCaption).foregroundStyle(Theme.textMuted) }
 }
 
 /// Sign in to another HelpBites, pick what to import, start it (`POST /v1/admin/transfers/inspect`, then `/transfers`).

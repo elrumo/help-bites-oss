@@ -223,7 +223,7 @@ struct BlogPostEditor: View {
         if current.isPage {
           Text("\(current.readingMinutes) min read").font(.lnMeta).foregroundStyle(Theme.textMuted)
         } else {
-          Text("\(current.readingMinutes) min read · \(current.commentCount) \(current.commentCount == 1 ? "comment" : "comments")")
+          Text(current.commentCount == 1 ? String(localized: "\(current.readingMinutes) min read · 1 comment") : String(localized: "\(current.readingMinutes) min read · \(current.commentCount) comments"))
             .font(.lnMeta).foregroundStyle(Theme.textMuted)
           ForEach(current.reactions, id: \.key) { Text("\($0.emoji) \($0.count)").font(.lnCaption).foregroundStyle(Theme.textMuted) }
         }
@@ -272,7 +272,7 @@ struct BlogPostEditor: View {
       } else if isHTML {
         LinearTextEditor(text: $draft.body, placeholder: "<p>HTML</p>", minHeight: 280, monospaced: true)
       } else {
-        LinearTextEditor(text: $draft.body, placeholder: "Write in Markdown: ## for a heading, **bold**, - for a list", minHeight: 280)
+        LinearTextEditor(text: $draft.body, placeholder: String(localized: "Write in Markdown: ## for a heading, **bold**, - for a list"), minHeight: 280)
       }
       Text(isHTML
         ? "HTML, as it came in from Ghost: it stays HTML (the web's editor edits it visually). An image goes in where the text ends."
@@ -293,7 +293,7 @@ struct BlogPostEditor: View {
     }
     if !isPage { audience }
     LabeledField(label: "Excerpt", hint: "For the list, the feed and link previews; taken from the text when empty") {
-      TextField(current.map { $0.excerptWritten ? "" : $0.excerpt } ?? "Taken from the text", text: $draft.excerpt, axis: .vertical)
+      TextField(current.map { $0.excerptWritten ? "" : $0.excerpt } ?? String(localized: "Taken from the text"), text: $draft.excerpt, axis: .vertical)
         .textFieldStyle(.linear).lineLimit(2...6)
         .onChange(of: draft.excerpt) { _, value in if value.count > BlogLimits.excerpt { draft.excerpt = String(value.prefix(BlogLimits.excerpt)) } }
     }
@@ -320,7 +320,7 @@ struct BlogPostEditor: View {
 
   @ViewBuilder private var publishing: some View {
     LabeledField(label: "Status") {
-      FeedbackSelect(options: [FeedbackOption(value: "draft", label: "Draft", color: "neutral"), FeedbackOption(value: "published", label: "Published", color: "success")], selection: $draft.status)
+      FeedbackSelect(options: [FeedbackOption(value: "draft", label: String(localized: "Draft"), color: "neutral"), FeedbackOption(value: "published", label: String(localized: "Published"), color: "success")], selection: $draft.status)
     }
     LabeledField(label: draft.status == "published" ? "Published on" : "Publish on", hint: scheduled ? "Scheduled: goes live on its own" : "Empty publishes it now; a later date schedules it") {
       HStack(spacing: 4) {
@@ -350,7 +350,7 @@ struct BlogPostEditor: View {
         ? "Everyone sees the title and excerpt; the rest is for readers signed in with your app or with their email. The feed carries only the excerpt."
         : "Anyone with the link, the feed and search engines."
     ) {
-      FeedbackSelect(options: [FeedbackOption(value: "public", label: "Everyone"), FeedbackOption(value: "members", label: "Members only")], selection: $draft.visibility)
+      FeedbackSelect(options: [FeedbackOption(value: "public", label: String(localized: "Everyone")), FeedbackOption(value: "members", label: String(localized: "Members only"))], selection: $draft.visibility)
     }
   }
 
@@ -421,8 +421,8 @@ struct BlogPostEditor: View {
     let description = draft.metaDescription.isEmpty ? descriptionFallback : draft.metaDescription
     return VStack(alignment: .leading, spacing: 2) {
       Text("\(store.blogAddress)/\(slug)").font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1).truncationMode(.middle)
-      Text(title.isEmpty ? "Untitled post" : title).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.info).lineLimit(1)
-      Text(description.isEmpty ? "The excerpt shows here when there is no description." : description).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(2)
+      Text(title.isEmpty ? String(localized: "Untitled post") : title).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.info).lineLimit(1)
+      Text(description.isEmpty ? String(localized: "The excerpt shows here when there is no description.") : description).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(2)
     }
     .padding(12)
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -434,7 +434,7 @@ struct BlogPostEditor: View {
   private func counted<Field: View>(_ label: String, _ count: Int, guide: Int, @ViewBuilder field: () -> Field) -> some View {
     VStack(alignment: .leading, spacing: 6) {
       HStack {
-        Text(label).font(.lnMetaMedium).foregroundStyle(Theme.textToned)
+        Text(LocalizedStringKey(label)).font(.lnMetaMedium).foregroundStyle(Theme.textToned)
         Spacer(minLength: 0)
         Text("\(count)/\(guide)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
       }
@@ -560,7 +560,7 @@ struct BlogPostEditor: View {
       coverPhoto = nil
     }
     do {
-      guard let data = try await item.loadTransferable(type: Data.self) else { throw APIError.server("Could not read that photo.") }
+      guard let data = try await item.loadTransferable(type: Data.self) else { throw APIError.server(String(localized: "Could not read that photo.")) }
       let url = try await store.uploadImage(data)
       if field == \BlogPostDraft.body {
         let gap = draft.body.isEmpty || draft.body.hasSuffix("\n\n") ? "" : draft.body.hasSuffix("\n") ? "\n" : "\n\n"

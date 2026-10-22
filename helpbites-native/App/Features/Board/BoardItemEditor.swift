@@ -28,8 +28,8 @@ struct BoardItemEditor: View {
   private var current: BoardItem? { itemId.flatMap { store.item($0) } }
 
   private var title: String {
-    guard itemId != nil else { return "New item" }
-    return current?.number.map { "Item #\($0)" } ?? "Item"
+    guard itemId != nil else { return String(localized: "New item") }
+    return current?.number.map { String(localized: "Item #\($0)") } ?? String(localized: "Item")
   }
 
   var body: some View {
@@ -96,10 +96,10 @@ struct BoardItemEditor: View {
       FeedbackSelect(options: config.statuses.map { FeedbackOption(value: $0.key, label: $0.label, color: $0.color) }, selection: $draft.status)
     }
     LabeledField(label: "Priority") {
-      FeedbackSelect(options: [FeedbackOption(value: "", label: "No priority")] + BoardFormat.priorities.map { FeedbackOption(value: $0, label: $0.capitalized) }, selection: $draft.priority)
+      FeedbackSelect(options: [FeedbackOption(value: "", label: String(localized: "No priority"))] + BoardFormat.priorities.map { FeedbackOption(value: $0, label: BoardFormat.priorityName($0)) }, selection: $draft.priority)
     }
     LabeledField(label: "Assignee") {
-      FeedbackSelect(options: [FeedbackOption(value: "", label: "Unassigned")] + store.agents.map { FeedbackOption(value: $0.id, label: $0.inboxName) }, selection: $draft.assigneeId)
+      FeedbackSelect(options: [FeedbackOption(value: "", label: String(localized: "Unassigned"))] + store.agents.map { FeedbackOption(value: $0.id, label: $0.inboxName) }, selection: $draft.assigneeId)
     }
   }
 
@@ -159,7 +159,7 @@ struct BoardItemEditor: View {
           Text("The public roadmap is published through public feedback: turn it on, with its Roadmap view, under Feedback → Settings.")
             .font(.lnCaption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
         } else if !config.isOnRoadmap(draft.status) {
-          Text("Not on the roadmap yet: \(config.status(draft.status)?.label ?? "this status") stays private.")
+          Text("Not on the roadmap yet: \(config.status(draft.status)?.label ?? String(localized: "this status")) stays private.")
             .font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
         }
       }
@@ -310,7 +310,7 @@ struct BoardItemEditor: View {
   /// The post's status as the feedback board defines it.
   private func feedbackStatus(_ post: BoardLinkedPost) -> FeedbackStatusDefinition {
     store.feedbackStatuses.first { $0.key == post.status }
-      ?? FeedbackStatusDefinition(key: post.status, label: post.status.isEmpty ? "Open" : post.status, category: post.statusCategory, color: "neutral")
+      ?? FeedbackStatusDefinition(key: post.status, label: post.status.isEmpty ? String(localized: "Open") : post.status, category: post.statusCategory, color: "neutral")
   }
 
   private func conversationRow(_ conversation: BoardLinkedConversation) -> some View {
@@ -318,7 +318,7 @@ struct BoardItemEditor: View {
       Button { openConversation(conversation.id) } label: {
         HStack(spacing: 8) {
           Image(systemName: "text.bubble").font(.system(size: 12)).foregroundStyle(Theme.textMuted)
-          Text(conversation.subject.isEmpty ? "Conversation" : conversation.subject).foregroundStyle(Theme.text).lineLimit(1)
+          Text(conversation.subject.isEmpty ? String(localized: "Conversation") : conversation.subject).foregroundStyle(Theme.text).lineLimit(1)
           if !conversation.endUserName.isEmpty { Text("· \(conversation.endUserName)").foregroundStyle(Theme.textMuted).lineLimit(1) }
           Spacer(minLength: 4)
           Text(conversation.status.capitalized).font(.lnCaption).foregroundStyle(Theme.textToned)
@@ -345,7 +345,7 @@ struct BoardItemEditor: View {
     let before = draft
     await store.load()
     if draft == before { draft = BoardItemDraft(item: current, defaultStatus: store.config?.defaultStatusKey ?? "") }
-    if itemId != nil, current == nil, store.error.isEmpty { error = "That item no longer exists." }
+    if itemId != nil, current == nil, store.error.isEmpty { error = String(localized: "That item no longer exists.") }
   }
 
   private func save() async {
@@ -354,7 +354,7 @@ struct BoardItemEditor: View {
     do {
       let item: BoardItem
       if let itemId {
-        guard let current else { throw APIError.server("That item no longer exists.") }
+        guard let current else { throw APIError.server(String(localized: "That item no longer exists.")) }
         let patch = draft.patch(against: current)
         if patch.isEmpty { item = current } else { item = try await store.update(itemId, patch) }
       } else {

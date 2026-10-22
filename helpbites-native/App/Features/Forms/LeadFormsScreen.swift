@@ -70,7 +70,7 @@ struct LeadFormsScreen: View {
           Text(form.key).font(.lnMono).foregroundStyle(Theme.textMuted).lineLimit(1)
           HStack(spacing: 6) {
             Tag(text: form.active ? "Live" : "Closed", tint: form.active ? Theme.success : Theme.textDimmed)
-            Text("\(form.stats.leads) \(form.stats.leads == 1 ? "lead" : "leads")").font(.lnCaption).foregroundStyle(Theme.textMuted).monospacedDigit()
+            Text("\(form.stats.leads) \(form.stats.leads == 1 ? String(localized: "lead") : String(localized: "leads"))").font(.lnCaption).foregroundStyle(Theme.textMuted).monospacedDigit()
             if form.settings.doubleOptIn { Text("\(form.stats.confirmed) on the list").font(.lnCaption).foregroundStyle(Theme.textDimmed).monospacedDigit() }
           }
           .padding(.top, 4)

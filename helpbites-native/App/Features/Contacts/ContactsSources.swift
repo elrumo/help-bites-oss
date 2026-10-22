@@ -58,7 +58,7 @@ struct SourcesList: View {
         Image(systemName: Self.icons[source.kind] ?? "cylinder").foregroundStyle(Theme.textMuted)
         VStack(alignment: .leading, spacing: 2) {
           Text(source.name).font(.lnRow).foregroundStyle(Theme.textHighlighted)
-          Text("\(kinds.first { $0.kind == source.kind }?.label ?? source.kind) · \(source.what) · \(source.schedule)\(source.config.updatedField == nil ? " · full scan" : "")").font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
+          Text("\(kinds.first { $0.kind == source.kind }?.label ?? source.kind) · \(source.what) · \(source.schedule)\(source.config.updatedField == nil ? String(localized: " · full scan") : "")").font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
         }
         Spacer(minLength: 8)
         if !source.enabled { Tag(text: "Paused") }
@@ -81,7 +81,7 @@ struct SourcesList: View {
       }
       if !source.lastError.isEmpty { Text(source.lastError).font(.lnMono).foregroundStyle(Theme.error).lineLimit(3) }
       let s = source.stats
-      Text("Read \(s.seen.formatted()) · new \(s.created.formatted()) · updated \(s.updated.formatted())\(s.skipped > 0 ? " · skipped \(s.skipped.formatted())" : "")\(s.failed > 0 ? " · failed \(s.failed.formatted())" : "")\(source.lastRunAt.map { " · last run \(DateText.short($0))" } ?? "")\(source.position.isEmpty ? "" : " · up to \(source.position.prefix(32))")")
+      Text("Read \(s.seen.formatted()) · new \(s.created.formatted()) · updated \(s.updated.formatted())\(s.skipped > 0 ? String(localized: " · skipped \(s.skipped.formatted())") : "")\(s.failed > 0 ? String(localized: " · failed \(s.failed.formatted())") : "")\(source.lastRunAt.map { String(localized: " · last run \(DateText.short($0))") } ?? "")\(source.position.isEmpty ? "" : String(localized: " · up to \(String(source.position.prefix(32)))"))")
         .font(.lnCaption).foregroundStyle(Theme.textMuted)
     }
     .padding(.vertical, 6)
@@ -161,7 +161,7 @@ struct SourceFormSheet: View {
   @State private var saving = false
   @State private var error = ""
 
-  private static let schedules: [(label: String, value: Int)] = [("Every 15 minutes", 15), ("Hourly", 60), ("Every 6 hours", 360), ("Daily", 1440), ("Only when I click Sync", 0)]
+  private static let schedules: [(label: String, value: Int)] = [(String(localized: "Every 15 minutes"), 15), (String(localized: "Hourly"), 60), (String(localized: "Every 6 hours"), 360), (String(localized: "Daily"), 1440), (String(localized: "Only when I click Sync"), 0)]
   private var kindItems: [ContactSourceKind] { kinds.isEmpty ? [ContactSourceKind(kind: "parse", label: "Parse"), ContactSourceKind(kind: "postgres", label: "Postgres / Supabase"), ContactSourceKind(kind: "firestore", label: "Firestore")] : kinds }
   private var mappedColumns: Set<String> { Set([mapping.email, mapping.externalId, mapping.name, mapping.language, mapping.tags, mapping.subscribed].compactMap { $0 }) }
   private var attributeColumns: [String] { fields.filter { !mappedColumns.contains($0) } }
@@ -258,7 +258,7 @@ struct SourceFormSheet: View {
     }
   }
 
-  private func picker(_ title: String, _ selection: Binding<String?>) -> some View {
+  private func picker(_ title: LocalizedStringKey, _ selection: Binding<String?>) -> some View {
     Picker(title, selection: selection) {
       Text("None").tag(String?.none)
       ForEach(fields, id: \.self) { Text($0).tag(Optional($0)) }

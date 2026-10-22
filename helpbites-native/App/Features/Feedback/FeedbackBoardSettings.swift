@@ -1,8 +1,8 @@
 import SwiftUI
 
 // File scope: a generic type cannot hold static stored properties.
-private let feedbackCategoryOptions = [("open", "Open"), ("planned", "Planned"), ("active", "Active"), ("done", "Done"), ("closed", "Closed")].map { FeedbackOption(value: $0.0, label: $0.1) }
-private let feedbackColorOptions = ["neutral", "primary", "info", "success", "warning", "error"].map { FeedbackOption(value: $0, label: $0.capitalized, color: $0) }
+private let feedbackCategoryOptions = [("open", String(localized: "Open")), ("planned", String(localized: "Planned")), ("active", String(localized: "Active")), ("done", String(localized: "Done")), ("closed", String(localized: "Closed"))].map { FeedbackOption(value: $0.0, label: $0.1) }
+private let feedbackColorOptions = [("neutral", String(localized: "Neutral")), ("primary", String(localized: "Primary")), ("info", String(localized: "Info")), ("success", String(localized: "Success")), ("warning", String(localized: "Warning")), ("error", String(localized: "Error"))].map { FeedbackOption(value: $0.0, label: $0.1, color: $0.0) }
 
 /// Feedback settings (FeedbackBoardSettings.vue): the feedback page's switch and copy, its options,
 /// and the statuses, post types, platforms and tags posts are filed under. With
@@ -10,7 +10,7 @@ private let feedbackColorOptions = ["neutral", "primary", "info", "success", "wa
 /// renamed) under a `header` of the caller's own.
 struct FeedbackBoardSettingsSheet<Header: View>: View {
   private let boardOnly: Bool
-  private let intro: String
+  private let intro: LocalizedStringKey
   private let saveAction: @MainActor (FeedbackBoardConfig) async throws -> FeedbackBoardConfig
   private let header: Header
   @State private var draft: FeedbackSettingsDraft
@@ -20,7 +20,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
   @Environment(\.dismiss) private var dismiss
 
   /// `save` stores the config and answers with what the server kept.
-  init(config: FeedbackBoardConfig, boardOnly: Bool, intro: String, save: @escaping @MainActor (FeedbackBoardConfig) async throws -> FeedbackBoardConfig, @ViewBuilder header: () -> Header) {
+  init(config: FeedbackBoardConfig, boardOnly: Bool, intro: LocalizedStringKey, save: @escaping @MainActor (FeedbackBoardConfig) async throws -> FeedbackBoardConfig, @ViewBuilder header: () -> Header) {
     self.boardOnly = boardOnly
     self.intro = intro
     self.saveAction = save
@@ -200,7 +200,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
 
   // MARK: Pieces
 
-  private func heading(_ title: String, _ detail: String? = nil) -> some View {
+  private func heading(_ title: LocalizedStringKey, _ detail: LocalizedStringKey? = nil) -> some View {
     VStack(alignment: .leading, spacing: 3) {
       Text(title).font(.lnHeading).foregroundStyle(Theme.textHighlighted)
       if let detail { Text(detail).font(.lnMeta).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true) }
@@ -215,7 +215,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
   }
 
   /// The key field; until one is typed it shows the key the label will get.
-  private func keyField(_ key: Binding<String>, label: String, name: String) -> some View {
+  private func keyField(_ key: Binding<String>, label: String, name: LocalizedStringKey) -> some View {
     let auto = FeedbackFormat.normalizeKey(label)
     return TextField(auto.isEmpty ? "key" : auto, text: key)
       .textFieldStyle(.linear)
@@ -224,7 +224,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
       .accessibilityLabel(name)
   }
 
-  private func rowButton(_ systemImage: String, _ label: String, active: Bool = false, enabled: Bool = true, action: @escaping () -> Void) -> some View {
+  private func rowButton(_ systemImage: String, _ label: LocalizedStringKey, active: Bool = false, enabled: Bool = true, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Image(systemName: systemImage)
         .font(.system(size: 13, weight: .medium))
@@ -238,7 +238,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
     .accessibilityLabel(label)
   }
 
-  private func addButton(_ title: String, action: @escaping () -> Void) -> some View {
+  private func addButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
     Button(action: action) { Label(title, systemImage: "plus") }.buttonStyle(.lnSecondaryCompact)
   }
 
@@ -275,7 +275,7 @@ extension FeedbackBoardSettingsSheet where Header == EmptyView {
         // The sheet shows the error; the screen behind it must not keep it.
         let message = store.saveError
         store.saveError = ""
-        throw APIError.server(message.isEmpty ? "Could not save" : message)
+        throw APIError.server(message.isEmpty ? String(localized: "Could not save") : message)
       }
       return saved
     }) {

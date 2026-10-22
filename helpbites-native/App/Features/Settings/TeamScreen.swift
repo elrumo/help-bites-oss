@@ -34,13 +34,13 @@ struct TeamScreen: View {
   private var rows: [Row] {
     let projectNames = Dictionary(workspace.projects.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
     let humans = people.map { agent in
-      Row(id: "human-\(agent.id)", agentId: agent.id, isAI: false, name: agent.name.isEmpty ? agent.username : agent.name, detail: [agent.username, agent.email].filter { !$0.isEmpty }.joined(separator: " · "), project: "All projects", status: "active", projectId: "", isMe: agent.id == session.agent?.id, role: TeamRole(agent.role))
+      Row(id: "human-\(agent.id)", agentId: agent.id, isAI: false, name: agent.name.isEmpty ? agent.username : agent.name, detail: [agent.username, agent.email].filter { !$0.isEmpty }.joined(separator: " · "), project: String(localized: "All projects"), status: "active", projectId: "", isMe: agent.id == session.agent?.id, role: TeamRole(agent.role))
     }
     let invited = invitations.map { invite in
-      Row(id: "invite-\(invite.id)", agentId: invite.id, isAI: false, name: invite.email, detail: "Invited\(invite.invitedBy.isEmpty ? "" : " by \(invite.invitedBy)")", project: "All projects", status: "pending", projectId: "", isMe: false, role: TeamRole(invite.role), invitationId: invite.id)
+      Row(id: "invite-\(invite.id)", agentId: invite.id, isAI: false, name: invite.email, detail: invite.invitedBy.isEmpty ? String(localized: "Invited") : String(localized: "Invited by \(invite.invitedBy)"), project: String(localized: "All projects"), status: "pending", projectId: "", isMe: false, role: TeamRole(invite.role), invitationId: invite.id)
     }
     let bots = assistants.map { agent in
-      Row(id: "ai-\(agent.id)", agentId: agent.id, isAI: true, name: agent.name, detail: !agent.description.isEmpty ? agent.description : !agent.model.isEmpty ? agent.model : "No description", project: projectNames[agent.projectId] ?? "No project", status: agent.status, projectId: agent.projectId, isMe: false)
+      Row(id: "ai-\(agent.id)", agentId: agent.id, isAI: true, name: agent.name, detail: !agent.description.isEmpty ? agent.description : !agent.model.isEmpty ? agent.model : String(localized: "No description"), project: projectNames[agent.projectId] ?? String(localized: "No project"), status: agent.status, projectId: agent.projectId, isMe: false)
     }
     return humans + invited + bots
   }

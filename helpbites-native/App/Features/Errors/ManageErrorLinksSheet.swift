@@ -63,8 +63,8 @@ struct ManageErrorLinksSheet: View {
         row("Tracker", "\(link.providerName) · \(serverName(link))")
         row("Project name", link.name)
         if !link.team.isEmpty { row("Team", link.team) }
-        copyRow("DSN", link.dsn, id: "\(link.id):dsn")
-        if !link.alertWebhookUrl.isEmpty { copyRow("Alert webhook", link.alertWebhookUrl, id: "\(link.id):hook") }
+        copyRow("DSN", link.dsn, id: "\(link.id):dsn", copy: "Copy DSN")
+        if !link.alertWebhookUrl.isEmpty { copyRow("Alert webhook", link.alertWebhookUrl, id: "\(link.id):hook", copy: "Copy alert webhook") }
         if let url = URL(string: link.url), !link.url.isEmpty {
           Button { openURL(url) } label: { Label("Open in \(link.providerName)", systemImage: "arrow.up.right") }.buttonStyle(.lnGhost)
         }
@@ -81,10 +81,10 @@ struct ManageErrorLinksSheet: View {
   }
 
   private func serverName(_ link: ProjectsAdminProject.ErrorLink) -> String {
-    servers.first { $0.id == link.serverId }?.name ?? (link.serverId.isEmpty ? link.providerName : "Removed server")
+    servers.first { $0.id == link.serverId }?.name ?? (link.serverId.isEmpty ? link.providerName : String(localized: "Removed server"))
   }
 
-  private func row(_ label: String, _ value: String) -> some View {
+  private func row(_ label: LocalizedStringKey, _ value: String) -> some View {
     HStack(alignment: .top, spacing: 10) {
       Text(label).font(.lnMeta).foregroundStyle(Theme.textMuted).frame(width: 100, alignment: .leading)
       Text(value).font(.lnMeta).foregroundStyle(Theme.text).textSelection(.enabled)
@@ -92,14 +92,14 @@ struct ManageErrorLinksSheet: View {
     }
   }
 
-  private func copyRow(_ label: String, _ value: String, id: String) -> some View {
+  private func copyRow(_ label: LocalizedStringKey, _ value: String, id: String, copy: LocalizedStringKey) -> some View {
     HStack(alignment: .top, spacing: 10) {
       Text(label).font(.lnMeta).foregroundStyle(Theme.textMuted).frame(width: 100, alignment: .leading)
       Text(value).font(.lnMono).foregroundStyle(Theme.text).textSelection(.enabled)
         .padding(.horizontal, 8).padding(.vertical, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radiusSmall))
-      IconButton(systemImage: copied == id ? "checkmark" : "doc.on.doc", label: "Copy \(label)") {
+      IconButton(systemImage: copied == id ? "checkmark" : "doc.on.doc", label: copy) {
         Clipboard.copy(value)
         copied = id
         Task { try? await Task.sleep(for: .seconds(1.5)); if copied == id { copied = "" } }

@@ -258,16 +258,16 @@ enum EmailBlockKind: String, CaseIterable, Identifiable, Sendable {
   /// app/utils/emailBlocks.ts EMAIL_BLOCK_META.
   var label: String {
     switch self {
-    case .heading: "Heading"
-    case .text: "Text"
-    case .button: "Button"
-    case .image: "Image"
-    case .divider: "Divider"
-    case .spacer: "Spacer"
-    case .section: "Section"
-    case .columns: "Columns"
-    case .html: "Custom HTML"
-    case .component: "Component"
+    case .heading: String(localized: "Heading")
+    case .text: String(localized: "Text")
+    case .button: String(localized: "Button")
+    case .image: String(localized: "Image")
+    case .divider: String(localized: "Divider")
+    case .spacer: String(localized: "Spacer")
+    case .section: String(localized: "Section")
+    case .columns: String(localized: "Columns")
+    case .html: String(localized: "Custom HTML")
+    case .component: String(localized: "Component")
     }
   }
 
@@ -546,12 +546,12 @@ struct EmailComponentField: Identifiable, Equatable, Sendable {
     /// EmailComponentDialog.vue's names for them.
     var label: String {
       switch self {
-      case .text: "Text"
-      case .richtext: "Rich text"
-      case .url: "Link"
-      case .image: "Image"
-      case .color: "Colour"
-      case .number: "Number"
+      case .text: String(localized: "Text")
+      case .richtext: String(localized: "Rich text")
+      case .url: String(localized: "Link")
+      case .image: String(localized: "Image")
+      case .color: String(localized: "Colour")
+      case .number: String(localized: "Number")
       }
     }
 
@@ -562,7 +562,7 @@ struct EmailComponentField: Identifiable, Equatable, Sendable {
   enum Group: String, CaseIterable, Identifiable, Sendable {
     case content = "content", style = "style"
     var id: String { rawValue }
-    var label: String { self == .content ? "Content" : "Style" }
+    var label: String { self == .content ? String(localized: "Content") : String(localized: "Style") }
   }
 
   var key: String

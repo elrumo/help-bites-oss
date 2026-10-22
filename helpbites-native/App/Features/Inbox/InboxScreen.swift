@@ -188,7 +188,7 @@ private struct InboxRow: View {
 
   var body: some View {
     let unread = conversation.unreadByAgent > 0
-    let title = user?.inboxName ?? "Unknown customer"
+    let title = user?.inboxName ?? String(localized: "Unknown customer")
     HStack(spacing: 10) {
       Circle().fill(unread ? Theme.accent : Color.clear).frame(width: 6, height: 6)
       Avatar(name: title, size: 28)
@@ -221,8 +221,8 @@ private struct InboxRow: View {
   private var summary: Text {
     let subject = conversation.subject.isEmpty ? (conversation.context?.label ?? "") : conversation.subject
     let latest = conversation.lastMessagePreview.isEmpty
-      ? "No messages yet"
-      : conversation.lastMessageFrom == "agent" ? "You: \(conversation.lastMessagePreview)" : conversation.lastMessagePreview
+      ? String(localized: "No messages yet")
+      : conversation.lastMessageFrom == "agent" ? String(localized: "You: \(conversation.lastMessagePreview)") : conversation.lastMessagePreview
     let preview = Text(latest).foregroundStyle(Theme.textMuted)
     guard !subject.isEmpty else { return preview.font(.lnMeta) }
     return Text("\(Text(subject).fontWeight(.medium).foregroundStyle(Theme.textToned))  \(preview)").font(.lnMeta)
@@ -252,7 +252,7 @@ private struct InboxFilterMenu: View {
       .pickerStyle(.menu)
       Picker("Priority", selection: $store.priorityFilter) {
         Text("Any priority").tag("")
-        ForEach(InboxPriority.all, id: \.self) { Text($0.capitalized).tag($0) }
+        ForEach(InboxPriority.all, id: \.self) { Text(InboxPriority.label($0)).tag($0) }
       }
       .pickerStyle(.menu)
       Picker("Ticket type", selection: $store.typeFilter) {
@@ -288,6 +288,16 @@ private struct InboxFilterMenu: View {
 
 enum InboxPriority {
   static let all = ["low", "normal", "high", "urgent"]
+
+  static func label(_ key: String) -> String {
+    switch key {
+    case "low": String(localized: "Low")
+    case "normal": String(localized: "Normal")
+    case "high": String(localized: "High")
+    case "urgent": String(localized: "Urgent")
+    default: key.capitalized
+    }
+  }
 }
 
 enum InboxGlyph {
@@ -304,7 +314,7 @@ enum InboxGlyph {
 
 extension EndUser {
   /// How the panel names a customer: name, else email, else their id.
-  var inboxName: String { !name.isEmpty ? name : !email.isEmpty ? email : !externalId.isEmpty ? externalId : "Unknown customer" }
+  var inboxName: String { !name.isEmpty ? name : !email.isEmpty ? email : !externalId.isEmpty ? externalId : String(localized: "Unknown customer") }
 }
 
 extension Agent {

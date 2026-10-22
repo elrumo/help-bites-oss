@@ -31,11 +31,11 @@ struct ProjectDevScreen: View {
     var id: String { rawValue }
     var label: String {
       switch self {
-      case .chat: "Chat widget"
-      case .feedback: "Feedback"
-      case .flags: "Flags"
-      case .errors: "Errors"
-      case .email: "Email API"
+      case .chat: String(localized: "Chat widget")
+      case .feedback: String(localized: "Feedback")
+      case .flags: String(localized: "Flags")
+      case .errors: String(localized: "Errors")
+      case .email: String(localized: "Email API")
       }
     }
     var systemImage: String {
@@ -111,7 +111,7 @@ struct ProjectDevScreen: View {
 
   private func credentials(_ project: ProjectsAdminProject) -> some View {
     VStack(alignment: .leading, spacing: 12) {
-      heading("Credentials")
+      heading(String(localized: "Credentials"))
       Card {
         CardRow {
           LabeledField(label: "Public key", hint: "Names the project. Safe in browsers.") {
@@ -148,7 +148,7 @@ struct ProjectDevScreen: View {
 
   private func integrations(_ project: ProjectsAdminProject) -> some View {
     VStack(alignment: .leading, spacing: 12) {
-      heading("Integrations")
+      heading(String(localized: "Integrations"))
       LazyVGrid(columns: [GridItem(.adaptive(minimum: sizeClass == .regular ? 130 : 150), spacing: 8)], spacing: 8) {
         ForEach(Tab.allCases) { item in
           let (tone, status) = summary(item, project)
@@ -192,19 +192,19 @@ struct ProjectDevScreen: View {
       // Green only once the widget has loaded on a host page: allowing an origin is not installing it.
       let origins = project.allowedOrigins.count
       let seen = project.widgetSeenAt != nil
-      if origins == 0 { return (.warn, "No allowed origins") }
-      return seen ? (.ok, "\(origins) allowed origin\(origins == 1 ? "" : "s")") : (.warn, "Not loaded on your site yet")
+      if origins == 0 { return (.warn, String(localized: "No allowed origins")) }
+      return seen ? (.ok, origins == 1 ? String(localized: "1 allowed origin") : String(localized: "\(origins) allowed origins")) : (.warn, String(localized: "Not loaded on your site yet"))
     case .feedback:
       let on = project.feedback?.enabled == true
-      return (on ? .ok : .off, on ? "Feedback on" : "Off")
+      return (on ? .ok : .off, on ? String(localized: "Feedback on") : String(localized: "Off"))
     case .flags:
       let flags = project.flags?.count ?? 0
-      return (flags > 0 ? .ok : .off, flags > 0 ? "\(flags) flag\(flags == 1 ? "" : "s")" : "None yet")
+      return (flags > 0 ? .ok : .off, flags > 0 ? (flags == 1 ? String(localized: "1 flag") : String(localized: "\(flags) flags")) : String(localized: "None yet"))
     case .errors:
       let connected = project.errors?.connected == true
-      return (connected ? .ok : .off, connected ? (project.errors?.providerName ?? "Connected") : "Not connected")
+      return (connected ? .ok : .off, connected ? (project.errors?.providerName ?? String(localized: "Connected")) : String(localized: "Not connected"))
     case .email:
-      return (.ok, (project.fromEmail ?? "").isEmpty ? "Default sender" : project.fromEmail ?? "")
+      return (.ok, (project.fromEmail ?? "").isEmpty ? String(localized: "Default sender") : project.fromEmail ?? "")
     }
   }
 
@@ -237,29 +237,29 @@ struct ProjectDevScreen: View {
 
   private func chatPanel(_ project: ProjectsAdminProject) -> some View {
     VStack(alignment: .leading, spacing: 18) {
-      panelHead("Your server signs a short token for the signed-in user; the widget hands it to HelpBites.") {
+      panelHead(String(localized: "Your server signs a short token for the signed-in user; the widget hands it to HelpBites.")) {
         manage(.settings, label: "Widget settings")
       }
-      step(1, "Mint a token on your server", "Any language works; this is Node with no dependencies.", snippet: mintSnippet(project.publicKey))
-      step(2, "Load the widget on your site", "Only the allowed origins below may host it.", snippet: widgetSnippet(project.publicKey))
-      step(3, "Or build your own UI", "Call the [API](\(appURL)/_docs/scalar) with `Authorization: Bearer <token>`. Pass `assistantId` when opening a conversation to route it to a specific assistant (copy the ID from the Assistants tab).")
+      step(1, String(localized: "Mint a token on your server"), String(localized: "Any language works; this is Node with no dependencies."), snippet: mintSnippet(project.publicKey))
+      step(2, String(localized: "Load the widget on your site"), String(localized: "Only the allowed origins below may host it."), snippet: widgetSnippet(project.publicKey))
+      step(3, String(localized: "Or build your own UI"), String(localized: "Call the [API](\(appURL)/_docs/scalar) with `Authorization: Bearer <token>`. Pass `assistantId` when opening a conversation to route it to a specific assistant (copy the ID from the Assistants tab)."))
     }
   }
 
   private func feedbackPanel(_ project: ProjectsAdminProject) -> some View {
     VStack(alignment: .leading, spacing: 18) {
-      panelHead("A public feedback page where users post ideas, vote and comment. \(project.feedback?.enabled == true ? "It is on." : "Turn it on from the Feedback page.")") {
+      panelHead(project.feedback?.enabled == true ? String(localized: "A public feedback page where users post ideas, vote and comment. It is on.") : String(localized: "A public feedback page where users post ideas, vote and comment. Turn it on from the Feedback page.")) {
         manage(.feedback)
       }
-      step(1, "Add feedback to any page", "Anyone can read it; pass the same token as the chat so signed-in users can post, vote and comment.", snippet: feedbackSnippet(project.publicKey))
-      step(2, "Or build your own UI", "Use `/v1/feedback` ([API](\(appURL)/_docs/scalar)): read with `?pk=\(project.publicKey)`, write with the identity token. Add `role: \"admin\"` to a token to let one of your staff moderate. Bring old feedback over with `POST /v1/feedback/import` and the secret.")
+      step(1, String(localized: "Add feedback to any page"), String(localized: "Anyone can read it; pass the same token as the chat so signed-in users can post, vote and comment."), snippet: feedbackSnippet(project.publicKey))
+      step(2, String(localized: "Or build your own UI"), String(localized: "Use `/v1/feedback` ([API](\(appURL)/_docs/scalar)): read with `?pk=\(project.publicKey)`, write with the identity token. Add `role: \"admin\"` to a token to let one of your staff moderate. Bring old feedback over with `POST /v1/feedback/import` and the secret."))
     }
   }
 
   private func flagsPanel(_ project: ProjectsAdminProject) -> some View {
     VStack(alignment: .leading, spacing: 14) {
-      panelHead("Read flags from your server with the secret and decide them against your own admin check.") { manage(.flags) }
-      paragraph("Decide `admins` flags against your own admin check and each flag's `allow` list. Cache about 30 seconds, keep the last good answer through a blip, then use each flag's `fallback`; treat unknown flags as off. A browser can ask with `?pk=` or the identity token instead and gets `enabled` already worked out (`role: \"admin\"` counts as an admin).")
+      panelHead(String(localized: "Read flags from your server with the secret and decide them against your own admin check.")) { manage(.flags) }
+      paragraph(String(localized: "Decide `admins` flags against your own admin check and each flag's `allow` list. Cache about 30 seconds, keep the last good answer through a blip, then use each flag's `fallback`; treat unknown flags as off. A browser can ask with `?pk=` or the identity token instead and gets `enabled` already worked out (`role: \"admin\"` counts as an admin)."))
       CodeBlock(code: flagsSnippet)
     }
   }
@@ -269,27 +269,32 @@ struct ProjectDevScreen: View {
     let connected = project.errors?.connected == true
     return VStack(alignment: .leading, spacing: 14) {
       if connected {
-        panelHead("Reporting to \(links.count > 1 ? links.map(\.label).joined(separator: ", ") : project.errors?.providerName ?? "the tracker").") {
+        let target = links.count > 1 ? links.map(\.label).joined(separator: ", ") : project.errors?.providerName ?? String(localized: "the tracker")
+        panelHead(String(localized: "Reporting to \(target).")) {
           Button("Manage servers") { workspace.go(.connections) }.buttonStyle(.lnGhost)
           Button("Connect another") { connectErrorsOpen = true }.buttonStyle(.lnGhost)
           manage(.errors, label: "Errors")
         }
         ForEach(links.filter { !$0.alertWebhookUrl.isEmpty }) { link in
           VStack(alignment: .leading, spacing: 6) {
-            paragraph("To get \(links.count > 1 ? "\(link.label)'s " : "")alerts in the inbox, open the project's alerts in Bugsink, click Add, set Kind to **Slack** and use this Webhook url:")
+            paragraph(links.count > 1
+              ? String(localized: "To get \(link.label)'s alerts in the inbox, open the project's alerts in Bugsink, click Add, set Kind to **Slack** and use this Webhook url:")
+              : String(localized: "To get alerts in the inbox, open the project's alerts in Bugsink, click Add, set Kind to **Slack** and use this Webhook url:"))
             CodeBlock(code: link.alertWebhookUrl)
           }
         }
-        paragraph("Use this DSN in browser and server SDKs\(links.count > 1 ? " (\(links[0].label))" : ""). Set the same stable HelpBites identity id as the Sentry user id to show a customer’s errors in their conversation.")
+        paragraph(links.count > 1
+          ? String(localized: "Use this DSN in browser and server SDKs (\(links[0].label)). Set the same stable HelpBites identity id as the Sentry user id to show a customer’s errors in their conversation.")
+          : String(localized: "Use this DSN in browser and server SDKs. Set the same stable HelpBites identity id as the Sentry user id to show a customer’s errors in their conversation."))
         CodeBlock(code: sentrySnippet(project.errors?.dsn ?? ""))
         ForEach(links.dropFirst()) { link in
           VStack(alignment: .leading, spacing: 6) {
-            paragraph("DSN for \(link.label):")
+            paragraph(String(localized: "DSN for \(link.label):"))
             CodeBlock(code: link.dsn)
           }
         }
       } else {
-        panelHead("Connect GlitchTip or Bugsink to give this project a Sentry-compatible DSN and send alerts to the inbox.") { manage(.errors, label: "Errors") }
+        panelHead(String(localized: "Connect GlitchTip or Bugsink to give this project a Sentry-compatible DSN and send alerts to the inbox.")) { manage(.errors, label: "Errors") }
         Button { connectErrorsOpen = true } label: { Label("Connect error tracking", systemImage: "link") }.buttonStyle(.lnPrimaryCompact)
       }
     }
@@ -297,7 +302,7 @@ struct ProjectDevScreen: View {
 
   private func emailPanel(_ project: ProjectsAdminProject) -> some View {
     VStack(alignment: .leading, spacing: 14) {
-      panelHead("Send from your server with the secret.") {
+      panelHead(String(localized: "Send from your server with the secret.")) {
         manage(.email, label: "Templates")
         NavigationLink {
           EmailLibraryScreen(projectId: projectId, initialTab: .log)
@@ -306,7 +311,7 @@ struct ProjectDevScreen: View {
         }
         .buttonStyle(.lnGhost)
       }
-      paragraph("Send one of this project's templates by its send key, your own HTML (in the body, or uploaded as an `html` file), or a plain message in the project's layout. Each recipient gets their own message and a row in the log; `GET /v1/email-logs` reads it back. The sender is set in Email → Settings.")
+      paragraph(String(localized: "Send one of this project's templates by its send key, your own HTML (in the body, or uploaded as an `html` file), or a plain message in the project's layout. Each recipient gets their own message and a row in the log; `GET /v1/email-logs` reads it back. The sender is set in Email → Settings."))
       Button("Email settings") { workspace.go(.project(projectId, .email)) }.buttonStyle(.lnGhost).padding(.leading, -10)
       CodeBlock(code: emailSnippet)
     }
@@ -316,7 +321,7 @@ struct ProjectDevScreen: View {
 
   private func security(_ project: ProjectsAdminProject) -> some View {
     VStack(alignment: .leading, spacing: 12) {
-      heading("Security and webhooks")
+      heading(String(localized: "Security and webhooks"))
       VStack(alignment: .leading, spacing: 16) {
         LabeledField(label: "Allowed origins", hint: "One per line. Only these sites may host the widget.") {
           LinearTextEditor(text: $originsText, placeholder: "https://app.example.com", minHeight: 64, monospaced: true)
@@ -382,7 +387,7 @@ struct ProjectDevScreen: View {
     IconButton(systemImage: copied == id ? "checkmark" : "doc.on.doc", label: "Copy", bordered: true) { copy(value, id: id) }
   }
 
-  private func manage(_ section: ProjectSection, label: String = "Manage") -> some View {
+  private func manage(_ section: ProjectSection, label: LocalizedStringKey = "Manage") -> some View {
     Button { workspace.go(.project(projectId, section)) } label: {
       HStack(spacing: 4) { Text(label); Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold)) }
     }

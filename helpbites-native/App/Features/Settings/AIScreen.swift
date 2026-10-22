@@ -22,7 +22,7 @@ struct AIScreen: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 20) {
-        Text("Add keys for OpenAI, Anthropic, Gemini or any other OpenAI-compatible provider, and pick the one to use. Assistants without an endpoint of their own, the email designer and error notes then use it\(state?.platform.available == true ? " instead of the server's AI" : "")\(state?.platform.metered == true ? ", and it uses no AI credits" : "").")
+        Text("Add keys for OpenAI, Anthropic, Gemini or any other OpenAI-compatible provider, and pick the one to use. Assistants without an endpoint of their own, the email designer and error notes then use it\(state?.platform.available == true ? String(localized: " instead of the server's AI") : "")\(state?.platform.metered == true ? String(localized: ", and it uses no AI credits") : "").")
           .font(.lnMeta).foregroundStyle(Theme.textMuted)
 
         if loading {
@@ -30,7 +30,7 @@ struct AIScreen: View {
         } else if let state {
           statusCard(state)
           if !state.allowed {
-            Text("The \(session.plan?.name ?? "current") plan doesn't include your own AI provider.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+            Text("The \(session.plan?.name ?? String(localized: "current")) plan doesn't include your own AI provider.").font(.lnMeta).foregroundStyle(Theme.textMuted)
           }
           if !providers.isEmpty {
             Card {
@@ -63,10 +63,10 @@ struct AIScreen: View {
     let (icon, title, detail): (String, String, String) = {
       if let active {
         let detail = [host(active.endpoint), active.model].filter { !$0.isEmpty }.joined(separator: " · ")
-        return state.allowed ? ("powerplug", "Using \(label(active))", detail) : ("pause.circle", "Saved, but not in use", detail)
+        return state.allowed ? ("powerplug", String(localized: "Using \(label(active))"), detail) : ("pause.circle", String(localized: "Saved, but not in use"), detail)
       }
-      if state.platform.available { return ("server.rack", "Using the server's AI", state.platform.metered ? "Each call uses AI credits from your plan." : "The AI this server is set up with.") }
-      return ("circle.slash", "No AI set up", "Connect a provider to use the assistants, the email designer and error notes.")
+      if state.platform.available { return ("server.rack", String(localized: "Using the server's AI"), state.platform.metered ? String(localized: "Each call uses AI credits from your plan.") : String(localized: "The AI this server is set up with.")) }
+      return ("circle.slash", String(localized: "No AI set up"), String(localized: "Connect a provider to use the assistants, the email designer and error notes."))
     }()
     return HStack(spacing: 12) {
       Image(systemName: icon).font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
@@ -93,7 +93,7 @@ struct AIScreen: View {
       .accessibilityAddTraits(provider.id == state.ai.active ? .isSelected : [])
       VStack(alignment: .leading, spacing: 2) {
         Text(label(provider)).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-        Text([host(provider.endpoint), provider.model, provider.hasApiKey ? "" : "No key"].filter { !$0.isEmpty }.joined(separator: " · ")).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
+        Text([host(provider.endpoint), provider.model, provider.hasApiKey ? "" : String(localized: "No key")].filter { !$0.isEmpty }.joined(separator: " · ")).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
       }
       Spacer(minLength: 8)
       if editable {
@@ -127,7 +127,7 @@ struct AIScreen: View {
   }
 
   /// Saves the whole list; saved providers go without a key so the server keeps theirs.
-  private func persist(_ list: [AIProviderInput], active activeId: String, failure: String = "Could not save") async -> Bool {
+  private func persist(_ list: [AIProviderInput], active activeId: String, failure: String = String(localized: "Could not save")) async -> Bool {
     struct Input: Encodable, Sendable { let providers: [AIProviderInput]; let active: String }
     struct Output: Decodable, Sendable { let ai: AIConfig }
     saving = true; error = ""
@@ -153,13 +153,13 @@ struct AIScreen: View {
 
   private func use(_ provider: AIProvider) {
     guard provider.id != state?.ai.active else { return }
-    Task { _ = await persist(providers.map(\.input), active: provider.id, failure: "Could not switch provider") }
+    Task { _ = await persist(providers.map(\.input), active: provider.id, failure: String(localized: "Could not switch provider")) }
   }
 
   private func remove(_ provider: AIProvider) async {
     let rest = providers.filter { $0.id != provider.id }
     let activeId = state?.ai.active == provider.id ? rest.first?.id ?? "" : state?.ai.active ?? ""
-    if await persist(rest.map(\.input), active: activeId, failure: "Could not remove it"), form?.id == provider.id { form = nil }
+    if await persist(rest.map(\.input), active: activeId, failure: String(localized: "Could not remove it")), form?.id == provider.id { form = nil }
   }
 
   private func test() async {
@@ -196,21 +196,21 @@ private struct AIFormView: View {
         TextField("https://api.openai.com/v1", text: $form.endpoint).textFieldStyle(.linear).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
       }
       LabeledField(label: "Model", hint: "For the assistants, error notes and the designer") { modelField($form.model, placeholder: preset?.models.first ?? "gpt-4o-mini") }
-      LabeledField(label: "Ultra model", hint: "Optional. For the designer's Ultra mode; blank uses the model") { modelField($form.ultraModel, placeholder: "Same as the model") }
+      LabeledField(label: "Ultra model", hint: "Optional. For the designer's Ultra mode; blank uses the model") { modelField($form.ultraModel, placeholder: String(localized: "Same as the model")) }
       LabeledField(label: "API key") {
-        SecureField(keyKept ? "Saved; leave blank to keep" : "", text: $form.apiKey).textFieldStyle(.linear).autocorrectionDisabled()
+        SecureField(keyKept ? String(localized: "Saved; leave blank to keep") : "", text: $form.apiKey).textFieldStyle(.linear).autocorrectionDisabled()
       }
 
       if let result {
         Label {
-          Text(result.ok ? "It works: \(result.model) answered\(result.reply.map { $0.isEmpty ? "" : " “\($0)”" } ?? "")." : result.error ?? "The provider didn't answer.")
+          Text(result.ok ? String(localized: "It works: \(result.model) answered\(result.reply.map { $0.isEmpty ? "" : " “\($0)”" } ?? "").") : result.error ?? String(localized: "The provider didn't answer."))
             .font(.lnMeta)
         } icon: { Image(systemName: result.ok ? "checkmark.circle" : "exclamationmark.circle") }
           .foregroundStyle(result.ok ? Theme.success : Theme.error)
       }
 
       HStack(spacing: 8) {
-        Button { onSave() } label: { if saving { ProgressView() } else { Text(form.id.isEmpty ? "Add provider" : "Save") } }
+        Button { onSave() } label: { if saving { ProgressView() } else { Text(form.id.isEmpty ? String(localized: "Add provider") : String(localized: "Save")) } }
           .buttonStyle(.lnPrimaryCompact)
           .disabled(saving || form.endpoint.trimmingCharacters(in: .whitespaces).isEmpty || form.model.trimmingCharacters(in: .whitespaces).isEmpty)
         Button { onTest() } label: { if testing { ProgressView() } else { Text("Test") } }
@@ -259,7 +259,7 @@ struct AIPreset: Sendable {
     AIPreset(kind: "groq", label: "Groq", endpoint: "https://api.groq.com/openai/v1", models: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]),
     AIPreset(kind: "xai", label: "xAI", endpoint: "https://api.x.ai/v1", models: ["grok-4", "grok-3-mini"]),
     AIPreset(kind: "deepseek", label: "DeepSeek", endpoint: "https://api.deepseek.com/v1", models: ["deepseek-chat", "deepseek-reasoner"]),
-    AIPreset(kind: "custom", label: "Custom (OpenAI-compatible)", endpoint: "", models: [])
+    AIPreset(kind: "custom", label: String(localized: "Custom (OpenAI-compatible)"), endpoint: "", models: [])
   ]
 }
 

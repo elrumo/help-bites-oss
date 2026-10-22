@@ -18,10 +18,10 @@ struct EmailSettingsPanel: View {
           TextField("", text: store.binding(\.preheader)).textFieldStyle(.linear)
         }
         LabeledField(label: "Plain-text version", hint: "Sent alongside the HTML for clients that show text. Leave blank to generate it from the design.") {
-          LinearTextEditor(text: store.binding(\.text), placeholder: "Generated from the design", minHeight: 96, monospaced: true)
+          LinearTextEditor(text: store.binding(\.text), placeholder: String(localized: "Generated from the design"), minHeight: 96, monospaced: true)
         }
         LabeledField(label: "Content width (px)") {
-          EmailNumberField(label: "Content width", value: store.binding(\.contentWidth), placeholder: "600", range: 320...900, step: 10)
+          EmailNumberField(label: String(localized: "Content width"), value: store.binding(\.contentWidth), placeholder: "600", range: 320...900, step: 10)
         }
         PanelRule()
         themeSection
@@ -53,20 +53,20 @@ struct EmailSettingsPanel: View {
       }
       presets
       LazyVGrid(columns: twoColumns(spacing: 12), alignment: .leading, spacing: 14) {
-        token("Brand", \.brand)
-        token("On brand", \.onBrand)
-        token("Page", \.background)
-        token("Card", \.surface)
-        token("Headings", \.heading)
-        token("Text", \.text)
-        token("Muted", \.muted)
+        token(String(localized: "Brand"), \.brand)
+        token(String(localized: "On brand"), \.onBrand)
+        token(String(localized: "Page"), \.background)
+        token(String(localized: "Card"), \.surface)
+        token(String(localized: "Headings"), \.heading)
+        token(String(localized: "Text"), \.text)
+        token(String(localized: "Muted"), \.muted)
       }
       LabeledField(label: "Font") {
         fontMenu(current.fontFamily)
       }
       LabeledField(label: "Button corner radius (px)") {
         EmailNumberField(
-          label: "Button corner radius",
+          label: String(localized: "Button corner radius"),
           value: Binding<Double>(
             get: { store.design.currentTheme.radius },
             set: { value in store.applyTheme { $0.radius = value } }
@@ -134,7 +134,7 @@ struct EmailSettingsPanel: View {
   }
 
   private func fontMenu(_ font: String) -> some View {
-    let name = EmailFontStack.all.first { $0.value == font }?.label ?? "Custom"
+    let name = EmailFontStack.all.first { $0.value == font }?.label ?? String(localized: "Custom")
     return Menu {
       Picker("Font", selection: Binding<String>(
         get: { store.design.currentTheme.fontFamily },
@@ -263,7 +263,7 @@ private struct EmailVariableRow: View {
   }
 
   private var brandNote: String {
-    store.isMaster ? "Each project fills this in from its brand." : "Filled in from the project's brand."
+    store.isMaster ? String(localized: "Each project fills this in from its brand.") : String(localized: "Filled in from the project's brand.")
   }
 }
 

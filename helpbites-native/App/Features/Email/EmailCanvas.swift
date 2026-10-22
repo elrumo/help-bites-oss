@@ -146,7 +146,7 @@ private struct EmailCanvasBlock: View {
       .id(block.id)
       // A container's blocks stay reachable on their own.
       .accessibilityElement(children: block.kind?.isContainer == true ? .contain : .combine)
-      .accessibilityLabel("\(block.kind?.label ?? "Block"): \(block.displayName)")
+      .accessibilityLabel("\(block.kind?.label ?? String(localized: "Block")): \(block.displayName)")
       .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
   }
 
@@ -191,9 +191,9 @@ private struct EmailCanvasBlock: View {
     case .columns:
       columns
     case .html:
-      rendered("Custom HTML", systemImage: "chevron.left.forwardslash.chevron.right")
+      rendered(String(localized: "Custom HTML"), systemImage: "chevron.left.forwardslash.chevron.right")
     case .component:
-      rendered(block.name.isEmpty ? "Component" : block.name, systemImage: "puzzlepiece")
+      rendered(block.name.isEmpty ? String(localized: "Component") : block.name, systemImage: "puzzlepiece")
     case nil:
       Label("This block type isn't editable here", systemImage: "questionmark.square.dashed")
         .font(.lnMeta).foregroundStyle(Theme.textMuted)
@@ -327,7 +327,7 @@ private struct EmailCanvasBlock: View {
     RoundedRectangle(cornerRadius: 2)
       .strokeBorder(Theme.accent, lineWidth: 2)
       .overlay(alignment: .topLeading) {
-        Text(block.kind == .spacer ? "Spacer \(EmailRender.js(block.height))px" : block.kind?.label ?? block.type)
+        Text(block.kind == .spacer ? String(localized: "Spacer \(EmailRender.js(block.height))px") : block.kind?.label ?? block.type)
           .font(.system(size: 10, weight: .semibold))
           .foregroundStyle(.white)
           .padding(.horizontal, 6).padding(.vertical, 2)

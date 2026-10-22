@@ -18,32 +18,32 @@ struct DeveloperScreen: View {
   }
 
   private let links = [
-    QuickLink(label: "Get started", hint: "Project, token, widget — in three steps", systemImage: "paperplane", target: .section("get-started")),
-    QuickLink(label: "Admin API keys", hint: "Automate the complete operator API", systemImage: "key", target: .apiKeys),
-    QuickLink(label: "API reference", hint: "OpenAPI schema for every /v1 route", systemImage: "chevron.left.forwardslash.chevron.right", target: .reference),
-    QuickLink(label: "Widget", hint: "Loader options and JS commands", systemImage: "bubble.left.and.bubble.right", target: .section("widget")),
-    QuickLink(label: "Inline panel", hint: "Embed the chat in your own layout", systemImage: "sidebar.left", target: .section("inline")),
-    QuickLink(label: "Examples", hint: "cURL, your own UI, live events", systemImage: "testtube.2", target: .section("examples"))
+    QuickLink(label: String(localized: "Get started"), hint: String(localized: "Project, token, widget — in three steps"), systemImage: "paperplane", target: .section("get-started")),
+    QuickLink(label: String(localized: "Admin API keys"), hint: String(localized: "Automate the complete operator API"), systemImage: "key", target: .apiKeys),
+    QuickLink(label: String(localized: "API reference"), hint: String(localized: "OpenAPI schema for every /v1 route"), systemImage: "chevron.left.forwardslash.chevron.right", target: .reference),
+    QuickLink(label: String(localized: "Widget"), hint: String(localized: "Loader options and JS commands"), systemImage: "bubble.left.and.bubble.right", target: .section("widget")),
+    QuickLink(label: String(localized: "Inline panel"), hint: String(localized: "Embed the chat in your own layout"), systemImage: "sidebar.left", target: .section("inline")),
+    QuickLink(label: String(localized: "Examples"), hint: String(localized: "cURL, your own UI, live events"), systemImage: "testtube.2", target: .section("examples"))
   ]
 
   private let claims = [
-    ("iss", "The project public key"),
-    ("sub", "Your user's id — stable and unique per project"),
-    ("name", "Optional display name"),
-    ("email", "Optional; enables email notifications for that user"),
-    ("iat / exp", "Issued-at and expiry")
+    ("iss", String(localized: "The project public key")),
+    ("sub", String(localized: "Your user's id — stable and unique per project")),
+    ("name", String(localized: "Optional display name")),
+    ("email", String(localized: "Optional; enables email notifications for that user")),
+    ("iat / exp", String(localized: "Issued-at and expiry"))
   ]
 
   private let endpoints = [
-    ("GET", "/v1/conversations", "List the user’s conversations"),
-    ("POST", "/v1/conversations", "Start one"),
-    ("GET", "/v1/conversations/:id/messages", "Transcript; page with ?before="),
-    ("POST", "/v1/conversations/:id/messages", "Send a message"),
-    ("POST", "/v1/conversations/:id/read", "Mark as read"),
-    ("DELETE", "/v1/messages/:id", "Unsend"),
-    ("GET", "/v1/unread", "Unread counts"),
-    ("POST", "/v1/attachments", "Multipart `file`"),
-    ("GET", "/v1/events", "Server-sent events")
+    ("GET", "/v1/conversations", String(localized: "List the user’s conversations")),
+    ("POST", "/v1/conversations", String(localized: "Start one")),
+    ("GET", "/v1/conversations/:id/messages", String(localized: "Transcript; page with ?before=")),
+    ("POST", "/v1/conversations/:id/messages", String(localized: "Send a message")),
+    ("POST", "/v1/conversations/:id/read", String(localized: "Mark as read")),
+    ("DELETE", "/v1/messages/:id", String(localized: "Unsend")),
+    ("GET", "/v1/unread", String(localized: "Unread counts")),
+    ("POST", "/v1/attachments", String(localized: "Multipart `file`")),
+    ("GET", "/v1/events", String(localized: "Server-sent events"))
   ]
 
   var body: some View {
@@ -76,24 +76,24 @@ struct DeveloperScreen: View {
             }
           }
 
-          section("Get started", "Three steps, about ten minutes.") {
-            step(1, "Create a project") {
-              prose("[Projects → New project](helpbites:projects). You get a public key `pk_…` (safe in browsers) and a secret `sk_…` (server only, signs identity tokens). Set the site URL, the origins allowed to host the widget, the name replies are signed with, and who gets notified when a user writes.")
+          section(String(localized: "Get started"), String(localized: "Three steps, about ten minutes.")) {
+            step(1, String(localized: "Create a project")) {
+              prose(String(localized: "[Projects → New project](helpbites:projects). You get a public key `pk_…` (safe in browsers) and a secret `sk_…` (server only, signs identity tokens). Set the site URL, the origins allowed to host the widget, the name replies are signed with, and who gets notified when a user writes."))
             }
-            step(2, "Mint identity tokens on your server") {
-              prose("One authenticated route that returns a short-lived HS256 JWT for the signed-in user. Any JWT library works (`jose`, `jsonwebtoken`, PyJWT…); the secret is the project secret. Node, no dependencies:")
+            step(2, String(localized: "Mint identity tokens on your server")) {
+              prose(String(localized: "One authenticated route that returns a short-lived HS256 JWT for the signed-in user. Any JWT library works (`jose`, `jsonwebtoken`, PyJWT…); the secret is the project secret. Node, no dependencies:"))
               CodeBlock(code: Self.mintSnippet)
-              note("Never send the secret to a browser. Rotate it from the project page if it leaks — tokens minted with the old one stop verifying immediately.")
+              note(String(localized: "Never send the secret to a browser. Rotate it from the project page if it leaks — tokens minted with the old one stop verifying immediately."))
             }
-            step(3, "Show the chat") {
-              prose("Drop the widget on your site and hand it that token:")
+            step(3, String(localized: "Show the chat")) {
+              prose(String(localized: "Drop the widget on your site and hand it that token:"))
               CodeBlock(code: widgetSnippet)
-              note("Only origins listed on the project can host the widget; anything else sees an error inside the frame and never gets a token.")
+              note(String(localized: "Only origins listed on the project can host the widget; anything else sees an error inside the frame and never gets a token."))
             }
           }
           .id("get-started")
 
-          section("Identity tokens", "HS256, signed with the project secret. An hour of life is plenty.") {
+          section(String(localized: "Identity tokens"), String(localized: "HS256, signed with the project secret. An hour of life is plenty.")) {
             Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
               ForEach(claims, id: \.0) { claim, description in
                 GridRow {
@@ -108,15 +108,15 @@ struct DeveloperScreen: View {
             .overlay(alignment: .bottom) { hairline }
           }
 
-          section("Widget", "Everything the loader understands.") {
+          section(String(localized: "Widget"), String(localized: "Everything the loader understands.")) {
             VStack(alignment: .leading, spacing: 8) {
               ForEach([
-                "`getToken` is called when the chat opens and again whenever a token expires.",
-                "`context` is attached to new conversations so you know what the user was looking at. Update it with `HelpBites.push(['setContext', {…}])`.",
-                "`HelpBites.push(['open'])` / `(['close'])` control the panel.",
-                "`data-mode=\"inline\"` with `data-target=\"#selector\"` drops the chat inside an element of your page — a message panel instead of a floating launcher. It fills its container, so give that element a height.",
-                "`data-position=\"left\"` and `data-accent=\"#hex\"` on the script tag tweak the launcher.",
-                "A link with `?sb=<conversationId>` — what notification emails use — opens that conversation on load."
+                String(localized: "`getToken` is called when the chat opens and again whenever a token expires."),
+                String(localized: "`context` is attached to new conversations so you know what the user was looking at. Update it with `HelpBites.push(['setContext', {…}])`."),
+                String(localized: "`HelpBites.push(['open'])` / `(['close'])` control the panel."),
+                String(localized: "`data-mode=\"inline\"` with `data-target=\"#selector\"` drops the chat inside an element of your page — a message panel instead of a floating launcher. It fills its container, so give that element a height."),
+                String(localized: "`data-position=\"left\"` and `data-accent=\"#hex\"` on the script tag tweak the launcher."),
+                String(localized: "A link with `?sb=<conversationId>` — what notification emails use — opens that conversation on load.")
               ], id: \.self) { item in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                   Text("•").font(.lnCallout).foregroundStyle(Theme.textMuted)
@@ -127,26 +127,26 @@ struct DeveloperScreen: View {
           }
           .id("widget")
 
-          section("Inline panel", "Same chat, mounted in your layout — a support page or a section of your settings.") {
+          section(String(localized: "Inline panel"), String(localized: "Same chat, mounted in your layout — a support page or a section of your settings.")) {
             CodeBlock(code: inlineSnippet)
-            note("Wide enough (640px and up) and the conversation list sits beside the thread; narrower, it stacks like the floating widget. There's no close button — the host page owns the panel.")
+            note(String(localized: "Wide enough (640px and up) and the conversation list sits beside the thread; narrower, it stacks like the floating widget. There's no close button — the host page owns the panel."))
           }
           .id("inline")
 
-          section("Examples", "Everything the widget does is on the API. Send `Authorization: Bearer <identity token>`.") {
-            example("Start a conversation") { CodeBlock(code: curlSnippet) }
-            example("Your own UI") {
-              prose("Retries are safe: pass a `clientId` with each message and a repeated POST returns the message that already landed.")
+          section(String(localized: "Examples"), String(localized: "Everything the widget does is on the API. Send `Authorization: Bearer <identity token>`.")) {
+            example(String(localized: "Start a conversation")) { CodeBlock(code: curlSnippet) }
+            example(String(localized: "Your own UI")) {
+              prose(String(localized: "Retries are safe: pass a `clientId` with each message and a repeated POST returns the message that already landed."))
               CodeBlock(code: fetchSnippet)
             }
-            example("Live updates") {
-              prose("`GET /v1/events` is server-sent events. Use `fetch` plus a stream reader so the token stays in a header.")
+            example(String(localized: "Live updates")) {
+              prose(String(localized: "`GET /v1/events` is server-sent events. Use `fetch` plus a stream reader so the token stays in a header."))
               CodeBlock(code: sseSnippet)
             }
           }
           .id("examples")
 
-          section("Endpoints", "The full schema, with request and response shapes, lives in the [API reference](\(base)/_docs/scalar).") {
+          section(String(localized: "Endpoints"), String(localized: "The full schema, with request and response shapes, lives in the [API reference](\(base)/_docs/scalar).")) {
             VStack(spacing: 0) {
               hairline
               ForEach(endpoints, id: \.2) { method, path, description in

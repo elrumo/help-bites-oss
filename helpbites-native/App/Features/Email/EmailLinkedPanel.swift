@@ -52,7 +52,7 @@ struct EmailLinkedPanel: View {
           languagesSection
           valuesSection
           VStack(alignment: .leading, spacing: 8) {
-            heading("Send it")
+            heading(String(localized: "Send it"))
             Text("From your server, with the project secret. Your variables override the values above.").font(.lnMeta).foregroundStyle(Theme.textMuted)
             CodeBlock(code: snippet)
           }
@@ -62,7 +62,7 @@ struct EmailLinkedPanel: View {
         .frame(maxWidth: 640, alignment: .leading)
         .frame(maxWidth: .infinity)
       }
-      .panelScreen(master?.name ?? "Shared template")
+      .panelScreen(master?.name ?? String(localized: "Shared template"))
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
         ToolbarItem(placement: .confirmationAction) {
@@ -86,9 +86,9 @@ struct EmailLinkedPanel: View {
 
   private var brandSection: some View {
     VStack(alignment: .leading, spacing: 8) {
-      heading("Brand")
-      markdown((usesBrand ? "Filled in from this project: " : "This shared template does not use the project brand placeholders yet. Available: ")
-        + "`{{project.name}}`, `{{project.logoUrl}}`, `{{project.url}}`, `{{project.company}}`, `{{project.address}}`, `{{project.email}}`, `{{project.privacyUrl}}`, `{{project.termsUrl}}`. Buttons in the shared template's brand colour take the project accent.")
+      heading(String(localized: "Brand"))
+      markdown((usesBrand ? String(localized: "Filled in from this project: ") : String(localized: "This shared template does not use the project brand placeholders yet. Available: "))
+        + String(localized: "`{{project.name}}`, `{{project.logoUrl}}`, `{{project.url}}`, `{{project.company}}`, `{{project.address}}`, `{{project.email}}`, `{{project.privacyUrl}}`, `{{project.termsUrl}}`. Buttons in the shared template's brand colour take the project accent."))
       if let brand {
         FlowLayout(spacing: 6) {
           Tag(text: brand.name)
@@ -114,7 +114,7 @@ struct EmailLinkedPanel: View {
     let tags = (master?.translations ?? [:]).keys.sorted()
     let own = ContentLocale.name(master?.locale ?? ContentLocale.defaultTag)
     return VStack(alignment: .leading, spacing: 8) {
-      heading("Languages")
+      heading(String(localized: "Languages"))
       if tags.isEmpty {
         Text("The shared template is written in \(own) and has no translations. Add them in the shared template and this project sends them too.").font(.lnMeta).foregroundStyle(Theme.textMuted)
       } else {
@@ -126,12 +126,12 @@ struct EmailLinkedPanel: View {
 
   private var valuesSection: some View {
     VStack(alignment: .leading, spacing: 14) {
-      heading("Values for this project")
+      heading(String(localized: "Values for this project"))
       if fields.isEmpty { Text("The shared template has no variables of its own.").font(.lnMeta).foregroundStyle(Theme.textMuted) }
       ForEach(fields, id: \.key) { variable in
         let label = variable.label ?? ""
         LabeledField(label: label.isEmpty ? variable.key : label, hint: label.isEmpty ? nil : variable.key) {
-          TextField(variable.defaultValue?.isEmpty == false ? variable.defaultValue! : "Empty", text: binding(variable.key)).textFieldStyle(.linear)
+          TextField(variable.defaultValue?.isEmpty == false ? variable.defaultValue! : String(localized: "Empty"), text: binding(variable.key)).textFieldStyle(.linear)
         }
       }
       LabeledField(label: "Send key", hint: "Unique in this project. What your server passes as template to POST /v1/emails/send.") {

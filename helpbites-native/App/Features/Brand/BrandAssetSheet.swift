@@ -25,7 +25,7 @@ struct BrandAssetSheet: View {
             TextField("", text: $form.name).textFieldStyle(.linear)
           }
           LabeledField(label: "Description") {
-            LinearTextEditor(text: $form.description, placeholder: "Where and how to use it", minHeight: 72)
+            LinearTextEditor(text: $form.description, placeholder: String(localized: "Where and how to use it"), minHeight: 72)
           }
           LabeledField(label: "Kind") {
             Picker("Kind", selection: $form.kind) {

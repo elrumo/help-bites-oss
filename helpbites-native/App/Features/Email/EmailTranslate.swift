@@ -24,19 +24,19 @@ enum EmailTexts {
     func add(_ key: String, _ label: String, _ value: String) {
       if !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { out.append(Entry(key: key, label: label, text: value)) }
     }
-    add("subject", "Subject", design.settings.title)
-    add("preheader", "Preheader", design.settings.preheader)
-    add("text", "Plain-text version", design.settings.text)
+    add("subject", String(localized: "Subject"), design.settings.title)
+    add("preheader", String(localized: "Preheader"), design.settings.preheader)
+    add("text", String(localized: "Plain-text version"), design.settings.text)
     for block in design.allBlocks {
       switch block.kind {
-      case .heading: add("\(block.id)#text", "Heading", block.text)
-      case .text: add("\(block.id)#html", "Text", block.html)
-      case .button: add("\(block.id)#label", "Button", block.label)
-      case .image: add("\(block.id)#alt", "Image description", block.alt)
+      case .heading: add("\(block.id)#text", String(localized: "Heading"), block.text)
+      case .text: add("\(block.id)#html", String(localized: "Text"), block.html)
+      case .button: add("\(block.id)#label", String(localized: "Button"), block.label)
+      case .image: add("\(block.id)#alt", String(localized: "Image description"), block.alt)
       case .component:
         let values = block.values
         for field in block.componentFields where field.type == .text || field.type == .richtext {
-          add("\(block.id)#values.\(field.key)", "\(block.name.isEmpty ? "Component" : block.name): \(field.label.isEmpty ? field.key : field.label)", values[field.key] ?? field.defaultValue)
+          add("\(block.id)#values.\(field.key)", "\(block.name.isEmpty ? String(localized: "Component") : block.name): \(field.label.isEmpty ? field.key : field.label)", values[field.key] ?? field.defaultValue)
         }
       default: break
       }
@@ -144,8 +144,8 @@ struct EmailLanguagesPanel: View {
       .navigationDestination(item: $editing) { EmailTranslationEditor(store: store, tag: $0.id) }
       .sheet(isPresented: $translating) {
         TranslateSheet(
-          title: "Translate with AI", source: own, existing: tags,
-          note: "Fills in the subject, preheader, headings, text, buttons and image descriptions. Strings you already translated are kept unless you overwrite.",
+          title: String(localized: "Translate with AI"), source: own, existing: tags,
+          note: String(localized: "Fills in the subject, preheader, headings, text, buttons and image descriptions. Strings you already translated are kept unless you overwrite."),
           run: { locales, overwrite in try await store.translate(locales, overwrite: overwrite) }
         )
       }

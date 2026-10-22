@@ -12,6 +12,7 @@ import UniformTypeIdentifiers
 struct EmailLibraryScreen: View {
   let projectId: String?
   @Environment(SessionStore.self) private var session
+  @Environment(Workspace.self) private var workspace
   @State private var tab: EmailTab
   /// What the project's email still needs, under the tab bar (project tabs only).
   @State private var setup: EmailSetup?
@@ -62,12 +63,12 @@ struct EmailLibraryScreen: View {
     case newFolder, renameFolder(EmailFolderItem), renameTemplate(EmailTemplateItem)
     var title: String {
       switch self {
-      case .newFolder: "Folder name"
-      case .renameFolder: "Rename folder"
-      case .renameTemplate: "Rename template"
+      case .newFolder: String(localized: "Folder name")
+      case .renameFolder: String(localized: "Rename folder")
+      case .renameTemplate: String(localized: "Rename template")
       }
     }
-    var action: String { if case .newFolder = self { "Create" } else { "Rename" } }
+    var action: String { if case .newFolder = self { String(localized: "Create") } else { String(localized: "Rename") } }
   }
 
   private enum ImportKind { case html, json }
@@ -83,40 +84,41 @@ struct EmailLibraryScreen: View {
     case deleteFolder(EmailFolderItem), deleteTemplate(EmailTemplateItem), detach(EmailTemplateItem), importJSON(PendingImport)
     var title: String {
       switch self {
-      case .deleteFolder(let folder): return "Delete “\(folder.name)”? What is inside moves up a level."
-      case .deleteTemplate(let t): return t.isLinked ? "Remove “\(t.title)” from this project? The shared template stays." : "Delete “\(t.name)”? This cannot be undone."
-      case .detach: return "Detach from the shared template? This project gets its own editable copy, and later edits to the shared template no longer reach it."
+      case .deleteFolder(let folder): return String(localized: "Delete “\(folder.name)”? What is inside moves up a level.")
+      case .deleteTemplate(let t): return t.isLinked ? String(localized: "Remove “\(t.title)” from this project? The shared template stays.") : String(localized: "Delete “\(t.name)”? This cannot be undone.")
+      case .detach: return String(localized: "Detach from the shared template? This project gets its own editable copy, and later edits to the shared template no longer reach it.")
       case .importJSON(let pending):
         let count = pending.templates.count
         let plan = pending.plan
         let errors = (plan.results ?? []).compactMap { r in r.error.map { "\(r.key ?? "?"): \($0)" } }.prefix(5).joined(separator: "\n")
         let failed = plan.failed ?? 0
-        return "Import \(count) template\(count == 1 ? "" : "s") from \(pending.fileName)?\n\n\(plan.created ?? 0) new, \(plan.updated ?? 0) updated, \(plan.unchanged ?? 0) unchanged"
-          + (failed > 0 ? ", \(failed) with errors:\n\(errors)" : "")
+        let head = count == 1 ? String(localized: "Import 1 template from \(pending.fileName)?") : String(localized: "Import \(count) templates from \(pending.fileName)?")
+        let tally = String(localized: "\(plan.created ?? 0) new, \(plan.updated ?? 0) updated, \(plan.unchanged ?? 0) unchanged")
+        return head + "\n\n" + tally + (failed > 0 ? String(localized: ", \(failed) with errors:\n\(errors)") : "")
       }
     }
     var action: String {
       switch self {
-      case .deleteFolder: "Delete"
-      case .deleteTemplate(let t): t.isLinked ? "Remove from project" : "Delete"
-      case .detach: "Detach"
-      case .importJSON: "Import"
+      case .deleteFolder: String(localized: "Delete")
+      case .deleteTemplate(let t): t.isLinked ? String(localized: "Remove from project") : String(localized: "Delete")
+      case .detach: String(localized: "Detach")
+      case .importJSON: String(localized: "Import")
       }
     }
     var destructive: Bool { if case .importJSON = self { false } else { true } }
   }
 
-  private var newLabel: String { projectId == nil ? "New shared template" : "New template" }
+  private var newLabel: String { projectId == nil ? String(localized: "New shared template") : String(localized: "New template") }
 
   private var screenTitle: String {
-    if projectId != nil { return "Email" }
+    if projectId != nil { return String(localized: "Email") }
     switch tab {
-    case .templates: return "Email templates"
-    case .components: return "Email components"
-    case .log: return "Email log"
-    case .suppressed: return "Suppressed addresses"
+    case .templates: return String(localized: "Email templates")
+    case .components: return String(localized: "Email components")
+    case .log: return String(localized: "Email log")
+    case .suppressed: return String(localized: "Suppressed addresses")
     // Not on this page (init sends them to Templates); a project's pages are titled "Email".
-    case .campaigns, .sequences, .settings: return "Email"
+    case .campaigns, .sequences, .settings: return String(localized: "Email")
     }
   }
 
@@ -139,6 +141,8 @@ struct EmailLibraryScreen: View {
       }
     }
     .panelScreen(screenTitle)
+    .onAppear(perform: takePendingTab)
+    .onChange(of: workspace.pendingEmailTab) { takePendingTab() }
     .toolbar {
       if let projectId { ToolbarItem(placement: .principal) { ProjectBreadcrumb(projectId: projectId, title: "Email") } }
       // Suppressed addresses sit behind the Log, as on the web.
@@ -154,15 +158,22 @@ struct EmailLibraryScreen: View {
     }
   }
 
+  /// A link to one tab (`email?view=settings`) opens it.
+  private func takePendingTab() {
+    guard projectId != nil, let pending = workspace.pendingEmailTab else { return }
+    workspace.pendingEmailTab = nil
+    tab = pending
+  }
+
   private func tabTitle(_ item: EmailTab) -> String {
     switch item {
-    case .templates: projectId == nil ? "Shared templates" : "Templates"
-    case .components: "Components"
-    case .campaigns: "Campaigns"
-    case .sequences: "Sequences"
-    case .log: "Log"
-    case .suppressed: "Suppressed"
-    case .settings: "Settings"
+    case .templates: projectId == nil ? String(localized: "Shared templates") : String(localized: "Templates")
+    case .components: String(localized: "Components")
+    case .campaigns: String(localized: "Campaigns")
+    case .sequences: String(localized: "Sequences")
+    case .log: String(localized: "Log")
+    case .suppressed: String(localized: "Suppressed")
+    case .settings: String(localized: "Settings")
     }
   }
 
@@ -385,7 +396,7 @@ struct EmailLibraryScreen: View {
               if projectId != nil {
                 Text(t.key).font(.lnMono)
               } else if let count = usage[t.id], count > 0 {
-                Text("Used by \(count) project\(count == 1 ? "" : "s")")
+                Text(count == 1 ? "Used by 1 project" : "Used by \(count) projects")
               } else {
                 Text("Not used yet")
               }
@@ -425,7 +436,7 @@ struct EmailLibraryScreen: View {
         Button {
           if let html = EmailExport.html(t, brand: brand) {
             Clipboard.copy(html)
-            show("Email HTML copied")
+            show(String(localized: "Email HTML copied"))
           }
         } label: { Label("Copy HTML", systemImage: "doc.on.clipboard") }
         Button { shareFile { try EmailExport.htmlFile(t, brand: brand) } } label: { Label("Share HTML file…", systemImage: "arrow.down.doc") }
@@ -579,7 +590,7 @@ struct EmailLibraryScreen: View {
     let scoped = url.startAccessingSecurityScopedResource()
     let html = try? String(contentsOf: url, encoding: .utf8)
     if scoped { url.stopAccessingSecurityScopedResource() }
-    guard let html else { error = "Could not read that file."; return }
+    guard let html else { error = String(localized: "Could not read that file."); return }
     // One raw-HTML block: the design stays as written; the title, hidden
     // preheader and page background move into the settings (shared/email/import.ts).
     var (document, title) = EmailHTMLImport.document(from: html)
@@ -625,12 +636,12 @@ struct EmailLibraryScreen: View {
     let scoped = url.startAccessingSecurityScopedResource()
     let data = try? Data(contentsOf: url)
     if scoped { url.stopAccessingSecurityScopedResource() }
-    guard let data else { error = "Could not read that file."; return }
-    guard let parsed = try? JSONDecoder().decode(JSONValue.self, from: data) else { error = "That file is not valid JSON."; return }
+    guard let data else { error = String(localized: "Could not read that file."); return }
+    guard let parsed = try? JSONDecoder().decode(JSONValue.self, from: data) else { error = String(localized: "That file is not valid JSON."); return }
     var items: [JSONValue] = []
     if case .array(let list) = parsed { items = list }
     else if case .object(let root) = parsed, case .array(let list)? = root["templates"] { items = list }
-    guard !items.isEmpty else { error = "No templates in that file"; return }
+    guard !items.isEmpty else { error = String(localized: "No templates in that file"); return }
     busy = true
     defer { busy = false }
     do {
@@ -664,7 +675,7 @@ struct EmailLibraryScreen: View {
     do {
       let done = try await runImport(pending.templates, dryRun: false)
       let failed = done.failed ?? 0
-      show("\(done.created ?? 0) created, \(done.updated ?? 0) updated" + (failed > 0 ? "; \(failed) could not be imported" : ""))
+      show(String(localized: "\(done.created ?? 0) created, \(done.updated ?? 0) updated") + (failed > 0 ? String(localized: "; \(failed) could not be imported") : ""))
       await load()
     } catch { self.error = error.localizedDescription }
   }
@@ -674,7 +685,7 @@ struct EmailLibraryScreen: View {
     struct Input: Encodable, Sendable { let name: String; let document: JSONValue?; let variables: [EmailVariable] }
     do {
       let response: EmailTemplateResponse = try await session.send("/v1/admin/emails", body: Input(name: t.name, document: t.document, variables: t.variables))
-      show("Copied “\(t.name)” to shared templates", open: EmailEditorTarget(id: response.template.id, name: response.template.name))
+      show(String(localized: "Copied “\(t.name)” to shared templates"), open: EmailEditorTarget(id: response.template.id, name: response.template.name))
     } catch { self.error = error.localizedDescription }
   }
 

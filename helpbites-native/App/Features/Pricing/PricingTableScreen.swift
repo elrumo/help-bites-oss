@@ -51,7 +51,7 @@ struct PricingTableScreen: View {
         SkeletonRows(count: 4).frame(maxHeight: .infinity, alignment: .top)
       } else {
         VStack(spacing: 12) {
-          ErrorText(message: error.isEmpty ? "This pricing table does not exist." : error)
+          ErrorText(message: error.isEmpty ? String(localized: "This pricing table does not exist.") : error)
           Button("Try again") { Task { await load() } }.buttonStyle(.lnSecondaryCompact)
         }
         .padding(20).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -251,10 +251,10 @@ struct PricingTableScreen: View {
   }
 
   private var stripeStatus: String {
-    if !session.canManage { return "Only admins can see the Stripe products and prices. You can still edit the words." }
-    guard let stripe else { return "Reading Stripe…" }
-    guard stripe.connected else { return "Connect Stripe under Revenue to take prices and checkout from it. Without it, write the prices here." }
-    return "Linked plans take their prices from Stripe, read live: \(stripe.catalog?.products.count ?? 0) active products, \(stripe.catalog?.prices.count ?? 0) prices."
+    if !session.canManage { return String(localized: "Only admins can see the Stripe products and prices. You can still edit the words.") }
+    guard let stripe else { return String(localized: "Reading Stripe…") }
+    guard stripe.connected else { return String(localized: "Connect Stripe under Revenue to take prices and checkout from it. Without it, write the prices here.") }
+    return String(localized: "Linked plans take their prices from Stripe, read live: \(stripe.catalog?.products.count ?? 0) active products, \(stripe.catalog?.prices.count ?? 0) prices.")
   }
 
   private func wordsPanel(_ draft: Binding<PricingDraft>) -> some View {
@@ -341,16 +341,16 @@ struct PricingTableScreen: View {
 
   private var installHint: String {
     switch installTab {
-    case "link": "A hosted page with the table: link to it from an email or open it in an app."
-    case "swift": "Paste HelpBitesPricing.swift from the guide into your app, then show this view."
-    case "api": "The published table as JSON, open to any origin, for your own UI."
-    default: "One script tag. It draws the table where you put it, in your page's light or dark."
+    case "link": String(localized: "A hosted page with the table: link to it from an email or open it in an app.")
+    case "swift": String(localized: "Paste HelpBitesPricing.swift from the guide into your app, then show this view.")
+    case "api": String(localized: "The published table as JSON, open to any origin, for your own UI.")
+    default: String(localized: "One script tag. It draws the table where you put it, in your page's light or dark.")
     }
   }
 
   private func choice(_ label: String, _ value: Binding<String>, _ items: [(id: String, label: String)], hint: String? = nil) -> some View {
     LabeledField(label: label, hint: hint) {
-      Picker(label, selection: value) {
+      Picker(LocalizedStringKey(label), selection: value) {
         ForEach(items, id: \.id) { Text($0.label).tag($0.id) }
       }
       .pickerStyle(.segmented).labelsHidden()
@@ -360,8 +360,8 @@ struct PricingTableScreen: View {
   private func switchRow(_ title: String, _ hint: String?, _ value: Binding<Bool>) -> some View {
     Toggle(isOn: value) {
       VStack(alignment: .leading, spacing: 2) {
-        Text(title).font(.lnRow).foregroundStyle(Theme.text)
-        if let hint { Text(hint).font(.lnCaption).foregroundStyle(Theme.textMuted) }
+        Text(LocalizedStringKey(title)).font(.lnRow).foregroundStyle(Theme.text)
+        if let hint { Text(LocalizedStringKey(hint)).font(.lnCaption).foregroundStyle(Theme.textMuted) }
       }
     }
     .toggleStyle(.switch).tint(Theme.accent)
@@ -443,9 +443,9 @@ struct PricingTableScreen: View {
     guard var body = draft else { return false }
     body.name = body.name.trimmingCharacters(in: .whitespacesAndNewlines)
     body.key = body.key.trimmingCharacters(in: .whitespaces).lowercased()
-    if body.name.isEmpty { error = "Give the table a name."; return false }
+    if body.name.isEmpty { error = String(localized: "Give the table a name."); return false }
     if !PricingLimits.validKey(body.key) { error = PricingLimits.keyRule; return false }
-    if let plan = body.plans.first(where: { !PricingLimits.validKey($0.key) }) { error = "\(plan.name.isEmpty ? "A plan" : plan.name): \(PricingLimits.keyRule)"; return false }
+    if let plan = body.plans.first(where: { !PricingLimits.validKey($0.key) }) { error = "\(plan.name.isEmpty ? String(localized: "A plan") : plan.name): \(PricingLimits.keyRule)"; return false }
     busy = "save"
     error = ""
     defer { busy = "" }

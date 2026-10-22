@@ -51,7 +51,7 @@ private struct CampaignsList: View {
           HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
               Text(campaign.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-              Text(campaign.templateName.isEmpty ? "No template" : campaign.templateName).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
+              Text(campaign.templateName.isEmpty ? String(localized: "No template") : campaign.templateName).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
             }
             Spacer(minLength: 8)
             if campaign.stats.sent > 0 { Text("\(campaign.stats.sent.formatted()) · \(percent(campaign.stats.opened, max(campaign.stats.delivered, campaign.stats.sent))) opened").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted) }

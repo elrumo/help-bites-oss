@@ -50,7 +50,7 @@ struct GithubRefsSection: View {
         Text(link.label).monospacedDigit().foregroundStyle(Theme.textMuted)
         Text(link.title).foregroundStyle(Theme.text).lineLimit(1)
         Spacer(minLength: 4)
-        if link.closes { ChangelogChip(text: "closes", tint: Theme.success) }
+        if link.closes { ChangelogChip(text: String(localized: "closes"), tint: Theme.success) }
         Text(link.repo).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
       }
       .font(.lnMeta)

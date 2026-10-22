@@ -58,7 +58,7 @@ private struct LegalDocumentContent: View {
         editor(document)
       } else {
         VStack(spacing: 12) {
-          ErrorText(message: store.error.isEmpty ? "Document not found" : store.error)
+          ErrorText(message: store.error.isEmpty ? String(localized: "Document not found") : store.error)
           Button("Try again") { Task { await store.load() } }.buttonStyle(SecondaryButtonStyle(compact: true))
         }
         .padding(20).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -91,8 +91,8 @@ private struct LegalDocumentContent: View {
     .sheet(isPresented: $translating, onDismiss: { if let id = created { created = nil; opened = id } }) {
       if let document {
         TranslateSheet(
-          title: "Translate with AI", source: document.language, existing: ([document] + store.otherLanguages).map(\.language), limit: 1, overwriteHint: nil,
-          note: "Creates a new draft in that language, linked to this document. Nothing is published. It is a machine translation to review, not legal advice."
+          title: String(localized: "Translate with AI"), source: document.language, existing: ([document] + store.otherLanguages).map(\.language), limit: 1, overwriteHint: nil,
+          note: String(localized: "Creates a new draft in that language, linked to this document. Nothing is published. It is a machine translation to review, not legal advice.")
         ) { tags, _ in
           if let tag = tags.first { created = try await store.translate(to: tag).id }
         }
@@ -110,10 +110,10 @@ private struct LegalDocumentContent: View {
 
   private var confirmTitle: String {
     switch confirm {
-    case .unpublish: "Take this document offline?"
-    case .delete: "Delete this document?"
-    case .replaceTldr: "Replace your summary?"
-    case .restore(let version): "Restore version \(version)?"
+    case .unpublish: String(localized: "Take this document offline?")
+    case .delete: String(localized: "Delete this document?")
+    case .replaceTldr: String(localized: "Replace your summary?")
+    case .restore(let version): String(localized: "Restore version \(version)?")
     case nil: ""
     }
   }
@@ -252,9 +252,9 @@ private struct LegalDocumentContent: View {
 
   private var summaryPanel: some View {
     LegalPanel(title: "Summary (TL;DR)", trailing: {
-      if !store.tldrSource.isEmpty { Tag(text: store.tldrSource, tint: store.tldrSource == "human" ? Theme.accent : Theme.info) }
+      if !store.tldrSource.isEmpty { Tag(text: legalSourceLabel(store.tldrSource), tint: store.tldrSource == "human" ? Theme.accent : Theme.info) }
     }, content: {
-      LinearTextEditor(text: Binding(get: { store.tldr }, set: { store.editTldr($0) }), placeholder: "A short plain-language summary shown at the top of the page", minHeight: 96)
+      LinearTextEditor(text: Binding(get: { store.tldr }, set: { store.editTldr($0) }), placeholder: String(localized: "A short plain-language summary shown at the top of the page"), minHeight: 96)
       HStack(spacing: 8) {
         Button {
           if store.tldrSource == "human" { confirm = .replaceTldr } else { Task { await store.generateTldr() } }

@@ -87,7 +87,7 @@ struct KnowledgeModelScreen: View {
       case .tester: KnowledgeTesterSheet(projectId: model.projectId)
       }
     }
-    .alert("Add tags to \(selection.count) FAQ\(selection.count == 1 ? "" : "s")", isPresented: $tagging) {
+    .alert(selection.count == 1 ? "Add tags to 1 FAQ" : "Add tags to \(selection.count) FAQs", isPresented: $tagging) {
       TextField("Comma separated", text: $tagText)
       Button("Add") {
         let tags = tagText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
@@ -95,7 +95,7 @@ struct KnowledgeModelScreen: View {
       }
       Button("Cancel", role: .cancel) {}
     }
-    .confirmationDialog("Delete \(selection.count) FAQ\(selection.count == 1 ? "" : "s")?", isPresented: $confirmBulkDelete, titleVisibility: .visible) {
+    .confirmationDialog(selection.count == 1 ? "Delete 1 FAQ?" : "Delete \(selection.count) FAQs?", isPresented: $confirmBulkDelete, titleVisibility: .visible) {
       Button("Delete", role: .destructive) { Task { await bulk("delete") } }
     } message: { Text("This cannot be undone.") }
     .confirmationDialog("Delete FAQ?", isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }), titleVisibility: .visible, presenting: pendingDelete) { faq in
@@ -148,14 +148,14 @@ struct KnowledgeModelScreen: View {
             Divider()
             statusChoices { query.status = $0; query.skip = 0 }
           } label: {
-            KnowledgeMenuPill(label: query.status.isEmpty ? "All statuses" : query.status.capitalized, isActive: !query.status.isEmpty)
+            KnowledgeMenuPill(label: query.status.isEmpty ? String(localized: "All statuses") : knowledgeStatusLabel(query.status), isActive: !query.status.isEmpty)
           }
           Menu {
             Button("All themes") { query.theme = ""; query.skip = 0 }
             Divider()
             ForEach(themes) { theme in Button(theme.pathCache) { query.theme = theme.id; query.skip = 0 } }
           } label: {
-            KnowledgeMenuPill(label: themes.first { $0.id == query.theme }?.pathCache ?? "All themes", isActive: !query.theme.isEmpty)
+            KnowledgeMenuPill(label: themes.first { $0.id == query.theme }?.pathCache ?? String(localized: "All themes"), isActive: !query.theme.isEmpty)
           }
         }
       }
@@ -223,7 +223,7 @@ struct KnowledgeModelScreen: View {
         VStack(alignment: .leading, spacing: 3) {
           Text(faq.question).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
           HStack(spacing: 6) {
-            Text(faq.pathCache.isEmpty ? "No theme" : faq.pathCache).lineLimit(1)
+            Text(faq.pathCache.isEmpty ? String(localized: "No theme") : faq.pathCache).lineLimit(1)
             Text("·")
             Text(faq.origin).foregroundStyle(Theme.textDimmed).fixedSize()
             Label("\(faq.agents?.count ?? 0)", systemImage: "sparkles")
@@ -293,7 +293,7 @@ struct KnowledgeModelScreen: View {
   private func barLabel(_ title: String, _ systemImage: String, _ labelled: Bool, tint: Color = Theme.text) -> some View {
     HStack(spacing: 6) {
       Image(systemName: systemImage).font(.system(size: 13, weight: .medium))
-      if labelled { Text(title) }
+      if labelled { Text(LocalizedStringKey(title)) }
     }
     .font(.lnMetaMedium)
     .foregroundStyle(tint)
@@ -301,11 +301,11 @@ struct KnowledgeModelScreen: View {
     .frame(minWidth: 32, minHeight: 32)
     .background(Theme.elevated, in: Capsule())
     .contentShape(Capsule())
-    .accessibilityLabel(title)
+    .accessibilityLabel(LocalizedStringKey(title))
   }
 
   @ViewBuilder private func statusChoices(_ pick: @escaping (String) -> Void) -> some View {
-    ForEach(knowledgeFAQStatuses, id: \.self) { status in Button(status.capitalized) { pick(status) } }
+    ForEach(knowledgeFAQStatuses, id: \.self) { status in Button(knowledgeStatusLabel(status)) { pick(status) } }
   }
 
   @ViewBuilder private func themeChoices(_ pick: @escaping (String) -> Void) -> some View {

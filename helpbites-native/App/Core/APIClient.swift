@@ -4,8 +4,8 @@ enum APIError: LocalizedError {
   case invalidURL, unauthorized, cancelled, server(String), transport(Error)
   var errorDescription: String? {
     switch self {
-    case .invalidURL: "The API URL is invalid."
-    case .unauthorized: "Your session expired."
+    case .invalidURL: String(localized: "The API URL is invalid.")
+    case .unauthorized: String(localized: "Your session expired.")
     // A screen that went away mid-request: nothing for anyone to read.
     case .cancelled: ""
     case .server(let message): message
@@ -80,9 +80,9 @@ actor APIClient {
     let request = try makeRequest(path, method: "GET", token: token)
     do {
       let (data, response) = try await session.data(for: request)
-      guard let http = response as? HTTPURLResponse else { throw APIError.server("Invalid server response.") }
+      guard let http = response as? HTTPURLResponse else { throw APIError.server(String(localized: "Invalid server response.")) }
       if http.statusCode == 401 { throw APIError.unauthorized }
-      guard (200..<300).contains(http.statusCode) else { throw APIError.server("Download failed (\(http.statusCode)).") }
+      guard (200..<300).contains(http.statusCode) else { throw APIError.server(String(localized: "Download failed (\(http.statusCode)).")) }
       return data
     } catch let error as APIError { throw error }
     catch { throw APIError.transport(error) }
@@ -95,7 +95,7 @@ actor APIClient {
           var request = try makeRequest("/v1/admin/events", method: "GET", token: token)
           request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
           let (bytes, response) = try await session.bytes(for: request)
-          guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { throw APIError.server("Could not connect to live updates.") }
+          guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { throw APIError.server(String(localized: "Could not connect to live updates.")) }
           // The server writes one `data:` line per event (server/utils/sse.ts), and
           // bytes.lines drops the blank line that ends a frame, so decode each
           // data line as it arrives. Ping and ready frames don't decode and are skipped.
@@ -142,11 +142,11 @@ actor APIClient {
   private func decode<Value: Decodable & Sendable>(_ request: URLRequest) async throws -> Value {
     do {
       let (data, response) = try await session.data(for: request)
-      guard let http = response as? HTTPURLResponse else { throw APIError.server("Invalid server response.") }
+      guard let http = response as? HTTPURLResponse else { throw APIError.server(String(localized: "Invalid server response.")) }
       guard (200..<300).contains(http.statusCode) else {
         if http.statusCode == 401 { throw APIError.unauthorized }
         let error = try? JSONDecoder().decode(ErrorBody.self, from: data)
-        throw APIError.server(error?.statusMessage ?? error?.message ?? error?.error ?? "Request failed (\(http.statusCode)).")
+        throw APIError.server(error?.statusMessage ?? error?.message ?? error?.error ?? String(localized: "Request failed (\(http.statusCode))."))
       }
       if data.isEmpty, Value.self == Empty.self { return Empty() as! Value }
       return try JSONDecoder().decode(Value.self, from: data)

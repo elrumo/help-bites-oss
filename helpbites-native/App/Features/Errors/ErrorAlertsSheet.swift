@@ -107,9 +107,9 @@ struct ErrorAlertsSheet: View {
     .opacity(value.enabled ? 1 : 0.6)
   }
 
-  private func caption(_ text: String) -> some View { Text(text).font(.lnMeta).foregroundStyle(Theme.textMuted) }
+  private func caption(_ text: LocalizedStringKey) -> some View { Text(text).font(.lnMeta).foregroundStyle(Theme.textMuted) }
 
-  private func number(_ value: Binding<Int>, label: String) -> some View {
+  private func number(_ value: Binding<Int>, label: LocalizedStringKey) -> some View {
     TextField("", value: value, format: .number.grouping(.never)).textFieldStyle(.linear)
       .keyboardType(.numberPad).frame(width: 84).monospacedDigit().accessibilityLabel(label)
   }

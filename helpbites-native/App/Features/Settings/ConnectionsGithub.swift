@@ -48,7 +48,7 @@ struct GithubSection: View {
                 .frame(width: 28, height: 28).clipShape(Circle())
               VStack(alignment: .leading, spacing: 2) {
                 Text(item.account).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-                Text(item.type == "Organization" ? "Organisation" : "Personal account").font(.lnCaption).foregroundStyle(Theme.textMuted)
+                Text(item.type == "Organization" ? String(localized: "Organisation") : String(localized: "Personal account")).font(.lnCaption).foregroundStyle(Theme.textMuted)
               }
               Spacer(minLength: 8)
               if session.canManage { IconButton(systemImage: "bolt.slash", label: "Disconnect \(item.account)") { removing = item } }
@@ -159,7 +159,7 @@ struct ProjectReposSection: View {
       if loading {
         SkeletonRows(count: 2).padding(-Metrics.gutter)
       } else if connections.isEmpty {
-        Text(configured ? "Connect a GitHub account first (Settings → Connections)." : "GitHub isn't set up on this server.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+        Text(configured ? String(localized: "Connect a GitHub account first (Settings → Connections).") : String(localized: "GitHub isn't set up on this server.")).font(.lnMeta).foregroundStyle(Theme.textMuted)
       } else {
         if repos.isEmpty {
           Text("No repos yet.").font(.lnMeta).foregroundStyle(Theme.textMuted)
@@ -186,7 +186,7 @@ struct ProjectReposSection: View {
             }
             Menu {
               ForEach(choices) { item in
-                Button("\(item.fullName)\(item.private ? " (private)" : "")") { Task { await save((repos.map { RepoRef(installationId: $0.installationId, id: $0.id) }) + [RepoRef(installationId: connection, id: item.id)]) } }
+                Button("\(item.fullName)\(item.private ? String(localized: " (private)") : "")") { Task { await save((repos.map { RepoRef(installationId: $0.installationId, id: $0.id) }) + [RepoRef(installationId: connection, id: item.id)]) } }
               }
             } label: {
               HStack { if listing { ProgressView().controlSize(.small) }; Label("Add a repo", systemImage: "plus") }

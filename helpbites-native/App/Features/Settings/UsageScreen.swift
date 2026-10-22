@@ -57,6 +57,7 @@ struct UsageScreen: View {
             }
           }
         }
+        BillingSection()
         ErrorText(message: error)
       }
       .settingsColumn()
@@ -81,7 +82,9 @@ enum PlanFeature {
     ("emailAiUltra", "The Ultra AI designer"), ("multiWorkspace", "More workspaces"), ("legalDocs", "Hosted legal documents")
   ]
 
-  static func label(_ key: String) -> String { labels.first { $0.key == key }?.label ?? key }
+  /// The labels stay literal pairs (a parity test reads them); they are looked up in the catalog where they are shown.
+  static func label(_ key: String) -> String { labels.first { $0.key == key }.map { localized($0.label) } ?? key }
+  static func localized(_ text: String) -> String { String(localized: String.LocalizationValue(text)) }
 }
 
 private struct UsageBar: View {
@@ -115,9 +118,9 @@ struct UsageSnapshot: Decodable, Sendable {
 
   // shared/entitlements.ts: counters then gauges, the features in plan order.
   private static let metrics: [(key: String, label: String)] = [
-    ("conversations", "New conversations this month"), ("emails", "Emails this month"), ("emailsPerDay", "Emails today"), ("aiCredits", "AI credits this month"),
-    ("projects", "Projects"), ("seats", "Teammates"), ("apiKeys", "API keys"), ("knowledgeModels", "Knowledge models"),
-    ("assistants", "Assistants"), ("faqs", "FAQs"), ("contacts", "Contacts"), ("storageBytes", "Storage")
+    ("conversations", String(localized: "New conversations this month")), ("emails", String(localized: "Emails this month")), ("emailsPerDay", String(localized: "Emails today")), ("aiCredits", String(localized: "AI credits this month")),
+    ("projects", String(localized: "Projects")), ("seats", String(localized: "Teammates")), ("apiKeys", String(localized: "API keys")), ("knowledgeModels", String(localized: "Knowledge models")),
+    ("assistants", String(localized: "Assistants")), ("faqs", String(localized: "FAQs")), ("contacts", String(localized: "Contacts")), ("storageBytes", String(localized: "Storage"))
   ]
   var rows: [Row] {
     Self.metrics.compactMap { key, label in
@@ -128,9 +131,9 @@ struct UsageSnapshot: Decodable, Sendable {
   }
 
   var included: [Included] {
-    PlanFeature.labels.map { Included(label: $0.label, on: features[$0.key] ?? false) }
-      + (apiPerMinute.map { [Included(label: "Admin API: \($0.formatted()) requests a minute", on: true)] } ?? [])
-      + (emailLogDays.map { [Included(label: "Email log kept for \($0) days", on: true)] } ?? [])
+    PlanFeature.labels.map { Included(label: PlanFeature.localized($0.label), on: features[$0.key] ?? false) }
+      + (apiPerMinute.map { [Included(label: String(localized: "Admin API: \($0.formatted()) requests a minute"), on: true)] } ?? [])
+      + (emailLogDays.map { [Included(label: String(localized: "Email log kept for \($0) days"), on: true)] } ?? [])
   }
 
   private static func amount(_ key: String, _ value: Double) -> String {

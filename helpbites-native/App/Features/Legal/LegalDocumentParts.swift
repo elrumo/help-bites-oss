@@ -2,9 +2,15 @@ import SwiftUI
 
 /// A bordered block of the document's sidebar.
 struct LegalPanel<Content: View, Trailing: View>: View {
-  let title: String
+  let title: LocalizedStringKey
   @ViewBuilder var trailing: () -> Trailing
   @ViewBuilder var content: () -> Content
+  init(title: LocalizedStringKey, @ViewBuilder trailing: @escaping () -> Trailing, @ViewBuilder content: @escaping () -> Content) {
+    self.title = title; self.trailing = trailing; self.content = content
+  }
+  @_disfavoredOverload init(title: String, @ViewBuilder trailing: @escaping () -> Trailing, @ViewBuilder content: @escaping () -> Content) {
+    self.init(title: LocalizedStringKey(title), trailing: trailing, content: content)
+  }
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       HStack {
@@ -22,8 +28,11 @@ struct LegalPanel<Content: View, Trailing: View>: View {
 }
 
 extension LegalPanel where Trailing == EmptyView {
-  init(_ title: String, @ViewBuilder content: @escaping () -> Content) {
+  init(_ title: LocalizedStringKey, @ViewBuilder content: @escaping () -> Content) {
     self.init(title: title, trailing: { EmptyView() }, content: content)
+  }
+  @_disfavoredOverload init(_ title: String, @ViewBuilder content: @escaping () -> Content) {
+    self.init(title: LocalizedStringKey(title), trailing: { EmptyView() }, content: content)
   }
 }
 
@@ -45,17 +54,28 @@ struct LegalFindingRow: View {
     findings.enumerated().sorted { (order[$0.element.status] ?? 4, $0.offset) < (order[$1.element.status] ?? 4, $1.offset) }.map(\.element)
   }
 
+  /// A status as a word for the person: the server sends ok, unclear, missing or conflict.
+  static func label(_ status: String) -> String {
+    switch status {
+    case "ok": String(localized: "ok")
+    case "unclear": String(localized: "unclear")
+    case "missing": String(localized: "missing")
+    case "conflict": String(localized: "conflict")
+    default: status
+    }
+  }
+
   /// "2 missing · 1 unclear · 5 ok"
   static func tally(_ findings: [LegalFinding]) -> String {
     ["conflict", "missing", "unclear", "ok"].compactMap { status in
       let n = findings.filter { $0.status == status }.count
-      return n == 0 ? nil : "\(n) \(status)"
+      return n == 0 ? nil : "\(n) \(label(status))"
     }.joined(separator: " · ")
   }
 
   var body: some View {
     HStack(alignment: .top, spacing: 10) {
-      Tag(text: finding.status, tint: Self.tint(finding.status)).padding(.top, 1)
+      Tag(text: Self.label(finding.status), tint: Self.tint(finding.status)).padding(.top, 1)
       VStack(alignment: .leading, spacing: 2) {
         Text(summary ?? finding.requirement).font(.lnMeta).foregroundStyle(Theme.textHighlighted).fixedSize(horizontal: false, vertical: true)
         if !finding.note.isEmpty { Text(finding.note).font(.lnMeta).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true) }
@@ -114,7 +134,7 @@ struct LegalSectionCard: View {
           .background(Theme.field, in: RoundedRectangle(cornerRadius: Metrics.radius))
           .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
           .accessibilityLabel("Heading of section \(index + 1)")
-        Tag(text: section.source, tint: section.source == "human" ? Theme.accent : section.source == "ai" ? Theme.info : nil)
+        Tag(text: legalSourceLabel(section.source), tint: section.source == "human" ? Theme.accent : section.source == "ai" ? Theme.info : nil)
         Button { section.locked.toggle() } label: {
           Image(systemName: section.locked ? "lock.fill" : "lock.open").foregroundStyle(section.locked ? Theme.accentText : Theme.textMuted).frame(width: 28, height: 28)
         }
@@ -149,7 +169,7 @@ struct LegalSectionCard: View {
           Text("Save to use AI on this section").font(.lnCaption).foregroundStyle(Theme.textDimmed)
         }
         if !section.satisfies.isEmpty {
-          Text("Answers \(section.satisfies.count) requirement\(section.satisfies.count == 1 ? "" : "s")").font(.lnCaption).foregroundStyle(Theme.textDimmed)
+          Text(section.satisfies.count == 1 ? "Answers 1 requirement" : "Answers \(section.satisfies.count) requirements").font(.lnCaption).foregroundStyle(Theme.textDimmed)
         }
       }
 

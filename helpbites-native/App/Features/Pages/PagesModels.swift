@@ -46,7 +46,7 @@ enum CmsLimits {
 
   /// `CMS_SLUG`: lowercase words and dashes, `/` between folders. `home` is the site's root.
   static let slugPattern = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*$"
-  static let slugRule = "Lowercase words and dashes, / between folders; home is the site's root"
+  static let slugRule = String(localized: "Lowercase words and dashes, / between folders; home is the site's root")
   static func validSlug(_ slug: String) -> Bool {
     slug.utf16.count <= Self.slug && slug.range(of: slugPattern, options: .regularExpression) != nil
   }
@@ -135,7 +135,7 @@ struct CmsEntry: Decodable, Identifiable, Equatable, Sendable {
 
   var isPublished: Bool { status == "published" }
   /// Draft, or the version visitors get.
-  var statusLabel: String { isPublished ? "Published v\(version)" : "Draft" }
+  var statusLabel: String { isPublished ? String(localized: "Published v\(version)") : String(localized: "Draft") }
   /// `/` for the site's root, else `/slug`.
   var displayPath: String { slug == "home" ? "/" : "/\(slug)" }
 }
@@ -343,10 +343,10 @@ struct CmsBlock: Codable, Equatable, Sendable, Identifiable {
   /// Why `child` cannot go in `parent`'s `field`, or nil when it can (`placeable`).
   static func whyNotPlaceable(_ parent: CmsBlock, field: String, child: CmsComponent, _ library: CmsLibrary) -> String? {
     guard let parentDef = library[parent.component], let target = parentDef.fields.first(where: { $0.key == field && $0.kind == .blocks }) else {
-      return "That block has no blocks field “\(field)”"
+      return String(localized: "That block has no blocks field “\(field)”")
     }
-    if !child.nestable { return "“\(child.name)” is an entry type and cannot go inside a block" }
-    if let allow = target.allow, !allow.isEmpty, !allow.contains(child.key) { return "\(parentDef.name) takes only \(allow.joined(separator: ", "))" }
+    if !child.nestable { return String(localized: "“\(child.name)” is an entry type and cannot go inside a block") }
+    if let allow = target.allow, !allow.isEmpty, !allow.contains(child.key) { return String(localized: "\(parentDef.name) takes only \(allow.joined(separator: ", "))") }
     return nil
   }
 
@@ -357,11 +357,11 @@ struct CmsBlock: Codable, Equatable, Sendable, Identifiable {
 
   /// Adds `block` to a parent's blocks field (at the end, or `index`), checking what the field takes.
   mutating func add(_ block: CmsBlock, to parentId: String, field: String, at index: Int? = nil, _ library: CmsLibrary) -> String? {
-    guard let component = library[block.component] else { return "There is no component “\(block.component)”" }
-    guard let parent = find(parentId, library) else { return "No block with _uid \(parentId)" }
+    guard let component = library[block.component] else { return String(localized: "There is no component “\(block.component)”") }
+    guard let parent = find(parentId, library) else { return String(localized: "No block with _uid \(parentId)") }
     if let why = Self.whyNotPlaceable(parent, field: field, child: component, library) { return why }
-    if parent.children(field).count >= CmsLimits.blocksPerList { return "A list holds at most \(CmsLimits.blocksPerList) blocks" }
-    if (depth(of: parentId, library) ?? 0) >= CmsLimits.depth { return "Blocks nest at most \(CmsLimits.depth) levels deep" }
+    if parent.children(field).count >= CmsLimits.blocksPerList { return String(localized: "A list holds at most \(CmsLimits.blocksPerList) blocks") }
+    if (depth(of: parentId, library) ?? 0) >= CmsLimits.depth { return String(localized: "Blocks nest at most \(CmsLimits.depth) levels deep") }
     edit(parentId, library) { parent in
       var list = parent.children(field)
       list.insert(block, at: min(max(index ?? list.count, 0), list.count))
@@ -387,6 +387,29 @@ struct CmsBlock: Codable, Equatable, Sendable, Identifiable {
       var list = parent.children(slot.field)
       list.swapAt(slot.index, slot.index + offset)
       parent.setChildren(slot.field, list)
+    }
+  }
+
+  /// Moves a block to the end of another blocks list; why not, or nil when it moved.
+  mutating func moveToList(_ id: String, parent parentId: String, field: String, _ library: CmsLibrary) -> String? {
+    guard let block = find(id, library) else { return String(localized: "No block with _uid \(id)") }
+    if block.find(parentId, library) != nil { return String(localized: "A block cannot go inside itself") }
+    var moved = self
+    moved.remove(id, library)
+    if let why = moved.add(block, to: parentId, field: field, library) { return why }
+    self = moved
+    return nil
+  }
+
+  /// The lists a block could move to: every blocks field of another block that takes it.
+  func moveTargets(for id: String, _ library: CmsLibrary) -> [(parent: CmsBlock, field: CmsField)] {
+    guard let block = find(id, library), let component = library[block.component], let home = slot(of: id, library) else { return [] }
+    let inside = Set(block.outline(library).map(\.block.uid))
+    return outline(library).flatMap { entry -> [(parent: CmsBlock, field: CmsField)] in
+      guard !inside.contains(entry.block.uid) else { return [] }
+      return entry.block.childFields(library).filter { field in
+        !(entry.block.uid == home.parent && field.key == home.field) && Self.whyNotPlaceable(entry.block, field: field.key, child: component, library) == nil
+      }.map { (entry.block, $0) }
     }
   }
 
@@ -420,7 +443,7 @@ struct CmsAsset: Codable, Identifiable, Equatable, Sendable {
     case "image/svg+xml": "SVG"
     case "image/x-icon": "ICO"
     case "application/pdf": "PDF"
-    default: mime.split(separator: "/").last.map { $0.uppercased() } ?? "File"
+    default: mime.split(separator: "/").last.map { $0.uppercased() } ?? String(localized: "File")
     }
   }
   /// "240 KB · 512×512".

@@ -306,7 +306,7 @@ private struct SavedReplyEditor: View {
               .autocorrectionDisabled()
           }
           LabeledField(label: "Reply", hint: "Use {{firstName}} and {{name}}: they're filled in from the customer.") {
-            LinearTextEditor(text: $draft.body, placeholder: "Hi {{firstName}}, …", minHeight: 160)
+            LinearTextEditor(text: $draft.body, placeholder: String(localized: "Hi {{firstName}}, …"), minHeight: 160)
           }
           ErrorText(message: error)
         }

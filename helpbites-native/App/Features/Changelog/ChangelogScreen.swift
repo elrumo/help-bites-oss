@@ -90,18 +90,18 @@ private struct ChangelogView: View {
 
   private var bulkTitle: String {
     switch bulk {
-    case .approve: "Publish \(store.selectedEntries.filter { $0.status == .draft }.count) drafts?"
-    case .merge: "Merge into one draft?"
-    case .delete: "Delete \(store.selected.count) entries?"
+    case .approve: String(localized: "Publish \(store.selectedEntries.filter { $0.status == .draft }.count) drafts?")
+    case .merge: String(localized: "Merge into one draft?")
+    case .delete: String(localized: "Delete \(store.selected.count) entries?")
     case nil: ""
     }
   }
 
   private func bulkMessage(_ action: ChangelogBulk) -> String {
     switch action {
-    case .approve: "They go public, unless their release is still a draft."
-    case .merge: "The originals are archived. Published ones go private until you publish the merged draft."
-    case .delete: "This cannot be undone. The linked items stay."
+    case .approve: String(localized: "They go public, unless their release is still a draft.")
+    case .merge: String(localized: "The originals are archived. Published ones go private until you publish the merged draft.")
+    case .delete: String(localized: "This cannot be undone. The linked items stay.")
     }
   }
 
@@ -138,7 +138,8 @@ private struct ChangelogView: View {
       VStack(spacing: 1) {
         ProjectBreadcrumb(projectId: store.projectId, title: "Changelog")
         if store.loaded {
-          Text("\(store.publicCount) public, \(store.draftCount) \(store.draftCount == 1 ? "draft" : "drafts")")
+          let drafts = store.draftCount == 1 ? String(localized: "1 draft") : String(localized: "\(store.draftCount) drafts")
+          Text("\(store.publicCount) public, \(drafts)")
             .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
         }
       }
@@ -254,7 +255,7 @@ private struct ChangelogView: View {
   private var aiBanner: some View {
     HStack(alignment: .top, spacing: 8) {
       Image(systemName: "sparkles").foregroundStyle(Theme.accentText)
-      (Text("\(store.aiPending) AI-written \(store.aiPending == 1 ? "draft is" : "drafts are") waiting for your review. ").fontWeight(.medium).foregroundStyle(Theme.text)
+      (Text(store.aiPending == 1 ? "1 AI-written draft is waiting for your review. " : "\(store.aiPending) AI-written drafts are waiting for your review. ").fontWeight(.medium).foregroundStyle(Theme.text)
         + Text("Nothing is public until you approve it."))
         .foregroundStyle(Theme.textMuted)
       Spacer(minLength: 0)
@@ -272,7 +273,7 @@ private struct ChangelogView: View {
         (Text(release.version).fontWeight(.semibold).foregroundStyle(Theme.textHighlighted)
           + Text(release.title.isEmpty ? "" : " · \(release.title)").foregroundStyle(Theme.textMuted))
           .font(.lnMeta).lineLimit(1)
-        ChangelogChip(text: release.status == .published ? "Published" : "Draft", tint: release.status == .published ? Theme.success : Theme.textToned)
+        ChangelogChip(text: release.status == .published ? String(localized: "Published") : String(localized: "Draft"), tint: release.status == .published ? Theme.success : Theme.textToned)
         if release.publishedAt != nil { Text(DateText.day(release.publishedAt)).font(.lnCaption).foregroundStyle(Theme.textMuted) }
         Spacer(minLength: 0)
         if release.status == .draft {
@@ -311,8 +312,8 @@ private struct ChangelogView: View {
               Label("\(entry.doneSources)/\(entry.sources.count)", systemImage: "link").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
                 .help("\(entry.doneSources) of \(entry.sources.count) linked items are done")
             }
-            if entry.aiGenerated { ChangelogChip(text: "AI", tint: Theme.accentText) }
-            if entry.needsReview { ChangelogChip(text: entry.reviewStatus == .rejected ? "Sent back" : "Review", tint: Theme.warning) }
+            if entry.aiGenerated { ChangelogChip(text: String(localized: "AI"), tint: Theme.accentText) }
+            if entry.needsReview { ChangelogChip(text: entry.reviewStatus == .rejected ? String(localized: "Sent back") : String(localized: "Review"), tint: Theme.warning) }
             ChangelogChip(text: state.label, tint: state.tint)
           }
         }

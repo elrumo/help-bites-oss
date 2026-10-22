@@ -97,7 +97,7 @@ struct GlobalSearchResults: View {
   private func conversationRow(_ conversation: Conversation, user: EndUser?) -> some View {
     VStack(alignment: .leading, spacing: 2) {
       HStack {
-        Text(user?.inboxName ?? "Unknown customer").font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+        Text(user?.inboxName ?? String(localized: "Unknown customer")).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
         Spacer(minLength: 4)
         Text(DateText.short(conversation.lastMessageAt ?? conversation.createdAt)).font(.lnCaption).foregroundStyle(Theme.textMuted)
       }

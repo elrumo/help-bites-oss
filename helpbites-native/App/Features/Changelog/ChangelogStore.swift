@@ -6,13 +6,13 @@ enum ChangelogFilter: String, CaseIterable, Identifiable {
   var id: String { rawValue }
   var label: String {
     switch self {
-    case .all: "All"
-    case .live: "Public"
-    case .waiting: "Waiting"
-    case .draft: "Drafts"
-    case .review: "Needs review"
-    case .ai: "AI"
-    case .archived: "Archived"
+    case .all: String(localized: "All")
+    case .live: String(localized: "Public")
+    case .waiting: String(localized: "Waiting")
+    case .draft: String(localized: "Drafts")
+    case .review: String(localized: "Needs review")
+    case .ai: String(localized: "AI")
+    case .archived: String(localized: "Archived")
     }
   }
 }
@@ -405,7 +405,13 @@ enum ChangelogFilter: String, CaseIterable, Identifiable {
   enum ImportKind: String, CaseIterable, Identifiable {
     case entries, comments, subscriptions
     var id: String { rawValue }
-    var label: String { self == .subscriptions ? "Subscribers" : rawValue.capitalized }
+    var label: String {
+      switch self {
+      case .entries: String(localized: "Entries")
+      case .comments: String(localized: "Comments")
+      case .subscriptions: String(localized: "Subscribers")
+      }
+    }
     var path: String {
       switch self {
       case .entries: "/v1/admin/changelog/entries/import"
@@ -431,12 +437,12 @@ enum ChangelogFilter: String, CaseIterable, Identifiable {
     switch parsed {
     case .array(let list): items = list
     case .object(let object):
-      guard case .array(let list)? = object[kind.rawValue] else { throw APIError.server("The file has no \"\(kind.rawValue)\" list.") }
+      guard case .array(let list)? = object[kind.rawValue] else { throw APIError.server(String(localized: "The file has no \"\(kind.rawValue)\" list.")) }
       items = list
       if kind == .subscriptions, let runs = object["runs"] { extra["runs"] = runs }
-    default: throw APIError.server("The file must be a JSON list, or an object with a \"\(kind.rawValue)\" list.")
+    default: throw APIError.server(String(localized: "The file must be a JSON list, or an object with a \"\(kind.rawValue)\" list."))
     }
-    guard !items.isEmpty else { throw APIError.server("The file has nothing to import.") }
+    guard !items.isEmpty else { throw APIError.server(String(localized: "The file has nothing to import.")) }
     var summary = ImportSummary()
     for start in stride(from: 0, to: items.count, by: kind.chunk) {
       var body = extra

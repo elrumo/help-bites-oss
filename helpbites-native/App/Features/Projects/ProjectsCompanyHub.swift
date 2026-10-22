@@ -75,23 +75,23 @@ struct HubConfig: Codable, Equatable, Sendable {
 
   static func title(of section: String) -> String {
     switch section {
-    case "about": "About"
-    case "changelog": "What is new (changelog)"
-    case "roadmap": "Roadmap"
-    case "feedback": "Feedback"
-    case "blog": "Blog"
-    case "legal": "Legal documents"
-    case "brand": "Brand kit"
-    case "contact": "Contact us (opens the chat)"
+    case "about": String(localized: "About")
+    case "changelog": String(localized: "What is new (changelog)")
+    case "roadmap": String(localized: "Roadmap")
+    case "feedback": String(localized: "Feedback")
+    case "blog": String(localized: "Blog")
+    case "legal": String(localized: "Legal documents")
+    case "brand": String(localized: "Brand kit")
+    case "contact": String(localized: "Contact us (opens the chat)")
     default: section
     }
   }
 
   static func homeTitle(of section: String) -> String {
     switch section {
-    case "changelog": "What is new"
-    case "feedback": "Feedback"
-    case "onboarding": "Onboarding flows to start"
+    case "changelog": String(localized: "What is new")
+    case "feedback": String(localized: "Feedback")
+    case "onboarding": String(localized: "Onboarding flows to start")
     default: section
     }
   }
@@ -265,7 +265,7 @@ struct HubFields: View {
     hub.sections.swapAt(from, to)
   }
 
-  private func toggle(_ label: String, detail: String, isOn: Binding<Bool>) -> some View {
+  private func toggle(_ label: LocalizedStringKey, detail: LocalizedStringKey, isOn: Binding<Bool>) -> some View {
     Toggle(isOn: isOn) {
       VStack(alignment: .leading, spacing: 2) {
         Text(label).font(.lnCallout).foregroundStyle(Theme.text)

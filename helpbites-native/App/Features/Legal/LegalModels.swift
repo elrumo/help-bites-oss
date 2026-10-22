@@ -8,18 +8,18 @@ enum LegalType: String, CaseIterable, Identifiable, Sendable {
   var id: String { rawValue }
   var label: String {
     switch self {
-    case .privacy: "Privacy Policy"
-    case .terms: "Terms of Service"
-    case .cookies: "Cookie Policy"
-    case .refund: "Refund Policy"
+    case .privacy: String(localized: "Privacy Policy")
+    case .terms: String(localized: "Terms of Service")
+    case .cookies: String(localized: "Cookie Policy")
+    case .refund: String(localized: "Refund Policy")
     }
   }
 }
 
 /// The regions the wizard asks about, in the web's order (shared/legal/types.ts).
 let legalRegions: [(value: String, label: String)] = [
-  ("eu", "European Union / EEA"), ("uk", "United Kingdom"), ("us-ca", "United States: California"),
-  ("us-other", "United States: other states"), ("br", "Brazil"), ("ca", "Canada"), ("au", "Australia"), ("row", "Rest of the world")
+  ("eu", String(localized: "European Union / EEA")), ("uk", String(localized: "United Kingdom")), ("us-ca", String(localized: "United States: California")),
+  ("us-other", String(localized: "United States: other states")), ("br", String(localized: "Brazil")), ("ca", String(localized: "Canada")), ("au", String(localized: "Australia")), ("row", String(localized: "Rest of the world"))
 ]
 
 /// A wizard answer: text, a yes/no, or a list of picked option values.
@@ -41,6 +41,16 @@ enum LegalAnswer: Codable, Equatable, Sendable {
 }
 
 typealias LegalAnswers = [String: LegalAnswer]
+
+/// Where a section's or summary's text came from (template, ai or human), as a word for the person.
+func legalSourceLabel(_ source: String) -> String {
+  switch source {
+  case "template": String(localized: "template")
+  case "ai": String(localized: "ai")
+  case "human": String(localized: "human")
+  default: source
+  }
+}
 
 struct LegalSection: Codable, Identifiable, Equatable, Sendable {
   var id: String
@@ -197,8 +207,8 @@ struct LegalImportFile: Sendable {
     let scoped = url.startAccessingSecurityScopedResource()
     defer { if scoped { url.stopAccessingSecurityScopedResource() } }
     let data = try Data(contentsOf: url)
-    if data.count > maxBytes { throw Unreadable(errorDescription: "That file is too large. Policies are text; the limit is 500 KB.") }
-    guard let text = String(data: data, encoding: .utf8) else { throw Unreadable(errorDescription: "That file is not text.") }
+    if data.count > maxBytes { throw Unreadable(errorDescription: String(localized: "That file is too large. Policies are text; the limit is 500 KB.")) }
+    guard let text = String(data: data, encoding: .utf8) else { throw Unreadable(errorDescription: String(localized: "That file is not text.")) }
     return LegalImportFile(name: url.lastPathComponent, text: text)
   }
 }
@@ -285,7 +295,7 @@ struct LegalEmpty: Decodable, Sendable {}
     if status == 401 { await store.recover(APIError.unauthorized); throw APIError.unauthorized }
     guard (200..<300).contains(status) else {
       let failure = try? JSONDecoder().decode(Failure.self, from: data)
-      throw APIError.server(failure?.statusMessage ?? failure?.message ?? "Request failed (\(status)).")
+      throw APIError.server(failure?.statusMessage ?? failure?.message ?? String(localized: "Request failed (\(status))."))
     }
     return try JSONDecoder().decode(Value.self, from: data)
   }

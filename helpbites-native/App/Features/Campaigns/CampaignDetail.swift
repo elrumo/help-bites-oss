@@ -16,6 +16,7 @@ struct CampaignDetailSheet: View {
   @State private var testOpen = false
   @State private var testTo = ""
   @State private var testMessage = ""
+  @State private var testFailed = false
   @State private var confirmSend = false
   @State private var confirmDelete = false
   @State private var confirmCancel = false
@@ -74,7 +75,7 @@ struct CampaignDetailSheet: View {
           Text("Campaign")
         } footer: {
           VStack(alignment: .leading, spacing: 4) {
-            if let count = audienceCount { Text("\(count.formatted()) subscribed \(count == 1 ? "contact" : "contacts") would get it now.") }
+            if let count = audienceCount { Text("\(count.formatted()) subscribed \(count == 1 ? String(localized: "contact") : String(localized: "contacts")) would get it now.") }
             Text("Its design is frozen when sending starts. Test mode: Mailgun accepts and logs every message but delivers none.")
             if !editable { Text("A \(CampaignStatusStyle.label(campaign.status).lowercased()) campaign can no longer be edited.") }
           }
@@ -93,7 +94,7 @@ struct CampaignDetailSheet: View {
         actions
       }
       .formStyle(.grouped)
-      .navigationTitle(campaign.name.isEmpty ? "Campaign" : campaign.name)
+      .navigationTitle(campaign.name.isEmpty ? String(localized: "Campaign") : campaign.name)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
@@ -108,7 +109,7 @@ struct CampaignDetailSheet: View {
       }
       .sheet(isPresented: $scheduleOpen) { scheduleSheet }
       .sheet(isPresented: $testOpen) { testSheet }
-      .confirmationDialog("Send “\(name)” to \(audienceCount?.formatted() ?? "everyone in the audience") now?\(testMode ? " (Test mode: nothing is delivered.)" : "")", isPresented: $confirmSend, titleVisibility: .visible) {
+      .confirmationDialog("Send “\(name)” to \(audienceCount?.formatted() ?? String(localized: "everyone in the audience")) now?\(testMode ? String(localized: " (Test mode: nothing is delivered.)") : "")", isPresented: $confirmSend, titleVisibility: .visible) {
         Button("Send now") { Task { await move("sending") } }
       }
       .confirmationDialog("Delete this campaign? The email log keeps what was sent.", isPresented: $confirmDelete, titleVisibility: .visible) {
@@ -169,7 +170,7 @@ struct CampaignDetailSheet: View {
     }
   }
 
-  private func tile(_ label: String, _ value: String) -> some View {
+  private func tile(_ label: LocalizedStringKey, _ value: String) -> some View {
     VStack(alignment: .leading, spacing: 2) {
       Text(value).font(.system(size: 18, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted)
       Text(label).font(.lnCaption).foregroundStyle(Theme.textMuted)
@@ -228,7 +229,7 @@ struct CampaignDetailSheet: View {
       Form {
         TextField("you@example.com", text: $testTo).inputHints(.emailAddress, capitalization: .never).autocorrectionDisabled()
         Text("Up to five addresses, separated by commas. A contact's own values fill in.").font(.lnCaption).foregroundStyle(Theme.textMuted)
-        if !testMessage.isEmpty { Text(testMessage).font(.lnMeta).foregroundStyle(testMessage.hasPrefix("Failed") ? Theme.error : Theme.success) }
+        if !testMessage.isEmpty { Text(testMessage).font(.lnMeta).foregroundStyle(testFailed ? Theme.error : Theme.success) }
       }
       .formStyle(.grouped)
       .navigationTitle("Send a test")
@@ -301,7 +302,7 @@ struct CampaignDetailSheet: View {
 
   private func openTest() {
     if testTo.isEmpty { testTo = session.agent?.email ?? "" }
-    testMessage = ""
+    testMessage = ""; testFailed = false
     testOpen = true
   }
 
@@ -313,8 +314,9 @@ struct CampaignDetailSheet: View {
     do {
       let recipients = testTo.split(whereSeparator: { $0 == "," || $0 == " " || $0 == "\n" }).map(String.init)
       let output: Output = try await session.send("/v1/campaigns/\(campaign.id)/test", body: Input(project: projectId, to: recipients))
-      testMessage = output.failed.isEmpty ? "Test sent to \(output.sent)." : "Failed for \(output.failed.joined(separator: ", "))."
-    } catch { testMessage = "Failed: \(error.localizedDescription)" }
+      testFailed = !output.failed.isEmpty
+      testMessage = output.failed.isEmpty ? String(localized: "Test sent to \(output.sent).") : String(localized: "Failed for \(output.failed.joined(separator: ", ")).")
+    } catch { testFailed = true; testMessage = String(localized: "Failed: \(error.localizedDescription)") }
   }
 
   private func remove() async {

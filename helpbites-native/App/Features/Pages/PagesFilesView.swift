@@ -81,7 +81,7 @@ struct PagesFilesView: View {
       photos = []
       Task {
         for item in items {
-          guard let data = try? await item.loadTransferable(type: Data.self) else { error = "Could not read that photo."; continue }
+          guard let data = try? await item.loadTransferable(type: Data.self) else { error = String(localized: "Could not read that photo."); continue }
           let type = item.supportedContentTypes.first
           await upload(data, filename: "Photo.\(type?.preferredFilenameExtension ?? "jpg")", mimeType: type?.preferredMIMEType)
         }
@@ -96,7 +96,7 @@ struct PagesFilesView: View {
           defer { if scoped { url.stopAccessingSecurityScopedResource() } }
           return (try? Data(contentsOf: url)).map { ($0, url.lastPathComponent) }
         }
-        if files.count < urls.count { error = "Some files could not be read." }
+        if files.count < urls.count { error = String(localized: "Some files could not be read.") }
         Task { for (data, name) in files { await upload(data, filename: name, mimeType: nil) } }
       }
     }
@@ -136,7 +136,7 @@ struct PagesFilesView: View {
 
   @ViewBuilder private func actions(_ asset: CmsAsset) -> some View {
     Button { editing = asset } label: { Label("Edit", systemImage: "pencil") }
-    Button { Clipboard.copy(asset.url); flash("Copied the file's URL.") } label: { Label("Copy URL", systemImage: "link") }
+    Button { Clipboard.copy(asset.url); flash(String(localized: "Copied the file's URL.")) } label: { Label("Copy URL", systemImage: "link") }
     Divider()
     Button(role: .destructive) { deleting = asset } label: { Label("Delete", systemImage: "trash") }
   }
@@ -164,7 +164,7 @@ struct PagesFilesView: View {
 
   private func upload(_ data: Data, filename: String, mimeType: String?) async {
     if data.count > CmsLimits.assetBytes {
-      error = "\(filename) is larger than \(CmsLimits.assetBytes / 1024 / 1024) MB."
+      error = String(localized: "\(filename) is larger than \(CmsLimits.assetBytes / 1024 / 1024) MB.")
       return
     }
     uploading += 1

@@ -698,9 +698,12 @@ repository. See [EDITIONS.md](EDITIONS.md).
   the picker, not by typing `/shortcut`; Save as FAQ lives on a reply's context menu;
   the AI draft answers the latest customer message only and takes no instructions.
   [SUPPORT.md](SUPPORT.md)
-- **Native app.** English only: it has no translations yet, while the web panel
-  has five more languages. In the hosted edition it shows the plan, usage and locks,
-  but subscribing and managing the subscription happen in the web panel.
+- **Native app.** Translated into the panel's five other languages (Catalan, Spanish,
+  Japanese, Korean, Simplified Chinese) through a string catalog, and it follows the
+  device's language (the per-app language setting on iOS and macOS); text that comes
+  from the server (error messages, names, AI output) stays as the server wrote it.
+  In the hosted edition it shows the plan, usage, locks and
+  sending domains, and opens Stripe's Checkout and customer portal in the browser.
 - **Push.** Off until APNs credentials are set on the server.
 - **Contact sync.** Rows deleted upstream are not noticed yet. Erase them through
   the API. [CONTACTS.md](CONTACTS.md)
@@ -738,12 +741,12 @@ repository. See [EDITIONS.md](EDITIONS.md).
   import until the next publish, and are blank while `APP_URL` is unset.
   [LEGAL.md](LEGAL.md)
 - **Pages and CMS.** The native app lists, creates, edits, publishes and deletes
-  entries (a block outline with each block's fields and animation), manages files
-  and settings; the assistant and wizard, the live preview, undo, writing
-  components (HTML and CSS) and moving a block between lists are web-only. No custom
-  domains for hosted pages, no scripts in components, no per-field translations,
-  scheduled publishing, version history or generated TypeScript types yet.
-  [PAGES.md](PAGES.md)
+  entries (a block outline with each block's fields and animation, undo and redo, moving
+  a block between lists), writes components (fields, HTML and CSS), runs the assistant
+  and the page wizard, and manages files and settings; the live previews are web-only
+  (open the hosted page after publishing). No custom domains for hosted pages, no
+  scripts in components, no per-field translations, scheduled publishing, version
+  history or generated TypeScript types yet. [PAGES.md](PAGES.md)
 - **Translations.** Onboarding, pricing tables, legal documents, template emails, lead forms,
   campaigns, sequences and lead-form welcome emails have them; blog newsletters, the
   mail HelpBites sends itself, the chat, feedback and changelog embeds and CMS pages
@@ -771,8 +774,6 @@ repository. See [EDITIONS.md](EDITIONS.md).
   flow's own language. [LANGUAGES.md](LANGUAGES.md)
 - **Needs attention.** The list is read every minute and when the web panel's tab comes
   back; only the inbox badge follows messages as they arrive. [OVERVIEW.md](OVERVIEW.md)
-- **Native navigation.** A link into one tab of a section (Email → Settings from a setup
-  row or the project settings, Email → Log from an attention row) opens the section on
-  its first tab, and the iPad sidebar lists a project's sections in the grouped order
-  without group headings.
+- **Native navigation.** The iPad sidebar lists a project's sections in the grouped
+  order without group headings.
 - **Language.** The panel is translated into Spanish, Catalan, Chinese, Japanese and Korean; the widgets are English only.

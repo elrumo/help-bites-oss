@@ -40,7 +40,7 @@ struct TeamInviteSheet: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 16) {
           if let sent {
-            Label(sent.emailed ? "Invitation sent." : "Send this link to them:", systemImage: "checkmark.circle").font(.lnRow).foregroundStyle(Theme.textHighlighted)
+            Label(sent.emailed ? String(localized: "Invitation sent.") : String(localized: "Send this link to them:"), systemImage: "checkmark.circle").font(.lnRow).foregroundStyle(Theme.textHighlighted)
             Text(sent.url).font(.lnMono).foregroundStyle(Theme.textHighlighted).textSelection(.enabled)
               .padding(12).frame(maxWidth: .infinity, alignment: .leading)
               .background(Theme.field, in: RoundedRectangle(cornerRadius: Metrics.radius))
@@ -62,7 +62,7 @@ struct TeamInviteSheet: View {
       }
       .panelScreen(sent == nil ? "Invite a teammate" : "Invitation")
       .toolbar {
-        ToolbarItem(placement: .cancellationAction) { Button(sent == nil ? "Cancel" : "Done") { dismiss() } }
+        ToolbarItem(placement: .cancellationAction) { Button(sent == nil ? String(localized: "Cancel") : String(localized: "Done")) { dismiss() } }
         if sent == nil {
           ToolbarItem(placement: .confirmationAction) {
             if saving { ProgressView() } else {

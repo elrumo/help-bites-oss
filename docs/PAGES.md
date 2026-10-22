@@ -68,7 +68,8 @@ Avenir) and content width.
 ## Components in code
 
 Project → Pages → Components lists the built-ins (read-only; **Duplicate** makes
-an editable copy) and your own. A component's template is HTML and CSS:
+an editable copy) and your own. The native app has the same tab and editor, and the same
+assistant and wizard, without the live preview. A component's template is HTML and CSS:
 
 ```html
 <section class="banner">

@@ -30,8 +30,8 @@ struct FeedbackPostEditor: View {
   private var current: FeedbackPost? { postId.flatMap { id in store.posts.first { $0.id == id } } }
 
   private var title: String {
-    guard postId != nil else { return "New post" }
-    return current?.number.map { "Post #\($0)" } ?? "Post"
+    guard postId != nil else { return String(localized: "New post") }
+    return current?.number.map { String(localized: "Post #\($0)") } ?? String(localized: "Post")
   }
 
   var body: some View {
@@ -225,7 +225,7 @@ struct FeedbackPostEditor: View {
       Text("\(post.commentCount) comments")
       Text("Posted \(FeedbackFormat.timeAgo(post.createdAt))")
       if let author = post.author {
-        let name = author.isTeam ? "\(author.name.isEmpty ? "Team" : author.name) (team)" : author.name.isEmpty ? "a user" : author.name
+        let name = author.isTeam ? String(localized: "\(author.name.isEmpty ? String(localized: "Team") : author.name) (team)") : author.name.isEmpty ? String(localized: "a user") : author.name
         Text("by \(Text(name).fontWeight(.medium).foregroundStyle(Theme.text))")
         if let email = author.email, !email.isEmpty {
           if let url = URL(string: "mailto:\(email)") { Link(email, destination: url) } else { Text(email) }
@@ -309,11 +309,11 @@ struct FeedbackPostEditor: View {
       VStack(alignment: .leading, spacing: 4) {
         HStack(alignment: .top, spacing: 6) {
           FlowLayout(spacing: 6) {
-            Text(name.isEmpty ? "User" : name).font(.lnCaptionMedium).foregroundStyle(Theme.textHighlighted)
-            if team { chip("Team", foreground: Theme.accentText, background: Theme.accent.opacity(0.12)) }
+            Text(name.isEmpty ? String(localized: "User") : name).font(.lnCaptionMedium).foregroundStyle(Theme.textHighlighted)
+            if team { chip(String(localized: "Team"), foreground: Theme.accentText, background: Theme.accent.opacity(0.12)) }
             if let email = comment.author?.email, !email.isEmpty { Text(email).font(.lnCaption).foregroundStyle(Theme.textMuted) }
-            Text(FeedbackFormat.timeAgo(comment.createdAt) + (comment.editedAt == nil ? "" : " · edited")).font(.lnCaption).foregroundStyle(Theme.textMuted)
-            if comment.visibility != "public" { chip(comment.visibility.capitalized, foreground: Theme.textToned, background: Theme.elevated) }
+            Text(FeedbackFormat.timeAgo(comment.createdAt) + (comment.editedAt == nil ? "" : String(localized: " · edited"))).font(.lnCaption).foregroundStyle(Theme.textMuted)
+            if comment.visibility != "public" { chip(visibilityLabel(comment.visibility), foreground: Theme.textToned, background: Theme.elevated) }
             if pinned { Image(systemName: "pin.fill").font(.system(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel("Pinned") }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -332,8 +332,16 @@ struct FeedbackPostEditor: View {
     .padding(.leading, comment.parentId == nil ? 0 : 38)
   }
 
+  private func visibilityLabel(_ visibility: String) -> String {
+    switch visibility {
+    case "internal": String(localized: "Internal")
+    case "hidden": String(localized: "Hidden")
+    default: visibility.capitalized
+    }
+  }
+
   private func chip(_ text: String, foreground: Color, background: Color) -> some View {
-    Text(text)
+    Text(verbatim: text)
       .font(.system(size: 10, weight: .semibold))
       .foregroundStyle(foreground)
       .padding(.horizontal, 6)

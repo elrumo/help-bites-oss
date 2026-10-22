@@ -83,8 +83,8 @@ struct EmailChatPanel: View {
   }
 
   private var emptyHint: String {
-    let scope = store.isMaster ? "As a shared template it uses each project's logo, name and accent, so write it once for all of them." : "Click any block to point at it."
-    return "Describe it, or start from one of these. " + scope
+    let scope = store.isMaster ? String(localized: "As a shared template it uses each project's logo, name and accent, so write it once for all of them.") : String(localized: "Click any block to point at it.")
+    return String(localized: "Describe it, or start from one of these.") + " " + scope
   }
 
   private func starterButton(_ starter: EmailChatSuggestion) -> some View {
@@ -207,15 +207,15 @@ struct EmailChatPanel: View {
 
   /// EmailChat.vue blockName().
   private func blockName(_ id: String?) -> String {
-    guard let id, let block = store.design.block(id) else { return "a block" }
+    guard let id, let block = store.design.block(id) else { return String(localized: "a block") }
     func clip(_ text: String) -> String {
       String(text.replacing(#/<[^>]+>/#, with: "").trimmingCharacters(in: .whitespacesAndNewlines).prefix(32))
     }
     switch block.type {
-    case "heading": return "heading “\(clip(block.text))”"
-    case "text": return "text “\(clip(block.html))”"
-    case "button": return "button “\(clip(block.label))”"
-    case "component": return "component “\(clip(block.name))”"
+    case "heading": return String(localized: "heading “\(clip(block.text))”")
+    case "text": return String(localized: "text “\(clip(block.html))”")
+    case "button": return String(localized: "button “\(clip(block.label))”")
+    case "component": return String(localized: "component “\(clip(block.name))”")
     default: return block.type
     }
   }
@@ -230,48 +230,50 @@ struct EmailChatPanel: View {
     }
     switch tool.name {
     case "set_document":
-      return change("rectangle.3.group", running ? "Designing the email" : "Designed the email")
+      return change("rectangle.3.group", running ? String(localized: "Designing the email") : String(localized: "Designed the email"))
     case "update_settings":
       let keys = EmailRender.object(input["patch"]).keys
-      let what = keys.contains("title") ? (keys.contains("preheader") ? "subject and preheader" : "subject") : keys.contains("preheader") ? "preheader" : "email settings"
-      return change("gearshape", "Updated the \(what)")
+      let what = keys.contains("title") ? (keys.contains("preheader") ? String(localized: "subject and preheader") : String(localized: "subject")) : keys.contains("preheader") ? String(localized: "preheader") : String(localized: "email settings")
+      return change("gearshape", String(localized: "Updated the \(what)"))
     case "update_blocks":
       let updates = EmailRender.list(input["updates"])
       if updates.count == 1 {
         let id = EmailRender.string(EmailRender.object(updates[0])["id"])
-        return change("pencil", "Edited \(blockName(id))", blockId: id)
+        return change("pencil", String(localized: "Edited \(blockName(id))"), blockId: id)
       }
-      return change("pencil", updates.isEmpty ? "Editing blocks" : "Edited \(updates.count) blocks")
+      return change("pencil", updates.isEmpty ? String(localized: "Editing blocks") : String(localized: "Edited \(updates.count) blocks"))
     case "add_block":
       let output = EmailRender.string(tool.output) ?? ""
       let id = output.firstMatch(of: #/"(blk_[^"]+)"/#).map { String($0.output.1) }
       let type = EmailRender.string(input["type"]) ?? ""
       let parent = EmailRender.string(input["parentId"]).flatMap { $0.isEmpty ? nil : $0 }
-      return change("plus", "Added a \(type.isEmpty ? "block" : type)" + (parent.map { " in \(blockName($0))" } ?? ""), blockId: id)
+      let kind = type.isEmpty ? String(localized: "block") : type
+      let added = parent.map { String(localized: "Added a \(kind) in \(blockName($0))") } ?? String(localized: "Added a \(kind)")
+      return change("plus", added, blockId: id)
     case "replace_block":
       let count = EmailRender.list(input["blocks"]).count
-      return change("square.grid.2x2", running ? "Rebuilding a block" : "Rebuilt a block as \(count == 0 ? "no" : String(count)) block\(count == 1 ? "" : "s")")
+      return change("square.grid.2x2", running ? String(localized: "Rebuilding a block") : count == 0 ? String(localized: "Rebuilt a block as no blocks") : count == 1 ? String(localized: "Rebuilt a block as 1 block") : String(localized: "Rebuilt a block as \(count) blocks"))
     case "save_component":
       let output = EmailRender.string(tool.output) ?? ""
       let id = output.firstMatch(of: #/as block "(blk_[^"]+)"|"(blk_[^"]+)"\./#).flatMap { ($0.output.1 ?? $0.output.2).map(String.init) }
-      let name = EmailRender.string(input["name"]).flatMap { $0.isEmpty ? nil : $0 } ?? "a component"
-      return change("puzzlepiece", running ? "Saving a component" : "Saved “\(name)” to the library", blockId: id)
+      let name = EmailRender.string(input["name"]).flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "a component")
+      return change("puzzlepiece", running ? String(localized: "Saving a component") : String(localized: "Saved “\(name)” to the library"), blockId: id)
     case "remove_block":
-      return change("trash", "Removed a block")
+      return change("trash", String(localized: "Removed a block"))
     case "move_block":
       let id = EmailRender.string(input["id"])
-      return change("arrow.up.arrow.down", "Moved \(blockName(id))", blockId: id)
+      return change("arrow.up.arrow.down", String(localized: "Moved \(blockName(id))"), blockId: id)
     case "set_theme":
       let preset = EmailRender.string(input["preset"]) ?? ""
-      return change("paintpalette", preset.isEmpty ? "Restyled the email" : "Applied the \(preset) theme")
+      return change("paintpalette", preset.isEmpty ? String(localized: "Restyled the email") : String(localized: "Applied the \(preset) theme"))
     case "set_variables":
       let keys = EmailRender.list(input["variables"]).compactMap { EmailRender.string(EmailRender.object($0)["key"]) }
       let placeholders = keys.map { key in "{{" + key + "}}" }.joined(separator: ", ")
-      return change("curlybraces", "Set " + (placeholders.isEmpty ? "variables" : placeholders))
+      return change("curlybraces", placeholders.isEmpty ? String(localized: "Set variables") : String(localized: "Set \(placeholders)"))
     case "check_email":
       let output = EmailRender.string(tool.output) ?? ""
       let count = !output.isEmpty && !output.hasPrefix("All checks") ? output.components(separatedBy: "\n").count : 0
-      return change("checkmark.shield", running ? "Checking the email" : count > 0 ? "Found \(count) issue\(count == 1 ? "" : "s")" : "All checks pass")
+      return change("checkmark.shield", running ? String(localized: "Checking the email") : count > 0 ? (count == 1 ? String(localized: "Found 1 issue") : String(localized: "Found \(count) issues")) : String(localized: "All checks pass"))
     default:
       return change("wand.and.stars", tool.name.replacingOccurrences(of: "_", with: " "))
     }
@@ -337,7 +339,7 @@ struct EmailChatPanel: View {
     return ScrollView(.horizontal, showsIndicators: false) {
       HStack(spacing: 6) {
         if !issues.isEmpty {
-          EmailChatFixPill(label: "Fix \(issues.count) issue\(issues.count == 1 ? "" : "s")") { _ = store.chat.send(fixPrompt(issues)) }
+          EmailChatFixPill(label: issues.count == 1 ? String(localized: "Fix 1 issue") : String(localized: "Fix \(issues.count) issues")) { _ = store.chat.send(fixPrompt(issues)) }
             .disabled(chat.busy)
             .opacity(chat.busy ? 0.5 : 1)
         }
@@ -359,8 +361,8 @@ struct EmailChatPanel: View {
   // MARK: Composer
 
   private var placeholder: String {
-    if let selected = store.selected { return "Ask for a change to the selected \(selected.type)…" }
-    return "Describe an email, or ask for a change…"
+    if let selected = store.selected { return String(localized: "Ask for a change to the selected \(selected.type)…") }
+    return String(localized: "Describe an email, or ask for a change…")
   }
 
   private var canSend: Bool {
@@ -425,7 +427,7 @@ struct EmailChatChange: Equatable {
 
 /// One tool call in a reply: a spinner while it runs, a warning when it failed.
 /// When it names a block, tapping it selects that block.
-private struct EmailChatChangeChip: View {
+struct EmailChatChangeChip: View {
   let change: EmailChatChange
   let onSelect: (String) -> Void
 
@@ -502,25 +504,25 @@ struct EmailChatSuggestion: Identifiable, Sendable {
 enum EmailChatPrompts {
   /// A master is written once for every project.
   static let masterStarters = [
-    EmailChatSuggestion(systemImage: "hand.wave", label: "Welcome email", prompt: "Design a warm welcome email for new users: the project logo at the top, a greeting with {{firstName}}, three quick getting-started steps and one button to {{project.url}}."),
-    EmailChatSuggestion(systemImage: "key", label: "Password reset", prompt: "Design a short, plain password reset email with one button to {{resetUrl}}, a note that the link expires in {{expiresIn}}, and a line for people who did not ask for it."),
-    EmailChatSuggestion(systemImage: "receipt", label: "Receipt", prompt: "Design a purchase receipt: order number {{orderId}}, an itemised summary, the total {{total}}, and a button to view the order at {{orderUrl}}."),
-    EmailChatSuggestion(systemImage: "newspaper", label: "Product update", prompt: "Design a product update newsletter: a hero with a headline, three short feature highlights with images, a primary button and a footer with {{unsubscribeUrl}}.")
+    EmailChatSuggestion(systemImage: "hand.wave", label: String(localized: "Welcome email"), prompt: "Design a warm welcome email for new users: the project logo at the top, a greeting with {{firstName}}, three quick getting-started steps and one button to {{project.url}}."),
+    EmailChatSuggestion(systemImage: "key", label: String(localized: "Password reset"), prompt: "Design a short, plain password reset email with one button to {{resetUrl}}, a note that the link expires in {{expiresIn}}, and a line for people who did not ask for it."),
+    EmailChatSuggestion(systemImage: "receipt", label: String(localized: "Receipt"), prompt: "Design a purchase receipt: order number {{orderId}}, an itemised summary, the total {{total}}, and a button to view the order at {{orderUrl}}."),
+    EmailChatSuggestion(systemImage: "newspaper", label: String(localized: "Product update"), prompt: "Design a product update newsletter: a hero with a headline, three short feature highlights with images, a primary button and a footer with {{unsubscribeUrl}}.")
   ]
 
   static let projectStarters = [
-    EmailChatSuggestion(systemImage: "hand.wave", label: "Welcome email", prompt: "Design a warm welcome email for new users of this project with a greeting using {{firstName}}, three getting-started steps and one clear button."),
-    EmailChatSuggestion(systemImage: "arrowshape.turn.up.left", label: "Support reply", prompt: "Design a friendly support follow-up email that answers {{question}}, links to {{articleUrl}} and invites a reply."),
-    EmailChatSuggestion(systemImage: "calendar", label: "Event invite", prompt: "Design an event invitation with the date {{eventDate}}, a short agenda and an RSVP button to {{rsvpUrl}}."),
-    EmailChatSuggestion(systemImage: "sparkles", label: "Launch", prompt: "Design a launch announcement for a new feature: hero image placeholder, what it does in three bullets, and a button to try it.")
+    EmailChatSuggestion(systemImage: "hand.wave", label: String(localized: "Welcome email"), prompt: "Design a warm welcome email for new users of this project with a greeting using {{firstName}}, three getting-started steps and one clear button."),
+    EmailChatSuggestion(systemImage: "arrowshape.turn.up.left", label: String(localized: "Support reply"), prompt: "Design a friendly support follow-up email that answers {{question}}, links to {{articleUrl}} and invites a reply."),
+    EmailChatSuggestion(systemImage: "calendar", label: String(localized: "Event invite"), prompt: "Design an event invitation with the date {{eventDate}}, a short agenda and an RSVP button to {{rsvpUrl}}."),
+    EmailChatSuggestion(systemImage: "sparkles", label: String(localized: "Launch"), prompt: "Design a launch announcement for a new feature: hero image placeholder, what it does in three bullets, and a button to try it.")
   ]
 
   /// Before the block actions when custom HTML is selected.
-  static let convertToBlocks = EmailChatSuggestion(label: "Convert to blocks", prompt: "Rebuild the selected custom HTML as editable blocks, matching its design as closely as you can.")
+  static let convertToBlocks = EmailChatSuggestion(label: String(localized: "Convert to blocks"), prompt: "Rebuild the selected custom HTML as editable blocks, matching its design as closely as you can.")
 
   /// Before the block actions when custom HTML or a section is selected; also the
   /// component sheet's "Let the AI do it".
-  static let makeReusable = EmailChatSuggestion(label: "Make reusable", prompt: "Save the selected block to the component library as a reusable component, with its copy as content fields and its colours and sizes as style fields, then use it here.")
+  static let makeReusable = EmailChatSuggestion(label: String(localized: "Make reusable"), prompt: "Save the selected block to the component library as a reusable component, with its copy as content fields and its colours and sizes as style fields, then use it here.")
 
   /// With a block selected: custom HTML can become blocks, and custom HTML or a
   /// section a library component, before the usual changes.
@@ -530,17 +532,17 @@ enum EmailChatPrompts {
 
   /// With a block selected.
   static let blockActions = [
-    EmailChatSuggestion(label: "Improve this", prompt: "Improve the selected block: sharper copy and better styling, same intent."),
-    EmailChatSuggestion(label: "Shorter", prompt: "Make the selected block shorter and punchier without losing meaning."),
-    EmailChatSuggestion(label: "Friendlier", prompt: "Rewrite the selected block in a warmer, more human tone."),
-    EmailChatSuggestion(label: "Make it pop", prompt: "Make the selected block stand out more: stronger hierarchy and contrast, within the theme.")
+    EmailChatSuggestion(label: String(localized: "Improve this"), prompt: "Improve the selected block: sharper copy and better styling, same intent."),
+    EmailChatSuggestion(label: String(localized: "Shorter"), prompt: "Make the selected block shorter and punchier without losing meaning."),
+    EmailChatSuggestion(label: String(localized: "Friendlier"), prompt: "Rewrite the selected block in a warmer, more human tone."),
+    EmailChatSuggestion(label: String(localized: "Make it pop"), prompt: "Make the selected block stand out more: stronger hierarchy and contrast, within the theme.")
   ]
 
   /// For the whole email.
   static let emailActions = [
-    EmailChatSuggestion(label: "Improve copy", prompt: "Improve the copy across the whole email: clearer, more concrete, more persuasive. Keep the layout."),
-    EmailChatSuggestion(label: "Polish design", prompt: "Polish the design: spacing rhythm, hierarchy and contrast. Keep the content."),
-    EmailChatSuggestion(label: "Subject ideas", prompt: "Suggest three subject line and preheader pairs for this email with a one-line reason each, then apply the strongest."),
-    EmailChatSuggestion(label: "Mobile check", prompt: "Make sure this email reads well on a 375px phone: avoid cramped columns, keep buttons easy to tap and text at least 14px.")
+    EmailChatSuggestion(label: String(localized: "Improve copy"), prompt: "Improve the copy across the whole email: clearer, more concrete, more persuasive. Keep the layout."),
+    EmailChatSuggestion(label: String(localized: "Polish design"), prompt: "Polish the design: spacing rhythm, hierarchy and contrast. Keep the content."),
+    EmailChatSuggestion(label: String(localized: "Subject ideas"), prompt: "Suggest three subject line and preheader pairs for this email with a one-line reason each, then apply the strongest."),
+    EmailChatSuggestion(label: String(localized: "Mobile check"), prompt: "Make sure this email reads well on a 375px phone: avoid cramped columns, keep buttons easy to tap and text at least 14px.")
   ]
 }

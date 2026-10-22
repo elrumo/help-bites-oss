@@ -9,11 +9,11 @@ enum ChangelogTag: String, Codable, CaseIterable, Identifiable, Sendable {
   var id: String { rawValue }
   var label: String {
     switch self {
-    case .new: "New"
-    case .improved: "Improved"
-    case .fix: "Fixed"
-    case .removed: "Removed"
-    case .breaking: "Breaking"
+    case .new: String(localized: "New")
+    case .improved: String(localized: "Improved")
+    case .fix: String(localized: "Fixed")
+    case .removed: String(localized: "Removed")
+    case .breaking: String(localized: "Breaking")
     }
   }
   /// The chip colour (CHANGELOG_TAG_CLASS): emerald, sky, amber, stone, red.
@@ -38,7 +38,7 @@ struct ChangelogSource: Decodable, Equatable, Identifiable, Sendable {
   let done: Bool
   var key: String { "\(kind):\(id)" }
   static func == (lhs: Self, rhs: Self) -> Bool { lhs.key == rhs.key && lhs.done == rhs.done && lhs.label == rhs.label }
-  var kindLabel: String { ["feedback": "Feedback post", "board": "Planning item", "conversation": "Conversation"][kind] ?? kind }
+  var kindLabel: String { ["feedback": String(localized: "Feedback post"), "board": String(localized: "Planning item"), "conversation": String(localized: "Conversation")][kind] ?? kind }
   var symbol: String { ["feedback": "lightbulb", "board": "rectangle.split.3x1", "conversation": "bubble.left"][kind] ?? "link" }
 }
 
@@ -75,10 +75,10 @@ enum ChangelogState: String, Sendable {
   case live, waiting, draft, archived
   var label: String {
     switch self {
-    case .live: "Public"
-    case .waiting: "Waiting for release"
-    case .draft: "Draft"
-    case .archived: "Archived"
+    case .live: String(localized: "Public")
+    case .waiting: String(localized: "Waiting for release")
+    case .draft: String(localized: "Draft")
+    case .archived: String(localized: "Archived")
     }
   }
   var tint: Color {
@@ -98,7 +98,7 @@ struct ChangelogRelease: Decodable, Equatable, Identifiable, Sendable {
   let createdAt: String
 
   /// "2.4 · Autumn" with a "(draft)" marker, for pickers.
-  var pickerLabel: String { "\(version)\(title.isEmpty ? "" : " · \(title)")\(status == .draft ? " (draft)" : "")" }
+  var pickerLabel: String { "\(version)\(title.isEmpty ? "" : " · \(title)")\(status == .draft ? String(localized: " (draft)") : "")" }
 }
 
 struct ChangelogRun: Decodable, Equatable, Sendable {
@@ -154,7 +154,7 @@ struct ChangelogProject: Decodable, Sendable {
   @MainActor static func load(_ id: String, session: SessionStore) async throws -> ChangelogProject {
     struct Response: Decodable, Sendable { let projects: [ChangelogProject] }
     let response: Response = try await session.get("/v1/admin/projects")
-    guard let project = response.projects.first(where: { $0.id == id }) else { throw APIError.server("Project not found") }
+    guard let project = response.projects.first(where: { $0.id == id }) else { throw APIError.server(String(localized: "Project not found")) }
     return project
   }
 }
@@ -170,15 +170,15 @@ struct ChangelogNotifyResult: Decodable, Equatable, Sendable {
 
   func summary(job: String, dryRun: Bool) -> String {
     let entries = entries ?? 0, recipients = recipients ?? 0
-    let people = "\(recipients) \(recipients == 1 ? "subscriber" : "subscribers")"
-    let items = "\(entries) \(entries == 1 ? "entry" : "entries")"
+    let people = recipients == 1 ? String(localized: "1 subscriber") : String(localized: "\(recipients) subscribers")
+    let items = entries == 1 ? String(localized: "1 entry") : String(localized: "\(entries) entries")
     if job == "instant" {
-      guard flushed == true else { return entries > 0 ? "\(items) published, still waiting for things to go quiet. Nothing sent." : "Nothing is waiting to be sent." }
-      return dryRun ? "Would send \(items) to \(people)." : "Sent \(items) to \(people)."
+      guard flushed == true else { return entries > 0 ? String(localized: "\(items) published, still waiting for things to go quiet. Nothing sent.") : String(localized: "Nothing is waiting to be sent.") }
+      return dryRun ? String(localized: "Would send \(items) to \(people).") : String(localized: "Sent \(items) to \(people).")
     }
-    guard due == true else { return "The weekly digest is not due yet." }
-    guard sent == true else { return entries == 0 ? "Nothing was published in the window, or the digest already went out." : "Nothing to send." }
-    return dryRun ? "Would send \(items) to \(people)." : "Sent \(items) to \(people)."
+    guard due == true else { return String(localized: "The weekly digest is not due yet.") }
+    guard sent == true else { return entries == 0 ? String(localized: "Nothing was published in the window, or the digest already went out.") : String(localized: "Nothing to send.") }
+    return dryRun ? String(localized: "Would send \(items) to \(people).") : String(localized: "Sent \(items) to \(people).")
   }
 }
 
@@ -237,7 +237,7 @@ struct ChangelogChip: View {
   let text: String
   var tint: Color = Theme.textToned
   var body: some View {
-    Text(text)
+    Text(verbatim: text)
       .font(.lnCaptionMedium)
       .foregroundStyle(tint)
       .lineLimit(1)

@@ -36,33 +36,33 @@ enum PricingLimits {
   /// A table's or a plan's key: lowercase letters, digits and dashes.
   static let key = "^[a-z0-9][a-z0-9-]{0,39}$"
   static let templates: [(id: String, label: String, hint: String, systemImage: String)] = [
-    ("tiers", "Cards", "Plans side by side; the highlighted one stands out.", "rectangle.split.3x1"),
-    ("rows", "Rows", "One compact line a plan, for narrow spaces.", "list.bullet.rectangle"),
-    ("paywall", "Paywall", "Benefits, selectable prices and one button, like an app's upgrade screen.", "iphone"),
-    ("matrix", "Comparison", "Every feature by plan, in a table.", "tablecells"),
-    ("spotlight", "Spotlight", "One wide card a plan: a single plan or a lifetime deal.", "rectangle.inset.filled")
+    ("tiers", String(localized: "Cards"), String(localized: "Plans side by side; the highlighted one stands out."), "rectangle.split.3x1"),
+    ("rows", String(localized: "Rows"), String(localized: "One compact line a plan, for narrow spaces."), "list.bullet.rectangle"),
+    ("paywall", String(localized: "Paywall"), String(localized: "Benefits, selectable prices and one button, like an app's upgrade screen."), "iphone"),
+    ("matrix", String(localized: "Comparison"), String(localized: "Every feature by plan, in a table."), "tablecells"),
+    ("spotlight", String(localized: "Spotlight"), String(localized: "One wide card a plan: a single plan or a lifetime deal."), "rectangle.inset.filled")
   ]
   /// The price slots of a plan (`PRICING_INTERVALS`), in the order a toggle lists them.
-  static let intervals: [(id: String, label: String)] = [("week", "Weekly"), ("month", "Monthly"), ("year", "Yearly"), ("once", "One-time")]
+  static let intervals: [(id: String, label: String)] = [("week", String(localized: "Weekly")), ("month", String(localized: "Monthly")), ("year", String(localized: "Yearly")), ("once", String(localized: "One-time"))]
   /// The slots a subscription bills in (`PRICING_RECURRING`); the toggle offers those a table has.
   static let recurring = ["week", "month", "year"]
   static func intervalLabel(_ id: String) -> String { intervals.first { $0.id == id }?.label ?? id }
   /// What "Suggest with AI" can work on (`PRICING_AI_FOCUS`).
-  static let focus: [(id: String, label: String)] = [("copy", "Words"), ("features", "Features"), ("prices", "Prices")]
+  static let focus: [(id: String, label: String)] = [("copy", String(localized: "Words")), ("features", String(localized: "Features")), ("prices", String(localized: "Prices"))]
   static let actions: [(id: String, label: String, hint: String)] = [
-    ("checkout", "Stripe Checkout", "HelpBites opens Stripe Checkout for the price. The Stripe key needs \"Checkout Sessions: Write\"."),
-    ("payment_link", "Stripe Payment Link", "The Payment Link in Stripe that sells this price."),
-    ("url", "A link of yours", "Your sign-up page or a contact form. {plan} and {interval} are filled in."),
-    ("none", "No button", "Just the plan, no button.")
+    ("checkout", String(localized: "Stripe Checkout"), String(localized: "HelpBites opens Stripe Checkout for the price. The Stripe key needs \"Checkout Sessions: Write\".")),
+    ("payment_link", String(localized: "Stripe Payment Link"), String(localized: "The Payment Link in Stripe that sells this price.")),
+    ("url", String(localized: "A link of yours"), String(localized: "Your sign-up page or a contact form. {plan} and {interval} are filled in.")),
+    ("none", String(localized: "No button"), String(localized: "Just the plan, no button."))
   ]
-  static let fonts: [(id: String, label: String)] = [("system", "System"), ("rounded", "Rounded"), ("serif", "Serif"), ("mono", "Mono")]
-  static let densities: [(id: String, label: String)] = [("compact", "Compact"), ("comfortable", "Comfortable"), ("spacious", "Spacious")]
-  static let surfaces: [(id: String, label: String)] = [("flat", "Flat"), ("outline", "Outlined"), ("shadow", "Shadow")]
-  static let highlights: [(id: String, label: String)] = [("border", "Border"), ("fill", "Fill"), ("raise", "Raised")]
-  static let yearlyAs: [(id: String, label: String)] = [("total", "Yearly total"), ("monthly", "A month")]
+  static let fonts: [(id: String, label: String)] = [("system", String(localized: "System")), ("rounded", String(localized: "Rounded")), ("serif", String(localized: "Serif")), ("mono", String(localized: "Mono"))]
+  static let densities: [(id: String, label: String)] = [("compact", String(localized: "Compact")), ("comfortable", String(localized: "Comfortable")), ("spacious", String(localized: "Spacious"))]
+  static let surfaces: [(id: String, label: String)] = [("flat", String(localized: "Flat")), ("outline", String(localized: "Outlined")), ("shadow", String(localized: "Shadow"))]
+  static let highlights: [(id: String, label: String)] = [("border", String(localized: "Border")), ("fill", String(localized: "Fill")), ("raise", String(localized: "Raised"))]
+  static let yearlyAs: [(id: String, label: String)] = [("total", String(localized: "Yearly total")), ("monthly", String(localized: "A month"))]
 
   static func validKey(_ value: String) -> Bool { value.range(of: key, options: .regularExpression) != nil }
-  static let keyRule = "The key is 1 to 40 lowercase letters, digits and dashes, starting with a letter or digit."
+  static let keyRule = String(localized: "The key is 1 to 40 lowercase letters, digits and dashes, starting with a letter or digit.")
   static func templateLabel(_ id: String) -> String { templates.first { $0.id == id }?.label ?? id }
 
   /// A key from a name (`pricingKeyFrom`): "Pro plan" → "pro-plan".
@@ -217,9 +217,9 @@ extension PricingContent {
 
   /// The fields a translation replaces (`CONTENT_TEXT`), with their limits.
   static let translatable: [(key: String, label: String, limit: Int)] = [
-    ("title", "Title", PricingLimits.title), ("subtitle", "Subtitle", PricingLimits.subtitle), ("footnote", "Small print", PricingLimits.footnote),
-    ("weeklyLabel", "Weekly toggle", PricingLimits.label), ("monthlyLabel", "Monthly toggle", PricingLimits.label),
-    ("yearlyLabel", "Yearly toggle", PricingLimits.label), ("savingsLabel", "Savings badge", PricingLimits.label)
+    ("title", String(localized: "Title"), PricingLimits.title), ("subtitle", String(localized: "Subtitle"), PricingLimits.subtitle), ("footnote", String(localized: "Small print"), PricingLimits.footnote),
+    ("weeklyLabel", String(localized: "Weekly toggle"), PricingLimits.label), ("monthlyLabel", String(localized: "Monthly toggle"), PricingLimits.label),
+    ("yearlyLabel", String(localized: "Yearly toggle"), PricingLimits.label), ("savingsLabel", String(localized: "Savings badge"), PricingLimits.label)
   ]
 
   subscript(field: String) -> String {
@@ -410,7 +410,7 @@ struct PricingTable: Codable, Identifiable, Equatable, Sendable {
   var updatedAt: String?
 
   var isPublished: Bool { status == "published" }
-  var statusLabel: String { isPublished ? "Published v\(version)" : "Draft" }
+  var statusLabel: String { isPublished ? String(localized: "Published v\(version)") : String(localized: "Draft") }
   var test: PricingExperiment { experiment ?? PricingExperiment() }
 }
 
@@ -479,7 +479,7 @@ struct PricingDraft: Equatable, Encodable, Sendable {
     for field in PricingContent.translatable { add("content/\(field.key)", content[field.key], field.limit, "Words", field.label) }
     for f in features {
       add("features/\(f.id)/text", f.text, PricingLimits.feature, "Features", f.isHeading ? "Heading" : "Feature")
-      add("features/\(f.id)/hint", f.hint, PricingLimits.hint, "Features", "Tooltip · \(f.text)")
+      add("features/\(f.id)/hint", f.hint, PricingLimits.hint, "Features", String(localized: "Tooltip · \(f.text)"))
     }
     for p in plans {
       let group = p.name.isEmpty ? p.key : p.name

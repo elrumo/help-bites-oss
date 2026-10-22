@@ -49,7 +49,7 @@ struct ErrorServersSection: View {
               Image(systemName: "ladybug").font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
               VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) { Text(server.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1); Tag(text: server.providerName) }
-                Text(server.builtIn ? "Set in this server's environment" : server.url).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
+                Text(server.builtIn ? String(localized: "Set in this server's environment") : server.url).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
               }
               Spacer(minLength: 8)
               if !server.builtIn && session.canManage {
@@ -107,8 +107,8 @@ private struct ErrorServerSheet: View {
   private var current: ErrorProvider? { providers.first { $0.id == provider } }
   private var tokenHelp: String {
     switch provider {
-    case "glitchtip": "From /profile/auth-tokens, with org:read, team:write, project:admin and event:write."
-    case "bugsink": "From Tokens in Bugsink, or bugsink-manage create_auth_token."
+    case "glitchtip": String(localized: "From /profile/auth-tokens, with org:read, team:write, project:admin and event:write.")
+    case "bugsink": String(localized: "From Tokens in Bugsink, or bugsink-manage create_auth_token.")
     default: ""
     }
   }
@@ -131,7 +131,7 @@ private struct ErrorServerSheet: View {
             LabeledField(label: "Organisation slug") { TextField("", text: $org).textFieldStyle(.linear).textInputAutocapitalization(.never).autocorrectionDisabled() }
           }
           LabeledField(label: "API token", hint: tokenHelp) {
-            SecureField(server?.hasToken == true ? "Saved; leave blank to keep" : "", text: $token).textFieldStyle(.linear).autocorrectionDisabled()
+            SecureField(server?.hasToken == true ? String(localized: "Saved; leave blank to keep") : "", text: $token).textFieldStyle(.linear).autocorrectionDisabled()
           }
           LabeledField(label: "API URL", hint: "Optional. Only when HelpBites reaches the tracker at another address, such as http://sb-\(provider):8000 in Compose.") {
             TextField("", text: $apiUrl).textFieldStyle(.linear).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -143,11 +143,11 @@ private struct ErrorServerSheet: View {
         .frame(maxWidth: .infinity)
       }
       .scrollDismissesKeyboard(.interactively)
-      .panelScreen(server == nil ? "Add server" : "Edit server")
+      .panelScreen(server == nil ? String(localized: "Add server") : String(localized: "Edit server"))
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
         ToolbarItem(placement: .confirmationAction) {
-          if saving { ProgressView() } else { Button(server == nil ? "Add server" : "Save") { Task { await save() } }.disabled(!valid) }
+          if saving { ProgressView() } else { Button(server == nil ? String(localized: "Add server") : String(localized: "Save")) { Task { await save() } }.disabled(!valid) }
         }
       }
     }

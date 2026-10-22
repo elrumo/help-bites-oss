@@ -80,7 +80,7 @@ struct PricingScreen: View {
             Tag(text: table.statusLabel, tint: table.isPublished ? Theme.success : Theme.textDimmed)
             if table.changed { Tag(text: "Unpublished changes", tint: Theme.warning) }
             if !table.warnings.isEmpty { Tag(text: "\(table.warnings.count) to check", tint: Theme.warning) }
-            Text("\(PricingLimits.templateLabel(table.template)) · \(table.plans.count) \(table.plans.count == 1 ? "plan" : "plans")").font(.lnCaption).foregroundStyle(Theme.textMuted)
+            Text("\(PricingLimits.templateLabel(table.template)) · \(table.plans.count) \(table.plans.count == 1 ? String(localized: "plan") : String(localized: "plans"))").font(.lnCaption).foregroundStyle(Theme.textMuted)
           }
           .padding(.top, 4)
         }

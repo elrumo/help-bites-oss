@@ -79,7 +79,7 @@ struct EmailSuppressionsScreen: View {
       await load()
     }
     .confirmationDialog(
-      removing.map { "Email \($0.email ?? "this address") again\(projectId == nil ? " from \(projectName($0.projectId))" : "")?" } ?? "",
+      removing.map { projectId == nil ? String(localized: "Email \($0.email ?? String(localized: "this address")) again from \(projectName($0.projectId))?") : String(localized: "Email \($0.email ?? String(localized: "this address")) again?") } ?? "",
       isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
       titleVisibility: .visible,
       presenting: removing
@@ -90,7 +90,7 @@ struct EmailSuppressionsScreen: View {
       EmailSuppressionAddSheet(projectId: projectId) { result in
         let added = result.added?.count ?? 0
         let existing = result.existing ?? 0
-        notice = "\(added) added" + (existing > 0 ? ", \(existing) already on the list" : "")
+        notice = String(localized: "\(added) added") + (existing > 0 ? String(localized: ", \(existing) already on the list") : "")
         Task { await load() }
       }
     }
@@ -114,7 +114,7 @@ struct EmailSuppressionsScreen: View {
           }
         } label: {
           HStack(spacing: 4) {
-            Text(reason.isEmpty ? "Reason" : EmailStatusText.reason(reason)).lineLimit(1)
+            Text(reason.isEmpty ? String(localized: "Reason") : EmailStatusText.reason(reason)).lineLimit(1)
             Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
           }
           .font(.lnMetaMedium)
@@ -168,13 +168,13 @@ struct EmailSuppressionsScreen: View {
     switch source {
     case "webhook": "Mailgun"
     case "api": "API"
-    default: "Panel"
+    default: String(localized: "Panel")
     }
   }
 
   private func projectName(_ id: String?) -> String {
-    guard let id, !id.isEmpty else { return "Project" }
-    return workspace.project(id)?.name ?? "Project"
+    guard let id, !id.isEmpty else { return String(localized: "Project") }
+    return workspace.project(id)?.name ?? String(localized: "Project")
   }
 
   // MARK: Data
@@ -197,7 +197,7 @@ struct EmailSuppressionsScreen: View {
       error = ""
     } catch {
       if Task.isCancelled { return }
-      self.error = error.localizedDescription.isEmpty ? "Could not load the list" : error.localizedDescription
+      self.error = error.localizedDescription.isEmpty ? String(localized: "Could not load the list") : error.localizedDescription
     }
     loading = false
   }
@@ -218,7 +218,7 @@ struct EmailSuppressionsScreen: View {
     do {
       try await session.delete("/v1/admin/email-suppressions/\(row.id)")
       rows.removeAll { $0.id == row.id }
-    } catch { self.error = error.localizedDescription.isEmpty ? "Could not remove it" : error.localizedDescription }
+    } catch { self.error = error.localizedDescription.isEmpty ? String(localized: "Could not remove it") : error.localizedDescription }
   }
 }
 
@@ -301,6 +301,6 @@ struct EmailSuppressionAddSheet: View {
       let result: EmailSuppressionAddResult = try await session.send("/v1/admin/email-suppressions", body: EmailSuppressionInput(project: target, emails: list, reason: reason, detail: detail.trimmingCharacters(in: .whitespacesAndNewlines)))
       onAdded(result)
       dismiss()
-    } catch { self.error = error.localizedDescription.isEmpty ? "Could not add them" : error.localizedDescription }
+    } catch { self.error = error.localizedDescription.isEmpty ? String(localized: "Could not add them") : error.localizedDescription }
   }
 }

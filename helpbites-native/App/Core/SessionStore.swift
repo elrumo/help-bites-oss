@@ -124,7 +124,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
   func setEndpoint(_ value: String) async {
     let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
     guard let url = URL(string: normalized), ["http", "https"].contains(url.scheme?.lowercased() ?? ""), url.host != nil else {
-      error = "Enter a valid http(s) API URL."
+      error = String(localized: "Enter a valid http(s) API URL.")
       return
     }
     guard normalized != endpoint else { return }

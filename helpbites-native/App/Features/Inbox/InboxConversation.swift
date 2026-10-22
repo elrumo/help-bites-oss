@@ -46,7 +46,7 @@ struct InboxConversationPane: View {
     } else if id.isEmpty {
       EmptyState(systemImage: "bubble.left.and.bubble.right", title: "Pick a conversation", message: "Its full history, the customer and the ticket open here.")
     } else if !store.threadError.isEmpty {
-      EmptyState(systemImage: "exclamationmark.bubble", title: "Couldn't open this conversation", message: store.threadError) {
+      EmptyState(systemImage: "exclamationmark.bubble", title: "Couldn't open this conversation", message: LocalizedStringKey(store.threadError)) {
         Button("Try again") { Task { await store.select(id) } }.buttonStyle(.lnSecondaryCompact)
       }
     } else {
@@ -65,7 +65,7 @@ private struct InboxCompactChrome: ViewModifier {
   @ViewBuilder
   func body(content: Content) -> some View {
     if enabled {
-      let name = conversation.flatMap { workspace.inbox.endUsers[$0.endUserId]?.inboxName } ?? "Conversation"
+      let name = conversation.flatMap { workspace.inbox.endUsers[$0.endUserId]?.inboxName } ?? String(localized: "Conversation")
       content
         .panelScreen(name)
         .toolbar {
@@ -117,7 +117,7 @@ private struct InboxConversationHeader: View {
 
   var body: some View {
     let project = workspace.project(conversation.projectId)
-    let name = workspace.inbox.endUsers[conversation.endUserId]?.inboxName ?? "Conversation"
+    let name = workspace.inbox.endUsers[conversation.endUserId]?.inboxName ?? String(localized: "Conversation")
     let subject = conversation.subject.isEmpty ? (conversation.context?.label ?? "") : conversation.subject
     HStack(spacing: 6) {
       if let project {
@@ -227,7 +227,7 @@ private struct InboxThreadView: View {
   }
 
   private func target(_ root: Message) -> InboxReplyTarget {
-    let name = root.senderName.isEmpty ? (root.sender == "agent" ? "yourself" : "them") : root.senderName
+    let name = root.senderName.isEmpty ? (root.sender == "agent" ? String(localized: "yourself") : String(localized: "them")) : root.senderName
     return InboxReplyTarget(name: name, preview: InboxText.preview(root.body, 80))
   }
 }
@@ -455,7 +455,7 @@ private struct InboxTranscript: View {
   private func quote(_ root: Message) -> some View {
     Button { withAnimation(.snappy) { threadId = root.id } } label: {
       Label {
-        Text(root.body.isEmpty ? "Image" : InboxText.preview(root.body, 60)).lineLimit(1)
+        Text(root.body.isEmpty ? String(localized: "Image") : InboxText.preview(root.body, 60)).lineLimit(1)
       } icon: {
         Image(systemName: "arrowshape.turn.up.left")
       }
@@ -491,7 +491,7 @@ private struct InboxTranscript: View {
   private func repliesButton(_ id: String, count: Int) -> some View {
     Button { withAnimation(.snappy) { threadId = threadId == id ? "" : id } } label: {
       HStack(spacing: 2) {
-        Text("\(count) \(count == 1 ? "reply" : "replies")")
+        Text(count == 1 ? String(localized: "1 reply") : String(localized: "\(count) replies"))
         Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold))
       }
       .font(.lnCaptionMedium)
@@ -528,9 +528,10 @@ private struct InboxTranscript: View {
     guard message.sender == "agent", message.visibility != "internal" else { return nil }
     let ai = InboxText.isAI(message)
     if index > 0, run[index - 1].visibility != "internal", InboxText.isAI(run[index - 1]) == ai { return nil }
+    let sender = message.senderName.isEmpty ? String(localized: "Assistant") : message.senderName
     return ai
-      ? InboxSourceTag(text: "\(message.senderName.isEmpty ? "Assistant" : message.senderName) · AI", ai: true)
-      : InboxSourceTag(text: message.senderName.isEmpty ? "Support" : message.senderName, ai: false)
+      ? InboxSourceTag(text: String(localized: "\(sender) · AI"), ai: true)
+      : InboxSourceTag(text: message.senderName.isEmpty ? String(localized: "Support") : message.senderName, ai: false)
   }
 
   /// ChatTranscript.vue's eventLabel, with names and labels where we know them.
@@ -538,31 +539,34 @@ private struct InboxTranscript: View {
     let event = message.event ?? [:]
     switch event["type"]?.inboxText ?? "" {
     case "created":
-      return "Ticket created"
+      return String(localized: "Ticket created")
     case "status.changed":
       // PATCH events nest the change under `status`.
       let key = event["to"]?.inboxText ?? event["status"]?.inboxObject?["to"]?.inboxText ?? ""
-      return "Status changed to \(store.statuses(for: conversation).first { $0.key == key }?.label ?? key)"
+      let label = store.statuses(for: conversation).first { $0.key == key }?.label ?? key
+      return String(localized: "Status changed to \(label)")
     case "assigned":
       let id = event["assignee"]?.inboxText ?? ""
-      if id.isEmpty { return "Assignment cleared" }
-      return "Assigned to \(store.agents.first { $0.id == id }?.inboxName ?? id)"
+      if id.isEmpty { return String(localized: "Assignment cleared") }
+      let name = store.agents.first { $0.id == id }?.inboxName ?? id
+      return String(localized: "Assigned to \(name)")
     case "action.performed":
       let key = event["actionKey"]?.inboxText ?? ""
-      let label = store.type(for: conversation)?.actions.first { $0.key == key }?.label ?? (key.isEmpty ? "Host action" : key)
-      return "\(label) · \(event["result"]?.inboxText ?? "pending")"
+      let label = store.type(for: conversation)?.actions.first { $0.key == key }?.label ?? (key.isEmpty ? String(localized: "Host action") : key)
+      let result = event["result"]?.inboxText ?? String(localized: "pending")
+      return "\(label) · \(result)"
     case "board.linked", "board.unlinked":
       let number = event["number"]?.inboxText ?? ""
       let title = event["title"]?.inboxText ?? ""
-      let item = "\(number.isEmpty ? "" : "#\(number) ")\(title.isEmpty ? "an item" : title)"
-      return event["type"]?.inboxText == "board.linked" ? "Linked to planning item \(item)" : "Unlinked from planning item \(item)"
+      let item = "\(number.isEmpty ? "" : "#\(number) ")\(title.isEmpty ? String(localized: "an item") : title)"
+      return event["type"]?.inboxText == "board.linked" ? String(localized: "Linked to planning item \(item)") : String(localized: "Unlinked from planning item \(item)")
     case "feedback.linked", "feedback.unlinked":
       let number = event["number"]?.inboxText ?? ""
       let title = event["title"]?.inboxText ?? ""
-      let post = "\(number.isEmpty ? "" : "#\(number) ")\(title.isEmpty ? "a post" : title)"
-      return event["type"]?.inboxText == "feedback.linked" ? "Linked to feedback post \(post)" : "Unlinked from feedback post \(post)"
+      let post = "\(number.isEmpty ? "" : "#\(number) ")\(title.isEmpty ? String(localized: "a post") : title)"
+      return event["type"]?.inboxText == "feedback.linked" ? String(localized: "Linked to feedback post \(post)") : String(localized: "Unlinked from feedback post \(post)")
     default:
-      return "Ticket updated"
+      return String(localized: "Ticket updated")
     }
   }
 }
@@ -792,7 +796,7 @@ private struct InboxComposer: View {
     do {
       let result = try await store.draftReply()
       insert(result.draft)
-      if result.sources.isEmpty { draftNote = "No FAQ matched this question, so check the facts." }
+      if result.sources.isEmpty { draftNote = String(localized: "No FAQ matched this question, so check the facts.") }
     } catch {
       store.threadError = error.localizedDescription
     }
@@ -804,7 +808,7 @@ private struct InboxComposer: View {
       guard let raw = try? await item.loadTransferable(type: Data.self),
             let encoded = await Task.detached(priority: .userInitiated, operation: { InboxImageEncoding.encode(raw) }).value,
             let thumbnail = PlatformImage(data: encoded.thumbnail) else {
-        workspace.inbox.threadError = "Couldn't read that image."
+        workspace.inbox.threadError = String(localized: "Couldn't read that image.")
         continue
       }
       images.append(InboxPickedImage(data: encoded.file, thumbnail: thumbnail))
@@ -978,8 +982,8 @@ private enum InboxText {
   static func separator(_ raw: String) -> (day: String, time: String) {
     guard let date = DateText.date(raw) else { return ("", "") }
     let time = date.formatted(date: .omitted, time: .shortened)
-    if Calendar.current.isDateInToday(date) { return ("Today", time) }
-    if Calendar.current.isDateInYesterday(date) { return ("Yesterday", time) }
+    if Calendar.current.isDateInToday(date) { return (String(localized: "Today"), time) }
+    if Calendar.current.isDateInYesterday(date) { return (String(localized: "Yesterday"), time) }
     if Date().timeIntervalSince(date) < 7 * 86_400 { return (date.formatted(.dateTime.weekday(.abbreviated)), time) }
     return (date.formatted(.dateTime.day().month(.abbreviated).year()), time)
   }

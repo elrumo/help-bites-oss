@@ -369,7 +369,9 @@ private struct FeedbackBoardView: View {
         ProjectBreadcrumb(projectId: store.projectId, title: "Feedback")
         if let config = store.config {
           if config.enabled {
-            Text("\(store.posts.count) \(store.posts.count == 1 ? "post" : "posts"), \(store.totalVotes) \(store.totalVotes == 1 ? "vote" : "votes")")
+            let posts = store.posts.count == 1 ? String(localized: "1 post") : String(localized: "\(store.posts.count) posts")
+            let votes = store.totalVotes == 1 ? String(localized: "1 vote") : String(localized: "\(store.totalVotes) votes")
+            Text("\(posts), \(votes)")
               .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
           } else {
             Text("Feedback is off").font(.lnCaption).foregroundStyle(Theme.warning)
@@ -395,7 +397,7 @@ private struct FeedbackBoardView: View {
     let ready = store.changelogPublic && url != nil && !key.isEmpty
     Menu {
       Button {
-        if ready { Clipboard.copy(url?.absoluteString) } else { store.alert = "Turn on the changelog first: switch on “Public changelog” in Project → Changelog → Settings. It does not depend on Feedback." }
+        if ready { Clipboard.copy(url?.absoluteString) } else { store.alert = String(localized: "Turn on the changelog first: switch on “Public changelog” in Project → Changelog → Settings. It does not depend on Feedback.") }
       } label: { Label("Copy changelog link", systemImage: "link") }
       if ready, let url { Link(destination: url) { Label("Open public changelog", systemImage: "arrow.up.right.square") } }
     } label: { Label("Public changelog", systemImage: "sparkles") }
@@ -406,7 +408,7 @@ private struct FeedbackBoardView: View {
     ScrollView {
       EmptyState(
         systemImage: "lightbulb",
-        title: "Public feedback for \(store.projectName.isEmpty ? "this project" : store.projectName)",
+        title: "Public feedback for \(store.projectName.isEmpty ? String(localized: "this project") : store.projectName)",
         message: "Users post ideas and bugs, vote on what matters and follow progress through a roadmap and changelog. Embed the ready-made page with one script tag, or build your own UI on the API."
       ) {
         Button("Customize first") { showSettings = true }.buttonStyle(.lnSecondary)
@@ -457,7 +459,7 @@ private struct FeedbackBoardView: View {
       }
     } label: {
       HStack(spacing: 6) {
-        Text(store.typeFilter.isEmpty ? "All types" : config.type(store.typeFilter)?.label ?? store.typeFilter).lineLimit(1)
+        Text(store.typeFilter.isEmpty ? String(localized: "All types") : config.type(store.typeFilter)?.label ?? store.typeFilter).lineLimit(1)
         Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
       }
       .font(.lnMetaMedium)

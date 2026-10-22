@@ -63,7 +63,7 @@ struct TicketTypesScreen: View {
   private func editor(_ type: TicketsType) -> some View {
     VStack(alignment: .leading, spacing: 18) {
       VStack(alignment: .leading, spacing: 4) {
-        Text(creating ? "New ticket type" : type.name).font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+        Text(creating ? String(localized: "New ticket type") : type.name).font(.lnHeading).foregroundStyle(Theme.textHighlighted)
         Text("A type defines its lifecycle, intake schema, and host-side actions.").font(.lnMeta).foregroundStyle(Theme.textMuted)
       }
       pair {
@@ -99,7 +99,7 @@ struct TicketTypesScreen: View {
     }
   }
 
-  private func json(_ label: String, hint: String, text: Binding<String>, minHeight: CGFloat) -> some View {
+  private func json(_ label: LocalizedStringKey, hint: LocalizedStringKey, text: Binding<String>, minHeight: CGFloat) -> some View {
     LabeledField(label: label, hint: hint) {
       LinearTextEditor(text: text, minHeight: minHeight, monospaced: true)
         .textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -139,7 +139,7 @@ struct TicketTypesScreen: View {
     return !actions.isEmpty
   }
 
-  private func toggle(_ label: String, isOn: Binding<Bool>) -> some View {
+  private func toggle(_ label: LocalizedStringKey, isOn: Binding<Bool>) -> some View {
     Toggle(isOn: isOn) { Text(label).font(.lnCallout).foregroundStyle(Theme.text) }.tint(Theme.accent)
   }
 
@@ -245,9 +245,9 @@ struct TicketTypesScreen: View {
       return nil
     } catch let DecodingError.dataCorrupted(context) {
       let detail = (context.underlyingError as NSError?)?.userInfo[NSDebugDescriptionErrorKey] as? String
-      return "Not valid JSON" + (detail.map { ": \($0)" } ?? "")
+      return String(localized: "Not valid JSON") + (detail.map { ": \($0)" } ?? "")
     } catch {
-      return "Must be a JSON array"
+      return String(localized: "Must be a JSON array")
     }
   }
 }

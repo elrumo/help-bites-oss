@@ -52,7 +52,7 @@ struct ProjectsScreen: View {
       ProjectTile(id: project.id, name: project.name, accent: project.theme.accent, icon: project.iconUrl, size: 20)
       Text(project.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
     }
-    let site = Text(host(project.siteUrl) ?? "No site URL").font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
+    let site = Text(host(project.siteUrl) ?? String(localized: "No site URL")).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
     let key = Text(project.publicKey).font(.lnMono).foregroundStyle(Theme.textMuted).lineLimit(1).truncationMode(.middle)
     Group {
       if wide {

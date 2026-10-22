@@ -34,7 +34,7 @@ struct SegmentsList: View {
             }
             Spacer()
             if segment.auto == true { Tag(text: "Auto") }
-            Text(counts[segment.id].map { "\($0.formatted()) people" } ?? "…").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
+            Text(counts[segment.id].map { String(localized: "\($0.formatted()) people") } ?? "…").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
           }
           .frame(minHeight: Metrics.rowHeight)
           .contentShape(Rectangle())
@@ -132,7 +132,7 @@ struct SegmentEditor: View {
         Section("Who matches") {
           if !previewError.isEmpty { ErrorText(message: previewError) }
           else if let count {
-            Text("\(count.formatted()) \(count == 1 ? "contact matches" : "contacts match")").font(.lnRow)
+            Text("\(count.formatted()) \(count == 1 ? String(localized: "contact matches") : String(localized: "contacts match"))").font(.lnRow)
             if !sample.isEmpty { Text(sample.map(\.displayName).joined(separator: ", ")).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(3) }
           } else { Text("Counting…").font(.lnMeta).foregroundStyle(Theme.textMuted) }
         }

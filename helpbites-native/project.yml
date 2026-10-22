@@ -1,6 +1,7 @@
 name: HelpBitesNative
 options:
   bundleIdPrefix: com.helpbites
+  developmentLanguage: en
   deploymentTarget:
     iOS: '18.0'
     macOS: '15.0'
@@ -8,6 +9,9 @@ settings:
   base:
     SWIFT_VERSION: '6.0'
     SWIFT_STRICT_CONCURRENCY: complete
+    # Panel languages (i18n/locales): the catalog App/Localizable.xcstrings holds every string.
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     Release:
       # Fast launch and a small binary: optimise the whole module at once, strip dead code

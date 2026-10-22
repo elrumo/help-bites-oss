@@ -84,7 +84,7 @@ struct InboxPropertiesPanel: View {
     return store.messages.last { $0.sender == "user" && $0.kind != "event" && !$0.body.isEmpty }?.body ?? ""
   }
 
-  private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+  private func section<Content: View>(_ title: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
     VStack(alignment: .leading, spacing: 4) {
       SectionLabel(title).padding(.horizontal, 8).padding(.bottom, 2)
       content()
@@ -102,7 +102,7 @@ struct InboxPropertiesPanel: View {
       }
       .pickerStyle(.inline)
     } label: {
-      InboxPropertyRow(label: "Status", value: current?.label ?? conversation.status.capitalized) {
+      InboxPropertyRow(label: String(localized: "Status"), value: current?.label ?? conversation.status.capitalized) {
         StatusIcon(category: current?.category ?? conversation.statusCategory ?? "open")
       }
     }
@@ -112,11 +112,11 @@ struct InboxPropertiesPanel: View {
     let priority = conversation.priority ?? "normal"
     return Menu {
       Picker("Priority", selection: Binding(get: { priority }, set: { value in Task { await store.triage(InboxTriage(priority: value)) } })) {
-        ForEach(InboxPriority.all, id: \.self) { Text($0.capitalized).tag($0) }
+        ForEach(InboxPriority.all, id: \.self) { Text(InboxPriority.label($0)).tag($0) }
       }
       .pickerStyle(.inline)
     } label: {
-      InboxPropertyRow(label: "Priority", value: priority.capitalized) { PriorityIcon(priority: priority) }
+      InboxPropertyRow(label: String(localized: "Priority"), value: InboxPriority.label(priority)) { PriorityIcon(priority: priority) }
     }
   }
 
@@ -130,7 +130,7 @@ struct InboxPropertiesPanel: View {
       }
       .pickerStyle(.inline)
     } label: {
-      InboxPropertyRow(label: "Assignee", value: assignee?.inboxName ?? (assigneeId.isEmpty ? "Unassigned" : "Assigned")) {
+      InboxPropertyRow(label: String(localized: "Assignee"), value: assignee?.inboxName ?? (assigneeId.isEmpty ? String(localized: "Unassigned") : String(localized: "Assigned"))) {
         if let assignee {
           Avatar(name: assignee.inboxName, size: 16)
         } else {
@@ -145,7 +145,7 @@ struct InboxPropertiesPanel: View {
   private func customer(_ store: InboxStore) -> some View {
     let user = store.endUsers[conversation.endUserId]
     let project = workspace.project(conversation.projectId)
-    let name = user?.inboxName ?? "Unknown customer"
+    let name = user?.inboxName ?? String(localized: "Unknown customer")
     return VStack(alignment: .leading, spacing: 10) {
       HStack(spacing: 10) {
         Avatar(name: name, size: 28)
@@ -162,7 +162,7 @@ struct InboxPropertiesPanel: View {
           Text("Project").foregroundStyle(Theme.textMuted)
           HStack(spacing: 6) {
             ProjectDot(id: conversation.projectId, accent: project?.theme.accent, icon: project?.iconUrl)
-            Text(project?.name ?? "Unknown").foregroundStyle(Theme.text).lineLimit(1)
+            Text(project?.name ?? String(localized: "Unknown")).foregroundStyle(Theme.text).lineLimit(1)
           }
         }
         if let user, !user.externalId.isEmpty {
@@ -196,7 +196,7 @@ struct InboxPropertiesPanel: View {
     let mrr = billing.currency.isEmpty ? billing.mrr.formatted() : Money.format(billing.mrr, billing.currency)
     return VStack(alignment: .leading, spacing: 6) {
       HStack(spacing: 8) {
-        Text(billing.plan.isEmpty ? "No plan" : billing.plan).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+        Text(billing.plan.isEmpty ? String(localized: "No plan") : billing.plan).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).lineLimit(1)
         Spacer(minLength: 0)
         if billing.status != "none" { Tag(text: billing.status.replacingOccurrences(of: "_", with: " ").capitalized) }
       }
@@ -219,7 +219,7 @@ struct InboxPropertiesPanel: View {
     } label: {
       HStack(spacing: 8) {
         StatusIcon(category: past.statusCategory)
-        Text(past.subject.isEmpty ? (past.lastMessagePreview.isEmpty ? "Conversation" : past.lastMessagePreview) : past.subject).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
+        Text(past.subject.isEmpty ? (past.lastMessagePreview.isEmpty ? String(localized: "Conversation") : past.lastMessagePreview) : past.subject).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
         Spacer(minLength: 0)
         Text(DateText.short(past.lastMessageAt ?? past.createdAt)).font(.lnCaption).foregroundStyle(Theme.textDimmed)
       }
@@ -430,7 +430,7 @@ private struct InboxFieldEditors: View {
           }
           .pickerStyle(.inline)
         } label: {
-          InboxFieldBox { Text(current.isEmpty ? "None" : current).foregroundStyle(current.isEmpty ? Theme.textDimmed : Theme.text) }
+          InboxFieldBox { Text(current.isEmpty ? String(localized: "None") : current).foregroundStyle(current.isEmpty ? Theme.textDimmed : Theme.text) }
         }
         .disabled(locked)
       }
@@ -498,12 +498,12 @@ private struct InboxActions: View {
     .confirmationDialog(confirming?.confirm ?? "", isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }), titleVisibility: .visible, presenting: confirming) { action in
       Button(title(action), role: action.destructive == true ? .destructive : nil) { run(action, note: "") }
     }
-    .alert(noting.map(title) ?? "Action", isPresented: Binding(get: { noting != nil }, set: { if !$0 { noting = nil } }), presenting: noting) { action in
+    .alert(noting.map(title) ?? String(localized: "Action"), isPresented: Binding(get: { noting != nil }, set: { if !$0 { noting = nil } }), presenting: noting) { action in
       TextField("Internal note", text: $note)
       Button("Cancel", role: .cancel) {}
       Button(title(action), role: action.destructive == true ? .destructive : nil) { run(action, note: note.trimmingCharacters(in: .whitespacesAndNewlines)) }
     } message: { action in
-      Text(action.confirm?.isEmpty == false ? action.confirm ?? "" : "This action needs an internal note for your team.")
+      Text(action.confirm?.isEmpty == false ? action.confirm ?? "" : String(localized: "This action needs an internal note for your team."))
     }
   }
 

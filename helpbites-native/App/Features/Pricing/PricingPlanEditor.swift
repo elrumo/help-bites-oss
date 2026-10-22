@@ -28,7 +28,7 @@ struct PricingPlanCard: View {
         Button { withAnimation(.snappy) { open.toggle() } } label: {
           HStack(spacing: 8) {
             Image(systemName: open ? "chevron.down" : "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted).frame(width: 12)
-            Text(plan.name.isEmpty ? (product?.name ?? "Plan \(index + 1)") : plan.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+            Text(plan.name.isEmpty ? (product?.name ?? String(localized: "Plan \(index + 1)")) : plan.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
             Text(plan.key).font(.lnMono).foregroundStyle(Theme.textDimmed).lineLimit(1)
             if !plan.badge.isEmpty { Tag(text: plan.badge) }
             Spacer(minLength: 4)
@@ -110,7 +110,7 @@ struct PricingPlanCard: View {
         .pickerStyle(.menu).labelsHidden()
       }
       HStack(spacing: 8) {
-        PricingAmountField(placeholder: "Written price (\(currency.uppercased()))", amount: Binding(get: { plan.prices[slot].amount }, set: { plan.prices[slot].amount = $0 }))
+        PricingAmountField(placeholder: String(localized: "Written price (\(currency.uppercased()))"), amount: Binding(get: { plan.prices[slot].amount }, set: { plan.prices[slot].amount = $0 }))
         TextField("App Store product", text: Binding(get: { plan.prices[slot].appStoreProduct }, set: { plan.prices[slot].appStoreProduct = $0.clipped(to: PricingLimits.product) }))
           .textFieldStyle(.linear).font(.lnMono).textInputAutocapitalization(.never).autocorrectionDisabled()
       }

@@ -166,8 +166,8 @@ struct AssistantDetailScreen: View {
   }
 
   private var llmLine: String {
-    guard let llm, llm.configured else { return "No LLM endpoint configured. Retrieval testing still works; auto-reply will not run." }
-    return "Ready — \(llm.model) via \(llm.usingDefaultEndpoint ? "default" : "custom") endpoint."
+    guard let llm, llm.configured else { return String(localized: "No LLM endpoint configured. Retrieval testing still works; auto-reply will not run.") }
+    return llm.usingDefaultEndpoint ? String(localized: "Ready — \(llm.model) via default endpoint.") : String(localized: "Ready — \(llm.model) via custom endpoint.")
   }
 
   // MARK: Auto-reply
@@ -240,7 +240,7 @@ struct AssistantDetailScreen: View {
 
   /// "Any type", the project's ticket types, and a key no longer among them so it still shows.
   private func typeOptions(including key: String) -> [AssistantOption] {
-    var options = [AssistantOption(value: "", label: "Any type")] + types.map { AssistantOption(value: $0.key, label: $0.name) }
+    var options = [AssistantOption(value: "", label: String(localized: "Any type"))] + types.map { AssistantOption(value: $0.key, label: $0.name) }
     if !key.isEmpty, !types.contains(where: { $0.key == key }) { options.append(AssistantOption(value: key, label: key)) }
     return options
   }
@@ -443,12 +443,12 @@ struct AssistantSelectField: View {
   var body: some View {
     let current = options.first { $0.value == selection }
     Menu {
-      Picker(placeholder, selection: $selection) {
+      Picker(LocalizedStringKey(placeholder), selection: $selection) {
         ForEach(options, id: \.self) { Text($0.label).tag($0.value) }
       }
     } label: {
       HStack(spacing: 8) {
-        Text(current?.label ?? placeholder)
+        (current.map { Text($0.label) } ?? Text(LocalizedStringKey(placeholder)))
           .foregroundStyle(current == nil ? Theme.textDimmed : Theme.text)
           .lineLimit(1)
         Spacer(minLength: 0)
@@ -469,7 +469,7 @@ struct AssistantSelectField: View {
 struct AssistantDashedNote: View {
   let text: String
   var body: some View {
-    Text(text)
+    Text(LocalizedStringKey(text))
       .font(.lnMeta).foregroundStyle(Theme.textMuted).multilineTextAlignment(.center)
       .frame(maxWidth: .infinity)
       .padding(16)

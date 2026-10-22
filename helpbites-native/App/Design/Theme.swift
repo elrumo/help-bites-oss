@@ -93,7 +93,13 @@ enum Metrics {
 enum ThemePreference: String, CaseIterable, Identifiable {
   case system, light, dark
   var id: String { rawValue }
-  var label: String { rawValue.capitalized }
+  var label: String {
+    switch self {
+    case .system: String(localized: "System")
+    case .light: String(localized: "Light")
+    case .dark: String(localized: "Dark")
+    }
+  }
   var scheme: ColorScheme? { self == .light ? .light : self == .dark ? .dark : nil }
   var systemImage: String { self == .system ? "circle.lefthalf.filled" : self == .light ? "sun.max" : "moon" }
 }

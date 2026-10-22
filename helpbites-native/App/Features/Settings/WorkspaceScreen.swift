@@ -33,7 +33,7 @@ struct WorkspaceScreen: View {
             HStack(spacing: 12) {
               Button { Task { await save() } } label: { if saving { ProgressView() } else { Text("Save") } }
                 .buttonStyle(.lnPrimary).disabled(!dirty || saving || name.trimmingCharacters(in: .whitespaces).isEmpty)
-              if saved && !dirty { SuccessText(message: "Saved") }
+              if saved && !dirty { SuccessText(message: String(localized: "Saved")) }
             }
           } else {
             Text("Only admins and owners can change the workspace's settings.").font(.lnMeta).foregroundStyle(Theme.textMuted)
@@ -68,6 +68,7 @@ struct WorkspaceScreen: View {
         }
 
         if session.canManage { TransferSection() }
+        SendingDomainsSection()
 
         if session.isOwner {
           VStack(alignment: .leading, spacing: 8) {
@@ -120,7 +121,7 @@ struct WorkspaceScreen: View {
     defer { exporting = false }
     do {
       let _: Output = try await session.send("/v1/admin/workspace/export")
-      exportNotice = "We'll email you a link. The export runs in the background; a big workspace takes a few minutes."
+      exportNotice = String(localized: "We'll email you a link. The export runs in the background; a big workspace takes a few minutes.")
     } catch { exportError = error.localizedDescription }
   }
 }

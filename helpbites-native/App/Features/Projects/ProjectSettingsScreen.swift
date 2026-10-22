@@ -25,6 +25,7 @@ struct ProjectSettingsScreen: View {
   private static let swatches = ["#5e6ad2", "#0f766e", "#0369a1", "#0e7490", "#4d7c0f", "#b45309", "#c2410c", "#be123c", "#7c3aed"]
 
   private var dirty: Bool { form != snapshot }
+  private var nameOrThis: String { form.name.isEmpty ? String(localized: "this project") : form.name }
   private var validAccent: Bool { form.accent.isEmpty || form.accent.trimmingCharacters(in: .whitespaces).wholeMatch(of: /#[0-9a-fA-F]{6}/) != nil }
 
   var body: some View {
@@ -40,7 +41,7 @@ struct ProjectSettingsScreen: View {
             notifications
             sidebar
             collaborators
-            section("GitHub repos", "The code behind \(form.name.isEmpty ? "this project" : form.name). AI error notes and legal documents read these; HelpBites never writes to them.") {
+            section("GitHub repos", "The code behind \(nameOrThis). AI error notes and legal documents read these; HelpBites never writes to them.") {
               ProjectReposSection(projectId: projectId)
             }
             if session.canManage {
@@ -99,7 +100,7 @@ struct ProjectSettingsScreen: View {
             }
             HStack(spacing: 6) {
               ProjectTile(id: projectId, name: form.name, accent: form.accent, icon: form.iconUrl, size: 16)
-              Text("\(form.name.isEmpty ? "Project" : form.name) in the sidebar").font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
+              Text("\(form.name.isEmpty ? String(localized: "Project") : form.name) in the sidebar").font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
             }
           }
         }
@@ -169,7 +170,7 @@ struct ProjectSettingsScreen: View {
     section("Chat widget", "What users can do when they start a chat.") {
       cardBody {
         LabeledField(label: "Chat notice", hint: "Shown centered at the top of every new chat. Leave blank to hide.") {
-          LinearTextEditor(text: $form.chatNotice, placeholder: "A human will always read this chat, but an AI might answer your questions first.", minHeight: 64)
+          LinearTextEditor(text: $form.chatNotice, placeholder: String(localized: "A human will always read this chat, but an AI might answer your questions first."), minHeight: 64)
         }
         toggle("Users can attach images", isOn: $form.allowAttachments)
         toggle("Allow email-only users (no sign-in)", detail: "Apps without a backend can chat and post feedback with just an email address. After a few actions, the person must confirm the address with a code we email them.", isOn: $form.allowAnonymousUsers)
@@ -205,7 +206,7 @@ struct ProjectSettingsScreen: View {
             VStack(alignment: .leading, spacing: 12) {
               Text(group.label).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
               ForEach(ProjectSection.allCases.filter { $0.group == group }) { item in
-                toggle(item.label, isOn: shown(item))
+                toggle(LocalizedStringKey(item.label), isOn: shown(item))
               }
             }
           }
@@ -215,7 +216,7 @@ struct ProjectSettingsScreen: View {
   }
 
   private var collaborators: some View {
-    section("Collaborators", "The people who answer \(form.name.isEmpty ? "this project" : form.name)'s chats.") {
+    section("Collaborators", "The people who answer \(nameOrThis)'s chats.") {
       cardBody {
         Text("Everyone on your team can open this project and every other one.").font(.lnMeta).foregroundStyle(Theme.textMuted)
         if !people.isEmpty {
@@ -247,7 +248,7 @@ struct ProjectSettingsScreen: View {
 
   private var saveBar: some View {
     HStack(spacing: 10) {
-      Text(saveError.isEmpty ? "Unsaved changes" : saveError).font(.lnMeta).foregroundStyle(saveError.isEmpty ? Theme.textMuted : Theme.error).lineLimit(2)
+      Text(saveError.isEmpty ? String(localized: "Unsaved changes") : saveError).font(.lnMeta).foregroundStyle(saveError.isEmpty ? Theme.textMuted : Theme.error).lineLimit(2)
       Button("Discard") { discard() }.buttonStyle(.lnGhost).disabled(saving)
       Button { Task { await save() } } label: {
         if saving { ProgressView().tint(.white) } else { Text("Save changes") }
@@ -279,7 +280,7 @@ struct ProjectSettingsScreen: View {
             Text(String((form.name.isEmpty ? "?" : form.name).prefix(1)).uppercased()).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white)
               .frame(width: 24, height: 24).background(accent, in: RoundedRectangle(cornerRadius: 6))
           }
-          Text(form.name.isEmpty ? "Your project" : form.name).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+          Text(form.name.isEmpty ? String(localized: "Your project") : form.name).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.textHighlighted).lineLimit(1)
           Spacer(minLength: 0)
         }
         .padding(.horizontal, 12).frame(height: 44)
@@ -317,7 +318,7 @@ struct ProjectSettingsScreen: View {
   // MARK: Small pieces
 
   /// A titled block: heading, one-line hint, then the content.
-  private func section<Content: View>(_ title: String, _ hint: String, @ViewBuilder content: () -> Content) -> some View {
+  private func section<Content: View>(_ title: LocalizedStringKey, _ hint: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
     VStack(alignment: .leading, spacing: 12) {
       VStack(alignment: .leading, spacing: 2) {
         Text(title).font(.lnHeading).foregroundStyle(Theme.textHighlighted)
@@ -335,7 +336,7 @@ struct ProjectSettingsScreen: View {
   }
 
   /// A row of the branding card: label and hint beside (iPad, Mac) or above (iPhone) the control.
-  private func row<Content: View>(_ title: String, _ hint: String, @ViewBuilder content: () -> Content) -> some View {
+  private func row<Content: View>(_ title: LocalizedStringKey, _ hint: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
     let layout = sizeClass == .regular ? AnyLayout(HStackLayout(alignment: .center, spacing: 16)) : AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
     return layout {
       VStack(alignment: .leading, spacing: 2) {
@@ -370,7 +371,7 @@ struct ProjectSettingsScreen: View {
     } onError: { saveError = $0 }
   }
 
-  private func toggle(_ label: String, detail: String? = nil, isOn: Binding<Bool>) -> some View {
+  private func toggle(_ label: LocalizedStringKey, detail: LocalizedStringKey? = nil, isOn: Binding<Bool>) -> some View {
     Toggle(isOn: isOn) {
       VStack(alignment: .leading, spacing: 2) {
         Text(label).font(.lnCallout).foregroundStyle(Theme.text)
@@ -453,7 +454,7 @@ struct ProjectSettingsScreen: View {
       let magic: [[UInt8]] = [[0x89, 0x50, 0x4E, 0x47], [0xFF, 0xD8, 0xFF], [0x47, 0x49, 0x46], [0x52, 0x49, 0x46, 0x46]]
       let accepted = magic.contains { data.starts(with: $0) }
       guard let file = accepted ? data : PlatformImage(data: data)?.jpegBytes(quality: 0.9) else {
-        throw APIError.server("Only PNG, JPEG, GIF and WebP images are accepted")
+        throw APIError.server(String(localized: "Only PNG, JPEG, GIF and WebP images are accepted"))
       }
       let stored: Attachment = try await session.upload("/v1/admin/projects/\(projectId)/logo", file: file, filename: "logo", mimeType: accepted ? "application/octet-stream" : "image/jpeg")
       set(image, stored.url)
@@ -494,9 +495,9 @@ private enum SettingsImage: Hashable {
   case icon, brand, assistant
   var label: String {
     switch self {
-    case .icon: "Logo"
-    case .brand: "Brand logo"
-    case .assistant: "Assistant avatar"
+    case .icon: String(localized: "Logo")
+    case .brand: String(localized: "Brand logo")
+    case .assistant: String(localized: "Assistant avatar")
     }
   }
   var placeholder: String { self == .brand ? "photo" : "sparkles" }
@@ -526,7 +527,7 @@ private struct ImageSourceButtons: View {
       Task {
         defer { pick = nil }
         do {
-          if let data = try await item.loadTransferable(type: Data.self) { onData(data) } else { onError("Could not read that image") }
+          if let data = try await item.loadTransferable(type: Data.self) { onData(data) } else { onError(String(localized: "Could not read that image")) }
         } catch { onError(error.localizedDescription) }
       }
     }
@@ -536,7 +537,7 @@ private struct ImageSourceButtons: View {
       case .success(let url):
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        if let data = try? Data(contentsOf: url) { onData(data) } else { onError("Could not read that file") }
+        if let data = try? Data(contentsOf: url) { onData(data) } else { onError(String(localized: "Could not read that file")) }
       }
     }
   }

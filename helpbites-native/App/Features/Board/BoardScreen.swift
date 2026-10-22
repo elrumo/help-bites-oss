@@ -109,7 +109,7 @@ struct BoardScreen: View {
     defer { loading = false }
     do {
       let project = try await ProjectsAdminProject.load(projectId, session: session)
-      guard project.board != nil else { throw APIError.server("This server has no project planning yet. Update HelpBites to use it.") }
+      guard project.board != nil else { throw APIError.server(String(localized: "This server has no project planning yet. Update HelpBites to use it.")) }
       apply(project)
       try await loadItems()
       if agents.isEmpty, let team: AgentsResponse = try? await session.get("/v1/admin/agents") { agents = team.agents }
@@ -156,7 +156,7 @@ struct BoardScreen: View {
   func saveLists(_ next: FeedbackBoardConfig) async throws -> FeedbackBoardConfig {
     let project = try await ProjectsAdminProject.save(projectId, ListsPatch(board: ListsPatch.Lists(statuses: next.statuses, labels: next.tags)), workspace: workspace)
     apply(project)
-    guard let board = project.board else { throw APIError.server("Planning could not be saved.") }
+    guard let board = project.board else { throw APIError.server(String(localized: "Planning could not be saved.")) }
     return board.settingsForm
   }
 
@@ -252,7 +252,17 @@ extension BoardConfig {
     FeedbackFormat.date(day: day).map { $0.formatted(.dateTime.month(.abbreviated).day()) }
   }
 
-  static func priorityLabel(_ priority: String) -> String { priority.isEmpty ? "No priority" : priority.capitalized }
+  static func priorityLabel(_ priority: String) -> String { priority.isEmpty ? String(localized: "No priority") : priorityName(priority) }
+
+  static func priorityName(_ priority: String) -> String {
+    switch priority {
+    case "urgent": String(localized: "Urgent")
+    case "high": String(localized: "High")
+    case "normal": String(localized: "Normal")
+    case "low": String(localized: "Low")
+    default: priority.capitalized
+    }
+  }
 }
 
 // MARK: - Screen
@@ -315,7 +325,8 @@ private struct BoardView: View {
         ProjectBreadcrumb(projectId: store.projectId, title: "Planning")
         if let config = store.config {
           if config.enabled {
-            Text("\(store.items.count) \(store.items.count == 1 ? "item" : "items"), \(store.publicCount) on the roadmap")
+            let items = store.items.count == 1 ? String(localized: "1 item") : String(localized: "\(store.items.count) items")
+            Text("\(items), \(store.publicCount) on the roadmap")
               .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
           } else {
             Text("Planning is off").font(.lnCaption).foregroundStyle(Theme.warning)
@@ -352,7 +363,7 @@ private struct BoardView: View {
     ScrollView {
       EmptyState(
         systemImage: "rectangle.split.3x1",
-        title: "Planning for \(store.projectName.isEmpty ? "this project" : store.projectName)",
+        title: "Planning for \(store.projectName.isEmpty ? String(localized: "this project") : store.projectName)",
         message: "Plan the work behind your feedback and support: items on a kanban, linked to the posts and conversations they answer. Pick which ones go on a public roadmap."
       ) {
         Button("Customize first") { showSettings = true }.buttonStyle(.lnSecondary)
@@ -380,7 +391,7 @@ private struct BoardView: View {
             Picker("Priority", selection: $store.priorityFilter) {
               Text("Any priority").tag("")
               Text("No priority").tag("none")
-              ForEach(BoardFormat.priorities, id: \.self) { priority in Text(priority.capitalized).tag(priority) }
+              ForEach(BoardFormat.priorities, id: \.self) { priority in Text(BoardFormat.priorityName(priority)).tag(priority) }
             }
           }
           if !config.labels.isEmpty {
@@ -410,17 +421,17 @@ private struct BoardView: View {
 
   private var assigneeTitle: String {
     switch store.assigneeFilter {
-    case "": "Anyone"
-    case "unassigned": "Unassigned"
-    default: store.agent(store.assigneeFilter)?.inboxName ?? "Assignee"
+    case "": String(localized: "Anyone")
+    case "unassigned": String(localized: "Unassigned")
+    default: store.agent(store.assigneeFilter)?.inboxName ?? String(localized: "Assignee")
     }
   }
 
   private var priorityTitle: String {
     switch store.priorityFilter {
-    case "": "Any priority"
-    case "none": "No priority"
-    default: store.priorityFilter.capitalized
+    case "": String(localized: "Any priority")
+    case "none": String(localized: "No priority")
+    default: BoardFormat.priorityName(store.priorityFilter)
     }
   }
 
@@ -634,9 +645,9 @@ private struct BoardOptionsSection: View {
   let store: BoardStore
 
   private static let layouts = [
-    FeedbackOption(value: "columns", label: "Columns by status"),
-    FeedbackOption(value: "timeline", label: "Timeline by quarter"),
-    FeedbackOption(value: "list", label: "Compact list")
+    FeedbackOption(value: "columns", label: String(localized: "Columns by status")),
+    FeedbackOption(value: "timeline", label: String(localized: "Timeline by quarter")),
+    FeedbackOption(value: "list", label: String(localized: "Compact list"))
   ]
 
   var body: some View {

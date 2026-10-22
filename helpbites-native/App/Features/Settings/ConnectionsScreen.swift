@@ -80,7 +80,7 @@ struct ConnectForm<Fields: View>: View {
       HStack(spacing: 8) {
         Spacer(minLength: 0)
         Button("Cancel", action: onCancel).buttonStyle(.lnGhost)
-        Button(action: onSubmit) { if saving { ProgressView() } else { Text(actionLabel) } }.buttonStyle(.lnPrimaryCompact).disabled(!canSubmit || saving)
+        Button(action: onSubmit) { if saving { ProgressView() } else { Text(LocalizedStringKey(actionLabel)) } }.buttonStyle(.lnPrimaryCompact).disabled(!canSubmit || saving)
       }
     }
     .padding(.top, 10)
@@ -113,7 +113,7 @@ private struct StripeSection: View {
     SettingsSection("Stripe", systemImage: "dollarsign.circle") {
       VStack(alignment: .leading, spacing: 12) {
         Text("Connect a Stripe account to each project that sells something. HelpBites only reads: revenue shows up under the project's Revenue tab, and each person's payments appear on their contact.").font(.lnMeta).foregroundStyle(Theme.textMuted)
-        if !ready { ErrorText(message: "Set HELPBITES_SECRET on the server first: Stripe keys are stored sealed with it.") }
+        if !ready { ErrorText(message: String(localized: "Set HELPBITES_SECRET on the server first: Stripe keys are stored sealed with it.")) }
         if loading && workspace.projects.isEmpty == false && states.isEmpty {
           SkeletonRows(count: 2).padding(-Metrics.gutter)
         } else if workspace.projects.isEmpty {
@@ -140,9 +140,9 @@ private struct StripeSection: View {
     let connection = states[project.id]?.connection
     var status = Text("Not connected")
     if let connection, connection.connected {
-      var line = "\(connection.accountName.isEmpty ? "Stripe" : connection.accountName) · \(connection.livemode ? "Live" : "Test mode")"
-      if !connection.lastError.isEmpty { line += " · last sync failed" }
-      else if let run = connection.lastRunAt { line += " · synced \(Money.logTime(run))" }
+      var line = "\(connection.accountName.isEmpty ? "Stripe" : connection.accountName) · \(connection.livemode ? String(localized: "Live") : String(localized: "Test mode"))"
+      if !connection.lastError.isEmpty { line += " · " + String(localized: "last sync failed") }
+      else if let run = connection.lastRunAt { line += " · " + String(localized: "synced \(Money.logTime(run))") }
       status = Text(line)
     }
     return ProjectConnectionRow(project: project, status: status) {
@@ -209,7 +209,7 @@ private struct TelegramSection: View {
     SettingsSection("Telegram", systemImage: "paperplane") {
       VStack(alignment: .leading, spacing: 12) {
         Text("Connect a Telegram bot to each project to get its error alerts as messages, alongside email. HelpBites only sends.").font(.lnMeta).foregroundStyle(Theme.textMuted)
-        if !ready { ErrorText(message: "Set HELPBITES_SECRET on the server first: bot tokens are stored sealed with it.") }
+        if !ready { ErrorText(message: String(localized: "Set HELPBITES_SECRET on the server first: bot tokens are stored sealed with it.")) }
         if loading && workspace.projects.isEmpty == false && states.isEmpty {
           SkeletonRows(count: 2).padding(-Metrics.gutter)
         } else if workspace.projects.isEmpty {
@@ -235,7 +235,7 @@ private struct TelegramSection: View {
   private func row(_ project: Project) -> some View {
     let connection = states[project.id]?.connection
     let connected = connection?.connected == true
-    return ProjectConnectionRow(project: project, status: Text(connected ? "@\(connection!.botName) → \(connection!.chatName)" : "Not connected")) {
+    return ProjectConnectionRow(project: project, status: Text(connected ? "@\(connection!.botName) → \(connection!.chatName)" : String(localized: "Not connected"))) {
       if connected {
         if session.canManage { IconButton(systemImage: "bolt.slash", label: "Disconnect Telegram from \(project.name)") { disconnecting = project } }
       } else if session.canManage && adding != project.id {

@@ -30,10 +30,10 @@ enum RevenueRange: String, CaseIterable, Identifiable, Sendable {
   var id: String { rawValue }
   var label: String {
     switch self {
-    case .d30: "Last 30 days"
-    case .d90: "Last 90 days"
-    case .m12: "Last 12 months"
-    case .all: "All time"
+    case .d30: String(localized: "Last 30 days")
+    case .d90: String(localized: "Last 90 days")
+    case .m12: String(localized: "Last 12 months")
+    case .all: String(localized: "All time")
     }
   }
 }

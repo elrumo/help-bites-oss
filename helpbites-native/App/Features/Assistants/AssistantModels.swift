@@ -90,10 +90,10 @@ enum AssistantVocabulary {
   static let maxRules = 20
   /// How many readable answers the server counts before it says "that many or more" (ASSISTANT_FAQ_LOOKUP).
   static let faqLookup = 50
-  static let statuses = ["active", "disabled", "draft"].map { AssistantOption(value: $0, label: $0.capitalized) }
-  static let fallbacks = [AssistantOption(value: "human", label: "Hand to a human"), AssistantOption(value: "silent", label: "Stay silent")]
-  static let actions = [AssistantOption(value: "auto", label: "Answer with AI"), AssistantOption(value: "human", label: "Leave for a human")]
-  static let scopes = [AssistantOption(value: "model", label: "Model"), AssistantOption(value: "path", label: "Path"), AssistantOption(value: "faq", label: "FAQ")]
+  static let statuses = ["active", "disabled", "draft"].map { AssistantOption(value: $0, label: knowledgeStatusLabel($0)) }
+  static let fallbacks = [AssistantOption(value: "human", label: String(localized: "Hand to a human")), AssistantOption(value: "silent", label: String(localized: "Stay silent"))]
+  static let actions = [AssistantOption(value: "auto", label: String(localized: "Answer with AI")), AssistantOption(value: "human", label: String(localized: "Leave for a human"))]
+  static let scopes = [AssistantOption(value: "model", label: String(localized: "Model")), AssistantOption(value: "path", label: String(localized: "Path")), AssistantOption(value: "faq", label: String(localized: "FAQ"))]
 
   static func scopeLabel(_ scope: String) -> String {
     scopes.first { $0.value == scope }?.label ?? scope
@@ -111,10 +111,10 @@ extension AssistantReadiness {
   /// What a check says: what is in place, or what is missing.
   func text(_ check: Check) -> String {
     switch check.key {
-    case "llm": check.ok ? "An AI provider is set up." : "No AI provider."
-    case "knowledge": check.ok ? "It can read \(readableFaqs) answer\(faqs == 1 ? "" : "s")" : "No knowledge to read: nothing is assigned, or what is has no active answers."
-    case "active": check.ok ? "Status is active." : "Status is not active."
-    case "autoReply": check.ok ? "Auto-reply is on." : "Auto-reply is off, so it only answers when asked here."
+    case "llm": check.ok ? String(localized: "An AI provider is set up.") : String(localized: "No AI provider.")
+    case "knowledge": check.ok ? (faqs == 1 ? String(localized: "It can read \(readableFaqs) answer") : String(localized: "It can read \(readableFaqs) answers")) : String(localized: "No knowledge to read: nothing is assigned, or what is has no active answers.")
+    case "active": check.ok ? String(localized: "Status is active.") : String(localized: "Status is not active.")
+    case "autoReply": check.ok ? String(localized: "Auto-reply is on.") : String(localized: "Auto-reply is off, so it only answers when asked here.")
     default: check.key
     }
   }
@@ -122,10 +122,10 @@ extension AssistantReadiness {
   /// The link that fixes a missing check, or nil for a key this app does not know.
   func fixLabel(_ check: Check) -> String? {
     switch check.key {
-    case "llm": "Settings → AI"
-    case "knowledge": "Assign knowledge"
-    case "active": "Set it to active"
-    case "autoReply": "Turn it on"
+    case "llm": String(localized: "Settings → AI")
+    case "knowledge": String(localized: "Assign knowledge")
+    case "active": String(localized: "Set it to active")
+    case "autoReply": String(localized: "Turn it on")
     default: nil
     }
   }
@@ -135,9 +135,9 @@ extension AssistantTestResult {
   /// "Would answer", "Would hand it to the team" or "Would stay silent".
   var outcomeLabel: String {
     switch decision.outcome {
-    case "answer": "Would answer"
-    case "handoff": "Would hand it to the team"
-    case "silent": "Would stay silent"
+    case "answer": String(localized: "Would answer")
+    case "handoff": String(localized: "Would hand it to the team")
+    case "silent": String(localized: "Would stay silent")
     default: decision.outcome
     }
   }
@@ -146,8 +146,8 @@ extension AssistantTestResult {
   var ruleConditions: String {
     guard let rule else { return "" }
     var parts: [String] = []
-    if let type = rule.conversationType, !type.isEmpty { parts.append("ticket type \(type)") }
-    if let keywords = rule.keywords, !keywords.isEmpty { parts.append("keywords \(keywords.joined(separator: ", "))") }
+    if let type = rule.conversationType, !type.isEmpty { parts.append(String(localized: "ticket type \(type)")) }
+    if let keywords = rule.keywords, !keywords.isEmpty { parts.append(String(localized: "keywords \(keywords.joined(separator: ", "))")) }
     return parts.isEmpty ? "" : " (\(parts.joined(separator: " · ")))"
   }
 
@@ -156,13 +156,13 @@ extension AssistantTestResult {
     let number = (decision.ruleIndex ?? 0) + 1
     var text: String
     switch decision.reason {
-    case "rule": text = "Rule \(number) sends messages like this to the team\(ruleConditions)."
-    case "default": text = "No rule matched, and the default for messages no rule matches is the team."
-    case "noKnowledge": text = "Nothing it may read matched the question."
-    case "lowConfidence": text = "The best match scored \(Self.percent(decision.best)), under its confidence bar of \(Self.percent(decision.minConfidence))."
-    default: text = "The best match scored \(Self.percent(decision.best)), enough to answer."
+    case "rule": text = String(localized: "Rule \(number) sends messages like this to the team\(ruleConditions).")
+    case "default": text = String(localized: "No rule matched, and the default for messages no rule matches is the team.")
+    case "noKnowledge": text = String(localized: "Nothing it may read matched the question.")
+    case "lowConfidence": text = String(localized: "The best match scored \(Self.percent(decision.best)), under its confidence bar of \(Self.percent(decision.minConfidence)).")
+    default: text = String(localized: "The best match scored \(Self.percent(decision.best)), enough to answer.")
     }
-    if let index = decision.ruleIndex, decision.reason != "rule" { text += " Rule \(index + 1)\(ruleConditions) let it through." }
+    if let index = decision.ruleIndex, decision.reason != "rule" { text += String(localized: " Rule \(index + 1)\(ruleConditions) let it through.") }
     return text
   }
 

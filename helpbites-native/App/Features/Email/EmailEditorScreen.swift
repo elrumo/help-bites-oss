@@ -149,22 +149,22 @@ private struct EmailEditorRoot: View {
 
   private var panelTitle: String {
     switch panel ?? .design {
-    case .design: store.selected.map { $0.kind?.label ?? "Block" } ?? "Email"
-    case .variables: "Variables"
-    case .ai: "AI designer"
-    case .layers: "Layers"
+    case .design: store.selected.map { $0.kind?.label ?? String(localized: "Block") } ?? String(localized: "Email")
+    case .variables: String(localized: "Variables")
+    case .ai: String(localized: "AI designer")
+    case .layers: String(localized: "Layers")
     }
   }
 
   /// Layers, Add, AI, Email and Variables along the bottom, in thumb's reach.
   private var bottomBar: some View {
     HStack(spacing: 0) {
-      barButton("Layers", "square.3.layers.3d") { panel = .layers }
-      EmailAddBlockMenu(store: store) { barLabel("Add", "plus.circle.fill", tint: Theme.accent) }
+      barButton(String(localized: "Layers"), "square.3.layers.3d") { panel = .layers }
+      EmailAddBlockMenu(store: store) { barLabel(String(localized: "Add"), "plus.circle.fill", tint: Theme.accent) }
         .frame(maxWidth: .infinity)
-      barButton("AI", "sparkles") { panel = .ai; detent = .large }
-      barButton("Email", "envelope") { store.selectedId = nil; panel = .design }
-      barButton("Variables", "curlybraces") { panel = .variables }
+      barButton(String(localized: "AI"), "sparkles") { panel = .ai; detent = .large }
+      barButton(String(localized: "Email"), "envelope") { store.selectedId = nil; panel = .design }
+      barButton(String(localized: "Variables"), "curlybraces") { panel = .variables }
     }
     .padding(.top, 6)
     .background(Theme.panel)
@@ -312,7 +312,7 @@ private struct EmailEditorRoot: View {
     ToolbarItem(placement: .principal) {
       Button { renameText = store.name; renaming = true } label: {
         HStack(spacing: 6) {
-          Text(store.name.isEmpty ? "Email" : store.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+          Text(store.name.isEmpty ? String(localized: "Email") : store.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
           saveDot
         }
       }

@@ -5,7 +5,7 @@ import SwiftUI
 // (`normalizeComponentInput`); the editor checks the key and name and shows the server's reason.
 
 /// A component as the editor holds it: the whole definition, HTML and CSS included.
-struct CmsComponentDraft: Codable, Identifiable, Equatable, Sendable {
+struct CmsComponentDraft: Codable, Identifiable, Hashable, Sendable {
   var id = ""
   var key = ""
   var name = ""
@@ -18,7 +18,7 @@ struct CmsComponentDraft: Codable, Identifiable, Equatable, Sendable {
   var builtin: Bool?
 
   var isBuiltin: Bool { builtin == true }
-  var kind: String { root && nestable ? "Page or block" : root ? "Page" : "Block" }
+  var kind: String { root && nestable ? String(localized: "Page or block") : root ? String(localized: "Page") : String(localized: "Block") }
 
   private enum CodingKeys: String, CodingKey { case id, key, name, description, root, nestable, fields, html, css, builtin }
   init() {}
@@ -49,7 +49,7 @@ struct CmsComponentDraft: Codable, Identifiable, Equatable, Sendable {
   }
 }
 
-struct CmsFieldDraft: Codable, Identifiable, Equatable, Sendable {
+struct CmsFieldDraft: Codable, Identifiable, Hashable, Sendable {
   let uid = UUID()
   var key = ""
   var label = ""
@@ -171,7 +171,7 @@ struct PagesComponentsView: View {
                     HStack(spacing: 10) {
                       VStack(alignment: .leading, spacing: 2) {
                         Text(item.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-                        Text(item.description.isEmpty ? "\(item.fields.count) field\(item.fields.count == 1 ? "" : "s")" : item.description)
+                        Text(item.description.isEmpty ? (item.fields.count == 1 ? String(localized: "1 field") : String(localized: "\(item.fields.count) fields")) : item.description)
                           .font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
                         HStack(spacing: 6) {
                           Text(item.key).font(.lnMono).foregroundStyle(Theme.textDimmed)
@@ -296,6 +296,8 @@ struct PageComponentScreen: View {
   @State private var saving = false
   @State private var error = ""
   @State private var confirmDelete = false
+  @State private var chat: PagesChatStore?
+  @State private var assistantOpen = false
 
   init(projectId: String, component: CmsComponentDraft?, taken: Set<String>, onChange: @escaping () async -> Void) {
     self.projectId = projectId
@@ -335,8 +337,23 @@ struct PageComponentScreen: View {
     .panelScreen(form.name.isEmpty ? "New component" : form.name)
     .toolbar {
       ToolbarItem(placement: .primaryAction) {
+        if !isNew {
+          Button { openAssistant() } label: { Label("Assistant", systemImage: "sparkles") }
+        }
+      }
+      ToolbarItem(placement: .primaryAction) {
         Button { Task { await save() } } label: { Text(saving ? "Saving…" : isNew ? "Create" : "Save") }
           .keyboardShortcut("s", modifiers: .command).disabled(!canSave)
+      }
+    }
+    .sheet(isPresented: $assistantOpen) {
+      if let chat {
+        NavigationStack {
+          PagesChatPanel(chat: chat, library: CmsLibrary(), selected: nil, content: nil) { _ in }
+            .panelScreen("Assistant")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { assistantOpen = false } } }
+        }
+        .presentationDetents([.medium, .large])
       }
     }
     .confirmationDialog("Delete “\(form.name)”?", isPresented: $confirmDelete, titleVisibility: .visible) {
@@ -344,6 +361,25 @@ struct PageComponentScreen: View {
     } message: {
       Text("Pages keep their content but stop showing its blocks.")
     }
+  }
+
+  /// The assistant writes this component: what it saves replaces the form.
+  private func openAssistant() {
+    if chat == nil {
+      let store = PagesChatStore(session: session, scope: PagesChatScope(projectId: projectId, componentId: componentId))
+      store.componentSaved = { Task { await reload() } }
+      chat = store
+    }
+    assistantOpen = true
+  }
+
+  private func reload() async {
+    struct Response: Decodable, Sendable { let components: [CmsComponentDraft] }
+    guard let response: Response = try? await session.get("/v1/admin/cms/components", query: ["project": projectId]),
+          let mine = response.components.first(where: { $0.id == componentId }) else { return }
+    form = mine
+    saved = mine
+    await onChange()
   }
 
   private var about: some View {
@@ -412,7 +448,7 @@ struct PageComponentScreen: View {
         TextField("key", text: field.key).textFieldStyle(.linear).font(.lnMono)
           .textInputAutocapitalization(.never).autocorrectionDisabled()
         Picker("Type", selection: field.type) {
-          ForEach(CmsFieldKind.allCases, id: \.rawValue) { Text(Self.typeLabels[$0.rawValue] ?? $0.rawValue).tag($0.rawValue) }
+          ForEach(CmsFieldKind.allCases, id: \.rawValue) { Text(LocalizedStringKey(Self.typeLabels[$0.rawValue] ?? $0.rawValue)).tag($0.rawValue) }
         }
         .labelsHidden().fixedSize()
         Menu {
@@ -479,7 +515,7 @@ struct PageComponentScreen: View {
     return String(key.prefix(40))
   }
 
-  private struct Body: Encodable, Sendable {
+  private struct Payload: Encodable, Sendable {
     let project: String?
     let component: CmsComponentDraft
     func encode(to encoder: Encoder) throws {
@@ -495,8 +531,8 @@ struct PageComponentScreen: View {
     defer { saving = false }
     do {
       let response: Response = isNew
-        ? try await session.send("/v1/admin/cms/components", body: Body(project: projectId, component: form))
-        : try await session.send("/v1/admin/cms/components/\(componentId)", method: "PATCH", body: Body(project: nil, component: form))
+        ? try await session.send("/v1/admin/cms/components", body: Payload(project: projectId, component: form))
+        : try await session.send("/v1/admin/cms/components/\(componentId)", method: "PATCH", body: Payload(project: nil, component: form))
       componentId = response.component.id
       form = response.component
       saved = response.component

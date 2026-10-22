@@ -49,7 +49,7 @@ struct KnowledgeScreen: View {
               ForEach(workspace.projects) { project in Text(project.name).tag(Optional(project.id)) }
             }
           } label: {
-            Label(filter.flatMap { workspace.project($0)?.name } ?? "All projects", systemImage: "line.3.horizontal.decrease.circle")
+            Label(filter.flatMap { workspace.project($0)?.name } ?? String(localized: "All projects"), systemImage: "line.3.horizontal.decrease.circle")
           }
         }
       }
@@ -77,7 +77,7 @@ struct KnowledgeScreen: View {
         let project = workspace.project(model.projectId)
         HStack(spacing: 6) {
           ProjectDot(id: model.projectId, accent: project?.theme.accent, icon: project?.iconUrl)
-          Text(project?.name ?? "Unknown project").font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
+          Text(project?.name ?? String(localized: "Unknown project")).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
         }
       }
       StatusDot(status: model.status)

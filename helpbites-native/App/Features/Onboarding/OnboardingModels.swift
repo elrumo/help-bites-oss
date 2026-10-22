@@ -15,11 +15,11 @@ enum OnboardingLimits {
   static let radius = 32
   /// A flow's key: lowercase letters, digits and dashes.
   static let key = "^[a-z0-9][a-z0-9-]{0,39}$"
-  static let fonts: [(id: String, label: String)] = [("system", "System"), ("rounded", "Rounded"), ("serif", "Serif"), ("mono", "Mono")]
-  static let progress: [(id: String, label: String)] = [("bar", "Bar"), ("dots", "Dots"), ("none", "None")]
+  static let fonts: [(id: String, label: String)] = [("system", String(localized: "System")), ("rounded", String(localized: "Rounded")), ("serif", String(localized: "Serif")), ("mono", String(localized: "Mono"))]
+  static let progress: [(id: String, label: String)] = [("bar", String(localized: "Bar")), ("dots", String(localized: "Dots")), ("none", String(localized: "None"))]
 
   static func validKey(_ value: String) -> Bool { value.range(of: key, options: .regularExpression) != nil }
-  static let keyRule = "The key is 1 to 40 lowercase letters, digits and dashes, starting with a letter or digit."
+  static let keyRule = String(localized: "The key is 1 to 40 lowercase letters, digits and dashes, starting with a letter or digit.")
 }
 
 struct OnboardingStep: Codable, Identifiable, Equatable, Sendable {
@@ -100,7 +100,7 @@ struct OnboardingStepText: Codable, Equatable, Sendable {
 enum StepField: String, CaseIterable, Identifiable, Sendable {
   case title, body, imageAlt, buttonLabel
   var id: String { rawValue }
-  var label: String { switch self { case .title: "Title"; case .body: "Body"; case .imageAlt: "Image description"; case .buttonLabel: "Button label" } }
+  var label: String { switch self { case .title: String(localized: "Title"); case .body: String(localized: "Body"); case .imageAlt: String(localized: "Image description"); case .buttonLabel: String(localized: "Button label") } }
   var limit: Int { switch self { case .title: OnboardingLimits.title; case .body: OnboardingLimits.body; case .imageAlt: OnboardingLimits.alt; case .buttonLabel: OnboardingLimits.label } }
   func original(_ step: OnboardingStep) -> String { switch self { case .title: step.title; case .body: step.body; case .imageAlt: step.imageAlt; case .buttonLabel: step.buttonLabel } }
 }
@@ -228,7 +228,7 @@ struct OnboardingFlowResponse: Decodable, Sendable { let flow: OnboardingFlow }
 
 extension OnboardingFlow {
   /// The flow's state in a list or a header: Draft, or the version apps get.
-  var statusLabel: String { isPublished ? "Published v\(version)" : "Draft" }
+  var statusLabel: String { isPublished ? String(localized: "Published v\(version)") : String(localized: "Draft") }
 }
 
 extension String {

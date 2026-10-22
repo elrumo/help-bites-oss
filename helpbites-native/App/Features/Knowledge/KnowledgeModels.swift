@@ -7,6 +7,18 @@ import UniformTypeIdentifiers
 let knowledgeFAQStatuses = ["draft", "active", "disabled", "archived", "outdated"]
 let knowledgeModelStatuses = ["active", "draft", "archived"]
 
+/// A FAQ's or model's status as a word for the person.
+func knowledgeStatusLabel(_ status: String) -> String {
+  switch status {
+  case "draft": String(localized: "Draft")
+  case "active": String(localized: "Active")
+  case "disabled": String(localized: "Disabled")
+  case "archived": String(localized: "Archived")
+  case "outdated": String(localized: "Outdated")
+  default: status.capitalized
+  }
+}
+
 /// A theme (the API's node): one entry of a model's path tree.
 struct KnowledgeTheme: Decodable, Sendable, Identifiable, Hashable {
   let id, parentId, name, pathCache: String
@@ -115,7 +127,7 @@ struct KnowledgePickedFile: Sendable {
     if status == 401 { await session.recover(APIError.unauthorized); throw APIError.unauthorized }
     guard (200..<300).contains(status) else {
       let failure = try? JSONDecoder().decode(Failure.self, from: data)
-      throw APIError.server(failure?.statusMessage ?? failure?.message ?? "Request failed (\(status)).")
+      throw APIError.server(failure?.statusMessage ?? failure?.message ?? String(localized: "Request failed (\(status))."))
     }
     return try JSONDecoder().decode(Value.self, from: data)
   }

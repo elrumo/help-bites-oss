@@ -26,10 +26,12 @@ struct ConnectErrorTrackingSheet: View {
   @State private var connected: ProjectsAdminProject.ErrorLink?
   @State private var form = ErrorServerForm()
 
-  private static let blurbs = [
-    "glitchtip": "Creates the project, DSN and an inbox alert automatically.",
-    "bugsink": "Creates the project and DSN; you paste one alert webhook into Bugsink."
-  ]
+  private static var blurbs: [String: String] {
+    [
+      "glitchtip": String(localized: "Creates the project, DSN and an inbox alert automatically."),
+      "bugsink": String(localized: "Creates the project and DSN; you paste one alert webhook into Bugsink.")
+    ]
+  }
 
   private var current: TrackerServer? { servers.first { $0.id == selected } }
   private var showForm: Bool { adding || (servers.isEmpty && !loading) }
@@ -51,7 +53,7 @@ struct ConnectErrorTrackingSheet: View {
           ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
           ToolbarItem(placement: .confirmationAction) {
             Button { Task { await connect() } } label: {
-              if connecting { ProgressView() } else { Text(current.map { "Connect \($0.provider == "bugsink" ? "Bugsink" : $0.providerName)" } ?? "Connect") }
+              if connecting { ProgressView() } else { Text(current.map { String(localized: "Connect \($0.provider == "bugsink" ? "Bugsink" : $0.providerName)") } ?? String(localized: "Connect")) }
             }
             .disabled(current == nil || adding || connecting || (!existing.isEmpty && name.trimmingCharacters(in: .whitespaces).isEmpty))
           }
@@ -233,8 +235,10 @@ private struct ErrorServerForm {
   var provider = "glitchtip", name = "", url = "", org = "", token = "", apiUrl = ""
   var busy = false
 
-  static let tokenHelp = [
-    "glitchtip": "From /profile/auth-tokens, with org:read, team:write, project:admin and event:write.",
-    "bugsink": "From Tokens in Bugsink, or bugsink-manage create_auth_token."
-  ]
+  static var tokenHelp: [String: String] {
+    [
+      "glitchtip": String(localized: "From /profile/auth-tokens, with org:read, team:write, project:admin and event:write."),
+      "bugsink": String(localized: "From Tokens in Bugsink, or bugsink-manage create_auth_token.")
+    ]
+  }
 }

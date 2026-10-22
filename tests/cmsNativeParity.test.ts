@@ -6,6 +6,7 @@ import {
   CMS_ANIM_EASINGS, CMS_ANIM_EFFECTS, CMS_ANIM_TRIGGERS, CMS_FIELD_TYPES, CMS_LIMITS, CMS_SLUG, CMS_WIDTHS, DEFAULT_ANIMATION, DEFAULT_STYLE, EMPTY_BRIEF
 } from '../shared/cms/content'
 import { CMS_ICON_NAMES } from '../shared/cms/icons'
+import { CMS_WIZARD_QUESTIONS, wizardPrompt } from '../shared/cms/library'
 import { projectSections } from '../app/utils/projectSections'
 
 // The native Pages screens hand-port the CMS's lists, defaults and limits; this keeps
@@ -41,7 +42,7 @@ describe('native pages parity', () => {
     expect(projectSections.map(s => s.path)).toContain('pages')
     const workspace = readFileSync(join(root, 'helpbites-native/App/Shell/Workspace.swift'), 'utf8')
     expect(workspace).toContain('case pageEntry')
-    for (const file of ['PagesScreen', 'PageEntryScreen', 'PageInspector', 'PageFieldInput', 'PagesFilesView', 'PagesSettingsView']) expect(existsSync(join(feature, `${file}.swift`))).toBe(true)
+    for (const file of ['PagesScreen', 'PageEntryScreen', 'PageInspector', 'PageFieldInput', 'PagesFilesView', 'PagesSettingsView', 'PagesComponents', 'PagesChat', 'PagesWizard']) expect(existsSync(join(feature, `${file}.swift`))).toBe(true)
   })
 
   test('the field types are the same, in order', () => {
@@ -85,5 +86,24 @@ describe('native pages parity', () => {
   test('the brief has the same parts', () => {
     const fields = [...block('struct CmsBrief').matchAll(/^\s*var (\w+)\b/gm)].map(m => m[1]!)
     expect(fields.sort()).toEqual(Object.keys(EMPTY_BRIEF).sort())
+  })
+  test('the assistant wizard asks the same questions and builds the same first message', () => {
+    const wizard = readFileSync(join(feature, 'PagesWizard.swift'), 'utf8')
+    for (const q of CMS_WIZARD_QUESTIONS.filter(x => x.id !== 'layout')) {
+      expect(wizard, q.id).toContain(`id: "${q.id}", label: ${JSON.stringify(q.label)}`)
+      for (const o of q.options ?? []) expect(wizard).toContain(`("${o.value}", ${JSON.stringify(o.label)})`)
+      if (q.help) expect(wizard).toContain(JSON.stringify(q.help).slice(1, -1).replace(/\\"/g, '\\"'))
+    }
+    // The lines of wizardPrompt, word for word.
+    const prompt = wizardPrompt({ product: 'P', repos: ['a/b'], layout: 'new' })
+    for (const line of prompt.split('\n').filter(l => !l.startsWith('- ') && !l.includes('a/b') && !l.startsWith('Build this'))) expect(wizard, line).toContain(line.replace(/'/g, "'"))
+    expect(wizard).toContain('Build this landing page')
+  })
+
+  test('the component editor takes the same field types and limits', () => {
+    const editor = readFileSync(join(feature, 'PagesComponents.swift'), 'utf8')
+    expect(editor).toContain(`static let keyPattern = ${JSON.stringify('^[a-z][a-z0-9_-]{0,39}$')}`)
+    for (const type of CMS_FIELD_TYPES) expect(editor, type).toContain(`"${type}"`)
+    expect(editor).toContain(`.clipped(to: ${CMS_LIMITS.description})`)
   })
 })

@@ -58,8 +58,8 @@ struct PricingLanguagesPanel: View {
     }
     .sheet(isPresented: $translating) {
       TranslateSheet(
-        title: "Translate with AI", source: draft.locale, existing: tags,
-        note: "Fills in the name, words, plans, features, values and button labels of the saved table. Strings you already translated are kept unless you overwrite.",
+        title: String(localized: "Translate with AI"), source: draft.locale, existing: tags,
+        note: String(localized: "Fills in the name, words, plans, features, values and button labels of the saved table. Strings you already translated are kept unless you overwrite."),
         run: { locales, overwrite in try await translate(locales, overwrite) }
       )
     }

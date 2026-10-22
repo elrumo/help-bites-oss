@@ -69,9 +69,16 @@ extension ButtonStyle where Self == GhostButtonStyle {
 /// Round icon button with a hairline ring, like Linear's toolbar icons.
 struct IconButton: View {
   let systemImage: String
-  let label: String
+  let label: LocalizedStringKey
   var bordered = false
   let action: () -> Void
+  init(systemImage: String, label: LocalizedStringKey, bordered: Bool = false, action: @escaping () -> Void) {
+    self.systemImage = systemImage; self.label = label; self.bordered = bordered; self.action = action
+  }
+  /// A label that comes from data or a variable is looked up in the catalog all the same.
+  @_disfavoredOverload init(systemImage: String, label: String, bordered: Bool = false, action: @escaping () -> Void) {
+    self.init(systemImage: systemImage, label: LocalizedStringKey(label), bordered: bordered, action: action)
+  }
   var body: some View {
     Button(action: action) {
       Image(systemName: systemImage)
@@ -90,11 +97,17 @@ struct IconButton: View {
 
 /// Linear's view pill: "Active · Backlog · All issues", with an optional count.
 struct Pill: View {
-  let label: String
+  let label: LocalizedStringKey
   var count: Int? = nil
   var systemImage: String? = nil
   var isActive = false
   let action: () -> Void
+  init(label: LocalizedStringKey, count: Int? = nil, systemImage: String? = nil, isActive: Bool = false, action: @escaping () -> Void) {
+    self.label = label; self.count = count; self.systemImage = systemImage; self.isActive = isActive; self.action = action
+  }
+  @_disfavoredOverload init(label: String, count: Int? = nil, systemImage: String? = nil, isActive: Bool = false, action: @escaping () -> Void) {
+    self.init(label: LocalizedStringKey(label), count: count, systemImage: systemImage, isActive: isActive, action: action)
+  }
   var body: some View {
     Button(action: action) {
       HStack(spacing: 6) {
@@ -117,8 +130,10 @@ struct Pill: View {
 
 /// A non-interactive label chip ("billing", "Master").
 struct Tag: View {
-  let text: String
+  let text: LocalizedStringKey
   var tint: Color? = nil
+  init(text: LocalizedStringKey, tint: Color? = nil) { self.text = text; self.tint = tint }
+  @_disfavoredOverload init(text: String, tint: Color? = nil) { self.init(text: LocalizedStringKey(text), tint: tint) }
   var body: some View {
     HStack(spacing: 5) {
       if let tint { Circle().fill(tint).frame(width: 6, height: 6) }
@@ -152,9 +167,15 @@ extension TextFieldStyle where Self == LinearFieldStyle {
 
 /// A labelled form row: a quiet label, the control, then an optional hint.
 struct LabeledField<Content: View>: View {
-  let label: String
-  var hint: String? = nil
+  let label: LocalizedStringKey
+  var hint: LocalizedStringKey? = nil
   @ViewBuilder let content: () -> Content
+  init(label: LocalizedStringKey, hint: LocalizedStringKey? = nil, @ViewBuilder content: @escaping () -> Content) {
+    self.label = label; self.hint = hint; self.content = content
+  }
+  @_disfavoredOverload init(label: String, hint: String? = nil, @ViewBuilder content: @escaping () -> Content) {
+    self.init(label: LocalizedStringKey(label), hint: hint.map { LocalizedStringKey($0) }, content: content)
+  }
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       Text(label).font(.lnMetaMedium).foregroundStyle(Theme.textToned)
@@ -189,8 +210,14 @@ struct LinearTextEditor: View {
 /// The search field above a list.
 struct SearchField: View {
   @Binding var text: String
-  var prompt = "Search"
+  var prompt: LocalizedStringKey = "Search"
   var onSubmit: () -> Void = {}
+  init(text: Binding<String>, prompt: LocalizedStringKey = "Search", onSubmit: @escaping () -> Void = {}) {
+    _text = text; self.prompt = prompt; self.onSubmit = onSubmit
+  }
+  @_disfavoredOverload init(text: Binding<String>, prompt: String, onSubmit: @escaping () -> Void = {}) {
+    self.init(text: text, prompt: LocalizedStringKey(prompt), onSubmit: onSubmit)
+  }
   var body: some View {
     HStack(spacing: 8) {
       Image(systemName: "magnifyingglass").font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.textDimmed)
@@ -209,8 +236,9 @@ struct SearchField: View {
 
 /// Small grey caption above a block: Linear's sentence-case section labels.
 struct SectionLabel: View {
-  let text: String
-  init(_ text: String) { self.text = text }
+  let text: LocalizedStringKey
+  init(_ text: LocalizedStringKey) { self.text = text }
+  @_disfavoredOverload init(_ text: String) { self.text = LocalizedStringKey(text) }
   var body: some View {
     Text(text).font(.lnCaptionMedium).foregroundStyle(Theme.textMuted).frame(maxWidth: .infinity, alignment: .leading)
   }
@@ -240,9 +268,11 @@ struct CardRow<Content: View>: View {
 
 /// A list group header ("Open 4"): grey band with the status glyph and count.
 struct GroupHeader: View {
-  let title: String
+  let title: LocalizedStringKey
   var count: Int? = nil
   var leading: AnyView? = nil
+  init(title: LocalizedStringKey, count: Int? = nil, leading: AnyView? = nil) { self.title = title; self.count = count; self.leading = leading }
+  @_disfavoredOverload init(title: String, count: Int? = nil, leading: AnyView? = nil) { self.init(title: LocalizedStringKey(title), count: count, leading: leading) }
   var body: some View {
     HStack(spacing: 8) {
       if let leading { leading }
@@ -259,9 +289,15 @@ struct GroupHeader: View {
 /// Linear's empty view: a quiet glyph in a bordered tile, what goes here, and the action that fills it.
 struct EmptyState<Actions: View>: View {
   let systemImage: String
-  let title: String
-  var message: String? = nil
+  let title: LocalizedStringKey
+  var message: LocalizedStringKey? = nil
   @ViewBuilder var actions: () -> Actions
+  init(systemImage: String, title: LocalizedStringKey, message: LocalizedStringKey? = nil, @ViewBuilder actions: @escaping () -> Actions) {
+    self.systemImage = systemImage; self.title = title; self.message = message; self.actions = actions
+  }
+  @_disfavoredOverload init(systemImage: String, title: String, message: String? = nil, @ViewBuilder actions: @escaping () -> Actions) {
+    self.init(systemImage: systemImage, title: LocalizedStringKey(title), message: message.map { LocalizedStringKey($0) }, actions: actions)
+  }
   var body: some View {
     VStack(spacing: 0) {
       Image(systemName: systemImage)
@@ -280,8 +316,11 @@ struct EmptyState<Actions: View>: View {
 }
 
 extension EmptyState where Actions == EmptyView {
-  init(systemImage: String, title: String, message: String? = nil) {
+  init(systemImage: String, title: LocalizedStringKey, message: LocalizedStringKey? = nil) {
     self.init(systemImage: systemImage, title: title, message: message) { EmptyView() }
+  }
+  @_disfavoredOverload init(systemImage: String, title: String, message: String? = nil) {
+    self.init(systemImage: systemImage, title: LocalizedStringKey(title), message: message.map { LocalizedStringKey($0) }) { EmptyView() }
   }
 }
 
@@ -301,7 +340,7 @@ struct PlanLockNotice: View {
   let feature: String
   @Environment(SessionStore.self) private var session
   var body: some View {
-    Label("\(PlanFeature.label(feature)) is not part of the \(session.plan?.name ?? "current") plan. Anything already here is kept.", systemImage: "lock")
+    Label("\(PlanFeature.label(feature)) is not part of the \(session.plan?.name ?? String(localized: "current")) plan. Anything already here is kept.", systemImage: "lock")
       .font(.lnMeta).foregroundStyle(Theme.textMuted)
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 12).padding(.vertical, 8)
@@ -355,16 +394,22 @@ struct ReorderControls: View {
 
 /// A `#rrggbb` setting with a colour picker; empty means the default, which `empty` names.
 struct OptionalColorField: View {
-  let label: String
+  let label: LocalizedStringKey
   @Binding var hex: String
   /// What the picker shows while the value is empty.
   var fallback: Color = Theme.accent
-  let empty: String
+  let empty: LocalizedStringKey
+  init(label: LocalizedStringKey, hex: Binding<String>, fallback: Color = Theme.accent, empty: LocalizedStringKey) {
+    self.label = label; _hex = hex; self.fallback = fallback; self.empty = empty
+  }
+  @_disfavoredOverload init(label: String, hex: Binding<String>, fallback: Color = Theme.accent, empty: String) {
+    self.init(label: LocalizedStringKey(label), hex: hex, fallback: fallback, empty: LocalizedStringKey(empty))
+  }
   var body: some View {
     LabeledField(label: label) {
       HStack(spacing: 10) {
         ColorPicker(label, selection: Binding(get: { Color(hexString: hex) ?? fallback }, set: { hex = $0.hexString }), supportsOpacity: false).labelsHidden()
-        Text(hex.isEmpty ? empty : hex).font(hex.isEmpty ? .lnMeta : .lnMono).foregroundStyle(hex.isEmpty ? Theme.textMuted : Theme.text)
+        (hex.isEmpty ? Text(empty) : Text(verbatim: hex)).font(hex.isEmpty ? .lnMeta : .lnMono).foregroundStyle(hex.isEmpty ? Theme.textMuted : Theme.text)
         Spacer(minLength: 0)
         if !hex.isEmpty { Button("Clear") { hex = "" }.buttonStyle(.lnGhost) }
       }
@@ -384,7 +429,7 @@ extension Array {
 
 extension View {
   /// The raised panel every screen sits on, with a quiet inline navigation bar.
-  func panelScreen(_ title: String) -> some View {
+  func panelScreen(_ title: LocalizedStringKey) -> some View {
     self
       .navigationTitle(title)
       .navigationBarTitleDisplayMode(.inline)
@@ -394,6 +439,9 @@ extension View {
       #endif
       .background(Theme.panel)
   }
+
+  /// A title that comes from data or a variable is looked up in the catalog all the same.
+  @_disfavoredOverload func panelScreen(_ title: String) -> some View { panelScreen(LocalizedStringKey(title)) }
 
   /// A List styled as Linear's flat rows on the panel.
   func linearList() -> some View {
@@ -463,10 +511,10 @@ struct FlowLayout: Layout {
 
   static func short(_ date: Date) -> String {
     let seconds = Date().timeIntervalSince(date)
-    if seconds < 45 { return "now" }
-    if seconds < 3600 { return "\(max(1, Int(seconds / 60)))m" }
-    if seconds < 86400 { return "\(Int(seconds / 3600))h" }
-    if seconds < 604800 { return "\(Int(seconds / 86400))d" }
+    if seconds < 45 { return String(localized: "now") }
+    if seconds < 3600 { return String(localized: "\(max(1, Int(seconds / 60)))m") }
+    if seconds < 86400 { return String(localized: "\(Int(seconds / 3600))h") }
+    if seconds < 604800 { return String(localized: "\(Int(seconds / 86400))d") }
     return date.formatted(.dateTime.month(.abbreviated).day())
   }
 

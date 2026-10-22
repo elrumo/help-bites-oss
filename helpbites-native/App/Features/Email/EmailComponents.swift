@@ -54,12 +54,12 @@ struct EmailComponentDef: Identifiable, Equatable, Sendable {
   static func problem(name: String, description: String, html: String) -> String? {
     let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
     let html = html.trimmingCharacters(in: .whitespacesAndNewlines)
-    if name.isEmpty { return "A component needs a name" }
-    if name.utf16.count > 80 { return "The name is longer than 80 characters" }
-    if description.trimmingCharacters(in: .whitespacesAndNewlines).utf16.count > 500 { return "The description is longer than 500 characters" }
-    if html.isEmpty { return "A component needs HTML" }
-    if html.utf16.count > 100_000 { return "The HTML is larger than 100 KB" }
-    if html.contains(#/<\s*(script|form|iframe|object|embed|video)\b/#.ignoresCase()) { return "The HTML uses tags mail clients strip (script, form, iframe, video)" }
+    if name.isEmpty { return String(localized: "A component needs a name") }
+    if name.utf16.count > 80 { return String(localized: "The name is longer than 80 characters") }
+    if description.trimmingCharacters(in: .whitespacesAndNewlines).utf16.count > 500 { return String(localized: "The description is longer than 500 characters") }
+    if html.isEmpty { return String(localized: "A component needs HTML") }
+    if html.utf16.count > 100_000 { return String(localized: "The HTML is larger than 100 KB") }
+    if html.contains(#/<\s*(script|form|iframe|object|embed|video)\b/#.ignoresCase()) { return String(localized: "The HTML uses tags mail clients strip (script, form, iframe, video)") }
     return nil
   }
 }
@@ -89,7 +89,7 @@ enum EmailComponentAPI {
     } else {
       try await session.send("/v1/admin/email-components", body: body)
     }
-    guard let saved = EmailComponentDef(json: response.component) else { throw APIError.server("The server didn't return the component.") }
+    guard let saved = EmailComponentDef(json: response.component) else { throw APIError.server(String(localized: "The server didn't return the component.")) }
     return saved
   }
 
@@ -157,7 +157,7 @@ struct EmailComponentEditor: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 18) {
-          Text(verbatim: "Email HTML you can reuse. Mark the parts each email changes with {{@name}}.")
+          Text(verbatim: String(localized: "Email HTML you can reuse. Mark the parts each email changes with {{@name}}."))
             .font(.lnMeta)
             .foregroundStyle(Theme.textMuted)
           LabeledField(label: "Name") {
@@ -184,7 +184,7 @@ struct EmailComponentEditor: View {
               }
             }
           } else if !html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            Text(verbatim: "No fields yet: every email shows this HTML as it is. Add {{@name}} where an email should get its own value.")
+            Text(verbatim: String(localized: "No fields yet: every email shows this HTML as it is. Add {{@name}} where an email should get its own value."))
               .font(.lnCaption)
               .foregroundStyle(Theme.textMuted)
           }
@@ -291,7 +291,7 @@ private struct EmailComponentFieldRow: View {
       .pickerStyle(.menu)
       if field.type == .color {
         EmailColorField(
-          label: "Default",
+          label: String(localized: "Default"),
           color: Binding<String?>(get: { field.defaultValue.isEmpty ? nil : field.defaultValue }, set: { value in onChange { $0.defaultValue = value ?? "" } }),
           clearable: true
         )
@@ -326,8 +326,8 @@ struct EmailComponentLibrary: View {
   var body: some View {
     VStack(spacing: 0) {
       VStack(alignment: .leading, spacing: 10) {
-        Text((projectId != nil ? "This project's components and the shared ones." : "Shared with every project and shared template.")
-          + " Insert them from Add in the editor; the AI designer uses them and saves new ones. Each email keeps its own copy.")
+        Text((projectId != nil ? String(localized: "This project's components and the shared ones.") : String(localized: "Shared with every project and shared template."))
+          + " " + String(localized: "Insert them from Add in the editor; the AI designer uses them and saves new ones. Each email keeps its own copy."))
           .font(.lnMeta)
           .foregroundStyle(Theme.textMuted)
         SearchField(text: $search)
@@ -408,13 +408,13 @@ struct EmailComponentLibrary: View {
       HStack(alignment: .top, spacing: 8) {
         VStack(alignment: .leading, spacing: 4) {
           Text(component.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-          Text(component.description.isEmpty ? "No description" : component.description)
+          Text(component.description.isEmpty ? String(localized: "No description") : component.description)
             .font(.lnCaption)
             .foregroundStyle(Theme.textMuted)
             .lineLimit(2, reservesSpace: true)
           HStack(spacing: 6) {
             Tag(text: component.projectId == nil ? "Shared" : "This project")
-            Tag(text: "\(component.fields.count) field\(component.fields.count == 1 ? "" : "s")")
+            Tag(text: component.fields.count == 1 ? String(localized: "1 field") : String(localized: "\(component.fields.count) fields"))
           }
           .padding(.top, 4)
         }

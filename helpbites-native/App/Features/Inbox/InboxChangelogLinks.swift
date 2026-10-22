@@ -20,7 +20,7 @@ struct InboxChangelogLinks: View {
   struct Row: Decodable, Identifiable, Equatable, Sendable {
     let id, title, status: String
     let number: Int?
-    var label: String { "\(number.map { "#\($0) " } ?? "")\(title)\(status == "draft" ? " (draft)" : "")" }
+    var label: String { "\(number.map { "#\($0) " } ?? "")\(title)\(status == "draft" ? String(localized: " (draft)") : "")" }
   }
   private struct Entries: Decodable, Sendable { let entries: [Row] }
   private struct One: Decodable, Sendable { let entry: Row }

@@ -54,7 +54,7 @@ struct PricingResultsPanel: View {
     .confirmationDialog("Use \(adopting?.name ?? "the variant")?", isPresented: Binding(get: { adopting != nil }, set: { if !$0 { adopting = nil } }), titleVisibility: .visible, presenting: adopting) { row in
       Button("Stop and use \(row.name)") { Task { await stop(adopt: row.key) } }
     } message: { row in
-      Text("The plans, words and look of \(row.name) replace this table's. Publish to make them live." + (dirty ? " Your unsaved changes here are lost." : ""))
+      Text(String(localized: "The plans, words and look of \(row.name) replace this table's. Publish to make them live.") + (dirty ? String(localized: " Your unsaved changes here are lost.") : ""))
     }
   }
 
@@ -63,7 +63,7 @@ struct PricingResultsPanel: View {
   @ViewBuilder private func numbers(_ stats: PricingStats) -> some View {
     let total = stats.total
     LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: 10)], spacing: 10) {
-      tile("Visitors", total.visitors.formatted(), "\(total.views.formatted()) views")
+      tile("Visitors", total.visitors.formatted(), String(localized: "\(total.views.formatted()) views"))
       tile("Clicks", total.clicks.formatted(), share(total.clicks, of: total.visitors))
       tile("Checkouts started", total.checkouts.formatted(), share(total.checkouts, of: total.visitors))
       tile("Purchases", total.conversions.formatted(), share(total.conversions, of: total.visitors))
@@ -117,7 +117,7 @@ struct PricingResultsPanel: View {
 
   private func tile(_ label: String, _ value: String, _ hint: String) -> some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text(label).font(.lnCaption).foregroundStyle(Theme.textMuted)
+      Text(LocalizedStringKey(label)).font(.lnCaption).foregroundStyle(Theme.textMuted)
       Text(value).font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.textHighlighted).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
       Text(hint.isEmpty ? " " : hint).font(.lnCaption).foregroundStyle(Theme.textDimmed).lineLimit(1)
     }
@@ -128,15 +128,15 @@ struct PricingResultsPanel: View {
   }
 
   private func share(_ count: Int, of visitors: Int) -> String {
-    visitors > 0 ? "\(percent(Double(count) / Double(visitors))) of visitors" : ""
+    visitors > 0 ? String(localized: "\(percent(Double(count) / Double(visitors))) of visitors") : ""
   }
 
   private func percent(_ value: Double) -> String { value.formatted(.percent.precision(.fractionLength(0...1))) }
 
   private func conversionNote(_ stats: PricingStats) -> String {
-    guard stripeConnected else { return "Connect Stripe to count purchases and revenue." }
-    guard let status = stats.conversions else { return "Stripe is checked for purchases every ten minutes while a table is published." }
-    return status.error.isEmpty ? "Purchases read from Stripe \(Money.logTime(status.at))." : "Could not read purchases from Stripe: \(status.error)"
+    guard stripeConnected else { return String(localized: "Connect Stripe to count purchases and revenue.") }
+    guard let status = stats.conversions else { return String(localized: "Stripe is checked for purchases every ten minutes while a table is published.") }
+    return status.error.isEmpty ? String(localized: "Purchases read from Stripe \(Money.logTime(status.at)).") : String(localized: "Could not read purchases from Stripe: \(status.error)")
   }
 
   /// Every day of the range, so a quiet day shows as a gap.
@@ -158,12 +158,12 @@ struct PricingResultsPanel: View {
       Text("Split visitors between this table and up to three others, by weight. Each visitor keeps the table they first saw, and the one that sells more on Stripe wins. Sites and apps keep asking for this table's key.")
         .font(.lnMeta).foregroundStyle(Theme.textMuted)
       VStack(spacing: 8) {
-        arm(name: "This table", key: table.key, note: nil, weight: Binding(get: { test.weight }, set: { test.weight = $0 }), remove: nil, id: nil)
+        arm(name: String(localized: "This table"), key: table.key, note: nil, weight: Binding(get: { test.weight }, set: { test.weight = $0 }), remove: nil, id: nil)
         ForEach(test.variants, id: \.table) { variant in
           let row = tables.first { $0.key == variant.table }
           arm(
             name: row?.name ?? variant.table, key: variant.table,
-            note: row == nil ? "no longer exists" : row?.status == "published" ? nil : "not published",
+            note: row == nil ? String(localized: "no longer exists") : row?.status == "published" ? nil : String(localized: "not published"),
             weight: Binding(get: { test.variants.first { $0.table == variant.table }?.weight ?? 0 }, set: { value in
               if let index = test.variants.firstIndex(where: { $0.table == variant.table }) { test.variants[index].weight = value }
             }),
@@ -210,9 +210,9 @@ struct PricingResultsPanel: View {
 
   private var statusLabel: String {
     switch table.test.status {
-    case "running": "Running since \(DateText.day(table.test.startedAt))"
-    case "ended": "Ended \(DateText.day(table.test.endedAt))"
-    default: "Not running"
+    case "running": String(localized: "Running since \(DateText.day(table.test.startedAt))")
+    case "ended": String(localized: "Ended \(DateText.day(table.test.endedAt))")
+    default: String(localized: "Not running")
     }
   }
 
@@ -243,7 +243,7 @@ struct PricingResultsPanel: View {
       ForEach(report.arms, id: \.table) { arm in
         VStack(alignment: .leading, spacing: 3) {
           HStack(spacing: 6) {
-            Text(arm.control ? "This table" : arm.name).font(.lnRow).foregroundStyle(Theme.text)
+            Text(arm.control ? String(localized: "This table") : arm.name).font(.lnRow).foregroundStyle(Theme.text)
             if report.leader == arm.table { Tag(text: "Ahead", tint: Theme.success) }
           }
           Text(armLine(arm)).font(.lnCaption).foregroundStyle(Theme.textMuted).monospacedDigit()
@@ -254,10 +254,10 @@ struct PricingResultsPanel: View {
   }
 
   private func armLine(_ arm: PricingExperimentReport.Arm) -> String {
-    var parts = ["\(arm.funnel.visitors.formatted()) visitors", "\(arm.funnel.clicks.formatted()) clicks", "\(arm.funnel.conversions.formatted()) purchases", "\(percent(arm.rate)) conversion"]
+    var parts = [String(localized: "\(arm.funnel.visitors.formatted()) visitors"), String(localized: "\(arm.funnel.clicks.formatted()) clicks"), String(localized: "\(arm.funnel.conversions.formatted()) purchases"), String(localized: "\(percent(arm.rate)) conversion")]
     if !arm.control {
-      if let lift = arm.lift { parts.append("\(lift > 0 ? "+" : "")\(percent(lift)) lift") }
-      parts.append(arm.enough ? "\(Int((arm.confidence * 100).rounded()))% sure" : "too early")
+      if let lift = arm.lift { parts.append(String(localized: "\(lift > 0 ? "+" : "")\(percent(lift)) lift")) }
+      parts.append(arm.enough ? String(localized: "\(Int((arm.confidence * 100).rounded()))% sure") : String(localized: "too early"))
     }
     return parts.joined(separator: " · ")
   }

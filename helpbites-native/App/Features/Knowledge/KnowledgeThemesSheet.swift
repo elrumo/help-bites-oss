@@ -66,7 +66,7 @@ struct KnowledgeThemesSheet: View {
     VStack(alignment: .leading, spacing: 12) {
       Text("Organise FAQs into themes; select one to see its FAQs.").font(.lnMeta).foregroundStyle(Theme.textMuted)
       HStack(spacing: 8) {
-        TextField(selected.map { "New sub-path under “\($0.name)”" } ?? "New top-level path", text: $newName)
+        TextField(selected.map { String(localized: "New sub-path under “\($0.name)”") } ?? String(localized: "New top-level path"), text: $newName)
           .textFieldStyle(.linear)
           .onSubmit { Task { await add() } }
         Button { Task { await add() } } label: { Label("Add", systemImage: "plus") }

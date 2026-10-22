@@ -127,20 +127,20 @@ struct EmailLogScreen: View {
           Text("Any status").tag("")
           ForEach(EmailStatusText.statuses, id: \.key) { item in Label(item.style.label, systemImage: item.style.systemImage).tag(item.key) }
         }
-      } label: { filterLabel(status.isEmpty ? "Status" : EmailStatusText.style(status).label, active: !status.isEmpty) }
+      } label: { filterLabel(status.isEmpty ? String(localized: "Status") : EmailStatusText.style(status).label, active: !status.isEmpty) }
       Menu {
         Picker("Source", selection: $source) {
           Text("Any source").tag("")
           ForEach(EmailStatusText.sources, id: \.key) { item in Text(item.label).tag(item.key) }
         }
-      } label: { filterLabel(source.isEmpty ? "Source" : EmailStatusText.source(source), active: !source.isEmpty) }
+      } label: { filterLabel(source.isEmpty ? String(localized: "Source") : EmailStatusText.source(source), active: !source.isEmpty) }
       if !templateKeys.isEmpty {
         Menu {
           Picker("Template", selection: $template) {
             Text("Any template").tag("")
             ForEach(templateKeys, id: \.self) { key in Text(key).tag(key) }
           }
-        } label: { filterLabel(template.isEmpty ? "Template" : template, active: !template.isEmpty) }
+        } label: { filterLabel(template.isEmpty ? String(localized: "Template") : template, active: !template.isEmpty) }
       }
     }
   }
@@ -190,15 +190,15 @@ struct EmailLogScreen: View {
       if projectId == nil, let settings, !settings.configured {
         EmailNotice(
           systemImage: "exclamationmark.triangle",
-          title: "Email sending is not configured",
-          message: "Set MAILGUN_API_KEY, MAILGUN_DOMAIN and MAILGUN_FROM_EMAIL on the server; until then sends fail with 503.",
+          title: String(localized: "Email sending is not configured"),
+          message: String(localized: "Set MAILGUN_API_KEY, MAILGUN_DOMAIN and MAILGUN_FROM_EMAIL on the server; until then sends fail with 503."),
           tone: .warning
         )
       } else if projectId == nil, let settings, !settings.webhook.configured {
         EmailNotice(
           systemImage: "point.3.connected.trianglepath.dotted",
-          title: "Delivery status needs the Mailgun webhook",
-          message: "Set MAILGUN_WEBHOOK_SIGNING_KEY and point Mailgun's webhooks at \(settings.webhook.url) to see deliveries, opens, bounces and spam reports here."
+          title: String(localized: "Delivery status needs the Mailgun webhook"),
+          message: String(localized: "Set MAILGUN_WEBHOOK_SIGNING_KEY and point Mailgun's webhooks at \(settings.webhook.url) to see deliveries, opens, bounces and spam reports here.")
         )
       }
     }
@@ -213,10 +213,10 @@ struct EmailLogScreen: View {
     let byStatus = stats.byStatus ?? [:]
     func count(_ keys: String...) -> Int { keys.reduce(0) { $0 + (byStatus[$1] ?? 0) } }
     return [
-      Tile(label: "Emails", value: stats.total ?? 0, hint: "Sent or attempted in the last 30 days"),
-      Tile(label: "Delivered", value: count("delivered", "opened", "clicked", "unsubscribed", "complained"), hint: settings?.webhook.configured == true ? "Accepted by the receiving server" : "Needs the Mailgun webhook"),
-      Tile(label: "Failed or bounced", value: count("failed", "bounced"), hint: "Refused by Mailgun or the receiving server"),
-      Tile(label: "Not sent", value: count("suppressed"), hint: "Skipped: on the suppression list")
+      Tile(label: String(localized: "Emails"), value: stats.total ?? 0, hint: String(localized: "Sent or attempted in the last 30 days")),
+      Tile(label: String(localized: "Delivered"), value: count("delivered", "opened", "clicked", "unsubscribed", "complained"), hint: settings?.webhook.configured == true ? String(localized: "Accepted by the receiving server") : String(localized: "Needs the Mailgun webhook")),
+      Tile(label: String(localized: "Failed or bounced"), value: count("failed", "bounced"), hint: String(localized: "Refused by Mailgun or the receiving server")),
+      Tile(label: String(localized: "Not sent"), value: count("suppressed"), hint: String(localized: "Skipped: on the suppression list"))
     ]
   }
 
@@ -291,7 +291,7 @@ struct EmailLogScreen: View {
 
   private func projectName(_ id: String?) -> String {
     guard let id, !id.isEmpty else { return "HelpBites" }
-    return workspace.project(id)?.name ?? "Project"
+    return workspace.project(id)?.name ?? String(localized: "Project")
   }
 
   // MARK: Data
@@ -317,7 +317,7 @@ struct EmailLogScreen: View {
       error = ""
     } catch {
       if Task.isCancelled { return }
-      self.error = error.localizedDescription.isEmpty ? "Could not load the log" : error.localizedDescription
+      self.error = error.localizedDescription.isEmpty ? String(localized: "Could not load the log") : error.localizedDescription
     }
     loading = false
   }
@@ -381,7 +381,7 @@ struct EmailLogDetailSheet: View {
 
   private func projectName(_ id: String?) -> String {
     guard let id, !id.isEmpty else { return "HelpBites" }
-    return workspace.project(id)?.name ?? "Project"
+    return workspace.project(id)?.name ?? String(localized: "Project")
   }
 
   var body: some View {
@@ -389,7 +389,7 @@ struct EmailLogDetailSheet: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 24) {
           VStack(alignment: .leading, spacing: 4) {
-            Text(detail.subject?.isEmpty == false ? detail.subject! : "Email").font(.lnTitle).foregroundStyle(Theme.textHighlighted).textSelection(.enabled)
+            Text(detail.subject?.isEmpty == false ? detail.subject! : String(localized: "Email")).font(.lnTitle).foregroundStyle(Theme.textHighlighted).textSelection(.enabled)
             Text("To \(detail.recipient) · \(EmailStatusText.fullDate(detail.createdAt))").font(.lnMeta).foregroundStyle(Theme.textMuted)
           }
           FlowLayout(spacing: 8) {
@@ -465,8 +465,8 @@ struct EmailLogDetailSheet: View {
             ForEach(Array(files.enumerated()), id: \.offset) { _, file in
               HStack(spacing: 6) {
                 Image(systemName: "paperclip").font(.system(size: 11)).foregroundStyle(Theme.textMuted)
-                Text(file.filename ?? "file")
-                Text(EmailStatusText.kilobytes(file.size ?? 0) + (file.inline == true ? " · inline" : "")).font(.lnCaption).foregroundStyle(Theme.textMuted)
+                Text(file.filename ?? String(localized: "file"))
+                Text(EmailStatusText.kilobytes(file.size ?? 0) + (file.inline == true ? " · " + String(localized: "inline") : "")).font(.lnCaption).foregroundStyle(Theme.textMuted)
               }
             }
           }
@@ -495,7 +495,7 @@ struct EmailLogDetailSheet: View {
   private var sentBy: String {
     var text = EmailStatusText.source(detail.source)
     if let name = detail.actor?.name, !name.isEmpty { text += " · \(name)" }
-    if detail.testMode == true { text += " · Mailgun test mode" }
+    if detail.testMode == true { text += " · " + String(localized: "Mailgun test mode") }
     return text
   }
 
@@ -520,14 +520,14 @@ struct EmailLogDetailSheet: View {
 
   private var kindLabel: String {
     switch detail.kind {
-    case "html": "Custom HTML"
-    case "document": "Block document"
-    case "message": "Message layout"
+    case "html": String(localized: "Custom HTML")
+    case "document": String(localized: "Block document")
+    case "message": String(localized: "Message layout")
     default: "—"
     }
   }
 
-  private func fact<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
+  private func fact<Content: View>(_ label: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
     HStack(alignment: .firstTextBaseline, spacing: 12) {
       Text(label).foregroundStyle(Theme.textMuted).frame(width: 112, alignment: .leading)
       content()
@@ -565,7 +565,7 @@ struct EmailLogDetailSheet: View {
       SectionLabel("Timeline")
       timelineRow(
         systemImage: "paperplane",
-        text: detail.statusKey == "failed" ? "Refused by Mailgun" : detail.statusKey == "suppressed" ? "Skipped" : "Handed to Mailgun",
+        text: detail.statusKey == "failed" ? String(localized: "Refused by Mailgun") : detail.statusKey == "suppressed" ? String(localized: "Skipped") : String(localized: "Handed to Mailgun"),
         detail: "",
         at: detail.createdAt
       )
@@ -574,7 +574,7 @@ struct EmailLogDetailSheet: View {
         let known = EmailStatusText.known(type)
         timelineRow(
           systemImage: known?.systemImage ?? "hourglass",
-          text: known?.label ?? (type == "deferred" ? "Delayed, will retry" : type),
+          text: known?.label ?? (type == "deferred" ? String(localized: "Delayed, will retry") : type),
           detail: event.detail ?? "",
           at: event.at
         )
@@ -622,7 +622,7 @@ struct EmailLogDetailSheet: View {
             .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
         }
       } else if loaded {
-        Text((try? AttributedString(markdown: "This project doesn't keep message content. Turn on **Keep a copy of each email in the log** under Email → Settings to see future messages here.")) ?? AttributedString(""))
+        Text((try? AttributedString(markdown: String(localized: "This project doesn't keep message content. Turn on **Keep a copy of each email in the log** under Email → Settings to see future messages here."))) ?? AttributedString(""))
           .font(.lnCaption)
           .foregroundStyle(Theme.textMuted)
       }
@@ -660,7 +660,7 @@ struct EmailLogDetailSheet: View {
       let response: EmailLogResponse = try await session.get("/v1/admin/email-logs/\(detail.id)")
       detail = response.log
     } catch {
-      if !Task.isCancelled { self.error = error.localizedDescription.isEmpty ? "Could not open this entry" : error.localizedDescription }
+      if !Task.isCancelled { self.error = error.localizedDescription.isEmpty ? String(localized: "Could not open this entry") : error.localizedDescription }
     }
     loaded = true
   }
@@ -672,7 +672,7 @@ struct EmailLogDetailSheet: View {
     defer { suppressing = false }
     do {
       let _: EmailSuppressionAddResult = try await session.send("/v1/admin/email-suppressions", body: EmailSuppressionInput(project: projectId, emails: [detail.recipient], reason: "manual", detail: "Added from the email log"))
-      notice = "\(detail.recipient) won't get this project's email"
+      notice = String(localized: "\(detail.recipient) won't get this project's email")
     } catch { self.error = error.localizedDescription }
   }
 }
@@ -701,13 +701,13 @@ struct EmailLogPreviewSheet: View {
           ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         }
       }
-      .panelScreen(entry.subject?.isEmpty == false ? entry.subject! : "Email")
+      .panelScreen(entry.subject?.isEmpty == false ? entry.subject! : String(localized: "Email"))
       .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
       .task {
         guard entry.html?.isEmpty != false else { return }
         do {
           let response: EmailLogResponse = try await session.get("/v1/admin/email-logs/\(entry.id)")
-          if response.log.html?.isEmpty == false { entry = response.log } else { error = "This message wasn't kept." }
+          if response.log.html?.isEmpty == false { entry = response.log } else { error = String(localized: "This message wasn't kept.") }
         } catch { self.error = error.localizedDescription }
       }
     }

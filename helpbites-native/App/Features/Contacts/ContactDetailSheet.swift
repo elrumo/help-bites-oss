@@ -32,7 +32,7 @@ struct ContactDetailSheet: View {
             ForEach(SubscriptionStatus.allCases.filter { $0 != .pending || contact.subscription == "pending" }) { Text($0.label).tag($0.rawValue) }
           }
           if let consent = contact.consent {
-            Text("Opted in via \(consentSource(consent.source)) on \(DateText.day(consent.at))\(consent.confirmedAt.map { ", confirmed \(DateText.day($0))" } ?? "")")
+            Text("Opted in via \(consentSource(consent.source)) on \(DateText.day(consent.at))\(consent.confirmedAt.map { String(localized: ", confirmed \(DateText.day($0))") } ?? "")")
               .font(.lnCaption).foregroundStyle(Theme.textMuted)
           }
           if !contact.unsubscribedTopics.isEmpty {
@@ -68,7 +68,7 @@ struct ContactDetailSheet: View {
             LabeledContent("Added via", value: ContactOriginKind.label(contact.origin, names: names))
           }
           if let forms = contact.leadForms, !forms.isEmpty {
-            LabeledContent("Lead forms", value: forms.map { names[$0] ?? "A deleted form" }.joined(separator: ", "))
+            LabeledContent("Lead forms", value: forms.map { names[$0] ?? String(localized: "A deleted form") }.joined(separator: ", "))
           }
           LabeledContent("Last seen", value: contact.lastSeenAt.map { DateText.day($0) } ?? "—")
         }

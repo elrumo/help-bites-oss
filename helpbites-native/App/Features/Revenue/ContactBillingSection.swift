@@ -61,10 +61,10 @@ struct ContactBillingSection: View {
   }
 
   private func customerLine(_ customer: StripeCustomer, _ currency: String) -> String {
-    var parts = ["Stripe customer since \(DateText.date(customer.createdAt)?.formatted(date: .abbreviated, time: .omitted) ?? "—")"]
+    var parts = [String(localized: "Stripe customer since \(DateText.date(customer.createdAt)?.formatted(date: .abbreviated, time: .omitted) ?? "—")")]
     if !customer.country.isEmpty { parts.append(Locale.current.localizedString(forRegionCode: customer.country) ?? customer.country) }
     let balance = Money.minor(abs(customer.balance), customer.currency.isEmpty ? currency : customer.currency)
-    if customer.balance < 0 { parts.append("\(balance) credit") } else if customer.balance > 0 { parts.append("Owes \(balance)") }
+    if customer.balance < 0 { parts.append(String(localized: "\(balance) credit")) } else if customer.balance > 0 { parts.append(String(localized: "Owes \(balance)")) }
     return parts.joined(separator: " · ")
   }
 }
@@ -72,12 +72,14 @@ struct ContactBillingSection: View {
 private struct SubscriptionRow: View {
   let subscription: StripeSubscription
 
-  private static let intervals = ["day": "day", "week": "week", "month": "mo", "year": "yr"]
+  private static var intervals: [String: String] {
+    ["day": String(localized: "day"), "week": String(localized: "week"), "month": String(localized: "mo"), "year": String(localized: "yr")]
+  }
   private var every: String {
     "\(Money.minor(subscription.amount, subscription.currency))/\(subscription.intervalCount > 1 ? "\(subscription.intervalCount) " : "")\(Self.intervals[subscription.interval] ?? subscription.interval)"
   }
   private var badge: String {
-    subscription.cancelAtPeriodEnd && subscription.status == "active" ? "Ends \(Money.logTime(subscription.currentPeriodEnd))" : subscription.status.replacingOccurrences(of: "_", with: " ")
+    subscription.cancelAtPeriodEnd && subscription.status == "active" ? String(localized: "Ends \(Money.logTime(subscription.currentPeriodEnd))") : subscription.status.replacingOccurrences(of: "_", with: " ")
   }
   private var tint: Color? {
     switch subscription.status {

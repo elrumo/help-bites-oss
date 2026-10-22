@@ -50,7 +50,7 @@ struct ProfileScreen: View {
             .buttonStyle(.lnPrimary)
             .disabled(!dirty || saving || (emailChanging && password.isEmpty))
             .keyboardShortcut("s", modifiers: .command)
-          if saved && !dirty { SuccessText(message: "Saved") }
+          if saved && !dirty { SuccessText(message: String(localized: "Saved")) }
         }
       }
       .settingsColumn()

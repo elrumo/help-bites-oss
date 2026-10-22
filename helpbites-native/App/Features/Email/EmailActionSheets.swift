@@ -38,7 +38,7 @@ enum EmailExport {
   }
 
   static func htmlFile(_ t: EmailTemplateItem, brand: EmailBrand?) throws -> URL {
-    guard let html = html(t, brand: brand) else { throw APIError.server("This template has nothing to export yet.") }
+    guard let html = html(t, brand: brand) else { throw APIError.server(String(localized: "This template has nothing to export yet.")) }
     return try EmailFiles.write(Data(html.utf8), named: "\(EmailFiles.slug(t.title)).html")
   }
 
@@ -158,10 +158,10 @@ struct EmailTestSheet: View {
       let result: EmailDeliverySummary = try await session.send("/v1/admin/emails/\(template.id)/test", body: Input(to: EmailExport.addresses(to), variables: values, project: project))
       if (result.sent ?? 0) > 0 {
         let names = (result.results ?? []).filter { $0.status == "sent" || $0.status == "scheduled" }.compactMap(\.to)
-        sent = names.isEmpty ? "Test sent" : "Test sent to \(names.joined(separator: ", "))"
+        sent = names.isEmpty ? String(localized: "Test sent") : String(localized: "Test sent to \(names.joined(separator: ", "))")
       } else {
         let reason = result.results?.first?.error ?? ""
-        error = reason.isEmpty ? "The test was not sent." : "The test was not sent: \(reason)"
+        error = reason.isEmpty ? String(localized: "The test was not sent.") : String(localized: "The test was not sent: \(reason)")
       }
     } catch { self.error = error.localizedDescription }
   }
@@ -252,7 +252,7 @@ struct EmailAPISheet: View {
             ErrorText(message: error)
           }
 
-          section("Fetch it rendered", code: fetchSnippet, note: "Variables are query parameters. Without `format=html` you get JSON: `{ subject, html, text, variables }`, ready for any mail provider.") {
+          section(String(localized: "Fetch it rendered"), code: fetchSnippet, note: String(localized: "Variables are query parameters. Without `format=html` you get JSON: `{ subject, html, text, variables }`, ready for any mail provider.")) {
             Button { Clipboard.copy(fetchURL); copiedURL = true } label: {
               Label(copiedURL ? "Copied" : "Copy URL", systemImage: copiedURL ? "checkmark" : "link")
             }
@@ -260,8 +260,8 @@ struct EmailAPISheet: View {
           }
 
           if isProject {
-            section("Or send it", code: sendSnippet, note: "Up to 50 recipients, one message each, from the project's sender. A recipient can be `{ email, name, variables }` for values of their own. In custom HTML, `{{ name }}` fills in as text and `{{{ list }}}` as HTML.") { EmptyView() }
-            section("See what was sent", code: logSnippet, note: "Every recipient's status, kept current by Mailgun's delivery webhook. Also under Email → Log.") { EmptyView() }
+            section(String(localized: "Or send it"), code: sendSnippet, note: String(localized: "Up to 50 recipients, one message each, from the project's sender. A recipient can be `{ email, name, variables }` for values of their own. In custom HTML, `{{ name }}` fills in as text and `{{{ list }}}` as HTML.")) { EmptyView() }
+            section(String(localized: "See what was sent"), code: logSnippet, note: String(localized: "Every recipient's status, kept current by Mailgun's delivery webhook. Also under Email → Log.")) { EmptyView() }
           }
 
           if !variables.isEmpty {

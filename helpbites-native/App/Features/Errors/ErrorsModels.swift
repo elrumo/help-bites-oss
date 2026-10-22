@@ -23,7 +23,7 @@ struct ErrorIssue: Decodable, Identifiable, Sendable {
   init(from decoder: Decoder) throws {
     let c = try decoder.container(keyedBy: CodingKeys.self)
     issueId = c.lenient(.id)
-    title = c.lenient(.title).isEmpty ? "Untitled error" : c.lenient(.title)
+    title = c.lenient(.title).isEmpty ? String(localized: "Untitled error") : c.lenient(.title)
     culprit = c.lenient(.culprit)
     level = c.lenient(.level)
     url = (try? c.decode(String.self, forKey: .url)).flatMap { $0.isEmpty ? nil : $0 }
@@ -81,7 +81,7 @@ struct ErrorAlertRule: Codable, Identifiable, Sendable, Equatable {
   var link: String
   var enabled: Bool
 
-  static let kinds = [("new", "a new error appears"), ("total", "an error totals"), ("rate", "an error happens")]
+  static var kinds: [(String, String)] { [("new", String(localized: "a new error appears")), ("total", String(localized: "an error totals")), ("rate", String(localized: "an error happens"))] }
   /// How long before the same error alerts again, by kind.
   static let defaultCooldown = ["new": 1440, "total": 1440, "rate": 60]
 
@@ -92,9 +92,9 @@ struct ErrorAlertRule: Codable, Identifiable, Sendable, Equatable {
   /// The rule in words, the placeholder for an unnamed one (`describeRule`).
   var summary: String {
     switch kind {
-    case "new": "a new error appears"
-    case "total": "an error has happened \(threshold) times in total"
-    default: "an error happens \(threshold) times within \(windowMinutes) min"
+    case "new": String(localized: "a new error appears")
+    case "total": String(localized: "an error has happened \(threshold) times in total")
+    default: String(localized: "an error happens \(threshold) times within \(windowMinutes) min")
     }
   }
 }
@@ -135,5 +135,5 @@ struct ErrorMarkdown: View {
 
 /// The Bugsink alert webhook steps, shared by the connect sheet and the Errors page.
 enum ErrorsText {
-  static let webhookSteps = "In Bugsink, open the project's alerts, click Add, set Kind to Slack (HelpBites reads Slack-format alerts) and use this Webhook url. Leave Discord and Mattermost alone."
+  static var webhookSteps: String { String(localized: "In Bugsink, open the project's alerts, click Add, set Kind to Slack (HelpBites reads Slack-format alerts) and use this Webhook url. Leave Discord and Mattermost alone.") }
 }

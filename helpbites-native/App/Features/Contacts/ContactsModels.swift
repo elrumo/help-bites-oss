@@ -20,15 +20,15 @@ enum ContactOriginKind: String, CaseIterable, Identifiable {
   var id: String { rawValue }
   var label: String {
     switch self {
-    case .app: "App user"
-    case .leadForm: "Lead form"
-    case .signup: "Newsletter sign-up"
-    case .csvImport: "CSV import"
-    case .sync: "Database sync"
-    case .stripe: "Stripe"
-    case .api: "API"
-    case .panel: "Added by hand"
-    case .feedback: "Feedback import"
+    case .app: String(localized: "App user")
+    case .leadForm: String(localized: "Lead form")
+    case .signup: String(localized: "Newsletter sign-up")
+    case .csvImport: String(localized: "CSV import")
+    case .sync: String(localized: "Database sync")
+    case .stripe: String(localized: "Stripe")
+    case .api: String(localized: "API")
+    case .panel: String(localized: "Added by hand")
+    case .feedback: String(localized: "Feedback import")
     }
   }
   var systemImage: String {
@@ -64,7 +64,7 @@ struct Contact: Codable, Identifiable, Equatable, Sendable {
   let feedbackEmails: Bool
   let lastSeenAt, createdAt, updatedAt: String?
 
-  var displayName: String { !name.isEmpty ? name : !email.isEmpty ? email : !externalId.isEmpty ? externalId : "Unnamed" }
+  var displayName: String { !name.isEmpty ? name : !email.isEmpty ? email : !externalId.isEmpty ? externalId : String(localized: "Unnamed") }
 }
 
 /// GET /v1/contacts.
@@ -75,14 +75,14 @@ enum SubscriptionStatus: String, CaseIterable, Identifiable {
   case subscribed, pending, unsubscribed, none
   var id: String { rawValue }
   var label: String {
-    switch self { case .subscribed: "Subscribed"; case .pending: "Pending"; case .unsubscribed: "Unsubscribed"; case .none: "Not subscribed" }
+    switch self { case .subscribed: String(localized: "Subscribed"); case .pending: String(localized: "Pending"); case .unsubscribed: String(localized: "Unsubscribed"); case .none: String(localized: "Not subscribed") }
   }
   var hint: String {
     switch self {
-    case .subscribed: "Gets marketing email"
-    case .pending: "Signed up; has not confirmed yet"
-    case .unsubscribed: "Asked for no more marketing email"
-    case .none: "Transactional email only"
+    case .subscribed: String(localized: "Gets marketing email")
+    case .pending: String(localized: "Signed up; has not confirmed yet")
+    case .unsubscribed: String(localized: "Asked for no more marketing email")
+    case .none: String(localized: "Transactional email only")
     }
   }
   var tint: Color? {
@@ -116,13 +116,13 @@ enum SegmentSpec {
   enum Kind { case text, enumeration, list, date, attribute, flag }
   static let attributePrefix = "attributes."
   static let fields: [(key: String, label: String, kind: Kind)] = [
-    ("email", "Email", .text), ("name", "Name", .text), ("externalId", "User id", .text),
-    ("subscription", "Subscription", .enumeration), ("tags", "Tags", .list),
-    ("unsubscribedTopics", "Opted-out topics", .list), ("sources", "Source", .list),
-    ("origin", "Added via", .enumeration), ("language", "Language", .text), ("leadForms", "Lead form", .list),
-    ("stripePlan", "Stripe plan", .text), ("hasOpenConversation", "Has an open conversation", .flag),
-    ("votedOnPost", "Voted on a post", .flag), ("hasErrors", "Has errors", .flag), ("finishedOnboarding", "Finished onboarding", .flag),
-    ("createdAt", "Added", .date), ("lastSeenAt", "Last seen", .date), ("updatedAt", "Updated", .date)
+    ("email", String(localized: "Email"), .text), ("name", String(localized: "Name"), .text), ("externalId", String(localized: "User id"), .text),
+    ("subscription", String(localized: "Subscription"), .enumeration), ("tags", String(localized: "Tags"), .list),
+    ("unsubscribedTopics", String(localized: "Opted-out topics"), .list), ("sources", String(localized: "Source"), .list),
+    ("origin", String(localized: "Added via"), .enumeration), ("language", String(localized: "Language"), .text), ("leadForms", String(localized: "Lead form"), .list),
+    ("stripePlan", String(localized: "Stripe plan"), .text), ("hasOpenConversation", String(localized: "Has an open conversation"), .flag),
+    ("votedOnPost", String(localized: "Voted on a post"), .flag), ("hasErrors", String(localized: "Has errors"), .flag), ("finishedOnboarding", String(localized: "Finished onboarding"), .flag),
+    ("createdAt", String(localized: "Added"), .date), ("lastSeenAt", String(localized: "Last seen"), .date), ("updatedAt", String(localized: "Updated"), .date)
   ]
   static func kind(_ field: String) -> Kind {
     if field.hasPrefix(attributePrefix) { return .attribute }
@@ -139,9 +139,9 @@ enum SegmentSpec {
     }
   }
   static let opLabels: [String: String] = [
-    "is": "is", "is_not": "is not", "contains": "contains", "starts_with": "starts with", "exists": "is set", "not_exists": "is not set",
-    "gt": "is more than", "lt": "is less than", "before": "is before", "after": "is after",
-    "within_days": "in the last … days", "not_within_days": "not in the last … days", "includes": "includes", "excludes": "does not include"
+    "is": String(localized: "is"), "is_not": String(localized: "is not"), "contains": String(localized: "contains"), "starts_with": String(localized: "starts with"), "exists": String(localized: "is set"), "not_exists": String(localized: "is not set"),
+    "gt": String(localized: "is more than"), "lt": String(localized: "is less than"), "before": String(localized: "is before"), "after": String(localized: "is after"),
+    "within_days": String(localized: "in the last … days"), "not_within_days": String(localized: "not in the last … days"), "includes": String(localized: "includes"), "excludes": String(localized: "does not include")
   ]
   static func needsValue(_ op: String) -> Bool { op != "exists" && op != "not_exists" }
   static func isDays(_ op: String) -> Bool { op == "within_days" || op == "not_within_days" }
@@ -174,7 +174,7 @@ struct ContactSource: Codable, Identifiable, Equatable, Sendable {
 
   var what: String { config.className ?? config.table ?? config.collection ?? "" }
   var schedule: String {
-    switch config.everyMinutes { case 0: "Manual"; case 60: "Hourly"; case 1440: "Daily"; case let m where m < 60: "Every \(m) min"; case let m: "Every \(m / 60) h" }
+    switch config.everyMinutes { case 0: String(localized: "Manual"); case 60: String(localized: "Hourly"); case 1440: String(localized: "Daily"); case let m where m < 60: String(localized: "Every \(m) min"); case let m: String(localized: "Every \(m / 60) h") }
   }
 }
 

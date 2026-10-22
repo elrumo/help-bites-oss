@@ -284,7 +284,7 @@ struct KnowledgeImportSheet: View {
 
       let warnings = preview.warnings + preview.invalid.map { "\($0.section) — \($0.reason)" }
       if !warnings.isEmpty {
-        DisclosureGroup("\(warnings.count) warning\(warnings.count == 1 ? "" : "s")") {
+        DisclosureGroup(warnings.count == 1 ? "1 warning" : "\(warnings.count) warnings") {
           VStack(alignment: .leading, spacing: 4) {
             ForEach(Array(warnings.enumerated()), id: \.offset) { Label($0.element, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.textMuted) }
           }
@@ -313,7 +313,7 @@ struct KnowledgeImportSheet: View {
               VStack(alignment: .leading, spacing: 4) {
                 TextField("Question", text: $entry.question, axis: .vertical).font(.lnRow).foregroundStyle(Theme.textHighlighted)
                 HStack(spacing: 6) {
-                  Text(entry.pathCache.isEmpty ? "(root)" : entry.pathCache).font(.lnCaption).foregroundStyle(Theme.textDimmed).lineLimit(1)
+                  Text(entry.pathCache.isEmpty ? String(localized: "(root)") : entry.pathCache).font(.lnCaption).foregroundStyle(Theme.textDimmed).lineLimit(1)
                   if !entry.duplicate.isEmpty { Tag(text: duplicateLabel(entry.duplicate), tint: duplicateTint(entry.duplicate)) }
                 }
               }
@@ -352,7 +352,7 @@ struct KnowledgeImportSheet: View {
   private var finished: Bool { documentStatus == "processed" || documentStatus == "failed" }
 
   private func duplicateLabel(_ duplicate: String) -> String {
-    duplicate == "in-document" ? "duplicate in file" : duplicate == "existing-detached" ? "edited — will keep yours" : "updates existing"
+    duplicate == "in-document" ? String(localized: "duplicate in file") : duplicate == "existing-detached" ? String(localized: "edited — will keep yours") : String(localized: "updates existing")
   }
 
   private func duplicateTint(_ duplicate: String) -> Color {

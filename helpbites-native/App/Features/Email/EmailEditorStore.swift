@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
   enum Device: String, CaseIterable, Identifiable {
     case desktop, phone
     var id: String { rawValue }
-    var label: String { self == .desktop ? "Desktop" : "Phone" }
+    var label: String { self == .desktop ? String(localized: "Desktop") : String(localized: "Phone") }
     var systemImage: String { self == .desktop ? "desktopcomputer" : "iphone" }
     /// The web editor's preview frames.
     var width: CGFloat { self == .desktop ? 720 : 390 }
@@ -466,7 +466,7 @@ import UniformTypeIdentifiers
         return
       }
     }
-    guard let starter = starters[starterId] else { notice = "That starter isn't available on this server."; return }
+    guard let starter = starters[starterId] else { notice = String(localized: "That starter isn't available on this server."); return }
     pushUndo()
     design = EmailDesign(starter.document)
     name = starter.name
@@ -671,17 +671,17 @@ enum EmailImageUpload {
     if data.count <= maxBytes, let match = kept.first(where: { data.starts(with: $0.magic) }) {
       return (data, match.mime, match.ext)
     }
-    guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { throw APIError.server("Couldn't read that image.") }
+    guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { throw APIError.server(String(localized: "Couldn't read that image.")) }
     let options: [CFString: Any] = [
       kCGImageSourceCreateThumbnailFromImageAlways: true,
       kCGImageSourceCreateThumbnailWithTransform: true,
       kCGImageSourceThumbnailMaxPixelSize: maxPixels
     ]
-    guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { throw APIError.server("Couldn't read that image.") }
+    guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { throw APIError.server(String(localized: "Couldn't read that image.")) }
     let output = NSMutableData()
-    guard let destination = CGImageDestinationCreateWithData(output as CFMutableData, UTType.jpeg.identifier as CFString, 1, nil) else { throw APIError.server("Couldn't read that image.") }
+    guard let destination = CGImageDestinationCreateWithData(output as CFMutableData, UTType.jpeg.identifier as CFString, 1, nil) else { throw APIError.server(String(localized: "Couldn't read that image.")) }
     CGImageDestinationAddImage(destination, image, [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary)
-    guard CGImageDestinationFinalize(destination) else { throw APIError.server("Couldn't read that image.") }
+    guard CGImageDestinationFinalize(destination) else { throw APIError.server(String(localized: "Couldn't read that image.")) }
     return (output as Data, "image/jpeg", "jpg")
   }
 }

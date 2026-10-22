@@ -26,7 +26,7 @@ struct ErrorsScreen: View {
   /// Answers can arrive out of order when pills are tapped quickly; only the latest counts.
   @State private var latest = 0
 
-  private static let statuses = [("unresolved", "Unresolved"), ("resolved", "Resolved"), ("ignored", "Ignored")]
+  private static var statuses: [(String, String)] { [("unresolved", String(localized: "Unresolved")), ("resolved", String(localized: "Resolved")), ("ignored", String(localized: "Ignored"))] }
 
   private var connected: Bool { workspace.project(projectId)?.errors?.connected == true }
   private var links: [ProjectsAdminProject.ErrorLink] { admin?.errorLinks ?? [] }
@@ -133,7 +133,7 @@ struct ErrorsScreen: View {
         ErrorText(message: overviewError)
       } else if let overview {
         ErrorMarkdown(text: overview.text)
-        Text("Based on \(overview.count) unresolved error\(overview.count == 1 ? "" : "s"): titles, locations and counts. Open an error to analyze its stack trace.")
+        Text(overview.count == 1 ? "Based on 1 unresolved error: titles, locations and counts. Open an error to analyze its stack trace." : "Based on \(overview.count) unresolved errors: titles, locations and counts. Open an error to analyze its stack trace.")
           .font(.lnCaption).foregroundStyle(Theme.textMuted)
       }
     }
@@ -164,7 +164,7 @@ struct ErrorsScreen: View {
       }
       .padding(.top, 8)
     } label: {
-      Label("DSN to send errors from your app\(links.count > 1 ? " (\(links.count))" : "")", systemImage: "key").font(.lnMetaMedium).foregroundStyle(Theme.text)
+      Label(links.count > 1 ? "DSN to send errors from your app (\(links.count))" : "DSN to send errors from your app", systemImage: "key").font(.lnMetaMedium).foregroundStyle(Theme.text)
     }
     .tint(Theme.textMuted)
   }
@@ -174,7 +174,7 @@ struct ErrorsScreen: View {
       VStack(alignment: .leading, spacing: 12) {
         ForEach(alertLinks) { link in
           VStack(alignment: .leading, spacing: 4) {
-            Text(links.count > 1 ? link.label : "Alert webhook").font(.lnCaptionMedium).foregroundStyle(Theme.textMuted)
+            Text(links.count > 1 ? link.label : String(localized: "Alert webhook")).font(.lnCaptionMedium).foregroundStyle(Theme.textMuted)
             Text(ErrorsText.webhookSteps).font(.lnCaption).foregroundStyle(Theme.textMuted)
             CodeBlock(code: link.alertWebhookUrl)
           }
@@ -182,7 +182,7 @@ struct ErrorsScreen: View {
       }
       .padding(.top, 8)
     } label: {
-      Label("Check alert rules the moment Bugsink reports an error\(alertLinks.count > 1 ? " (\(alertLinks.count))" : "")", systemImage: "point.3.connected.trianglepath.dotted").font(.lnMetaMedium).foregroundStyle(Theme.text)
+      Label(alertLinks.count > 1 ? "Check alert rules the moment Bugsink reports an error (\(alertLinks.count))" : "Check alert rules the moment Bugsink reports an error", systemImage: "point.3.connected.trianglepath.dotted").font(.lnMetaMedium).foregroundStyle(Theme.text)
     }
     .tint(Theme.textMuted)
   }

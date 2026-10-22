@@ -37,6 +37,14 @@ struct ErrorIssueCard: View {
   private enum Tab: String, CaseIterable, Identifiable {
     case stack = "Stacktrace", details = "Details", crumbs = "Breadcrumbs", tags = "Tags"
     var id: String { rawValue }
+    var label: String {
+      switch self {
+      case .stack: String(localized: "Stacktrace")
+      case .details: String(localized: "Details")
+      case .crumbs: String(localized: "Breadcrumbs")
+      case .tags: String(localized: "Tags")
+      }
+    }
   }
 
   private var path: String { "/v1/admin/errors/\(issue.issueId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? issue.issueId)" }
@@ -76,7 +84,7 @@ struct ErrorIssueCard: View {
       if showLink && !issue.linkLabel.isEmpty { Tag(text: issue.linkLabel) }
       Menu {
         if let raw = issue.url, let url = URL(string: raw) {
-          Button { openURL(url) } label: { Label("Open in \(issue.providerName.isEmpty ? "tracker" : issue.providerName)", systemImage: "arrow.up.right") }
+          Button { openURL(url) } label: { Label(issue.providerName.isEmpty ? "Open in tracker" : "Open in \(issue.providerName)", systemImage: "arrow.up.right") }
           Divider()
         }
         Button("Open") { onStatus("open") }
@@ -91,8 +99,8 @@ struct ErrorIssueCard: View {
   }
 
   private var subtitle: String {
-    var parts = [issue.culprit.isEmpty ? "Unknown location" : issue.culprit, "\(max(issue.count, 1)) events"]
-    if let last = DateText.date(issue.lastSeen) { parts.append("last seen \(last.formatted(date: .abbreviated, time: .shortened))") }
+    var parts = [issue.culprit.isEmpty ? String(localized: "Unknown location") : issue.culprit, String(localized: "\(max(issue.count, 1)) events")]
+    if let last = DateText.date(issue.lastSeen) { parts.append(String(localized: "last seen \(last.formatted(date: .abbreviated, time: .shortened))")) }
     return parts.joined(separator: " · ")
   }
 
@@ -129,7 +137,7 @@ struct ErrorIssueCard: View {
         Text(detail.exception.type).font(.lnRow).foregroundStyle(Theme.textHighlighted)
         if !detail.exception.value.isEmpty { Text(detail.exception.value).font(.lnMeta).foregroundStyle(Theme.textMuted).textSelection(.enabled) }
       }
-      Picker("Event", selection: $tab) { ForEach(Tab.allCases) { Text($0.rawValue).tag($0) } }
+      Picker("Event", selection: $tab) { ForEach(Tab.allCases) { Text($0.label).tag($0) } }
         .pickerStyle(.segmented).labelsHidden()
       switch tab {
       case .stack: stack(detail)
@@ -137,20 +145,25 @@ struct ErrorIssueCard: View {
       case .crumbs: crumbs(detail)
       case .tags: pairs(detail.tags, empty: "No tags on this event.", labelWidth: 110)
       }
-      Text("Showing the latest event\(DateText.date(detail.at).map { ", \($0.formatted(date: .abbreviated, time: .shortened))" } ?? ""). Older events are in \(issue.providerName.isEmpty ? "the tracker" : issue.providerName).")
-        .font(.lnCaption).foregroundStyle(Theme.textMuted)
+      latestEventNote(detail).font(.lnCaption).foregroundStyle(Theme.textMuted)
     }
+  }
+
+  private func latestEventNote(_ detail: ErrorDetail) -> Text {
+    let place = issue.providerName.isEmpty ? String(localized: "the tracker") : issue.providerName
+    guard let at = DateText.date(detail.at) else { return Text("Showing the latest event. Older events are in \(place).") }
+    return Text("Showing the latest event, \(at.formatted(date: .abbreviated, time: .shortened)). Older events are in \(place).")
   }
 
   private func keyInfo(_ detail: ErrorDetail) -> [(String, String)] {
     func when(_ raw: String) -> String { DateText.date(raw).map { $0.formatted(date: .abbreviated, time: .shortened) } ?? "—" }
     let info = detail.issue
     return [
-      ("Issue", info.shortId.isEmpty ? (issue.shortId.isEmpty ? issue.issueId : issue.shortId) : info.shortId),
-      ("State", info.status),
-      ("Events", String(info.count > 0 ? info.count : max(issue.count, 1))),
-      ("First seen", when(info.firstSeen)),
-      ("Last seen", when(info.lastSeen.isEmpty ? issue.lastSeen : info.lastSeen))
+      (String(localized: "Issue"), info.shortId.isEmpty ? (issue.shortId.isEmpty ? issue.issueId : issue.shortId) : info.shortId),
+      (String(localized: "State"), info.status),
+      (String(localized: "Events"), String(info.count > 0 ? info.count : max(issue.count, 1))),
+      (String(localized: "First seen"), when(info.firstSeen)),
+      (String(localized: "Last seen"), when(info.lastSeen.isEmpty ? issue.lastSeen : info.lastSeen))
     ]
   }
 
@@ -181,7 +194,7 @@ struct ErrorIssueCard: View {
     }
   }
 
-  private func pairs(_ rows: [[String]], empty: String, labelWidth: CGFloat) -> some View {
+  private func pairs(_ rows: [[String]], empty: LocalizedStringKey, labelWidth: CGFloat) -> some View {
     VStack(alignment: .leading, spacing: 6) {
       if rows.isEmpty { Text(empty).font(.lnMeta).foregroundStyle(Theme.textMuted) }
       ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
@@ -248,7 +261,7 @@ struct ErrorIssueCard: View {
       ErrorText(message: aiError)
       if let analysis {
         ErrorMarkdown(text: analysis.text)
-        Text((analysis.files.isEmpty ? "No source files from GitHub were found for this stack trace, so this is based on the event alone." : "Read \(analysis.files.joined(separator: ", ")) from your GitHub repos (default branch).") + (analysis.cached ? " Saved from an earlier run." : ""))
+        Text((analysis.files.isEmpty ? String(localized: "No source files from GitHub were found for this stack trace, so this is based on the event alone.") : String(localized: "Read \(analysis.files.joined(separator: ", ")) from your GitHub repos (default branch).")) + (analysis.cached ? String(localized: " Saved from an earlier run.") : ""))
           .font(.lnCaption).foregroundStyle(Theme.textMuted)
       } else if !analyzing {
         Text("Reads the stack trace and, when GitHub repos are connected to the project, the source files it passes through.").font(.lnCaption).foregroundStyle(Theme.textMuted)

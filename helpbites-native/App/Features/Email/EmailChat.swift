@@ -87,8 +87,8 @@ struct EmailChatTier: Identifiable, Equatable, Sendable {
   var id: String { value }
 
   static let all = [
-    EmailChatTier(value: "high", label: "High", hint: "Fast. Good for edits and copy."),
-    EmailChatTier(value: "ultra", label: "Ultra", hint: "Strongest. New designs and big rewrites.")
+    EmailChatTier(value: "high", label: String(localized: "High"), hint: String(localized: "Fast. Good for edits and copy.")),
+    EmailChatTier(value: "ultra", label: String(localized: "Ultra"), hint: String(localized: "Strongest. New designs and big rewrites."))
   ]
 
   /// emailAiTier(): anything but "ultra" is High.
@@ -98,7 +98,7 @@ struct EmailChatTier: Identifiable, Equatable, Sendable {
 // MARK: - Wire
 
 /// GET /v1/admin/emails/:id/chat: AI SDK UI messages, oldest first.
-private struct EmailChatHistory: Decodable, Sendable {
+struct EmailChatHistory: Decodable, Sendable {
   struct Message: Decodable, Sendable {
     let id: String?
     let role: String?
@@ -109,7 +109,7 @@ private struct EmailChatHistory: Decodable, Sendable {
 
 /// POST /v1/admin/emails/:id/chat. Earlier turns go as their words only: the
 /// server keeps only text for them anyway, and old tool inputs are whole documents.
-private struct EmailChatRequest: Encodable, Sendable {
+struct EmailChatRequest: Encodable, Sendable {
   struct Message: Encodable, Sendable {
     let id: String
     let role: String
@@ -130,7 +130,7 @@ private struct EmailChatRequest: Encodable, Sendable {
 
 /// One chunk of the AI SDK UI message stream. Every field but `type` is read
 /// leniently: a chunk with a field of an unexpected shape still applies.
-private struct EmailChatChunk: Decodable, Sendable {
+struct EmailChatChunk: Decodable, Sendable {
   let type: String
   let id: String?
   let delta: String?
@@ -162,7 +162,7 @@ private struct EmailChatChunk: Decodable, Sendable {
 }
 
 /// A failed request's JSON body (h3's createError).
-private struct EmailChatErrorBody: Decodable, Sendable {
+struct EmailChatErrorBody: Decodable, Sendable {
   let statusMessage: String?
   let message: String?
 }
@@ -243,7 +243,7 @@ private struct EmailChatErrorBody: Decodable, Sendable {
   }
 
   /// A stored UI message part: text and `tool-<name>`; everything else is skipped.
-  nonisolated private static func part(_ json: JSONValue) -> EmailChatMessage.Part? {
+  nonisolated static func part(_ json: JSONValue) -> EmailChatMessage.Part? {
     guard case .object(let fields) = json, case .string(let type)? = fields["type"] else { return nil }
     if type == "text" {
       if case .string(let text)? = fields["text"] { return .text(text) }
@@ -376,7 +376,7 @@ private struct EmailChatErrorBody: Decodable, Sendable {
           if data.count >= 65_536 { break }
         }
         let decoded = try? JSONDecoder().decode(EmailChatErrorBody.self, from: data)
-        throw APIError.server(decoded?.statusMessage ?? decoded?.message ?? "Request failed (\(status)).")
+        throw APIError.server(decoded?.statusMessage ?? decoded?.message ?? String(localized: "Request failed (\(status))."))
       }
       // One `data:` line per chunk; bytes.lines drops the blank line between frames.
       for try await line in bytes.lines {
@@ -496,7 +496,7 @@ private struct EmailChatErrorBody: Decodable, Sendable {
       editor?.replaceVariables(list.compactMap { Self.variable($0) })
 
     case "error":
-      error = chunk.errorText ?? "The AI designer hit a problem"
+      error = chunk.errorText ?? String(localized: "The AI designer hit a problem")
 
     default:
       // start-step, finish-step, finish, reasoning-*, tool-input-delta, other data-*.
@@ -557,7 +557,7 @@ private struct EmailChatErrorBody: Decodable, Sendable {
     for part in messages[index].parts.indices {
       if case .tool(var tool) = messages[index].parts[part], tool.isRunning {
         tool.state = "output-error"
-        if tool.errorText == nil { tool.errorText = "Stopped" }
+        if tool.errorText == nil { tool.errorText = String(localized: "Stopped") }
         messages[index].parts[part] = .tool(tool)
       }
     }

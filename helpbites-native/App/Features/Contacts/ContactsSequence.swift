@@ -17,10 +17,10 @@ struct EnrollSummary: Decodable, Equatable, Sendable {
     [alreadyOn(skipped.alreadyEnrolled), notSubscribed(skipped.notSubscribed), optedOut(skipped.optedOut), notFound(skipped.notFound)]
       .compactMap { $0 }.joined(separator: " · ")
   }
-  private func alreadyOn(_ n: Int) -> String? { n > 0 ? "\(n) already on it" : nil }
-  private func notSubscribed(_ n: Int) -> String? { n > 0 ? "\(n) not subscribed" : nil }
-  private func optedOut(_ n: Int) -> String? { n > 0 ? "\(n) opted out of its topic" : nil }
-  private func notFound(_ n: Int) -> String? { n > 0 ? "\(n) not found" : nil }
+  private func alreadyOn(_ n: Int) -> String? { n > 0 ? String(localized: "\(n) already on it") : nil }
+  private func notSubscribed(_ n: Int) -> String? { n > 0 ? String(localized: "\(n) not subscribed") : nil }
+  private func optedOut(_ n: Int) -> String? { n > 0 ? String(localized: "\(n) opted out of its topic") : nil }
+  private func notFound(_ n: Int) -> String? { n > 0 ? String(localized: "\(n) not found") : nil }
 }
 
 struct AddToSequenceSheet: View {
@@ -48,7 +48,7 @@ struct AddToSequenceSheet: View {
             Picker("Sequence", selection: $picked) { ForEach(sequences) { Text($0.name).tag($0.id) } }
           }
         } header: {
-          Text(segment.map { "Everyone in “\($0.name)”" } ?? "This person")
+          Text(segment.map { String(localized: "Everyone in “\($0.name)”") } ?? String(localized: "This person"))
         } footer: {
           Text("Only people who are subscribed to marketing email are added. Anyone already on the sequence is left alone.")
         }

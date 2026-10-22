@@ -50,7 +50,7 @@ struct ProjectConversationsScreen: View {
   private var groups: [(title: String, category: String, items: [Conversation])] {
     let open = items.filter { ["open", "pending"].contains(category($0)) }
     let done = items.filter { !["open", "pending"].contains(category($0)) }
-    return [(title: "Open", category: "open", items: open), (title: "Done", category: "resolved", items: done)].filter { !$0.items.isEmpty }
+    return [(title: String(localized: "Open"), category: "open", items: open), (title: String(localized: "Done"), category: "resolved", items: done)].filter { !$0.items.isEmpty }
   }
 
   private func row(_ conversation: Conversation) -> some View {
@@ -61,7 +61,7 @@ struct ProjectConversationsScreen: View {
       StatusIcon(category: category(conversation))
       lines {
         Text(subject(conversation)).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1).layoutPriority(1)
-        Text((conversation.lastMessageFrom == "agent" ? "You: " : "") + conversation.lastMessagePreview)
+        Text((conversation.lastMessageFrom == "agent" ? String(localized: "You: ") : "") + conversation.lastMessagePreview)
           .font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
       }
       Spacer(minLength: 0)
@@ -88,12 +88,12 @@ struct ProjectConversationsScreen: View {
   private func subject(_ conversation: Conversation) -> String {
     if !conversation.subject.isEmpty { return conversation.subject }
     if let label = conversation.context?.label, !label.isEmpty { return label }
-    return "Conversation"
+    return String(localized: "Conversation")
   }
 
   private func customerName(_ conversation: Conversation) -> String {
-    guard let user = endUsers[conversation.endUserId] else { return "Customer" }
-    return [user.name, user.email, user.externalId].first { !$0.isEmpty } ?? "Customer"
+    guard let user = endUsers[conversation.endUserId] else { return String(localized: "Customer") }
+    return [user.name, user.email, user.externalId].first { !$0.isEmpty } ?? String(localized: "Customer")
   }
 
   /// The web links to `/inbox?project=<id>&c=<conversation>`: filter the inbox to this project, then select.

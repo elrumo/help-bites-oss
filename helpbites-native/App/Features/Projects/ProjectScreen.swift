@@ -22,7 +22,7 @@ struct ProjectScreen: View {
       row(.settings)
     }
     .linearList()
-    .panelScreen(project?.name ?? "Project")
+    .panelScreen(project?.name ?? String(localized: "Project"))
     .toolbar {
       if let project {
         ToolbarItem(placement: .principal) {
@@ -77,7 +77,7 @@ struct ProjectOverviewScreen: View {
             ForEach(overview.stats) { stat in
               Button { open(stat.section) } label: {
                 VStack(alignment: .leading, spacing: 4) {
-                  Text(stat.label).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
+                  Text(LocalizedStringKey(stat.label)).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
                   Text(EmailStatusText.compactCount(stat.value)).font(.system(size: 22, weight: .semibold)).foregroundStyle(Theme.textHighlighted).monospacedDigit()
                 }
                 .padding(.horizontal, 14)
@@ -151,12 +151,13 @@ struct ProjectOverviewScreen: View {
     .task { await load() }
   }
 
-  /// `?view=` and `#anchor` are dropped; an unknown section opens Install & API.
+  /// `#anchor` is dropped; an unknown section opens Install & API.
   private func section(_ path: String) -> ProjectSection {
     ProjectSection.fromWeb(path) ?? .dev
   }
 
-  private func open(_ path: String) { workspace.go(.project(projectId, section(path))) }
+  /// `?view=` opens an Email tab.
+  private func open(_ path: String) { workspace.go(webPath: path, project: projectId) }
 
   /// The web links to `/inbox?c=<conversation>`.
   private func openConversation(_ id: String) {
@@ -186,7 +187,7 @@ struct SetupChecklist: View {
     Card {
       ForEach(setup.items) { item in
         CardRow(divider: item.id != setup.items.last?.id) {
-          Button { workspace.go(.project(projectId, ProjectSection.fromWeb(item.section) ?? .dev)) } label: { row(item) }.buttonStyle(.plain)
+          Button { workspace.go(webPath: item.section, project: projectId) } label: { row(item) }.buttonStyle(.plain)
         }
       }
     }

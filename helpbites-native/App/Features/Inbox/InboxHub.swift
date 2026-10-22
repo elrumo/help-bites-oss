@@ -115,7 +115,7 @@ struct InboxFaqSheet: View {
                 TextField("How do I export my data?", text: $question, axis: .vertical).lineLimit(1...4).textFieldStyle(.linear)
               }
               LabeledField(label: "Answer") {
-                LinearTextEditor(text: $answer, placeholder: "The answer", minHeight: 140)
+                LinearTextEditor(text: $answer, placeholder: String(localized: "The answer"), minHeight: 140)
               }
               if models.count > 1 {
                 LabeledField(label: "Knowledge model") {

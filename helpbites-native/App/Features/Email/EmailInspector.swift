@@ -81,11 +81,11 @@ struct EmailBlockInspector: View {
 
   private var actions: some View {
     HStack(spacing: 8) {
-      actionButton("Move up", systemImage: "arrow.up", enabled: canShift(-1)) { store.shift(blockId, by: -1) }
-      actionButton("Move down", systemImage: "arrow.down", enabled: canShift(1)) { store.shift(blockId, by: 1) }
-      actionButton("Duplicate", systemImage: "plus.square.on.square") { store.duplicate(blockId) }
+      actionButton(String(localized: "Move up"), systemImage: "arrow.up", enabled: canShift(-1)) { store.shift(blockId, by: -1) }
+      actionButton(String(localized: "Move down"), systemImage: "arrow.down", enabled: canShift(1)) { store.shift(blockId, by: 1) }
+      actionButton(String(localized: "Duplicate"), systemImage: "plus.square.on.square") { store.duplicate(blockId) }
       // No confirmation: Undo brings it back.
-      actionButton("Delete", systemImage: "trash", tint: Theme.error) { store.remove(blockId) }
+      actionButton(String(localized: "Delete"), systemImage: "trash", tint: Theme.error) { store.remove(blockId) }
     }
   }
 
@@ -145,13 +145,13 @@ struct EmailBlockInspector: View {
         EmailSegmentedPicker(selection: bind(\.level, 2), options: [1, 2, 3], title: { "H\($0)" })
       }
       LabeledField(label: "Colour") {
-        EmailColorField(label: "Colour", color: bind(\.color, nil), clearable: true)
+        EmailColorField(label: String(localized: "Colour"), color: bind(\.color, nil), clearable: true)
       }
       LabeledField(label: "Font size (px)") {
-        EmailNumberField(label: "Font size", value: bind(\.fontSize, nil), placeholder: EmailRender.js(Double([28, 22, 18][block.level - 1])), range: 8...200)
+        EmailNumberField(label: String(localized: "Font size"), value: bind(\.fontSize, nil), placeholder: EmailRender.js(Double([28, 22, 18][block.level - 1])), range: 8...200)
       }
       LabeledField(label: "Letter spacing (px)") {
-        EmailNumberField(label: "Letter spacing", value: zeroIsUnset(\.letterSpacing), placeholder: "0", range: -20...50, step: 0.1)
+        EmailNumberField(label: String(localized: "Letter spacing"), value: zeroIsUnset(\.letterSpacing), placeholder: "0", range: -20...50, step: 0.1)
       }
       LabeledField(label: "Font") {
         headingFontMenu(block.fontFamily)
@@ -166,7 +166,7 @@ struct EmailBlockInspector: View {
     let familyName = { (stack: String) in
       (stack.split(separator: ",").first.map(String.init) ?? stack).replacingOccurrences(of: "'", with: "").replacingOccurrences(of: "\"", with: "").trimmingCharacters(in: .whitespaces)
     }
-    let name = current.map { value in EmailFontStack.all.first { $0.value == value }?.label ?? familyName(value) } ?? "Email font"
+    let name = current.map { value in EmailFontStack.all.first { $0.value == value }?.label ?? familyName(value) } ?? String(localized: "Email font")
     return Menu {
       Picker("Font", selection: Binding<String>(
         get: { store.design.block(blockId)?.fontFamily ?? "" },
@@ -190,10 +190,10 @@ struct EmailBlockInspector: View {
         EmailRichTextField(html: bind(\.html, ""), variables: store.detectedVariables.map(\.key))
       }
       LabeledField(label: "Font size (px)") {
-        EmailNumberField(label: "Font size", value: bind(\.fontSize, nil), placeholder: "15", range: 8...200)
+        EmailNumberField(label: String(localized: "Font size"), value: bind(\.fontSize, nil), placeholder: "15", range: 8...200)
       }
       LabeledField(label: "Colour") {
-        EmailColorField(label: "Colour", color: bind(\.color, nil), clearable: true)
+        EmailColorField(label: String(localized: "Colour"), color: bind(\.color, nil), clearable: true)
       }
     }
   }
@@ -207,16 +207,16 @@ struct EmailBlockInspector: View {
         urlField(bind(\.href, ""))
       }
       LabeledField(label: "Fill colour") {
-        EmailColorField(label: "Fill colour", color: bind(\.backgroundColor, ""))
+        EmailColorField(label: String(localized: "Fill colour"), color: bind(\.backgroundColor, ""))
       }
       LabeledField(label: "Label colour") {
-        EmailColorField(label: "Label colour", color: bind(\.color, nil))
+        EmailColorField(label: String(localized: "Label colour"), color: bind(\.color, nil))
       }
       LabeledField(label: "Corner radius (px)") {
-        EmailNumberField(label: "Corner radius", value: bind(\.radius, nil), placeholder: "6", range: 0...999)
+        EmailNumberField(label: String(localized: "Corner radius"), value: bind(\.radius, nil), placeholder: "6", range: 0...999)
       }
       LabeledField(label: "Font size (px)", hint: "The padding scales with it.") {
-        EmailNumberField(label: "Font size", value: bind(\.fontSize, nil), placeholder: "15", range: 8...100)
+        EmailNumberField(label: String(localized: "Font size"), value: bind(\.fontSize, nil), placeholder: "15", range: 8...100)
       }
       LabeledField(label: "Shadow", hint: "CSS box-shadow; Outlook leaves it out.") {
         EmailShadowField(shadow: bind(\.shadow, nil))
@@ -236,10 +236,10 @@ struct EmailBlockInspector: View {
         urlField(bind(\.href, ""))
       }
       LabeledField(label: "Width (px)", hint: "0 fills the width.") {
-        EmailNumberField(label: "Width", value: bind(\.width, nil), placeholder: "0", range: 0...2000)
+        EmailNumberField(label: String(localized: "Width"), value: bind(\.width, nil), placeholder: "0", range: 0...2000)
       }
       LabeledField(label: "Height (px)", hint: "With no width: a badge.") {
-        EmailNumberField(label: "Height", value: zeroIsUnset(\.imageHeight), placeholder: "0", range: 0...2000)
+        EmailNumberField(label: String(localized: "Height"), value: zeroIsUnset(\.imageHeight), placeholder: "0", range: 0...2000)
       }
     }
   }
@@ -250,23 +250,23 @@ struct EmailBlockInspector: View {
     let shown = Binding<String?>(get: { color.wrappedValue ?? "#e4e4e7" }, set: { color.wrappedValue = $0 })
     return VStack(alignment: .leading, spacing: 16) {
       LabeledField(label: "Colour") {
-        EmailColorField(label: "Colour", color: shown)
+        EmailColorField(label: String(localized: "Colour"), color: shown)
       }
       LabeledField(label: "Thickness (px)") {
-        EmailNumberField(label: "Thickness", value: bind(\.thickness, nil), placeholder: "1", range: 1...100)
+        EmailNumberField(label: String(localized: "Thickness"), value: bind(\.thickness, nil), placeholder: "1", range: 1...100)
       }
     }
   }
 
   private var spacerFields: some View {
     LabeledField(label: "Height (px)") {
-      EmailNumberField(label: "Height", value: bind(\.height, 0), placeholder: "0", range: 0...1000)
+      EmailNumberField(label: String(localized: "Height"), value: bind(\.height, 0), placeholder: "0", range: 0...1000)
     }
   }
 
   private func columnsFields(_ block: EmailDesignBlock) -> some View {
     let columns = block.columns
-    let countLabel: String = columns.count == 1 ? "1 column" : "\(columns.count) columns"
+    let countLabel: String = columns.count == 1 ? String(localized: "1 column") : String(localized: "\(columns.count) columns")
     let count = Binding<Int>(
       get: { max(1, store.design.block(blockId)?.columns.count ?? 1) },
       set: { store.setColumnCount(blockId, $0) }
@@ -281,10 +281,10 @@ struct EmailBlockInspector: View {
         .frame(minHeight: 44)
       }
       LabeledField(label: "Gap (px)") {
-        EmailNumberField(label: "Gap", value: bind(\.gap, nil), placeholder: "16", range: 0...200)
+        EmailNumberField(label: String(localized: "Gap"), value: bind(\.gap, nil), placeholder: "16", range: 0...200)
       }
       ForEach(0..<columns.count, id: \.self) { column in
-        childList("Column \(column + 1)", column: column, children: columns[column])
+        childList(String(localized: "Column \(column + 1)"), column: column, children: columns[column])
       }
     }
   }
@@ -296,15 +296,15 @@ struct EmailBlockInspector: View {
         .foregroundStyle(Theme.textMuted)
         .fixedSize(horizontal: false, vertical: true)
       LabeledField(label: "Gradient to") {
-        EmailColorField(label: "Gradient to", color: bind(\.gradientTo, nil), clearable: true, placeholder: "None")
+        EmailColorField(label: String(localized: "Gradient to"), color: bind(\.gradientTo, nil), clearable: true, placeholder: String(localized: "None"))
       }
       LabeledField(label: "Angle (°)") {
-        EmailNumberField(label: "Gradient angle", value: bind(\.gradientAngle, nil), placeholder: "180", range: 0...360)
+        EmailNumberField(label: String(localized: "Gradient angle"), value: bind(\.gradientAngle, nil), placeholder: "180", range: 0...360)
           .disabled(block.gradientTo == nil)
           .opacity(block.gradientTo == nil ? 0.5 : 1)
       }
       LabeledField(label: "Corner radius (px)") {
-        EmailNumberField(label: "Corner radius", value: zeroIsUnset(\.radius), placeholder: "0", range: 0...999)
+        EmailNumberField(label: String(localized: "Corner radius"), value: zeroIsUnset(\.radius), placeholder: "0", range: 0...999)
       }
       LabeledField(label: "Shadow", hint: "CSS box-shadow; Outlook leaves it out.") {
         EmailShadowField(shadow: bind(\.shadow, nil))
@@ -431,7 +431,7 @@ struct EmailBlockInspector: View {
         label: field.label,
         color: Binding<String?>(get: { (value.wrappedValue ?? "").isEmpty ? nil : value.wrappedValue }, set: { value.wrappedValue = $0 }),
         clearable: true,
-        placeholder: field.defaultValue.isEmpty ? "None" : field.defaultValue
+        placeholder: field.defaultValue.isEmpty ? String(localized: "None") : field.defaultValue
       )
     case .number:
       EmailNumberField(
@@ -488,7 +488,7 @@ struct EmailBlockInspector: View {
         EmailPaddingField(padding: bind(\.padding, EmailPadding.none))
       }
       LabeledField(label: "Background") {
-        EmailColorField(label: "Background", color: bind(\.background, nil), clearable: true, placeholder: "None")
+        EmailColorField(label: String(localized: "Background"), color: bind(\.background, nil), clearable: true, placeholder: String(localized: "None"))
       }
     }
   }

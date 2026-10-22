@@ -50,11 +50,11 @@ struct AssistantKnowledgeAccess: View {
   }
 
   private func describe(_ assignment: AssistantAssignment) -> String {
-    let model = models.first { $0.id == assignment.modelId }?.name ?? "model"
+    let model = models.first { $0.id == assignment.modelId }?.name ?? String(localized: "model")
     switch assignment.scope {
-    case "model": return "Entire model: \(model)"
-    case "path": return "Path: \(model) › \(assignment.pathCache ?? "")"
-    default: return "Single FAQ in \(model)"
+    case "model": return String(localized: "Entire model: \(model)")
+    case "path": return String(localized: "Path: \(model) › \(assignment.pathCache ?? "")")
+    default: return String(localized: "Single FAQ in \(model)")
     }
   }
 
@@ -92,7 +92,7 @@ struct AssistantKnowledgeAccess: View {
   }
 
   private func pickerPlaceholder(_ empty: Bool, _ none: String, _ choose: String) -> String {
-    modelId.isEmpty ? "Choose a model first" : empty ? none : choose
+    modelId.isEmpty ? String(localized: "Choose a model first") : empty ? none : choose
   }
 
   /// The id the chosen scope needs (the server 400s without it).
@@ -203,7 +203,7 @@ struct AssistantTestAnswer: View {
 
   /// The project's ticket types, or the built-in one when they have not loaded.
   private var typeOptions: [AssistantOption] {
-    types.isEmpty ? [AssistantOption(value: "support", label: "Support")] : types.map { AssistantOption(value: $0.key, label: $0.name) }
+    types.isEmpty ? [AssistantOption(value: "support", label: String(localized: "Support"))] : types.map { AssistantOption(value: $0.key, label: $0.name) }
   }
 
   // MARK: Result
@@ -291,7 +291,7 @@ struct AssistantTestAnswer: View {
     } catch {
       result = nil
       let message = error.localizedDescription
-      self.error = message.isEmpty ? "Could not run the test" : message
+      self.error = message.isEmpty ? String(localized: "Could not run the test") : message
     }
   }
 }

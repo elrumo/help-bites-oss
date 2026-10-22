@@ -27,7 +27,7 @@ struct FlagsScreen: View {
               Spacer()
               if saved { Label("Saved", systemImage: "checkmark").font(.lnCaption).foregroundStyle(Theme.textMuted) }
             }
-            Text(flagsMarkdown("Switch features of your app on, off, or on for admins only. Your app reads them from `GET /v1/flags`; the Dev section shows how."))
+            Text(flagsMarkdown(String(localized: "Switch features of your app on, off, or on for admins only. Your app reads them from `GET /v1/flags`; the Dev section shows how.")))
               .font(.lnMeta).foregroundStyle(Theme.textMuted)
           }
 
@@ -160,9 +160,9 @@ private struct FlagsDraft: Identifiable {
 /// off | admins | on, with the web's dot colours.
 private enum FlagsState {
   static let all: [(value: String, label: String, tint: Color)] = [
-    ("off", "Off", Theme.error),
-    ("admins", "Admins only", Theme.warning),
-    ("on", "On", Theme.success)
+    ("off", String(localized: "Off"), Theme.error),
+    ("admins", String(localized: "Admins only"), Theme.warning),
+    ("on", String(localized: "On"), Theme.success)
   ]
   static func label(_ value: String) -> String { all.first { $0.value == value }?.label ?? value }
   static func tint(_ value: String) -> Color { all.first { $0.value == value }?.tint ?? Theme.textDimmed }
@@ -286,7 +286,7 @@ private struct FlagsStatePicker: View {
 /// Tags input (the web's UInputTags): return, a comma or leaving the field adds, the cross removes.
 private struct FlagsTagsField: View {
   @Binding var tags: [String]
-  let placeholder: String
+  let placeholder: LocalizedStringKey
   @State private var text = ""
   @FocusState private var focused: Bool
 

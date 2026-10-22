@@ -114,7 +114,7 @@ private struct MacSidebar: View {
     let layout = workspace.layout(projectId, keeping: currentSection(projectId))
     sectionRow(projectId, .overview)
     ForEach(layout.groups) { entry in
-      Text(entry.group.label)
+      Text(entry.group.localizedLabel)
         .font(.lnCaptionMedium).foregroundStyle(Theme.textMuted)
         .padding(.top, 6)
         .accessibilityAddTraits(.isHeader)
@@ -124,7 +124,7 @@ private struct MacSidebar: View {
   }
 
   private func sectionRow(_ projectId: String, _ section: ProjectSection) -> some View {
-    Label(section.label, systemImage: section.systemImage).tag(AppRoute.project(projectId, section))
+    Label(section.localizedLabel, systemImage: section.systemImage).tag(AppRoute.project(projectId, section))
   }
 
   /// The section of this project the window shows.

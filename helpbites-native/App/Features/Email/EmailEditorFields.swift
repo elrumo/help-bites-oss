@@ -23,7 +23,7 @@ struct EmailColorField: View {
   @State private var text: String
   @FocusState private var focused: Bool
 
-  init(label: String, color: Binding<String?>, clearable: Bool = false, placeholder: String = "Default") {
+  init(label: String, color: Binding<String?>, clearable: Bool = false, placeholder: String = String(localized: "Default")) {
     self.label = label
     _color = color
     self.clearable = clearable
@@ -32,7 +32,7 @@ struct EmailColorField: View {
   }
 
   /// A colour that is always set (a theme token, a button's fill): emptying the text leaves it as it was.
-  init(label: String, color: Binding<String>, placeholder: String = "Default") {
+  init(label: String, color: Binding<String>, placeholder: String = String(localized: "Default")) {
     self.init(
       label: label,
       color: Binding<String?>(
@@ -119,9 +119,9 @@ struct EmailShadowField: View {
 
   /// EMAIL_SHADOWS.
   static let presets: [(label: String, value: String)] = [
-    ("Subtle", "0 2px 4px rgba(0, 0, 0, 0.1)"),
-    ("Soft", "0 10px 30px rgba(20, 35, 60, 0.08)"),
-    ("Lifted", "0 4px 10px rgba(0, 0, 0, 0.2)")
+    (String(localized: "Subtle"), "0 2px 4px rgba(0, 0, 0, 0.1)"),
+    (String(localized: "Soft"), "0 10px 30px rgba(20, 35, 60, 0.08)"),
+    (String(localized: "Lifted"), "0 4px 10px rgba(0, 0, 0, 0.2)")
   ]
 
   init(shadow: Binding<String?>) {
@@ -341,7 +341,13 @@ struct EmailAlignPicker: View {
     EmailSegmentedPicker(
       selection: $align,
       options: ["left", "center", "right"],
-      title: { $0.capitalized },
+      title: { option in
+        switch option {
+        case "center": String(localized: "Center")
+        case "right": String(localized: "Right")
+        default: String(localized: "Left")
+        }
+      },
       systemImage: { "text.align\($0)" }
     )
   }
@@ -366,10 +372,10 @@ struct EmailPaddingField: View {
 
     var label: String {
       switch self {
-      case .top: "Top"
-      case .right: "Right"
-      case .bottom: "Bottom"
-      case .left: "Left"
+      case .top: String(localized: "Top")
+      case .right: String(localized: "Right")
+      case .bottom: String(localized: "Bottom")
+      case .left: String(localized: "Left")
       }
     }
   }
@@ -377,7 +383,7 @@ struct EmailPaddingField: View {
   var body: some View {
     let mixed = padding.uniformValue == nil
     VStack(alignment: .leading, spacing: 8) {
-      EmailNumberField(label: "Padding", value: uniform, placeholder: mixed ? "Mixed" : "0", range: 0...400)
+      EmailNumberField(label: String(localized: "Padding"), value: uniform, placeholder: mixed ? String(localized: "Mixed") : "0", range: 0...400)
       Button {
         withAnimation(.easeInOut(duration: 0.2)) { showsSides.toggle() }
       } label: {
@@ -422,7 +428,7 @@ struct EmailPaddingField: View {
 
   private func sideField(_ side: Side) -> some View {
     LabeledField(label: side.label) {
-      EmailNumberField(label: "\(side.label) padding", value: sideValue(side), placeholder: "0", range: 0...400, showsStepper: false)
+      EmailNumberField(label: String(localized: "\(side.label) padding"), value: sideValue(side), placeholder: "0", range: 0...400, showsStepper: false)
     }
   }
 
@@ -436,7 +442,7 @@ struct EmailPaddingField: View {
   /// The web's summary under a mixed padding.
   private var summary: String {
     let e = padding.edges
-    return "Top \(EmailRender.js(e.top))px, right \(EmailRender.js(e.right))px, bottom \(EmailRender.js(e.bottom))px, left \(EmailRender.js(e.left))px"
+    return String(localized: "Top \(EmailRender.js(e.top))px, right \(EmailRender.js(e.right))px, bottom \(EmailRender.js(e.bottom))px, left \(EmailRender.js(e.left))px")
   }
 
   private static func edge(_ side: Side, of current: EmailPadding) -> Double {
@@ -524,17 +530,17 @@ struct EmailRichTextField: View {
 
   private var toolbar: some View {
     HStack(spacing: 0) {
-      tool("bold", "Bold") { wrap("<b>", "</b>") }
-      tool("italic", "Italic") { wrap("<i>", "</i>") }
-      tool("underline", "Underline") { wrap("<u>", "</u>") }
-      tool("link", "Link") {
+      tool("bold", String(localized: "Bold")) { wrap("<b>", "</b>") }
+      tool("italic", String(localized: "Italic")) { wrap("<i>", "</i>") }
+      tool("underline", String(localized: "Underline")) { wrap("<u>", "</u>") }
+      tool("link", String(localized: "Link")) {
         linkRange = currentRange
         linkURL = "https://"
         askingLink = true
       }
-      tool("return", "Line break") { insert("<br>") }
+      tool("return", String(localized: "Line break")) { insert("<br>") }
       variableMenu
-      tool("eraser", "Clear formatting") { clearFormatting() }
+      tool("eraser", String(localized: "Clear formatting")) { clearFormatting() }
     }
     .padding(.horizontal, 4)
   }
@@ -727,7 +733,7 @@ struct EmailImageSourceField: View {
         if let data = Self.read(url) {
           Task { await send(data) }
         } else {
-          store.notice = "Couldn't read that file."
+          store.notice = String(localized: "Couldn't read that file.")
         }
       case .failure(let error):
         store.notice = error.localizedDescription
@@ -748,7 +754,7 @@ struct EmailImageSourceField: View {
     photo = nil
     guard let data else {
       uploading = false
-      store.notice = "Couldn't read that photo."
+      store.notice = String(localized: "Couldn't read that photo.")
       return
     }
     await send(data)

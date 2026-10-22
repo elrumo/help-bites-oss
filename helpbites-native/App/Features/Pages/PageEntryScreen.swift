@@ -2,11 +2,14 @@ import SwiftUI
 
 /// One entry (web: projects/[id]/pages/[entryId].vue and CmsEditor.vue): its block tree as an
 /// outline beside a form for the selected block (a sheet on iPhone). Edits save together;
-/// publishing freezes them into the next version visitors get. The web editor's live preview
-/// and assistant have no native counterpart: open the hosted page after publishing.
+/// publishing freezes them into the next version visitors get. Undo and redo step through the
+/// draft, and the assistant (PagesChat.swift) edits it as it works. The web editor's live preview has
+/// no native counterpart: open the hosted page after publishing.
 struct PageEntryScreen: View {
   let projectId: String
   let entryId: String
+  /// The assistant sends this once, when its chat is empty (the wizard's brief).
+  var firstPrompt: String? = nil
   @Environment(SessionStore.self) private var session
   @Environment(Workspace.self) private var workspace
   @Environment(\.dismiss) private var dismiss
@@ -26,6 +29,15 @@ struct PageEntryScreen: View {
   /// iPhone: the form for the selection, in a sheet.
   @State private var inspecting = false
   @State private var confirm: Confirm?
+  /// Earlier drafts, newest last; edits within 600 ms of each other share one step.
+  @State private var undoStack: [PageDraft] = []
+  @State private var redoStack: [PageDraft] = []
+  @State private var lastEdit = Date.distantPast
+  @State private var restoring = false
+  /// The assistant is at work: its edits are one undo step, taken when its turn began.
+  @State private var assisting = false
+  @State private var chat: PagesChatStore?
+  @State private var assistantOpen = false
 
   private enum Confirm: String, Identifiable { case unpublish, delete; var id: String { rawValue } }
 
@@ -45,7 +57,7 @@ struct PageEntryScreen: View {
         SkeletonRows(count: 4).frame(maxHeight: .infinity, alignment: .top)
       } else {
         VStack(spacing: 12) {
-          ErrorText(message: error.isEmpty ? "Page not found" : error)
+          ErrorText(message: error.isEmpty ? String(localized: "Page not found") : error)
           Button("Try again") { Task { await load() } }.buttonStyle(.lnSecondaryCompact)
         }
         .padding(20).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -75,12 +87,66 @@ struct PageEntryScreen: View {
       }
       .presentationDetents([.large])
     }
+    .onChange(of: draft) { old, new in record(from: old, to: new) }
+    .sheet(isPresented: $assistantOpen) {
+      if let chat {
+        NavigationStack {
+          PagesChatPanel(chat: chat, library: library, selected: selectedBlock, content: draft?.content) { selection = $0 }
+            .panelScreen("Assistant")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { assistantOpen = false } } }
+        }
+        .presentationDetents([.medium, .large])
+      }
+    }
     .task { if entry == nil { await load() } }
+  }
+
+  // MARK: History
+
+  private func record(from old: PageDraft?, to new: PageDraft?) {
+    if restoring { restoring = false; return }
+    guard let old, new != nil, !assisting else { return }
+    if Date().timeIntervalSince(lastEdit) > 0.6 {
+      undoStack.append(old)
+      if undoStack.count > 50 { undoStack.removeFirst() }
+    }
+    lastEdit = Date()
+    redoStack.removeAll()
+  }
+
+  private func undo() {
+    guard let previous = undoStack.popLast(), let draft else { return }
+    redoStack.append(draft)
+    restoring = true
+    self.draft = previous
+    lastEdit = .distantPast
+    reselect()
+  }
+
+  private func redo() {
+    guard let next = redoStack.popLast(), let draft else { return }
+    undoStack.append(draft)
+    restoring = true
+    self.draft = next
+    lastEdit = .distantPast
+    reselect()
+  }
+
+  /// The selection goes to the page when its block no longer exists.
+  private func reselect() {
+    if let draft, let selection, draft.content.find(selection, library) == nil { self.selection = nil; inspecting = false }
   }
 
   // MARK: Toolbar
 
   @ToolbarContentBuilder private func toolbar(_ entry: CmsEntry) -> some ToolbarContent {
+    ToolbarItemGroup(placement: .primaryAction) {
+      Button { assistantOpen = true } label: { Label("Assistant", systemImage: "sparkles") }
+      Button { undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
+        .keyboardShortcut("z", modifiers: .command).disabled(undoStack.isEmpty || busy != "")
+      Button { redo() } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
+        .keyboardShortcut("z", modifiers: [.command, .shift]).disabled(redoStack.isEmpty || busy != "")
+    }
     ToolbarItem(placement: .primaryAction) {
       Menu {
         if entry.isPublished, let publicURL {
@@ -137,6 +203,46 @@ struct PageEntryScreen: View {
       projectAccent: workspace.project(projectId)?.theme.accent,
       address: publicURL?.absoluteString ?? ""
     )
+  }
+
+  private var selectedBlock: CmsBlock? {
+    guard let draft, let selection, selection != draft.content.uid else { return nil }
+    return draft.content.find(selection, library)
+  }
+
+  /// The assistant edits this page: its content and settings stream into the draft.
+  private func makeChat() -> PagesChatStore {
+    let store = PagesChatStore(session: session, scope: PagesChatScope(projectId: projectId, entryId: entryId))
+    store.firstPrompt = firstPrompt
+    store.content = { draft?.content }
+    store.selectedId = { selection }
+    store.snapshot = { draft }
+    store.restore = { previous in
+      draft = previous
+      reselect()
+    }
+    store.applyContent = { block in
+      draft?.content = block
+      reselect()
+    }
+    store.applyPage = { name, slug, style in
+      if let name { draft?.name = name }
+      if let slug { draft?.slug = slug }
+      if let style { draft?.style = style }
+    }
+    store.componentSaved = { Task { await reloadLibrary() } }
+    store.turnStarted = {
+      if let draft { undoStack.append(draft); if undoStack.count > 50 { undoStack.removeFirst() } }
+      redoStack.removeAll()
+      assisting = true
+    }
+    store.turnEnded = { assisting = false }
+    return store
+  }
+
+  private func reloadLibrary() async {
+    struct Components: Decodable, Sendable { let components: [CmsComponent] }
+    if let components: Components = try? await session.get("/v1/admin/cms/components", query: ["project": projectId]) { library = CmsLibrary(components.components) }
   }
 
   private var selectionTitle: String {
@@ -201,7 +307,7 @@ struct PageEntryScreen: View {
         HStack(spacing: 8) {
           Image(systemName: root ? "doc" : def == nil ? "questionmark.circle" : def?.isBuiltin == true ? "cube" : "puzzlepiece")
             .font(.system(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 18)
-          Text(def?.name ?? "Missing: \(block.component)").font(.lnRow).foregroundStyle(def == nil ? Theme.warning : Theme.textHighlighted).lineLimit(1).layoutPriority(1)
+          Text(def?.name ?? String(localized: "Missing: \(block.component)")).font(.lnRow).foregroundStyle(def == nil ? Theme.warning : Theme.textHighlighted).lineLimit(1).layoutPriority(1)
           if !block.title.isEmpty { Text(block.title).font(.lnCaption).foregroundStyle(Theme.textDimmed).lineLimit(1) }
           Spacer(minLength: 0)
           if block.animation != nil { Image(systemName: "sparkles").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Animated") }
@@ -214,6 +320,7 @@ struct PageEntryScreen: View {
           Button { move(block.uid, by: -1) } label: { Label("Move up", systemImage: "arrow.up") }.disabled(slot.map { $0.index == 0 } ?? true)
           Button { move(block.uid, by: 1) } label: { Label("Move down", systemImage: "arrow.down") }.disabled(slot.map { $0.index >= $0.count - 1 } ?? true)
           Button { duplicate(block.uid) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
+          moveMenu(block)
           Divider()
           Button(role: .destructive) { remove(block.uid) } label: { Label("Delete", systemImage: "trash") }
         } label: {
@@ -259,6 +366,25 @@ struct PageEntryScreen: View {
     selection = block.uid
   }
 
+  /// "Move to": the other lists that take this block.
+  @ViewBuilder private func moveMenu(_ block: CmsBlock) -> some View {
+    let targets = draft?.content.moveTargets(for: block.uid, library) ?? []
+    if !targets.isEmpty {
+      Menu {
+        ForEach(Array(targets.enumerated()), id: \.offset) { _, target in
+          Button("\(library[target.parent.component]?.name ?? target.parent.component) › \(target.field.label)") { moveToList(block.uid, target.parent, target.field) }
+        }
+      } label: { Label("Move to…", systemImage: "arrow.right.square") }
+    }
+  }
+
+  private func moveToList(_ id: String, _ parent: CmsBlock, _ field: CmsField) {
+    guard var edited = draft else { return }
+    if let why = edited.content.moveToList(id, parent: parent.uid, field: field.key, library) { error = why; return }
+    error = ""
+    draft = edited
+  }
+
   private func move(_ id: String, by offset: Int) {
     draft?.content.move(id, by: offset, library)
   }
@@ -288,6 +414,10 @@ struct PageEntryScreen: View {
       entry = response.entry
       draft = PageDraft(response.entry)
       error = ""
+      if chat == nil {
+        chat = makeChat()
+        assistantOpen = firstPrompt != nil
+      }
     } catch {
       if case APIError.cancelled = error { return }
       self.error = error.localizedDescription
@@ -302,7 +432,7 @@ struct PageEntryScreen: View {
     guard let draft else { return false }
     let name = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
     let slug = draft.slug.trimmingCharacters(in: .whitespaces).lowercased()
-    if name.isEmpty { error = "A page needs a name."; return false }
+    if name.isEmpty { error = String(localized: "A page needs a name."); return false }
     if !CmsLimits.validSlug(slug) { error = CmsLimits.slugRule; return false }
     busy = "save"
     error = ""
@@ -311,7 +441,7 @@ struct PageEntryScreen: View {
       let response: CmsEntryResponse = try await session.send("/v1/admin/cms/entries/\(entryId)", method: "PATCH", body: Input(name: name, slug: slug, style: draft.style, content: draft.content))
       entry = response.entry
       self.draft = PageDraft(response.entry)
-      notice = response.issues.isEmpty ? "" : "Fixed on save: " + response.issues.prefix(3).joined(separator: " ")
+      notice = response.issues.isEmpty ? "" : String(localized: "Fixed on save: \(response.issues.prefix(3).joined(separator: " "))")
       return true
     } catch {
       self.error = error.localizedDescription

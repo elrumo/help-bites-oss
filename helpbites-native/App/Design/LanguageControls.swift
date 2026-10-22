@@ -43,7 +43,7 @@ struct TranslateSheet: View {
   var existing: [String] = []
   /// Most languages one request takes; 1 makes it a single choice.
   var limit = ContentLocale.translateRequest
-  var overwriteHint: String? = "Replace strings that already have a translation. Off: only what is missing is filled in."
+  var overwriteHint: String? = String(localized: "Replace strings that already have a translation. Off: only what is missing is filled in.")
   let note: String
   let run: ([String], Bool) async throws -> Void
   @Environment(\.dismiss) private var dismiss
@@ -97,7 +97,7 @@ struct TranslateSheet: View {
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(busy) }
         ToolbarItem(placement: .confirmationAction) {
-          Button { Task { await translate() } } label: { Text(busy ? "Translating…" : "Translate") }.disabled(picked.isEmpty || busy)
+          Button { Task { await translate() } } label: { Text(busy ? String(localized: "Translating…") : String(localized: "Translate")) }.disabled(picked.isEmpty || busy)
         }
       }
       .alert("Language tag", isPresented: $typing) {
@@ -138,7 +138,7 @@ struct TranslateSheet: View {
 
 /// How many of `total` strings a translation has: "3 of 7 filled".
 func translationProgress(_ filled: Int, of total: Int) -> String {
-  total == 0 ? "Nothing to translate yet" : "\(filled) of \(total) filled"
+  total == 0 ? String(localized: "Nothing to translate yet") : String(localized: "\(filled) of \(total) filled")
 }
 
 /// A language picked for editing, for `.sheet(item:)`.

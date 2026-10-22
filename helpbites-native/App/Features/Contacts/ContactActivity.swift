@@ -109,7 +109,7 @@ struct ContactActivitySection: View {
     }
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)
-    .accessibilityHint(linked ? "Opens it" : "")
+    .accessibilityHint(linked ? String(localized: "Opens it") : "")
   }
 
   /// A conversation, or another screen of the app.

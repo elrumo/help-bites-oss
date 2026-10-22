@@ -57,7 +57,7 @@ struct ProjectEmailSettingsView: View {
             field("From name", project.name, $sender.fromName)
             Text("Signs your replies and their emails").font(.lnCaption).foregroundStyle(Theme.textMuted)
           }
-          field("Reply-to", "Replies go to the from address", $sender.replyTo, .emailAddress)
+          field("Reply-to", String(localized: "Replies go to the from address"), $sender.replyTo, .emailAddress)
           field("From address", serverOr(serverDefault?.fromEmail, "hello@mail.example.com"), $sender.fromEmail, .emailAddress)
           field("Sending domain", serverOr(serverDefault?.domain, "mail.example.com"), $sender.mailDomain, .url, mono: true)
         } header: { Text("Sender") } footer: {
@@ -139,7 +139,7 @@ struct ProjectEmailSettingsView: View {
           if saved { Label("Saved", systemImage: "checkmark").font(.lnMeta).foregroundStyle(Theme.textMuted) }
         }
       } else {
-        Section { ErrorText(message: error.isEmpty ? "This project could not be loaded." : error) }
+        Section { ErrorText(message: error.isEmpty ? String(localized: "This project could not be loaded.") : error) }
       }
     }
     .formStyle(.grouped)
@@ -157,7 +157,7 @@ struct ProjectEmailSettingsView: View {
   }
 
   /// A labelled text row: the label leading, the field trailing with its default or an example as the placeholder.
-  private func field(_ label: String, _ placeholder: String, _ text: Binding<String>, _ keyboard: URLKeyboard = .default, mono: Bool = false) -> some View {
+  private func field(_ label: LocalizedStringKey, _ placeholder: String, _ text: Binding<String>, _ keyboard: URLKeyboard = .default, mono: Bool = false) -> some View {
     let font: Font = mono ? .lnMono : .lnCallout
     return LabeledContent(label) {
       TextField(label, text: text, prompt: Text(placeholder))

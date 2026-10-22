@@ -29,12 +29,12 @@ private struct BlogSheetFrame<Content: View, Trailing: View>: View {
   }
 }
 
-private func hint(_ text: String) -> some View {
+private func hint(_ text: LocalizedStringKey) -> some View {
   Text(text).font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
 }
 
 /// A boxed line above a sheet: who may change it, or what a send waits for.
-private func notice(_ text: String) -> some View {
+private func notice(_ text: LocalizedStringKey) -> some View {
   Text(text)
     .font(.lnMeta).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
     .padding(.horizontal, 12).padding(.vertical, 8)
@@ -105,7 +105,7 @@ struct BlogSettingsSheet: View {
       TextField("{siteUrl}/blog/{slug}", text: $settings.postUrl).textFieldStyle(.linear).inputHints(.url, capitalization: .never).autocorrectionDisabled()
     }
     LabeledField(label: "Newsletter topic", hint: "Who a newsletter goes to unless you pick otherwise") {
-      FeedbackSelect(options: [FeedbackOption(value: "", label: "Every subscriber")] + (store.project?.marketing?.topics ?? []).map { FeedbackOption(value: $0.key, label: $0.name.isEmpty ? $0.key : $0.name) }, selection: $settings.newsletterTopic)
+      FeedbackSelect(options: [FeedbackOption(value: "", label: String(localized: "Every subscriber"))] + (store.project?.marketing?.topics ?? []).map { FeedbackOption(value: $0.key, label: $0.name.isEmpty ? $0.key : $0.name) }, selection: $settings.newsletterTopic)
     }
     Button { Task { await saveText() } } label: { Text("Save") }.buttonStyle(.lnSecondary).disabled(saving)
     ErrorText(message: error)
@@ -183,10 +183,10 @@ struct BlogDesignSheet: View {
     var url: String
   }
 
-  private static let layoutLabels = ["list": "List", "grid": "Grid", "magazine": "Magazine"]
-  private static let fontLabels = ["sans": "Sans serif", "serif": "Serif"]
-  private static let schemeLabels = ["auto": "Follow the reader", "light": "Light", "dark": "Dark"]
-  private static let socialLabels = ["x": "X", "bluesky": "Bluesky", "mastodon": "Mastodon", "github": "GitHub", "linkedin": "LinkedIn", "instagram": "Instagram", "youtube": "YouTube", "website": "Website"]
+  private static let layoutLabels = ["list": String(localized: "List"), "grid": String(localized: "Grid"), "magazine": String(localized: "Magazine")]
+  private static let fontLabels = ["sans": String(localized: "Sans serif"), "serif": String(localized: "Serif")]
+  private static let schemeLabels = ["auto": String(localized: "Follow the reader"), "light": String(localized: "Light"), "dark": String(localized: "Dark")]
+  private static let socialLabels = ["x": "X", "bluesky": "Bluesky", "mastodon": "Mastodon", "github": "GitHub", "linkedin": "LinkedIn", "instagram": "Instagram", "youtube": "YouTube", "website": String(localized: "Website")]
 
   init(store: BlogStore) {
     self.store = store
@@ -416,7 +416,7 @@ struct BlogDesignSheet: View {
       coverPhoto = nil
     }
     do {
-      guard let data = try await item.loadTransferable(type: Data.self) else { throw APIError.server("Could not read that photo.") }
+      guard let data = try await item.loadTransferable(type: Data.self) else { throw APIError.server(String(localized: "Could not read that photo.")) }
       let url = try await store.uploadImage(data)
       if key == "logoUrl" { logoUrl = url } else { coverImageUrl = url }
       await save([key: .string(url)])
@@ -461,7 +461,7 @@ struct BlogImportSheet: View {
       } else {
         LabeledField(label: "Ghost export", hint: "In Ghost: Settings → Advanced → Import/Export → Export content. A .json file.") {
           HStack(spacing: 8) {
-            Button { picking = true } label: { Label(file?.name ?? "Choose the file", systemImage: "doc") }.buttonStyle(.lnSecondaryCompact)
+            Button { picking = true } label: { Label(file?.name ?? String(localized: "Choose the file"), systemImage: "doc") }.buttonStyle(.lnSecondaryCompact)
             if let file {
               Text(file.count == 1 ? "1 post or page" : "\(file.count) posts and pages").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
             }
@@ -556,7 +556,7 @@ struct BlogNewsletterSheet: View {
         TextField(post.title, text: $subject).textFieldStyle(.linear)
       }
       LabeledField(label: "Topic", hint: "Leaves out whoever opted out of it") {
-        FeedbackSelect(options: [FeedbackOption(value: "", label: "Every subscriber")] + (store.project?.marketing?.topics ?? []).map { FeedbackOption(value: $0.key, label: $0.name.isEmpty ? $0.key : $0.name) }, selection: $topic)
+        FeedbackSelect(options: [FeedbackOption(value: "", label: String(localized: "Every subscriber"))] + (store.project?.marketing?.topics ?? []).map { FeedbackOption(value: $0.key, label: $0.name.isEmpty ? $0.key : $0.name) }, selection: $topic)
       }
       Toggle("Send later", isOn: $later).font(.lnBody)
       if later {
@@ -582,7 +582,7 @@ struct BlogNewsletterSheet: View {
     } trailing: {}
   }
 
-  @ViewBuilder private func busyLabel(_ title: String, _ key: String) -> some View {
+  @ViewBuilder private func busyLabel(_ title: LocalizedStringKey, _ key: String) -> some View {
     if busy == key { ProgressView().controlSize(.small) } else { Text(title) }
   }
 

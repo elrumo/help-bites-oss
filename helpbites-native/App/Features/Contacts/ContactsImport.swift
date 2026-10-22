@@ -199,7 +199,7 @@ struct CsvImportSheet: View {
     }
   }
 
-  private func picker(_ title: String, _ selection: Binding<String?>) -> some View {
+  private func picker(_ title: LocalizedStringKey, _ selection: Binding<String?>) -> some View {
     Picker(title, selection: selection) {
       Text("None").tag(String?.none)
       ForEach(columns, id: \.self) { Text($0).tag(Optional($0)) }
@@ -236,7 +236,7 @@ struct CsvImportSheet: View {
         if mapping.email == nil && mapping.externalId == nil {
           Text("Pick the email or the user id column.").foregroundStyle(Theme.error)
         } else {
-          Text("\(preview.inputs.count) people to import\(preview.skipped > 0 ? ", \(preview.skipped) rows skipped (no valid email or id)" : "").").foregroundStyle(Theme.textMuted)
+          Text("\(preview.inputs.count) people to import\(preview.skipped > 0 ? String(localized: ", \(preview.skipped) rows skipped (no valid email or id)") : "").").foregroundStyle(Theme.textMuted)
         }
         if importing { ProgressView(value: Double(done), total: Double(max(preview.inputs.count, 1))) }
         ErrorText(message: error)
@@ -278,9 +278,9 @@ struct CsvImportSheet: View {
       let scoped = url.startAccessingSecurityScopedResource()
       defer { if scoped { url.stopAccessingSecurityScopedResource() } }
       let data = try Data(contentsOf: url)
-      guard data.count <= ContactsCSV.maxBytes else { error = "That file is over 20 MB; split it up."; return }
+      guard data.count <= ContactsCSV.maxBytes else { error = String(localized: "That file is over 20 MB; split it up."); return }
       let parsed = await Task.detached { ContactsCSV.records(String(decoding: data, as: UTF8.self)) }.value
-      guard !parsed.columns.isEmpty, !parsed.records.isEmpty else { error = "No rows found: the first line should name the columns."; return }
+      guard !parsed.columns.isEmpty, !parsed.records.isEmpty else { error = String(localized: "No rows found: the first line should name the columns."); return }
       fileName = url.lastPathComponent
       columns = parsed.columns
       records = parsed.records
@@ -320,12 +320,12 @@ struct CsvImportSheet: View {
         let slice = Array(inputs[offset..<min(offset + ContactsCSV.batch, inputs.count)])
         let result: ImportResult = try await session.send("/v1/contacts", body: Input(project: projectId, contacts: slice, fillOnly: fillOnly))
         total.created += result.created; total.updated += result.updated; total.unchanged += result.unchanged; total.failed += result.failed
-        for row in result.results where total.errors.count < 5 { if let message = row.error { total.errors.append("Row \(offset + row.index + 2): \(message)") } }
+        for row in result.results where total.errors.count < 5 { if let message = row.error { total.errors.append(String(localized: "Row \(offset + row.index + 2): \(message)")) } }
         offset += slice.count
         done = offset
       }
     } catch {
-      self.error = "\(error.localizedDescription) \(done) of \(inputs.count) rows were imported before it stopped."
+      self.error = String(localized: "\(error.localizedDescription) \(done) of \(inputs.count) rows were imported before it stopped.")
     }
     summary = total
     onImported()

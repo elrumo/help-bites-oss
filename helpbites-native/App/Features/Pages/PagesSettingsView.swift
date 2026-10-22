@@ -143,10 +143,11 @@ struct PagesSettingsView: View {
     do {
       let response: Response = try await session.send("/v1/admin/cms/settings", method: "PATCH", body: Input(project: projectId, previewUrl: settings.previewUrl.trimmingCharacters(in: .whitespaces), brief: settings.brief))
       fill(response.settings)
-      notice = "Saved."
+      let saved = String(localized: "Saved.")
+      notice = saved
       Task {
         try? await Task.sleep(for: .seconds(3))
-        if notice == "Saved." { notice = "" }
+        if notice == saved { notice = "" }
       }
     } catch {
       self.error = error.localizedDescription

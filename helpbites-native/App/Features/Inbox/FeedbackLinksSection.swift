@@ -98,7 +98,7 @@ struct FeedbackLinksSection: View {
     return VStack(alignment: .leading, spacing: 8) {
       Text("Creates a post written by \(who). They follow it and hear when it changes.").font(.lnCaption).foregroundStyle(Theme.textMuted)
       TextField("Title", text: $newTitle).textFieldStyle(.linear)
-      LinearTextEditor(text: $newBody, placeholder: "Details", minHeight: 80)
+      LinearTextEditor(text: $newBody, placeholder: String(localized: "Details"), minHeight: 80)
       HStack(spacing: 6) {
         Button { Task { await create() } } label: {
           HStack(spacing: 6) {

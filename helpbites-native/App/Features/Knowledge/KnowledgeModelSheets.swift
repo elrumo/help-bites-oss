@@ -37,7 +37,7 @@ struct KnowledgeSettingsSheet: View {
           HStack(alignment: .top, spacing: 12) {
             LabeledField(label: "Status") {
               Picker("Status", selection: $status) {
-                ForEach(knowledgeModelStatuses, id: \.self) { Text($0.capitalized).tag($0) }
+                ForEach(knowledgeModelStatuses, id: \.self) { Text(knowledgeStatusLabel($0)).tag($0) }
               }
               .knowledgeField()
             }
@@ -160,7 +160,7 @@ struct KnowledgeTesterSheet: View {
 
           if let result, !result.knowledge.isEmpty, !asking {
             VStack(alignment: .leading, spacing: 6) {
-              Text("Grounded in \(result.knowledge.count) FAQ\(result.knowledge.count == 1 ? "" : "s")").font(.lnCaptionMedium).foregroundStyle(Theme.textToned)
+              Text(result.knowledge.count == 1 ? "Grounded in 1 FAQ" : "Grounded in \(result.knowledge.count) FAQs").font(.lnCaptionMedium).foregroundStyle(Theme.textToned)
               ForEach(result.knowledge, id: \.faqId) { source in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                   VStack(alignment: .leading, spacing: 1) {

@@ -66,7 +66,7 @@ struct KnowledgeFAQEditor: View {
             .frame(maxWidth: .infinity, minHeight: 180, alignment: .topLeading)
             .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
         } else {
-          LinearTextEditor(text: $answer, placeholder: "Write the answer in Markdown", minHeight: 180, monospaced: true)
+          LinearTextEditor(text: $answer, placeholder: String(localized: "Write the answer in Markdown"), minHeight: 180, monospaced: true)
         }
       }
 
@@ -80,7 +80,7 @@ struct KnowledgeFAQEditor: View {
         }
         LabeledField(label: "Status") {
           Picker("Status", selection: $status) {
-            ForEach(knowledgeFAQStatuses, id: \.self) { Text($0.capitalized).tag($0) }
+            ForEach(knowledgeFAQStatuses, id: \.self) { Text(knowledgeStatusLabel($0)).tag($0) }
           }
           .knowledgeField()
         }
@@ -112,7 +112,7 @@ struct KnowledgeFAQEditor: View {
       }
 
       if let count = detail?.agentIds.count, count > 0 {
-        Label("\(count) assistant\(count == 1 ? "" : "s") can use this FAQ.", systemImage: "sparkles")
+        Label(count == 1 ? "1 assistant can use this FAQ." : "\(count) assistants can use this FAQ.", systemImage: "sparkles")
           .font(.lnCaption).foregroundStyle(Theme.textMuted)
       }
 

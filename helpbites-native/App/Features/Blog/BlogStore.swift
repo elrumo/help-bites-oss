@@ -13,10 +13,10 @@ enum BlogFilter: String, CaseIterable, Identifiable {
   var id: String { rawValue }
   var label: String {
     switch self {
-    case .all: "All"
-    case .live: "Live"
-    case .scheduled: "Scheduled"
-    case .draft: "Drafts"
+    case .all: String(localized: "All")
+    case .live: String(localized: "Live")
+    case .scheduled: String(localized: "Scheduled")
+    case .draft: String(localized: "Drafts")
     }
   }
 }

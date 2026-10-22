@@ -34,8 +34,8 @@ struct WebhookEndpoint: Decodable, Identifiable, Equatable, Sendable {
   let secret: String?
   let lastStatus: String?
   var statusText: String {
-    if !enabled { return "Switched off" }
-    switch lastStatus { case "failed": return "Last delivery failed"; case "delivered": return "Last delivery worked"; default: return "No deliveries yet" }
+    if !enabled { return String(localized: "Switched off") }
+    switch lastStatus { case "failed": return String(localized: "Last delivery failed"); case "delivered": return String(localized: "Last delivery worked"); default: return String(localized: "No deliveries yet") }
   }
 }
 
@@ -135,7 +135,7 @@ struct WebhookEndpointsSection: View {
         IconButton(systemImage: "trash", label: "Remove", bordered: false) { confirmDelete = endpoint }
       }
       if !endpoint.description.isEmpty { Text(endpoint.description).font(.lnMeta).foregroundStyle(Theme.textMuted) }
-      Text((endpoint.events.contains("*") ? ["Everything"] : endpoint.events).joined(separator: ", ")).font(.lnCaption).foregroundStyle(Theme.textMuted)
+      Text((endpoint.events.contains("*") ? [String(localized: "Everything")] : endpoint.events).joined(separator: ", ")).font(.lnCaption).foregroundStyle(Theme.textMuted)
       Text(endpoint.statusText).font(.lnCaption).foregroundStyle(endpoint.lastStatus == "failed" ? Theme.error : Theme.textMuted)
     }
   }
@@ -213,9 +213,9 @@ private struct WebhookEndpointSheet: View {
           Toggle("Everything", isOn: $everything)
           if !everything {
             ForEach(DomainEventCatalog.groups) { group in
-              Toggle(group.label, isOn: groupBinding(group))
+              Toggle(LocalizedStringKey(group.label), isOn: groupBinding(group))
               ForEach(group.events, id: \.type) { event in
-                Toggle(event.label, isOn: eventBinding(event.type, group: group)).padding(.leading, 16).disabled(picked.contains("\(group.key).*"))
+                Toggle(LocalizedStringKey(event.label), isOn: eventBinding(event.type, group: group)).padding(.leading, 16).disabled(picked.contains("\(group.key).*"))
               }
             }
           }
@@ -261,7 +261,7 @@ private struct WebhookEndpointSheet: View {
   private func save() async {
     struct Input: Encodable, Sendable { let url, description: String; let events: [String]; let enabled: Bool }
     struct Output: Decodable, Sendable { let endpoint: WebhookEndpoint }
-    if !everything && picked.isEmpty { error = "Pick at least one event, or choose Everything"; return }
+    if !everything && picked.isEmpty { error = String(localized: "Pick at least one event, or choose Everything"); return }
     saving = true; error = ""
     defer { saving = false }
     let base = "/v1/admin/projects/\(projectId)/webhooks"

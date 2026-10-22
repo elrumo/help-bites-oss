@@ -53,7 +53,7 @@ struct InboxNewConversationSheet: View {
           if let type {
             ForEach(type.fields.filter { $0.editableBy != "none" }) { field in intake(field) }
           }
-          LabeledField(label: "Message") { LinearTextEditor(text: $message, placeholder: "Write the first message…", minHeight: 120) }
+          LabeledField(label: "Message") { LinearTextEditor(text: $message, placeholder: String(localized: "Write the first message…"), minHeight: 120) }
           Toggle(isOn: $notify) { Text("Also send by email").font(.lnCallout).foregroundStyle(Theme.text) }
             .tint(Theme.accent)
           if !error.isEmpty { ErrorText(message: error) }
@@ -173,7 +173,7 @@ struct InboxNewConversationSheet: View {
           }
           .pickerStyle(.inline)
         } label: {
-          InboxFieldBox { Text(current.isEmpty ? "None" : current).foregroundStyle(current.isEmpty ? Theme.textDimmed : Theme.text) }
+          InboxFieldBox { Text(current.isEmpty ? String(localized: "None") : current).foregroundStyle(current.isEmpty ? Theme.textDimmed : Theme.text) }
         }
       }
     default:

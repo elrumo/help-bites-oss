@@ -42,7 +42,7 @@ struct AuthView: View {
             if mode == .forgot {
               Button("I have a link") { mode = .reset; notice = ""; error = "" }.buttonStyle(.lnGhost)
             }
-            Button(mode == .signIn ? "Forgot password?" : "Back to sign in") {
+            Button(mode == .signIn ? String(localized: "Forgot password?") : String(localized: "Back to sign in")) {
               mode = mode == .signIn ? .forgot : .signIn
               notice = ""; error = ""
             }
@@ -132,15 +132,15 @@ struct AuthView: View {
   }
 
   private var title: String {
-    session.needsSetup ? "Create your account" : mode == .forgot ? "Reset your password" : mode == .reset ? "Choose a new password" : "Sign in to HelpBites"
+    session.needsSetup ? String(localized: "Create your account") : mode == .forgot ? String(localized: "Reset your password") : mode == .reset ? String(localized: "Choose a new password") : String(localized: "Sign in to HelpBites")
   }
   private var subtitle: String {
-    session.needsSetup ? "This is a fresh install. The first account becomes the operator; you can add teammates later."
-      : mode == .forgot ? "Enter your account email and we'll send you a reset link."
-      : mode == .reset ? "The link in the email works for 30 minutes."
-      : "Your support inbox and every app you've connected."
+    session.needsSetup ? String(localized: "This is a fresh install. The first account becomes the operator; you can add teammates later.")
+      : mode == .forgot ? String(localized: "Enter your account email and we'll send you a reset link.")
+      : mode == .reset ? String(localized: "The link in the email works for 30 minutes.")
+      : String(localized: "Your support inbox and every app you've connected.")
   }
-  private var primaryLabel: String { session.needsSetup ? "Create account" : mode == .forgot ? "Send reset link" : mode == .reset ? "Set password" : "Sign in" }
+  private var primaryLabel: String { session.needsSetup ? String(localized: "Create account") : mode == .forgot ? String(localized: "Send reset link") : mode == .reset ? String(localized: "Set password") : String(localized: "Sign in") }
   private var canSubmit: Bool {
     if mode == .forgot && !session.needsSetup { return email.contains("@") }
     if mode == .reset && !session.needsSetup { return !resetToken.isEmpty && password.count >= 8 }
@@ -159,7 +159,7 @@ struct AuthView: View {
         struct Output: Decodable, Sendable {}
         do {
           let _: Output = try await session.api.send("/v1/admin/forgot-password", method: "POST", body: Input(email: email.trimmingCharacters(in: .whitespaces)))
-          notice = "If that email has an account, a reset link is on its way."
+          notice = String(localized: "If that email has an account, a reset link is on its way.")
         } catch { self.error = error.localizedDescription }
       } else if mode == .reset {
         struct Input: Encodable, Sendable { let token, password: String }
@@ -168,7 +168,7 @@ struct AuthView: View {
           let _: Output = try await session.api.send("/v1/admin/reset-password", method: "POST", body: Input(token: resetToken, password: password))
           password = ""; resetLink = ""
           mode = .signIn
-          notice = "Password updated. Sign in with your new password."
+          notice = String(localized: "Password updated. Sign in with your new password.")
         } catch { self.error = error.localizedDescription }
       } else {
         await session.login(username: username.trimmingCharacters(in: .whitespaces), password: password)

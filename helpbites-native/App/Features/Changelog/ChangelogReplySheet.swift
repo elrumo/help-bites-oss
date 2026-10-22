@@ -115,11 +115,11 @@ struct ChangelogReplySheet: View {
     } label: {
       HStack(spacing: 10) {
         Image(systemName: picked ? "checkmark.circle.fill" : "circle").font(.system(size: 18)).foregroundStyle(picked ? Theme.accent : Theme.textDimmed)
-        Text(conversation.subject.isEmpty ? "Conversation" : conversation.subject).foregroundStyle(Theme.text).lineLimit(1)
+        Text(conversation.subject.isEmpty ? String(localized: "Conversation") : conversation.subject).foregroundStyle(Theme.text).lineLimit(1)
         if !conversation.endUserName.isEmpty { Text("· \(conversation.endUserName)").foregroundStyle(Theme.textMuted).lineLimit(1) }
         Spacer(minLength: 4)
         if let outcome {
-          ChangelogChip(text: outcome.ok ? (outcome.emailSent ? "Sent and emailed" : "Sent") : "Failed", tint: outcome.ok ? Theme.success : Theme.error)
+          ChangelogChip(text: outcome.ok ? (outcome.emailSent ? String(localized: "Sent and emailed") : String(localized: "Sent")) : String(localized: "Failed"), tint: outcome.ok ? Theme.success : Theme.error)
         } else {
           Text(conversation.status.capitalized).font(.lnCaption).foregroundStyle(Theme.textToned)
         }

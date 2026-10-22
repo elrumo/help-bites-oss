@@ -112,8 +112,8 @@ struct LegalWizardSheet: View {
   private func choice(_ title: String, detail: String? = nil, selected: Bool, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       VStack(alignment: .leading, spacing: 2) {
-        Text(title).font(.lnMetaMedium).foregroundStyle(selected ? Theme.textHighlighted : Theme.textToned)
-        if let detail { Text(detail).font(.lnMeta).foregroundStyle(Theme.textMuted).multilineTextAlignment(.leading) }
+        Text(LocalizedStringKey(title)).font(.lnMetaMedium).foregroundStyle(selected ? Theme.textHighlighted : Theme.textToned)
+        if let detail { Text(LocalizedStringKey(detail)).font(.lnMeta).foregroundStyle(Theme.textMuted).multilineTextAlignment(.leading) }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 12).padding(.vertical, 10)
@@ -143,8 +143,8 @@ struct LegalWizardSheet: View {
 
   private func reuseToggle(_ title: String, detail: String? = nil) -> some View {
     VStack(alignment: .leading, spacing: 4) {
-      Toggle(title, isOn: $saveAnswers).font(.lnMeta).foregroundStyle(Theme.text).tint(Theme.accent)
-      if let detail { Text(detail).font(.lnCaption).foregroundStyle(Theme.textMuted) }
+      Toggle(LocalizedStringKey(title), isOn: $saveAnswers).font(.lnMeta).foregroundStyle(Theme.text).tint(Theme.accent)
+      if let detail { Text(LocalizedStringKey(detail)).font(.lnCaption).foregroundStyle(Theme.textMuted) }
     }
   }
 
@@ -162,7 +162,7 @@ struct LegalWizardSheet: View {
         Button { picking = true } label: { Label("Choose a file…", systemImage: "doc.badge.plus") }.buttonStyle(SecondaryButtonStyle(compact: true))
       }
       LabeledField(label: "Or paste the text") {
-        LinearTextEditor(text: Binding(get: { importText }, set: { importText = $0; importFormat = nil }), placeholder: "Paste your existing document here", minHeight: 180)
+        LinearTextEditor(text: Binding(get: { importText }, set: { importText = $0; importFormat = nil }), placeholder: String(localized: "Paste your existing document here"), minHeight: 180)
       }
       LabeledField(label: "Title (optional)", hint: "Taken from the text when it has one.") {
         TextField(type.label, text: $importTitle).textFieldStyle(.linear)
@@ -250,7 +250,7 @@ struct LegalWizardSheet: View {
       let shown: String
       switch value {
       case .list(let items): shown = items.map(option).joined(separator: ", ")
-      case .flag(let on): shown = on ? "Yes" : "No"
+      case .flag(let on): shown = on ? String(localized: "Yes") : String(localized: "No")
       case .text(let text): shown = q.kind == "select" ? option(text) : text.replacingOccurrences(of: "\n", with: "; ")
       }
       return SuggestedRow(id: q.id, label: q.label, shown: shown, evidence: suggestion.evidence[q.id] ?? [])

@@ -50,7 +50,7 @@ struct APIKeysScreen: View {
       VStack(alignment: .leading, spacing: 24) {
         VStack(alignment: .leading, spacing: 4) {
           Text("Admin API keys").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
-          Text((try? AttributedString(markdown: "A key acts as you, in this workspace only: it can do what you can here, through `/v1/admin`. Keep keys on your servers.")) ?? "")
+          Text((try? AttributedString(markdown: String(localized: "A key acts as you, in this workspace only: it can do what you can here, through `/v1/admin`. Keep keys on your servers."))) ?? "")
             .font(.lnMeta)
             .foregroundStyle(Theme.textMuted)
         }
@@ -76,7 +76,7 @@ struct APIKeysScreen: View {
             Button {
               Clipboard.copy(mcpAddress)
               copiedAddress = true
-            } label: { Label(copiedAddress ? "Copied" : "Copy", systemImage: copiedAddress ? "checkmark" : "doc.on.clipboard") }
+            } label: { Label(copiedAddress ? String(localized: "Copied") : String(localized: "Copy"), systemImage: copiedAddress ? "checkmark" : "doc.on.clipboard") }
               .buttonStyle(.lnGhost)
           }
         }
@@ -98,7 +98,7 @@ struct APIKeysScreen: View {
             .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty || creating || (scope == .projects && picked.isEmpty))
           }
           LabeledField(label: "Access") {
-            MenuPicker(selection: $scope, options: [PickerOption(value: .all, label: "All projects and the main account"), PickerOption(value: .projects, label: "Only specific projects")], title: "Access")
+            MenuPicker(selection: $scope, options: [PickerOption(value: .all, label: String(localized: "All projects and the main account")), PickerOption(value: .projects, label: String(localized: "Only specific projects"))], title: "Access")
           }
           if scope == .projects {
             VStack(alignment: .leading, spacing: 6) {
@@ -110,7 +110,7 @@ struct APIKeysScreen: View {
             }
           }
           LabeledField(label: "Expires") {
-            MenuPicker(selection: $expiry, options: [PickerOption(value: 30, label: "In 30 days"), PickerOption(value: 90, label: "In 90 days"), PickerOption(value: 365, label: "In a year"), PickerOption(value: 0, label: "Never")], title: "Expires")
+            MenuPicker(selection: $expiry, options: [PickerOption(value: 30, label: String(localized: "In 30 days")), PickerOption(value: 90, label: String(localized: "In 90 days")), PickerOption(value: 365, label: String(localized: "In a year")), PickerOption(value: 0, label: String(localized: "Never"))], title: "Expires")
           }
           ErrorText(message: error)
         }
@@ -156,7 +156,7 @@ struct APIKeysScreen: View {
           Button {
             Clipboard.copy(created.key)
             copied = true
-          } label: { Label(copied ? "Copied" : "Copy key", systemImage: copied ? "checkmark" : "doc.on.clipboard") }
+          } label: { Label(copied ? String(localized: "Copied") : String(localized: "Copy key"), systemImage: copied ? "checkmark" : "doc.on.clipboard") }
             .buttonStyle(.lnPrimary)
           Spacer(minLength: 0)
         }
@@ -197,15 +197,15 @@ struct APIKeysScreen: View {
   }
 
   private func scopeLabel(_ key: APIKey) -> String {
-    guard let ids = key.projectIds else { return "All projects" }
+    guard let ids = key.projectIds else { return String(localized: "All projects") }
     let names = ids.compactMap { workspace.project($0)?.name }
-    return names.isEmpty ? "\(ids.count) project\(ids.count == 1 ? "" : "s")" : names.joined(separator: ", ")
+    return names.isEmpty ? (ids.count == 1 ? String(localized: "1 project") : String(localized: "\(ids.count) projects")) : names.joined(separator: ", ")
   }
 
   private func expiryLabel(_ key: APIKey) -> String {
-    var text = "Never expires"
-    if let raw = key.expiresAt, let date = DateText.date(raw) { text = date <= Date() ? "Expired \(DateText.day(raw))" : "Expires \(DateText.day(raw))" }
-    if let used = key.lastUsedAt { text += " · used \(DateText.day(used))" }
+    var text = String(localized: "Never expires")
+    if let raw = key.expiresAt, let date = DateText.date(raw) { text = date <= Date() ? String(localized: "Expired \(DateText.day(raw))") : String(localized: "Expires \(DateText.day(raw))") }
+    if let used = key.lastUsedAt { text += " · " + String(localized: "used \(DateText.day(used))") }
     return text
   }
 

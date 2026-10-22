@@ -45,7 +45,7 @@ struct LeadFileRows: View {
     }
     .task { await load() }
     .sheet(item: $shared) { ShareSheet(url: $0.url).presentationDetents([.medium, .large]) }
-    .confirmationDialog("Delete \(deleting?.name ?? "this file") for good?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
+    .confirmationDialog("Delete \(deleting?.name ?? String(localized: "this file")) for good?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
       Button("Delete file", role: .destructive) { if let file = deleting { Task { await delete(file) } } }
     }
   }

@@ -12,7 +12,16 @@ import Observation
 enum InboxQueue: String, CaseIterable, Identifiable {
   case all, unassigned, mine, open, unread, archived
   var id: String { rawValue }
-  var label: String { rawValue.capitalized }
+  var label: String {
+    switch self {
+    case .all: String(localized: "All")
+    case .unassigned: String(localized: "Unassigned")
+    case .mine: String(localized: "Mine")
+    case .open: String(localized: "Open")
+    case .unread: String(localized: "Unread")
+    case .archived: String(localized: "Archived")
+    }
+  }
 }
 
 /// PATCH /admin/conversations/:id. Only the keys that are set are sent.
@@ -337,7 +346,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
       upsertMessage(result.message)
       upsert(result.conversation)
       if notify, result.emailSent != true, let failure = result.emailError, !failure.isEmpty, failure != "throttled" {
-        threadError = "Sent, but the email failed: \(failure)"
+        threadError = String(localized: "Sent, but the email failed: \(failure)")
       }
       return true
     } catch {
@@ -486,8 +495,8 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   }
 
   private static let supportStatuses = [
-    ConversationStatus(key: "open", label: "Open", category: "open", isDefault: true, isTerminal: nil, reopenTo: nil),
-    ConversationStatus(key: "done", label: "Done", category: "resolved", isDefault: nil, isTerminal: true, reopenTo: "open")
+    ConversationStatus(key: "open", label: String(localized: "Open"), category: "open", isDefault: true, isTerminal: nil, reopenTo: nil),
+    ConversationStatus(key: "done", label: String(localized: "Done"), category: "resolved", isDefault: nil, isTerminal: true, reopenTo: "open")
   ]
 
   private func loadAgents() async {

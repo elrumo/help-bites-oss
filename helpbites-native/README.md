@@ -21,6 +21,12 @@ The companion server changes live outside this directory: `Device` schema,
 device registration routes, and the event-bus APNs fan-out. Push stays disabled
 until APNs credentials are present in the server environment.
 
+The app is translated into the panel's languages (English, Catalan, Spanish, Japanese, Korean, Simplified
+Chinese): every string lives in `App/Localizable.xcstrings`, Xcode adds new ones as you build, and the app follows the
+device's language (per-app language in Settings on iOS, System Settings on the Mac). Text shown through a plain `String`
+needs `String(localized:)` where it is defined; SwiftUI literals and the Design components' labels are picked up
+automatically.
+
 The app covers every page of the web panel (inbox, projects and all their
 sections including Changelog, Onboarding, Legal, Brand, Pages and Revenue, Knowledge, Email, workspace
 settings, AI, connections, team and invitations). It wears the web panel's

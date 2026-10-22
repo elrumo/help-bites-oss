@@ -52,7 +52,7 @@ struct PageInspector: View {
   @ViewBuilder private func blockForm(_ block: CmsBlock) -> some View {
     let def = library[block.component]
     VStack(alignment: .leading, spacing: 2) {
-      Text(def?.name ?? "Missing component").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+      Text(def?.name ?? String(localized: "Missing component")).font(.lnHeading).foregroundStyle(Theme.textHighlighted)
       Text("\(block.component) · \(block.uid)").font(.lnMono).foregroundStyle(Theme.textDimmed)
       if let description = def?.description, !description.isEmpty { Text(description).font(.lnCaption).foregroundStyle(Theme.textMuted).padding(.top, 2) }
     }
@@ -62,7 +62,7 @@ struct PageInspector: View {
       }
       ForEach(def.blocksFields) { field in
         let count = block.children(field.key).count
-        Label("\(field.label): \(count) \(count == 1 ? "block" : "blocks"), edited in the outline", systemImage: "square.3.layers.3d").font(.lnCaption).foregroundStyle(Theme.textMuted)
+        Label("\(field.label): \(count) \(count == 1 ? String(localized: "block") : String(localized: "blocks")), edited in the outline", systemImage: "square.3.layers.3d").font(.lnCaption).foregroundStyle(Theme.textMuted)
       }
     } else {
       Text("This block's component no longer exists. Its data is kept, and it shows as nothing on the page.").font(.lnMeta).foregroundStyle(Theme.warning)
@@ -86,20 +86,20 @@ struct PageInspector: View {
           set: { effect in if effect == "none" { setValue(block.uid, "_anim", nil) } else { change { $0.effect = effect } } }
         )) {
           Text("None").tag("none")
-          ForEach(CmsAnimation.effects, id: \.id) { Text($0.label).tag($0.id) }
+          ForEach(CmsAnimation.effects, id: \.id) { Text(LocalizedStringKey($0.label)).tag($0.id) }
         }
         .labelsHidden().fixedSize()
       }
       if let current {
         LabeledField(label: "When") {
           Picker("When", selection: Binding(get: { current.trigger }, set: { trigger in change { $0.trigger = trigger } })) {
-            ForEach(CmsAnimation.triggers, id: \.id) { Text($0.label).tag($0.id) }
+            ForEach(CmsAnimation.triggers, id: \.id) { Text(LocalizedStringKey($0.label)).tag($0.id) }
           }
           .labelsHidden().fixedSize().disabled(current.effect == "parallax")
         }
         LabeledField(label: "Easing") {
           Picker("Easing", selection: Binding(get: { current.easing }, set: { easing in change { $0.easing = easing } })) {
-            ForEach(CmsAnimation.easings, id: \.id) { Text($0.label).tag($0.id) }
+            ForEach(CmsAnimation.easings, id: \.id) { Text(LocalizedStringKey($0.label)).tag($0.id) }
           }
           .labelsHidden().fixedSize()
         }
@@ -122,7 +122,7 @@ struct PageInspector: View {
   @ViewBuilder private var pageForm: some View {
     let root = library[draft.content.component]
     VStack(alignment: .leading, spacing: 2) {
-      Text(root?.name ?? "Page").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+      Text(root?.name ?? String(localized: "Page")).font(.lnHeading).foregroundStyle(Theme.textHighlighted)
       Text("The page's own settings. Choose a block in the outline to edit it.").font(.lnCaption).foregroundStyle(Theme.textMuted)
     }
     LabeledField(label: "Name") {
@@ -147,13 +147,13 @@ struct PageInspector: View {
     LegalPanel("Style") {
       OptionalColorField(label: "Accent", hex: $draft.style.accent, fallback: Color(hexString: projectAccent) ?? Theme.accent, empty: "The project's accent")
       LabeledField(label: "Colour scheme") {
-        Picker("Colour scheme", selection: $draft.style.mode) { ForEach(CmsOptions.modes, id: \.id) { Text($0.label).tag($0.id) } }.labelsHidden().fixedSize()
+        Picker("Colour scheme", selection: $draft.style.mode) { ForEach(CmsOptions.modes, id: \.id) { Text(LocalizedStringKey($0.label)).tag($0.id) } }.labelsHidden().fixedSize()
       }
       LabeledField(label: "Corners") {
-        Picker("Corners", selection: $draft.style.radius) { ForEach(BrandOptions.radii, id: \.id) { Text($0.label).tag($0.id) } }.pickerStyle(.segmented).labelsHidden()
+        Picker("Corners", selection: $draft.style.radius) { ForEach(BrandOptions.radii, id: \.id) { Text(LocalizedStringKey($0.label)).tag($0.id) } }.pickerStyle(.segmented).labelsHidden()
       }
       LabeledField(label: "Width") {
-        Picker("Width", selection: $draft.style.width) { ForEach(CmsOptions.widths, id: \.id) { Text($0.label).tag($0.id) } }.pickerStyle(.segmented).labelsHidden()
+        Picker("Width", selection: $draft.style.width) { ForEach(CmsOptions.widths, id: \.id) { Text(LocalizedStringKey($0.label)).tag($0.id) } }.pickerStyle(.segmented).labelsHidden()
       }
       fontField("Heading font", $draft.style.headingFont, hint: "Any Google Fonts family, or a font Apple and Windows devices have (Avenir, Helvetica).")
       fontField("Body font", $draft.style.bodyFont, hint: nil)

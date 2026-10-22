@@ -70,7 +70,7 @@ struct OnboardingScreen: View {
           HStack(spacing: 6) {
             Tag(text: flow.statusLabel, tint: flow.isPublished ? Theme.success : Theme.textDimmed)
             if flow.changed { Tag(text: "Unpublished changes", tint: Theme.warning) }
-            Text("\(flow.steps.count) \(flow.steps.count == 1 ? "step" : "steps")").font(.lnCaption).foregroundStyle(Theme.textMuted)
+            Text("\(flow.steps.count) \(flow.steps.count == 1 ? String(localized: "step") : String(localized: "steps"))").font(.lnCaption).foregroundStyle(Theme.textMuted)
           }
           .padding(.top, 4)
         }

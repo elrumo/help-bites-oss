@@ -9,7 +9,14 @@ struct PagesScreen: View {
   private enum PagesTab: String, CaseIterable, Identifiable {
     case pages, components, files, settings
     var id: String { rawValue }
-    var label: String { rawValue.capitalized }
+    var label: String {
+      switch self {
+      case .pages: String(localized: "Pages")
+      case .components: String(localized: "Components")
+      case .files: String(localized: "Files")
+      case .settings: String(localized: "Settings")
+      }
+    }
   }
 
   var body: some View {
@@ -44,6 +51,8 @@ struct PagesEntriesView: View {
   @State private var creating = false
   /// The entry the sheet just made, pushed once the sheet is gone.
   @State private var created: String?
+  /// The assistant's first message for the page the wizard made.
+  @State private var firstPrompt: String?
   @State private var path: String?
   @State private var busy = ""
   @State private var deleting: CmsEntry?
@@ -103,12 +112,14 @@ struct PagesEntriesView: View {
     .sheet(isPresented: $creating, onDismiss: {
       if let created { path = created; self.created = nil }
     }) {
-      PagesNewSheet(projectId: projectId) { entry in
+      PagesNewSheet(projectId: projectId) { entry, prompt in
         entries.insert(entry, at: 0)
         created = entry.id
+        firstPrompt = prompt
       }
     }
-    .navigationDestination(item: $path) { id in PageEntryScreen(projectId: projectId, entryId: id) }
+    .navigationDestination(item: $path) { id in PageEntryScreen(projectId: projectId, entryId: id, firstPrompt: firstPrompt) }
+    .onChange(of: path) { if path == nil { firstPrompt = nil } }
     .confirmationDialog("Delete “\(deleting?.name ?? "")”?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible, presenting: deleting) { entry in
       Button("Delete page", role: .destructive) { Task { await delete(entry) } }
     } message: { _ in
@@ -203,7 +214,8 @@ struct PagesEntriesView: View {
 /// (web: CmsNewPage.vue, without the assistant's wizard).
 private struct PagesNewSheet: View {
   let projectId: String
-  let onCreate: (CmsEntry) -> Void
+  /// The page made, and the wizard's prompt for the assistant when it made it.
+  let onCreate: (CmsEntry, String?) -> Void
   @Environment(SessionStore.self) private var session
   @Environment(\.dismiss) private var dismiss
   @State private var types: [CmsComponent] = []
@@ -214,11 +226,27 @@ private struct PagesNewSheet: View {
   @State private var loading = true
   @State private var saving = false
   @State private var error = ""
+  @State private var wizard = false
 
   var body: some View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 16) {
+          Button { wizard = true } label: {
+            HStack(spacing: 10) {
+              Image(systemName: "sparkles").foregroundStyle(Theme.accentText)
+              VStack(alignment: .leading, spacing: 2) {
+                Text("Plan it with the assistant").font(.lnRow).foregroundStyle(Theme.textHighlighted)
+                Text("Answer a few questions and it builds the page for you.").font(.lnCaption).foregroundStyle(Theme.textMuted)
+              }
+              Spacer(minLength: 0)
+              Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+            }
+            .padding(12)
+            .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.borderAccented))
+            .contentShape(RoundedRectangle(cornerRadius: Metrics.radius))
+          }
+          .buttonStyle(.plain)
           if types.count > 1 {
             LabeledField(label: "Type") {
               Picker("Type", selection: $type) {
@@ -271,6 +299,12 @@ private struct PagesNewSheet: View {
       }
     }
     .presentationDetents([.large])
+    .sheet(isPresented: $wizard) {
+      PagesWizardSheet(projectId: projectId, templates: templates) { entry, prompt in
+        onCreate(entry, prompt)
+        dismiss()
+      }
+    }
     .task { await load() }
   }
 
@@ -299,7 +333,7 @@ private struct PagesNewSheet: View {
       let response: CmsEntryResponse = try await session.send("/v1/admin/cms/entries", body: Input(
         project: projectId, type: type, name: name.isEmpty ? nil : name, template: type == "page" && template != "blank" ? template : nil
       ))
-      onCreate(response.entry)
+      onCreate(response.entry, nil)
       dismiss()
     } catch {
       self.error = error.localizedDescription

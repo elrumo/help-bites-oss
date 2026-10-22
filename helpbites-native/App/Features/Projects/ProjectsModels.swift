@@ -43,7 +43,7 @@ struct ProjectsAdminProject: Decodable, Sendable {
   @MainActor static func load(_ id: String, session: SessionStore) async throws -> ProjectsAdminProject {
     struct Response: Decodable, Sendable { let projects: [ProjectsAdminProject] }
     let response: Response = try await session.get("/v1/admin/projects")
-    guard let project = response.projects.first(where: { $0.id == id }) else { throw APIError.server("Project not found") }
+    guard let project = response.projects.first(where: { $0.id == id }) else { throw APIError.server(String(localized: "Project not found")) }
     return project
   }
 
@@ -94,14 +94,14 @@ struct SetupItem: Decodable, Identifiable, Sendable {
   /// `setup.<key>.title`.
   var title: String {
     switch key {
-    case "widget": "Chat widget on your site"
-    case "identity": "Users identified"
-    case "notified": "Someone is told about new chats"
-    case "sender": "Email sender"
-    case "assistant": "AI assistant ready"
-    case "stripe": "Stripe"
-    case "github": "GitHub"
-    case "errors": "Error tracking"
+    case "widget": String(localized: "Chat widget on your site")
+    case "identity": String(localized: "Users identified")
+    case "notified": String(localized: "Someone is told about new chats")
+    case "sender": String(localized: "Email sender")
+    case "assistant": String(localized: "AI assistant ready")
+    case "stripe": String(localized: "Stripe")
+    case "github": String(localized: "GitHub")
+    case "errors": String(localized: "Error tracking")
     default: key
     }
   }
@@ -110,30 +110,30 @@ struct SetupItem: Decodable, Identifiable, Sendable {
   @MainActor var text: String {
     let words: PluralText
     switch "\(key).\(reason)" {
-    case "widget.seen": words = PluralText("Last loaded on your site {value}.")
-    case "widget.noOrigins": words = PluralText("Allow your site's address, then add the script.")
-    case "widget.waiting": words = PluralText("Waiting for the widget to load on your site.")
-    case "identity.seen": words = PluralText("Your backend signed an identity token {value}.")
-    case "identity.missing": words = PluralText("No signed identity token yet: your backend signs one per user so conversations are theirs.")
-    case "identity.anonymous": words = PluralText("Nobody signed in with a token yet. Email-only sign-in is on, so this may be fine.")
-    case "notified.email": words = PluralText("Emailed to {value} address", "Emailed to {value} addresses")
-    case "notified.push": words = PluralText("Pushed to {value} device", "Pushed to {value} devices")
-    case "notified.noMailer": words = PluralText("Addresses are set, but this server cannot send email yet.")
-    case "notified.nobody": words = PluralText("Nobody is emailed or pushed when a customer writes.")
-    case "sender.ready": words = PluralText("Mail goes out from {value}.")
-    case "sender.default": words = PluralText("Mail goes out from the server's default address.")
-    case "sender.missing": words = PluralText("No sender or no mail server yet: email cannot go out.")
-    case "assistant.live": words = PluralText("{value} answers customers by itself.")
-    case "assistant.notLive": words = PluralText("{value} is not answering yet: it needs a provider, knowledge, to be active and auto-reply on.")
-    case "assistant.none": words = PluralText("No assistant yet. Humans answer everything until you add one.")
-    case "stripe.synced": words = PluralText("Connected and synced.")
-    case "stripe.waiting": words = PluralText("Connected; waiting for the first sync.")
-    case "stripe.error": words = PluralText("The last sync failed: {value}")
-    case "stripe.none": words = PluralText("Not connected: no revenue on the Overview.")
-    case "github.linked": words = PluralText("{value} repository linked", "{value} repositories linked")
-    case "github.none": words = PluralText("No repository linked: no drafts from commits.")
-    case "errors.connected": words = PluralText("Reporting to {value}.")
-    case "errors.none": words = PluralText("Not connected: errors never reach the inbox.")
+    case "widget.seen": words = PluralText(String(localized: "Last loaded on your site {value}."))
+    case "widget.noOrigins": words = PluralText(String(localized: "Allow your site's address, then add the script."))
+    case "widget.waiting": words = PluralText(String(localized: "Waiting for the widget to load on your site."))
+    case "identity.seen": words = PluralText(String(localized: "Your backend signed an identity token {value}."))
+    case "identity.missing": words = PluralText(String(localized: "No signed identity token yet: your backend signs one per user so conversations are theirs."))
+    case "identity.anonymous": words = PluralText(String(localized: "Nobody signed in with a token yet. Email-only sign-in is on, so this may be fine."))
+    case "notified.email": words = PluralText(String(localized: "Emailed to {value} address"), String(localized: "Emailed to {value} addresses"))
+    case "notified.push": words = PluralText(String(localized: "Pushed to {value} device"), String(localized: "Pushed to {value} devices"))
+    case "notified.noMailer": words = PluralText(String(localized: "Addresses are set, but this server cannot send email yet."))
+    case "notified.nobody": words = PluralText(String(localized: "Nobody is emailed or pushed when a customer writes."))
+    case "sender.ready": words = PluralText(String(localized: "Mail goes out from {value}."))
+    case "sender.default": words = PluralText(String(localized: "Mail goes out from the server's default address."))
+    case "sender.missing": words = PluralText(String(localized: "No sender or no mail server yet: email cannot go out."))
+    case "assistant.live": words = PluralText(String(localized: "{value} answers customers by itself."))
+    case "assistant.notLive": words = PluralText(String(localized: "{value} is not answering yet: it needs a provider, knowledge, to be active and auto-reply on."))
+    case "assistant.none": words = PluralText(String(localized: "No assistant yet. Humans answer everything until you add one."))
+    case "stripe.synced": words = PluralText(String(localized: "Connected and synced."))
+    case "stripe.waiting": words = PluralText(String(localized: "Connected; waiting for the first sync."))
+    case "stripe.error": words = PluralText(String(localized: "The last sync failed: {value}"))
+    case "stripe.none": words = PluralText(String(localized: "Not connected: no revenue on the Overview."))
+    case "github.linked": words = PluralText(String(localized: "{value} repository linked"), String(localized: "{value} repositories linked"))
+    case "github.none": words = PluralText(String(localized: "No repository linked: no drafts from commits."))
+    case "errors.connected": words = PluralText(String(localized: "Reporting to {value}."))
+    case "errors.none": words = PluralText(String(localized: "Not connected: errors never reach the inbox."))
     default: return value
     }
     var shown = value

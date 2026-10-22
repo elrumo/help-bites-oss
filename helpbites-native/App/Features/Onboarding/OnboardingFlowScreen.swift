@@ -40,7 +40,7 @@ struct OnboardingFlowScreen: View {
         SkeletonRows(count: 4).frame(maxHeight: .infinity, alignment: .top)
       } else {
         VStack(spacing: 12) {
-          ErrorText(message: error.isEmpty ? "Flow not found" : error)
+          ErrorText(message: error.isEmpty ? String(localized: "Flow not found") : error)
           Button("Try again") { Task { await load() } }.buttonStyle(.lnSecondaryCompact)
         }
         .padding(20).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -232,7 +232,7 @@ struct OnboardingFlowScreen: View {
     guard var body = draft else { return }
     body.name = body.name.trimmingCharacters(in: .whitespacesAndNewlines)
     body.key = body.key.trimmingCharacters(in: .whitespaces).lowercased()
-    if body.name.isEmpty { error = "Give the flow a name."; return }
+    if body.name.isEmpty { error = String(localized: "Give the flow a name."); return }
     if !OnboardingLimits.validKey(body.key) { error = OnboardingLimits.keyRule; return }
     busy = "save"
     error = ""
@@ -302,7 +302,7 @@ struct OnboardingTextField: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       HStack {
-        Text(label).font(.lnMetaMedium).foregroundStyle(Theme.textToned)
+        Text(LocalizedStringKey(label)).font(.lnMetaMedium).foregroundStyle(Theme.textToned)
         Spacer()
         Text("\(text.utf16.count)/\(limit)").font(.lnCaption).foregroundStyle(Theme.textDimmed).monospacedDigit()
       }
@@ -342,7 +342,7 @@ private struct OnboardingStepCard: View {
       OnboardingTextField(label: "Body", text: $step.body, limit: OnboardingLimits.body, multiline: true)
       image
       if !step.imageUrl.isEmpty {
-        OnboardingTextField(label: "Image description", text: $step.imageAlt, limit: OnboardingLimits.alt, placeholder: "What the picture shows, for screen readers")
+        OnboardingTextField(label: "Image description", text: $step.imageAlt, limit: OnboardingLimits.alt, placeholder: String(localized: "What the picture shows, for screen readers"))
       }
       OnboardingTextField(label: "Button label", text: $step.buttonLabel, limit: OnboardingLimits.label, placeholder: index == count - 1 ? "Get started" : "Continue")
       if !pricingTables.isEmpty || !step.pricingTable.isEmpty { pricing }
@@ -359,7 +359,7 @@ private struct OnboardingStepCard: View {
       Picker("Pricing table", selection: $step.pricingTable) {
         Text("None").tag("")
         ForEach(pricingTables, id: \.key) { table in
-          Text(table.isPublished ? table.name : "\(table.name) (draft)").tag(table.key)
+          Text(table.isPublished ? table.name : String(localized: "\(table.name) (draft)")).tag(table.key)
         }
         if !step.pricingTable.isEmpty && chosen == nil { Text(step.pricingTable).tag(step.pricingTable) }
       }
@@ -404,7 +404,7 @@ private struct OnboardingStepCard: View {
       guard let item else { return }
       Task {
         defer { photo = nil }
-        if let data = try? await item.loadTransferable(type: Data.self) { await upload(data) } else { error = "Could not read that photo." }
+        if let data = try? await item.loadTransferable(type: Data.self) { await upload(data) } else { error = String(localized: "Could not read that photo.") }
       }
     }
     .fileImporter(isPresented: $importing, allowedContentTypes: [.image]) { result in
@@ -413,7 +413,7 @@ private struct OnboardingStepCard: View {
       case .success(let url):
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        if let data = try? Data(contentsOf: url) { Task { await upload(data) } } else { error = "Could not read that file." }
+        if let data = try? Data(contentsOf: url) { Task { await upload(data) } } else { error = String(localized: "Could not read that file.") }
       }
     }
   }

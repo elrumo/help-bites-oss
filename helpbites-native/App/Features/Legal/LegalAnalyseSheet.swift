@@ -38,7 +38,7 @@ struct LegalAnalyseSheet: View {
           }
           LabeledField(label: "Text") {
             VStack(alignment: .leading, spacing: 8) {
-              LinearTextEditor(text: $text, placeholder: "Paste the policy here", minHeight: 200)
+              LinearTextEditor(text: $text, placeholder: String(localized: "Paste the policy here"), minHeight: 200)
               Button { picking = true } label: { Label("Import a file", systemImage: "doc") }
                 .buttonStyle(SecondaryButtonStyle(compact: true))
             }
@@ -92,7 +92,7 @@ struct LegalAnalyseSheet: View {
     let scoped = url.startAccessingSecurityScopedResource()
     defer { if scoped { url.stopAccessingSecurityScopedResource() } }
     let data = try Data(contentsOf: url)
-    guard data.count <= 2_000_000 else { throw APIError.server("That file is too large to analyse (2 MB at most).") }
+    guard data.count <= 2_000_000 else { throw APIError.server(String(localized: "That file is too large to analyse (2 MB at most).")) }
     return String(decoding: data, as: UTF8.self)
   }
 

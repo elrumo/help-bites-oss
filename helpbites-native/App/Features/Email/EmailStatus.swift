@@ -26,27 +26,27 @@ struct EmailStatusStyle: Sendable {
 enum EmailStatusText {
   /// Every status the log knows, in the web's order.
   static let statuses: [(key: String, style: EmailStatusStyle)] = [
-    ("scheduled", EmailStatusStyle(label: "Scheduled", systemImage: "clock", tone: .neutral, hint: "Accepted; Mailgun delivers it at the scheduled time.")),
-    ("sent", EmailStatusStyle(label: "Sent", systemImage: "paperplane", tone: .neutral, hint: "Accepted by Mailgun. Delivery events need the Mailgun webhook.")),
-    ("delivered", EmailStatusStyle(label: "Delivered", systemImage: "checkmark", tone: .success, hint: "The receiving server accepted it.")),
-    ("opened", EmailStatusStyle(label: "Opened", systemImage: "envelope.open", tone: .success, hint: "Opened at least once (needs open tracking).")),
-    ("clicked", EmailStatusStyle(label: "Clicked", systemImage: "cursorarrow.click", tone: .success, hint: "A link was clicked (needs click tracking).")),
-    ("unsubscribed", EmailStatusStyle(label: "Unsubscribed", systemImage: "bell.slash", tone: .warning, hint: "The recipient unsubscribed; the address is suppressed.")),
-    ("bounced", EmailStatusStyle(label: "Bounced", systemImage: "xmark.circle", tone: .error, hint: "Permanently refused; the address is suppressed.")),
-    ("complained", EmailStatusStyle(label: "Spam report", systemImage: "flag", tone: .error, hint: "Marked as spam; the address is suppressed.")),
-    ("failed", EmailStatusStyle(label: "Failed", systemImage: "exclamationmark.circle", tone: .error, hint: "Mailgun did not accept it.")),
-    ("suppressed", EmailStatusStyle(label: "Not sent", systemImage: "nosign", tone: .warning, hint: "Skipped: the address is on the suppression list."))
+    ("scheduled", EmailStatusStyle(label: String(localized: "Scheduled"), systemImage: "clock", tone: .neutral, hint: String(localized: "Accepted; Mailgun delivers it at the scheduled time."))),
+    ("sent", EmailStatusStyle(label: String(localized: "Sent"), systemImage: "paperplane", tone: .neutral, hint: String(localized: "Accepted by Mailgun. Delivery events need the Mailgun webhook."))),
+    ("delivered", EmailStatusStyle(label: String(localized: "Delivered"), systemImage: "checkmark", tone: .success, hint: String(localized: "The receiving server accepted it."))),
+    ("opened", EmailStatusStyle(label: String(localized: "Opened"), systemImage: "envelope.open", tone: .success, hint: String(localized: "Opened at least once (needs open tracking)."))),
+    ("clicked", EmailStatusStyle(label: String(localized: "Clicked"), systemImage: "cursorarrow.click", tone: .success, hint: String(localized: "A link was clicked (needs click tracking)."))),
+    ("unsubscribed", EmailStatusStyle(label: String(localized: "Unsubscribed"), systemImage: "bell.slash", tone: .warning, hint: String(localized: "The recipient unsubscribed; the address is suppressed."))),
+    ("bounced", EmailStatusStyle(label: String(localized: "Bounced"), systemImage: "xmark.circle", tone: .error, hint: String(localized: "Permanently refused; the address is suppressed."))),
+    ("complained", EmailStatusStyle(label: String(localized: "Spam report"), systemImage: "flag", tone: .error, hint: String(localized: "Marked as spam; the address is suppressed."))),
+    ("failed", EmailStatusStyle(label: String(localized: "Failed"), systemImage: "exclamationmark.circle", tone: .error, hint: String(localized: "Mailgun did not accept it."))),
+    ("suppressed", EmailStatusStyle(label: String(localized: "Not sent"), systemImage: "nosign", tone: .warning, hint: String(localized: "Skipped: the address is on the suppression list.")))
   ]
 
   static func known(_ key: String) -> EmailStatusStyle? { statuses.first { $0.key == key }?.style }
 
   static func style(_ key: String) -> EmailStatusStyle {
-    known(key) ?? EmailStatusStyle(label: key.isEmpty ? "Sent" : key.capitalized, systemImage: "hourglass", tone: .neutral, hint: "")
+    known(key) ?? EmailStatusStyle(label: key.isEmpty ? String(localized: "Sent") : key.capitalized, systemImage: "hourglass", tone: .neutral, hint: "")
   }
 
   static let sources: [(key: String, label: String)] = [
-    ("api", "API"), ("admin", "Operator"), ("test", "Test"), ("notification", "Notification"), ("feedback", "Feedback"), ("system", "HelpBites"),
-    ("campaign", "Campaign"), ("sequence", "Sequence"), ("form", "Lead form")
+    ("api", "API"), ("admin", String(localized: "Operator")), ("test", String(localized: "Test")), ("notification", String(localized: "Notification")), ("feedback", String(localized: "Feedback")), ("system", "HelpBites"),
+    ("campaign", String(localized: "Campaign")), ("sequence", String(localized: "Sequence")), ("form", String(localized: "Lead form"))
   ]
 
   static func source(_ key: String?) -> String {
@@ -55,7 +55,7 @@ enum EmailStatusText {
   }
 
   static let suppressionReasons: [(key: String, label: String)] = [
-    ("bounce", "Bounced"), ("complaint", "Spam report"), ("unsubscribe", "Unsubscribed"), ("manual", "Added by hand")
+    ("bounce", String(localized: "Bounced")), ("complaint", String(localized: "Spam report")), ("unsubscribe", String(localized: "Unsubscribed")), ("manual", String(localized: "Added by hand"))
   ]
 
   static func reason(_ key: String?) -> String {
@@ -218,11 +218,11 @@ struct EmailSetupStrip: View {
   /// `emailSetup.<key>.title` and `emailSetup.<key>.<state>` of en.json; a pair the server does not send has no words.
   private static func words(_ check: EmailSetupCheck) -> (title: String, text: String)? {
     switch (check.key, check.state) {
-    case ("mailer", "todo"): return ("Mail server.", "This server has no Mailgun API key, so it cannot send any email. Set MAILGUN_API_KEY.")
-    case ("sender", "todo"): return ("Sender.", "Neither this project nor the server has a from address and sending domain. Set them in Email → Settings.")
-    case ("webhook", "warn"): return ("Delivery events.", "Mailgun's webhook is not set up, so the log never learns about deliveries, opens or bounces and bounced addresses are not suppressed.")
-    case ("postalAddress", "todo"): return ("Postal address.", "Every campaign must carry one. Add it in Email → Settings.")
-    case ("paused", "todo"): return ("Bulk mail is paused.", "\(check.value ?? "").")
+    case ("mailer", "todo"): return (String(localized: "Mail server."), String(localized: "This server has no Mailgun API key, so it cannot send any email. Set MAILGUN_API_KEY."))
+    case ("sender", "todo"): return (String(localized: "Sender."), String(localized: "Neither this project nor the server has a from address and sending domain. Set them in Email → Settings."))
+    case ("webhook", "warn"): return (String(localized: "Delivery events."), String(localized: "Mailgun's webhook is not set up, so the log never learns about deliveries, opens or bounces and bounced addresses are not suppressed."))
+    case ("postalAddress", "todo"): return (String(localized: "Postal address."), String(localized: "Every campaign must carry one. Add it in Email → Settings."))
+    case ("paused", "todo"): return (String(localized: "Bulk mail is paused."), "\(check.value ?? "").")
     default: return nil
     }
   }

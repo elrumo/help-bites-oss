@@ -31,9 +31,9 @@ private enum BlogTab: String, CaseIterable, Identifiable {
   var id: String { rawValue }
   var label: String {
     switch self {
-    case .posts: "Posts"
-    case .pages: "Pages"
-    case .comments: "Comments"
+    case .posts: String(localized: "Posts")
+    case .pages: String(localized: "Pages")
+    case .comments: String(localized: "Comments")
     }
   }
   /// What a list tab shows; nil for the comments.
@@ -137,7 +137,7 @@ private struct BlogView: View {
       VStack(spacing: 1) {
         ProjectBreadcrumb(projectId: store.projectId, title: "Blog")
         if store.loaded {
-          Text("\(store.liveCount) live, \(store.draftCount) \(store.draftCount == 1 ? "draft" : "drafts")")
+          Text(store.draftCount == 1 ? String(localized: "\(store.liveCount) live, 1 draft") : String(localized: "\(store.liveCount) live, \(store.draftCount) drafts"))
             .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
         }
       }
@@ -167,7 +167,7 @@ private struct BlogView: View {
 
   // MARK: Posts
 
-  private var newLabel: String { store.kind == .page ? "New page" : "New post" }
+  private var newLabel: String { store.kind == .page ? String(localized: "New page") : String(localized: "New post") }
 
   @ViewBuilder private var posts: some View {
     VStack(spacing: 10) {
@@ -284,7 +284,7 @@ private struct BlogView: View {
       Pill(label: "Visible", isActive: store.commentFilter == "visible") { store.commentFilter = "visible" }
       Pill(label: "Hidden", isActive: store.commentFilter == "hidden") { store.commentFilter = "hidden" }
       Spacer(minLength: 0)
-      Text("\(store.commentTotal) \(store.commentTotal == 1 ? "comment" : "comments")").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
+      Text(store.commentTotal == 1 ? String(localized: "1 comment") : String(localized: "\(store.commentTotal) comments")).font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
     }
     .padding(.horizontal, Metrics.gutter).padding(.vertical, 10)
     Rectangle().fill(Theme.border).frame(height: 1)
@@ -310,8 +310,8 @@ private struct BlogView: View {
       HStack(spacing: 6) {
         Avatar(name: comment.authorName, size: 22)
         Text(comment.authorName).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-        if comment.authorIsStaff { BlogChip(text: "Team", tint: Theme.accentText) }
-        if hidden { BlogChip(text: "Hidden", tint: Theme.warning) }
+        if comment.authorIsStaff { BlogChip(text: String(localized: "Team"), tint: Theme.accentText) }
+        if hidden { BlogChip(text: String(localized: "Hidden"), tint: Theme.warning) }
         Text(FeedbackFormat.timeAgo(comment.createdAt)).font(.lnCaption).foregroundStyle(Theme.textMuted)
         Spacer(minLength: 0)
         Menu {

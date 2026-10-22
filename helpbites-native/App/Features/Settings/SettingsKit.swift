@@ -8,7 +8,13 @@ import SwiftUI
 enum TeamRole: String, CaseIterable, Identifiable, Sendable {
   case owner, admin, agent
   var id: String { rawValue }
-  var label: String { rawValue.capitalized }
+  var label: String {
+    switch self {
+    case .owner: String(localized: "Owner")
+    case .admin: String(localized: "Admin")
+    case .agent: String(localized: "Agent")
+    }
+  }
   var rank: Int { self == .owner ? 3 : self == .admin ? 2 : 1 }
   init(_ raw: String?) { self = TeamRole(rawValue: raw ?? "") ?? .agent }
   /// A member may hand out at most their own role, and only owners make owners.
@@ -31,8 +37,8 @@ struct MenuPicker<Value: Hashable>: View {
   let options: [PickerOption<Value>]
   var title = ""
   var body: some View {
-    Picker(title, selection: $selection) {
-      ForEach(options, id: \.self) { option in Text(option.label).tag(option.value) }
+    Picker(LocalizedStringKey(title), selection: $selection) {
+      ForEach(options, id: \.self) { option in Text(LocalizedStringKey(option.label)).tag(option.value) }
     }
     .labelsHidden()
     .pickerStyle(.menu)
@@ -54,10 +60,16 @@ struct SuccessText: View {
 
 /// A bordered block with a title and optional trailing control, for settings sections.
 struct SettingsSection<Content: View, Trailing: View>: View {
-  let title: String
+  let title: LocalizedStringKey
   var systemImage: String? = nil
   @ViewBuilder var trailing: () -> Trailing
   @ViewBuilder var content: () -> Content
+  init(title: LocalizedStringKey, systemImage: String? = nil, @ViewBuilder trailing: @escaping () -> Trailing, @ViewBuilder content: @escaping () -> Content) {
+    self.title = title; self.systemImage = systemImage; self.trailing = trailing; self.content = content
+  }
+  @_disfavoredOverload init(title: String, systemImage: String? = nil, @ViewBuilder trailing: @escaping () -> Trailing, @ViewBuilder content: @escaping () -> Content) {
+    self.init(title: LocalizedStringKey(title), systemImage: systemImage, trailing: trailing, content: content)
+  }
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       HStack(spacing: 8) {
@@ -72,17 +84,26 @@ struct SettingsSection<Content: View, Trailing: View>: View {
 }
 
 extension SettingsSection where Trailing == EmptyView {
-  init(_ title: String, systemImage: String? = nil, @ViewBuilder content: @escaping () -> Content) {
+  init(_ title: LocalizedStringKey, systemImage: String? = nil, @ViewBuilder content: @escaping () -> Content) {
     self.init(title: title, systemImage: systemImage, trailing: { EmptyView() }, content: content)
+  }
+  @_disfavoredOverload init(_ title: String, systemImage: String? = nil, @ViewBuilder content: @escaping () -> Content) {
+    self.init(title: LocalizedStringKey(title), systemImage: systemImage, trailing: { EmptyView() }, content: content)
   }
 }
 
 /// The dashed-border empty state the web draws inside a settings tab.
 struct DashedEmptyState<Actions: View>: View {
   let systemImage: String
-  let title: String
-  var message: String? = nil
+  let title: LocalizedStringKey
+  var message: LocalizedStringKey? = nil
   @ViewBuilder var actions: () -> Actions
+  init(systemImage: String, title: LocalizedStringKey, message: LocalizedStringKey? = nil, @ViewBuilder actions: @escaping () -> Actions) {
+    self.systemImage = systemImage; self.title = title; self.message = message; self.actions = actions
+  }
+  @_disfavoredOverload init(systemImage: String, title: String, message: String? = nil, @ViewBuilder actions: @escaping () -> Actions) {
+    self.init(systemImage: systemImage, title: LocalizedStringKey(title), message: message.map { LocalizedStringKey($0) }, actions: actions)
+  }
   var body: some View {
     EmptyState(systemImage: systemImage, title: title, message: message, actions: actions)
       .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
@@ -90,8 +111,11 @@ struct DashedEmptyState<Actions: View>: View {
 }
 
 extension DashedEmptyState where Actions == EmptyView {
-  init(systemImage: String, title: String, message: String? = nil) {
+  init(systemImage: String, title: LocalizedStringKey, message: LocalizedStringKey? = nil) {
     self.init(systemImage: systemImage, title: title, message: message) { EmptyView() }
+  }
+  @_disfavoredOverload init(systemImage: String, title: String, message: String? = nil) {
+    self.init(systemImage: systemImage, title: LocalizedStringKey(title), message: message.map { LocalizedStringKey($0) }) { EmptyView() }
   }
 }
 

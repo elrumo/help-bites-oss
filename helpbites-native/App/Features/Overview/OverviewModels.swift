@@ -91,15 +91,15 @@ struct AttentionItem: Decodable, Identifiable, Sendable {
   var text: String {
     let words: PluralText
     switch kind {
-    case "unread": words = PluralText("{count} unread conversation", "{count} unread conversations")
-    case "drafts": words = PluralText("{count} changelog draft waiting for approval", "{count} changelog drafts waiting for approval")
-    case "sync": words = PluralText("{value} sync is failing")
-    case "bounces": words = PluralText("{count} email bounced or failed this week", "{count} emails bounced or failed this week")
-    case "alerts": words = PluralText("{count} error alert fired today", "{count} error alerts fired today")
-    case "paused": words = PluralText("Campaigns and sequences are paused")
-    case "errors": words = PluralText("{count} open error report", "{count} open error reports")
-    case "documents": words = PluralText("{count} knowledge document failed to process", "{count} knowledge documents failed to process")
-    case "triage": words = PluralText("{count} feedback post to triage", "{count} feedback posts to triage")
+    case "unread": words = PluralText(String(localized: "{count} unread conversation"), String(localized: "{count} unread conversations"))
+    case "drafts": words = PluralText(String(localized: "{count} changelog draft waiting for approval"), String(localized: "{count} changelog drafts waiting for approval"))
+    case "sync": words = PluralText(String(localized: "{value} sync is failing"))
+    case "bounces": words = PluralText(String(localized: "{count} email bounced or failed this week"), String(localized: "{count} emails bounced or failed this week"))
+    case "alerts": words = PluralText(String(localized: "{count} error alert fired today"), String(localized: "{count} error alerts fired today"))
+    case "paused": words = PluralText(String(localized: "Campaigns and sequences are paused"))
+    case "errors": words = PluralText(String(localized: "{count} open error report"), String(localized: "{count} open error reports"))
+    case "documents": words = PluralText(String(localized: "{count} knowledge document failed to process"), String(localized: "{count} knowledge documents failed to process"))
+    case "triage": words = PluralText(String(localized: "{count} feedback post to triage"), String(localized: "{count} feedback posts to triage"))
     default: words = PluralText(kind)
     }
     return words.text(count, ["count": String(count), "value": value])

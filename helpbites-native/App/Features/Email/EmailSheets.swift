@@ -180,9 +180,9 @@ struct EmailShareSheet: View {
   @State private var error = ""
 
   private static let modes: [(value: String, label: String, detail: String)] = [
-    ("off", "Off", "Only operators can open it."),
-    ("view", "Anyone with the link can view", "A rendered preview, no sign-in."),
-    ("edit", "Anyone with the link can edit", "Changes sync live. Share with care.")
+    ("off", String(localized: "Off"), String(localized: "Only operators can open it.")),
+    ("view", String(localized: "Anyone with the link can view"), String(localized: "A rendered preview, no sign-in.")),
+    ("edit", String(localized: "Anyone with the link can edit"), String(localized: "Changes sync live. Share with care."))
   ]
   private static let dayOptions = [1, 7, 30, 90]
   /// Mail the server sends itself (shareEditRefusal in server/utils/emails.ts).
@@ -198,9 +198,9 @@ struct EmailShareSheet: View {
 
   /// Why this template can only be shared view-only (shareEditRefusal).
   private var editRefusal: String? {
-    if template.isLinked { return "A linked shared template can only be shared view-only; edit the shared template instead." }
-    if template.projectId == nil { return "A shared template can only be shared view-only: an edit would change it for every project that uses it." }
-    if Self.systemKeys.contains(template.key) { return "“\(template.key)” is mail the server sends itself, so it can only be shared view-only." }
+    if template.isLinked { return String(localized: "A linked shared template can only be shared view-only; edit the shared template instead.") }
+    if template.projectId == nil { return String(localized: "A shared template can only be shared view-only: an edit would change it for every project that uses it.") }
+    if Self.systemKeys.contains(template.key) { return String(localized: "“\(template.key)” is mail the server sends itself, so it can only be shared view-only.") }
     return nil
   }
 
@@ -213,9 +213,9 @@ struct EmailShareSheet: View {
   private var expired: Bool { expiresAt.map { $0 <= Date().timeIntervalSince1970 * 1000 } ?? true }
 
   private var expiryText: String {
-    guard let expiresAt else { return "Expired: renew to use it again" }
+    guard let expiresAt else { return String(localized: "Expired: renew to use it again") }
     let date = Date(timeIntervalSince1970: expiresAt / 1000).formatted(date: .abbreviated, time: .shortened)
-    return "\(expired ? "Expired" : "Expires") \(date)"
+    return expired ? String(localized: "Expired \(date)") : String(localized: "Expires \(date)")
   }
 
   var body: some View {
@@ -278,7 +278,7 @@ struct EmailShareSheet: View {
                   Button(option == 1 ? "1 day" : "\(option) days") { Task { await apply(mode, days: option) } }
                 }
               } label: {
-                Label(days.map { $0 == 1 ? "1 day" : "\($0) days" } ?? "Set expiry", systemImage: "clock")
+                Label(days.map { $0 == 1 ? String(localized: "1 day") : String(localized: "\($0) days") } ?? String(localized: "Set expiry"), systemImage: "clock")
                   .font(.lnMetaMedium)
                   .foregroundStyle(Theme.textMuted)
               }
@@ -287,7 +287,7 @@ struct EmailShareSheet: View {
             }
           }
           if let edit = template.lastSharedEdit, let at = edit.at {
-            Text("Last edited through a link \(EmailStatusText.fullDate(at)) from \(edit.ip?.isEmpty == false ? edit.ip! : "an unknown address")")
+            Text("Last edited through a link \(EmailStatusText.fullDate(at)) from \(edit.ip?.isEmpty == false ? edit.ip! : String(localized: "an unknown address"))")
               .font(.lnCaption)
               .foregroundStyle(Theme.textMuted)
           }

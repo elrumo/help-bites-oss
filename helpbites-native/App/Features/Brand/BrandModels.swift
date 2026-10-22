@@ -5,25 +5,25 @@ import Foundation
 /// The lists and limits of shared/brand.ts, ported by hand (tests/brandNativeParity.test.ts).
 enum BrandOptions {
   static let templates: [(id: String, label: String, description: String)] = [
-    ("minimal", "Minimal", "Your logo on its colour, then everything else in a quiet grid."),
-    ("editorial", "Editorial", "A centred, type-led page for kits with a lot to say."),
-    ("split", "Split", "A panel in your colour beside the content, like a brand book.")
+    ("minimal", String(localized: "Minimal"), String(localized: "Your logo on its colour, then everything else in a quiet grid.")),
+    ("editorial", String(localized: "Editorial"), String(localized: "A centred, type-led page for kits with a lot to say.")),
+    ("split", String(localized: "Split"), String(localized: "A panel in your colour beside the content, like a brand book."))
   ]
-  static let themes: [(id: String, label: String)] = [("auto", "Auto"), ("light", "Light"), ("dark", "Dark")]
+  static let themes: [(id: String, label: String)] = [("auto", String(localized: "Auto")), ("light", String(localized: "Light")), ("dark", String(localized: "Dark"))]
   static let radii: [(id: String, label: String)] = [("sharp", "Sharp"), ("soft", "Soft"), ("round", "Round")]
   /// `BRAND_SECTIONS` with `BRAND_SECTION_LABELS`, in the default order.
   static let sections: [(id: String, label: String)] = [
-    ("colors", "Colours"), ("typography", "Typography"), ("logos", "Logos and icons"),
-    ("screenshots", "Screenshots"), ("assets", "Other files"), ("guidelines", "Guidelines")
+    ("colors", String(localized: "Colours")), ("typography", String(localized: "Typography")), ("logos", String(localized: "Logos and icons")),
+    ("screenshots", String(localized: "Screenshots")), ("assets", String(localized: "Other files")), ("guidelines", String(localized: "Guidelines"))
   ]
   /// `BRAND_ASSET_KINDS` with `BRAND_ASSET_KIND_LABELS`.
   static let assetKinds: [(id: String, label: String)] = [
-    ("logo", "Logo"), ("icon", "App icon"), ("favicon", "Favicon"),
-    ("screenshot", "Screenshot"), ("social", "Social image"), ("other", "Other")
+    ("logo", String(localized: "Logo")), ("icon", String(localized: "App icon")), ("favicon", String(localized: "Favicon")),
+    ("screenshot", String(localized: "Screenshot")), ("social", String(localized: "Social image")), ("other", String(localized: "Other"))
   ]
   /// What a logo is drawn to sit on.
-  static let backgrounds: [(id: String, label: String)] = [("light", "Light"), ("dark", "Dark"), ("any", "Any")]
-  static let fontRoles: [(id: String, label: String)] = [("display", "Display"), ("body", "Body"), ("mono", "Mono"), ("other", "Other")]
+  static let backgrounds: [(id: String, label: String)] = [("light", String(localized: "Light")), ("dark", String(localized: "Dark")), ("any", String(localized: "Any"))]
+  static let fontRoles: [(id: String, label: String)] = [("display", String(localized: "Display")), ("body", String(localized: "Body")), ("mono", String(localized: "Mono")), ("other", String(localized: "Other"))]
 
   static func kindLabel(_ id: String) -> String { assetKinds.first { $0.id == id }?.label ?? id }
 }
@@ -110,7 +110,7 @@ struct BrandAsset: Codable, Identifiable, Equatable, Sendable {
     case "image/svg+xml": "SVG"
     case "image/x-icon": "ICO"
     case "application/pdf": "PDF"
-    default: mime.split(separator: "/").last.map { $0.uppercased() } ?? "File"
+    default: mime.split(separator: "/").last.map { $0.uppercased() } ?? String(localized: "File")
     }
   }
   /// "240 KB · 512×512".

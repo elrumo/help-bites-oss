@@ -36,7 +36,7 @@ struct LeadFormScreen: View {
         SkeletonRows(count: 4).frame(maxHeight: .infinity, alignment: .top)
       } else {
         VStack(spacing: 12) {
-          ErrorText(message: error.isEmpty ? "Form not found" : error)
+          ErrorText(message: error.isEmpty ? String(localized: "Form not found") : error)
           Button("Try again") { Task { await load() } }.buttonStyle(.lnSecondaryCompact)
         }
         .padding(20).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -102,7 +102,7 @@ struct LeadFormScreen: View {
     VStack(alignment: .leading, spacing: 16) {
       HStack(spacing: 8) {
         Tag(text: form.active ? "Live" : "Closed", tint: form.active ? Theme.success : Theme.textDimmed)
-        Text("\(form.stats.leads) \(form.stats.leads == 1 ? "lead" : "leads") · \(form.stats.confirmed) on the list").font(.lnCaption).foregroundStyle(Theme.textMuted).monospacedDigit()
+        Text("\(form.stats.leads) \(form.stats.leads == 1 ? String(localized: "lead") : String(localized: "leads")) · \(form.stats.confirmed) on the list").font(.lnCaption).foregroundStyle(Theme.textMuted).monospacedDigit()
         if dirty { Text("Unsaved changes").font(.lnCaption).foregroundStyle(Theme.warning) }
       }
       ErrorText(message: error)
@@ -131,7 +131,7 @@ struct LeadFormScreen: View {
       }
       Menu {
         ForEach(LeadFormLimits.fieldTypes.filter { $0.id != "email" && ($0.id != "name" || !draft.wrappedValue.fields.contains { $0.type == "name" }) }, id: \.id) { type in
-          Button { draft.wrappedValue.fields.append(.new(type.id, taken: draft.wrappedValue.fields.map(\.key))) } label: { Label(type.label, systemImage: type.systemImage) }
+          Button { draft.wrappedValue.fields.append(.new(type.id, taken: draft.wrappedValue.fields.map(\.key))) } label: { Label(LocalizedStringKey(type.label), systemImage: type.systemImage) }
             .disabled(type.id == "file" && draft.wrappedValue.fields.filter { $0.type == "file" }.count >= LeadFormLimits.files)
         }
       } label: { Label("Add field", systemImage: "plus") }
@@ -147,7 +147,7 @@ struct LeadFormScreen: View {
         if draft.wrappedValue.settings.doubleOptIn {
           OnboardingTextField(label: "While they confirm", text: draft.content.confirmMessage, limit: LeadFormLimits.message)
         }
-        OnboardingTextField(label: "Small print", text: draft.content.footnote, limit: LeadFormLimits.message, placeholder: "Optional: a privacy line")
+        OnboardingTextField(label: "Small print", text: draft.content.footnote, limit: LeadFormLimits.message, placeholder: String(localized: "Optional: a privacy line"))
       }
 
       LegalPanel("Look") {
@@ -228,7 +228,7 @@ struct LeadFormScreen: View {
     }
   }
 
-  private func toggle(_ title: String, _ hint: String, isOn: Binding<Bool>) -> some View {
+  private func toggle(_ title: LocalizedStringKey, _ hint: LocalizedStringKey, isOn: Binding<Bool>) -> some View {
     Toggle(isOn: isOn) {
       VStack(alignment: .leading, spacing: 2) {
         Text(title).font(.lnRow).foregroundStyle(Theme.text)
@@ -238,7 +238,7 @@ struct LeadFormScreen: View {
     .toggleStyle(.switch).tint(Theme.accent)
   }
 
-  private func picker(_ label: String, _ hint: String, none: String, selection: Binding<String>, items: [(id: String, title: String)]) -> some View {
+  private func picker(_ label: LocalizedStringKey, _ hint: LocalizedStringKey, none: LocalizedStringKey, selection: Binding<String>, items: [(id: String, title: String)]) -> some View {
     LabeledField(label: label, hint: hint) {
       Picker(label, selection: selection) {
         Text(none).tag("")
@@ -253,11 +253,11 @@ struct LeadFormScreen: View {
   // MARK: Install
 
   private static let installHints = [
-    "script": "One script tag draws the form where you put it, in your colours. It needs nothing else.",
-    "html": "A plain form, styled by your own CSS. It posts straight to HelpBites and comes back to the thank-you page.",
-    "link": "A hosted page to link to, or to frame in your site.",
-    "swift": "Paste HelpBitesLeadForm.swift from the guide (/docs/forms) into your app, then show the view anywhere.",
-    "api": "Post answers from your own UI or server. Each field's answer goes under its key."
+    "script": String(localized: "One script tag draws the form where you put it, in your colours. It needs nothing else."),
+    "html": String(localized: "A plain form, styled by your own CSS. It posts straight to HelpBites and comes back to the thank-you page."),
+    "link": String(localized: "A hosted page to link to, or to frame in your site."),
+    "swift": String(localized: "Paste HelpBitesLeadForm.swift from the guide (/docs/forms) into your app, then show the view anywhere."),
+    "api": String(localized: "Post answers from your own UI or server. Each field's answer goes under its key.")
   ]
 
   private var base: String { session.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/")) }
@@ -353,10 +353,10 @@ struct LeadFormScreen: View {
     guard var body = draft else { return }
     body.name = body.name.trimmingCharacters(in: .whitespacesAndNewlines)
     body.key = body.key.trimmingCharacters(in: .whitespaces).lowercased()
-    if body.name.isEmpty { error = "Give the form a name."; return }
+    if body.name.isEmpty { error = String(localized: "Give the form a name."); return }
     if !LeadFormLimits.validKey(body.key) { error = LeadFormLimits.keyRule; return }
     if let bad = body.fields.first(where: { !["email", "name"].contains($0.type) && !LeadFormLimits.validFieldKey($0.key) }) {
-      error = "“\(bad.label)” is saved as “\(bad.key)”: use letters, digits and _, starting with a letter, and not a reserved name."
+      error = String(localized: "“\(bad.label)” is saved as “\(bad.key)”: use letters, digits and _, starting with a letter, and not a reserved name.")
       return
     }
     busy = "save"
@@ -480,7 +480,7 @@ struct LeadFormPreview: View {
                 Label(field.label, systemImage: "square").font(.callout).foregroundStyle(Theme.text)
               } else {
                 VStack(alignment: .leading, spacing: 4) {
-                  if draft.style.layout != "inline" { Text(field.label + (field.required ? "" : " (optional)")).font(.caption.weight(.medium)).foregroundStyle(Theme.textToned) }
+                  if draft.style.layout != "inline" { Text(field.label + (field.required ? "" : String(localized: " (optional)"))).font(.caption.weight(.medium)).foregroundStyle(Theme.textToned) }
                   input(field, radius)
                 }
               }
@@ -500,7 +500,7 @@ struct LeadFormPreview: View {
   private static let designs: [String: Font.Design] = ["rounded": .rounded, "serif": .serif, "mono": .monospaced]
 
   private func input(_ field: LeadFormField, _ radius: CGFloat) -> some View {
-    Text(field.type == "select" ? (field.options.first ?? "—") : field.type == "file" ? "Choose a file · up to \(field.maxMB) MB" : field.placeholder.isEmpty ? field.label : field.placeholder)
+    Text(field.type == "select" ? (field.options.first ?? "—") : field.type == "file" ? String(localized: "Choose a file · up to \(field.maxMB) MB") : field.placeholder.isEmpty ? field.label : field.placeholder)
       .font(.callout).foregroundStyle(Theme.textDimmed).lineLimit(1)
       .frame(maxWidth: .infinity, minHeight: field.type == "textarea" ? 72 : 42, alignment: field.type == "textarea" ? .topLeading : .leading)
       .padding(.horizontal, 12).padding(.vertical, field.type == "textarea" ? 10 : 0)

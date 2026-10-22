@@ -36,21 +36,21 @@ enum LeadFormLimits {
   ]
   /// What a file field takes; the server checks each file's bytes.
   static let fileKinds: [(id: String, label: String, hint: String)] = [
-    ("images", "Pictures", "PNG, JPEG, GIF or WebP."),
-    ("documents", "Documents", "PDF, Word, Excel, PowerPoint, OpenDocument, RTF, text, CSV or Markdown."),
-    ("any", "Any of these", "Pictures, documents or a ZIP archive.")
+    ("images", String(localized: "Pictures"), String(localized: "PNG, JPEG, GIF or WebP.")),
+    ("documents", String(localized: "Documents"), String(localized: "PDF, Word, Excel, PowerPoint, OpenDocument, RTF, text, CSV or Markdown.")),
+    ("any", String(localized: "Any of these"), String(localized: "Pictures, documents or a ZIP archive."))
   ]
-  static let fonts: [(id: String, label: String)] = [("system", "System"), ("rounded", "Rounded"), ("serif", "Serif"), ("mono", "Mono")]
-  static let layouts: [(id: String, label: String)] = [("stacked", "Stacked"), ("inline", "One row")]
+  static let fonts: [(id: String, label: String)] = [("system", String(localized: "System")), ("rounded", String(localized: "Rounded")), ("serif", String(localized: "Serif")), ("mono", String(localized: "Mono"))]
+  static let layouts: [(id: String, label: String)] = [("stacked", String(localized: "Stacked")), ("inline", String(localized: "One row"))]
   static let presets: [(id: String, label: String, hint: String)] = [
-    ("email", "Email only", "One email box and a button, on one row."),
-    ("waitlist", "Waitlist", "Email and name."),
-    ("detailed", "Interest form", "Email, name, company, role and a question.")
+    ("email", String(localized: "Email only"), String(localized: "One email box and a button, on one row.")),
+    ("waitlist", String(localized: "Waitlist"), String(localized: "Email and name.")),
+    ("detailed", String(localized: "Interest form"), String(localized: "Email, name, company, role and a question."))
   ]
 
   static func validKey(_ value: String) -> Bool { value.range(of: key, options: .regularExpression) != nil }
   static func validFieldKey(_ value: String) -> Bool { value.range(of: fieldKeyPattern, options: .regularExpression) != nil && !reservedKeys.contains(value) }
-  static let keyRule = "The key is 1 to 40 lowercase letters, digits and dashes, starting with a letter or digit."
+  static let keyRule = String(localized: "The key is 1 to 40 lowercase letters, digits and dashes, starting with a letter or digit.")
   static func typeLabel(_ type: String) -> String { fieldTypes.first { $0.id == type }?.label ?? type }
   static func typeImage(_ type: String) -> String { fieldTypes.first { $0.id == type }?.systemImage ?? "textformat" }
 

@@ -129,7 +129,7 @@ struct SequenceEditor: View {
   @State private var saving = false
   @State private var error = ""
 
-  private static let units: [(label: String, value: Int)] = [("minutes", 1), ("hours", 60), ("days", 1440)]
+  private static let units: [(label: String, value: Int)] = [(String(localized: "minutes"), 1), (String(localized: "hours"), 60), (String(localized: "days"), 1440)]
 
   var body: some View {
     NavigationStack {
@@ -171,7 +171,7 @@ struct SequenceEditor: View {
             Button("Remove email", role: .destructive) { steps.removeAll { $0.id == step.id } }
           } header: {
             let index = steps.firstIndex { $0.id == step.id } ?? 0
-            Text("Email \(index + 1) · \(index == 0 ? "after they start" : "after the one before")")
+            Text("Email \(index + 1) · \(index == 0 ? String(localized: "after they start") : String(localized: "after the one before"))")
           }
         }
         Section {

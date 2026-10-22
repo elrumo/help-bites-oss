@@ -5,6 +5,11 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Native app catches up with the panel**: Pages gets the component library and editor, the AI assistant (pages and components), the
+  page wizard, undo and redo, and moving blocks between lists; links from the setup list open Email on the tab they name; the hosted
+  edition's plan screen opens Stripe Checkout and the customer portal and manages sending domains. The app is translated into
+  Catalan, Spanish, Japanese, Korean and Simplified Chinese (`App/Localizable.xcstrings`; it follows the device language).
+  No schema, API or env changes.
 - **Write with AI in the blog editor** (`POST /v1/admin/blog/ai`, `docs/BLOG.md`). Drafts, continues or improves a post, or suggests
   its title, excerpt, search description and tags, from the project's linked GitHub repos (read-only). It uses the workspace's AI
   provider or the server's gateway, so a self-hoster needs one configured (as for the other AI features); no schema or env changes.

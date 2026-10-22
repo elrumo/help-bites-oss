@@ -62,7 +62,7 @@ struct FeedbackBoardConfig: Codable, Equatable, Sendable {
 
   /// A status the config no longer knows reads as an open one, so its posts stay visible.
   func status(_ key: String) -> FeedbackStatusDefinition {
-    statuses.first { $0.key == key } ?? FeedbackStatusDefinition(key: key, label: key.isEmpty ? "Open" : key, category: "open", color: "neutral")
+    statuses.first { $0.key == key } ?? FeedbackStatusDefinition(key: key, label: key.isEmpty ? String(localized: "Open") : key, category: "open", color: "neutral")
   }
 
   func type(_ key: String) -> FeedbackTypeDefinition? {
@@ -200,7 +200,7 @@ enum FeedbackFormat {
     guard let date = DateText.date(raw) else { return "" }
     let seconds = date.timeIntervalSinceNow
     let distance = abs(seconds)
-    if distance < 45 { return "just now" }
+    if distance < 45 { return String(localized: "just now") }
     if distance > 365 * 86400 { return date.formatted(.dateTime.year().month(.abbreviated).day()) }
     let units: [(Calendar.Component, Double)] = [(.minute, 60), (.hour, 3600), (.day, 86400), (.weekOfMonth, 604800), (.month, 2629800)]
     let unit = units.last { distance >= $0.1 } ?? units[0]
@@ -421,8 +421,8 @@ struct FeedbackToggleRow: View {
   var body: some View {
     Toggle(isOn: $isOn) {
       VStack(alignment: .leading, spacing: 2) {
-        Text(title).font(.lnRow).foregroundStyle(Theme.textHighlighted)
-        Text(detail).font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
+        Text(LocalizedStringKey(title)).font(.lnRow).foregroundStyle(Theme.textHighlighted)
+        Text(LocalizedStringKey(detail)).font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
       }
     }
     .tint(Theme.accent)

@@ -41,7 +41,7 @@ struct SettingsScreen: View {
           } label: {
             HStack(spacing: 10) {
               Image(systemName: "building.2").font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
-              Text(session.workspace?.name ?? "Workspace").font(.lnRow).foregroundStyle(Theme.text)
+              Text(session.workspace?.name ?? String(localized: "Workspace")).font(.lnRow).foregroundStyle(Theme.text)
               Spacer(minLength: 0)
               Image(systemName: "chevron.up.chevron.down").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
             }
@@ -102,7 +102,7 @@ struct SettingsScreen: View {
     .sheet(isPresented: $joinOpen) { AcceptInvitationSheet() }
   }
 
-  private func link(_ route: AppRoute, _ title: String, _ systemImage: String, divider: Bool = true) -> some View {
+  private func link(_ route: AppRoute, _ title: LocalizedStringKey, _ systemImage: String, divider: Bool = true) -> some View {
     NavigationLink(value: route) {
       CardRow(divider: divider) {
         HStack(spacing: 10) {
@@ -119,6 +119,6 @@ struct SettingsScreen: View {
 
   private var displayName: String {
     let name = session.agent?.name ?? ""
-    return name.isEmpty ? session.agent?.username ?? "You" : name
+    return name.isEmpty ? session.agent?.username ?? String(localized: "You") : name
   }
 }

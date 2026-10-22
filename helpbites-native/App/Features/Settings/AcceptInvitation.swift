@@ -54,10 +54,10 @@ struct AcceptInvitationSheet: View {
           if let invite {
             VStack(alignment: .leading, spacing: 4) {
               Text("Join \(invite.workspace.name)").font(.lnTitle).foregroundStyle(Theme.textHighlighted)
-              Text("\(invite.invitedBy?.isEmpty == false ? invite.invitedBy! : "A teammate") invited \(invite.email) as \(TeamRole(invite.role).label).").font(.lnMeta).foregroundStyle(Theme.textMuted)
+              Text("\(invite.invitedBy?.isEmpty == false ? invite.invitedBy! : String(localized: "A teammate")) invited \(invite.email) as \(TeamRole(invite.role).label).").font(.lnMeta).foregroundStyle(Theme.textMuted)
             }
             if signedIn {
-              Text("You'll join as \(session.agent?.email.isEmpty == false ? session.agent!.email : "yourself"). The invitation is for \(invite.email); sign in with that account if they differ.").font(.lnCaption).foregroundStyle(Theme.textMuted)
+              Text("You'll join as \(session.agent?.email.isEmpty == false ? session.agent!.email : String(localized: "yourself")). The invitation is for \(invite.email); sign in with that account if they differ.").font(.lnCaption).foregroundStyle(Theme.textMuted)
             } else if invite.hasAccount {
               Text("\(invite.email) already has an account. Sign in with it, then open this invitation again to join.").font(.lnMeta).foregroundStyle(Theme.textMuted)
             } else {
@@ -82,7 +82,7 @@ struct AcceptInvitationSheet: View {
         ToolbarItem(placement: .confirmationAction) {
           if looking || joining { ProgressView() }
           else if let invite {
-            Button(signedIn ? "Join workspace" : "Create account and join") { Task { await join(invite) } }
+            Button(signedIn ? String(localized: "Join workspace") : String(localized: "Create account and join")) { Task { await join(invite) } }
               .disabled(!signedIn && (invite.hasAccount || password.count < 8))
           } else {
             Button("Continue") { Task { await look(pasted) } }.disabled(InviteLink.token(from: pasted) == nil)
@@ -95,7 +95,7 @@ struct AcceptInvitationSheet: View {
   }
 
   private func look(_ raw: String) async {
-    guard let value = InviteLink.token(from: raw) else { error = "That doesn't look like an invitation link."; return }
+    guard let value = InviteLink.token(from: raw) else { error = String(localized: "That doesn't look like an invitation link."); return }
     looking = true; error = ""
     defer { looking = false }
     do {

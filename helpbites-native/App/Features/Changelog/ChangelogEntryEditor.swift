@@ -82,8 +82,8 @@ struct ChangelogEntryEditor: View {
   private var canSave: Bool { !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !saving && dirty && filled }
 
   private var title: String {
-    guard entryId != nil else { return "New entry" }
-    return current?.number.map { "Entry #\($0)" } ?? "Entry"
+    guard entryId != nil else { return String(localized: "New entry") }
+    return current?.number.map { String(localized: "Entry #\($0)") } ?? String(localized: "Entry")
   }
 
   var body: some View {
@@ -148,7 +148,7 @@ struct ChangelogEntryEditor: View {
 
   @ViewBuilder private var form: some View {
     if current == nil { Text("A draft until you publish it").font(.lnMeta).foregroundStyle(Theme.textMuted) }
-    else if let current { Text("Created \(FeedbackFormat.timeAgo(current.createdAt))\(current.authorName.isEmpty ? "" : " by \(current.authorName)")").font(.lnMeta).foregroundStyle(Theme.textMuted) }
+    else if let current { Text(current.authorName.isEmpty ? "Created \(FeedbackFormat.timeAgo(current.createdAt))" : "Created \(FeedbackFormat.timeAgo(current.createdAt)) by \(current.authorName)").font(.lnMeta).foregroundStyle(Theme.textMuted) }
 
     LabeledField(label: "Title") {
       TextField("What changed", text: $draft.title)
@@ -176,12 +176,12 @@ struct ChangelogEntryEditor: View {
       FeedbackSelect(options: ChangelogTag.allCases.map { FeedbackOption(value: $0.rawValue, label: $0.label) }, selection: Binding(get: { draft.tag.rawValue }, set: { draft.tag = ChangelogTag(rawValue: $0) ?? .improved }))
     }
     LabeledField(label: "Release") {
-      FeedbackSelect(options: [FeedbackOption(value: "", label: "No release")] + store.releases.map { FeedbackOption(value: $0.id, label: $0.pickerLabel) }, selection: $draft.releaseId)
+      FeedbackSelect(options: [FeedbackOption(value: "", label: String(localized: "No release"))] + store.releases.map { FeedbackOption(value: $0.id, label: $0.pickerLabel) }, selection: $draft.releaseId)
     }
     LabeledField(label: "Status") {
       FeedbackSelect(
-        options: [FeedbackOption(value: "draft", label: "Draft", color: "neutral"), FeedbackOption(value: "published", label: "Published", color: "success")]
-          + (current?.status == .archived ? [FeedbackOption(value: "archived", label: "Archived")] : []),
+        options: [FeedbackOption(value: "draft", label: String(localized: "Draft"), color: "neutral"), FeedbackOption(value: "published", label: String(localized: "Published"), color: "success")]
+          + (current?.status == .archived ? [FeedbackOption(value: "archived", label: String(localized: "Archived"))] : []),
         selection: $draft.status
       )
     }
@@ -195,7 +195,7 @@ struct ChangelogEntryEditor: View {
         TextField("Area (optional)", text: $draft.area).textFieldStyle(.linear).inputHints(.asciiCapable, capitalization: .never).autocorrectionDisabled()
       } else {
         let areas = store.settings.areas + (draft.area.isEmpty || store.settings.areas.contains(draft.area) ? [] : [draft.area])
-        FeedbackSelect(options: [FeedbackOption(value: "", label: "No area")] + areas.map { FeedbackOption(value: $0, label: $0) }, selection: $draft.area)
+        FeedbackSelect(options: [FeedbackOption(value: "", label: String(localized: "No area"))] + areas.map { FeedbackOption(value: $0, label: $0) }, selection: $draft.area)
       }
     }
   }
@@ -234,17 +234,17 @@ struct ChangelogEntryEditor: View {
 
   @ViewBuilder private func notes(_ entry: ChangelogEntry) -> some View {
     if entry.aiGenerated {
-      notice("sparkles", "Written by AI from \(entry.commitShas.count) git \(entry.commitShas.count == 1 ? "commit" : "commits"). Check it before it goes public; edit it freely.")
+      notice("sparkles", entry.commitShas.count == 1 ? "Written by AI from 1 git commit. Check it before it goes public; edit it freely." : "Written by AI from \(entry.commitShas.count) git commits. Check it before it goes public; edit it freely.")
     }
     if store.state(entry) == .waiting {
       notice("hourglass", "Not public yet: its release is still a draft. Publish the release and it goes out with it.")
     }
     if entry.commentCount > 0 {
-      notice("bubble.left", "\(entry.commentCount) \(entry.commentCount == 1 ? "comment" : "comments") from readers.")
+      notice("bubble.left", entry.commentCount == 1 ? "1 comment from readers." : "\(entry.commentCount) comments from readers.")
     }
   }
 
-  private func notice(_ symbol: String, _ text: String) -> some View {
+  private func notice(_ symbol: String, _ text: LocalizedStringKey) -> some View {
     HStack(alignment: .top, spacing: 8) {
       Image(systemName: symbol).font(.system(size: 12)).foregroundStyle(Theme.accentText).padding(.top, 2)
       Text(text).font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
@@ -275,7 +275,7 @@ struct ChangelogEntryEditor: View {
     }
   }
 
-  @ViewBuilder private func busyLabel(_ title: String, _ key: String) -> some View {
+  @ViewBuilder private func busyLabel(_ title: LocalizedStringKey, _ key: String) -> some View {
     if busy == key { ProgressView().controlSize(.mini) } else { Text(title) }
   }
 
@@ -346,7 +346,7 @@ struct ChangelogEntryEditor: View {
       }
       .buttonStyle(.plain)
       .disabled(source.kind != "board")
-      ChangelogChip(text: source.done ? "Done" : (source.status.isEmpty ? "Open" : source.status), tint: source.done ? Theme.success : Theme.textToned)
+      ChangelogChip(text: source.done ? String(localized: "Done") : (source.status.isEmpty ? String(localized: "Open") : source.status), tint: source.done ? Theme.success : Theme.textToned)
       Button { Task { await setLink(entry, source.kind, source.id, false) } } label: {
         Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textDimmed).frame(width: 24, height: 24).contentShape(Rectangle())
       }
@@ -400,10 +400,10 @@ struct ChangelogEntryEditor: View {
     if store.state(entry) == .live, let linked = linkedConversations, linked.count > 0 {
       HStack(spacing: 10) {
         Image(systemName: "bubble.left.and.bubble.right").font(.system(size: 14)).foregroundStyle(Theme.accentText)
-        Text("This entry answers \(linked.count) \(linked.count == 1 ? "conversation" : "conversations"). You can tell them it shipped.")
+        Text(linked.count == 1 ? "This entry answers 1 conversation. You can tell them it shipped." : "This entry answers \(linked.count) conversations. You can tell them it shipped.")
           .font(.lnMeta).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
         Spacer(minLength: 4)
-        Button { replying = true } label: { Label("Reply to \(linked.count) linked \(linked.count == 1 ? "conversation" : "conversations")", systemImage: "paperplane") }
+        Button { replying = true } label: { Label(linked.count == 1 ? "Reply to 1 linked conversation" : "Reply to \(linked.count) linked conversations", systemImage: "paperplane") }
           .buttonStyle(.lnSecondaryCompact)
       }
       .padding(12)

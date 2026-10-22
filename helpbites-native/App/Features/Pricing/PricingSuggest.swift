@@ -97,7 +97,7 @@ struct PricingSuggestSheet: View {
         .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
       }
       if !suggestion.repos.isEmpty {
-        Text("Read: " + suggestion.repos.map { $0.read ? $0.repo : "\($0.repo) ✕" }.joined(separator: ", ")).font(.lnCaption).foregroundStyle(Theme.textMuted)
+        Text("Read: \(suggestion.repos.map { $0.read ? $0.repo : "\($0.repo) ✕" }.joined(separator: ", "))").font(.lnCaption).foregroundStyle(Theme.textMuted)
       }
       PricingTableView(table: suggestion.preview)
         .padding(16)

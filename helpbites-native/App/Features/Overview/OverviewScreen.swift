@@ -122,7 +122,7 @@ struct OverviewScreen: View {
           ProjectTile(id: stats.id, name: project?.name ?? stats.name, accent: project?.theme.accent, icon: project?.iconUrl, size: 22)
           VStack(alignment: .leading, spacing: 1) {
             Text(project?.name ?? stats.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
-            Text(host(project?.siteUrl) ?? "No site URL").font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
+            Text(host(project?.siteUrl) ?? String(localized: "No site URL")).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
           }
           Spacer(minLength: 4)
           if stats.errors > 0 {
@@ -145,7 +145,7 @@ struct OverviewScreen: View {
     .buttonStyle(.plain)
   }
 
-  private func cardStat(_ label: String, _ value: String, dot: Bool = false, dimmed: Bool = false) -> some View {
+  private func cardStat(_ label: LocalizedStringKey, _ value: String, dot: Bool = false, dimmed: Bool = false) -> some View {
     VStack(alignment: .leading, spacing: 2) {
       Text(label).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
       HStack(spacing: 5) {
@@ -155,7 +155,7 @@ struct OverviewScreen: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .accessibilityElement(children: .combine)
-    .accessibilityValue(dimmed ? "Stripe not connected" : "")
+    .accessibilityValue(dimmed ? String(localized: "Stripe not connected") : "")
   }
 
   // MARK: At a glance
@@ -165,16 +165,16 @@ struct OverviewScreen: View {
   private func tiles(_ overview: WorkspaceOverview) -> [Tile] {
     let totals = overview.totals
     var list = [
-      Tile(id: "unread", label: "Unread conversations", value: EmailStatusText.compactCount(totals.unread), hint: "\(totals.unreadMessages) unread message\(totals.unreadMessages == 1 ? "" : "s")", opensInbox: true),
-      Tile(id: "open", label: "Open conversations", value: EmailStatusText.compactCount(totals.open), opensInbox: true)
+      Tile(id: "unread", label: String(localized: "Unread conversations"), value: EmailStatusText.compactCount(totals.unread), hint: totals.unreadMessages == 1 ? String(localized: "1 unread message") : String(localized: "\(totals.unreadMessages) unread messages"), opensInbox: true),
+      Tile(id: "open", label: String(localized: "Open conversations"), value: EmailStatusText.compactCount(totals.open), opensInbox: true)
     ]
-    guard revenue != nil else { return list + [Tile(id: "errors", label: "Open error reports", value: EmailStatusText.compactCount(totals.errors))] }
+    guard revenue != nil else { return list + [Tile(id: "errors", label: String(localized: "Open error reports"), value: EmailStatusText.compactCount(totals.errors))] }
     if let top {
-      list.append(Tile(id: "net", label: "Net revenue", value: Money.format(top.net, top.currency), hint: range.label, change: top.change))
-      list.append(Tile(id: "mrr", label: "MRR", value: Money.format(top.mrr, top.currency), hint: "\(top.subscribers) subscriber\(top.subscribers == 1 ? "" : "s")"))
+      list.append(Tile(id: "net", label: String(localized: "Net revenue"), value: Money.format(top.net, top.currency), hint: range.label, change: top.change))
+      list.append(Tile(id: "mrr", label: String(localized: "MRR"), value: Money.format(top.mrr, top.currency), hint: top.subscribers == 1 ? String(localized: "1 subscriber") : String(localized: "\(top.subscribers) subscribers")))
     } else {
-      list.append(Tile(id: "net", label: "Net revenue", value: "—", hint: "Stripe not connected"))
-      list.append(Tile(id: "mrr", label: "MRR", value: "—", hint: "Stripe not connected"))
+      list.append(Tile(id: "net", label: String(localized: "Net revenue"), value: "—", hint: String(localized: "Stripe not connected")))
+      list.append(Tile(id: "mrr", label: String(localized: "MRR"), value: "—", hint: String(localized: "Stripe not connected")))
     }
     return list
   }
@@ -215,9 +215,9 @@ struct OverviewScreen: View {
 
   private var previousLabel: String {
     switch range {
-    case .d30: "vs the 30 days before"
-    case .d90: "vs the 90 days before"
-    case .m12: "vs the 12 months before"
+    case .d30: String(localized: "vs the 30 days before")
+    case .d90: String(localized: "vs the 90 days before")
+    case .m12: String(localized: "vs the 12 months before")
     case .all: ""
     }
   }
@@ -247,7 +247,7 @@ struct OverviewScreen: View {
 
   private func unreadRow(_ item: WorkspaceOverview.Unread) -> some View {
     let project = workspace.project(item.projectId)
-    let name = [item.name, item.email, item.subject].first { !$0.isEmpty } ?? "Unknown customer"
+    let name = [item.name, item.email, item.subject].first { !$0.isEmpty } ?? String(localized: "Unknown customer")
     return HStack(spacing: 10) {
       Avatar(name: name, size: 28)
         .overlay(alignment: .bottomTrailing) {
@@ -441,9 +441,9 @@ struct AttentionList: View {
     .contentShape(Rectangle())
   }
 
-  /// A paused sender belongs to no project: it opens the email log across them. The `?view=` of a section is dropped.
+  /// A paused sender belongs to no project: it opens the email log across them.
   private func open(_ item: AttentionItem) {
     if item.projectId.isEmpty { workspace.go(.emailLog) }
-    else { workspace.go(.project(item.projectId, ProjectSection.fromWeb(item.section) ?? .dev)) }
+    else { workspace.go(webPath: item.section, project: item.projectId) }
   }
 }

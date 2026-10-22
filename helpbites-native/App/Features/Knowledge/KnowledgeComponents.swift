@@ -8,7 +8,7 @@ struct KnowledgeStat: View {
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 4) {
       Text("\(n)").font(.lnMetaMedium).monospacedDigit().foregroundStyle(warn ? Theme.warning : Theme.textHighlighted)
-      Text(label).font(.lnMeta).foregroundStyle(Theme.textMuted)
+      Text(LocalizedStringKey(label)).font(.lnMeta).foregroundStyle(Theme.textMuted)
     }
   }
 }

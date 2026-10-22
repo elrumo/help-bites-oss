@@ -95,7 +95,7 @@ struct AppShell: View {
   @TabContentBuilder<AppTab> private func projectSection(_ project: Project) -> some TabContent<AppTab> {
     let section = TabSection {
       ForEach(workspace.layout(project.id, keeping: shownSection(project.id)).all) { section in
-        Tab(section.label, systemImage: section.systemImage, value: AppTab.section(project.id, section)) {
+        Tab(section.localizedLabel, systemImage: section.systemImage, value: AppTab.section(project.id, section)) {
           NavigationStack { RouteView(route: .project(project.id, section)).routes() }
         }
         .tabPlacement(.sidebarOnly)
@@ -226,21 +226,21 @@ struct CommandPalette: View {
 
   private var entries: [Entry] {
     var all: [Entry] = [
-      Entry(id: "overview", title: "Overview", detail: nil, systemImage: "house", route: .overview),
-      Entry(id: "inbox", title: "Inbox", detail: nil, systemImage: "tray", route: .inbox),
-      Entry(id: "emails", title: "Shared templates", detail: nil, systemImage: "envelope", route: .emailTemplates),
-      Entry(id: "email-log", title: "Email log", detail: nil, systemImage: "list.bullet.rectangle", route: .emailLog),
-      Entry(id: "knowledge", title: "Knowledge", detail: nil, systemImage: "book", route: .knowledge),
-      Entry(id: "projects", title: "Projects", detail: nil, systemImage: "square.stack", route: .projects),
-      Entry(id: "keys", title: "API keys", detail: nil, systemImage: "key", route: .apiKeys),
-      Entry(id: "team", title: "Team", detail: nil, systemImage: "person.2", route: .team),
-      Entry(id: "developer", title: "Developer", detail: nil, systemImage: "chevron.left.forwardslash.chevron.right", route: .developer),
-      Entry(id: "account", title: "Account", detail: nil, systemImage: "person.crop.circle", route: .account)
+      Entry(id: "overview", title: String(localized: "Overview"), detail: nil, systemImage: "house", route: .overview),
+      Entry(id: "inbox", title: String(localized: "Inbox"), detail: nil, systemImage: "tray", route: .inbox),
+      Entry(id: "emails", title: String(localized: "Shared templates"), detail: nil, systemImage: "envelope", route: .emailTemplates),
+      Entry(id: "email-log", title: String(localized: "Email log"), detail: nil, systemImage: "list.bullet.rectangle", route: .emailLog),
+      Entry(id: "knowledge", title: String(localized: "Knowledge"), detail: nil, systemImage: "book", route: .knowledge),
+      Entry(id: "projects", title: String(localized: "Projects"), detail: nil, systemImage: "square.stack", route: .projects),
+      Entry(id: "keys", title: String(localized: "API keys"), detail: nil, systemImage: "key", route: .apiKeys),
+      Entry(id: "team", title: String(localized: "Team"), detail: nil, systemImage: "person.2", route: .team),
+      Entry(id: "developer", title: String(localized: "Developer"), detail: nil, systemImage: "chevron.left.forwardslash.chevron.right", route: .developer),
+      Entry(id: "account", title: String(localized: "Account"), detail: nil, systemImage: "person.crop.circle", route: .account)
     ]
     for project in workspace.projects {
       // Only what the project shows in its sidebar.
       for section in workspace.layout(project.id).all {
-        all.append(Entry(id: "\(project.id)-\(section.rawValue)", title: section == .overview ? project.name : "\(project.name) › \(section.label)", detail: section == .overview ? project.siteUrl : nil, systemImage: section.systemImage, route: .project(project.id, section)))
+        all.append(Entry(id: "\(project.id)-\(section.rawValue)", title: section == .overview ? project.name : "\(project.name) › \(section.localizedLabel)", detail: section == .overview ? project.siteUrl : nil, systemImage: section.systemImage, route: .project(project.id, section)))
       }
     }
     let needle = query.trimmingCharacters(in: .whitespaces).lowercased()

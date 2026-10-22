@@ -33,13 +33,13 @@ struct PageFieldInput: View {
       }
       .toggleStyle(.switch).tint(Theme.accent)
     default:
-      LabeledField(label: field.required == true ? "\(field.label) · required" : field.label, hint: hint) { control }
+      LabeledField(label: field.required == true ? String(localized: "\(field.label) · required") : field.label, hint: hint) { control }
     }
   }
 
   private var hint: String? {
     let description = field.description ?? ""
-    if field.kind == .markdown { return description.isEmpty ? "Markdown: **bold**, *italic*, [links](https://…), lists with “- ”." : description }
+    if field.kind == .markdown { return description.isEmpty ? String(localized: "Markdown: **bold**, *italic*, [links](https://…), lists with “- ”.") : description }
     return description.isEmpty ? nil : description
   }
 
@@ -74,9 +74,9 @@ struct PageFieldInput: View {
         Spacer(minLength: 0)
       }
     case .select:
-      choice(field.options ?? [], none: "Not set")
+      choice(field.options ?? [], none: String(localized: "Not set"))
     case .icon:
-      choice(field.options?.isEmpty == false ? field.options ?? [] : CmsOptions.icons, none: "No icon")
+      choice(field.options?.isEmpty == false ? field.options ?? [] : CmsOptions.icons, none: String(localized: "No icon"))
     case .asset:
       assetControl
     case .boolean, .blocks:

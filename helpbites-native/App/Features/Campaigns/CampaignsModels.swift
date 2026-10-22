@@ -20,7 +20,7 @@ struct Campaign: Codable, Identifiable, Equatable, Sendable {
 
 enum CampaignStatusStyle {
   static func label(_ status: String) -> String {
-    ["draft": "Draft", "scheduled": "Scheduled", "sending": "Sending", "paused": "Paused", "sent": "Sent", "canceled": "Canceled"][status] ?? status
+    ["draft": String(localized: "Draft"), "scheduled": String(localized: "Scheduled"), "sending": String(localized: "Sending"), "paused": String(localized: "Paused"), "sent": String(localized: "Sent"), "canceled": String(localized: "Canceled")][status] ?? status
   }
   static func tint(_ status: String) -> Color? {
     switch status { case "scheduled": Theme.info; case "sending": Theme.warning; case "sent": Theme.success; case "canceled": Theme.error; default: nil }
@@ -42,9 +42,9 @@ struct EmailSequence: Codable, Identifiable, Equatable, Sendable {
 
   var triggerText: String {
     switch trigger.type {
-    case "subscribed": trigger.topic.map { "On sign-up to \($0)" } ?? "On sign-up"
-    case "event": "On \(trigger.event ?? "an event")"
-    default: "Manual"
+    case "subscribed": trigger.topic.map { String(localized: "On sign-up to \($0)") } ?? String(localized: "On sign-up")
+    case "event": String(localized: "On \(trigger.event ?? String(localized: "an event"))")
+    default: String(localized: "Manual")
     }
   }
 }

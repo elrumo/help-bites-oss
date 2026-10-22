@@ -63,9 +63,9 @@ enum BlogPostState {
   case live, scheduled, draft
   var label: String {
     switch self {
-    case .live: "Live"
-    case .scheduled: "Scheduled"
-    case .draft: "Draft"
+    case .live: String(localized: "Live")
+    case .scheduled: String(localized: "Scheduled")
+    case .draft: String(localized: "Draft")
     }
   }
   var tint: Color {
@@ -265,8 +265,8 @@ enum BlogGhostExport {
   /// The parsed file and how many posts and pages it holds, or why it is not an export.
   static func read(_ data: Data) throws -> (export: JSONValue, count: Int) {
     let parsed: JSONValue
-    do { parsed = try JSONDecoder().decode(JSONValue.self, from: data) } catch { throw Unreadable(errorDescription: "This file is not JSON.") }
-    guard let count = postCount(parsed) else { throw Unreadable(errorDescription: "This is not a Ghost export: no posts in it.") }
+    do { parsed = try JSONDecoder().decode(JSONValue.self, from: data) } catch { throw Unreadable(errorDescription: String(localized: "This file is not JSON.")) }
+    guard let count = postCount(parsed) else { throw Unreadable(errorDescription: String(localized: "This is not a Ghost export: no posts in it.")) }
     return (parsed, count)
   }
 
@@ -293,7 +293,7 @@ struct BlogProject: Decodable, Sendable {
   @MainActor static func load(_ id: String, session: SessionStore) async throws -> BlogProject {
     struct Response: Decodable, Sendable { let projects: [BlogProject] }
     let response: Response = try await session.get("/v1/admin/projects")
-    guard let project = response.projects.first(where: { $0.id == id }) else { throw APIError.server("Project not found") }
+    guard let project = response.projects.first(where: { $0.id == id }) else { throw APIError.server(String(localized: "Project not found")) }
     return project
   }
 }

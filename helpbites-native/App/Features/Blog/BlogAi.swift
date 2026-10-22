@@ -20,18 +20,18 @@ enum BlogAiMode: String, CaseIterable, Identifiable {
   var id: String { rawValue }
   var label: String {
     switch self {
-    case .write: "Write the post"
-    case .continue: "Continue it"
-    case .improve: "Improve the text"
-    case .meta: "Title, excerpt and tags"
+    case .write: String(localized: "Write the post")
+    case .continue: String(localized: "Continue it")
+    case .improve: String(localized: "Improve the text")
+    case .meta: String(localized: "Title, excerpt and tags")
     }
   }
   var applyLabel: String {
     switch self {
-    case .write: "Use as the post"
-    case .continue: "Add to the post"
-    case .improve: "Replace the text"
-    case .meta: "Use these"
+    case .write: String(localized: "Use as the post")
+    case .continue: String(localized: "Add to the post")
+    case .improve: String(localized: "Replace the text")
+    case .meta: String(localized: "Use these")
     }
   }
 }
@@ -124,7 +124,7 @@ struct BlogAiSheet: View {
     VStack(alignment: .leading, spacing: 12) {
       Rectangle().fill(Theme.border).frame(height: Hairline.width)
       if !result.notes.isEmpty { Text(result.notes).font(.lnBody).foregroundStyle(Theme.text) }
-      let fields = [("Title", result.title), ("Excerpt", result.excerpt), ("Description for search engines", result.metaDescription), ("Tags", result.tags.joined(separator: ", "))].filter { !$0.1.isEmpty }
+      let fields = [(String(localized: "Title"), result.title), (String(localized: "Excerpt"), result.excerpt), (String(localized: "Description for search engines"), result.metaDescription), (String(localized: "Tags"), result.tags.joined(separator: ", "))].filter { !$0.1.isEmpty }
       if !fields.isEmpty {
         VStack(alignment: .leading, spacing: 8) {
           ForEach(fields, id: \.0) { field in
@@ -145,7 +145,8 @@ struct BlogAiSheet: View {
           .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
       }
       if !result.repos.isEmpty {
-        Text("Read: " + result.repos.map { $0.read ? $0.repo : "\($0.repo) ✕" }.joined(separator: ", ")).font(.lnCaption).foregroundStyle(Theme.textMuted)
+        let read = result.repos.map { $0.read ? $0.repo : "\($0.repo) ✕" }.joined(separator: ", ")
+        Text(String(localized: "Read: \(read)")).font(.lnCaption).foregroundStyle(Theme.textMuted)
       }
       Text("Apply puts it in the editor: check it, then save or publish.").font(.lnCaption).foregroundStyle(Theme.textMuted)
     }

@@ -56,11 +56,11 @@ struct EmailFontStack: Identifiable, Sendable {
   static let mono = "'Courier New', Courier, monospace"
 
   static let all = [
-    EmailFontStack(label: "System sans", value: sans),
-    EmailFontStack(label: "Georgia serif", value: serif),
-    EmailFontStack(label: "Verdana humanist", value: verdana),
-    EmailFontStack(label: "Trebuchet", value: trebuchet),
-    EmailFontStack(label: "Courier mono", value: mono)
+    EmailFontStack(label: String(localized: "System sans"), value: sans),
+    EmailFontStack(label: String(localized: "Georgia serif"), value: serif),
+    EmailFontStack(label: String(localized: "Verdana humanist"), value: verdana),
+    EmailFontStack(label: String(localized: "Trebuchet"), value: trebuchet),
+    EmailFontStack(label: String(localized: "Courier mono"), value: mono)
   ]
 
   /// Whether this device has the font family installed.
@@ -87,13 +87,13 @@ struct EmailThemePreset: Identifiable, Sendable {
   let theme: EmailDesignTheme
 
   static let all: [EmailThemePreset] = [
-    EmailThemePreset(id: "classic", name: "Classic", theme: .standard),
-    EmailThemePreset(id: "midnight", name: "Midnight", theme: EmailDesignTheme(brand: "#8b5cf6", onBrand: "#ffffff", background: "#0b0b16", surface: "#171728", heading: "#ffffff", text: "#c7c7e1", muted: "#2e2e4a", fontFamily: EmailFontStack.sans, radius: 10)),
-    EmailThemePreset(id: "forest", name: "Forest", theme: EmailDesignTheme(brand: "#16a34a", onBrand: "#ffffff", background: "#f0f4ef", surface: "#ffffff", heading: "#14291a", text: "#3c4a3d", muted: "#d8e3d5", fontFamily: EmailFontStack.verdana, radius: 8)),
-    EmailThemePreset(id: "sunset", name: "Sunset", theme: EmailDesignTheme(brand: "#ea580c", onBrand: "#ffffff", background: "#fff7ed", surface: "#ffffff", heading: "#431407", text: "#57534e", muted: "#fed7aa", fontFamily: EmailFontStack.sans, radius: 999)),
-    EmailThemePreset(id: "ocean", name: "Ocean", theme: EmailDesignTheme(brand: "#0891b2", onBrand: "#ffffff", background: "#ecfeff", surface: "#ffffff", heading: "#164e63", text: "#33475b", muted: "#bae6fd", fontFamily: EmailFontStack.trebuchet, radius: 6)),
-    EmailThemePreset(id: "editorial", name: "Editorial", theme: EmailDesignTheme(brand: "#111111", onBrand: "#ffffff", background: "#fafafa", surface: "#ffffff", heading: "#111111", text: "#3d3d3d", muted: "#e5e5e5", fontFamily: EmailFontStack.serif, radius: 0)),
-    EmailThemePreset(id: "candy", name: "Candy", theme: EmailDesignTheme(brand: "#db2777", onBrand: "#ffffff", background: "#fdf2f8", surface: "#ffffff", heading: "#831843", text: "#4b5563", muted: "#fbcfe8", fontFamily: EmailFontStack.sans, radius: 14))
+    EmailThemePreset(id: "classic", name: String(localized: "Classic"), theme: .standard),
+    EmailThemePreset(id: "midnight", name: String(localized: "Midnight"), theme: EmailDesignTheme(brand: "#8b5cf6", onBrand: "#ffffff", background: "#0b0b16", surface: "#171728", heading: "#ffffff", text: "#c7c7e1", muted: "#2e2e4a", fontFamily: EmailFontStack.sans, radius: 10)),
+    EmailThemePreset(id: "forest", name: String(localized: "Forest"), theme: EmailDesignTheme(brand: "#16a34a", onBrand: "#ffffff", background: "#f0f4ef", surface: "#ffffff", heading: "#14291a", text: "#3c4a3d", muted: "#d8e3d5", fontFamily: EmailFontStack.verdana, radius: 8)),
+    EmailThemePreset(id: "sunset", name: String(localized: "Sunset"), theme: EmailDesignTheme(brand: "#ea580c", onBrand: "#ffffff", background: "#fff7ed", surface: "#ffffff", heading: "#431407", text: "#57534e", muted: "#fed7aa", fontFamily: EmailFontStack.sans, radius: 999)),
+    EmailThemePreset(id: "ocean", name: String(localized: "Ocean"), theme: EmailDesignTheme(brand: "#0891b2", onBrand: "#ffffff", background: "#ecfeff", surface: "#ffffff", heading: "#164e63", text: "#33475b", muted: "#bae6fd", fontFamily: EmailFontStack.trebuchet, radius: 6)),
+    EmailThemePreset(id: "editorial", name: String(localized: "Editorial"), theme: EmailDesignTheme(brand: "#111111", onBrand: "#ffffff", background: "#fafafa", surface: "#ffffff", heading: "#111111", text: "#3d3d3d", muted: "#e5e5e5", fontFamily: EmailFontStack.serif, radius: 0)),
+    EmailThemePreset(id: "candy", name: String(localized: "Candy"), theme: EmailDesignTheme(brand: "#db2777", onBrand: "#ffffff", background: "#fdf2f8", surface: "#ffffff", heading: "#831843", text: "#4b5563", muted: "#fbcfe8", fontFamily: EmailFontStack.sans, radius: 14))
   ]
 }
 
@@ -206,17 +206,17 @@ enum EmailLint {
     let s = design.settings
     let title = s.title.trimmingCharacters(in: .whitespacesAndNewlines)
     if title.isEmpty || title == "Untitled email" {
-      issues.append(EmailIssue(level: .error, message: "No subject line", fix: "Write a specific subject line (settings.title) under 50 characters."))
+      issues.append(EmailIssue(level: .error, message: String(localized: "No subject line"), fix: "Write a specific subject line (settings.title) under 50 characters."))
     } else if title.replacing(#/\{\{[^}]+\}\}/#, with: "xxxxxxxx").count > 70 {
-      issues.append(EmailIssue(level: .warning, message: "Subject is long and will be cut off in most inboxes", fix: "Shorten the subject line to under 50 characters."))
+      issues.append(EmailIssue(level: .warning, message: String(localized: "Subject is long and will be cut off in most inboxes"), fix: "Shorten the subject line to under 50 characters."))
     }
     if s.preheader.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-      issues.append(EmailIssue(level: .warning, message: "No preheader", fix: "Add a preheader that complements the subject (40–90 characters)."))
+      issues.append(EmailIssue(level: .warning, message: String(localized: "No preheader"), fix: "Add a preheader that complements the subject (40–90 characters)."))
     }
-    if design.blocks.isEmpty { issues.append(EmailIssue(level: .error, message: "The email is empty", fix: "Design the email.")) }
+    if design.blocks.isEmpty { issues.append(EmailIssue(level: .error, message: String(localized: "The email is empty"), fix: "Design the email.")) }
     // Custom HTML sizes itself; the width only governs blocks HelpBites lays out.
     if s.contentWidth > 640, design.blocks.contains(where: { $0.type != "html" && $0.type != "component" }) {
-      issues.append(EmailIssue(level: .warning, message: "Content is \(EmailRender.js(s.contentWidth))px wide; 600px suits every client", fix: "Set settings.contentWidth to 600."))
+      issues.append(EmailIssue(level: .warning, message: String(localized: "Content is \(EmailRender.js(s.contentWidth))px wide; 600px suits every client"), fix: "Set settings.contentWidth to 600."))
     }
 
     // Contrast is measured against what is really behind a block: its own
@@ -230,7 +230,7 @@ enum EmailLint {
     visit(design.blocks, behind: s.contentBackground)
 
     if master, !design.placeholderKeys.contains(where: { $0.hasPrefix("project.") }) {
-      issues.append(EmailIssue(level: .warning, message: "This shared template does not use the project brand", fix: "Use {{project.name}} for the product name, {{project.logoUrl}} as the logo image src and {{project.url}} for links, instead of hardcoded values."))
+      issues.append(EmailIssue(level: .warning, message: String(localized: "This shared template does not use the project brand"), fix: "Use {{project.name}} for the product name, {{project.logoUrl}} as the logo image src and {{project.url}} for links, instead of hardcoded values."))
     }
     return issues
   }
@@ -241,47 +241,47 @@ enum EmailLint {
     switch b.kind {
     case .image:
       if b.src.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        issues.append(EmailIssue(level: .error, message: "Image has no source", fix: "Give image \(blockId) a src or remove it.", blockId: blockId))
+        issues.append(EmailIssue(level: .error, message: String(localized: "Image has no source"), fix: "Give image \(blockId) a src or remove it.", blockId: blockId))
       } else if b.src.contains(placeholderURL) {
-        issues.append(EmailIssue(level: .warning, message: "Placeholder image", fix: "Image \(blockId) still uses a placeholder URL; tell the user to replace it with their own image.", blockId: blockId))
+        issues.append(EmailIssue(level: .warning, message: String(localized: "Placeholder image"), fix: "Image \(blockId) still uses a placeholder URL; tell the user to replace it with their own image.", blockId: blockId))
       }
       if b.alt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        issues.append(EmailIssue(level: .warning, message: "Image has no alt text", fix: "Write descriptive alt text for image \(blockId).", blockId: blockId))
+        issues.append(EmailIssue(level: .warning, message: String(localized: "Image has no alt text"), fix: "Write descriptive alt text for image \(blockId).", blockId: blockId))
       }
     case .button:
       if b.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        issues.append(EmailIssue(level: .error, message: "Button has no label", fix: "Give button \(blockId) a clear action label.", blockId: blockId))
+        issues.append(EmailIssue(level: .error, message: String(localized: "Button has no label"), fix: "Give button \(blockId) a clear action label.", blockId: blockId))
       }
       if b.href.isEmpty || b.href == "#" || b.href.contains(placeholderURL) {
-        issues.append(EmailIssue(level: .warning, message: "\(label(b)) links nowhere real", fix: "Point button \(blockId) at a real URL or a {{variable}} such as {{actionUrl}}.", blockId: blockId))
+        issues.append(EmailIssue(level: .warning, message: String(localized: "\(label(b)) links nowhere real"), fix: "Point button \(blockId) at a real URL or a {{variable}} such as {{actionUrl}}.", blockId: blockId))
       }
       if let ratio = contrastRatio(EmailRender.string(b.fields["color"]), b.backgroundColor), ratio < 3 {
-        issues.append(EmailIssue(level: .warning, message: "\(label(b)) label is hard to read (\(String(format: "%.1f", ratio)):1)", fix: "Raise the contrast between the label and background of button \(blockId) to at least 4.5:1.", blockId: blockId))
+        issues.append(EmailIssue(level: .warning, message: String(localized: "\(label(b)) label is hard to read (\(String(format: "%.1f", ratio)):1)"), fix: "Raise the contrast between the label and background of button \(blockId) to at least 4.5:1.", blockId: blockId))
       }
     case .heading, .text:
       let minimum = b.kind == .heading ? 3.0 : 4.5
       if let ratio = contrastRatio(b.color ?? s.textColor, background), ratio < minimum {
-        issues.append(EmailIssue(level: .warning, message: "\(label(b)) is hard to read (\(String(format: "%.1f", ratio)):1)", fix: "Raise the contrast of \(blockId) against its background to at least \(EmailRender.js(minimum)):1.", blockId: blockId))
+        issues.append(EmailIssue(level: .warning, message: String(localized: "\(label(b)) is hard to read (\(String(format: "%.1f", ratio)):1)"), fix: "Raise the contrast of \(blockId) against its background to at least \(EmailRender.js(minimum)):1.", blockId: blockId))
       }
       if b.kind == .text, b.html.contains(placeholderLink) {
-        issues.append(EmailIssue(level: .warning, message: "\(label(b)) has a placeholder link", fix: "Replace the placeholder links in \(blockId) with real URLs or {{variables}}.", blockId: blockId))
+        issues.append(EmailIssue(level: .warning, message: String(localized: "\(label(b)) has a placeholder link"), fix: "Replace the placeholder links in \(blockId) with real URLs or {{variables}}.", blockId: blockId))
       }
     case .html:
       if b.html.contains(strippedTags) {
-        issues.append(EmailIssue(level: .error, message: "Custom HTML uses tags mail clients strip (script, form, iframe, video)", fix: "Rewrite html block \(blockId) with tables and inline styles only.", blockId: blockId))
+        issues.append(EmailIssue(level: .error, message: String(localized: "Custom HTML uses tags mail clients strip (script, form, iframe, video)"), fix: "Rewrite html block \(blockId) with tables and inline styles only.", blockId: blockId))
       }
     case .section:
       if b.gradientTo != nil, b.background == nil {
-        issues.append(EmailIssue(level: .warning, message: "Gradient section has no solid colour for Outlook", fix: "Give section \(blockId) a background colour close to its gradient; Outlook shows that instead.", blockId: blockId))
+        issues.append(EmailIssue(level: .warning, message: String(localized: "Gradient section has no solid colour for Outlook"), fix: "Give section \(blockId) a background colour close to its gradient; Outlook shows that instead.", blockId: blockId))
       }
     case .component:
       if EmailRender.fillComponent(b.fields["html"], fields: b.fields["fields"], values: b.fields["values"]).contains(strippedTags) {
-        issues.append(EmailIssue(level: .error, message: "\(label(b)) uses tags mail clients strip (script, form, iframe, video)", fix: "Rebuild component \(blockId) with tables and inline styles only.", blockId: blockId))
+        issues.append(EmailIssue(level: .error, message: String(localized: "\(label(b)) uses tags mail clients strip (script, form, iframe, video)"), fix: "Rebuild component \(blockId) with tables and inline styles only.", blockId: blockId))
       }
       let values = EmailRender.object(b.fields["values"])
       for field in b.componentFields where field.type == .url || field.type == .image {
         guard EmailRender.componentValue(EmailRender.object(field.json), values).contains(placeholderURL) else { continue }
-        issues.append(EmailIssue(level: .warning, message: "\(label(b)): “\(field.label)” is a placeholder", fix: "Set the \(field.key) value of component \(blockId) to a real URL or a {{variable}}.", blockId: blockId))
+        issues.append(EmailIssue(level: .warning, message: String(localized: "\(label(b)): “\(field.label)” is a placeholder"), fix: "Set the \(field.key) value of component \(blockId) to a real URL or a {{variable}}.", blockId: blockId))
       }
     default:
       break
@@ -290,11 +290,11 @@ enum EmailLint {
 
   private static func label(_ b: EmailDesignBlock) -> String {
     switch b.kind {
-    case .heading: "heading “\(b.text.prefix(30))”"
-    case .text: "text “\(b.html.replacing(#/<[^>]+>/#, with: "").prefix(30))”"
-    case .button: "button “\(b.label)”"
-    case .component: "component “\(b.name)”"
-    default: "\(b.type) block"
+    case .heading: String(localized: "heading “\(String(b.text.prefix(30)))”")
+    case .text: String(localized: "text “\(String(b.html.replacing(#/<[^>]+>/#, with: "").prefix(30)))”")
+    case .button: String(localized: "button “\(b.label)”")
+    case .component: String(localized: "component “\(b.name)”")
+    default: String(localized: "\(b.type) block")
     }
   }
 

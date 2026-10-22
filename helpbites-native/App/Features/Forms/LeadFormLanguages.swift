@@ -57,7 +57,7 @@ struct LeadFormLanguagesPanel: View {
     .sheet(isPresented: $translating) {
       TranslateSheet(
         title: "Translate with AI", source: draft.locale, existing: tags,
-        note: "Fills in the title, description, button, thank-you words and every field's label, placeholder and options of the saved form. Words you already translated are kept unless you overwrite.",
+        note: String(localized: "Fills in the title, description, button, thank-you words and every field's label, placeholder and options of the saved form. Words you already translated are kept unless you overwrite."),
         run: { locales, overwrite in try await translate(locales, overwrite) }
       )
     }
@@ -101,7 +101,7 @@ private struct LeadFormTranslationSheet: View {
               }
               if field.type == "select" {
                 ForEach(Array(field.options.enumerated()), id: \.offset) { index, option in
-                  OnboardingTextField(label: "Option \(index + 1)", text: optionBinding(field, index), limit: LeadFormLimits.option, placeholder: option)
+                  OnboardingTextField(label: String(localized: "Option \(index + 1)"), text: optionBinding(field, index), limit: LeadFormLimits.option, placeholder: option)
                 }
                 Text("The answer saved is still the original option.").font(.lnCaption).foregroundStyle(Theme.textMuted)
               }

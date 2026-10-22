@@ -87,7 +87,7 @@ struct RevenueScreen: View {
         LabeledField(label: "Restricted API key", hint: "Stripe → Developers → API keys → Create restricted key. Give it read access to Charges, Customers, Subscriptions and Products.") {
           SecureField("rk_live_…", text: $apiKey).textFieldStyle(.linear).autocorrectionDisabled().onSubmit { Task { await connect() } }
         }
-        if !ready { ErrorText(message: "Set HELPBITES_SECRET on the server first: the key is stored sealed with it.") }
+        if !ready { ErrorText(message: String(localized: "Set HELPBITES_SECRET on the server first: the key is stored sealed with it.")) }
         Button { Task { await connect() } } label: { if connecting { ProgressView() } else { Text("Connect Stripe") } }
           .buttonStyle(.lnPrimary).disabled(apiKey.trimmingCharacters(in: .whitespaces).isEmpty || !ready || connecting)
       }
@@ -197,12 +197,12 @@ private struct RevenueReportView: View {
 
   private var kpis: [(label: String, value: String, hint: String)] {
     let subscribers = report.subscribers
-    let subscriberHint = [subscribers.trialing > 0 ? "\(subscribers.trialing) trialing" : nil, subscribers.pastDue > 0 ? "\(subscribers.pastDue) past due" : nil].compactMap { $0 }.joined(separator: ", ")
+    let subscriberHint = [subscribers.trialing > 0 ? String(localized: "\(subscribers.trialing) trialing") : nil, subscribers.pastDue > 0 ? String(localized: "\(subscribers.pastDue) past due") : nil].compactMap { $0 }.joined(separator: ", ")
     return [
-      ("Net revenue", money(report.net), report.refunds > 0 ? "\(money(report.gross)) gross, \(money(report.refunds)) refunded" : "\(report.payments.formatted()) payments"),
-      ("MRR", money(report.mrr), "\(money(report.arr)) a year"),
-      ("Subscribers", String(subscribers.active + subscribers.pastDue), subscriberHint.isEmpty ? "\(report.newSubscribers) new, \(report.churned) canceled in this period" : subscriberHint),
-      ("Paying customers", report.customers.formatted(), "\(money(report.allTimeNet)) all time")
+      (String(localized: "Net revenue"), money(report.net), report.refunds > 0 ? String(localized: "\(money(report.gross)) gross, \(money(report.refunds)) refunded") : String(localized: "\(report.payments.formatted()) payments")),
+      (String(localized: "MRR"), money(report.mrr), String(localized: "\(money(report.arr)) a year")),
+      (String(localized: "Subscribers"), String(subscribers.active + subscribers.pastDue), subscriberHint.isEmpty ? String(localized: "\(report.newSubscribers) new, \(report.churned) canceled in this period") : subscriberHint),
+      (String(localized: "Paying customers"), report.customers.formatted(), String(localized: "\(money(report.allTimeNet)) all time"))
     ]
   }
 
@@ -289,7 +289,7 @@ private struct RevenueReportView: View {
     HStack(spacing: 6) {
       RoundedRectangle(cornerRadius: 2).fill(Theme.accent.opacity(0.7)).frame(width: 9, height: 9)
       Text(money(month.net)).font(.lnCaption.weight(.semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted)
-      Text("net revenue · \(month.payments) payment\(month.payments == 1 ? "" : "s")").font(.lnCaption).foregroundStyle(Theme.textMuted)
+      Text(month.payments == 1 ? "net revenue · 1 payment" : "net revenue · \(month.payments) payments").font(.lnCaption).foregroundStyle(Theme.textMuted)
     }
     HStack(spacing: 6) {
       Capsule().fill(Theme.textHighlighted).frame(width: 10, height: 2)
@@ -310,7 +310,7 @@ private struct RevenueReportView: View {
               HStack(spacing: 10) {
                 Text(plan.plan).font(.lnCallout).foregroundStyle(Theme.text).lineLimit(1)
                 Spacer(minLength: 8)
-                Text("\(plan.subscribers) subscriber\(plan.subscribers == 1 ? "" : "s")").font(.lnCaption).foregroundStyle(Theme.textMuted)
+                Text(plan.subscribers == 1 ? "1 subscriber" : "\(plan.subscribers) subscribers").font(.lnCaption).foregroundStyle(Theme.textMuted)
                 Text("\(money(plan.mrr))/mo").font(.lnCallout).monospacedDigit().foregroundStyle(Theme.text)
               }
             }
@@ -336,7 +336,7 @@ private struct RevenueReportView: View {
                   Button { openContact = OpenContact(id: contactId) } label: { who.underline() }.buttonStyle(.plain).accessibilityHint("Opens this person")
                 } else { who }
                 Spacer(minLength: 8)
-                Text("\(customer.payments) payment\(customer.payments == 1 ? "" : "s")").font(.lnCaption).foregroundStyle(Theme.textMuted)
+                Text(customer.payments == 1 ? "1 payment" : "\(customer.payments) payments").font(.lnCaption).foregroundStyle(Theme.textMuted)
                 Text(money(customer.net)).font(.lnCallout).monospacedDigit().foregroundStyle(Theme.text)
               }
             }
@@ -358,7 +358,7 @@ struct PaymentRow: View {
   var onOpenContact: ((String) -> Void)? = nil
 
   private var title: String {
-    showCustomer ? (payment.email.isEmpty ? (payment.customerId.isEmpty ? "Guest" : payment.customerId) : payment.email) : (payment.description.isEmpty ? "Payment" : payment.description)
+    showCustomer ? (payment.email.isEmpty ? (payment.customerId.isEmpty ? String(localized: "Guest") : payment.customerId) : payment.email) : (payment.description.isEmpty ? String(localized: "Payment") : payment.description)
   }
 
   var body: some View {

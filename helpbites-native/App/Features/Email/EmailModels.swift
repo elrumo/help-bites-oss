@@ -104,12 +104,12 @@ struct EmailStarter: Identifiable, Sendable {
   let id, name, type, style, systemImage, accent, description, background, surface: String
 
   static let all: [EmailStarter] = [
-    EmailStarter(id: "launch-bold", name: "Product launch", type: "Launch", style: "Bold", systemImage: "paperplane", accent: "#2563eb", description: "Hero, feature columns, and one direct call to action.", background: "#eef2ff", surface: "#ffffff"),
-    EmailStarter(id: "newsletter-editorial", name: "Editorial digest", type: "Newsletter", style: "Editorial", systemImage: "newspaper", accent: "#0f766e", description: "A calm issue layout with lead story, links, and notes.", background: "#f5f7f4", surface: "#ffffff"),
-    EmailStarter(id: "promotion-minimal", name: "Flash sale", type: "Promotion", style: "Minimal", systemImage: "percent", accent: "#dc2626", description: "Offer-first copy with a coupon block and compact footer.", background: "#fafafa", surface: "#ffffff"),
-    EmailStarter(id: "welcome-soft", name: "Warm welcome", type: "Welcome", style: "Soft", systemImage: "hand.wave", accent: "#7c3aed", description: "Friendly onboarding with next steps and a helpful CTA.", background: "#f6f2ff", surface: "#ffffff"),
-    EmailStarter(id: "event-dark", name: "Event invite", type: "Event", style: "Dark", systemImage: "calendar", accent: "#f59e0b", description: "High-contrast invitation with date, details, and RSVP.", background: "#111827", surface: "#1f2937"),
-    EmailStarter(id: "transactional-utility", name: "Account update", type: "Transactional", style: "Utility", systemImage: "checkmark.shield", accent: "#0891b2", description: "Clear system message with status details and support link.", background: "#ecfeff", surface: "#ffffff")
+    EmailStarter(id: "launch-bold", name: String(localized: "Product launch"), type: String(localized: "Launch"), style: String(localized: "Bold"), systemImage: "paperplane", accent: "#2563eb", description: String(localized: "Hero, feature columns, and one direct call to action."), background: "#eef2ff", surface: "#ffffff"),
+    EmailStarter(id: "newsletter-editorial", name: String(localized: "Editorial digest"), type: String(localized: "Newsletter"), style: String(localized: "Editorial"), systemImage: "newspaper", accent: "#0f766e", description: String(localized: "A calm issue layout with lead story, links, and notes."), background: "#f5f7f4", surface: "#ffffff"),
+    EmailStarter(id: "promotion-minimal", name: String(localized: "Flash sale"), type: String(localized: "Promotion"), style: String(localized: "Minimal"), systemImage: "percent", accent: "#dc2626", description: String(localized: "Offer-first copy with a coupon block and compact footer."), background: "#fafafa", surface: "#ffffff"),
+    EmailStarter(id: "welcome-soft", name: String(localized: "Warm welcome"), type: String(localized: "Welcome"), style: String(localized: "Soft"), systemImage: "hand.wave", accent: "#7c3aed", description: String(localized: "Friendly onboarding with next steps and a helpful CTA."), background: "#f6f2ff", surface: "#ffffff"),
+    EmailStarter(id: "event-dark", name: String(localized: "Event invite"), type: String(localized: "Event"), style: String(localized: "Dark"), systemImage: "calendar", accent: "#f59e0b", description: String(localized: "High-contrast invitation with date, details, and RSVP."), background: "#111827", surface: "#1f2937"),
+    EmailStarter(id: "transactional-utility", name: String(localized: "Account update"), type: String(localized: "Transactional"), style: String(localized: "Utility"), systemImage: "checkmark.shield", accent: "#0891b2", description: String(localized: "Clear system message with status details and support link."), background: "#ecfeff", surface: "#ffffff")
   ]
 }
 

@@ -32,7 +32,14 @@ struct BrandScreen: View {
   private enum BrandTab: String, CaseIterable, Identifiable {
     case files, style, guidelines, page
     var id: String { rawValue }
-    var label: String { rawValue.capitalized }
+    var label: String {
+      switch self {
+      case .files: String(localized: "Files")
+      case .style: String(localized: "Style")
+      case .guidelines: String(localized: "Guidelines")
+      case .page: String(localized: "Page")
+      }
+    }
   }
 
   private var dirty: Bool { config != nil && config != saved }
@@ -103,7 +110,7 @@ struct BrandScreen: View {
       photos = []
       Task {
         for item in items {
-          guard let data = try? await item.loadTransferable(type: Data.self) else { error = "Could not read that photo."; continue }
+          guard let data = try? await item.loadTransferable(type: Data.self) else { error = String(localized: "Could not read that photo."); continue }
           await upload(data, filename: "Photo.\(item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg")")
         }
       }
@@ -117,7 +124,7 @@ struct BrandScreen: View {
           defer { if scoped { url.stopAccessingSecurityScopedResource() } }
           return (try? Data(contentsOf: url)).map { ($0, url.lastPathComponent) }
         }
-        if files.count < urls.count { error = "Some files could not be read." }
+        if files.count < urls.count { error = String(localized: "Some files could not be read.") }
         Task { for (data, name) in files { await upload(data, filename: name) } }
       }
     }
@@ -186,7 +193,7 @@ struct BrandScreen: View {
 
   @ViewBuilder private func actions(_ asset: BrandAsset) -> some View {
     Button { editing = asset } label: { Label("Edit", systemImage: "pencil") }
-    Button { Clipboard.copy(asset.url); flash("Copied the file's URL.") } label: { Label("Copy URL", systemImage: "link") }
+    Button { Clipboard.copy(asset.url); flash(String(localized: "Copied the file's URL.")) } label: { Label("Copy URL", systemImage: "link") }
     if let url = LegalAPI.publicURL(session, asset.downloadUrl) {
       // The download is public: it answers only while the page and the file are.
       Button { openURL(url) } label: { Label("Open download", systemImage: "arrow.down.circle") }
@@ -208,7 +215,7 @@ struct BrandScreen: View {
       LegalPanel("Words") {
         LabeledField(label: "Tagline") { TextField("One line about the app", text: config.tagline).textFieldStyle(.linear) }
         LabeledField(label: "About", hint: "Blank lines start a new paragraph") {
-          LinearTextEditor(text: config.about, placeholder: "What the app is and who it is for, for press and partners", minHeight: 120)
+          LinearTextEditor(text: config.about, placeholder: String(localized: "What the app is and who it is for, for press and partners"), minHeight: 120)
         }
       }
 
@@ -284,13 +291,13 @@ struct BrandScreen: View {
       ForEach(config.guidelines) { $guideline in
         let list = config.wrappedValue.guidelines
         let index = list.firstIndex { $0.id == guideline.id } ?? 0
-        LegalPanel(title: guideline.title.isEmpty ? "Guideline \(index + 1)" : guideline.title, trailing: {
+        LegalPanel(title: guideline.title.isEmpty ? String(localized: "Guideline \(index + 1)") : guideline.title, trailing: {
           ReorderControls(index: index, count: list.count, move: { config.wrappedValue.guidelines.move(index, by: $0) }, remove: {
             config.wrappedValue.guidelines.removeAll { $0.id == guideline.id }
           })
         }, content: {
           TextField("Title", text: $guideline.title).textFieldStyle(.linear)
-          LinearTextEditor(text: $guideline.body, placeholder: "Markdown: **bold**, lists, links", minHeight: 140, monospaced: true)
+          LinearTextEditor(text: $guideline.body, placeholder: String(localized: "Markdown: **bold**, lists, links"), minHeight: 140, monospaced: true)
         })
       }
       Button { config.wrappedValue.guidelines.append(.blank()) } label: { Label("Add guideline", systemImage: "plus") }
@@ -316,7 +323,7 @@ struct BrandScreen: View {
           HStack(spacing: 8) {
             Button { openURL(publicURL) } label: { Label("Open", systemImage: "arrow.up.right.square") }.buttonStyle(.lnSecondaryCompact)
               .disabled(!(saved?.page.public ?? false))
-            Button { Clipboard.copy(publicURL.absoluteString); flash("Copied the link.") } label: { Label("Copy link", systemImage: "link") }.buttonStyle(.lnSecondaryCompact)
+            Button { Clipboard.copy(publicURL.absoluteString); flash(String(localized: "Copied the link.")) } label: { Label("Copy link", systemImage: "link") }.buttonStyle(.lnSecondaryCompact)
           }
         }
         if page.wrappedValue.public != saved?.page.public { Text("Save to apply.").font(.lnCaption).foregroundStyle(Theme.warning) }
@@ -349,7 +356,7 @@ struct BrandScreen: View {
           Picker("Theme", selection: page.theme) { ForEach(BrandOptions.themes, id: \.id) { Text($0.label).tag($0.id) } }.pickerStyle(.segmented).labelsHidden()
         }
         LabeledField(label: "Corners") {
-          Picker("Corners", selection: page.radius) { ForEach(BrandOptions.radii, id: \.id) { Text($0.label).tag($0.id) } }.pickerStyle(.segmented).labelsHidden()
+          Picker("Corners", selection: page.radius) { ForEach(BrandOptions.radii, id: \.id) { Text(LocalizedStringKey($0.label)).tag($0.id) } }.pickerStyle(.segmented).labelsHidden()
         }
         OptionalColorField(label: "Accent", hex: page.accent, fallback: Color(hexString: config.wrappedValue.colors.first?.hex) ?? Theme.accent, empty: "First colour")
         LabeledField(label: "Headline", hint: "Empty shows the project's name") {
@@ -453,7 +460,7 @@ struct BrandScreen: View {
       let response: Response = try await session.send("/v1/admin/brand?project=\(projectId)", method: "PATCH", body: config)
       saved = response.brand
       self.config = response.brand
-      flash("Saved.")
+      flash(String(localized: "Saved."))
     } catch {
       self.error = error.localizedDescription
     }
@@ -485,7 +492,7 @@ struct BrandScreen: View {
     error = ""
     do {
       _ = try await ProjectsAdminProject.save(projectId, [field: asset.url], workspace: workspace)
-      flash(field == "iconUrl" ? "“\(asset.name)” is now the project icon." : "“\(asset.name)” is now the project logo.")
+      flash(field == "iconUrl" ? String(localized: "“\(asset.name)” is now the project icon.") : String(localized: "“\(asset.name)” is now the project logo."))
     } catch {
       self.error = error.localizedDescription
     }

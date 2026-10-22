@@ -140,6 +140,15 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
   }
 }
 
+// The labels above stay plain literals (tests/projectSectionsNativeParity.test.ts reads them);
+// screens that show them use these, which look the label up in the string catalog.
+extension SectionGroup {
+  var localizedLabel: String { String(localized: String.LocalizationValue(label)) }
+}
+extension ProjectSection {
+  var localizedLabel: String { String(localized: String.LocalizationValue(label)) }
+}
+
 /// One heading of a project's navigation and the sections under it.
 struct SectionGroupEntry: Identifiable {
   let group: SectionGroup
@@ -169,6 +178,8 @@ struct SectionLayout {
   var projectsPath: [AppRoute] = []
   var templatesPath: [AppRoute] = []
   var settingsPath: [AppRoute] = []
+  /// The Email tab a link asked for (`email?view=log`); the Email screen takes it when it appears.
+  var pendingEmailTab: EmailTab?
   /// The Mac window's sidebar selection and the pages pushed onto its detail.
   var macSelection: AppRoute = .overview
   var macPath: [AppRoute] = []
@@ -238,6 +249,15 @@ struct SectionLayout {
   func replace(_ project: Project) {
     if let index = projects.firstIndex(where: { $0.id == project.id }) { projects[index] = project }
     else { projects.append(project) }
+  }
+
+  /// Opens the section a web path names, on the tab its `?view=` picks (`email?view=settings`).
+  func go(webPath path: String, project projectId: String) {
+    let section = ProjectSection.fromWeb(path) ?? .dev
+    if section == .email, let view = path.split(separator: "?").last?.split(separator: "&").first(where: { $0.hasPrefix("view=") }) {
+      pendingEmailTab = EmailTab(rawValue: String(view.dropFirst(5)))
+    }
+    go(.project(projectId, section))
   }
 
   /// Jump anywhere (palette, menu bar, links between screens): pick the tab and

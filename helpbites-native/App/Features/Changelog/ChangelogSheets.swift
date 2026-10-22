@@ -31,8 +31,12 @@ private struct ChangelogSheetFrame<Content: View, Trailing: View>: View {
   }
 }
 
-private func hint(_ text: String) -> some View {
+private func hint(_ text: LocalizedStringKey) -> some View {
   Text(text).font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
+}
+
+private func hint(verbatim text: String) -> some View {
+  Text(verbatim: text).font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
 }
 
 // MARK: - Release
@@ -60,7 +64,7 @@ struct ChangelogReleaseSheet: View {
   private var release: ChangelogRelease? { releaseId.flatMap { store.release($0) } }
 
   var body: some View {
-    ChangelogSheetFrame(title: release.map { "Release \($0.version)" } ?? "New release") {
+    ChangelogSheetFrame(title: release.map { String(localized: "Release \($0.version)") } ?? String(localized: "New release")) {
       hint("A version that groups entries. Nothing in it is public until the release is.")
       LabeledField(label: "Version", hint: "Free text: 2.4, 2026.10…") {
         TextField("2.4", text: $version).textFieldStyle(.linear)
@@ -232,12 +236,12 @@ struct ChangelogGenerateSheet: View {
         hint("Repos: \(repos.joined(separator: ", "))")
       }
       LabeledField(label: "Commits to read") {
-        FeedbackSelect(options: [FeedbackOption(value: "all", label: "All commits"), FeedbackOption(value: "recent", label: "Only recent commits")], selection: Binding(get: { recent ? "recent" : "all" }, set: { recent = $0 == "recent" }))
+        FeedbackSelect(options: [FeedbackOption(value: "all", label: String(localized: "All commits")), FeedbackOption(value: "recent", label: String(localized: "Only recent commits"))], selection: Binding(get: { recent ? "recent" : "all" }, set: { recent = $0 == "recent" }))
       }
       if recent {
         HStack(spacing: 10) {
           Stepper("\(count)", value: $count, in: 1...999).font(.lnBody).fixedSize()
-          FeedbackSelect(options: [FeedbackOption(value: "1", label: count == 1 ? "day" : "days"), FeedbackOption(value: "7", label: count == 1 ? "week" : "weeks"), FeedbackOption(value: "30", label: count == 1 ? "month" : "months")], selection: Binding(get: { String(unit) }, set: { unit = Int($0) ?? 7 }))
+          FeedbackSelect(options: [FeedbackOption(value: "1", label: count == 1 ? String(localized: "day") : String(localized: "days")), FeedbackOption(value: "7", label: count == 1 ? String(localized: "week") : String(localized: "weeks")), FeedbackOption(value: "30", label: count == 1 ? String(localized: "month") : String(localized: "months"))], selection: Binding(get: { String(unit) }, set: { unit = Int($0) ?? 7 }))
         }
       }
       hint("Reads the newest 300 commits of the default branch of each repo. Commits already written up are skipped, and merge commits are ignored. Entries come back as drafts for you to review, merge and edit.")
@@ -246,9 +250,11 @@ struct ChangelogGenerateSheet: View {
           if run.running {
             HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Writing drafts…") }
           } else if run.state == "done" {
-            Text("Last run: \(run.created) \(run.created == 1 ? "draft" : "drafts") created, \(run.skipped) \(run.skipped == 1 ? "commit" : "commits") already covered\(run.truncated == true ? " (older commits were not read)" : "").")
+            let drafts = run.created == 1 ? String(localized: "1 draft") : String(localized: "\(run.created) drafts")
+            let commits = run.skipped == 1 ? String(localized: "1 commit") : String(localized: "\(run.skipped) commits")
+            Text(run.truncated == true ? "Last run: \(drafts) created, \(commits) already covered (older commits were not read)." : "Last run: \(drafts) created, \(commits) already covered.")
           } else {
-            Text("Last run failed: \(run.error ?? "unknown error")").foregroundStyle(Theme.error)
+            Text("Last run failed: \(run.error ?? String(localized: "unknown error"))").foregroundStyle(Theme.error)
           }
         }
         .font(.lnMeta)
@@ -318,7 +324,7 @@ struct ChangelogSubscribersSheet: View {
     }
   }
 
-  private func stat(_ title: String, _ value: Int, _ detail: String) -> some View {
+  private func stat(_ title: LocalizedStringKey, _ value: Int, _ detail: LocalizedStringKey) -> some View {
     HStack {
       VStack(alignment: .leading, spacing: 2) {
         Text(title).font(.lnRow).foregroundStyle(Theme.textHighlighted)
@@ -329,7 +335,7 @@ struct ChangelogSubscribersSheet: View {
     }
   }
 
-  private func job(_ key: String, _ title: String, _ detail: String) -> some View {
+  private func job(_ key: String, _ title: LocalizedStringKey, _ detail: LocalizedStringKey) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(title).font(.lnRow).foregroundStyle(Theme.textHighlighted)
       hint(detail)
@@ -371,9 +377,9 @@ struct ChangelogImportSheet: View {
 
   private var detail: String {
     switch kind {
-    case .entries: "Up to 100 per request (a longer list is sent in parts). Each entry: externalId (your id for it), title, body, tag, status, publishedAt, releaseVersion, slug… An entry whose externalId exists is updated, otherwise created. Nobody is emailed and nothing is linked."
-    case .comments: "Each comment: externalId, entry (its externalId, slug or #N), body, status, authorId, authorName, authorIsStaff, postedAt. A comment whose externalId exists is updated, so re-running converges. Nobody is notified."
-    case .subscriptions: "Each subscriber: externalId, email, frequency (instant or weekly), status, confirmedAt… Optionally \"runs\", the past sends, so the first weekly sweep does not repeat a week already mailed. Someone who unsubscribed here is never reactivated, and nobody is emailed."
+    case .entries: String(localized: "Up to 100 per request (a longer list is sent in parts). Each entry: externalId (your id for it), title, body, tag, status, publishedAt, releaseVersion, slug… An entry whose externalId exists is updated, otherwise created. Nobody is emailed and nothing is linked.")
+    case .comments: String(localized: "Each comment: externalId, entry (its externalId, slug or #N), body, status, authorId, authorName, authorIsStaff, postedAt. A comment whose externalId exists is updated, so re-running converges. Nobody is notified.")
+    case .subscriptions: String(localized: "Each subscriber: externalId, email, frequency (instant or weekly), status, confirmedAt… Optionally \"runs\", the past sends, so the first weekly sweep does not repeat a week already mailed. Someone who unsubscribed here is never reactivated, and nobody is emailed.")
     }
   }
 
@@ -386,7 +392,7 @@ struct ChangelogImportSheet: View {
       .pickerStyle(.segmented)
       .labelsHidden()
       .onChange(of: kind) { _, _ in summary = nil; error = "" }
-      hint(detail)
+      hint(verbatim: detail)
       Button { picking = true } label: {
         if importing { HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Importing…") } } else { Label("Choose JSON file…", systemImage: "doc") }
       }
@@ -394,7 +400,7 @@ struct ChangelogImportSheet: View {
       .disabled(importing)
       if let summary {
         VStack(alignment: .leading, spacing: 6) {
-          Label("\(summary.created) created, \(summary.updated) updated\(summary.failures.isEmpty ? "" : ", \(summary.failures.count) failed")", systemImage: summary.failures.isEmpty ? "checkmark.circle" : "exclamationmark.triangle")
+          Label(summary.failures.isEmpty ? "\(summary.created) created, \(summary.updated) updated" : "\(summary.created) created, \(summary.updated) updated, \(summary.failures.count) failed", systemImage: summary.failures.isEmpty ? "checkmark.circle" : "exclamationmark.triangle")
             .font(.lnMetaMedium).foregroundStyle(summary.failures.isEmpty ? Theme.success : Theme.warning)
           ForEach(Array(summary.failures.prefix(20).enumerated()), id: \.offset) { _, failure in
             Text(failure).font(.lnCaption).foregroundStyle(Theme.textMuted)

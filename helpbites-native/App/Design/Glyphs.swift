@@ -25,7 +25,7 @@ struct StatusIcon: View {
       }
     }
     .frame(width: size, height: size)
-    .accessibilityLabel(Text(category.capitalized))
+    .accessibilityLabel(Text(LocalizedStringKey(category.capitalized)))
   }
 
   private var tone: Color {
@@ -71,7 +71,7 @@ struct PriorityIcon: View {
       }
     }
     .frame(width: size, height: size)
-    .accessibilityLabel(Text("\(priority.capitalized) priority"))
+    .accessibilityLabel(Text("\(String(localized: String.LocalizationValue(priority.capitalized))) priority"))
   }
 
   private var level: Int { ["low": 1, "normal": 2, "high": 3][priority] ?? 0 }
@@ -85,9 +85,12 @@ struct StatusDot: View {
   var body: some View {
     HStack(spacing: 6) {
       Circle().fill(tone).frame(width: 6, height: 6)
-      Text((label ?? status).capitalized).font(.lnCaption).foregroundStyle(Theme.textMuted)
+      name.font(.lnCaption).foregroundStyle(Theme.textMuted)
     }
   }
+
+  /// A status the app defines is looked up in the catalog; a label the team wrote stays as it is.
+  private var name: Text { label.map { Text($0.capitalized) } ?? Text(LocalizedStringKey(status.capitalized)) }
 
   private var tone: Color {
     switch status {
