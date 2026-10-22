@@ -3384,6 +3384,16 @@
       "allowAttachments": "Users can attach images",
       "allowAnonymous": "Allow email-only users (no sign-in)",
       "allowAnonymousDescription": "Apps without a backend can chat and post feedback with just an email address. After a few actions, the person must confirm the address with a code we email them.",
+      "guestAccess": "Guest access (no account, no email)",
+      "guestAccessDescription": "Let visitors use these without signing in or giving an address. Guests are rate limited, cannot upload files, get no reply emails, and their session expires after 30 days unused. Turn every box off to end all guest access.",
+      "guest": {
+        "chat": "Chat",
+        "chatDescription": "Guests can start conversations and message you.",
+        "feedback": "Feedback",
+        "feedbackDescription": "Guests can post, vote and comment on the feedback board.",
+        "comments": "Comments",
+        "commentsDescription": "Guests can comment on blog posts and changelog entries."
+      },
       "letUsersChoose": "Let users choose a request type when starting a chat",
       "letUsersChooseDescription": "Only takes effect once the project has more than one ticket type.",
       "offerOther": "Offer an “Other” option",

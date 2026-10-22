@@ -1,5 +1,6 @@
 import { createError, getHeader, type H3Event } from 'h3'
 import { normalizeEmail } from '#shared/contacts'
+import type { GuestSurface } from '#shared/guest'
 import { normalizeLocale } from '#shared/locales'
 import { invalidate, onInvalidate } from './cacheBus'
 import { emitDomainEvent } from './domainEvents'
@@ -116,13 +117,13 @@ export function serializeAgent(agent: ParseObject) {
 
 // ---- end users ------------------------------------------------------------
 
-/** `write`: this call changes something, so an email-only user who has not verified their address is counted against their free writes. */
-export async function requireEndUser(event: H3Event, options: { ensure?: boolean, write?: boolean } = {}): Promise<EndUserContext> {
+/** `write`: the surface this call changes something on, so an email-only user who has not verified their address is counted against their free writes and a guest is held to the surfaces the admin opened. */
+export async function requireEndUser(event: H3Event, options: { ensure?: boolean, write?: GuestSurface } = {}): Promise<EndUserContext> {
   const token = bearer(event)
   if (token.startsWith('r:')) throw createError({ statusCode: 401, statusMessage: 'End-user identity token required' })
 
   const { project, claims } = await verifyEndUserToken(event, token)
-  if (options.write) await anonymousWriteGate(project, claims)
+  if (options.write) await anonymousWriteGate(project, claims, options.write)
   const endUser = options.ensure
     ? await ensureEndUser(project, claims)
     : await findEndUser(project, claims.sub)

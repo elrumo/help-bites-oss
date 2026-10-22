@@ -3229,6 +3229,16 @@
       "allowAttachments": "Los usuarios pueden adjuntar imágenes",
       "allowAnonymous": "Permitir usuarios solo con correo (sin inicio de sesión)",
       "allowAnonymousDescription": "Las apps sin backend pueden chatear y enviar comentarios solo con una dirección de correo. Tras algunas acciones, la persona debe confirmar la dirección con un código que le enviamos por correo.",
+      "guestAccess": "Acceso de invitados (sin cuenta ni correo)",
+      "guestAccessDescription": "Permite que los visitantes los usen sin iniciar sesión ni dar una dirección. Los invitados tienen límites de uso, no pueden subir archivos, no reciben correos de respuesta y su sesión caduca tras 30 días sin usarse. Desmarca todo para terminar con el acceso de invitados.",
+      "guest": {
+        "chat": "Chat",
+        "chatDescription": "Los invitados pueden iniciar conversaciones y escribirte.",
+        "feedback": "Comentarios",
+        "feedbackDescription": "Los invitados pueden publicar, votar y comentar en el tablón de comentarios.",
+        "comments": "Comentarios en contenidos",
+        "commentsDescription": "Los invitados pueden comentar en entradas del blog y del changelog."
+      },
       "letUsersChoose": "Permitir que los usuarios elijan un tipo de solicitud al iniciar un chat",
       "letUsersChooseDescription": "Solo se aplica cuando el proyecto tiene más de un tipo de ticket.",
       "offerOther": "Ofrecer la opción «Otro»",

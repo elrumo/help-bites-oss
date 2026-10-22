@@ -89,7 +89,7 @@ function project(id: string, name: string, siteUrl: string, accent: string, flag
   return {
     id, slug: slug(name), publicKey: `pk_demo_${id}`, name, siteUrl, allowedOrigins: [siteUrl], theme: { accent }, look: projectLook({ name, theme: { accent } }), widgetHome: false,
     company: { ...DEFAULT_COMPANY, name, address: '1 Demo Street, Lisbon, Portugal', email: `hello@${new URL(siteUrl).host}` }, legalLinks: { privacyUrl: '', termsUrl: '', cookiesUrl: '', refundUrl: '' }, hub: DEFAULT_HUB_CONFIG,
-    allowAttachments: true, allowAnonymousUsers: false, chatNotice: '', brandLogoUrl: '', iconUrl: '', assistantLogoUrl: '', letUsersChooseType: false, allowOtherType: false,
+    allowAttachments: true, allowAnonymousUsers: false, guestSurfaces: [], chatNotice: '', brandLogoUrl: '', iconUrl: '', assistantLogoUrl: '', letUsersChooseType: false, allowOtherType: false,
     feedback: { ...DEFAULT_FEEDBACK_CONFIG, enabled: true, title: `${name} feedback` },
     board: DEFAULT_BOARD_CONFIG,
     changelog: DEFAULT_CHANGELOG_CONFIG,

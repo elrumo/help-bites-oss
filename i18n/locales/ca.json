@@ -3229,6 +3229,16 @@
       "allowAttachments": "Els usuaris poden adjuntar imatges",
       "allowAnonymous": "Permet usuaris només amb correu (sense inici de sessió)",
       "allowAnonymousDescription": "Les apps sense backend poden xatejar i enviar comentaris només amb una adreça de correu. Després d'algunes accions, la persona ha de confirmar l'adreça amb un codi que li enviem per correu.",
+      "guestAccess": "Accés de convidats (sense compte ni correu)",
+      "guestAccessDescription": "Deixa que els visitants els facin servir sense iniciar sessió ni donar una adreça. Els convidats tenen límits d'ús, no poden pujar fitxers, no reben correus de resposta i la seva sessió caduca als 30 dies sense ús. Desmarca-ho tot per acabar amb l'accés de convidats.",
+      "guest": {
+        "chat": "Xat",
+        "chatDescription": "Els convidats poden iniciar converses i escriure't.",
+        "feedback": "Comentaris",
+        "feedbackDescription": "Els convidats poden publicar, votar i comentar al tauler de comentaris.",
+        "comments": "Comentaris en continguts",
+        "commentsDescription": "Els convidats poden comentar a les entrades del blog i del changelog."
+      },
       "letUsersChoose": "Permet que els usuaris triïn un tipus de sol·licitud en iniciar un xat",
       "letUsersChooseDescription": "Només s'aplica quan el projecte té més d'un tipus de tiquet.",
       "offerOther": "Ofereix l'opció «Altres»",

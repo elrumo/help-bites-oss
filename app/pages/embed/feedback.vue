@@ -60,7 +60,7 @@
 
     <!-- Signed out: reading is open, writing needs the host's sign-in. -->
     <Transition name="fade">
-      <div v-if="config && !viewer.signedIn && screen === 'list' && !onlyChangelog" class="mx-auto w-full px-4 pt-3" :class="contentWidth">
+      <div v-if="config && !viewer.signedIn && !guestOpen && screen === 'list' && !onlyChangelog" class="mx-auto w-full px-4 pt-3" :class="contentWidth">
         <div class="flex items-center gap-3 rounded-lg border border-default bg-default px-3.5 py-2.5 text-[13px]">
           <UIcon name="i-lucide-log-in" class="size-4 shrink-0 text-muted" />
           <span class="min-w-0 flex-1">{{ onlyRoadmap ? $t('embed.feedback.signInToVote') : $t('embed.feedback.signInToPost') }}</span>
@@ -259,11 +259,11 @@
                   :rows="2"
                   :maxrows="8"
                   autoresize
-                  :placeholder="viewer.signedIn ? $t('embed.feedback.addComment') : $t('embed.feedback.signInToComment')"
+                  :placeholder="viewer.signedIn || guestOpen ? $t('embed.feedback.addComment') : $t('embed.feedback.signInToComment')"
                   class="w-full"
                   :ui="{ base: 'text-[14px]' }"
                   :maxlength="8000"
-                  @focus="!viewer.signedIn && requestSignIn('comment')"
+                  @focus="!viewer.signedIn && needSignIn('comment')"
                   @keydown.meta.enter.prevent="submitComment"
                   @keydown.ctrl.enter.prevent="submitComment"
                 />
@@ -367,6 +367,7 @@ import {
 } from '#shared/feedback'
 import { BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, roadmapGroups, type BoardRoadmapLayout, type RoadmapResponse } from '#shared/board'
 import { changelogTimeline, type PublicChangelog } from '#shared/changelog'
+import type { GuestSurface } from '#shared/guest'
 import type { RoadmapCard } from '~/components/feedback/RoadmapView.vue'
 
 // The plug-and-play feedback board, inside the host site's iframe (see
@@ -396,7 +397,7 @@ const colorMode = useColorMode()
 const themeParam = String(route.query.theme || '')
 if (['light', 'dark', 'system'].includes(themeParam)) colorMode.preference = themeParam
 
-type ProjectInfo = { name: string, publicKey: string, theme: { accent?: string }, brandLogoUrl: string, allowedOrigins: string[], poweredBy?: { url: string } | null }
+type ProjectInfo = { name: string, publicKey: string, theme: { accent?: string }, brandLogoUrl: string, allowedOrigins: string[], guestSurfaces?: GuestSurface[], poweredBy?: { url: string } | null }
 type View = 'board' | 'roadmap' | 'changelog'
 
 const { t } = useI18n()
@@ -473,6 +474,22 @@ function setToken(next: string | null) {
   }
 }
 
+// Guests: a host that gave the board no sign-in of its own, and a project that lets guests post here,
+// make a visitor a guest the first time they act (never on load, so a reader costs no session).
+const guests = useGuestSession(pk)
+const guestOpen = computed(() => !canSignIn.value && Boolean(projectInfo.value?.guestSurfaces?.includes('feedback')))
+
+/** True when the visitor still cannot write (and has been told how to sign in). */
+async function needSignIn(reason: 'vote' | 'post' | 'comment'): Promise<boolean> {
+  if (token.value) return false
+  if (guestOpen.value) {
+    const guest = await guests.start(projectInfo.value?.guestSurfaces, 'feedback')
+    if (guest) { setToken(guest); return false }
+  }
+  requestSignIn(reason)
+  return true
+}
+
 function requestSignIn(reason: 'vote' | 'post' | 'comment') {
   if (canSignIn.value) {
     post({ type: 'sign-in', reason })
@@ -499,7 +516,8 @@ function onMessage(event: MessageEvent) {
   if (allowed) parentOrigin.value = event.origin
   if (data.type === 'token') {
     canSignIn.value = Boolean(data.canSignIn)
-    setToken(typeof data.token === 'string' && data.token ? data.token : null)
+    // No token from the host: the guest this browser already is, if any (a new one waits for a first action).
+    setToken(typeof data.token === 'string' && data.token ? data.token : (canSignIn.value ? null : guests.restore()))
   }
   if (data.type === 'open-post' && typeof data.postId === 'string') void openPost(data.postId)
   if (data.type === 'set-view' && ['board', 'roadmap', 'changelog'].includes(data.view) && !only) setView(data.view)
@@ -515,7 +533,13 @@ async function api<T = any>(path: string, options: { method?: 'GET' | 'POST' | '
     return await $fetch<T>(url, { method: options.method || 'GET', body: options.body as any, headers: token.value ? { Authorization: `Bearer ${token.value}` } : {} })
   } catch (error: any) {
     const status = error?.statusCode || error?.status
-    if (status === 401 && token.value && options.retry !== false) {
+    if (status === 401 && token.value && token.value === guests.restore()) {
+      // The server dropped this guest (expired, or guests were switched off): read as a visitor again.
+      guests.forget()
+      token.value = null
+      viewer.value = { signedIn: false, isAdmin: false, name: '' }
+      if (options.retry !== false && (options.method || 'GET') === 'GET') return api<T>(path, { ...options, retry: false })
+    } else if (status === 401 && token.value && options.retry !== false) {
       token.value = await requestToken()
       return api<T>(path, { ...options, retry: false })
     }
@@ -693,7 +717,7 @@ function setView(next: View) {
 // ---- voting ----
 async function vote(item: FeedbackPost) {
   if (!votingOpen(item.statusCategory)) return
-  if (!token.value) return requestSignIn('vote')
+  if (await needSignIn('vote')) return
   const before = byId.value[item.id] || item
   const want = !before.hasVoted
   replace({ ...before, hasVoted: want, voteCount: Math.max(0, before.voteCount + (want ? 1 : -1)) })
@@ -805,7 +829,7 @@ const confirmCommentId = ref('')
 async function submitComment() {
   const body = commentDraft.value.trim()
   if (!body || !activePost.value || commentSending.value) return
-  if (!token.value) return requestSignIn('comment')
+  if (await needSignIn('comment')) return
   commentSending.value = true
   commentError.value = ''
   try {
@@ -845,8 +869,8 @@ const form = reactive({ title: '', body: '', type: '', platform: '' })
 const submitting = ref(false)
 const formError = ref('')
 
-function startCompose() {
-  if (!token.value) return requestSignIn('post')
+async function startCompose() {
+  if (await needSignIn('post')) return
   nav.value = 'push'
   editingId.value = ''
   Object.assign(form, { title: search.value.trim(), body: '', type: typeFilter.value || config.value?.types[0]?.key || '', platform: config.value?.platforms.some(p => p.key === defaultPlatform) ? defaultPlatform : '' })
@@ -973,6 +997,7 @@ onMounted(async () => {
     return
   }
   if (direct) token.value = direct
+  else if (window.parent === window) token.value = guests.restore()
   // Read straight away; a token from the host only refines the view.
   await loadPosts()
   post({ type: 'ready' })

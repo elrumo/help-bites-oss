@@ -24,6 +24,8 @@ export type IdentityClaims = {
   role?: string
   /** Set by HelpBites, never read from a token: this person came in with only an email address (an `eu_…` session), so has no host identity. */
   anon?: boolean
+  /** Set by HelpBites with `anon`: a guest, who gave no address at all. */
+  guest?: boolean
   /** With `anon`: they proved the address with a code. */
   emailVerified?: boolean
   iat: number

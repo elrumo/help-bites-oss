@@ -333,8 +333,24 @@
     ])
   }
 
+  /** Guests may comment: the project opened it, and the page has no sign-in of its own. */
+  function guestComments() {
+    return !options.onSignIn && !options.getToken && state.project && state.project.guestSurfaces && state.project.guestSurfaces.indexOf('comments') !== -1
+  }
+
+  /** The reader's guest session, made on their first comment or reaction (never on load). */
+  function ensureGuest() {
+    if (state.token) return Promise.resolve(true)
+    if (!guestComments()) return Promise.resolve(false)
+    return api('/anonymous/guest', { method: 'POST', body: { pk: options.project } }).then(function (r) {
+      state.token = r.token
+      store(r.token)
+      return true
+    }, function (e) { state.authError = e.message; render(); return false })
+  }
+
   function composer(parentId, text, onText) {
-    if (!state.token) return signInView()
+    if (!state.token && !guestComments()) return signInView()
     var area = h('textarea', { placeholder: word('write'), oninput: function (e) { if (onText) onText(e.target.value) } }, text)
     return h('form', { part: 'composer', onsubmit: function (e) { e.preventDefault(); comment(parentId, area.value, area) } }, [
       area,
@@ -393,6 +409,7 @@
 
   function react(key) {
     if (!state.token) {
+      if (guestComments()) return ensureGuest().then(function (ok) { if (ok) react(key) })
       if (options.onSignIn) return options.onSignIn('react')
       state.auth = 'email'
       return render()
@@ -407,15 +424,18 @@
   function comment(parentId, text, area) {
     if (!text.trim()) return
     state.authError = ''
-    busy(api('/blog/' + encodeURIComponent(state.slug) + '/comments', { method: 'POST', body: { body: text, parentId: parentId || undefined } })).then(function (r) {
-      state.comments.push(r.comment)
-      state.post.commentCount = r.commentCount
-      if (parentId) state.replyTo = ''
-      else state.composing = ''
-      if (area) area.value = ''
-      emit('comment', state.slug)
-      render()
-    }, needsSignIn)
+    ensureGuest().then(function (ok) { return ok ? send() : render() })
+    function send() {
+      busy(api('/blog/' + encodeURIComponent(state.slug) + '/comments', { method: 'POST', body: { body: text, parentId: parentId || undefined } })).then(function (r) {
+        state.comments.push(r.comment)
+        state.post.commentCount = r.commentCount
+        if (parentId) state.replyTo = ''
+        else state.composing = ''
+        if (area) area.value = ''
+        emit('comment', state.slug)
+        render()
+      }, needsSignIn)
+    }
   }
 
   function saveEdit(c) {

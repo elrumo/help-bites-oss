@@ -17,6 +17,7 @@ import { companyEntity, type CompanyProfile } from '#shared/company'
 import { applyCompany, companyOf } from './company'
 import { legalLinksOf, type LegalLinks } from './legalLinks'
 import { legacyTheme, projectLook, type ProjectLook, type ProjectLookInput } from '#shared/projectLook'
+import { normalizeGuestSurfaces, type GuestSurface } from '#shared/guest'
 import { normalizeHiddenSections, validateHiddenSections } from '#shared/projectSections'
 
 export type ProjectTheme = { accent?: string, dark?: boolean }
@@ -35,6 +36,8 @@ export type PublicProject = {
   allowAttachments: boolean
   /** Chat and feedback work with only an email address, no host-signed identity token (POST /v1/anonymous/session). */
   allowAnonymousUsers: boolean
+  /** Which surfaces a guest (no account, no email) may use: any of `chat`, `feedback`, `comments`; empty means guests are off (POST /v1/anonymous/guest). */
+  guestSurfaces: GuestSurface[]
   /** Fixed informational line shown centered at the top of a new chat; '' hides it. */
   chatNotice: string
   /** Optional project brand logo and assistant/bot avatar (public image URLs); '' when unset. */
@@ -230,6 +233,7 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
   if ('notifyEmails' in input) project.set('notifyEmails', parseRecipientList(input.notifyEmails))
   if ('allowAttachments' in input) project.set('allowAttachments', Boolean(input.allowAttachments))
   if ('allowAnonymousUsers' in input) project.set('allowAnonymousUsers', Boolean(input.allowAnonymousUsers))
+  if ('guestSurfaces' in input) project.set('guestSurfaces', normalizeGuestSurfaces(input.guestSurfaces))
   if ('letUsersChooseType' in input) project.set('letUsersChooseType', Boolean(input.letUsersChooseType))
   if ('allowOtherType' in input) project.set('allowOtherType', Boolean(input.allowOtherType))
   if ('actionWebhookUrl' in input) project.set('actionWebhookUrl', safeHttpUrl(input.actionWebhookUrl))
@@ -346,6 +350,7 @@ export function serializePublicProject(project: ParseObject): PublicProject {
     look,
     allowAttachments: project.get('allowAttachments') !== false,
     allowAnonymousUsers: project.get('allowAnonymousUsers') === true,
+    guestSurfaces: normalizeGuestSurfaces(project.get('guestSurfaces')),
     chatNotice: String(project.get('chatNotice') || ''),
     brandLogoUrl: look.logoUrl,
     assistantLogoUrl: String(project.get('assistantLogoUrl') || ''),

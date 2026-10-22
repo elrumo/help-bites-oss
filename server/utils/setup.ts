@@ -32,7 +32,7 @@ export async function projectSetup(ctx: MemberContext, project: ParseObject): Pr
     allowedOrigins: p.allowedOrigins.length,
     widgetSeenAt: p.widgetSeenAt,
     identitySeenAt: p.identitySeenAt,
-    allowAnonymousUsers: p.allowAnonymousUsers,
+    allowAnonymousUsers: p.allowAnonymousUsers || p.guestSurfaces.length > 0,
     notifyEmails: p.notifyEmails.length,
     mailerReady: isMailerConfigured({ fromEmail: p.fromEmail, domain: p.mailDomain }),
     pushDevices,

@@ -206,6 +206,8 @@ const SCHEMAS = {
       allowAttachments: { type: 'Boolean' },
       // Let a person use chat and feedback with only an email address (server/utils/endUserSessions.ts).
       allowAnonymousUsers: { type: 'Boolean' },
+      // Which surfaces a guest (no account, no email) may use: chat, feedback, comments. Empty: guests are off.
+      guestSurfaces: { type: 'Array' },
       chatNotice: { type: 'String' },
       brandLogoUrl: { type: 'String' },
       assistantLogoUrl: { type: 'String' },
@@ -302,6 +304,8 @@ const SCHEMAS = {
       hash: { type: 'String' },
       prefix: { type: 'String' },
       lastUsedAt: { type: 'Date' },
+      // Guest sessions only: when an unused session stops working.
+      expiresAt: { type: 'Date' },
       ip: { type: 'String' },
       ua: { type: 'String' }
     },
@@ -340,6 +344,8 @@ const SCHEMAS = {
       // an `anon_…` externalId; the address stays in `pendingEmail` until the
       // person proves it with a code, then moves to `email`.
       anonymous: { type: 'Boolean' },
+      // A guest: an `anon` row with a `guest_…` externalId and no address at all.
+      guest: { type: 'Boolean' },
       pendingEmail: { type: 'String' },
       emailVerifiedAt: { type: 'Date' },
       anonWrites: { type: 'Number' },

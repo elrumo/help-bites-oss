@@ -8,6 +8,9 @@
  *     HelpBites.push(['init', { getToken: () => fetch('/api/support/token').then(r => r.json()).then(r => r.token), context: {...} }])
  *   </script>
  *
+ * Without getToken, a project whose admin opened guest access for chat (Project →
+ * Settings) lets visitors in as guests: HelpBites.push(['init', {}]) is enough.
+ *
  * data-mode="inline" data-target="#support" instead renders the chat inside
  * that element (no launcher, always open) — a message panel in your own page.
  *
@@ -139,7 +142,8 @@
   }
 
   function sendToken() {
-    if (!options || !options.getToken) return
+    // Nothing to sign anyone in with: the chat may let the visitor in as a guest, if the project allows it.
+    if (!options || !options.getToken) { send({ type: 'no-token' }); return }
     Promise.resolve(options.getToken()).then(function (token) {
       if (typeof token === 'string' && token) send({ type: 'token', token: token })
     }).catch(function (e) { console.warn('[help-bites] getToken failed', e) })
