@@ -126,6 +126,11 @@
               <UCheckbox v-model="form.allowAttachments" :label="$t('projectPages.settings.allowAttachments')" />
               <UCheckbox v-model="form.allowAnonymousUsers" :label="$t('projectPages.settings.allowAnonymous')" :description="$t('projectPages.settings.allowAnonymousDescription')" />
               <div class="space-y-2">
+                <p class="text-sm font-medium">{{ $t('projectPages.settings.guestAccess') }}</p>
+                <p class="text-xs text-muted">{{ $t('projectPages.settings.guestAccessDescription') }}</p>
+                <UCheckbox v-for="surface in GUEST_SURFACES" :key="surface" :model-value="form.guestSurfaces.includes(surface)" :label="$t('projectPages.settings.guest.' + surface)" :description="$t('projectPages.settings.guest.' + surface + 'Description')" class="pl-6" @update:model-value="setGuestSurface(surface, $event === true)" />
+              </div>
+              <div class="space-y-2">
                 <UCheckbox v-model="form.letUsersChooseType" :label="$t('projectPages.settings.letUsersChoose')" :description="$t('projectPages.settings.letUsersChooseDescription')" />
                 <UCheckbox v-model="form.allowOtherType" :label="$t('projectPages.settings.offerOther')" :description="$t('projectPages.settings.offerOtherDescription')" :disabled="!form.letUsersChooseType" class="pl-6" />
               </div>
@@ -211,6 +216,7 @@ import type { AdminProject } from '~~/server/utils/projects'
 import { projectColor } from '~/utils/projectColor'
 import { can } from '#shared/roles'
 import { normalizeCompany } from '#shared/company'
+import { GUEST_SURFACES, normalizeGuestSurfaces, type GuestSurface } from '#shared/guest'
 import { normalizeHubConfig } from '#shared/hub'
 import { groupSections } from '#shared/projectSections'
 
@@ -253,7 +259,7 @@ const widgetImages = computed(() => [
 // Linear's indigo, then the colours projects without one are given.
 const swatches = ['#5e6ad2', '#0f766e', '#0369a1', '#0e7490', '#4d7c0f', '#b45309', '#c2410c', '#be123c', '#7c3aed']
 
-const blank = () => ({ name: '', siteUrl: '', inboxPath: '', iconUrl: '', brandLogoUrl: '', assistantLogoUrl: '', accent: '', chatNotice: '', allowAttachments: true, allowAnonymousUsers: false, letUsersChooseType: false, allowOtherType: false, company: normalizeCompany(null), hub: normalizeHubConfig(null), notifyEmailsText: '', hiddenSections: [] as string[] })
+const blank = () => ({ name: '', siteUrl: '', inboxPath: '', iconUrl: '', brandLogoUrl: '', assistantLogoUrl: '', accent: '', chatNotice: '', allowAttachments: true, allowAnonymousUsers: false, guestSurfaces: [] as GuestSurface[], letUsersChooseType: false, allowOtherType: false, company: normalizeCompany(null), hub: normalizeHubConfig(null), notifyEmailsText: '', hiddenSections: [] as string[] })
 const form = reactive(blank())
 const snapshot = ref('')
 const dirty = computed(() => !!snapshot.value && JSON.stringify(form) !== snapshot.value)
@@ -280,6 +286,7 @@ function fill(p: AdminProject) {
     chatNotice: p.chatNotice || '',
     allowAttachments: p.allowAttachments,
     allowAnonymousUsers: p.allowAnonymousUsers === true,
+    guestSurfaces: normalizeGuestSurfaces(p.guestSurfaces),
     letUsersChooseType: p.letUsersChooseType,
     allowOtherType: p.allowOtherType,
     company: normalizeCompany(p.company),
@@ -318,6 +325,10 @@ async function upload(event: Event) {
     uploading.value = ''
     input.value = ''
   }
+}
+
+function setGuestSurface(surface: GuestSurface, on: boolean) {
+  form.guestSurfaces = normalizeGuestSurfaces(on ? [...form.guestSurfaces, surface] : form.guestSurfaces.filter(item => item !== surface))
 }
 
 async function save() {

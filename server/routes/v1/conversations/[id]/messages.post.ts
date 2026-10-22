@@ -16,7 +16,7 @@ defineRouteMeta({
 })
 
 export default defineEventHandler(async (event) => {
-  const { project, endUser, claims } = await requireEndUser(event, { ensure: true, write: true })
+  const { project, endUser, claims } = await requireEndUser(event, { ensure: true, write: 'chat' })
   const conversation = await getConversation(getRouterParam(event, 'id') || '')
   if (pointerId(conversation.get('endUser')) !== endUser!.id) throw createError({ statusCode: 404, statusMessage: 'Conversation not found' })
 

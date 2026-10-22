@@ -54,7 +54,7 @@ export async function resolveCommentContext(event: H3Event, options: { projectId
   if (token) {
     const { project, claims } = await verifyEndUserToken(event, token)
     if (options.projectId && project.id !== options.projectId) throw wrongProject()
-    if (event.method !== 'GET' && event.method !== 'HEAD') await anonymousWriteGate(project, claims)
+    if (event.method !== 'GET' && event.method !== 'HEAD') await anonymousWriteGate(project, claims, 'comments')
     const actor: CommentActor = { kind: 'user', externalId: claims.sub, name: String(claims.name || '').trim().slice(0, 120), isAdmin: claims.role === 'admin', claims }
     if (!actor.isAdmin && !changelogIsPublic(project)) throw createError({ statusCode: 404, statusMessage: 'No changelog here' })
     return { project, actor }

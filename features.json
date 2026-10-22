@@ -10,14 +10,14 @@
       "id": "chat-widget",
       "name": "Chat widget",
       "category": "support",
-      "summary": "A floating bubble or inline chat in the customer's own app; users never make an account (the host app signs an identity token). It wears the project's Brand kit look and can open on a Home tab (what is new, top feedback, onboarding flows to start) next to Messages.",
+      "summary": "A floating bubble or inline chat in the customer's own app; users never make an account (the host app signs an identity token, or, where an admin opened guest access, they chat as a guest with no sign-in and no email). It wears the project's Brand kit look and can open on a Home tab (what is new, top feedback, onboarding flows to start) next to Messages.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/embed/index.vue"], "public": ["/embed"] },
+      "web": { "panel": ["app/pages/embed/index.vue", "app/composables/useGuestSession.ts"], "public": ["/embed"] },
       "native": null,
       "api": { "prefixes": ["/v1/conversations", "/v1/messages", "/v1/events", "/v1/end-users", "/v1/unread", "/v1/attachments"], "docs": "docs/CONNECTING.md" },
-      "embed": { "web": "public/widget.js", "swift": null, "customize": ["data-mode", "data-position", "data-accent", "JS open/close API", "Home tab (hub.widgetHome)"] },
+      "embed": { "web": "public/widget.js", "swift": null, "customize": ["data-mode", "data-position", "data-accent", "JS open/close API", "Home tab (hub.widgetHome)", "Guest access (guestSurfaces: chat, feedback, comments)"] },
       "landing": { "listed": true, "key": "landing.features.app" }
     },
     {
@@ -466,7 +466,7 @@
       "id": "projects",
       "name": "Projects",
       "category": "platform",
-      "summary": "One project per app: keys and secret, allowed origins, accent (the Brand kit's), logo, company profile, public hub, notifications, which sections show in its sidebar, overview with its setup checklist, and the Install & API page.",
+      "summary": "One project per app: keys and secret, allowed origins, accent (the Brand kit's), logo, company profile, public hub, notifications, guest access per surface (chat, feedback, comments), which sections show in its sidebar, overview with its setup checklist, and the Install & API page.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "status": "stable",
@@ -605,6 +605,7 @@
     "A contact's activity timeline links to a section of the panel (the feedback page, the email log), not to the post or log row itself, and its titles are English text written by the server.",
     "The public hub page is English only, has no custom domain (it lives at /hub/<public key>) and no template choice; its sections are fixed (about, changelog, roadmap, feedback, blog, legal, brand, contact) plus up to 8 links. The chat widget's Home tab is not shown in the wide inline layout, offers every published onboarding flow (turn the section off to hide them) and is web only: the native operator app edits its settings but has no public surfaces.",
     "A project's legal page links for email (privacyUrl, termsUrl, cookiesUrl, refundUrl) are rebuilt when a legal document is published, unpublished, renamed or deleted, and are not carried by an export or import until the next publish; they are blank while APP_URL is unset. The project company profile has no per-document override: every legal document names the same operator.",
+    "Guests (guest access) are not upgraded when the same person later signs in or gives an email: their conversations and posts stay with the guest contact. A guest who wrote something stays a contact after the session expires (only guests who never wrote, and expired sessions, are purged).",
     "helpbites.js adds the chat, feedback board, changelog and onboarding scripts; it does not add the blog, brand or forms embeds, and it cannot fetch an identity token for you (pass data-token or call HelpBites.push(['init', { getToken }])).",
     "The conversation panel: a contact with no user id (externalId) cannot follow a feedback post or have one filed as them (linking still works). Saved replies are inserted from the picker, not by typing /shortcut in the reply box; Save as FAQ is on a reply's context menu (right-click, long-press). The AI draft answers the customer's latest message only, takes no instructions, and the demo does not fake linking, drafting or saving."
   ]

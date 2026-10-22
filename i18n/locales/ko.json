@@ -3229,6 +3229,16 @@
       "allowAttachments": "사용자가 이미지를 첨부할 수 있음",
       "allowAnonymous": "이메일만 있는 사용자 허용(로그인 없음)",
       "allowAnonymousDescription": "백엔드가 없는 앱에서는 이메일 주소만으로 채팅하고 피드백을 남길 수 있습니다. 몇 가지 작업 후에는 발송된 코드로 주소를 확인해야 합니다.",
+      "guestAccess": "게스트 접근(계정·이메일 없음)",
+      "guestAccessDescription": "로그인하거나 주소를 알려주지 않아도 이용할 수 있게 합니다. 게스트는 사용 제한이 있고, 파일을 올릴 수 없으며, 답장 이메일을 받지 않고, 30일 동안 쓰지 않으면 세션이 만료됩니다. 모두 끄면 게스트 접근이 종료됩니다.",
+      "guest": {
+        "chat": "채팅",
+        "chatDescription": "게스트가 대화를 시작하고 메시지를 보낼 수 있습니다.",
+        "feedback": "피드백",
+        "feedbackDescription": "게스트가 피드백 보드에 글을 쓰고 투표하고 댓글을 달 수 있습니다.",
+        "comments": "댓글",
+        "commentsDescription": "게스트가 블로그 글과 변경 내역에 댓글을 달 수 있습니다."
+      },
       "letUsersChoose": "채팅을 시작할 때 사용자가 요청 유형을 고르도록 허용",
       "letUsersChooseDescription": "프로젝트에 티켓 유형이 두 개 이상 있을 때만 적용됩니다.",
       "offerOther": "“기타” 옵션 제공",

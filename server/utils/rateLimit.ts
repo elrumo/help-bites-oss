@@ -79,6 +79,10 @@ export const LIMITS = {
   anonCodesPerIp: { limit: 30, window: 3600 },
   anonConfirmPerIp: { limit: 60, window: 3600 },
   anonConfirmPerAddress: { limit: 20, window: 3600 },
+  // Guests (no email at all): nothing proves who they are, so minting is tighter than for email-only users,
+  // and a project's total is capped so one flood cannot fill its contact list.
+  guestSessionsPerIp: { limit: 10, window: 3600 },
+  guestSessionsPerProject: { limit: 500, window: 3600 },
   campaignTestsPerAgent: { limit: 20, window: 600 },
   // Hosted legal pages are read by crawlers and every app launch that links to them.
   legalReadsPerIp: { limit: 600, window: 60 },

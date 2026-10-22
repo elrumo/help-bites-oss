@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto'
 import { createError, getHeader, type H3Event } from 'h3'
+import { GUEST_SESSION_IDLE_DAYS, GUEST_WRITES_PER_10_MIN, GUEST_WRITES_PER_DAY, GUEST_WRITES_PER_PROJECT_HOUR, normalizeGuestSurfaces, type GuestSurface } from '#shared/guest'
 import { poweredByFor } from './branding'
 import { deliverEmails, newEmailBatchId, projectEmailSender, SYSTEM_EMAIL_ACTOR } from './emailDelivery'
-import { CODE_TTL_MS, checkVerifyCode, hashEndUserToken, hashVerifyCode, isEndUserToken, needsVerification, newAnonExternalId, newEndUserToken, newVerifyCode } from './endUserTokens'
+import { CODE_TTL_MS, checkVerifyCode, guestDisplayName, hashEndUserToken, hashVerifyCode, isEndUserToken, needsVerification, newAnonExternalId, newEndUserToken, newGuestExternalId, newVerifyCode } from './endUserTokens'
 import type { IdentityClaims } from './jwt'
 import { renderMessageEmail } from './messageEmail'
 import { MASTER, useParse, type ParseObject } from './parse'
@@ -22,8 +23,17 @@ import { runExclusive } from './redis'
 // person must verify. An address that is already known never gets a token from
 // the session call alone: it gets a code, so nobody can pick up someone else's
 // history by typing their address.
+//
+// Guests are the step below: no address at all (Project.guestSurfaces lists what
+// they may use). Nothing proves who a guest is, so their session is the whole
+// identity: it expires when unused, cannot upload, never gets an email on its
+// claims (so no reply mail, flag allow-lists or subscriptions), is only allowed
+// on the surfaces the admin opened, and is held to tighter write limits.
 
 export const anonymousEnabled = (project: ParseObject): boolean => project.get('allowAnonymousUsers') === true
+
+/** What the admin let guests into; empty means guests are off. */
+export const guestSurfacesOf = (project: ParseObject): GuestSurface[] => normalizeGuestSurfaces(project.get('guestSurfaces'))
 
 const addressKey = (email: string) => createHash('sha256').update(email).digest('hex')
 
@@ -56,7 +66,7 @@ async function createAnonymousRow(project: ParseObject, email: string, name: str
   return row
 }
 
-async function mintSession(event: H3Event, project: ParseObject, row: ParseObject): Promise<string> {
+async function mintSession(event: H3Event, project: ParseObject, row: ParseObject, expiresAt?: Date): Promise<string> {
   const { token, hash, prefix } = newEndUserToken()
   const session = new (useParse().Object.extend('EndUserSession'))() as ParseObject
   session.set('project', project)
@@ -64,10 +74,23 @@ async function mintSession(event: H3Event, project: ParseObject, row: ParseObjec
   session.set('hash', hash)
   session.set('prefix', prefix)
   session.set('lastUsedAt', new Date())
+  if (expiresAt) session.set('expiresAt', expiresAt)
   session.set('ip', clientIp(event) || '')
   session.set('ua', String(getHeader(event, 'user-agent') || '').slice(0, 300))
   await session.save(null, MASTER)
   return token
+}
+
+/** Drop guest sessions that ran out, and guests who never wrote anything and have not been back for as long as a session lasts. */
+export async function purgeIdleGuests(max = 2000): Promise<{ sessions: number, guests: number }> {
+  const Parse = useParse()
+  const cutoff = new Date(Date.now() - GUEST_SESSION_IDLE_DAYS * 86400_000)
+  const expired = await new Parse.Query('EndUserSession').lessThan('expiresAt', new Date()).limit(Math.min(max, 1000)).find(MASTER)
+  await Parse.Object.destroyAll(expired, MASTER)
+  const idle = await new Parse.Query('EndUser').equalTo('guest', true).lessThan('lastSeenAt', cutoff).equalTo('anonWrites', 0).limit(Math.min(max, 1000)).find(MASTER)
+  for (const row of idle) await revokeEndUserSessions(row)
+  await Parse.Object.destroyAll(idle, MASTER)
+  return { sessions: expired.length, guests: idle.length }
 }
 
 /** End every session of one person (their data is erased, or they just proved their address). */
@@ -145,6 +168,31 @@ export async function startAnonymousSession(event: H3Event, project: ParseObject
   return run.value
 }
 
+const guestExpiry = () => new Date(Date.now() + GUEST_SESSION_IDLE_DAYS * 86400_000)
+
+/** Open a session for a visitor who gave nothing: a new guest each time, so the app keeps the token. */
+export async function startGuestSession(event: H3Event, project: ParseObject): Promise<{ token: string, externalId: string, name: string, surfaces: GuestSurface[] }> {
+  const surfaces = guestSurfacesOf(project)
+  if (!surfaces.length) throw createError({ statusCode: 403, statusMessage: 'This project does not allow guest access' })
+  await rateLimit(`sb:rl:guestsession:${clientIp(event) || 'ip'}`, LIMITS.guestSessionsPerIp.limit, LIMITS.guestSessionsPerIp.window)
+  await rateLimit(`sb:rl:guestsession:p:${project.id}`, LIMITS.guestSessionsPerProject.limit, LIMITS.guestSessionsPerProject.window)
+
+  const externalId = newGuestExternalId()
+  const name = guestDisplayName(externalId)
+  const row = new (useParse().Object.extend('EndUser'))() as ParseObject
+  row.set('project', project)
+  row.set('externalId', externalId)
+  row.set('anonymous', true)
+  row.set('guest', true)
+  row.set('name', name)
+  row.set('subscription', 'none')
+  row.set('origin', { type: 'app', id: '', at: new Date().toISOString() })
+  row.set('anonWrites', 0)
+  row.set('lastSeenAt', new Date())
+  await row.save(null, MASTER)
+  return { token: await mintSession(event, project, row, guestExpiry()), externalId, name, surfaces }
+}
+
 /** Send (or re-send) a code to an address that has an email-only user. Says nothing about whether it does. */
 export async function requestAnonymousCode(event: H3Event, project: ParseObject, email: string): Promise<void> {
   requireEnabled(project)
@@ -200,11 +248,21 @@ export async function verifyAnonymousToken(event: H3Event, token: string): Promi
   // By public key, so a suspended workspace closes this door like every other.
   const project = await findProjectByPublicKey(String(stored.get('publicKey') || ''))
   if (!project || project.id !== stored.id) throw await bad('Invalid session token')
-  if (!anonymousEnabled(project)) throw createError({ statusCode: 401, statusMessage: 'This project no longer allows email-only access' })
+  const guest = row.get('guest') === true
+  if (guest) {
+    // Closing every surface ends guest access at once; an idle session also runs out.
+    if (!guestSurfacesOf(project).length) throw createError({ statusCode: 401, statusMessage: 'This project no longer allows guest access' })
+    const expiresAt = session.get('expiresAt') as Date | undefined
+    if (expiresAt instanceof Date && expiresAt.getTime() < Date.now()) throw await bad('Invalid session token')
+  } else if (!anonymousEnabled(project)) throw createError({ statusCode: 401, statusMessage: 'This project no longer allows email-only access' })
 
   await rateLimit(`sb:rl:project:${project.id}`, LIMITS.requestsPerProject.limit, LIMITS.requestsPerProject.window)
   const last = session.get('lastUsedAt') as Date | undefined
-  if (!last || Date.now() - last.getTime() > 10 * 60 * 1000) { session.set('lastUsedAt', new Date()); void session.save(null, MASTER).catch(() => {}) }
+  if (!last || Date.now() - last.getTime() > 10 * 60 * 1000) {
+    session.set('lastUsedAt', new Date())
+    if (guest) session.set('expiresAt', guestExpiry())
+    void session.save(null, MASTER).catch(() => {})
+  }
 
   const verified = row.get('emailVerifiedAt') instanceof Date
   const email = verified ? String(row.get('email') || row.get('pendingEmail') || '') : ''
@@ -212,26 +270,37 @@ export async function verifyAnonymousToken(event: H3Event, token: string): Promi
   const now = Math.floor(Date.now() / 1000)
   return {
     project,
-    claims: { iss: String(project.get('publicKey')), sub: String(row.get('externalId')), ...(name ? { name } : {}), ...(email ? { email } : {}), anon: true, emailVerified: verified, iat: now, exp: now + 3600 }
+    claims: { iss: String(project.get('publicKey')), sub: String(row.get('externalId')), ...(name ? { name } : {}), ...(email ? { email } : {}), anon: true, ...(guest ? { guest: true } : {}), emailVerified: verified, iat: now, exp: now + 3600 }
   }
 }
 
+const guestRefused = (surface: GuestSurface) => createError({ statusCode: 403, statusMessage: 'Guests cannot do that here', data: { code: 'guest_not_allowed', surface } })
+
 /**
- * Called before an email-only user writes. Counts the write and, once an
- * unverified person is past their free ones, refuses with a code the app can
- * act on. Host-signed users and verified ones pass untouched.
+ * Called before an email-only user or a guest writes, with the surface the
+ * write belongs to. A guest only passes on a surface the admin opened, within
+ * their own and the project's write limits. An email-only user's write is
+ * counted and, once an unverified person is past their free ones, refused with
+ * a code the app can act on. Host-signed users and verified ones pass untouched.
  */
-export async function anonymousWriteGate(project: ParseObject, claims: IdentityClaims): Promise<void> {
-  if (!claims.anon || claims.emailVerified) return
+export async function anonymousWriteGate(project: ParseObject, claims: IdentityClaims, surface: GuestSurface): Promise<void> {
+  if (claims.guest) {
+    if (!guestSurfacesOf(project).includes(surface)) throw guestRefused(surface)
+    await rateLimit(`sb:rl:guestwrite:${project.id}:${claims.sub}`, GUEST_WRITES_PER_10_MIN, 600)
+    await rateLimit(`sb:rl:guestwrite:day:${project.id}:${claims.sub}`, GUEST_WRITES_PER_DAY, 86400)
+    await rateLimit(`sb:rl:guestwrite:p:${project.id}`, GUEST_WRITES_PER_PROJECT_HOUR, 3600)
+  } else if (!claims.anon || claims.emailVerified) return
   const Parse = useParse()
   const row = await new Parse.Query('EndUser').equalTo('project', project).equalTo('externalId', claims.sub).first(MASTER)
   if (!row) return
   row.increment('anonWrites')
   await row.save(null, MASTER)
-  if (needsVerification(Number(row.get('anonWrites') || 0), false)) throw verifyRequired()
+  // A guest has no address to verify; their count only tells the purge (server/plugins/guestPurge.ts) who ever wrote.
+  if (!claims.guest && needsVerification(Number(row.get('anonWrites') || 0), false)) throw verifyRequired()
 }
 
-/** For what an unverified person may not do at all (uploads). */
+/** For what an unverified person may not do at all (uploads). A guest has no address to verify, so for them it is a plain no. */
 export function requireVerifiedAnonymous(claims: IdentityClaims): void {
+  if (claims.guest) throw createError({ statusCode: 403, statusMessage: 'Guests cannot upload files', data: { code: 'guest_upload_not_allowed' } })
   if (claims.anon && !claims.emailVerified) throw verifyRequired()
 }

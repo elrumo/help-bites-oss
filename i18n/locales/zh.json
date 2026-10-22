@@ -3229,6 +3229,16 @@
       "allowAttachments": "用户可以附加图片",
       "allowAnonymous": "允许仅使用邮箱的用户（无需登录）",
       "allowAnonymousDescription": "没有后端的应用只需一个邮箱地址即可聊天和提交反馈。进行几次操作后，用户必须通过我们发送到其邮箱的验证码确认地址。",
+      "guestAccess": "访客访问（无需账号和邮箱）",
+      "guestAccessDescription": "让访客无需登录、无需提供邮箱即可使用。访客有速率限制，不能上传文件，不会收到回复邮件，会话 30 天未使用即失效。全部取消勾选即可结束访客访问。",
+      "guest": {
+        "chat": "聊天",
+        "chatDescription": "访客可以发起对话并给你发消息。",
+        "feedback": "反馈",
+        "feedbackDescription": "访客可以在反馈板上发帖、投票和评论。",
+        "comments": "评论",
+        "commentsDescription": "访客可以评论博客文章和更新日志。"
+      },
       "letUsersChoose": "允许用户在开始聊天时选择请求类型",
       "letUsersChooseDescription": "仅当项目有多种工单类型时生效。",
       "offerOther": "提供“其他”选项",

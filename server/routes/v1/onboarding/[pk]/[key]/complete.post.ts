@@ -10,7 +10,7 @@ defineRouteMeta({
 })
 
 export default defineEventHandler(async (event) => {
-  const { project, endUser } = await requireEndUser(event, { ensure: true, write: true })
+  const { project, endUser } = await requireEndUser(event, { ensure: true, write: 'chat' })
   if (getRouterParam(event, 'pk') !== project.get('publicKey')) throw createError({ statusCode: 404, statusMessage: 'Flow not found' })
   const body = await readBody(event).catch(() => ({})) as { outcome?: unknown }
   await recordOnboardingOutcome(project, endUser!, String(getRouterParam(event, 'key') || '').toLowerCase(), body?.outcome === 'skipped' ? 'skipped' : 'completed')

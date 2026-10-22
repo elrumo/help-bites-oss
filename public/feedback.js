@@ -30,6 +30,8 @@
  *     HelpBitesFeedback.push(['refresh'])
  *   </script>
  *
+ * Without getToken or onSignIn, a project whose admin opened guest access for
+ * feedback (Project → Settings) lets a visitor post, vote and comment as a guest.
  * getToken may resolve to null for a signed-out visitor. The token travels by
  * postMessage, never in a URL. Other calls: (['open']), (['close']),
  * (['openPost', id]), (['setView', 'board' | 'roadmap' | 'changelog']).
