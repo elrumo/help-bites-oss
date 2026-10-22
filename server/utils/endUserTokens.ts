@@ -27,6 +27,16 @@ export function newAnonExternalId(): string {
   return `anon_${randomBytes(12).toString('hex')}`
 }
 
+/** The id a guest (no email at all) is known by. */
+export function newGuestExternalId(): string {
+  return `guest_${randomBytes(12).toString('hex')}`
+}
+
+/** "Guest 7f3a": enough for an operator to tell two guests apart in the inbox. */
+export function guestDisplayName(externalId: string): string {
+  return `Guest ${externalId.slice(-4)}`
+}
+
 /** Six digits, zero-padded. */
 export function newVerifyCode(): string {
   return String(randomInt(0, 1_000_000)).padStart(6, '0')

@@ -334,6 +334,28 @@ function isAllowedOrigin(origin: string): boolean {
   return allowed.includes(origin) || origin === window.location.origin
 }
 
+// Guests: when the host gave the chat no way to sign someone in and the project lets guests chat,
+// the visitor becomes a guest at once (kept in this frame's storage, so they stay the same one).
+const guests = useGuestSession(pk)
+async function startGuest(): Promise<boolean> {
+  if (token.value) return false
+  const guest = await guests.start(project.value?.guestSurfaces, 'chat')
+  if (!guest) return false
+  token.value = guest
+  state.value = 'ready'
+  void loadList()
+  return true
+}
+
+// A new token for a call the server refused: a guest's own session is replaced, a host's token is asked for again.
+async function refreshToken(): Promise<string> {
+  if (token.value && token.value === guests.restore()) {
+    guests.forget()
+    return (await guests.start(project.value?.guestSurfaces, 'chat')) || ''
+  }
+  return requestToken()
+}
+
 let tokenResolvers: ((token: string) => void)[] = []
 function requestToken(): Promise<string> {
   return new Promise((resolve) => {
@@ -361,6 +383,7 @@ function onMessage(event: MessageEvent) {
       void loadList()
     }
   }
+  if (data.type === 'no-token') void startGuest()
   if (data.type === 'context') context.value = data.context || null
   if (data.type === 'open' && typeof data.conversationId === 'string') void select(data.conversationId)
 }
@@ -376,7 +399,7 @@ async function api<T = any>(path: string, options: { method?: 'GET' | 'POST' | '
   } catch (error: any) {
     const status = error?.statusCode || error?.status
     if (status === 401 && options.retry !== false) {
-      token.value = await requestToken()
+      token.value = await refreshToken()
       return api<T>(path, { ...options, retry: false })
     }
     const data = error?.data?.data
@@ -623,6 +646,8 @@ onMounted(async () => {
   } else {
     post({ type: 'ready' })
     waitingText.value = t('embed.chat.waitingForSignIn')
+    // Opened on its own (a web view, a link): there is no host to ask.
+    if (window.parent === window) void startGuest()
   }
 })
 

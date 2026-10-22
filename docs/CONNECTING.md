@@ -143,6 +143,162 @@ POST /v1/anonymous/session   { "pk": "pk_…", "email": "ann@example.com", "name
 An email-only user is an ordinary contact whose `externalId` starts with
 `anon_`, so conversations, feedback and the CRM work as for any other user.
 
+## Guest access (no account, no email)
+
+Email-only users still hand over an address. For a visitor who gives nothing, an
+admin can open **guest access** per surface: Project → Settings → Chat widget →
+*Guest access*, or `PATCH /v1/admin/projects/:id { "guestSurfaces": ["chat", "feedback", "comments"] }`
+(any of the three; `[]` turns guests off). It is off by default.
+
+| Surface | A guest can |
+|---|---|
+| `chat` | Start conversations and message you (replies show in the chat; there is no address to email) |
+| `feedback` | Post, vote, react and comment on the feedback board |
+| `comments` | Comment and react on blog posts and changelog entries |
+
+Lead forms and sign-up forms are public already and need no guest.
+
+```
+POST /v1/anonymous/guest   { "pk": "pk_…" }
+→ 200 { "token": "eu_…", "externalId": "guest_…", "name": "Guest 7f3a", "surfaces": ["chat", "feedback"] }
+```
+
+Send `Authorization: Bearer eu_…` on the end-user routes of the opened surfaces,
+and keep the token: every call makes a **new** guest, so a returning visitor
+should reuse theirs. A guest is an ordinary contact whose `externalId` starts with
+`guest_` and whose name is `Guest 7f3a`, so conversations, feedback and the CRM
+work as for anyone. `DELETE /v1/anonymous/me` erases a guest's data.
+
+**Built-in protections**, all on by default and not switchable:
+
+- *Only where the admin opened it.* A write on any other surface is `403` with
+  `data.code = "guest_not_allowed"`. Closing every surface ends all guest sessions
+  at once (`401`).
+- *Rate limited.* Making guests: 10 an hour per IP and 500 an hour per project (`429`).
+  Writing: 20 per ten minutes and 100 per day per guest, and 600 an hour across the
+  project, on top of the limits every user has (messages, posts, comments, votes).
+- *No files.* Guests cannot upload images (`403`, `data.code = "guest_upload_not_allowed"`).
+- *No identity to borrow.* A guest session carries no email, so it cannot trigger
+  reply mail, feature-flag allow-lists, changelog subscriptions or the host's
+  `role: "admin"`.
+- *Sessions expire.* 30 days without use ends a guest session; the token is random,
+  opaque and stored only as a hash. Expired sessions, and guests who never wrote
+  anything, are deleted every six hours.
+- *Your own sign-in wins.* The built-in chat only makes a guest when the page gave it
+  no `getToken`; the board when it has no `onSignIn`; blog comments when the page has
+  neither.
+
+### Web
+
+No code beyond the embed. With guest access open for chat:
+
+```html
+<script src="https://YOUR-SUPPORT-HOST/widget.js" data-project="pk_…" defer></script>
+<script>
+  window.HelpBites = window.HelpBites || []
+  HelpBites.push(['init', {}])
+</script>
+```
+
+The feedback board (`feedback.js`) and blog comments (`blog.js`) do the same: with
+no `onSignIn` (and, for blog comments, no `getToken`), a visitor becomes a guest on their first action
+(reading never makes one), and the browser keeps that guest in its own storage. If
+storage is blocked (a third-party frame in some browsers), the guest lasts until the
+page closes. Colours, position and labels are the embed's usual options and the
+project's Brand kit; nothing guest-specific needs styling.
+
+For your own UI, call the route above and use the token like any other (the API
+reference is `/_docs/scalar`, tag *End user*).
+
+### Swift
+
+```swift
+// GuestChat.swift. MIT. Gets a guest session once, keeps it in the Keychain, and lists the guest's conversations.
+import SwiftUI
+import Security
+
+struct GuestChat: View {
+  let host: URL                  // https://support.example.com
+  let projectKey: String         // pk_…
+  var accent: Color = .accentColor
+  var cornerRadius: CGFloat = 10
+
+  struct Conversation: Decodable, Identifiable { let id: String; let subject: String }
+
+  @State private var conversations: [Conversation] = []
+  @State private var draft = ""
+  @State private var message = ""
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      ForEach(conversations) { Text($0.subject.isEmpty ? "Conversation" : $0.subject) }
+      TextField("How can we help?", text: $draft, axis: .vertical)
+        .padding(10).background(.quaternary, in: RoundedRectangle(cornerRadius: cornerRadius))
+      Button("Send") { Task { await send() } }
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .background(accent, in: RoundedRectangle(cornerRadius: cornerRadius)).foregroundStyle(.white)
+        .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
+      if !message.isEmpty { Text(message).font(.footnote).foregroundStyle(.secondary) }
+    }
+    .task { await load() }
+  }
+
+  private func request(_ path: String, body: [String: Any]? = nil) async throws -> Data {
+    var request = URLRequest(url: host.appending(path: "v1/" + path))
+    request.setValue("Bearer " + (try await token()), forHTTPHeaderField: "Authorization")
+    if let body {
+      request.httpMethod = "POST"
+      request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+      request.httpBody = try JSONSerialization.data(withJSONObject: body)
+    }
+    let (data, response) = try await URLSession.shared.data(for: request)
+    if (response as? HTTPURLResponse)?.statusCode == 401 { Keychain.delete(); throw URLError(.userAuthenticationRequired) }
+    return data
+  }
+
+  private func load() async {
+    struct List: Decodable { let conversations: [Conversation] }
+    if let data = try? await request("conversations"), let list = try? JSONDecoder().decode(List.self, from: data) { conversations = list.conversations }
+  }
+
+  private func send() async {
+    do {
+      _ = try await request("conversations", body: ["body": draft, "clientId": UUID().uuidString])
+      draft = ""
+      await load()
+    } catch { message = "Could not send. Try again in a moment." }
+  }
+
+  /// The saved guest token, or a new guest (one call, rate limited by the server).
+  private func token() async throws -> String {
+    if let saved = Keychain.read() { return saved }
+    var request = URLRequest(url: host.appending(path: "v1/anonymous/guest"))
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = try JSONSerialization.data(withJSONObject: ["pk": projectKey])
+    let (data, _) = try await URLSession.shared.data(for: request)
+    struct Guest: Decodable { let token: String }
+    let guest = try JSONDecoder().decode(Guest.self, from: data)
+    Keychain.save(guest.token)
+    return guest.token
+  }
+}
+
+private enum Keychain {
+  static let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrAccount as String: "helpbites.guest"]
+  static func read() -> String? {
+    var found: AnyObject?
+    guard SecItemCopyMatching(query.merging([kSecReturnData as String: true]) { $1 } as CFDictionary, &found) == errSecSuccess, let data = found as? Data else { return nil }
+    return String(data: data, encoding: .utf8)
+  }
+  static func save(_ token: String) { delete(); SecItemAdd(query.merging([kSecValueData as String: Data(token.utf8)]) { $1 } as CFDictionary, nil) }
+  static func delete() { SecItemDelete(query as CFDictionary) }
+}
+```
+
+Colours and corner radius are parameters. Feedback and comments work the same way
+with `/v1/feedback` and `/v1/blog/…/comments`.
+
 ## Feedback board
 
 The same token also signs users into the project's public feedback board.

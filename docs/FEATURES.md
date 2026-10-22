@@ -16,6 +16,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   with `data-mode="inline"` and the same chat sits in your layout. [CONNECTING.md](CONNECTING.md)
 - **Users never make an account.** Your server signs a one-hour token for the
   user who is already signed in. [CONNECTING.md](CONNECTING.md)
+- **Guests.** Where an admin opens it (Project → Settings → Chat widget → Guest
+  access), visitors chat, post feedback or comment with no sign-in and no email,
+  rate limited, without uploads or reply mail. [CONNECTING.md](CONNECTING.md)
 - **Page context.** Attach what the user is looking at (a page, a record, a
   link) and update it as they move. [CONNECTING.md](CONNECTING.md)
 - **Images.** Paste or pick PNG, JPEG, GIF or WebP.

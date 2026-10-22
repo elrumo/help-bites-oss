@@ -5,6 +5,12 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Guest access (no account, no email)**: an admin can open chat, feedback and blog or changelog comments to visitors who sign in with
+  nothing (Project → Settings → Chat widget → Guest access, web and native; `guestSurfaces` on `PATCH /v1/admin/projects/{id}`; off by
+  default). `POST /v1/anonymous/guest` makes a session; guests are rate limited per IP, per project and per guest, cannot upload, carry no
+  email, and expire after 30 days unused (`docs/CONNECTING.md`). The chat, board and blog embeds use it when the page has no sign-in of
+  its own. Schema (needs `schema:apply`; the container does it on boot): new fields `Project.guestSurfaces`, `EndUser.guest`,
+  `EndUserSession.expiresAt`.
 - **Native app catches up with the panel**: Pages gets the component library and editor, the AI assistant (pages and components), the
   page wizard, undo and redo, and moving blocks between lists; links from the setup list open Email on the tab they name; the hosted
   edition's plan screen opens Stripe Checkout and the customer portal and manages sending domains. The app is translated into

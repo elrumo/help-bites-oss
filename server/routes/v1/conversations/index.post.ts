@@ -17,7 +17,7 @@ defineRouteMeta({
 })
 
 export default defineEventHandler(async (event) => {
-  const { project, endUser, claims } = await requireEndUser(event, { ensure: true, write: true })
+  const { project, endUser, claims } = await requireEndUser(event, { ensure: true, write: 'chat' })
   const payload = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   const input = readMessageInput(payload, project.id || '')
   await rateLimit(`sb:rl:msg:${endUser!.id}`, LIMITS.messagesPerUser.limit, LIMITS.messagesPerUser.window)

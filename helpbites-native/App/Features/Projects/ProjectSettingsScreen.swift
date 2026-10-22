@@ -175,6 +175,13 @@ struct ProjectSettingsScreen: View {
         toggle("Users can attach images", isOn: $form.allowAttachments)
         toggle("Allow email-only users (no sign-in)", detail: "Apps without a backend can chat and post feedback with just an email address. After a few actions, the person must confirm the address with a code we email them.", isOn: $form.allowAnonymousUsers)
         VStack(alignment: .leading, spacing: 10) {
+          Text("Guest access (no account, no email)").font(.lnCallout).foregroundStyle(Theme.text)
+          Text("Let visitors use these without signing in or giving an address. Guests are rate limited, cannot upload files, get no reply emails, and their session expires after 30 days unused. Turn every box off to end all guest access.").font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
+          toggle("Chat", detail: "Guests can start conversations and message you.", isOn: guest("chat")).padding(.leading, 24)
+          toggle("Feedback", detail: "Guests can post, vote and comment on the feedback board.", isOn: guest("feedback")).padding(.leading, 24)
+          toggle("Comments", detail: "Guests can comment on blog posts and changelog entries.", isOn: guest("comments")).padding(.leading, 24)
+        }
+        VStack(alignment: .leading, spacing: 10) {
           toggle("Let users choose a request type when starting a chat", detail: "Only takes effect once the project has more than one ticket type.", isOn: $form.letUsersChooseType)
           toggle("Offer an “Other” option", detail: "Creates a plain support ticket.", isOn: $form.allowOtherType).disabled(!form.letUsersChooseType).padding(.leading, 24)
         }
@@ -381,6 +388,14 @@ struct ProjectSettingsScreen: View {
     .tint(Theme.accent)
   }
 
+  /// A guest surface's switch (`GUEST_SURFACES` in shared/guest.ts): on while it is in the set.
+  private func guest(_ surface: String) -> Binding<Bool> {
+    Binding(
+      get: { form.guestSurfaces.contains(surface) },
+      set: { on in if on { form.guestSurfaces.insert(surface) } else { form.guestSurfaces.remove(surface) } }
+    )
+  }
+
   /// A section's switch: on while it is not in the hidden set.
   private func shown(_ section: ProjectSection) -> Binding<Bool> {
     Binding(
@@ -472,6 +487,7 @@ struct ProjectSettingsScreen: View {
       name: form.name, siteUrl: form.siteUrl, inboxPath: form.inboxPath,
       iconUrl: form.iconUrl, brandLogoUrl: form.brandLogoUrl, assistantLogoUrl: form.assistantLogoUrl,
       chatNotice: form.chatNotice, allowAttachments: form.allowAttachments, allowAnonymousUsers: form.allowAnonymousUsers,
+      guestSurfaces: GuestSurfaces.all.filter { form.guestSurfaces.contains($0) },
       letUsersChooseType: form.letUsersChooseType, allowOtherType: form.allowOtherType,
       notifyEmails: form.notifyEmails,
       company: form.company, hub: form.hub.droppingBlankLinks,
@@ -545,11 +561,18 @@ private struct ImageSourceButtons: View {
 
 // MARK: - Form
 
+/// What an admin can open to guests, in the server's order (`GUEST_SURFACES` in shared/guest.ts; tests/guestNativeParity.test.ts keeps them equal).
+private enum GuestSurfaces {
+  static let all = ["chat", "feedback", "comments"]
+}
+
 /// The settings form, filled from the project like the web's `fill()`. Equatable: dirty means it differs from the saved copy.
 private struct SettingsForm: Equatable {
   var name = "", siteUrl = "", inboxPath = "", iconUrl = "", brandLogoUrl = "", assistantLogoUrl = "", accent = "", chatNotice = ""
   var notifyEmails = ""
   var allowAttachments = true, allowAnonymousUsers = false, letUsersChooseType = false, allowOtherType = false
+  /// Which surfaces guests may use. A set, so ticking and unticking back reads as unchanged.
+  var guestSurfaces: Set<String> = []
   var company = CompanyProfile()
   var hub = HubConfig()
   /// Web paths of the sections left out of the sidebar. A set, so ticking and unticking back reads as unchanged.
@@ -567,6 +590,7 @@ private struct SettingsForm: Equatable {
     chatNotice = project.chatNotice ?? ""
     allowAttachments = project.allowAttachments
     allowAnonymousUsers = project.allowAnonymousUsers ?? false
+    guestSurfaces = Set(project.guestSurfaces ?? [])
     letUsersChooseType = project.letUsersChooseType ?? false
     allowOtherType = project.allowOtherType ?? false
     notifyEmails = project.notifyEmails.joined(separator: ", ")
@@ -580,6 +604,7 @@ private struct SettingsForm: Equatable {
 private struct SettingsInput: Encodable, Sendable {
   let name, siteUrl, inboxPath, iconUrl, brandLogoUrl, assistantLogoUrl, chatNotice: String
   let allowAttachments, allowAnonymousUsers, letUsersChooseType, allowOtherType: Bool
+  let guestSurfaces: [String]
   let notifyEmails: String
   let company: CompanyProfile
   let hub: HubConfig

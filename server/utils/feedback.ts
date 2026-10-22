@@ -110,7 +110,7 @@ export async function resolveFeedbackContext(event: H3Event, options: { projectI
     const { project, claims } = await verifyEndUserToken(event, token)
     if (options.projectId && project.id !== options.projectId) throw createError({ statusCode: 404, statusMessage: 'Post not found' })
     // Email-only users get a few free writes, then must verify their address.
-    if (event.method !== 'GET' && event.method !== 'HEAD') await anonymousWriteGate(project, claims)
+    if (event.method !== 'GET' && event.method !== 'HEAD') await anonymousWriteGate(project, claims, 'feedback')
     const actor: FeedbackActor = { kind: 'user', externalId: claims.sub, name: String(claims.name || '').trim().slice(0, 120), isAdmin: claims.role === 'admin', claims }
     const config = getFeedbackConfig(project)
     boardMustBeOn(config, actor)

@@ -12,7 +12,7 @@ defineRouteMeta({
 })
 
 export default defineEventHandler(async (event) => {
-  const { endUser, claims } = await requireEndUser(event, { ensure: true, write: true })
+  const { endUser, claims } = await requireEndUser(event, { ensure: true, write: 'chat' })
   const message = await getMessage(getRouterParam(event, 'id') || '')
   const conversation = await getConversation(pointerId(message.get('conversation')))
   if (!endUser || pointerId(conversation.get('endUser')) !== endUser.id) {

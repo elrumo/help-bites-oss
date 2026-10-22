@@ -16,6 +16,8 @@ struct ProjectsAdminProject: Decodable, Sendable {
   let errorLinks: [ErrorLink]?
   /// Chat and feedback with only an email address; nil from an older server.
   let allowAnonymousUsers: Bool?
+  /// The surfaces guests (no account, no email) may use; nil from an older server.
+  let guestSurfaces: [String]?
   let feedback: Feedback?
   let flags: [ProjectsFlag]?
   /// The project board's settings; nil from a server without boards.
