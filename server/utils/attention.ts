@@ -1,5 +1,6 @@
 import { ALERT_WINDOW_MS, EMAIL_FAILURE_WINDOW_DAYS, attentionTotal, sortAttention, type AttentionItem, type WorkspaceAttention } from '#shared/attention'
 import { normalizeFeedbackConfig } from '#shared/feedback'
+import { revenueSource } from '#shared/revenue'
 
 // Everything that waits on someone, in one list: drafts to approve, syncs that
 // failed, mail that bounced, alerts that fired, and the project's own backlog
@@ -28,10 +29,11 @@ export async function projectAttention(project: ParseObject): Promise<AttentionI
   const feedback = normalizeFeedbackConfig(project.get('feedback'))
   const triageKeys = feedback.enabled ? feedback.statuses.filter(s => s.category === 'open').map(s => s.key) : []
 
-  const [drafts, sources, stripe, bounced, errors, documents, triage, alerts] = await Promise.all([
+  const [drafts, sources, stripe, otherRevenue, bounced, errors, documents, triage, alerts] = await Promise.all([
     countNewest(q('ChangelogEntry').equalTo('status', 'draft').equalTo('reviewStatus', 'pending')),
     q('ContactSource').equalTo('status', 'error').limit(20).find(MASTER),
     new Parse.Query('StripeAccount').equalTo('project', project).equalTo('status', 'error').first(MASTER),
+    new Parse.Query('RevenueSource').equalTo('project', project).equalTo('status', 'error').limit(20).find(MASTER),
     countNewest(q('EmailLog').containedIn('status', [...FAILED_STATUSES]).greaterThanOrEqualTo('createdAt', failedSince)),
     q('Conversation').equalTo('type', 'error').containedIn('statusCategory', OPEN_CATEGORIES).count(MASTER),
     new Parse.Query('KnowledgeDocument').matchesQuery('knowledgeModel', q('KnowledgeModel')).equalTo('isCurrent', true).equalTo('status', 'failed').count(MASTER),
@@ -49,6 +51,9 @@ export async function projectAttention(project: ParseObject): Promise<AttentionI
     add('sync', `source:${source.id}`, 1, 'contacts?view=sources', { value: String(source.get('name') || 'Contact sync'), detail: String(source.get('lastError') || ''), at: iso(source.get('lastRunAt')) })
   }
   if (stripe) add('sync', `stripe:${projectId}`, 1, 'revenue', { value: 'Stripe', detail: String(stripe.get('lastError') || ''), at: iso(stripe.get('lastRunAt')) })
+  for (const row of otherRevenue) {
+    add('sync', `revenue:${row.get('source')}:${projectId}`, 1, 'revenue', { value: revenueSource(String(row.get('source')))?.name || 'Revenue', detail: String(row.get('lastError') || ''), at: iso(row.get('lastRunAt')) })
+  }
   add('bounces', projectId, bounced.count, 'email?view=log', { at: iso(bounced.newest?.createdAt) })
   const newestAlert = alerts[0]
   add('alerts', projectId, alerts.length, 'errors', { value: newestAlert?.title || '', at: newestAlert ? new Date(newestAlert.at).toISOString() : null })

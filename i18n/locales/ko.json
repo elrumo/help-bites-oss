@@ -103,7 +103,7 @@
     "inboxZeroDescription": "답장을 기다리는 사람이 없습니다.",
     "revenueByProject": "프로젝트별 수익",
     "noRevenueTitle": "아직 수익이 없습니다",
-    "noRevenueDescription": "프로젝트에 Stripe를 연결하면 다른 앱과 나란히 수익이 여기에 표시됩니다.",
+    "noRevenueDescription": "프로젝트에 수익 소스(Stripe, RevenueCat, App Store 등)를 연결하면 다른 앱과 나란히 수익이 여기에 표시됩니다.",
     "share": "{currency} 수익의 {share}",
     "mrrShort": "MRR {amount}",
     "withoutStripe": "Stripe가 연결되지 않은 프로젝트 {count}개는 포함되지 않습니다.",
@@ -2654,8 +2654,8 @@
     "more": {
       "title": "지원 기능 곁에 있는 작은 기능들.",
       "stripe": {
-        "title": "Stripe 매출",
-        "body": "읽기 전용 키를 연결하면 매출, 구독자, 각 사용자의 결제 내역을 대화 옆에서 볼 수 있습니다."
+        "title": "판매하는 모든 곳의 매출",
+        "body": "Stripe, RevenueCat, App Store, Paddle, Lemon Squeezy를 연결하거나 내 코드에서 결제를 보내면 매출, MRR, 각 사용자의 결제 내역을 대화 옆에서 볼 수 있습니다."
       },
       "legal": {
         "title": "법률 문서",
@@ -3590,17 +3590,24 @@
       "period": "기간",
       "loadingLabel": "수익 불러오는 중",
       "sync": "동기화",
-      "connectStripe": "Stripe 연결",
-      "connectDescription": "대화 옆에서 수익, 구독자, 각 사람의 결제 내역을 확인하세요. HelpBites는 Stripe에서 읽기만 합니다.",
-      "apiKeyLabel": "제한된 API 키",
-      "apiKeyHelp": "Stripe → 개발자 → API 키 → 제한된 키 만들기. Charges, Customers, Subscriptions, Products에 대한 읽기 권한을 부여하세요.",
+      "connectTitle": "수익 소스 연결",
+      "connectDescription": "대화 옆에서 수익, 구독자, 각 사람의 결제 내역을 확인하세요. 판매하는 모든 곳을 연결하면 숫자가 합산됩니다.",
+      "addSource": "소스 추가",
+      "back": "뒤로",
+      "connect": "{name} 연결",
       "live": "라이브",
       "testMode": "테스트 모드",
-      "syncing": "· 동기화 중… 지금까지 결제 {payments}건",
-      "synced": "· {time} 동기화, 결제 {payments}건, 구독 {subscriptions}건",
+      "syncing": "동기화 중…",
+      "synced": "{time} 동기화, 결제 {payments}건, 구독 {subscriptions}건",
+      "lastEvent": "마지막 이벤트 {time}, 결제 {payments}건",
+      "waitingEvent": "첫 이벤트를 기다리는 중",
+      "lastSent": "마지막 전송 {time}, 결제 {payments}건, 구독 {subscriptions}건",
+      "nothingSent": "아직 전송된 내용이 없습니다",
       "syncFailed": "마지막 동기화에 실패했습니다",
-      "waitingTitle": "첫 동기화를 기다리는 중",
-      "waitingDescription": "첫 구간을 읽는 즉시 결제 내역이 여기에 표시됩니다.",
+      "eventFailed": "마지막 이벤트를 적용할 수 없습니다",
+      "setup": "설정 방법",
+      "waitingTitle": "첫 결제를 기다리는 중",
+      "waitingDescription": "소스가 결제를 읽거나 첫 이벤트를 보내는 즉시 결제 내역이 여기에 표시됩니다.",
       "byMonth": "월별 수익",
       "monthTitle": "{month}: 결제 {payments}건, 순수익 {net}, MRR {mrr}",
       "plans": "플랜",
@@ -3610,6 +3617,7 @@
       "topCustomers": "주요 고객",
       "noPayments": "아직 결제 내역이 없습니다.",
       "payments": "결제 {count}건",
+      "bySource": "소스별",
       "recentPayments": "최근 결제",
       "guest": "게스트",
       "refunded": "환불됨",
@@ -3625,13 +3633,95 @@
       "newChurned": "이번 기간 신규 {newSubs}명, 해지 {churned}명",
       "payingCustomers": "유료 고객",
       "allTime": "누적 {amount}",
-      "syncAll": "전체 다시 동기화",
-      "disconnectStripe": "Stripe 연결 해제",
+      "syncAll": "{name} 처음부터 다시 동기화",
+      "disconnect": "{name} 연결 해제",
       "loadError": "수익을 불러올 수 없습니다",
-      "connectError": "Stripe를 연결할 수 없습니다",
+      "connectError": "연결할 수 없습니다",
       "syncError": "동기화를 시작할 수 없습니다",
-      "disconnectConfirm": "Stripe 연결을 해제할까요? 키와 Stripe에서 동기화된 결제 내역이 삭제됩니다. 연락처의 Stripe 속성은 유지됩니다.",
-      "disconnectError": "연결을 해제할 수 없습니다"
+      "disconnectConfirm": "{name} 연결을 해제할까요? 인증 정보와 이를 통해 가져온 결제 내역 및 구독이 삭제됩니다. 다른 소스는 유지됩니다.",
+      "disconnectError": "연결을 해제할 수 없습니다",
+      "openContact": "이 사람 열기",
+      "copy": "복사",
+      "copied": "복사됨",
+      "sources": {
+        "stripe": {
+          "blurb": "청구와 구독을 제한된 키로 읽습니다.",
+          "intro": "HelpBites는 Stripe에서 읽기만 합니다.",
+          "fields": {
+            "apiKey": {
+              "label": "제한된 API 키",
+              "help": "Stripe → 개발자 → API 키 → 제한된 키 만들기. Charges, Customers, Subscriptions, Products에 대한 읽기 권한을 부여하세요."
+            }
+          }
+        },
+        "revenuecat": {
+          "blurb": "App Store, Google Play 등의 인앱 구매와 구독을 RevenueCat이 보고하는 그대로 가져옵니다.",
+          "intro": "RevenueCat이 이벤트가 발생하는 즉시 HelpBites로 보냅니다. 다음 단계에서 RevenueCat에 붙여넣을 URL과 시크릿이 표시됩니다."
+        },
+        "apple": {
+          "blurb": "Sales and Trends 보고서 기준 App Store 수익입니다. 고객과 MRR은 없습니다.",
+          "intro": "Sales and Reports를 읽을 수 있는 App Store Connect API 키(Users and Access → Integrations)를 만드세요. HelpBites는 일별 판매 보고서를 읽으며, Apple은 이를 1년간 보관합니다.",
+          "fields": {
+            "issuerId": {
+              "label": "Issuer ID",
+              "help": "Users and Access → Integrations → App Store Connect API 맨 위에 있습니다."
+            },
+            "keyId": {
+              "label": "Key ID",
+              "help": "만든 키 옆에 표시됩니다."
+            },
+            "vendorNumber": {
+              "label": "공급업체 번호",
+              "help": "Payments and Financial Reports에서 이름 옆에 있습니다."
+            },
+            "privateKey": {
+              "label": "개인 키(.p8)",
+              "help": "다운로드한 AuthKey_….p8을 텍스트 편집기로 열어 내용을 모두 붙여넣으세요. Apple에서는 한 번만 다운로드할 수 있습니다."
+            }
+          }
+        },
+        "paddle": {
+          "blurb": "Paddle Billing의 거래와 구독.",
+          "intro": "Paddle → Developer tools → Authentication에서 거래, 구독, 고객, 조정(환불)에 대한 읽기 권한이 있는 서버 측 API 키를 만드세요. 샌드박스 키는 샌드박스에 연결됩니다.",
+          "fields": {
+            "apiKey": {
+              "label": "API 키",
+              "help": "pdl_live_apikey_로 시작합니다(샌드박스는 pdl_sdbx_apikey_)."
+            }
+          }
+        },
+        "lemonsqueezy": {
+          "blurb": "Lemon Squeezy의 주문과 구독.",
+          "intro": "Lemon Squeezy → Settings → API에서 API 키를 만드세요. HelpBites는 읽기만 하며 테스트 모드 주문은 제외합니다.",
+          "fields": {
+            "apiKey": {
+              "label": "API 키",
+              "help": "만들 때 복사하세요. Lemon Squeezy는 한 번만 보여줍니다."
+            }
+          }
+        },
+        "custom": {
+          "name": "커스텀 API",
+          "blurb": "그 밖의 모든 것: Google Play 보고서, Gumroad, PayPal, 인보이스. API로 보내세요.",
+          "intro": "연결할 것은 없습니다. 스크립트나 노코드 도구에서 결제와 구독을 API로 보내면 나머지와 함께 합산됩니다."
+        }
+      },
+      "setupSheet": {
+        "done": "완료",
+        "revenuecat": {
+          "title": "RevenueCat 이벤트를 HelpBites로 보내기",
+          "step1": "RevenueCat에서 Project settings → Integrations → Webhooks를 열고 webhook을 추가하세요.",
+          "step2": "이 값을 webhook URL로 붙여넣으세요:",
+          "step3": "이 시크릿을 Authorization 헤더 값으로 붙여넣으세요:",
+          "step4": "프로덕션 이벤트를 선택해 저장하고 테스트 이벤트를 보내세요. 마지막 이벤트로 여기에 표시됩니다.",
+          "note": "이후 구매, 갱신, 환불, 취소, 만료가 발생하는 즉시 여기에 표시됩니다. RevenueCat은 과거 데이터를 다시 보낼 수 없으므로 오늘 이전 수익은 빠져 있습니다. 금액은 스토어 수수료를 떼기 전 RevenueCat의 USD 가격이며, 샌드박스 구매는 무시됩니다. 사람은 App User ID(연락처의 사용자 ID) 또는 $email 속성으로 연락처와 연결됩니다.",
+          "tokenHidden": "프로젝트를 관리하는 사람만 시크릿을 볼 수 있습니다."
+        },
+        "custom": {
+          "title": "내 코드에서 결제 보내기",
+          "intro": "관리자 API 키(설정 → API 키)를 사용하세요. 금액은 소수이며, id가 있으면 다시 보내도 안전합니다. 모든 필드는 수익 가이드에 나와 있습니다."
+        }
+      }
     },
     "projectList": {
       "emptyTitle": "아직 프로젝트가 없습니다",
@@ -5343,7 +5433,7 @@
       "none": "아직 어시스턴트가 없습니다. 추가하기 전까지는 모든 답변을 사람이 합니다."
     },
     "stripe": {
-      "title": "Stripe",
+      "title": "매출",
       "synced": "연결되어 동기화되었습니다.",
       "waiting": "연결됨. 첫 동기화를 기다리는 중입니다.",
       "error": "마지막 동기화에 실패했습니다: {value}",

@@ -1,9 +1,9 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
     <PageHeader :project-id="id" :title="$t('sections.revenue')">
-      <template v-if="connection?.connected" #actions>
+      <template v-if="sources.length" #actions>
         <USelect v-model="range" :items="REVENUE_RANGES" value-key="value" size="sm" class="w-40" :aria-label="$t('projectTools.revenue.period')" @update:model-value="loadReport()" />
-        <UButton icon="i-lucide-refresh-cw" :label="$t('projectTools.revenue.sync')" size="sm" color="neutral" variant="outline" :loading="connection.status === 'running'" @click="sync(false)" />
+        <UButton v-if="pulled.length" icon="i-lucide-refresh-cw" :label="$t('projectTools.revenue.sync')" size="sm" color="neutral" variant="outline" :loading="pulled.some(c => c.status === 'running')" @click="pulled.forEach(c => sync(c.source, false))" />
         <UDropdownMenu :items="menu">
           <UButton icon="i-lucide-ellipsis" size="sm" color="neutral" variant="ghost" square :aria-label="$t('projectTools.shared.more')" />
         </UDropdownMenu>
@@ -16,23 +16,22 @@
           <USkeleton v-for="n in 4" :key="n" class="h-24 rounded-xl" />
         </div>
 
-        <EmptyState v-else-if="!connection?.connected" icon="i-lucide-circle-dollar-sign" :title="$t('projectTools.revenue.connectStripe')" :description="$t('projectTools.revenue.connectDescription')">
-          <form class="w-full max-w-md space-y-3 text-left" @submit.prevent="connect">
-            <UFormField :label="$t('projectTools.revenue.apiKeyLabel')" :help="$t('projectTools.revenue.apiKeyHelp')">
-              <UInput v-model="apiKey" type="password" placeholder="rk_live_…" autocomplete="off" class="w-full" />
-            </UFormField>
-            <UButton type="submit" :label="$t('projectTools.revenue.connectStripe')" :loading="connecting" :disabled="!apiKey.trim()" />
-          </form>
+        <EmptyState v-else-if="!sources.length" icon="i-lucide-circle-dollar-sign" :title="$t('projectTools.revenue.connectTitle')" :description="$t('projectTools.revenue.connectDescription')">
+          <RevenueConnect :project-id="id" @connected="connected" />
         </EmptyState>
 
         <template v-else>
-          <p class="flex flex-wrap items-center gap-x-2 text-xs text-muted">
-            <UBadge :label="connection.livemode ? $t('projectTools.revenue.live') : $t('projectTools.revenue.testMode')" :color="connection.livemode ? 'success' : 'warning'" variant="subtle" size="sm" />
-            <span>{{ connection.accountName || 'Stripe' }}</span>
-            <span v-if="connection.status === 'running'">{{ $t('projectTools.revenue.syncing', { payments: connection.stats.payments.toLocaleString() }) }}</span>
-            <span v-else-if="connection.lastRunAt">{{ $t('projectTools.revenue.synced', { time: logTime(connection.lastRunAt), payments: connection.stats.payments.toLocaleString(), subscriptions: connection.stats.subscriptions.toLocaleString() }) }}</span>
-          </p>
-          <UAlert v-if="connection.lastError" color="error" variant="subtle" icon="i-lucide-triangle-alert" :title="$t('projectTools.revenue.syncFailed')" :description="connection.lastError" />
+          <ul class="space-y-1.5 text-xs text-muted">
+            <li v-for="c in sources" :key="c.source" class="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <UIcon :name="revenueSource(c.source)?.icon || 'i-lucide-circle-dollar-sign'" class="size-3.5" />
+              <span class="font-medium text-default">{{ nameOf(c.source) }}</span>
+              <UBadge v-if="revenueSource(c.source)?.kind === 'pull'" :label="c.livemode ? $t('projectTools.revenue.live') : $t('projectTools.revenue.testMode')" :color="c.livemode ? 'success' : 'warning'" variant="subtle" size="sm" />
+              <span v-if="c.accountName && c.accountName !== nameOf(c.source)">{{ c.accountName }}</span>
+              <span>{{ statusText(c) }}</span>
+              <UButton v-if="revenueSource(c.source)?.kind !== 'pull'" color="neutral" variant="link" size="xs" class="px-0" :label="$t('projectTools.revenue.setup')" @click="setupFor = c.source" />
+            </li>
+          </ul>
+          <UAlert v-for="c in sources.filter(c => c.lastError)" :key="c.source" color="error" variant="subtle" icon="i-lucide-triangle-alert" :title="`${nameOf(c.source)}: ${$t(revenueSource(c.source)?.kind === 'pull' ? 'projectTools.revenue.syncFailed' : 'projectTools.revenue.eventFailed')}`" :description="c.lastError" />
 
           <EmptyState v-if="!report" icon="i-lucide-hourglass" :title="$t('projectTools.revenue.waitingTitle')" :description="$t('projectTools.revenue.waitingDescription')" />
           <template v-else>
@@ -113,12 +112,26 @@
               </section>
             </div>
 
+            <section v-if="report.sources.length > 1" class="space-y-2">
+              <h2 class="text-xs font-semibold text-muted">{{ $t('projectTools.revenue.bySource') }}</h2>
+              <ul class="divide-y divide-default rounded-xl border border-default text-[13px]">
+                <li v-for="r in report.sources" :key="r.source" class="flex items-center gap-3 px-3 py-2">
+                  <UIcon :name="revenueSource(r.source)?.icon || 'i-lucide-circle-dollar-sign'" class="size-4 shrink-0 text-muted" />
+                  <span class="min-w-0 flex-1 truncate">{{ nameOf(r.source) }}</span>
+                  <span class="text-xs text-muted">{{ $t('projectTools.revenue.payments', r.payments) }}</span>
+                  <span v-if="r.mrr" class="w-24 text-right text-xs text-muted tabular-nums">{{ $t('projectTools.revenue.perMonth', { amount: money(r.mrr) }) }}</span>
+                  <span class="w-24 text-right tabular-nums">{{ money(r.net) }}</span>
+                </li>
+              </ul>
+            </section>
+
             <section class="space-y-2">
               <h2 class="text-xs font-semibold text-muted">{{ $t('projectTools.revenue.recentPayments') }}</h2>
               <ul class="divide-y divide-default rounded-xl border border-default text-[13px]">
                 <li v-for="p in report.recent" :key="p.id" class="flex items-center gap-3 px-3 py-2">
                   <NuxtLink v-if="p.contactId" :to="contactLink(p.contactId)" class="min-w-0 flex-1 truncate hover:underline" :title="$t('projectTools.revenue.openContact')">{{ p.email || p.customerId || $t('projectTools.revenue.guest') }}<span v-if="p.description" class="text-muted"> · {{ p.description }}</span></NuxtLink>
                   <span v-else class="min-w-0 flex-1 truncate">{{ p.email || p.customerId || $t('projectTools.revenue.guest') }}<span v-if="p.description" class="text-muted"> · {{ p.description }}</span></span>
+                  <span v-if="report.sources.length > 1" class="text-xs text-dimmed">{{ nameOf(p.source || 'stripe') }}</span>
                   <UBadge v-if="p.status !== 'succeeded'" :label="p.status" color="error" variant="subtle" size="sm" />
                   <UBadge v-else-if="p.refunded" :label="p.refunded >= p.amount ? $t('projectTools.revenue.refunded') : $t('projectTools.revenue.partRefunded')" color="neutral" variant="subtle" size="sm" />
                   <span class="w-24 text-right tabular-nums">{{ formatMoney(fromMinor(p.amount, p.currency), p.currency) }}</span>
@@ -132,25 +145,46 @@
         </template>
       </div>
     </main>
+
+    <UModal v-model:open="adding" :title="$t('projectTools.revenue.addSource')">
+      <template #body>
+        <RevenueConnect :project-id="id" :exclude="sources.map(c => c.source)" @connected="connected" />
+      </template>
+    </UModal>
+    <UModal v-model:open="setupOpen" :title="setupFor === 'revenuecat' ? $t('projectTools.revenue.setupSheet.revenuecat.title') : $t('projectTools.revenue.setupSheet.custom.title')">
+      <template #body>
+        <RevenueSetup v-if="setupConnection" :project-id="id" :connection="setupConnection" />
+      </template>
+      <template #footer>
+        <UButton class="ml-auto" :label="$t('projectTools.revenue.setupSheet.done')" @click="setupFor = ''" />
+      </template>
+    </UModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { REVENUE_RANGES, formatMoney, fromMinor, type RevenueRange, type RevenueReport, type StripeConnection } from '#shared/stripe'
+import { revenueSource, type RevenueConnection } from '#shared/revenue'
+import { REVENUE_RANGES, formatMoney, fromMinor, type RevenueRange, type RevenueReport } from '#shared/stripe'
 import { logTime } from '~/utils/emailStatus'
 
 definePageMeta({ middleware: 'agent' })
 const { api } = useAgent()
 const toast = useToast()
 const { t, locale } = useI18n()
+const nameOf = useRevenueSourceName()
 const id = String(useRoute().params.id)
 
-const connection = ref<StripeConnection | null>(null)
+const sources = ref<RevenueConnection[]>([])
 const report = ref<RevenueReport | null>(null)
 const range = ref<RevenueRange>('30d')
 const loading = ref(true)
-const apiKey = ref('')
-const connecting = ref(false)
+const adding = ref(false)
+// The source whose setup (webhook details, API example) is open; '' while closed.
+const setupFor = ref('')
+const setupOpen = computed({ get: () => Boolean(setupFor.value), set: (open) => { if (!open) setupFor.value = '' } })
+const setupConnection = computed(() => sources.value.find(c => c.source === setupFor.value))
+// The sources HelpBites reads; the rest send to it.
+const pulled = computed(() => sources.value.filter(c => revenueSource(c.source)?.kind === 'pull'))
 
 const money = (amount: number) => formatMoney(amount, report.value?.currency || 'usd')
 // A customer who is also a contact opens in the people list.
@@ -176,22 +210,33 @@ const kpis = computed(() => {
     { label: t('projectTools.revenue.payingCustomers'), value: r.customers.toLocaleString(), hint: t('projectTools.revenue.allTime', { amount: money(r.allTimeNet) }) }
   ]
 })
-const menu = computed(() => [[
-  { label: t('projectTools.revenue.syncAll'), icon: 'i-lucide-history', onSelect: () => sync(true) },
-  { label: t('projectTools.revenue.disconnectStripe'), icon: 'i-lucide-unplug', color: 'error' as const, onSelect: () => disconnect() }
-]])
+// One line per source: when it last ran or heard from the service, and how much it has brought.
+function statusText(c: RevenueConnection) {
+  const kind = revenueSource(c.source)?.kind
+  const { payments, subscriptions } = { payments: c.stats.payments.toLocaleString(), subscriptions: c.stats.subscriptions.toLocaleString() }
+  if (c.status === 'running') return t('projectTools.revenue.syncing')
+  if (kind === 'push') return c.lastRunAt ? t('projectTools.revenue.lastEvent', { time: logTime(c.lastRunAt), payments }) : t('projectTools.revenue.waitingEvent')
+  if (kind === 'manual') return c.lastRunAt ? t('projectTools.revenue.lastSent', { time: logTime(c.lastRunAt), payments, subscriptions }) : t('projectTools.revenue.nothingSent')
+  return c.lastRunAt ? t('projectTools.revenue.synced', { time: logTime(c.lastRunAt), payments, subscriptions }) : ''
+}
+const menu = computed(() => [
+  [{ label: t('projectTools.revenue.addSource'), icon: 'i-lucide-plus', onSelect: () => { adding.value = true } }],
+  [
+    ...pulled.value.map(c => ({ label: t('projectTools.revenue.syncAll', { name: nameOf(c.source) }), icon: 'i-lucide-history', onSelect: () => sync(c.source, true) })),
+    ...sources.value.map(c => ({ label: t('projectTools.revenue.disconnect', { name: nameOf(c.source) }), icon: 'i-lucide-unplug', color: 'error' as const, onSelect: () => disconnect(c.source) }))
+  ]
+])
 
-async function loadConnection() {
-  const res = await api<{ connection: StripeConnection }>('/admin/stripe', { query: { project: id } })
-  connection.value = res.connection
+async function loadSources() {
+  sources.value = (await api<{ sources: RevenueConnection[] }>('/admin/revenue/sources', { query: { project: id } })).sources
 }
 async function loadReport() {
-  if (!connection.value?.connected) return
-  report.value = (await api<{ report: RevenueReport | null }>('/admin/stripe/report', { query: { project: id, range: range.value } })).report
+  if (!sources.value.length) { report.value = null; return }
+  report.value = (await api<{ report: RevenueReport | null }>('/admin/revenue/report', { query: { project: id, range: range.value } })).report
 }
 async function load() {
   try {
-    await loadConnection()
+    await loadSources()
     await loadReport()
   } catch (e: any) {
     toast.add({ title: e?.message || t('projectTools.revenue.loadError'), color: 'error' })
@@ -200,43 +245,37 @@ async function load() {
   }
 }
 
-async function connect() {
-  connecting.value = true
-  try {
-    connection.value = (await api<{ connection: StripeConnection }>('/admin/stripe/connect', { method: 'POST', body: { project: id, apiKey: apiKey.value } })).connection
-    apiKey.value = ''
-  } catch (e: any) {
-    toast.add({ title: e?.message || t('projectTools.revenue.connectError'), color: 'error' })
-  } finally {
-    connecting.value = false
-  }
+// A source with something to set up on the other side opens its instructions at once.
+async function connected(connection: RevenueConnection) {
+  adding.value = false
+  await load()
+  if (revenueSource(connection.source)?.kind !== 'pull') setupFor.value = connection.source
 }
 
-async function sync(reset: boolean) {
+async function sync(source: string, reset: boolean) {
   try {
-    connection.value = (await api<{ connection: StripeConnection }>('/admin/stripe/sync', { method: 'POST', body: { project: id, reset } })).connection
+    const res = await api<{ connection: RevenueConnection }>('/admin/revenue/sync', { method: 'POST', body: { project: id, source, reset } })
+    sources.value = sources.value.map(c => (c.source === source ? res.connection : c))
   } catch (e: any) {
     toast.add({ title: e?.message || t('projectTools.revenue.syncError'), color: 'error' })
   }
 }
 
-async function disconnect() {
-  if (!window.confirm(t('projectTools.revenue.disconnectConfirm'))) return
+async function disconnect(source: string) {
+  if (!window.confirm(t('projectTools.revenue.disconnectConfirm', { name: nameOf(source) }))) return
   try {
-    await api('/admin/stripe', { method: 'DELETE', query: { project: id } })
-    connection.value = null
-    report.value = null
-    await loadConnection()
+    await api('/admin/revenue', { method: 'DELETE', query: { project: id, source } })
+    await load()
   } catch (e: any) {
     toast.add({ title: e?.message || t('projectTools.revenue.disconnectError'), color: 'error' })
   }
 }
 
-// A running sync fills the numbers in as it goes.
+// A running sync fills the numbers in as it goes; a source that pushes shows its newest event.
 let timer: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
   load()
-  timer = setInterval(() => { if (connection.value?.status === 'running' || (connection.value?.connected && !report.value && !connection.value.lastError)) load() }, 4000)
+  timer = setInterval(() => { if (sources.value.some(c => c.status === 'running') || (sources.value.length && !report.value && !sources.value.some(c => c.lastError))) load() }, 4000)
 })
 onBeforeUnmount(() => clearInterval(timer))
 </script>

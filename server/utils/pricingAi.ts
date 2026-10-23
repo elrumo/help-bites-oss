@@ -9,7 +9,7 @@ import { repoOverview } from './cmsAi'
 import { projectRepos } from './github'
 import { pricingTableFor, pricingWorkingCopy, projectCatalog } from './pricing'
 import { pricingFunnel } from './pricingStats'
-import { findStripeAccount, revenueReport } from './stripe'
+import { revenueReport } from './stripe'
 
 // "Suggest with AI": reads the project's connected GitHub repos (read-only), the
 // table as it stands, what the project sells in Stripe and how it sells, and what
@@ -78,8 +78,7 @@ export async function suggestPricing(ctx: MemberContext, project: ParseObject, r
   const current = pricingWorkingCopy(row)
   const catalog = await projectCatalog(project).catch(() => null)
   const shown = pricingTableFor(project, row, current, catalog?.catalog || null)
-  const account = await findStripeAccount(project)
-  const revenue = account ? await revenueReport(project, account, '90d').catch(() => null) : null
+  const revenue = await revenueReport(project, '90d').catch(() => null)
   const since = new Date(Date.now() - 89 * 86_400_000).toISOString().slice(0, 10)
   const funnel = (await pricingFunnel(row.id || '', { since }).catch(() => null))?.total
   const context = {

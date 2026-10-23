@@ -412,14 +412,42 @@ const SCHEMAS = {
       enabled_next: { enabled: 1, nextRunAt: 1 }
     }
   },
+  // A project's connection to a revenue source other than Stripe (server/utils/revenue): RevenueCat,
+  // Apple, Paddle, Lemon Squeezy or the custom API. `secretSealed` holds the credentials as sealed JSON
+  // (for RevenueCat, the secret its webhook sends); `cursor` is where a pull source stopped. One per
+  // project and source. The payments and subscriptions it reads are the StripePayment and
+  // StripeSubscription rows with its `source`.
+  RevenueSource: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      projectId: { type: 'String' },
+      source: { type: 'String' },
+      secretSealed: { type: 'String' },
+      accountName: { type: 'String' },
+      livemode: { type: 'Boolean' },
+      enabled: { type: 'Boolean' },
+      status: { type: 'String' },
+      cursor: { type: 'Object' },
+      lastRunAt: { type: 'Date' },
+      nextRunAt: { type: 'Date' },
+      lastError: { type: 'String' }
+    },
+    indexes: {
+      project_source: { _p_project: 1, source: 1 },
+      enabled_next: { enabled: 1, nextRunAt: 1 }
+    }
+  },
   // A Stripe charge. Amounts are in the currency's smallest unit; `net` is what
   // stayed (0 unless it succeeded), `month` is YYYY-MM (UTC). Plain strings and
   // numbers, with the project id as a string beside the pointer, so the revenue
-  // reports can aggregate them.
+  // reports can aggregate them. Every revenue source writes here (the class kept
+  // its first name): `source` is which ('' on rows from before, which are Stripe's)
+  // and `stripeId` is prefixed with it for all but Stripe.
   StripePayment: {
     fields: {
       project: { type: 'Pointer', targetClass: 'Project' },
       projectId: { type: 'String' },
+      source: { type: 'String' },
       stripeId: { type: 'String' },
       customerId: { type: 'String' },
       email: { type: 'String' },
@@ -447,6 +475,7 @@ const SCHEMAS = {
     fields: {
       project: { type: 'Pointer', targetClass: 'Project' },
       projectId: { type: 'String' },
+      source: { type: 'String' },
       stripeId: { type: 'String' },
       customerId: { type: 'String' },
       email: { type: 'String' },
@@ -463,7 +492,8 @@ const SCHEMAS = {
       cancelAtPeriodEnd: { type: 'Boolean' },
       monthly: { type: 'Number' },
       paidFromMonth: { type: 'String' },
-      endedMonth: { type: 'String' }
+      endedMonth: { type: 'String' },
+      eventAtSec: { type: 'Number' }
     },
     indexes: {
       project_stripe: { projectId: 1, stripeId: 1 },

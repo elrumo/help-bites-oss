@@ -144,6 +144,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'MCP.md'
   },
   {
+    slug: 'revenue',
+    title: 'Revenue',
+    description: 'See revenue, MRR and subscribers from Stripe, RevenueCat, the App Store, Paddle and Lemon Squeezy, or send your own payments to the API.',
+    group: 'Guides',
+    file: 'REVENUE.md'
+  },
+  {
     slug: 'errors',
     title: 'Error tracking',
     description: 'Connect GlitchTip or Bugsink to browse errors, get alert emails when one spikes, and fix them with AI that reads your GitHub repos.',

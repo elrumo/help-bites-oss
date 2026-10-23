@@ -65,6 +65,7 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   EndUserSession: { scope: 'project' },
   ContactSource: { scope: 'project' },
   StripeAccount: { scope: 'project' },
+  RevenueSource: { scope: 'project' },
   StripePayment: { scope: 'project' },
   StripeSubscription: { scope: 'project' },
   Campaign: { scope: 'project' },
@@ -225,6 +226,7 @@ const SECRET_FIELDS: Record<string, string[]> = {
   WorkspaceInvite: ['tokenHash'],
   ContactSource: ['secretSealed'],
   StripeAccount: ['secretSealed'],
+  RevenueSource: ['secretSealed'],
   SupportAgent: ['apiKey'],
   WebhookEndpoint: ['secret'],
   EmailTemplate: ['shareToken']

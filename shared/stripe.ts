@@ -34,8 +34,8 @@ export type StripeConnection = {
 
 /** A Stripe customer as read live; `balance` is in the smallest unit of `currency`, negative when they have credit. */
 export type StripeCustomerDto = { id: string, name: string, email: string, createdAt: string | null, country: string, delinquent: boolean, balance: number, currency: string, livemode: boolean }
-/** `contactId` is the person in HelpBites this belongs to ('' when nobody matches); added by the revenue report so a row can open them. */
-export type StripePaymentDto = { id: string, customerId: string, contactId?: string, email: string, amount: number, refunded: number, currency: string, status: string, description: string, receiptUrl: string, paidAt: string }
+/** `contactId` is the person in HelpBites this belongs to ('' when nobody matches); added by the revenue report so a row can open them. `source` is the revenue source it came from (shared/revenue.ts); Stripe's own rows have it too. */
+export type StripePaymentDto = { id: string, source?: string, customerId: string, contactId?: string, email: string, amount: number, refunded: number, currency: string, status: string, description: string, receiptUrl: string, paidAt: string }
 export type StripeSubscriptionDto = { id: string, customerId: string, email: string, status: StripeSubscriptionStatus, plan: string, mrr: number, amount: number, interval: string, intervalCount: number, currency: string, startedAt: string | null, canceledAt: string | null, currentPeriodEnd: string | null, cancelAtPeriodEnd: boolean }
 
 export type RevenueRange = '30d' | '90d' | '12m' | 'all'
@@ -66,6 +66,8 @@ export type RevenueReport = {
   topCustomers: { customerId: string, contactId: string, email: string, net: number, payments: number }[]
   recent: StripePaymentDto[]
   otherCurrencies: { currency: string, net: number }[]
+  /** Where the period's money came from (shared/revenue.ts), biggest first; only the sources with payments or MRR. */
+  sources: { source: string, net: number, payments: number, mrr: number }[]
 }
 
 // Stripe amounts are in the currency's smallest unit; these have no cents.
@@ -74,6 +76,11 @@ const ZERO_DECIMAL = new Set(['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', '
 /** Stripe's smallest-unit amount as a number of the currency's units (1999 usd → 19.99). */
 export function fromMinor(amount: number, currency: string): number {
   return ZERO_DECIMAL.has(currency.toLowerCase()) ? amount : Math.round(amount) / 100
+}
+
+/** The inverse of `fromMinor`: 19.99 usd → 1999. */
+export function toMinor(amount: number, currency: string): number {
+  return ZERO_DECIMAL.has(currency.toLowerCase()) ? Math.round(amount) : Math.round(amount * 100)
 }
 
 export function formatMoney(amount: number, currency: string): string {

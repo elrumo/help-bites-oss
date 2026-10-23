@@ -102,7 +102,7 @@
     "inboxZeroDescription": "Nobody is waiting on a reply.",
     "revenueByProject": "Revenue by project",
     "noRevenueTitle": "No revenue yet",
-    "noRevenueDescription": "Connect Stripe to a project to see its revenue here, next to your other apps.",
+    "noRevenueDescription": "Connect a revenue source (Stripe, RevenueCat, the App Store and more) to a project to see its revenue here, next to your other apps.",
     "share": "{share} of {currency} revenue",
     "mrrShort": "{amount} MRR",
     "withoutStripe": "{count} project without Stripe is not counted. | {count} projects without Stripe are not counted.",
@@ -2800,8 +2800,8 @@
     "more": {
       "title": "Small things that sit next to support.",
       "stripe": {
-        "title": "Revenue from Stripe",
-        "body": "Connect a read-only key to see revenue, subscribers and each person’s payments next to their conversations."
+        "title": "Revenue from every place you sell",
+        "body": "Connect Stripe, RevenueCat, the App Store, Paddle or Lemon Squeezy, or send payments from your own code, to see revenue, MRR and each person’s payments next to their conversations."
       },
       "legal": {
         "title": "Legal documents",
@@ -3798,17 +3798,24 @@
       "period": "Period",
       "loadingLabel": "Loading revenue",
       "sync": "Sync",
-      "connectStripe": "Connect Stripe",
-      "connectDescription": "See revenue, subscribers and each person's payments next to their conversations. HelpBites only reads from Stripe.",
-      "apiKeyLabel": "Restricted API key",
-      "apiKeyHelp": "Stripe → Developers → API keys → Create restricted key. Give it read access to Charges, Customers, Subscriptions and Products.",
+      "connectTitle": "Connect a revenue source",
+      "connectDescription": "See revenue, subscribers and each person's payments next to their conversations. Connect every place you sell through and the numbers add up.",
+      "addSource": "Add a source",
+      "back": "Back",
+      "connect": "Connect {name}",
       "live": "Live",
       "testMode": "Test mode",
-      "syncing": "· syncing… {payments} payments so far",
-      "synced": "· synced {time}, {payments} payments, {subscriptions} subscriptions",
+      "syncing": "syncing…",
+      "synced": "synced {time}, {payments} payments, {subscriptions} subscriptions",
+      "lastEvent": "last event {time}, {payments} payments",
+      "waitingEvent": "waiting for the first event",
+      "lastSent": "last sent {time}, {payments} payments, {subscriptions} subscriptions",
+      "nothingSent": "nothing sent yet",
       "syncFailed": "The last sync failed",
-      "waitingTitle": "Waiting for the first sync",
-      "waitingDescription": "Payments show up here as soon as the first stretch has been read.",
+      "eventFailed": "The last event could not be applied",
+      "setup": "Setup",
+      "waitingTitle": "Waiting for the first payments",
+      "waitingDescription": "Payments show up here as soon as a source has read some or sent its first event.",
       "byMonth": "Revenue by month",
       "monthTitle": "{month}: {net} from {payments} payments, {mrr} MRR",
       "plans": "Plans",
@@ -3818,6 +3825,7 @@
       "topCustomers": "Top customers",
       "noPayments": "No payments yet.",
       "payments": "{count} payment | {count} payments",
+      "bySource": "By source",
       "recentPayments": "Recent payments",
       "guest": "Guest",
       "refunded": "Refunded",
@@ -3833,14 +3841,95 @@
       "newChurned": "{newSubs} new, {churned} canceled in this period",
       "payingCustomers": "Paying customers",
       "allTime": "{amount} all time",
-      "syncAll": "Sync everything again",
-      "disconnectStripe": "Disconnect Stripe",
+      "syncAll": "Sync {name} again from the start",
+      "disconnect": "Disconnect {name}",
       "loadError": "Could not load revenue",
-      "connectError": "Could not connect Stripe",
+      "connectError": "Could not connect",
       "syncError": "Could not start the sync",
-      "disconnectConfirm": "Disconnect Stripe? The key and the payments synced from Stripe are forgotten. Contacts keep their Stripe attributes.",
+      "disconnectConfirm": "Disconnect {name}? Its credentials and the payments and subscriptions it brought are forgotten. Your other sources are kept.",
       "disconnectError": "Could not disconnect",
-      "openContact": "Open this person"
+      "openContact": "Open this person",
+      "copy": "Copy",
+      "copied": "Copied",
+      "sources": {
+        "stripe": {
+          "blurb": "Charges and subscriptions, read with a restricted key.",
+          "intro": "HelpBites only reads from Stripe.",
+          "fields": {
+            "apiKey": {
+              "label": "Restricted API key",
+              "help": "Stripe → Developers → API keys → Create restricted key. Give it read access to Charges, Customers, Subscriptions and Products."
+            }
+          }
+        },
+        "revenuecat": {
+          "blurb": "In-app purchases and subscriptions from the App Store, Google Play and more, as RevenueCat reports them.",
+          "intro": "RevenueCat sends HelpBites its events as they happen. You get a URL and a secret to paste into RevenueCat next."
+        },
+        "apple": {
+          "blurb": "Your App Store proceeds, from the Sales and Trends reports. No customers or MRR.",
+          "intro": "Create an App Store Connect API key (Users and Access → Integrations) that can read Sales and Reports. HelpBites reads the daily sales reports, which Apple keeps for a year.",
+          "fields": {
+            "issuerId": {
+              "label": "Issuer ID",
+              "help": "At the top of Users and Access → Integrations → App Store Connect API."
+            },
+            "keyId": {
+              "label": "Key ID",
+              "help": "Shown beside the key you created."
+            },
+            "vendorNumber": {
+              "label": "Vendor number",
+              "help": "Payments and Financial Reports, beside your name."
+            },
+            "privateKey": {
+              "label": "Private key (.p8)",
+              "help": "Open the downloaded AuthKey_….p8 in a text editor and paste all of it. Apple only lets you download it once."
+            }
+          }
+        },
+        "paddle": {
+          "blurb": "Transactions and subscriptions from Paddle Billing.",
+          "intro": "Create a server-side API key in Paddle → Developer tools → Authentication with read access to transactions, subscriptions, customers and adjustments (refunds). A sandbox key connects your sandbox.",
+          "fields": {
+            "apiKey": {
+              "label": "API key",
+              "help": "Starts with pdl_live_apikey_ (pdl_sdbx_apikey_ for the sandbox)."
+            }
+          }
+        },
+        "lemonsqueezy": {
+          "blurb": "Orders and subscriptions from Lemon Squeezy.",
+          "intro": "Create an API key in Lemon Squeezy → Settings → API. HelpBites only reads, and leaves test-mode orders out.",
+          "fields": {
+            "apiKey": {
+              "label": "API key",
+              "help": "Copy it when it is created: Lemon Squeezy shows it once."
+            }
+          }
+        },
+        "custom": {
+          "name": "Custom API",
+          "blurb": "Anything else: Google Play reports, Gumroad, PayPal, invoices. Send it to the API.",
+          "intro": "Nothing to connect. You send payments and subscriptions to the API from a script or a no-code tool, and they join the rest."
+        }
+      },
+      "setupSheet": {
+        "done": "Done",
+        "revenuecat": {
+          "title": "Send RevenueCat events to HelpBites",
+          "step1": "In RevenueCat, open Project settings → Integrations → Webhooks and add a webhook.",
+          "step2": "Paste this as the webhook URL:",
+          "step3": "Paste this secret as the Authorization header value:",
+          "step4": "Choose production events, save, and send a test event. It shows up here as the last event.",
+          "note": "From then on purchases, renewals, refunds, cancellations and expirations appear here as they happen. RevenueCat cannot replay the past, so revenue before today is missing. Amounts are RevenueCat's USD price, before store fees; sandbox purchases are ignored. People are matched to contacts by the App User ID (the contact's external id) or the $email attribute.",
+          "tokenHidden": "Only people who manage the project can see the secret."
+        },
+        "custom": {
+          "title": "Send payments from your own code",
+          "intro": "Use an admin API key (Settings → API keys). Amounts are decimals, and the id makes sending safe to repeat. The Revenue guide lists every field."
+        }
+      }
     },
     "projectList": {
       "emptyTitle": "No projects yet",
@@ -5597,7 +5686,7 @@
       "none": "No assistant yet. Humans answer everything until you add one."
     },
     "stripe": {
-      "title": "Stripe",
+      "title": "Revenue",
       "synced": "Connected and synced.",
       "waiting": "Connected; waiting for the first sync.",
       "error": "The last sync failed: {value}",

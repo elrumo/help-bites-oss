@@ -407,15 +407,15 @@
     },
     {
       "id": "revenue",
-      "name": "Revenue (Stripe)",
+      "name": "Revenue",
       "category": "dev",
-      "summary": "Connect Stripe with a restricted key to see revenue and MRR month by month, and on each contact their Stripe customer (looked up live) with subscriptions and payments. Top customers and recent payments open the person they belong to. Read-only, except that pricing tables open Stripe Checkout when the key allows it.",
+      "summary": "See revenue and MRR month by month, plans, top customers and recent payments from every place you sell: Stripe (a restricted key), RevenueCat (its webhook), the App Store (Sales and Trends reports), Paddle, Lemon Squeezy, or payments you send to the API. Sources add up and disconnect on their own; each shows its own share. A person's page lists their payments and subscriptions from every source, and for Stripe their customer (looked up live). Read-only, except that pricing tables open Stripe Checkout when the key allows it.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "status": "stable",
       "web": { "panel": ["app/pages/projects/[id]/revenue.vue"] },
       "native": { "folders": ["helpbites-native/App/Features/Revenue"] },
-      "api": { "prefixes": ["/v1/admin/stripe"], "docs": null },
+      "api": { "prefixes": ["/v1/admin/revenue", "/v1/admin/stripe", "/v1/webhooks/revenuecat"], "docs": "docs/REVENUE.md" },
       "embed": null,
       "landing": { "listed": true, "key": "landing.more.stripe" }
     },
@@ -608,6 +608,8 @@
     "A project's legal page links for email (privacyUrl, termsUrl, cookiesUrl, refundUrl) are rebuilt when a legal document is published, unpublished, renamed or deleted, and are not carried by an export or import until the next publish; they are blank while APP_URL is unset. The project company profile has no per-document override: every legal document names the same operator.",
     "Guests (guest access) are not upgraded when the same person later signs in or gives an email: their conversations and posts stay with the guest contact. A guest who wrote something stays a contact after the session expires (only guests who never wrote, and expired sessions, are purged).",
     "helpbites.js adds the chat, feedback board, changelog and onboarding scripts; it does not add the blog, brand or forms embeds, and it cannot fetch an identity token for you (pass data-token or call HelpBites.push(['init', { getToken }])).",
-    "The conversation panel: a contact with no user id (externalId) cannot follow a feedback post or have one filed as them (linking still works). Saved replies are inserted from the picker, not by typing /shortcut in the reply box; Save as FAQ is on a reply's context menu (right-click, long-press). The AI draft answers the customer's latest message only, takes no instructions, and the demo does not fake linking, drafting or saving."
+    "The conversation panel: a contact with no user id (externalId) cannot follow a feedback post or have one filed as them (linking still works). Saved replies are inserted from the picker, not by typing /shortcut in the reply box; Save as FAQ is on a reply's context menu (right-click, long-press). The AI draft answers the customer's latest message only, takes no instructions, and the demo does not fake linking, drafting or saving.",
+    "Revenue sources: RevenueCat's history starts when its webhook does (it cannot replay events, and HelpBites does not read RevenueCat's REST API to backfill; earlier months go in through POST /v1/admin/revenue/payments). The App Store source reads proceeds from the Sales and Trends reports, which name no customers, so it has no top customers, subscribers or MRR. There are no direct Google Play, PayPal, Gumroad or Polar sources: send them to the custom API, or read Google Play through RevenueCat.",
+    "Only Stripe customers are written onto contacts as stripe_* attributes, so the People billing filters, segments and campaigns do not see the customers of the other revenue sources (a contact's page and the report's customer rows do list and open them). The Paddle, Lemon Squeezy and App Store sources were written from those services' documentation and unit tests, not run against live accounts."
   ]
 }

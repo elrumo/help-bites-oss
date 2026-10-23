@@ -103,7 +103,7 @@
     "inboxZeroDescription": "返信を待っている人はいません。",
     "revenueByProject": "プロジェクト別の収益",
     "noRevenueTitle": "まだ収益はありません",
-    "noRevenueDescription": "プロジェクトに Stripe を接続すると、ほかのアプリと並べて収益をここに表示します。",
+    "noRevenueDescription": "プロジェクトに収益ソース（Stripe、RevenueCat、App Store など）を接続すると、ほかのアプリと並べて収益をここに表示します。",
     "share": "{currency} の収益の {share}",
     "mrrShort": "MRR {amount}",
     "withoutStripe": "Stripe 未接続のプロジェクト {count} 件は含まれていません。",
@@ -2654,8 +2654,8 @@
     "more": {
       "title": "サポートのそばにある小さな便利機能。",
       "stripe": {
-        "title": "Stripeの売上",
-        "body": "読み取り専用キーを接続すると、売上、購読者、各ユーザーの支払いが会話の横に表示されます。"
+        "title": "販売するすべての場所からの売上",
+        "body": "Stripe、RevenueCat、App Store、Paddle、Lemon Squeezy を接続するか、自分のコードから支払いを送信すると、売上、MRR、各ユーザーの支払いが会話の横に表示されます。"
       },
       "legal": {
         "title": "法的文書",
@@ -3590,17 +3590,24 @@
       "period": "期間",
       "loadingLabel": "収益を読み込み中",
       "sync": "同期",
-      "connectStripe": "Stripe に接続",
-      "connectDescription": "会話と並べて、収益、サブスクライバー、各ユーザーの支払いを確認できます。HelpBites は Stripe からの読み取りのみを行います。",
-      "apiKeyLabel": "制限付き API キー",
-      "apiKeyHelp": "Stripe → 開発者 → API キー → 制限付きキーを作成。Charges、Customers、Subscriptions、Products への読み取り権限を付与してください。",
+      "connectTitle": "収益ソースを接続",
+      "connectDescription": "会話と並べて、収益、サブスクライバー、各ユーザーの支払いを確認できます。販売しているすべての場所を接続すれば、数字が合算されます。",
+      "addSource": "ソースを追加",
+      "back": "戻る",
+      "connect": "{name} に接続",
       "live": "本番",
       "testMode": "テストモード",
-      "syncing": "· 同期中… これまでに {payments} 件の支払い",
-      "synced": "· {time} に同期、{payments} 件の支払い、{subscriptions} 件のサブスクリプション",
+      "syncing": "同期中…",
+      "synced": "{time} に同期、{payments} 件の支払い、{subscriptions} 件のサブスクリプション",
+      "lastEvent": "最後のイベント {time}、{payments} 件の支払い",
+      "waitingEvent": "最初のイベントを待っています",
+      "lastSent": "最後の送信 {time}、{payments} 件の支払い、{subscriptions} 件のサブスクリプション",
+      "nothingSent": "まだ何も送信されていません",
       "syncFailed": "前回の同期に失敗しました",
-      "waitingTitle": "最初の同期を待っています",
-      "waitingDescription": "最初の範囲の読み取りが終わると、支払いがここに表示されます。",
+      "eventFailed": "最後のイベントを適用できませんでした",
+      "setup": "セットアップ",
+      "waitingTitle": "最初の支払いを待っています",
+      "waitingDescription": "ソースが支払いを読み取るか最初のイベントを受信すると、すぐにここに表示されます。",
       "byMonth": "月別の収益",
       "monthTitle": "{month}：{payments} 件の支払いによる {net}、MRR {mrr}",
       "plans": "プラン",
@@ -3610,6 +3617,7 @@
       "topCustomers": "上位の顧客",
       "noPayments": "まだ支払いはありません。",
       "payments": "{count} 件の支払い",
+      "bySource": "ソース別",
       "recentPayments": "最近の支払い",
       "guest": "ゲスト",
       "refunded": "返金済み",
@@ -3625,13 +3633,95 @@
       "newChurned": "この期間の新規 {newSubs}、解約 {churned}",
       "payingCustomers": "有料顧客",
       "allTime": "累計 {amount}",
-      "syncAll": "すべて再同期",
-      "disconnectStripe": "Stripe の接続を解除",
+      "syncAll": "{name} を最初から再同期",
+      "disconnect": "{name} の接続を解除",
       "loadError": "収益を読み込めませんでした",
-      "connectError": "Stripe に接続できませんでした",
+      "connectError": "接続できませんでした",
       "syncError": "同期を開始できませんでした",
-      "disconnectConfirm": "Stripe の接続を解除しますか？キーと Stripe から同期された支払いは削除されます。連絡先は Stripe の属性を保持します。",
-      "disconnectError": "接続を解除できませんでした"
+      "disconnectConfirm": "{name} の接続を解除しますか？認証情報と、そこから取り込んだ支払い・サブスクリプションは削除されます。ほかのソースは保持されます。",
+      "disconnectError": "接続を解除できませんでした",
+      "openContact": "このユーザーを開く",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "sources": {
+        "stripe": {
+          "blurb": "請求とサブスクリプションを、制限付きキーで読み取ります。",
+          "intro": "HelpBites は Stripe から読み取るだけです。",
+          "fields": {
+            "apiKey": {
+              "label": "制限付き API キー",
+              "help": "Stripe → 開発者 → API キー → 制限付きキーを作成。Charges、Customers、Subscriptions、Products への読み取り権限を付与してください。"
+            }
+          }
+        },
+        "revenuecat": {
+          "blurb": "App Store や Google Play などのアプリ内課金とサブスクリプションを、RevenueCat の報告どおりに取り込みます。",
+          "intro": "RevenueCat が発生したイベントを HelpBites に送信します。次の画面で、RevenueCat に貼り付ける URL とシークレットが表示されます。"
+        },
+        "apple": {
+          "blurb": "Sales and Trends レポートに基づく App Store の収益。顧客と MRR は含まれません。",
+          "intro": "Sales and Reports を読み取れる App Store Connect API キー（Users and Access → Integrations）を作成してください。HelpBites は日次の売上レポートを読み取ります。Apple が保持するのは 1 年間です。",
+          "fields": {
+            "issuerId": {
+              "label": "Issuer ID",
+              "help": "Users and Access → Integrations → App Store Connect API の一番上にあります。"
+            },
+            "keyId": {
+              "label": "Key ID",
+              "help": "作成したキーの横に表示されます。"
+            },
+            "vendorNumber": {
+              "label": "ベンダー番号",
+              "help": "Payments and Financial Reports の、名前の横にあります。"
+            },
+            "privateKey": {
+              "label": "秘密鍵（.p8）",
+              "help": "ダウンロードした AuthKey_….p8 をテキストエディタで開き、内容をすべて貼り付けてください。Apple からダウンロードできるのは一度だけです。"
+            }
+          }
+        },
+        "paddle": {
+          "blurb": "Paddle Billing のトランザクションとサブスクリプション。",
+          "intro": "Paddle → Developer tools → Authentication で、トランザクション、サブスクリプション、顧客、調整（返金）への読み取り権限を持つサーバー側 API キーを作成してください。サンドボックスのキーを使うと、サンドボックスに接続されます。",
+          "fields": {
+            "apiKey": {
+              "label": "API キー",
+              "help": "pdl_live_apikey_ で始まります（サンドボックスは pdl_sdbx_apikey_）。"
+            }
+          }
+        },
+        "lemonsqueezy": {
+          "blurb": "Lemon Squeezy の注文とサブスクリプション。",
+          "intro": "Lemon Squeezy → Settings → API で API キーを作成してください。HelpBites は読み取りのみを行い、テストモードの注文は除外します。",
+          "fields": {
+            "apiKey": {
+              "label": "API キー",
+              "help": "作成時にコピーしてください。Lemon Squeezy が表示するのは一度だけです。"
+            }
+          }
+        },
+        "custom": {
+          "name": "カスタム API",
+          "blurb": "それ以外のすべて：Google Play のレポート、Gumroad、PayPal、請求書など。API に送信してください。",
+          "intro": "接続するものはありません。スクリプトやノーコードツールから支払いとサブスクリプションを API に送信すると、ほかのデータと合算されます。"
+        }
+      },
+      "setupSheet": {
+        "done": "完了",
+        "revenuecat": {
+          "title": "RevenueCat のイベントを HelpBites に送信",
+          "step1": "RevenueCat で Project settings → Integrations → Webhooks を開き、webhook を追加します。",
+          "step2": "次を webhook の URL として貼り付けます：",
+          "step3": "次のシークレットを Authorization ヘッダーの値として貼り付けます：",
+          "step4": "本番イベントを選んで保存し、テストイベントを送信します。最後のイベントとしてここに表示されます。",
+          "note": "以降、購入、更新、返金、解約、期限切れが発生するたびにここに表示されます。RevenueCat は過去分を再送できないため、今日より前の収益は含まれません。金額は RevenueCat の USD 価格で、ストア手数料を差し引く前の額です。サンドボックスの購入は無視されます。ユーザーは App User ID（連絡先のユーザー ID）または $email 属性で連絡先と紐付けられます。",
+          "tokenHidden": "プロジェクトを管理できるユーザーだけがシークレットを確認できます。"
+        },
+        "custom": {
+          "title": "自分のコードから支払いを送信",
+          "intro": "管理者 API キー（設定 → APIキー）を使います。金額は小数で、id を付けると再送しても安全です。すべてのフィールドは「収益」ガイドに載っています。"
+        }
+      }
     },
     "projectList": {
       "emptyTitle": "プロジェクトはまだありません",
@@ -5343,7 +5433,7 @@
       "none": "アシスタントはまだありません。追加するまで、すべて担当者が回答します。"
     },
     "stripe": {
-      "title": "Stripe",
+      "title": "売上",
       "synced": "接続済みで同期されています。",
       "waiting": "接続済みです。最初の同期を待っています。",
       "error": "前回の同期に失敗しました：{value}",

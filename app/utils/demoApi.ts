@@ -410,7 +410,8 @@ function demoRevenueReport(projectId: string, range: RevenueRange): RevenueRepor
     plans: r.plans.map(([plan, subscribers, planMrr]) => ({ plan, subscribers, mrr: planMrr })),
     topCustomers: r.customers.map(([email, net, payments]) => ({ customerId: customerId(email), email, net, payments })),
     recent: r.recent,
-    otherCurrencies: []
+    otherCurrencies: [],
+    sources: [{ source: 'stripe', net: row.net, payments: row.payments, mrr }]
   }
 }
 const serializeUser = ({ projectId: _, ...user }: EndUser) => user
@@ -643,6 +644,17 @@ const routes: [string, RegExp, (req: Req) => unknown][] = [
     }
   }],
   ['GET', /^\/admin\/stripe$/, ({ query }) => ({ connection: demoStripe(query.project || '') })],
+  // The Revenue tab reads every source; the demo sells through Stripe only.
+  ['GET', /^\/admin\/revenue\/sources$/, ({ query }) => {
+    const { connected, currency: _currency, ...stripe } = demoStripe(query.project || '')
+    return { sources: connected ? [{ source: 'stripe', ...stripe, stats: { payments: stripe.stats.payments, subscriptions: stripe.stats.subscriptions } }] : [] }
+  }],
+  ['GET', /^\/admin\/revenue\/report$/, ({ query }) => ({ report: DEMO_REVENUE[query.project || ''] ? demoRevenueReport(query.project || '', REVENUE_RANGES.find(r => r.value === query.range)?.value || '30d') : null })],
+  ['POST', /^\/admin\/revenue\/sync$/, ({ body }) => {
+    if (DEMO_REVENUE[body.project]) stripeSyncedAt[body.project] = now()
+    const { connected: _connected, currency: _currency, ...stripe } = demoStripe(body.project)
+    return { connection: { source: 'stripe', ...stripe, stats: { payments: stripe.stats.payments, subscriptions: stripe.stats.subscriptions } } }
+  }],
   ['GET', /^\/admin\/stripe\/report$/, ({ query }) => ({ report: demoRevenueReport(query.project || '', REVENUE_RANGES.find(r => r.value === query.range)?.value || '30d') })],
   ['POST', /^\/admin\/stripe\/sync$/, ({ body }) => {
     if (DEMO_REVENUE[body.project]) stripeSyncedAt[body.project] = now()

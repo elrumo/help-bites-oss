@@ -17,6 +17,7 @@ import onboarding from '../../docs/ONBOARDING.md'
 import pages from '../../docs/PAGES.md'
 import support from '../../docs/SUPPORT.md'
 import pricing from '../../docs/PRICING.md'
+import revenue from '../../docs/REVENUE.md'
 import transfer from '../../docs/TRANSFER.md'
 
 // The text of each published guide, bundled into the server at build time (the
@@ -40,6 +41,7 @@ const SOURCES: Record<string, string> = {
   'PAGES.md': pages,
   'SUPPORT.md': support,
   'PRICING.md': pricing,
+  'REVENUE.md': revenue,
   'TRANSFER.md': transfer
 }
 

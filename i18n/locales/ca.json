@@ -103,7 +103,7 @@
     "inboxZeroDescription": "Ningú espera resposta.",
     "revenueByProject": "Ingressos per projecte",
     "noRevenueTitle": "Encara no hi ha ingressos",
-    "noRevenueDescription": "Connecta Stripe a un projecte per veure aquí els seus ingressos, al costat de les altres apps.",
+    "noRevenueDescription": "Connecta una font d'ingressos (Stripe, RevenueCat, l'App Store i més) a un projecte per veure aquí els seus ingressos, al costat dels de les altres apps.",
     "share": "{share} dels ingressos en {currency}",
     "mrrShort": "{amount} MRR",
     "withoutStripe": "{count} projecte sense Stripe no es compta. | {count} projectes sense Stripe no es compten.",
@@ -2654,8 +2654,8 @@
     "more": {
       "title": "Petites coses que acompanyen l'assistència.",
       "stripe": {
-        "title": "Ingressos de Stripe",
-        "body": "Connecta una clau de només lectura per veure els ingressos, els subscriptors i els pagaments de cada persona al costat de les seves converses."
+        "title": "Ingressos de cada lloc on vens",
+        "body": "Connecta Stripe, RevenueCat, l'App Store, Paddle o Lemon Squeezy, o envia pagaments des del teu propi codi, per veure els ingressos, el MRR i els pagaments de cada persona al costat de les seves converses."
       },
       "legal": {
         "title": "Documents legals",
@@ -3590,17 +3590,24 @@
       "period": "Període",
       "loadingLabel": "Carregant ingressos",
       "sync": "Sincronitza",
-      "connectStripe": "Connecta Stripe",
-      "connectDescription": "Consulta els ingressos, els subscriptors i els pagaments de cada persona al costat de les seves converses. HelpBites només llegeix de Stripe.",
-      "apiKeyLabel": "Clau API restringida",
-      "apiKeyHelp": "Stripe → Developers → Claus API → Crea una clau restringida. Dona-li accés de lectura a Charges, Customers, Subscriptions i Products.",
+      "connectTitle": "Connecta una font d'ingressos",
+      "connectDescription": "Consulta els ingressos, els subscriptors i els pagaments de cada persona al costat de les seves converses. Connecta tots els llocs on vens i les xifres se sumen.",
+      "addSource": "Afegeix una font",
+      "back": "Enrere",
+      "connect": "Connecta {name}",
       "live": "En directe",
       "testMode": "Mode de prova",
-      "syncing": "· sincronitzant… {payments} pagaments fins ara",
-      "synced": "· sincronitzat {time}, {payments} pagaments, {subscriptions} subscripcions",
+      "syncing": "sincronitzant…",
+      "synced": "sincronitzat {time}, {payments} pagaments, {subscriptions} subscripcions",
+      "lastEvent": "darrer esdeveniment {time}, {payments} pagaments",
+      "waitingEvent": "esperant el primer esdeveniment",
+      "lastSent": "darrer enviament {time}, {payments} pagaments, {subscriptions} subscripcions",
+      "nothingSent": "encara no s'ha enviat res",
       "syncFailed": "La darrera sincronització ha fallat",
-      "waitingTitle": "Esperant la primera sincronització",
-      "waitingDescription": "Els pagaments apareixeran aquí tan bon punt es llegeixi el primer tram.",
+      "eventFailed": "No s'ha pogut aplicar el darrer esdeveniment",
+      "setup": "Configuració",
+      "waitingTitle": "Esperant els primers pagaments",
+      "waitingDescription": "Els pagaments apareixeran aquí tan bon punt una font n'hagi llegit algun o n'hagi enviat el primer esdeveniment.",
       "byMonth": "Ingressos per mes",
       "monthTitle": "{month}: {net} de {payments} pagaments, {mrr} de MRR",
       "plans": "Plans",
@@ -3610,6 +3617,7 @@
       "topCustomers": "Clients principals",
       "noPayments": "Encara no hi ha pagaments.",
       "payments": "{count} pagament | {count} pagaments",
+      "bySource": "Per font",
       "recentPayments": "Pagaments recents",
       "guest": "Convidat",
       "refunded": "Reemborsat",
@@ -3625,13 +3633,95 @@
       "newChurned": "{newSubs} de nous, {churned} cancel·lats en aquest període",
       "payingCustomers": "Clients de pagament",
       "allTime": "{amount} en total",
-      "syncAll": "Torna a sincronitzar-ho tot",
-      "disconnectStripe": "Desconnecta Stripe",
+      "syncAll": "Torna a sincronitzar {name} des del principi",
+      "disconnect": "Desconnecta {name}",
       "loadError": "No s'han pogut carregar els ingressos",
-      "connectError": "No s'ha pogut connectar Stripe",
+      "connectError": "No s'ha pogut connectar",
       "syncError": "No s'ha pogut iniciar la sincronització",
-      "disconnectConfirm": "Desconnectar Stripe? S'oblidaran la clau i els pagaments sincronitzats des de Stripe. Els contactes conservaran els seus atributs de Stripe.",
-      "disconnectError": "No s'ha pogut desconnectar"
+      "disconnectConfirm": "Desconnectar {name}? S'oblidaran les seves credencials i els pagaments i subscripcions que va portar. Les altres fonts es conserven.",
+      "disconnectError": "No s'ha pogut desconnectar",
+      "openContact": "Obre aquesta persona",
+      "copy": "Copia",
+      "copied": "Copiat",
+      "sources": {
+        "stripe": {
+          "blurb": "Càrrecs i subscripcions, llegits amb una clau restringida.",
+          "intro": "HelpBites només llegeix de Stripe.",
+          "fields": {
+            "apiKey": {
+              "label": "Clau API restringida",
+              "help": "Stripe → Developers → Claus API → Crea una clau restringida. Dona-li accés de lectura a Charges, Customers, Subscriptions i Products."
+            }
+          }
+        },
+        "revenuecat": {
+          "blurb": "Compres dins de l'app i subscripcions de l'App Store, Google Play i més, tal com les informa RevenueCat.",
+          "intro": "RevenueCat envia a HelpBites els seus esdeveniments a mesura que passen. A continuació rebràs una URL i un secret per enganxar a RevenueCat."
+        },
+        "apple": {
+          "blurb": "Els teus ingressos de l'App Store, segons els informes de Sales and Trends. Sense clients ni MRR.",
+          "intro": "Crea una clau d'API d'App Store Connect (Users and Access → Integrations) que pugui llegir Sales and Reports. HelpBites llegeix els informes diaris de vendes, que Apple conserva durant un any.",
+          "fields": {
+            "issuerId": {
+              "label": "Issuer ID",
+              "help": "A la part superior de Users and Access → Integrations → App Store Connect API."
+            },
+            "keyId": {
+              "label": "Key ID",
+              "help": "Apareix al costat de la clau que has creat."
+            },
+            "vendorNumber": {
+              "label": "Número de proveïdor",
+              "help": "Payments and Financial Reports, al costat del teu nom."
+            },
+            "privateKey": {
+              "label": "Clau privada (.p8)",
+              "help": "Obre el fitxer AuthKey_….p8 descarregat en un editor de text i enganxa'n tot el contingut. Apple només et deixa descarregar-la una vegada."
+            }
+          }
+        },
+        "paddle": {
+          "blurb": "Transaccions i subscripcions de Paddle Billing.",
+          "intro": "Crea una clau d'API de servidor a Paddle → Developer tools → Authentication amb accés de lectura a transaccions, subscripcions, clients i ajustos (reemborsaments). Una clau de sandbox connecta el teu sandbox.",
+          "fields": {
+            "apiKey": {
+              "label": "Clau d'API",
+              "help": "Comença per pdl_live_apikey_ (pdl_sdbx_apikey_ per al sandbox)."
+            }
+          }
+        },
+        "lemonsqueezy": {
+          "blurb": "Comandes i subscripcions de Lemon Squeezy.",
+          "intro": "Crea una clau d'API a Lemon Squeezy → Settings → API. HelpBites només llegeix i deixa fora les comandes en mode de prova.",
+          "fields": {
+            "apiKey": {
+              "label": "Clau d'API",
+              "help": "Copia-la quan es creï: Lemon Squeezy només la mostra una vegada."
+            }
+          }
+        },
+        "custom": {
+          "name": "API personalitzada",
+          "blurb": "Qualsevol altra cosa: informes de Google Play, Gumroad, PayPal, factures. Envia-ho a l'API.",
+          "intro": "No hi ha res a connectar. Envies els pagaments i les subscripcions a l'API des d'un script o una eina sense codi, i s'afegeixen a la resta."
+        }
+      },
+      "setupSheet": {
+        "done": "Fet",
+        "revenuecat": {
+          "title": "Envia els esdeveniments de RevenueCat a HelpBites",
+          "step1": "A RevenueCat, obre Project settings → Integrations → Webhooks i afegeix un webhook.",
+          "step2": "Enganxa això com a URL del webhook:",
+          "step3": "Enganxa aquest secret com a valor de la capçalera Authorization:",
+          "step4": "Tria els esdeveniments de producció, desa i envia un esdeveniment de prova. Apareixerà aquí com a darrer esdeveniment.",
+          "note": "A partir d'aleshores, les compres, renovacions, reemborsaments, cancel·lacions i caducitats apareixen aquí a mesura que passen. RevenueCat no pot reenviar el passat, així que falten els ingressos anteriors a avui. Els imports són el preu en USD de RevenueCat, abans de les comissions de la botiga; les compres de sandbox s'ignoren. Les persones es vinculen amb els contactes per l'App User ID (l'id d'usuari del contacte) o per l'atribut $email.",
+          "tokenHidden": "Només les persones que gestionen el projecte poden veure el secret."
+        },
+        "custom": {
+          "title": "Envia pagaments des del teu propi codi",
+          "intro": "Fes servir una clau d'API d'administrador (Configuració → Claus d'API). Els imports són decimals i l'id permet repetir l'enviament sense risc. La guia d'Ingressos enumera tots els camps."
+        }
+      }
     },
     "projectList": {
       "emptyTitle": "Encara no hi ha projectes",
@@ -5343,7 +5433,7 @@
       "none": "Encara no hi ha cap assistent. Les persones responen tot fins que n'afegeixis un."
     },
     "stripe": {
-      "title": "Stripe",
+      "title": "Ingressos",
       "synced": "Connectat i sincronitzat.",
       "waiting": "Connectat; esperant la primera sincronització.",
       "error": "L'última sincronització ha fallat: {value}",

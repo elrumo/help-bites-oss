@@ -101,7 +101,7 @@ struct SetupItem: Decodable, Identifiable, Sendable {
     case "notified": String(localized: "Someone is told about new chats")
     case "sender": String(localized: "Email sender")
     case "assistant": String(localized: "AI assistant ready")
-    case "stripe": String(localized: "Stripe")
+    case "stripe": String(localized: "Revenue")
     case "github": String(localized: "GitHub")
     case "errors": String(localized: "Error tracking")
     default: key

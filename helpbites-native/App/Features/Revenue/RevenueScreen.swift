@@ -1,27 +1,32 @@
 import Charts
 import SwiftUI
 
-/// A project's revenue (web: projects/[id]/revenue.vue): connect Stripe, then net revenue,
-/// MRR, subscribers, revenue by month, plans, top customers and recent payments from the
-/// last sync. HelpBites only reads from Stripe. Reports are for owners and admins (`marketing`).
+/// A project's revenue (web: projects/[id]/revenue.vue): connect the places you sell through, then net
+/// revenue, MRR, subscribers, revenue by month, plans, top customers and recent payments over all of
+/// them. HelpBites only reads from Stripe, App Store, Paddle and Lemon Squeezy; RevenueCat and your own
+/// code send to it. Reports are for owners and admins (`marketing`).
 struct RevenueScreen: View {
   let projectId: String
   @Environment(SessionStore.self) private var session
-  @State private var connection: StripeConnection?
-  @State private var ready = true
+  @State private var sources: [RevenueConnection] = []
   @State private var report: RevenueReport?
   @State private var range = RevenueRange.d30
   @State private var loading = true
-  @State private var apiKey = ""
-  @State private var connecting = false
   @State private var error = ""
-  @State private var confirmDisconnect = false
-  @State private var confirmResync = false
+  @State private var connect: ConnectTarget?
+  @State private var setup: RevenueConnection?
+  @State private var disconnecting: RevenueConnection?
 
-  /// A running sync fills the numbers in as it goes; poll while it does.
+  /// What the connect sheet opens on: the source whose card was tapped, or the picker.
+  private struct ConnectTarget: Identifiable { let id = UUID(); let start: RevenueSource? }
+
+  /// The sources HelpBites reads; the rest send to it.
+  private var pulled: [RevenueConnection] { sources.filter { $0.catalog?.kind == .pull } }
+  private var available: [RevenueSource] { RevenueSource.all.filter { source in !sources.contains { $0.source == source.id } } }
+
+  /// A running sync fills the numbers in as it goes; poll while one does.
   private var shouldPoll: Bool {
-    guard let connection, connection.connected else { return false }
-    return connection.isRunning || (report == nil && connection.lastError.isEmpty)
+    sources.contains { $0.isRunning } || (!sources.isEmpty && report == nil && !sources.contains { !$0.lastError.isEmpty })
   }
 
   var body: some View {
@@ -34,10 +39,10 @@ struct RevenueScreen: View {
           .redacted(reason: .placeholder)
         } else if !session.canManage {
           EmptyState(systemImage: "lock", title: "Revenue is for admins and owners", message: "Ask an admin of this workspace for access.")
-        } else if connection?.connected != true {
+        } else if sources.isEmpty {
           connectCard
-        } else if let connection {
-          content(connection)
+        } else {
+          content
         }
         ErrorText(message: error)
       }
@@ -48,16 +53,23 @@ struct RevenueScreen: View {
     .scrollDismissesKeyboard(.interactively)
     .projectScreen(projectId, "Revenue")
     .toolbar {
-      if connection?.connected == true {
+      if !sources.isEmpty {
         ToolbarItemGroup(placement: .topBarTrailing) {
           Menu {
             Picker("Period", selection: $range) { ForEach(RevenueRange.allCases) { Text($0.label).tag($0) } }
           } label: { Label(range.label, systemImage: "calendar") }
-          Button { Task { await sync(reset: false) } } label: { Label("Sync", systemImage: "arrow.clockwise") }
-            .disabled(connection?.isRunning == true)
+          if !pulled.isEmpty {
+            Button { Task { for connection in pulled where !connection.isRunning { await sync(connection.source, reset: false) } } } label: { Label("Sync", systemImage: "arrow.clockwise") }
+              .disabled(pulled.allSatisfy { $0.isRunning })
+          }
           Menu {
-            Button { confirmResync = true } label: { Label("Sync everything again", systemImage: "clock.arrow.circlepath") }
-            Button(role: .destructive) { confirmDisconnect = true } label: { Label("Disconnect Stripe", systemImage: "bolt.slash") }
+            if !available.isEmpty { Button { connect = ConnectTarget(start: nil) } label: { Label("Add a source", systemImage: "plus") } }
+            ForEach(pulled) { connection in
+              Button { Task { await sync(connection.source, reset: true) } } label: { Label("Sync \(connection.title) again from the start", systemImage: "clock.arrow.circlepath") }
+            }
+            ForEach(sources) { connection in
+              Button(role: .destructive) { disconnecting = connection } label: { Label("Disconnect \(connection.title)", systemImage: "bolt.slash") }
+            }
           } label: { Label("More", systemImage: "ellipsis") }
         }
       }
@@ -70,47 +82,37 @@ struct RevenueScreen: View {
       }
     }
     .onChange(of: range) { _, _ in Task { await loadReport() } }
-    .confirmationDialog("Disconnect Stripe? The key and the payments synced from Stripe are forgotten. Contacts keep their Stripe attributes.", isPresented: $confirmDisconnect, titleVisibility: .visible) {
-      Button("Disconnect", role: .destructive) { Task { await disconnect() } }
+    .sheet(item: $connect) { target in
+      RevenueConnectSheet(projectId: projectId, available: available, start: target.start) { await load() }
     }
-    .confirmationDialog("Read every charge again? This picks up refunds on old payments and can take a while.", isPresented: $confirmResync, titleVisibility: .visible) {
-      Button("Sync everything again") { Task { await sync(reset: true) } }
+    .sheet(item: $setup) { RevenueSetupSheet(projectId: projectId, connection: $0) }
+    .confirmationDialog(
+      "Disconnect \(disconnecting?.title ?? "")? Its credentials and the payments and subscriptions it brought are forgotten. Your other sources are kept.",
+      isPresented: Binding(get: { disconnecting != nil }, set: { if !$0 { disconnecting = nil } }), titleVisibility: .visible, presenting: disconnecting
+    ) { connection in
+      Button("Disconnect", role: .destructive) { Task { await disconnect(connection.source) } }
     }
   }
 
   // MARK: Connect
 
   private var connectCard: some View {
-    VStack(alignment: .leading, spacing: 16) {
-      EmptyState(systemImage: "dollarsign.circle", title: "Connect Stripe", message: "See revenue, subscribers and each person's payments next to their conversations. HelpBites only reads from Stripe.")
-      VStack(alignment: .leading, spacing: 12) {
-        LabeledField(label: "Restricted API key", hint: "Stripe → Developers → API keys → Create restricted key. Give it read access to Charges, Customers, Subscriptions and Products.") {
-          SecureField("rk_live_…", text: $apiKey).textFieldStyle(.linear).autocorrectionDisabled().onSubmit { Task { await connect() } }
-        }
-        if !ready { ErrorText(message: String(localized: "Set HELPBITES_SECRET on the server first: the key is stored sealed with it.")) }
-        Button { Task { await connect() } } label: { if connecting { ProgressView() } else { Text("Connect Stripe") } }
-          .buttonStyle(.lnPrimary).disabled(apiKey.trimmingCharacters(in: .whitespaces).isEmpty || !ready || connecting)
-      }
-      .frame(maxWidth: 440, alignment: .leading)
-      .frame(maxWidth: .infinity)
+    VStack(spacing: 16) {
+      EmptyState(systemImage: "dollarsign.circle", title: "Connect a revenue source", message: "See revenue, subscribers and each person's payments next to their conversations. Connect every place you sell through and the numbers add up.")
+      RevenueSourcePicker(sources: RevenueSource.all) { connect = ConnectTarget(start: $0) }
+        .frame(maxWidth: 560)
     }
+    .frame(maxWidth: .infinity)
   }
 
   // MARK: Report
 
-  @ViewBuilder private func content(_ connection: StripeConnection) -> some View {
-    HStack(spacing: 8) {
-      Tag(text: connection.livemode ? "Live" : "Test mode", tint: connection.livemode ? Theme.success : Theme.warning)
-      Group {
-        Text(connection.accountName.isEmpty ? "Stripe" : connection.accountName)
-        if connection.isRunning { Text("· syncing… \(connection.stats.payments.formatted()) payments so far") }
-        else if let run = connection.lastRunAt { Text("· synced \(Money.logTime(run)), \(connection.stats.payments.formatted()) payments, \(connection.stats.subscriptions.formatted()) subscriptions") }
-      }
-      .font(.lnCaption).foregroundStyle(Theme.textMuted)
-      Spacer(minLength: 0)
+  @ViewBuilder private var content: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      ForEach(sources) { connection in statusLine(connection) }
     }
-    if !connection.lastError.isEmpty {
-      Label { VStack(alignment: .leading, spacing: 2) { Text("The last sync failed").font(.lnRow); Text(connection.lastError).font(.lnMeta) } } icon: { Image(systemName: "exclamationmark.triangle") }
+    ForEach(sources.filter { !$0.lastError.isEmpty }) { connection in
+      Label { VStack(alignment: .leading, spacing: 2) { Text("\(connection.title): The last sync failed").font(.lnRow); Text(connection.lastError).font(.lnMeta) } } icon: { Image(systemName: "exclamationmark.triangle") }
         .foregroundStyle(Theme.error).padding(12).frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.error.opacity(0.08), in: RoundedRectangle(cornerRadius: Metrics.radius))
     }
@@ -118,17 +120,42 @@ struct RevenueScreen: View {
     if let report {
       RevenueReportView(projectId: projectId, report: report)
     } else {
-      EmptyState(systemImage: "hourglass", title: "Waiting for the first sync", message: "Payments show up here as soon as the first stretch has been read.")
+      EmptyState(systemImage: "hourglass", title: "Waiting for the first payments", message: "Payments show up here as soon as a source has read some or sent its first event.")
+    }
+  }
+
+  /// One line per source: its name, Live or Test mode for the ones HelpBites reads, when it last ran or heard from the service, and how much it has brought.
+  private func statusLine(_ connection: RevenueConnection) -> some View {
+    let kind = connection.catalog?.kind
+    return FlowLayout(spacing: 8) {
+      Image(systemName: connection.catalog?.icon ?? "dollarsign.circle").font(.system(size: 12)).foregroundStyle(Theme.textMuted)
+      Text(connection.title).font(.lnCaptionMedium).foregroundStyle(Theme.text)
+      if kind == .pull { Tag(text: connection.livemode ? "Live" : "Test mode", tint: connection.livemode ? Theme.success : Theme.warning) }
+      if !connection.accountName.isEmpty, connection.accountName != connection.title { Text(connection.accountName).font(.lnCaption).foregroundStyle(Theme.textMuted) }
+      Text(statusText(connection)).font(.lnCaption).foregroundStyle(Theme.textMuted)
+      if kind != .pull { Button("Setup") { setup = connection }.buttonStyle(.lnGhost) }
+    }
+  }
+
+  private func statusText(_ connection: RevenueConnection) -> String {
+    let payments = connection.stats.payments.formatted(), subscriptions = connection.stats.subscriptions.formatted()
+    let time = Money.logTime(connection.lastRunAt)
+    if connection.isRunning { return String(localized: "syncing…") }
+    switch connection.catalog?.kind {
+    case .push: return connection.lastRunAt == nil ? String(localized: "waiting for the first event") : String(localized: "last event \(time), \(payments) payments")
+    case .manual: return connection.lastRunAt == nil ? String(localized: "nothing sent yet") : String(localized: "last sent \(time), \(payments) payments, \(subscriptions) subscriptions")
+    default: return connection.lastRunAt == nil ? "" : String(localized: "synced \(time), \(payments) payments, \(subscriptions) subscriptions")
     }
   }
 
   // MARK: Requests
 
   private func load() async {
+    struct Output: Decodable, Sendable { let sources: [RevenueConnection] }
     do {
-      let state: StripeState = try await session.get("/v1/admin/stripe", query: ["project": projectId])
-      connection = state.connection; ready = state.ready
-      if state.connection.connected { await loadReport() } else { report = nil }
+      let output: Output = try await session.get("/v1/admin/revenue/sources", query: ["project": projectId])
+      sources = output.sources
+      if output.sources.isEmpty { report = nil } else { await loadReport() }
       error = ""
     } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
     loading = false
@@ -136,39 +163,27 @@ struct RevenueScreen: View {
 
   private func loadReport() async {
     struct Output: Decodable, Sendable { let report: RevenueReport? }
-    guard connection?.connected == true else { return }
+    guard !sources.isEmpty else { return }
     do {
-      let output: Output = try await session.get("/v1/admin/stripe/report", query: ["project": projectId, "range": range.rawValue])
+      let output: Output = try await session.get("/v1/admin/revenue/report", query: ["project": projectId, "range": range.rawValue])
       report = output.report
     } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
   }
 
-  private func connect() async {
-    struct Input: Encodable, Sendable { let project, apiKey: String }
-    struct Output: Decodable, Sendable { let connection: StripeConnection }
-    guard !connecting, !apiKey.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-    connecting = true; error = ""
-    defer { connecting = false }
+  private func sync(_ source: String, reset: Bool) async {
+    struct Input: Encodable, Sendable { let project, source: String; let reset: Bool }
+    struct Output: Decodable, Sendable { let connection: RevenueConnection }
+    error = ""
     do {
-      let output: Output = try await session.send("/v1/admin/stripe/connect", body: Input(project: projectId, apiKey: apiKey.trimmingCharacters(in: .whitespaces)))
-      connection = output.connection; apiKey = ""
+      let output: Output = try await session.send("/v1/admin/revenue/sync", body: Input(project: projectId, source: source, reset: reset))
+      sources = sources.map { $0.source == source ? output.connection : $0 }
     } catch { self.error = error.localizedDescription }
   }
 
-  private func sync(reset: Bool) async {
-    struct Input: Encodable, Sendable { let project: String; let reset: Bool }
-    struct Output: Decodable, Sendable { let connection: StripeConnection }
+  private func disconnect(_ source: String) async {
     error = ""
     do {
-      let output: Output = try await session.send("/v1/admin/stripe/sync", body: Input(project: projectId, reset: reset))
-      connection = output.connection
-    } catch { self.error = error.localizedDescription }
-  }
-
-  private func disconnect() async {
-    error = ""
-    do {
-      try await session.delete("/v1/admin/stripe?project=\(projectId)")
+      try await session.delete("/v1/admin/revenue?project=\(projectId)&source=\(source)")
       report = nil
       await load()
     } catch { self.error = error.localizedDescription }
@@ -264,6 +279,8 @@ private struct RevenueReportView: View {
       VStack(alignment: .leading, spacing: 24) { plans; customers }
     }
 
+    if report.sources.count > 1 { bySource }
+
     VStack(alignment: .leading, spacing: 8) {
       SectionLabel("Recent payments")
       if report.recent.isEmpty {
@@ -272,7 +289,9 @@ private struct RevenueReportView: View {
       } else {
         Card {
           ForEach(report.recent) { payment in
-            CardRow(divider: payment.id != report.recent.last?.id) { PaymentRow(payment: payment, showCustomer: true) { openContact = OpenContact(id: $0) } }
+            CardRow(divider: payment.id != report.recent.last?.id) {
+              PaymentRow(payment: payment, showCustomer: true, sourceName: report.sources.count > 1 ? RevenueSource.title(of: payment.source ?? "stripe") : nil) { openContact = OpenContact(id: $0) }
+            }
           }
         }
       }
@@ -295,6 +314,27 @@ private struct RevenueReportView: View {
       Capsule().fill(Theme.textHighlighted).frame(width: 10, height: 2)
       Text(money(month.mrr)).font(.lnCaption.weight(.semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted)
       Text("MRR").font(.lnCaption).foregroundStyle(Theme.textMuted)
+    }
+  }
+
+  /// What each source brought in the period, shown once there is more than one.
+  private var bySource: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      SectionLabel("By source")
+      Card {
+        ForEach(report.sources) { row in
+          CardRow(divider: row.id != report.sources.last?.id) {
+            HStack(spacing: 10) {
+              Image(systemName: RevenueSource.named(row.source)?.icon ?? "dollarsign.circle").font(.system(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 16)
+              Text(RevenueSource.title(of: row.source)).font(.lnCallout).foregroundStyle(Theme.text).lineLimit(1)
+              Spacer(minLength: 8)
+              Text(row.payments == 1 ? "1 payment" : "\(row.payments) payments").font(.lnCaption).foregroundStyle(Theme.textMuted)
+              if row.mrr > 0 { Text("\(money(row.mrr))/mo").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted) }
+              Text(money(row.net)).font(.lnCallout).monospacedDigit().foregroundStyle(Theme.text)
+            }
+          }
+        }
+      }
     }
   }
 
@@ -348,11 +388,13 @@ private struct RevenueReportView: View {
   }
 }
 
-/// One payment: who or what, a status badge for failed and refunded ones, the amount (a receipt link when
-/// Stripe has one) and when. Used by the report and by a contact's billing.
+/// One payment: who or what, the source it came from when the report has several, a status badge for failed
+/// and refunded ones, the amount (a receipt link when the service has one) and when. Used by the report and by a contact's billing.
 struct PaymentRow: View {
   let payment: StripePayment
   var showCustomer = false
+  /// Shown when the project has more than one source.
+  var sourceName: String? = nil
   @Environment(\.openURL) private var openURL
   /// With a customer shown, tapping their name opens the person (their contact id) when they are one.
   var onOpenContact: ((String) -> Void)? = nil
@@ -369,6 +411,7 @@ struct PaymentRow: View {
         Button { onOpenContact(contactId) } label: { label.underline() }.buttonStyle(.plain).accessibilityHint("Opens this person")
       } else { label }
       Spacer(minLength: 8)
+      if let sourceName { Text(sourceName).font(.lnCaption).foregroundStyle(Theme.textDimmed).lineLimit(1) }
       if payment.status != "succeeded" { Tag(text: payment.status, tint: Theme.error) }
       else if payment.refunded > 0 { Tag(text: payment.refunded >= payment.amount ? "Refunded" : "Part refunded") }
       if let receipt = URL(string: payment.receiptUrl), !payment.receiptUrl.isEmpty {

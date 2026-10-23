@@ -491,7 +491,15 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   paying customers for a period, charts the last twelve months of net revenue with
   MRR at the end of each month (hover, focus or touch a month for its numbers), and
   lists plans, top customers and recent payments. A customer who is also a contact
-  opens their page from the report. Read-only. Web and native.
+  opens their page from the report. It reads from every place you sell through,
+  and the sources add up: Stripe (a restricted key, read hourly), RevenueCat (its
+  webhook, so purchases, renewals, refunds and expirations show as they happen),
+  the App Store (the Sales and Trends reports: your proceeds, no customers), Paddle
+  and Lemon Squeezy (an API key, read hourly), and a custom API for anything else
+  (Google Play reports, Gumroad, PayPal, past months). Each source connects and
+  disconnects on its own and the tab shows what each brought in. A person's page
+  lists their payments and subscriptions from every source. Read-only. Web and
+  native. [REVENUE.md](REVENUE.md)
 - **Erasure.** Deleting a person removes their conversations, feedback, the files
   they sent through forms, email history and changelog subscriptions, including
   ones made by address alone.
@@ -764,6 +772,16 @@ repository. See [EDITIONS.md](EDITIONS.md).
   yet. Answers are saved on the contact, not kept as separate submissions, and a
   form never overwrites an answer a contact already has. Files are not scanned for
   malware (only their type and size are checked). [FORMS.md](FORMS.md)
+- **Revenue sources.** RevenueCat's history starts when its webhook does (it cannot
+  replay events, and there is no REST backfill: send earlier months to the custom
+  API). The App Store source reads proceeds from the Sales and Trends reports, which
+  name no customers, so it has no top customers, subscribers or MRR. No direct Google
+  Play, PayPal, Gumroad or Polar source: use the custom API, or RevenueCat for Google
+  Play. Only Stripe customers become `stripe_*` attributes on contacts, so the People
+  billing filters, segments and campaigns do not see the other sources' customers.
+  Paddle, Lemon Squeezy and the App Store were written from the services'
+  documentation and unit tests, not run against live accounts.
+  [REVENUE.md](REVENUE.md)
 - **Pricing tables.** Fixed prices only: metered and tiered Stripe prices are left
   out. No Stripe Customer Portal button (a "Manage plan" button is a link of
   yours). Purchases are counted from Stripe, not the App Store, and the Swift

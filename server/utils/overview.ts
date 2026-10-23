@@ -116,18 +116,28 @@ export async function workspaceOverview(ctx: MemberContext, range: RevenueRange)
   }
 }
 
-/** Revenue for each of these projects that has Stripe connected, in its own currency, with totals per currency. */
+/** Revenue for each of these projects that has a revenue source connected, in its own currency, with totals per currency. */
 export async function workspaceRevenue(projectIds: string[], range: RevenueRange): Promise<WorkspaceRevenue> {
-  const accounts = projectIds.length ? await new (useParse()).Query('StripeAccount').containedIn('projectId', projectIds).select('projectId', 'currency').limit(1000).find(MASTER) : []
+  const Parse = useParse()
+  const [stripe, others, earned] = projectIds.length
+    ? await Promise.all([
+      new Parse.Query('StripeAccount').containedIn('projectId', projectIds).select('projectId').limit(1000).find(MASTER),
+      new Parse.Query('RevenueSource').containedIn('projectId', projectIds).select('projectId').limit(1000).find(MASTER),
+      aggregate('StripePayment', [{ $match: { projectId: { $in: projectIds }, status: 'succeeded' } }, { $group: { _id: { p: '$projectId', c: '$currency' }, net: { $sum: '$net' } } }])
+    ])
+    : [[], [], []]
+  const connected = new Set([...stripe, ...others].map(row => String(row.get('projectId')))).size
   const days = REVENUE_RANGES.find(r => r.value === range)?.days || 0
   const since = days ? Math.floor(Date.now() / 1000) - days * DAY : 0
   const months = lastMonths(new Date())
-  // A project counts in its main currency only (an account with no currency has not synced yet), so each currency is summed on its own.
-  const byCurrency = new Map<string, string[]>()
-  for (const row of accounts) {
-    const currency = String(row.get('currency') || '')
-    if (currency) byCurrency.set(currency, [...(byCurrency.get(currency) || []), String(row.get('projectId'))])
+  // A project counts in its main currency only (the one it earned most in, across its sources; none before its first payment), so each currency is summed on its own.
+  const main = new Map<string, { currency: string, net: number }>()
+  for (const row of earned) {
+    const { p, c } = row.objectId as { p: string, c: string }
+    if (c && (main.get(p)?.net ?? -Infinity) < Number(row.net)) main.set(p, { currency: c, net: Number(row.net) })
   }
+  const byCurrency = new Map<string, string[]>()
+  for (const [projectId, { currency }] of main) byCurrency.set(currency, [...(byCurrency.get(currency) || []), projectId])
   const keyed = (rows: Record<string, any>[] | null, field: string) => new Map((rows || []).map(r => [String(r.objectId), Number(r[field]) || 0]))
 
   const groups = await Promise.all([...byCurrency].map(async ([currency, ids]) => {
@@ -157,5 +167,5 @@ export async function workspaceRevenue(projectIds: string[], range: RevenueRange
   }))
 
   const order = (a: { net: number, mrr: number }, b: { net: number, mrr: number }) => b.net - a.net || b.mrr - a.mrr
-  return { range, connected: accounts.length, totals: groups.map(g => g.total).sort(order), projects: groups.flatMap(g => g.projects).sort(order) }
+  return { range, connected, totals: groups.map(g => g.total).sort(order), projects: groups.flatMap(g => g.projects).sort(order) }
 }

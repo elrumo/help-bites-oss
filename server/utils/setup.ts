@@ -19,11 +19,14 @@ export async function projectSetup(ctx: MemberContext, project: ParseObject): Pr
   const Parse = useParse()
   const p = serializeAdminProject(project)
   const skip: SetupKey[] = can(ctx.role, 'marketing') ? [] : ['stripe']
-  const [pushDevices, assistantRows, stripe] = await Promise.all([
+  const [pushDevices, assistantRows, stripeAccount, revenueRows] = await Promise.all([
     teamPushDevices(ctx.workspace),
     new Parse.Query('SupportAgent').equalTo('project', project).ascending('createdAt').limit(20).find(MASTER),
-    skip.includes('stripe') ? null : findStripeAccount(project)
+    skip.includes('stripe') ? null : findStripeAccount(project),
+    skip.includes('stripe') ? [] : new Parse.Query('RevenueSource').equalTo('project', project).limit(20).find(MASTER)
   ])
+  // The checklist's revenue row (still keyed `stripe`) reads every source: connected when any is, failing when any is.
+  const stripe = [stripeAccount, ...revenueRows].filter((row): row is ParseObject => Boolean(row))
   const readiness = await Promise.all(assistantRows.map(agent => readAssistant(ctx.workspace, agent)))
   const live = readiness.findIndex(r => r.live)
   return buildSetup({
@@ -39,7 +42,11 @@ export async function projectSetup(ctx: MemberContext, project: ParseObject): Pr
     fromEmail: p.fromEmail,
     // Named after the one that answers, else the first: the row says which assistant to look at.
     assistants: { total: assistantRows.length, live: readiness.filter(r => r.live).length, first: String(assistantRows[live >= 0 ? live : 0]?.get('name') || '') },
-    stripe: { connected: Boolean(stripe), synced: Boolean(stripe?.get('lastRunAt')) && stripe?.get('status') !== 'error', error: stripe?.get('status') === 'error' ? String(stripe.get('lastError') || 'Sync failed') : '' },
+    stripe: {
+      connected: stripe.length > 0,
+      synced: stripe.some(row => row.get('lastRunAt')) && !stripe.some(row => row.get('status') === 'error'),
+      error: String(stripe.find(row => row.get('status') === 'error')?.get('lastError') || (stripe.some(row => row.get('status') === 'error') ? 'Sync failed' : ''))
+    },
     repos: projectRepos(project).length,
     errorTracker: { connected: p.errors.connected, name: p.errors.providerName }
   })

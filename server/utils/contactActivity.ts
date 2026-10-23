@@ -1,6 +1,6 @@
 import { ACTIVITY_LIMITS, mergeActivity, type ActivityItem, type ActivityType, type ContactActivity } from '#shared/activity'
 import { formatMoney, fromMinor } from '#shared/stripe'
-import { identityOf, type ContactIdentity } from './contactJoins'
+import { billingRowsOf, identityOf, type ContactIdentity } from './contactJoins'
 import { iso, MASTER, useParse, type ParseObject } from './parse'
 
 // One person's history, newest first, merged from the places HelpBites keeps
@@ -81,10 +81,8 @@ const KINDS: Record<ActivityType, Kind> = {
   },
 
   async payment(project, who, _contact, before, limit) {
-    if (!who.stripeCustomerId && !who.email) return []
-    const query = new (useParse()).Query('StripePayment').equalTo('projectId', project.id)
-    if (who.stripeCustomerId) query.equalTo('customerId', who.stripeCustomerId)
-    else query.equalTo('email', who.email)
+    const query = billingRowsOf('StripePayment', project, who)
+    if (!query) return []
     query.descending('paidAtSec').limit(limit)
     if (before) query.lessThan('paidAtSec', Math.floor(before.getTime() / 1000))
     return (await query.find(MASTER)).map((row) => {
@@ -94,10 +92,8 @@ const KINDS: Record<ActivityType, Kind> = {
   },
 
   async subscription(project, who, _contact, before, limit) {
-    if (!who.stripeCustomerId && !who.email) return []
-    const query = new (useParse()).Query('StripeSubscription').equalTo('projectId', project.id)
-    if (who.stripeCustomerId) query.equalTo('customerId', who.stripeCustomerId)
-    else query.equalTo('email', who.email)
+    const query = billingRowsOf('StripeSubscription', project, who)
+    if (!query) return []
     query.descending('startedAtSec').limit(limit)
     if (before) query.lessThan('startedAtSec', Math.floor(before.getTime() / 1000))
     return (await query.find(MASTER)).map(row => ({ id: `subscription:${row.id}`, type: 'subscription' as const, at: secondsToIso(row.get('startedAtSec')), title: `Subscribed to ${row.get('plan') || 'a plan'}`, detail: String(row.get('status') || ''), ref: { kind: 'stripe' as const, id: String(row.get('stripeId') || '') } }))

@@ -33,8 +33,8 @@ export function identityOf(contact: ParseObject): ContactIdentity {
 }
 
 /**
- * The contact ids for Stripe customers: by the customer id the sync wrote on
- * the contact, else by address. Keys of the result are `customerId` and the
+ * The contact ids for the customers of billing rows: by the Stripe customer id the sync wrote on
+ * the contact, else by the app's user id (RevenueCat), else by address. Keys of the result are `customerId` and the
  * lowercased `email`, so a row looks itself up either way.
  */
 export async function contactIdsForBilling(project: ParseObject, rows: { customerId?: string, email?: string }[]): Promise<{ byCustomer: Map<string, string>, byEmail: Map<string, string> }> {
@@ -45,6 +45,9 @@ export async function contactIdsForBilling(project: ParseObject, rows: { custome
   if (customers.length) {
     const found = await contactQuery(project, { [`attributes.${STRIPE_ATTR.customer}`]: { $in: customers } }).select('attributes').limit(1000).find(MASTER)
     for (const c of found) byCustomer.set(String((c.get('attributes') as Record<string, unknown>)[STRIPE_ATTR.customer]), c.id || '')
+    // RevenueCat names a customer by the app's own user id, which is the contact's external id.
+    const ours = await contactQuery(project).containedIn('externalId', customers.filter(id => !byCustomer.has(id))).select('externalId').limit(1000).find(MASTER)
+    for (const c of ours) byCustomer.set(String(c.get('externalId') || ''), c.id || '')
   }
   const unmatched = emails.filter(e => !rows.some(r => r.customerId && byCustomer.has(r.customerId) && (r.email || '').toLowerCase() === e))
   if (unmatched.length) {
@@ -52,6 +55,18 @@ export async function contactIdsForBilling(project: ParseObject, rows: { custome
     for (const c of found) byEmail.set(String(c.get('email') || '').toLowerCase(), c.id || '')
   }
   return { byCustomer, byEmail }
+}
+
+/**
+ * A person's payment or subscription rows (`className`), whichever source wrote them: found by their Stripe
+ * customer id, by the app's own user id (RevenueCat names customers by it) or by address. Null when
+ * nothing identifies them.
+ */
+export function billingRowsOf(className: 'StripePayment' | 'StripeSubscription', project: ParseObject, who: Pick<ContactIdentity, 'stripeCustomerId' | 'externalId' | 'email'>) {
+  const Parse = useParse()
+  const by = (field: string, value: string) => new Parse.Query(className).equalTo('projectId', project.id).equalTo(field, value)
+  const queries = [by('customerId', who.stripeCustomerId), by('customerId', who.externalId), by('email', who.email)].filter((_, i) => [who.stripeCustomerId, who.externalId, who.email][i])
+  return queries.length ? Parse.Query.or(...queries) : null
 }
 
 /** A billing row's contact id, from lookups made by `contactIdsForBilling`; '' when nobody matches. */

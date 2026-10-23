@@ -103,7 +103,7 @@
     "inboxZeroDescription": "没有人在等待回复。",
     "revenueByProject": "按项目划分的收入",
     "noRevenueTitle": "还没有收入",
-    "noRevenueDescription": "为项目连接 Stripe，即可在这里与其他应用一起查看它的收入。",
+    "noRevenueDescription": "为项目连接收入来源（Stripe、RevenueCat、App Store 等），即可在这里与其他应用一起查看它的收入。",
     "share": "占 {currency} 收入的 {share}",
     "mrrShort": "MRR {amount}",
     "withoutStripe": "{count} 个未连接 Stripe 的项目未计入。",
@@ -2654,8 +2654,8 @@
     "more": {
       "title": "与支持功能相辅相成的小功能。",
       "stripe": {
-        "title": "来自 Stripe 的收入",
-        "body": "连接一个只读密钥，即可在每个人的会话旁看到收入、订阅者以及他们的付款记录。"
+        "title": "来自每个销售渠道的收入",
+        "body": "连接 Stripe、RevenueCat、App Store、Paddle 或 Lemon Squeezy，或从你自己的代码发送付款，即可在每个人的会话旁看到收入、MRR 以及他们的付款记录。"
       },
       "legal": {
         "title": "法律文件",
@@ -3590,17 +3590,24 @@
       "period": "时间段",
       "loadingLabel": "正在加载收入",
       "sync": "同步",
-      "connectStripe": "连接 Stripe",
-      "connectDescription": "在对话旁边查看收入、订阅者以及每位用户的付款情况。HelpBites 仅从 Stripe 读取数据。",
-      "apiKeyLabel": "受限 API 密钥",
-      "apiKeyHelp": "Stripe → 开发者 → API 密钥 → 创建受限密钥。授予 Charges、Customers、Subscriptions 和 Products 的读取权限。",
+      "connectTitle": "连接收入来源",
+      "connectDescription": "在对话旁边查看收入、订阅者以及每位用户的付款情况。连接你销售的所有渠道，数字就会汇总在一起。",
+      "addSource": "添加来源",
+      "back": "返回",
+      "connect": "连接 {name}",
       "live": "正式",
       "testMode": "测试模式",
-      "syncing": "· 同步中… 目前已有 {payments} 笔付款",
-      "synced": "· 已于 {time} 同步，{payments} 笔付款，{subscriptions} 个订阅",
+      "syncing": "同步中…",
+      "synced": "已于 {time} 同步，{payments} 笔付款，{subscriptions} 个订阅",
+      "lastEvent": "最近事件 {time}，{payments} 笔付款",
+      "waitingEvent": "正在等待首个事件",
+      "lastSent": "最近发送 {time}，{payments} 笔付款，{subscriptions} 个订阅",
+      "nothingSent": "尚未发送任何内容",
       "syncFailed": "上次同步失败",
-      "waitingTitle": "等待首次同步",
-      "waitingDescription": "首段数据读取完成后，付款会立即显示在这里。",
+      "eventFailed": "无法应用最近的事件",
+      "setup": "配置",
+      "waitingTitle": "等待首批付款",
+      "waitingDescription": "来源读取到付款或收到首个事件后，付款会立即显示在这里。",
       "byMonth": "按月收入",
       "monthTitle": "{month}：来自 {payments} 笔付款的 {net}，MRR {mrr}",
       "plans": "套餐",
@@ -3610,6 +3617,7 @@
       "topCustomers": "主要客户",
       "noPayments": "还没有付款。",
       "payments": "{count} 笔付款",
+      "bySource": "按来源",
       "recentPayments": "最近的付款",
       "guest": "访客",
       "refunded": "已退款",
@@ -3625,13 +3633,95 @@
       "newChurned": "本期新增 {newSubs}，取消 {churned}",
       "payingCustomers": "付费客户",
       "allTime": "累计 {amount}",
-      "syncAll": "全部重新同步",
-      "disconnectStripe": "断开 Stripe 连接",
+      "syncAll": "从头重新同步 {name}",
+      "disconnect": "断开 {name} 连接",
       "loadError": "无法加载收入",
-      "connectError": "无法连接 Stripe",
+      "connectError": "无法连接",
       "syncError": "无法开始同步",
-      "disconnectConfirm": "断开 Stripe 连接？密钥以及从 Stripe 同步的付款将被删除。联系人会保留其 Stripe 属性。",
-      "disconnectError": "无法断开连接"
+      "disconnectConfirm": "断开 {name} 连接？它的凭据，以及它带来的付款和订阅都会被删除。你的其他来源会保留。",
+      "disconnectError": "无法断开连接",
+      "openContact": "打开此人",
+      "copy": "复制",
+      "copied": "已复制",
+      "sources": {
+        "stripe": {
+          "blurb": "扣款和订阅，使用受限密钥读取。",
+          "intro": "HelpBites 仅从 Stripe 读取数据。",
+          "fields": {
+            "apiKey": {
+              "label": "受限 API 密钥",
+              "help": "Stripe → 开发者 → API 密钥 → 创建受限密钥。授予 Charges、Customers、Subscriptions 和 Products 的读取权限。"
+            }
+          }
+        },
+        "revenuecat": {
+          "blurb": "来自 App Store、Google Play 等的应用内购买和订阅，以 RevenueCat 的报告为准。",
+          "intro": "RevenueCat 会在事件发生时将其发送给 HelpBites。接下来你会得到一个 URL 和一个密钥，粘贴到 RevenueCat 中。"
+        },
+        "apple": {
+          "blurb": "你的 App Store 收益，来自 Sales and Trends 报告。不含客户和 MRR。",
+          "intro": "创建一个可读取 Sales and Reports 的 App Store Connect API 密钥（Users and Access → Integrations）。HelpBites 会读取每日销售报告，Apple 会将其保留一年。",
+          "fields": {
+            "issuerId": {
+              "label": "Issuer ID",
+              "help": "位于 Users and Access → Integrations → App Store Connect API 的顶部。"
+            },
+            "keyId": {
+              "label": "Key ID",
+              "help": "显示在你创建的密钥旁边。"
+            },
+            "vendorNumber": {
+              "label": "供应商编号",
+              "help": "Payments and Financial Reports，位于你的名字旁边。"
+            },
+            "privateKey": {
+              "label": "私钥 (.p8)",
+              "help": "用文本编辑器打开下载的 AuthKey_….p8，粘贴全部内容。Apple 只允许下载一次。"
+            }
+          }
+        },
+        "paddle": {
+          "blurb": "来自 Paddle Billing 的交易和订阅。",
+          "intro": "在 Paddle → Developer tools → Authentication 中创建服务器端 API 密钥，授予交易、订阅、客户和调整（退款）的读取权限。沙盒密钥会连接你的沙盒。",
+          "fields": {
+            "apiKey": {
+              "label": "API 密钥",
+              "help": "以 pdl_live_apikey_ 开头（沙盒为 pdl_sdbx_apikey_）。"
+            }
+          }
+        },
+        "lemonsqueezy": {
+          "blurb": "来自 Lemon Squeezy 的订单和订阅。",
+          "intro": "在 Lemon Squeezy → Settings → API 中创建 API 密钥。HelpBites 只读取数据，并排除测试模式的订单。",
+          "fields": {
+            "apiKey": {
+              "label": "API 密钥",
+              "help": "创建时请立即复制：Lemon Squeezy 只显示一次。"
+            }
+          }
+        },
+        "custom": {
+          "name": "自定义 API",
+          "blurb": "其他一切：Google Play 报告、Gumroad、PayPal、发票。发送到 API 即可。",
+          "intro": "无需连接任何东西。你用脚本或无代码工具把付款和订阅发送到 API，它们会与其余数据汇总在一起。"
+        }
+      },
+      "setupSheet": {
+        "done": "完成",
+        "revenuecat": {
+          "title": "将 RevenueCat 事件发送到 HelpBites",
+          "step1": "在 RevenueCat 中打开 Project settings → Integrations → Webhooks，添加一个 webhook。",
+          "step2": "粘贴下面的内容作为 webhook URL：",
+          "step3": "粘贴下面的密钥作为 Authorization 请求头的值：",
+          "step4": "选择生产环境事件，保存，然后发送一个测试事件。它会作为最近事件显示在这里。",
+          "note": "此后，购买、续订、退款、取消和到期会在发生时显示在这里。RevenueCat 无法重放过去的事件，因此今天之前的收入会缺失。金额为 RevenueCat 的美元价格，未扣除商店手续费；沙盒购买会被忽略。系统通过 App User ID（联系人的用户 ID）或 $email 属性将人员与联系人匹配。",
+          "tokenHidden": "只有管理该项目的人才能看到密钥。"
+        },
+        "custom": {
+          "title": "从你自己的代码发送付款",
+          "intro": "使用管理员 API 密钥（设置 → API 密钥）。金额为小数，id 可确保重复发送是安全的。“收入”指南列出了所有字段。"
+        }
+      }
     },
     "projectList": {
       "emptyTitle": "还没有项目",
@@ -5343,7 +5433,7 @@
       "none": "还没有助手。在你添加之前，所有问题都由人工回答。"
     },
     "stripe": {
-      "title": "Stripe",
+      "title": "收入",
       "synced": "已连接并同步。",
       "waiting": "已连接；正在等待首次同步。",
       "error": "上次同步失败：{value}",

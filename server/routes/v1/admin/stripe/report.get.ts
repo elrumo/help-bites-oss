@@ -15,8 +15,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const project = await requireProject(ctx, String(query.project || ''))
   const range = REVENUE_RANGES.find(r => r.value === query.range)?.value || '30d' as RevenueRange
-  const account = await requireStripeAccount(project)
-  // Nothing synced yet: an empty report instead of totals in no currency.
-  if (!account.get('currency')) return { report: null }
-  return { report: await revenueReport(project, account, range) }
+  await requireStripeAccount(project)
+  // Nothing synced yet: no report instead of totals in no currency. Covers every source, like /v1/admin/revenue/report.
+  return { report: await revenueReport(project, range) }
 })

@@ -103,7 +103,7 @@
     "inboxZeroDescription": "Nadie espera respuesta.",
     "revenueByProject": "Ingresos por proyecto",
     "noRevenueTitle": "Todavía no hay ingresos",
-    "noRevenueDescription": "Conecta Stripe a un proyecto para ver aquí sus ingresos, junto a los de tus otras apps.",
+    "noRevenueDescription": "Conecta una fuente de ingresos (Stripe, RevenueCat, el App Store y más) a un proyecto para ver aquí sus ingresos, junto a los de tus otras apps.",
     "share": "{share} de los ingresos en {currency}",
     "mrrShort": "{amount} MRR",
     "withoutStripe": "{count} proyecto sin Stripe no se cuenta. | {count} proyectos sin Stripe no se cuentan.",
@@ -2654,8 +2654,8 @@
     "more": {
       "title": "Pequeños extras que complementan el soporte.",
       "stripe": {
-        "title": "Ingresos desde Stripe",
-        "body": "Conecta una clave de solo lectura para ver los ingresos, los suscriptores y los pagos de cada persona junto a sus conversaciones."
+        "title": "Ingresos desde cada lugar donde vendes",
+        "body": "Conecta Stripe, RevenueCat, el App Store, Paddle o Lemon Squeezy, o envía pagos desde tu propio código, para ver los ingresos, el MRR y los pagos de cada persona junto a sus conversaciones."
       },
       "legal": {
         "title": "Documentos legales",
@@ -3590,17 +3590,24 @@
       "period": "Periodo",
       "loadingLabel": "Cargando ingresos",
       "sync": "Sincronizar",
-      "connectStripe": "Conectar Stripe",
-      "connectDescription": "Consulta los ingresos, los suscriptores y los pagos de cada persona junto a sus conversaciones. HelpBites solo lee datos de Stripe.",
-      "apiKeyLabel": "Clave API restringida",
-      "apiKeyHelp": "Stripe → Desarrolladores → Claves API → Crear clave restringida. Dale acceso de lectura a Charges, Customers, Subscriptions y Products.",
+      "connectTitle": "Conecta una fuente de ingresos",
+      "connectDescription": "Consulta los ingresos, los suscriptores y los pagos de cada persona junto a sus conversaciones. Conecta todos los sitios donde vendes y las cifras se suman.",
+      "addSource": "Añadir una fuente",
+      "back": "Atrás",
+      "connect": "Conectar {name}",
       "live": "En vivo",
       "testMode": "Modo de prueba",
-      "syncing": "· sincronizando… {payments} pagos hasta ahora",
-      "synced": "· sincronizado {time}, {payments} pagos, {subscriptions} suscripciones",
+      "syncing": "sincronizando…",
+      "synced": "sincronizado {time}, {payments} pagos, {subscriptions} suscripciones",
+      "lastEvent": "último evento {time}, {payments} pagos",
+      "waitingEvent": "esperando el primer evento",
+      "lastSent": "último envío {time}, {payments} pagos, {subscriptions} suscripciones",
+      "nothingSent": "aún no se ha enviado nada",
       "syncFailed": "La última sincronización falló",
-      "waitingTitle": "Esperando la primera sincronización",
-      "waitingDescription": "Los pagos aparecerán aquí en cuanto se lea el primer tramo.",
+      "eventFailed": "No se pudo aplicar el último evento",
+      "setup": "Configuración",
+      "waitingTitle": "Esperando los primeros pagos",
+      "waitingDescription": "Los pagos aparecerán aquí en cuanto una fuente haya leído alguno o haya enviado su primer evento.",
       "byMonth": "Ingresos por mes",
       "monthTitle": "{month}: {net} de {payments} pagos, {mrr} de MRR",
       "plans": "Planes",
@@ -3610,6 +3617,7 @@
       "topCustomers": "Principales clientes",
       "noPayments": "Aún no hay pagos.",
       "payments": "{count} pago | {count} pagos",
+      "bySource": "Por fuente",
       "recentPayments": "Pagos recientes",
       "guest": "Invitado",
       "refunded": "Reembolsado",
@@ -3625,13 +3633,95 @@
       "newChurned": "{newSubs} nuevos, {churned} cancelados en este periodo",
       "payingCustomers": "Clientes de pago",
       "allTime": "{amount} en total",
-      "syncAll": "Volver a sincronizar todo",
-      "disconnectStripe": "Desconectar Stripe",
+      "syncAll": "Volver a sincronizar {name} desde el principio",
+      "disconnect": "Desconectar {name}",
       "loadError": "No se pudieron cargar los ingresos",
-      "connectError": "No se pudo conectar Stripe",
+      "connectError": "No se pudo conectar",
       "syncError": "No se pudo iniciar la sincronización",
-      "disconnectConfirm": "¿Desconectar Stripe? Se olvidarán la clave y los pagos sincronizados desde Stripe. Los contactos conservan sus atributos de Stripe.",
-      "disconnectError": "No se pudo desconectar"
+      "disconnectConfirm": "¿Desconectar {name}? Se olvidarán sus credenciales y los pagos y suscripciones que trajo. Tus otras fuentes se conservan.",
+      "disconnectError": "No se pudo desconectar",
+      "openContact": "Abrir a esta persona",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "sources": {
+        "stripe": {
+          "blurb": "Cobros y suscripciones, leídos con una clave restringida.",
+          "intro": "HelpBites solo lee datos de Stripe.",
+          "fields": {
+            "apiKey": {
+              "label": "Clave API restringida",
+              "help": "Stripe → Desarrolladores → Claves API → Crear clave restringida. Dale acceso de lectura a Charges, Customers, Subscriptions y Products."
+            }
+          }
+        },
+        "revenuecat": {
+          "blurb": "Compras dentro de la app y suscripciones de App Store, Google Play y más, tal como las informa RevenueCat.",
+          "intro": "RevenueCat envía a HelpBites sus eventos en cuanto ocurren. A continuación recibes una URL y un secreto para pegar en RevenueCat."
+        },
+        "apple": {
+          "blurb": "Tus ingresos del App Store, según los informes de Sales and Trends. Sin clientes ni MRR.",
+          "intro": "Crea una clave de API de App Store Connect (Users and Access → Integrations) que pueda leer Sales and Reports. HelpBites lee los informes diarios de ventas, que Apple conserva durante un año.",
+          "fields": {
+            "issuerId": {
+              "label": "Issuer ID",
+              "help": "En la parte superior de Users and Access → Integrations → App Store Connect API."
+            },
+            "keyId": {
+              "label": "Key ID",
+              "help": "Aparece junto a la clave que creaste."
+            },
+            "vendorNumber": {
+              "label": "Número de proveedor",
+              "help": "Payments and Financial Reports, junto a tu nombre."
+            },
+            "privateKey": {
+              "label": "Clave privada (.p8)",
+              "help": "Abre el archivo AuthKey_….p8 descargado en un editor de texto y pega todo su contenido. Apple solo permite descargarla una vez."
+            }
+          }
+        },
+        "paddle": {
+          "blurb": "Transacciones y suscripciones de Paddle Billing.",
+          "intro": "Crea una clave de API de servidor en Paddle → Developer tools → Authentication con acceso de lectura a transacciones, suscripciones, clientes y ajustes (reembolsos). Una clave de sandbox conecta tu sandbox.",
+          "fields": {
+            "apiKey": {
+              "label": "Clave de API",
+              "help": "Empieza por pdl_live_apikey_ (pdl_sdbx_apikey_ para el sandbox)."
+            }
+          }
+        },
+        "lemonsqueezy": {
+          "blurb": "Pedidos y suscripciones de Lemon Squeezy.",
+          "intro": "Crea una clave de API en Lemon Squeezy → Settings → API. HelpBites solo lee y deja fuera los pedidos en modo de prueba.",
+          "fields": {
+            "apiKey": {
+              "label": "Clave de API",
+              "help": "Cópiala al crearla: Lemon Squeezy la muestra una sola vez."
+            }
+          }
+        },
+        "custom": {
+          "name": "API personalizada",
+          "blurb": "Cualquier otra cosa: informes de Google Play, Gumroad, PayPal, facturas. Envíalo a la API.",
+          "intro": "No hay nada que conectar. Envías los pagos y las suscripciones a la API desde un script o una herramienta sin código, y se suman al resto."
+        }
+      },
+      "setupSheet": {
+        "done": "Listo",
+        "revenuecat": {
+          "title": "Envía los eventos de RevenueCat a HelpBites",
+          "step1": "En RevenueCat, abre Project settings → Integrations → Webhooks y añade un webhook.",
+          "step2": "Pega esto como URL del webhook:",
+          "step3": "Pega este secreto como valor de la cabecera Authorization:",
+          "step4": "Elige los eventos de producción, guarda y envía un evento de prueba. Aparecerá aquí como último evento.",
+          "note": "A partir de ahí, las compras, renovaciones, reembolsos, cancelaciones y caducidades aparecen aquí en cuanto ocurren. RevenueCat no puede reenviar el pasado, así que faltan los ingresos anteriores a hoy. Los importes son el precio en USD de RevenueCat, antes de las comisiones de la tienda; las compras de sandbox se ignoran. Las personas se vinculan con los contactos por el App User ID (el ID de usuario del contacto) o por el atributo $email.",
+          "tokenHidden": "Solo quienes gestionan el proyecto pueden ver el secreto."
+        },
+        "custom": {
+          "title": "Envía pagos desde tu propio código",
+          "intro": "Usa una clave de API de administrador (Ajustes → Claves de API). Los importes son decimales y el id permite repetir el envío sin riesgo. La guía de Ingresos enumera todos los campos."
+        }
+      }
     },
     "projectList": {
       "emptyTitle": "Aún no hay proyectos",
@@ -5343,7 +5433,7 @@
       "none": "Aún no hay ningún asistente. Las personas responden todo hasta que añadas uno."
     },
     "stripe": {
-      "title": "Stripe",
+      "title": "Ingresos",
       "synced": "Conectado y sincronizado.",
       "waiting": "Conectado; esperando la primera sincronización.",
       "error": "La última sincronización falló: {value}",

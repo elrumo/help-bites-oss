@@ -1,13 +1,15 @@
 import { createError } from 'h3'
 import { normalizeEmail, type ContactInput } from '#shared/contacts'
+import { OTHER_SOURCES } from '#shared/revenue'
 import {
   PAYING_STATUSES, REVENUE_RANGES, STRIPE_ATTR, fromMinor, monthlyMinor, rollupAttributes,
   type RevenueRange, type RevenueReport, type StripeConnection, type StripeCustomerDto, type StripePaymentDto, type StripeSubscriptionDto, type StripeSubscriptionStatus
 } from '#shared/stripe'
 import { contactQuery, upsertContacts } from './contacts'
-import { billingContactId, contactIdsForBilling } from './contactJoins'
+import { billingContactId, billingRowsOf, contactIdsForBilling, identityOf } from './contactJoins'
 import { MASTER, iso, useParse, type ParseObject } from './parse'
 import { runExclusive, useRedis } from './redis'
+import { monthOf, saveRows } from './revenue/rows'
 import { readCredential, storeCredential } from './secrets'
 import { workspaceIsActive } from './tenancy'
 import { projectWorkspaceId } from './usage'
@@ -125,14 +127,15 @@ export async function connectStripe(project: ParseObject, apiKey: unknown): Prom
   return row
 }
 
-/** Forgets the key and everything synced from Stripe. Contacts keep their `stripe_*` attributes. */
+/** Forgets the key and everything synced from Stripe (not the other sources' rows in the same classes). Contacts keep their `stripe_*` attributes. */
 export async function disconnectStripe(project: ParseObject): Promise<void> {
   const Parse = useParse()
   await (await findStripeAccount(project))?.destroy(MASTER)
   await useRedis().del(pricingCatalogKey(project.id || '')).catch(() => {})
   for (const className of ['StripePayment', 'StripeSubscription']) {
     for (;;) {
-      const rows = await new Parse.Query(className).equalTo('projectId', project.id).limit(1000).find(MASTER)
+      // Stripe's rows are the ones with no `source` or `stripe`: everything else belongs to another source.
+      const rows = await new Parse.Query(className).equalTo('projectId', project.id).notContainedIn('source', OTHER_SOURCES).limit(1000).find(MASTER)
       if (!rows.length) break
       await Parse.Object.destroyAll(rows, MASTER)
     }
@@ -141,27 +144,12 @@ export async function disconnectStripe(project: ParseObject): Promise<void> {
 
 // ---- syncing -------------------------------------------------------------------
 
-async function saveRows(className: string, projectId: string, items: (Record<string, unknown> & { stripeId: string })[]) {
-  if (!items.length) return
-  const Parse = useParse()
-  const project = Parse.Object.extend('Project').createWithoutData(projectId)
-  const existing = await new Parse.Query(className).equalTo('projectId', projectId).containedIn('stripeId', items.map(i => i.stripeId)).limit(items.length).find(MASTER)
-  const byId = new Map(existing.map(row => [String(row.get('stripeId')), row]))
-  const rows = items.map((item) => {
-    const row = byId.get(item.stripeId) || new (Parse.Object.extend(className))() as ParseObject
-    row.set({ ...item, project, projectId })
-    return row
-  })
-  await Parse.Object.saveAll(rows, { ...MASTER, batchSize: 50 })
-}
-
-const monthOf = (sec: number) => new Date(sec * 1000).toISOString().slice(0, 7)
-
 export function chargeRow(charge: any) {
   const customer = customerOf(charge.customer)
   const succeeded = charge.status === 'succeeded'
   return {
     stripeId: String(charge.id),
+    source: 'stripe' as const,
     customerId: customer.id,
     email: customer.email || normalizeEmail(charge.billing_details?.email) || normalizeEmail(charge.receipt_email),
     status: String(charge.status || ''),
@@ -186,6 +174,7 @@ export function subscriptionRow(sub: any, products: Map<string, string>) {
   const status = String(sub.status || '')
   return {
     stripeId: String(sub.id),
+    source: 'stripe' as const,
     customerId: customer.id,
     email: customer.email,
     status,
@@ -218,8 +207,8 @@ async function productNames(key: string): Promise<Map<string, string>> {
 const aggregate = (className: string, pipeline: Record<string, unknown>[]) =>
   new (useParse()).Query(className).aggregate(pipeline, MASTER) as Promise<Record<string, any>[]>
 
-/** The currency with the most revenue: every total in the panel is in this one. */
-async function primaryCurrency(projectId: string): Promise<string> {
+/** The currency with the most revenue, across every source: every total in the panel is in this one. */
+export async function primaryCurrency(projectId: string): Promise<string> {
   const rows = await aggregate('StripePayment', [{ $match: { projectId, status: 'succeeded' } }, { $group: { _id: '$currency', net: { $sum: '$net' } } }, { $sort: { net: -1 } }, { $limit: 1 }])
   return String(rows[0]?.objectId || '')
 }
@@ -336,7 +325,7 @@ const seconds = (value: unknown) => (Number(value) > 0 ? new Date(Number(value) 
 
 export function serializePayment(row: ParseObject): StripePaymentDto {
   return {
-    id: String(row.get('stripeId')), customerId: String(row.get('customerId') || ''), email: String(row.get('email') || ''),
+    id: String(row.get('stripeId')), source: String(row.get('source') || 'stripe'), customerId: String(row.get('customerId') || ''), email: String(row.get('email') || ''),
     amount: Number(row.get('amount')) || 0, refunded: Number(row.get('refunded')) || 0, currency: String(row.get('currency') || ''),
     status: String(row.get('status') || ''), description: String(row.get('description') || ''), receiptUrl: String(row.get('receiptUrl') || ''),
     paidAt: seconds(row.get('paidAtSec')) || ''
@@ -370,18 +359,20 @@ export function mrrByMonth(months: string[], spans: PaidSpan[]): number[] {
   return months.map(month => spans.reduce((sum, s) => sum + (s.from > month ? 0 : !s.to ? s.mrr : s.to > month ? s.monthly : 0), 0))
 }
 
-export async function revenueReport(project: ParseObject, account: ParseObject, range: RevenueRange): Promise<RevenueReport> {
+/** The project's revenue over every source it has, in its main currency; null while nothing has been paid yet. */
+export async function revenueReport(project: ParseObject, range: RevenueRange): Promise<RevenueReport | null> {
   const projectId = project.id || ''
-  const currency = String(account.get('currency') || '')
+  const currency = await primaryCurrency(projectId)
+  if (!currency) return null
   const days = REVENUE_RANGES.find(r => r.value === range)?.days || 0
   const now = new Date()
   const since = days ? Math.floor(now.getTime() / 1000) - days * DAY : 0
   const months = lastMonths(now)
   const paid = { projectId, status: 'succeeded', currency }
   const Parse = useParse()
-  const [period, payers, allTime, monthly, currencies, top, bySubStatus, plans, started, canceled, recent, spans] = await Promise.all([
+  const [period, payers, allTime, monthly, currencies, top, bySubStatus, plans, started, canceled, recent, spans, bySource, mrrBySource] = await Promise.all([
     aggregate('StripePayment', [{ $match: { ...paid, paidAtSec: { $gte: since } } }, { $group: { _id: '$projectId', gross: { $sum: '$amount' }, refunds: { $sum: '$refunded' }, payments: { $sum: 1 } } }]),
-    aggregate('StripePayment', [{ $match: { ...paid, paidAtSec: { $gte: since }, net: { $gt: 0 } } }, { $group: { _id: '$customerId', p: { $first: '$projectId' } } }, { $group: { _id: '$p', n: { $sum: 1 } } }]),
+    aggregate('StripePayment', [{ $match: { ...paid, paidAtSec: { $gte: since }, net: { $gt: 0 }, customerId: { $ne: '' } } }, { $group: { _id: '$customerId', p: { $first: '$projectId' } } }, { $group: { _id: '$p', n: { $sum: 1 } } }]),
     aggregate('StripePayment', [{ $match: paid }, { $group: { _id: '$projectId', net: { $sum: '$net' } } }]),
     aggregate('StripePayment', [{ $match: { ...paid, month: { $gte: months[0] } } }, { $group: { _id: '$month', net: { $sum: '$net' }, payments: { $sum: 1 } } }]),
     aggregate('StripePayment', [{ $match: { projectId, status: 'succeeded' } }, { $group: { _id: '$currency', net: { $sum: '$net' } } }]),
@@ -391,7 +382,9 @@ export async function revenueReport(project: ParseObject, account: ParseObject, 
     new Parse.Query('StripeSubscription').equalTo('projectId', projectId).greaterThanOrEqualTo('startedAtSec', since).count(MASTER),
     new Parse.Query('StripeSubscription').equalTo('projectId', projectId).greaterThanOrEqualTo('canceledAtSec', Math.max(since, 1)).count(MASTER),
     new Parse.Query('StripePayment').equalTo('projectId', projectId).descending('paidAtSec').limit(10).find(MASTER),
-    aggregate('StripeSubscription', [{ $match: { projectId, currency, paidFromMonth: { $gt: '' } } }, { $group: { _id: { from: '$paidFromMonth', to: '$endedMonth' }, mrr: { $sum: '$mrr' }, monthly: { $sum: '$monthly' } } }])
+    aggregate('StripeSubscription', [{ $match: { projectId, currency, paidFromMonth: { $gt: '' } } }, { $group: { _id: { from: '$paidFromMonth', to: '$endedMonth' }, mrr: { $sum: '$mrr' }, monthly: { $sum: '$monthly' } } }]),
+    aggregate('StripePayment', [{ $match: { ...paid, paidAtSec: { $gte: since } } }, { $group: { _id: '$source', net: { $sum: '$net' }, payments: { $sum: 1 } } }]),
+    aggregate('StripeSubscription', [{ $match: { projectId, currency, status: { $in: PAYING_STATUSES } } }, { $group: { _id: '$source', mrr: { $sum: '$mrr' } } }])
   ])
   const gross = fromMinor(Number(period[0]?.gross) || 0, currency)
   const refunds = fromMinor(Number(period[0]?.refunds) || 0, currency)
@@ -400,6 +393,14 @@ export async function revenueReport(project: ParseObject, account: ParseObject, 
   const byMonth = new Map(monthly.map(m => [String(m.objectId), m]))
   const mrrs = mrrByMonth(months, spans.map(s => ({ ...s.objectId, mrr: Number(s.mrr) || 0, monthly: Number(s.monthly) || 0 })))
   // Rows name a Stripe customer; the people behind them are looked up once for the page.
+  // Stripe's rows are older than the field: no source reads as Stripe.
+  const bySourceMinor = new Map<string, { net: number, payments: number, mrr: number }>()
+  const slot = (id: unknown) => {
+    const key = String(id || 'stripe')
+    return bySourceMinor.get(key) || bySourceMinor.set(key, { net: 0, payments: 0, mrr: 0 }).get(key)!
+  }
+  for (const r of bySource) { const s = slot(r.objectId); s.net += Number(r.net) || 0; s.payments += Number(r.payments) || 0 }
+  for (const r of mrrBySource) slot(r.objectId).mrr += Number(r.mrr) || 0
   const topRows = top.map(t => ({ customerId: String(t.objectId), email: String(t.email || '') }))
   const recentRows = recent.map(serializePayment)
   const joins = await contactIdsForBilling(project, [...topRows, ...recentRows])
@@ -415,7 +416,8 @@ export async function revenueReport(project: ParseObject, account: ParseObject, 
     plans: plans.map(p => ({ plan: String(p.objectId || 'Subscription'), subscribers: Number(p.n) || 0, mrr: fromMinor(Number(p.mrr) || 0, currency) })),
     topCustomers: top.map((t, i) => ({ customerId: String(t.objectId), contactId: billingContactId(joins, topRows[i]!), email: String(t.email || ''), net: fromMinor(Number(t.net) || 0, currency), payments: Number(t.payments) || 0 })),
     recent: recentRows.map(p => ({ ...p, contactId: billingContactId(joins, p) })),
-    otherCurrencies: currencies.filter(c => c.objectId !== currency && Number(c.net) > 0).map(c => ({ currency: String(c.objectId), net: fromMinor(Number(c.net), String(c.objectId)) }))
+    otherCurrencies: currencies.filter(c => c.objectId !== currency && Number(c.net) > 0).map(c => ({ currency: String(c.objectId), net: fromMinor(Number(c.net), String(c.objectId)) })),
+    sources: [...bySourceMinor].map(([source, v]) => ({ source, net: fromMinor(v.net, currency), payments: v.payments, mrr: fromMinor(v.mrr, currency) })).filter(v => v.net || v.mrr || v.payments).sort((a, b) => b.net - a.net || b.mrr - a.mrr)
   }
 }
 
@@ -437,23 +439,20 @@ async function liveCustomer(account: ParseObject, customerId: string, email: str
 }
 
 /**
- * One contact's Stripe customer (read live, so someone who exists in Stripe shows up before the
- * next sync) and their synced subscriptions and payments, found by their Stripe customer id or,
- * failing that, their email. A Stripe error leaves `customer` null and the synced rows as they are.
+ * One contact's billing: their Stripe customer (read live, so someone who exists in Stripe shows up
+ * before the next sync, when Stripe is connected) and their synced subscriptions and payments from
+ * every source, found by their Stripe customer id, the app's user id or their email. A Stripe error
+ * leaves `customer` null and the synced rows as they are.
  */
-export async function contactBilling(project: ParseObject, account: ParseObject, contact: ParseObject): Promise<{ customer: StripeCustomerDto | null, subscriptions: StripeSubscriptionDto[], payments: StripePaymentDto[] }> {
-  const Parse = useParse()
-  const customerId = String(((contact.get('attributes') || {}) as Record<string, unknown>)[STRIPE_ATTR.customer] || '')
-  const email = String(contact.get('email') || '')
-  if (!customerId && !email) return { customer: null, subscriptions: [], payments: [] }
-  const scoped = (className: string) => {
-    const query = new Parse.Query(className).equalTo('projectId', project.id)
-    return customerId ? query.equalTo('customerId', customerId) : query.equalTo('email', email)
-  }
-  const [customer, subs, payments] = await Promise.all([
-    liveCustomer(account, customerId, email).catch(() => null),
-    scoped('StripeSubscription').descending('startedAtSec').limit(50).find(MASTER),
-    scoped('StripePayment').descending('paidAtSec').limit(50).find(MASTER)
+export async function contactBilling(project: ParseObject, account: ParseObject | null, contact: ParseObject): Promise<{ customer: StripeCustomerDto | null, subscriptions: StripeSubscriptionDto[], payments: StripePaymentDto[] }> {
+  const who = identityOf(contact)
+  const subscriptions = billingRowsOf('StripeSubscription', project, who)
+  const payments = billingRowsOf('StripePayment', project, who)
+  if (!subscriptions || !payments) return { customer: null, subscriptions: [], payments: [] }
+  const [customer, subs, paid] = await Promise.all([
+    account && (who.stripeCustomerId || who.email) ? liveCustomer(account, who.stripeCustomerId, String(contact.get('email') || '')).catch(() => null) : null,
+    subscriptions.descending('startedAtSec').limit(50).find(MASTER),
+    payments.descending('paidAtSec').limit(50).find(MASTER)
   ])
-  return { customer, subscriptions: subs.map(serializeSubscription), payments: payments.map(serializePayment) }
+  return { customer, subscriptions: subs.map(serializeSubscription), payments: paid.map(serializePayment) }
 }

@@ -27,13 +27,14 @@ sidebar on iPad and Mac (`⌘0`).
 | Unread | Conversations with unread customer messages, outside the archive. The same as the inbox's Unread view. |
 | Open | Conversations in an open or pending status, archived ones included, as on a project's overview. |
 | Errors | Open conversations of type `error`. |
-| Revenue | What Stripe kept from charges in the period (`net`): succeeded charges, less refunds. |
+| Revenue | What the project's revenue sources kept in the period (`net`): payments that succeeded, less refunds ([Revenue](REVENUE.md)). |
 | MRR | Subscriptions that are active or past due, at their list price a month. |
 
-Revenue comes from the last Stripe sync of each project
-(**Project → Revenue**). **Each project counts in its own currency**, the one
-its Revenue tab totals in, so a project's number here matches that tab. Charges
-in that project's other currencies are left out, as they are on the tab. When
+Revenue comes from every revenue source a project has connected, Stripe,
+RevenueCat and the others (**Project → Revenue**). **Each project counts in its own
+currency**, the one its Revenue tab totals in, so a project's number here matches
+that tab. Payments in that project's other currencies are left out, as they are on
+the tab. When
 projects charge in different currencies, totals are given per currency, and the
 panel leads with the currency that has the most revenue.
 

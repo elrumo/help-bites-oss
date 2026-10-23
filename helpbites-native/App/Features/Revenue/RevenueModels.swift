@@ -1,7 +1,8 @@
 import Foundation
 
-// shared/stripe.ts and server/routes/v1/admin/stripe/**: payments and subscriptions
-// are synced from the project's Stripe account (HelpBites only reads).
+// shared/stripe.ts, shared/revenue.ts and server/routes/v1/admin/{stripe,revenue}/**: payments and
+// subscriptions come from the project's revenue sources (Stripe, RevenueCat, App Store, Paddle,
+// Lemon Squeezy, your own API). The Stripe-only types serve Settings → Connections and a contact's billing.
 
 /// `GET /v1/admin/stripe?project=` → `{ connection, ready }`.
 struct StripeConnection: Decodable, Equatable, Sendable {
@@ -25,6 +26,27 @@ struct StripeState: Decodable, Sendable {
   var ready: Bool
 }
 
+/// A connected revenue source: `GET /v1/admin/revenue/sources?project=` → `{ sources }`, Stripe first.
+/// `lastRunAt` is the last run, or for a push source its last event. A push source also carries the
+/// `webhook` to paste into the service; `token` is '' unless the member manages the project.
+struct RevenueConnection: Decodable, Equatable, Identifiable, Sendable {
+  struct Stats: Decodable, Equatable, Sendable { var payments = 0, subscriptions = 0 }
+  struct Webhook: Decodable, Equatable, Sendable { let url, token: String }
+  let source: String
+  var accountName = ""
+  var livemode = false
+  /// idle, running or error.
+  var status = "idle"
+  var lastRunAt: String?
+  var lastError = ""
+  var stats = Stats()
+  var webhook: Webhook?
+
+  var id: String { source }
+  var isRunning: Bool { status == "running" }
+  var catalog: RevenueSource? { RevenueSource.named(source) }
+}
+
 enum RevenueRange: String, CaseIterable, Identifiable, Sendable {
   case d30 = "30d", d90 = "90d", m12 = "12m", all
   var id: String { rawValue }
@@ -38,7 +60,7 @@ enum RevenueRange: String, CaseIterable, Identifiable, Sendable {
   }
 }
 
-/// `GET /v1/admin/stripe/report`. Totals are already in the currency's major units
+/// `GET /v1/admin/revenue/report`, over every connected source. Totals are already in the currency's major units
 /// (19.99), unlike the payments in `recent`, which are in the smallest unit (1999).
 struct RevenueReport: Decodable, Equatable, Sendable {
   struct Subscribers: Decodable, Equatable, Sendable { let active, trialing, pastDue: Int }
@@ -48,6 +70,8 @@ struct RevenueReport: Decodable, Equatable, Sendable {
   /// `contactId` is the person in HelpBites this customer is ('' when nobody matches), so a row can open them.
   struct Customer: Decodable, Equatable, Sendable, Identifiable { let customerId, email: String; let contactId: String?; let net: Double; let payments: Int; var id: String { customerId } }
   struct OtherCurrency: Decodable, Equatable, Sendable { let currency: String; let net: Double }
+  /// What one source brought in the period, biggest first.
+  struct Source: Decodable, Equatable, Sendable, Identifiable { let source: String; let net: Double; let payments: Int; let mrr: Double; var id: String { source } }
 
   let currency: String
   let net, gross, refunds: Double
@@ -60,10 +84,13 @@ struct RevenueReport: Decodable, Equatable, Sendable {
   let topCustomers: [Customer]
   let recent: [StripePayment]
   let otherCurrencies: [OtherCurrency]
+  let sources: [Source]
 }
 
 struct StripePayment: Decodable, Equatable, Identifiable, Sendable {
   let id, customerId, email: String
+  /// The revenue source it came from (shared/revenue.ts ids).
+  let source: String?
   /// The person in HelpBites this belongs to ('' when nobody matches); only the revenue report adds it.
   let contactId: String?
   let amount, refunded: Double

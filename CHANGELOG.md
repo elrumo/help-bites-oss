@@ -5,6 +5,17 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Revenue from more than Stripe** (`docs/REVENUE.md`). The Revenue tab now also reads RevenueCat (its webhook,
+  `POST /v1/webhooks/revenuecat/{project}`, with a secret HelpBites makes), the App Store (Sales and Trends reports), Paddle and
+  Lemon Squeezy (an API key), and a custom API (`POST /v1/admin/revenue/payments`) for anything else. The sources add up, each
+  connects and disconnects on its own, and the tab shows what each brought in. New routes `GET /v1/admin/revenue/sources`,
+  `POST /v1/admin/revenue/connect`, `POST /v1/admin/revenue/sync`, `DELETE /v1/admin/revenue` and `GET /v1/admin/revenue/report`
+  (the report gains `sources`); the `/v1/admin/stripe` routes are unchanged. A person's billing lists payments and subscriptions
+  from every source, the workspace overview and the setup checklist's row (now **Revenue**) read every source. Web and native.
+  Schema (needs `schema:apply`; the container does it on boot): new class `RevenueSource`, new fields `StripePayment.source`,
+  `StripeSubscription.source` and `StripeSubscription.eventAtSec`. No env changes. RevenueCat's history starts when the webhook
+  does; Paddle, Lemon Squeezy and the App Store were written from the services' documentation and unit tests and have not been run
+  against live accounts.
 - **Optional Plausible stats** for HelpBites' own site and panel: set `NUXT_PUBLIC_PLAUSIBLE_SRC` to the script's address (off by default; the panel reads it at run
   time, the prerendered landing page and docs need it as a Docker build arg too). It is not loaded in the embeds or on the invite and OAuth pages, and its origin joins the panel's script policy. No schema changes.
 - **Developer & MCP**: the workspace Developer page is now **Developer & MCP** and gains an AI assistants section with the

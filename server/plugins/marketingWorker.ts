@@ -1,5 +1,5 @@
 // The CRM's background work, one tick every 15 seconds: database syncs and
-// Stripe syncs that are due, pricing table numbers and conversions, campaigns that
+// Stripe and other revenue source syncs that are due, pricing table numbers and conversions, campaigns that
 // are sending, sequence steps, blog posts whose scheduled moment came (their
 // webhook) and webhook deliveries.
 // No queue: each job's state and cursor live on its own Parse row, and a
@@ -11,6 +11,7 @@ const TICK_MS = 15_000
 const JOBS: [string, () => Promise<void>][] = [
   ['sources', async () => { for (const id of await dueSources(5)) await runSourceSync(id) }],
   ['stripe', async () => { for (const id of await dueStripeAccounts(3)) await runStripeSync(id) }],
+  ['revenue', async () => { for (const id of await dueRevenueSources(3)) await runRevenueSync(id) }],
   ['pricing', () => runPricingWork()],
   ['campaigns', async () => { if (hasRootSecret()) for (const id of await dueCampaigns(5)) await runCampaign(id) }],
   ['sequences', async () => { if (hasRootSecret()) await runDueSequenceSteps() }],

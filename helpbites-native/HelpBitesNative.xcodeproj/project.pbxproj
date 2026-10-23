@@ -82,6 +82,7 @@
 		559A10DD10F3F857A1C01CD4 /* LeadFormLanguages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0AB16863B6175907E9D2A /* LeadFormLanguages.swift */; };
 		56480ABCFA511248CE0542A4 /* ContentLocale.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACD7DDE57FDF181331B90CC /* ContentLocale.swift */; };
 		59574AA5C6720ABD7EFD4D78 /* ChangelogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AB1B1A7F01FAE81D655A837 /* ChangelogStore.swift */; };
+		59A6395B6EE19234CB7786C4 /* RevenueSources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 843921FF3A1A1DEF70413574 /* RevenueSources.swift */; };
 		5A42BD68D0E677281C83DF0F /* BlogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5418F2FA4617C422EDBDDF10 /* BlogStore.swift */; };
 		5B2EBF30CBCD4DAEE1974B05 /* EmailModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC19BAB63EA4C39D5933383F /* EmailModels.swift */; };
 		5CC00D257A4B3CD780405012 /* LegalModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA8D433FF9F026C9450913B /* LegalModels.swift */; };
@@ -127,6 +128,7 @@
 		A2A572DC3CC2A207758DB955 /* EmailSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 630B44ACEB5A8AA306D9B8D4 /* EmailSheets.swift */; };
 		A3C8222E6570D3CCC94B91F4 /* HelpBitesNativeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB11DF49144E1A43E11C90A1 /* HelpBitesNativeApp.swift */; };
 		A58D1FE5FFF0F31DF107FCF4 /* ChangelogScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89AC228969303619C3148640 /* ChangelogScreen.swift */; };
+		A5D4746B96B316F7E652A049 /* RevenueConnect.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA3EE44191096B0DA543A539 /* RevenueConnect.swift */; };
 		A6D0F2229F69A2C433DC94FD /* GlobalSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = E837EAA1BBD4EDFCDE7C0912 /* GlobalSearch.swift */; };
 		A79728F75CBFF3BE99BFAFAD /* LeadFormsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B37664C67864B24DD145CE81 /* LeadFormsModels.swift */; };
 		ABFE68B3B956B14739DE4FCD /* InboxProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEBA8FF7B22AD20166F9C27 /* InboxProperties.swift */; };
@@ -276,6 +278,7 @@
 		7C659FF68BBA2D8885B01547 /* EmailLibraryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailLibraryScreen.swift; sourceTree = "<group>"; };
 		7E6BDD85FB44FEBC0D961BAB /* CampaignsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampaignsScreen.swift; sourceTree = "<group>"; };
 		7E7E2AD55AC0892685EA1D8E /* RevenueModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueModels.swift; sourceTree = "<group>"; };
+		843921FF3A1A1DEF70413574 /* RevenueSources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueSources.swift; sourceTree = "<group>"; };
 		84B147D62FD0297A61E28D0A /* AssistantDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantDetailScreen.swift; sourceTree = "<group>"; };
 		853CBA686AC8E4445BF2F19A /* ContactBillingSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactBillingSection.swift; sourceTree = "<group>"; };
 		88D56F686CAAD419199DB268 /* FeedbackBoardSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackBoardSettings.swift; sourceTree = "<group>"; };
@@ -328,6 +331,7 @@
 		C27728425445C8CB7F0CFE3F /* CampaignsSequences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampaignsSequences.swift; sourceTree = "<group>"; };
 		C54EEEA57049744249352AB9 /* KnowledgeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeScreen.swift; sourceTree = "<group>"; };
 		C9C046F32D80D62F9701168D /* KnowledgeModelScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeModelScreen.swift; sourceTree = "<group>"; };
+		CA3EE44191096B0DA543A539 /* RevenueConnect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueConnect.swift; sourceTree = "<group>"; };
 		CB34A5FCAC463A62FA1A2C45 /* PageFieldInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageFieldInput.swift; sourceTree = "<group>"; };
 		CB7820DCD292B8678533DFB0 /* LegalDocumentParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalDocumentParts.swift; sourceTree = "<group>"; };
 		CED2FB233E74DBD705178743 /* FeedbackChangelogLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackChangelogLinks.swift; sourceTree = "<group>"; };
@@ -366,7 +370,7 @@
 		F3A8133AAF31EE866C4EB75F /* FlagsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlagsScreen.swift; sourceTree = "<group>"; };
 		F566C847DA17376021C6A1F5 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		F685F682E640A82AD6F5CF0D /* FeedbackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackModels.swift; sourceTree = "<group>"; };
-		F7FFC773425AFD980758F3B2 /* HelpBitesNative.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelpBitesNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F7FFC773425AFD980758F3B2 /* HelpBitesNative.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HelpBitesNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FAC97D2281787653CEBB896D /* OnboardingFlowScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowScreen.swift; sourceTree = "<group>"; };
 		FACEE864352A0CFB92921C68 /* PagesSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagesSettingsView.swift; sourceTree = "<group>"; };
 		FB32ACBB8C379B356FAB4079 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
@@ -629,8 +633,10 @@
 			isa = PBXGroup;
 			children = (
 				853CBA686AC8E4445BF2F19A /* ContactBillingSection.swift */,
+				CA3EE44191096B0DA543A539 /* RevenueConnect.swift */,
 				7E7E2AD55AC0892685EA1D8E /* RevenueModels.swift */,
 				0F2DF44EE451F96493D8BF78 /* RevenueScreen.swift */,
+				843921FF3A1A1DEF70413574 /* RevenueSources.swift */,
 			);
 			path = Revenue;
 			sourceTree = "<group>";
@@ -835,6 +841,11 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					5111F7EC70B9848CB4D44FA9 = {
+						DevelopmentTeam = "";
+					};
+				};
 			};
 			buildConfigurationList = 5B52E215EC336D3FE57470D8 /* Build configuration list for PBXProject "HelpBitesNative" */;
 			developmentRegion = en;
@@ -1036,8 +1047,10 @@
 				0A958293514ABADCFC8A8BDE /* ProjectsModels.swift in Sources */,
 				052563DC69285E2D41E41F0E /* ProjectsScreen.swift in Sources */,
 				1B3CF4CD22D3C353B7EFBD12 /* Push.swift in Sources */,
+				A5D4746B96B316F7E652A049 /* RevenueConnect.swift in Sources */,
 				37CD212EA34793247DE48519 /* RevenueModels.swift in Sources */,
 				BDF1B27D009A398D3A1FD3F7 /* RevenueScreen.swift in Sources */,
+				59A6395B6EE19234CB7786C4 /* RevenueSources.swift in Sources */,
 				8239B8C6BDECD03C60F0C30E /* RootView.swift in Sources */,
 				367BBF05A3E9A284E35B0BC4 /* SavedReplies.swift in Sources */,
 				C4E42C2C41EA599978F3A849 /* SendingDomains.swift in Sources */,
@@ -1202,7 +1215,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = UC3T83K9FR;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
@@ -1236,7 +1249,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = UC3T83K9FR;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
