@@ -727,8 +727,9 @@ repository. See [EDITIONS.md](EDITIONS.md).
   from the server (error messages, names, AI output) stays as the server wrote it.
   In the hosted edition it shows the plan, usage, locks and
   sending domains, and opens Stripe's Checkout and customer portal in the browser.
-- **Project style.** The native app does not edit the project style or the
-  changelog's style yet (the panel does, and the API is the same). Forms,
+- **Project style.** The native app edits the project style and the
+  changelog's style (Brand, Settings, Changelog → Style), not the feedback board's
+  yet (the panel does, and the API is the same). Forms,
   onboarding, pricing tables, the blog and legal pages take the project style's
   accent only: no dark palette, shadow or card colours there yet.
   [STYLE.md](STYLE.md)
