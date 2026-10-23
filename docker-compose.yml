@@ -3,8 +3,8 @@
 # attach domains from Dokploy's Domains tab by service name + container port:
 #   app → 3000 (the panel, the API, the widget)
 # Or run `--profile proxy` for a bundled Caddy that serves HELPBITES_DOMAIN over HTTPS.
-#   Never sb-parse: it takes the master key from any address (see
-#   PARSE_SERVER_MASTER_KEY_IPS below), so a domain on it is a public master-key endpoint.
+#   Not sb-parse: nothing needs it public, and /parse/login has none of the app's rate limits.
+#   A domain on it is harmless to the app (it reaches Parse by `sb-parse-internal`, below).
 #   sb-meili → 7700 only if an external Meilisearch UI must reach it; then set a
 #   strong MEILI_MASTER_KEY (the app's search works without a domain).
 #
@@ -40,12 +40,20 @@ services:
         condition: service_healthy
     expose:
       - "1337"
+    networks:
+      default:
+        # A service with a Dokploy domain also joins the shared `dokploy-network`, and Docker
+        # DNS may then answer `sb-parse` with the address there. The app would call Parse from
+        # outside the subnet below and lose the master key. This alias exists on the stack's
+        # own network only, so the app always arrives from inside it, domain or no domain.
+        aliases:
+          - sb-parse-internal
     environment:
       PARSE_SERVER_APPLICATION_ID: ${PARSE_ID}
       PARSE_SERVER_MASTER_KEY: ${PARSE_MASTER_KEY}
       PARSE_SERVER_DATABASE_URI: ${PARSE_SERVER_DATABASE_URI:-mongodb://sb-mongo:27017/helpbites}
       PARSE_SERVER_MOUNT_PATH: /parse
-      PARSE_SERVER_URL: http://sb-parse:1337/parse
+      PARSE_SERVER_URL: http://sb-parse-internal:1337/parse
       # The app talks to Parse over the compose network; without this Parse 7+
       # refuses the master key from any non-loopback address. Only this
       # stack's own (pinned) network may use it.
@@ -119,7 +127,7 @@ services:
       - "3000"
     env_file: .env
     environment:
-      PARSE_URL: http://sb-parse:1337/parse
+      PARSE_URL: http://sb-parse-internal:1337/parse
       REDIS_URL: redis://sb-redis:6379
       MEILI_URL: http://sb-meili:7700
       # env_file hands the app every .env value, the Meilisearch master key

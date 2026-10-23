@@ -5,6 +5,10 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **A domain on `sb-parse` no longer breaks the app on Dokploy.** The app and Parse now talk over `sb-parse-internal`, a name that exists
+  only on the stack's own network. A Dokploy domain also joins a service to `dokploy-network`, and Docker could answer `sb-parse` with
+  that address; the app then reached Parse from outside `SB_INTERNAL_SUBNET` and Parse refused the master key. Redeploy to pick it up
+  (`PARSE_URL` and `PARSE_SERVER_URL` are set by the compose, so there is nothing to change in `.env`).
 - **Revenue from more than Stripe** (`docs/REVENUE.md`). The Revenue tab now also reads RevenueCat (its webhook,
   `POST /v1/webhooks/revenuecat/{project}`, with a secret HelpBites makes), the App Store (Sales and Trends reports), Paddle and
   Lemon Squeezy (an API key), and a custom API (`POST /v1/admin/revenue/payments`) for anything else. The sources add up, each

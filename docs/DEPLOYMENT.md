@@ -206,7 +206,7 @@ From the **Domains** tab, attach domains by **service name + container port**:
 |---|---|---|---|
 | `app` | `3000` | `support.yourdomain.com` | The whole product. Required. |
 | `sb-meili` | `7700` | `help-search.yourdomain.com` | Only if you run a Meilisearch UI elsewhere pointing at it. **Exposes the API — see below.** |
-| `sb-parse` | `1337` | **Don't** | The app talks to Parse internally. Parse accepts its master key from any address (`PARSE_SERVER_MASTER_KEY_IPS`), and `/parse/login` has none of the app's rate limits, so a public `sb-parse` is guarded by the master key alone. |
+| `sb-parse` | `1337` | **Don't, unless you need it** | The app talks to Parse internally (as `sb-parse-internal`, so a domain here never changes how it reaches Parse). Parse only honours the master key from the stack's own network (`PARSE_SERVER_MASTER_KEY_IPS`), but a public `sb-parse` still exposes Parse's REST API, and `/parse/login` has none of the app's rate limits. |
 
 Dokploy terminates TLS and routes to the container port. Point `APP_URL` at the
 `app` domain.
@@ -916,10 +916,13 @@ offer HelpBites as a service:
 ## Troubleshooting
 
 **App can't reach Parse / "master key rejected".** Parse 7+ refuses the master
-key from non-loopback addresses unless allow-listed. The compose sets
-`PARSE_SERVER_MASTER_KEY_IPS: "0.0.0.0/0,::/0"` for the internal network — keep
-it. Also confirm `PARSE_ID` and `PARSE_MASTER_KEY` match between the app and
-`sb-parse`.
+key from non-loopback addresses unless allow-listed. The compose allows the
+stack's own subnet (`SB_INTERNAL_SUBNET`, `10.213.0.0/24` by default) — keep it, and
+keep the app on `PARSE_URL=http://sb-parse-internal:1337/parse`: that name exists only
+on the stack's network. The plain `sb-parse` can resolve to Dokploy's shared network
+once the service has a domain, and a call from there is outside the subnet. Parse logs
+`masterKeyIps` when it refuses one. Also confirm `PARSE_ID` and `PARSE_MASTER_KEY`
+match between the app and `sb-parse`.
 
 **Services resolve to the wrong container.** On a shared network, use the `sb-`
 prefixed names (`sb-parse`, `sb-redis`, `sb-mongo`, `sb-meili`). A bare `parse`

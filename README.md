@@ -48,8 +48,8 @@ Seed a demo knowledge model: `bun run seed:knowledge` (against a running app). B
 
 `docker compose up -d` runs sb-mongo, sb-parse, sb-redis, sb-meili and the app. Nothing publishes a host port
 unless you use the bundled Caddy (`--profile proxy`): otherwise attach domains from Dokploy's Domains tab (or your
-own proxy) by service name and container port (`app` → 3000). Never give `sb-parse` a domain: it holds the master
-key. The app container applies the schema on every boot. Attachments go to any S3-compatible bucket (`S3_*` env).
+own proxy) by service name and container port (`app` → 3000). You don't need one on `sb-parse`: it holds the
+data layer, and only the app uses it. The app container applies the schema on every boot. Attachments go to any S3-compatible bucket (`S3_*` env).
 
 Full guide (Dokploy, plain Compose, every env var, backups, troubleshooting):
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). An install from before workspaces upgrades on its
