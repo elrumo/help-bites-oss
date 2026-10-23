@@ -12,7 +12,8 @@ import { normalizeBlogConfig, validateBlogConfig, type BlogConfig } from '#share
 import { normalizeFlags, validateFlags, type FeatureFlag } from '#shared/flags'
 import { normalizeMarketingConfig, validateMarketingConfig, type MarketingConfig } from '#shared/marketing'
 import { normalizeBrandConfig, validateBrandConfig } from '#shared/brand'
-import { normalizeProjectStyle, resolveStyle, styleLayers, validateProjectStyle, type ProjectStyle, type ResolvedStyle, type StyleChoice } from '#shared/projectStyle'
+import { DEFAULT_STYLE_CHOICE, normalizeProjectStyle, overlayStyle, ownLayer, resolveStyle, styleLayers, validateProjectStyle, type OwnLook, type ProjectStyle, type ResolvedStyle, type StyleChoice } from '#shared/projectStyle'
+import { normalizeWidgetConfig, validateWidgetConfig, type WidgetConfig } from '#shared/widget'
 import { normalizeHubConfig, validateHubConfig, type HubConfig } from '#shared/hub'
 import { companyEntity, type CompanyProfile } from '#shared/company'
 import { applyCompany, companyOf } from './company'
@@ -54,6 +55,8 @@ export type PublicProject = {
   feedback: FeedbackBoardConfig
   /** What the public board (list, roadmap, changelog views) wears: the project's style with the board's own choices over it. */
   feedbackStyle: ResolvedStyle
+  /** What the chat widget wears: the project's style with the widget's own choices over it. */
+  widgetStyle: ResolvedStyle
   /** The chat embed shows a Home tab (read from GET /v1/hub/{pk}); the hub settings turn it on. */
   widgetHome: boolean
   /** The "Powered by HelpBites" link, null when the plan removes it. Set by the public routes, since it needs the workspace's plan. */
@@ -91,6 +94,8 @@ export type AdminProject = PublicProject & {
   company: CompanyProfile
   /** The public hub page and the chat widget's Home tab (shared/hub.ts). */
   hub: HubConfig
+  /** The chat widget's own settings: how it takes its style. */
+  widget: WidgetConfig
   /** The public pages of the published legal documents, as `{{project.privacyUrl}}` and friends; '' for a type with none. */
   legalLinks: LegalLinks
   /** Blog options. Admin-only; what readers see is the published posts and GET /v1/blog. */
@@ -298,6 +303,12 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     // The postal address campaigns carry is the company's.
     if (input.marketing && typeof input.marketing === 'object' && 'postalAddress' in input.marketing) applyCompany(project, { address: config.postalAddress })
   }
+  if (input.widget !== undefined) {
+    // Partial: only the keys sent change.
+    const { config, errors } = validateWidgetConfig(input.widget, normalizeWidgetConfig(project.get('widget')))
+    if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
+    project.set('widget', config)
+  }
   if (input.hub !== undefined) {
     // Partial: only the keys sent change (`sections` and `links` are whole lists).
     const { config, errors } = validateHubConfig(input.hub, normalizeHubConfig(project.get('hub')))
@@ -355,10 +366,15 @@ export function lookOf(project: { get: (key: string) => unknown }, overrides: Pr
   })
 }
 
-/** A feature's style: the project's, with the feature's own choices laid over it when it has chosen `custom` (shared/projectStyle.ts). */
-export function styleOf(project: { get: (key: string) => unknown }, choice: StyleChoice): ResolvedStyle {
+/**
+ * A feature's style: the project's, with the feature's own choices laid over it when it has chosen `custom`
+ * (shared/projectStyle.ts). A feature with its own accent, background, text, radius and font fields passes them
+ * as `own`: they stay a layer over the project's style (see `ownLayer`).
+ */
+export function styleOf(project: { get: (key: string) => unknown }, choice: StyleChoice = DEFAULT_STYLE_CHOICE, own?: { look: OwnLook, defaults?: { radius?: number, font?: string } }): ResolvedStyle {
   const look = lookOf(project)
-  return resolveStyle(look.kit, ...styleLayers(look.projectStyle, choice))
+  const layers = styleLayers(look.projectStyle, choice)
+  return resolveStyle(look.kit, ...layers, ...(own ? [ownLayer(own.look, layers.reduce(overlayStyle), own.defaults)] : []))
 }
 
 export function serializePublicProject(project: ParseObject): PublicProject {
@@ -380,6 +396,7 @@ export function serializePublicProject(project: ParseObject): PublicProject {
     allowOtherType: project.get('allowOtherType') === true,
     feedback,
     feedbackStyle: styleOf(project, feedback.style),
+    widgetStyle: styleOf(project, normalizeWidgetConfig(project.get('widget')).style),
     widgetHome: normalizeHubConfig(project.get('hub')).widgetHome.enabled
   }
 }
@@ -430,6 +447,7 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
     company,
     legalLinks: legalLinksOf(project),
     hub: normalizeHubConfig(project.get('hub')),
+    widget: normalizeWidgetConfig(project.get('widget')),
     blog: normalizeBlogConfig(project.get('blog')),
     errors: { connected: Boolean(errors.dsn), provider: errors.dsn ? tracker.id : '', providerName: errors.dsn ? tracker.name : '', dsn: String(errors.dsn || ''), url: issuesUrlOf(errors), alertWebhookUrl: errors.dsn && tracker.manualAlerts ? errorWebhookUrl(project, errors) : '' },
     errorLinks: errorLinksOf(project).map(link => errorLinkView(project, link)),

@@ -22,7 +22,7 @@ import type { AdminProject } from '~~/server/utils/projects'
 // The style panel of one public feature (the changelog, the feedback board…):
 // wear the project's style, or lay this feature's own choices over it. Saves
 // as `{ [target]: { style } }` on the project, like the feature's other settings.
-const props = defineProps<{ project: AdminProject, target: 'changelog' | 'feedback' }>()
+const props = defineProps<{ project: AdminProject, target: 'changelog' | 'feedback' | 'hub' | 'widget' | 'blog' | 'legal' }>()
 const { api, projects } = useAgent()
 const { t } = useI18n()
 

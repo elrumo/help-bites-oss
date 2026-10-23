@@ -251,3 +251,50 @@ export function styleVars(style: ResolvedStyle, mode: 'light' | 'dark'): Record<
     '--hb-font': style.fontFamily
   }
 }
+
+/** A feature's own look fields, as its panel keeps them (any may be missing). */
+export type OwnLook = { accent?: string, background?: string, text?: string, radius?: number, font?: string, scheme?: string }
+
+/**
+ * A feature with its own accent, background, text, radius and font fields (forms,
+ * onboarding, pricing, the blog, legal pages…) keeps them as a layer over the
+ * project style: whatever is set there wins, in light and dark. A radius or font
+ * left at the feature's default (`defaults`) counts as unset when the project
+ * style sets one, so it follows the project and never changes a project that has
+ * no style. Lay the result over the project's: `resolveStyle(kit, projectStyle, ownLayer(…))`.
+ */
+export function ownLayer(own: OwnLook, project: ProjectStyle, defaults: { radius?: number, font?: string } = {}): ProjectStyle {
+  const hex = (value?: string) => (value && HEX.test(value) ? value.toLowerCase() : '')
+  const palette = (): StylePalette => ({ ...EMPTY_PALETTE, accent: hex(own.accent), background: hex(own.background), text: hex(own.text) })
+  const radius = own.radius !== undefined && Number.isInteger(own.radius) && own.radius >= 0 && own.radius <= STYLE_RADIUS_MAX
+    && (own.radius !== defaults.radius || project.radius === null)
+    ? own.radius
+    : null
+  const font = (STYLE_FONTS as readonly string[]).includes(own.font || '') && (own.font !== defaults.font || !project.font) ? own.font as StyleFont : ''
+  return {
+    ...DEFAULT_PROJECT_STYLE,
+    scheme: (STYLE_SCHEMES as readonly string[]).includes(own.scheme || '') && own.scheme !== 'auto' ? own.scheme as StyleScheme : '',
+    light: palette(),
+    dark: palette(),
+    radius,
+    font
+  }
+}
+
+const cssSafe = (value: string) => value.replace(/[<>{};\\]/g, '')
+
+/**
+ * The CSS a server-rendered page (hub, blog, legal, brand, hosted forms…) puts in
+ * its <style>: the palette as `--accent`, `--on-accent`, `--bg`, `--card` (also
+ * `--surface`), `--text`, `--muted`, `--line`, plus `--radius`, `--shadow` and
+ * `--font`. A style that fixes its scheme gets that palette; `auto` gets light
+ * with dark under prefers-color-scheme. Put it before the page's own rules.
+ */
+export function styleCss(style: ResolvedStyle): string {
+  const vars = (mode: 'light' | 'dark') => {
+    const p = style[mode]
+    return `--accent:${cssSafe(p.accent)};--on-accent:${readableOn(p.accent)};--bg:${cssSafe(p.background)};--card:${cssSafe(p.surface)};--surface:${cssSafe(p.surface)};--text:${cssSafe(p.text)};--muted:${cssSafe(p.muted)};--line:${cssSafe(p.border)};--radius:${style.radius}px;--shadow:${cssSafe(style.shadowCss)};--font:${cssSafe(style.fontFamily)};color-scheme:${mode};`
+  }
+  if (style.scheme === 'light' || style.scheme === 'dark') return `:root{${vars(style.scheme)}}`
+  return `:root{${vars('light')}}@media (prefers-color-scheme:dark){:root{${vars('dark')}}}`
+}

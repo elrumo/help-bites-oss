@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { DEFAULT_FEEDBACK_CONFIG, validateFeedbackConfig } from '../shared/feedback'
 import { DEFAULT_CHANGELOG_CONFIG, normalizeChangelogConfig, validateChangelogConfig } from '../shared/changelog'
 import { projectLook } from '../shared/projectLook'
-import { DEFAULT_PROJECT_STYLE, normalizeProjectStyle, overlayStyle, resolveStyle, styleFrom, styleVars, validateProjectStyle } from '../shared/projectStyle'
+import { DEFAULT_PROJECT_STYLE, normalizeProjectStyle, overlayStyle, ownLayer, resolveStyle, styleCss, styleFrom, styleVars, validateProjectStyle } from '../shared/projectStyle'
 
 const base = { accent: '#4f46e5', radiusPx: 8, fontFamily: 'system-ui', logoUrl: '', logoDarkUrl: '', iconUrl: '' }
 
@@ -101,5 +101,37 @@ describe('feedback board style', () => {
     const bad = validateFeedbackConfig({ style: { source: 'nope', custom: { radius: 99 } } }, two.config)
     expect(bad.errors).toHaveLength(2)
     expect(bad.config.style).toEqual(two.config.style)
+  })
+})
+
+describe('ownLayer and styleCss', () => {
+  const project = normalizeProjectStyle({ radius: 4, font: 'serif', dark: { background: '#111111' } })
+
+  test("a feature's own fields win over the project style in light and dark", () => {
+    const own = ownLayer({ accent: '#ff0000', background: '#fefefe', text: '#222222' }, project)
+    const style = resolveStyle(base, project, own)
+    expect(style.light).toMatchObject({ accent: '#ff0000', background: '#fefefe', text: '#222222' })
+    expect(style.dark).toMatchObject({ accent: '#ff0000', background: '#fefefe' })
+    // Empty fields leave the project's dark palette alone.
+    expect(resolveStyle(base, project, ownLayer({}, project)).dark.background).toBe('#111111')
+  })
+
+  test('a radius or font left at the feature default follows the project style, but never changes a project without one', () => {
+    const defaults = { radius: 16, font: 'system' }
+    expect(resolveStyle(base, project, ownLayer({ radius: 16, font: 'system' }, project, defaults))).toMatchObject({ radius: 4 })
+    expect(resolveStyle(base, project, ownLayer({ radius: 10, font: 'mono' }, project, defaults))).toMatchObject({ radius: 10, fontFamily: expect.stringContaining('mono') })
+    const empty = normalizeProjectStyle({})
+    expect(resolveStyle(base, empty, ownLayer({ radius: 16, font: 'system' }, empty, defaults))).toMatchObject({ radius: 16 })
+  })
+
+  test('the page CSS carries both palettes, or the one the style fixes', () => {
+    const auto = styleCss(resolveStyle(base, normalizeProjectStyle({ light: { accent: '#112233' } })))
+    expect(auto).toContain('--accent:#112233')
+    expect(auto).toContain('@media (prefers-color-scheme:dark)')
+    expect(auto).toContain('--bg:#0c0a09')
+    const dark = styleCss(resolveStyle(base, normalizeProjectStyle({ scheme: 'dark' })))
+    expect(dark).not.toContain('@media')
+    expect(dark).toContain('--bg:#0c0a09')
+    expect(styleCss(resolveStyle({ ...base, fontFamily: 'a</style>{}' }))).not.toContain('</style>')
   })
 })
