@@ -485,6 +485,183 @@ export const MCP_TOOLS: readonly McpTool[] = [
     name: 'stop_pricing_experiment', title: 'End an A/B test', method: 'POST', path: '/v1/admin/pricing-tables/{id}/experiment/stop',
     description: 'Everyone sees the table again. With `adopt`, a variant\'s plans, words and look become the table\'s working copy, to publish.',
     params: { id: id('pricing table'), adopt: { type: 'string', description: 'The key of the variant to keep.' } }
+  },
+  // ---- flags, knowledge base, email, campaigns, legal ---------------------------
+  {
+    name: 'update_project_flags', title: 'Replace a project\'s feature flags', method: 'PATCH', path: '/v1/admin/projects/{id}',
+    description: 'REPLACES every feature flag of the project with the list you send, so read the current ones from list_projects first and send them all back with your change. A flag left out is deleted. Apps read these live: confirm with the user first.',
+    params: {
+      id: id('project'),
+      flags: { type: 'array', items: { type: 'object' }, required: true, description: 'Each flag: { key, description?, state: off|admins|on, fallback: off|admins|on, targets?: string[], allow?: string[] (user ids or emails treated as admins) }.' }
+    }
+  },
+  {
+    name: 'list_knowledge_models', title: 'List knowledge models', readOnly: true, method: 'GET', path: '/v1/admin/knowledge/models',
+    description: 'The knowledge bases (models) of the workspace or one project, with their ids. FAQs belong to one.',
+    params: { projectId: { type: 'string', description: 'Only this project\'s models.' } }
+  },
+  {
+    name: 'list_faqs', title: 'List knowledge base answers', readOnly: true, method: 'GET', path: '/v1/admin/knowledge/faqs',
+    description: 'FAQs (question, answer, tags), filtered or searched. Offset paging with `limit` and `skip`; the reply says whether there are more.',
+    params: {
+      modelId: { type: 'string', description: 'A knowledge model id, from list_knowledge_models.' },
+      q: { type: 'string', description: 'Full-text search.' },
+      status: { type: 'string', description: 'Status, e.g. published or draft.' },
+      language: { type: 'string', description: 'Language code.' },
+      limit: limit(100),
+      skip: { type: 'integer', description: 'How many to skip.' }
+    }
+  },
+  {
+    name: 'get_faq', title: 'Get an FAQ', readOnly: true, method: 'GET', path: '/v1/admin/knowledge/faqs/{id}',
+    description: 'One knowledge base answer.',
+    params: { id: id('FAQ') }
+  },
+  {
+    name: 'create_faq', title: 'Add an FAQ', method: 'POST', path: '/v1/admin/knowledge/faqs',
+    description: 'Add a question and answer to a knowledge model. Published answers are what the project\'s assistants and the public help center use.',
+    params: {
+      modelId: { type: 'string', required: true, description: 'The knowledge model id, from list_knowledge_models.' },
+      question: { type: 'string', required: true, description: 'The question.' },
+      answer: { type: 'string', description: 'The answer (Markdown).' },
+      aliases: { type: 'array', description: 'Other ways to ask it.' },
+      tags: { type: 'array', description: 'Tags.' },
+      status: { type: 'string', description: 'Status, e.g. published or draft.' },
+      language: { type: 'string', description: 'Language code.' }
+    }
+  },
+  {
+    name: 'update_faq', title: 'Edit an FAQ', method: 'PATCH', path: '/v1/admin/knowledge/faqs/{id}',
+    description: 'Change a question, answer, aliases, tags, status or language. Only the keys you send change. Editing an imported answer stops a later re-import overwriting it.',
+    params: {
+      id: id('FAQ'),
+      question: { type: 'string', description: 'The question.' },
+      answer: { type: 'string', description: 'The answer (Markdown).' },
+      aliases: { type: 'array', description: 'Other ways to ask it.' },
+      tags: { type: 'array', description: 'Tags.' },
+      status: { type: 'string', description: 'Status, e.g. published or draft.' },
+      language: { type: 'string', description: 'Language code.' }
+    }
+  },
+  {
+    name: 'delete_faq', title: 'Delete an FAQ', destructive: true, method: 'DELETE', path: '/v1/admin/knowledge/faqs/{id}',
+    description: 'Permanently remove one answer. Confirm with the user first.',
+    params: { id: id('FAQ') }
+  },
+  {
+    name: 'list_knowledge_documents', title: 'List knowledge documents', readOnly: true, method: 'GET', path: '/v1/admin/knowledge/documents',
+    description: 'Documents uploaded as sources for a knowledge model.',
+    params: { modelId: { type: 'string', description: 'A knowledge model id.' } }
+  },
+  {
+    name: 'list_email_templates', title: 'List email templates', readOnly: true, method: 'GET', path: '/v1/admin/emails',
+    description: 'A project\'s email templates (with send keys), or the shared master templates when no project is given.',
+    params: { project: { type: 'string', description: 'Project id.' } }
+  },
+  {
+    name: 'get_email_template', title: 'Get an email template', readOnly: true, method: 'GET', path: '/v1/admin/emails/{id}',
+    description: 'One template: subject, design, variables and sample values.',
+    params: { id: id('template') }
+  },
+  {
+    name: 'send_test_email', title: 'Send a test email', method: 'POST', path: '/v1/admin/emails/{id}/test',
+    description: 'Sends a template, rendered with sample values, to up to five addresses (default: the person who connected this assistant) with "[Test]" in the subject. Real mail leaves the server: confirm the addresses first.',
+    params: {
+      id: id('template'),
+      to: { type: 'array', description: 'Up to five addresses.' },
+      variables: { type: 'object', description: 'Values for the template\'s placeholders.' },
+      project: { type: 'string', description: 'For a shared master template: whose brand and sender to use.' }
+    }
+  },
+  {
+    name: 'list_email_logs', title: 'Email log', readOnly: true, method: 'GET', path: '/v1/admin/email-logs',
+    description: 'Every message HelpBites sent or tried to send, newest first. Page with `before` set to the previous reply\'s nextBefore.',
+    params: {
+      project: { type: 'string', description: 'Project id. Leave out for the whole workspace.' },
+      to: { type: 'string', description: 'An address, or the start of one.' },
+      template: { type: 'string', description: 'A template send key.' },
+      status: { type: 'string', description: 'Delivery status.' },
+      source: { type: 'string', description: 'Where it came from, e.g. api, test, campaign.' },
+      batch: { type: 'string', description: 'A batch id, e.g. cm_<campaign id> for one campaign\'s recipients.' },
+      since: { type: 'string', description: 'ISO date-time.' },
+      until: { type: 'string', description: 'ISO date-time.' },
+      before: { type: 'string', description: 'The previous reply\'s nextBefore.' },
+      limit: limit(200)
+    }
+  },
+  {
+    name: 'list_email_suppressions', title: 'Suppressed addresses', readOnly: true, method: 'GET', path: '/v1/admin/email-suppressions',
+    description: 'Addresses a project no longer mails (bounces, complaints, unsubscribes).',
+    params: {
+      project: { type: 'string', description: 'Project id. Leave out for the whole workspace.' },
+      q: { type: 'string', description: 'The start of an address.' }
+    }
+  },
+  {
+    name: 'list_campaigns', title: 'List campaigns', readOnly: true, method: 'GET', path: '/v1/campaigns',
+    description: 'Email campaigns, newest first, each with its numbers (sent, opened, clicked).',
+    params: { project: { type: 'string', required: true, description: 'Project id, from list_projects.' } }
+  },
+  {
+    name: 'get_campaign', title: 'Get a campaign', readOnly: true, method: 'GET', path: '/v1/campaigns/{id}',
+    description: 'One campaign with live numbers, how many people it would go to now, and `problems` that stop it being sent.',
+    params: { id: id('campaign'), project: { type: 'string', required: true, in: 'query', description: 'Project id.' } }
+  },
+  {
+    name: 'create_campaign', title: 'Create a campaign draft', method: 'POST', path: '/v1/campaigns',
+    description: 'A draft only: a template sent to subscribed contacts, narrowed by a segment or topic. Nothing is sent until update_campaign schedules or sends it. The template must carry {{unsubscribeUrl}} and {{project.address}}.',
+    params: {
+      project: { type: 'string', required: true, description: 'Project id.' },
+      name: { type: 'string', required: true, description: 'Campaign name.' },
+      template: { type: 'string', required: true, description: 'Template send key or id, from list_email_templates.' },
+      subject: { type: 'string', description: 'Overrides the template\'s subject.' },
+      audience: { type: 'object', description: '{ segment?: segment id (list_segments), topic?: topic to respect }.' },
+      testMode: { type: 'boolean', description: 'Log every message but deliver none.' }
+    }
+  },
+  {
+    name: 'update_campaign', title: 'Edit, schedule, send, pause or cancel a campaign', destructive: true, method: 'PATCH', path: '/v1/campaigns/{id}',
+    description: 'Edit a draft\'s content, or move it with `status`: scheduled (with scheduledAt), sending (SENDS NOW to real people, or resumes a paused one), paused, canceled, draft (unschedule). Sending cannot be taken back: show the user the audience size from get_campaign and get a clear yes first.',
+    params: {
+      id: id('campaign'),
+      project: { type: 'string', required: true, in: 'body', description: 'Project id.' },
+      name: { type: 'string', description: 'Campaign name.' },
+      template: { type: 'string', description: 'Template send key or id.' },
+      subject: { type: 'string', description: 'Subject override.' },
+      audience: { type: 'object', description: '{ segment?, topic? }.' },
+      testMode: { type: 'boolean', description: 'Log every message but deliver none.' },
+      status: { type: 'string', enum: ['draft', 'scheduled', 'sending', 'paused', 'canceled'], description: 'Move the campaign.' },
+      scheduledAt: { type: 'string', description: 'ISO date-time, with status scheduled.' }
+    }
+  },
+  {
+    name: 'list_legal_documents', title: 'List legal documents', readOnly: true, method: 'GET', path: '/v1/admin/legal/documents',
+    description: 'A project\'s legal documents (privacy policy, terms…), drafts included, with sections, summary, status and public path.',
+    params: { project: { type: 'string', required: true, description: 'Project id, from list_projects.' } }
+  },
+  {
+    name: 'get_legal_document', title: 'Get a legal document', readOnly: true, method: 'GET', path: '/v1/admin/legal/documents/{id}',
+    description: 'One document with its sections and how well the applicable rules are covered.',
+    params: { id: id('legal document') }
+  },
+  {
+    name: 'update_legal_document', title: 'Edit a legal document', method: 'PATCH', path: '/v1/admin/legal/documents/{id}',
+    description: 'Change `sections` (the FULL list: an unknown id is added, one left out is removed) and/or the `tldr` summary. Editing a published document changes the live page at once: confirm with the user first.',
+    params: {
+      id: id('legal document'),
+      sections: { type: 'array', items: { type: 'object' }, description: 'Every section: { id, body, locked? }, taken from get_legal_document.' },
+      tldr: { type: 'string', description: 'The plain-language summary.' }
+    }
+  },
+  {
+    name: 'publish_legal_document', title: 'Publish a legal document', method: 'POST', path: '/v1/admin/legal/documents/{id}/publish',
+    description: 'Makes the document public at its path and records a version. Visitors will read it: ask the user first.',
+    params: { id: id('legal document'), note: { type: 'string', description: 'A note for the version history.' } }
+  },
+  {
+    name: 'unpublish_legal_document', title: 'Take a legal document offline', method: 'POST', path: '/v1/admin/legal/documents/{id}/unpublish',
+    description: 'Back to draft: its public path answers 404. Versions are kept.',
+    params: { id: id('legal document') }
   }
 ]
 

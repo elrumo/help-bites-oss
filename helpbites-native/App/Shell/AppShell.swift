@@ -234,7 +234,7 @@ struct CommandPalette: View {
       Entry(id: "projects", title: String(localized: "Projects"), detail: nil, systemImage: "square.stack", route: .projects),
       Entry(id: "keys", title: String(localized: "API keys"), detail: nil, systemImage: "key", route: .apiKeys),
       Entry(id: "team", title: String(localized: "Team"), detail: nil, systemImage: "person.2", route: .team),
-      Entry(id: "developer", title: String(localized: "Developer"), detail: nil, systemImage: "chevron.left.forwardslash.chevron.right", route: .developer),
+      Entry(id: "developer", title: String(localized: "Developer & MCP"), detail: nil, systemImage: "chevron.left.forwardslash.chevron.right", route: .developer),
       Entry(id: "account", title: String(localized: "Account"), detail: nil, systemImage: "person.crop.circle", route: .account)
     ]
     for project in workspace.projects {

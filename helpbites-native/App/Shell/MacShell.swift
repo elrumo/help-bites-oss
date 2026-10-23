@@ -70,7 +70,7 @@ private struct MacSidebar: View {
 
       Section("Workspace") {
         Label("Knowledge", systemImage: "book").tag(AppRoute.knowledge)
-        Label("Developer", systemImage: "chevron.left.forwardslash.chevron.right").tag(AppRoute.developer)
+        Label("Developer & MCP", systemImage: "chevron.left.forwardslash.chevron.right").tag(AppRoute.developer)
         Label("Settings", systemImage: "gearshape").tag(AppRoute.account)
       }
     }

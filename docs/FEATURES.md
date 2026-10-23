@@ -209,7 +209,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   signed with HMAC-SHA256 to your webhook. [CONNECTING.md](CONNECTING.md)
 - **A warning when an action has nowhere to go.** The type editor, and the actions
   in the inbox, say so while the project has no action webhook URL and secret
-  (they would fail), and link to Developer & MCP where it is set.
+  (they would fail), and link to Install & API where it is set.
 
 ## 4. Knowledge base and AI assistants
 
@@ -639,13 +639,14 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **AI assistants (MCP).** An MCP server at `/mcp` lets Claude, ChatGPT, Cursor or
   any MCP client work in a workspace as the operator who connected it: read and reply
   in the inbox, add notes, triage feedback, move planning items, write and
-  publish changelog entries, browse errors, and edit, publish, A/B test and get AI
-  suggestions for pricing tables. Sign in with the browser (OAuth with
+  publish changelog entries, browse errors, edit, publish, A/B test and get AI
+  suggestions for pricing tables, and manage feature flags, knowledge base answers, email
+  templates and logs, campaigns and legal documents. Sign in with the browser (OAuth with
   PKCE and dynamic registration, for claude.ai and ChatGPT) or paste an admin API
   key. Each tool is a `/v1` call, so the operator's role, the workspace and a key's
   project limit apply; connections are API keys you can revoke in **Settings → API
   keys** and from the address and a ready-made `claude mcp add` command on the
-  project's **Developer & MCP** page, in the panel and the native app.
+  workspace's **Developer & MCP** page (the old Developer page), in the panel and the native app.
   [MCP.md](MCP.md)
 - **Realtime streams.** Server-sent events for end users, operators, the feedback
   page, and shared email previews.
@@ -773,7 +774,8 @@ repository. See [EDITIONS.md](EDITIONS.md).
   members-only posts (a member is a signed-in reader), images from a Ghost import
   stay on the old site, and no MCP tools for it yet. [BLOG.md](BLOG.md)
 - **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
-  email, campaigns, legal documents, flags or knowledge base editing, and it issues no refresh tokens, so an
+  creating legal documents, importing knowledge documents, the email designer, forms, onboarding or the
+  blog, and it issues no refresh tokens, so an
   OAuth-connected assistant signs in again after a year. [MCP.md](MCP.md)
 - **Native translations.** The legal screen cannot yet link an existing document as
   a translation of another (the API and web can); the email editor shows translation

@@ -33,6 +33,24 @@
             </a>
           </div>
 
+          <!-- AI assistants (MCP) -->
+          <section id="mcp" class="space-y-3 scroll-mt-8">
+            <div>
+              <h2 class="text-[17px] font-semibold tracking-tight text-highlighted">{{ $t('admin.developer.mcp') }}</h2>
+              <p class="text-sm text-muted">{{ $t('admin.developer.mcpIntro') }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <code class="min-w-0 flex-1 truncate rounded-lg bg-elevated px-3 py-2 font-mono text-xs">{{ mcpUrl }}</code>
+              <UButton :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'" color="neutral" variant="outline" size="sm" square :aria-label="$t('workspaceSettings.apiKeys.mcpAddress')" @click="copyMcp" />
+            </div>
+            <p class="text-sm text-muted">{{ $t('admin.developer.mcpKeyHint') }}</p>
+            <CodeBlock :code="mcpSnippet" lang="bash" />
+            <div class="flex gap-1">
+              <UButton to="/docs/mcp" target="_blank" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('workspaceSettings.apiKeys.mcpDocs')" />
+              <UButton to="/api-keys" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('admin.developer.mcpKeys')" />
+            </div>
+          </section>
+
           <!-- Get started -->
           <section id="get-started" class="space-y-5 scroll-mt-8">
             <div>
@@ -192,8 +210,19 @@ definePageMeta({ middleware: 'agent' })
 const { t } = useI18n()
 const appUrl = useAppUrl()
 
+const mcpUrl = computed(() => `${appUrl.value}/mcp`)
+const mcpSnippet = computed(() => `claude mcp add --transport http helpbites ${mcpUrl.value} \\
+  --header "Authorization: Bearer ak_…"`)
+const copied = ref(false)
+async function copyMcp() {
+  await navigator.clipboard.writeText(mcpUrl.value)
+  copied.value = true
+  setTimeout(() => { copied.value = false }, 2000)
+}
+
 const links = computed(() => [
   { label: t('admin.developer.getStarted'), hint: t('admin.developer.quickStartHint'), to: '#get-started', icon: 'i-lucide-rocket' },
+  { label: t('admin.developer.mcp'), hint: t('admin.developer.mcpHint'), to: '#mcp', icon: 'i-lucide-plug-zap' },
   { label: t('admin.developer.quickAdminKeys'), hint: t('admin.developer.quickAdminKeysHint'), to: '/api-keys', icon: 'i-lucide-key-round' },
   { label: t('admin.developer.apiReference'), hint: t('admin.developer.quickApiRefHint'), to: '/_docs/scalar', external: true, icon: 'i-lucide-code-xml' },
   { label: t('admin.developer.widget'), hint: t('admin.developer.quickWidgetHint'), to: '#widget', icon: 'i-lucide-messages-square' },
@@ -202,6 +231,7 @@ const links = computed(() => [
 ])
 
 const sections = computed(() => [
+  { id: 'mcp', label: t('admin.developer.mcp') },
   { id: 'get-started', label: t('admin.developer.getStarted') },
   { id: 'tokens', label: t('admin.developer.tokens') },
   { id: 'widget', label: t('admin.developer.widget') },

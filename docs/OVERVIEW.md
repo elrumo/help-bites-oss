@@ -175,7 +175,7 @@ project overview no longer returns `health`; the checklist replaces it.
 The sidebar groups a project's sections as Support (Conversations, Knowledge
 base, Assistants, Ticket types), Product (Feedback, Planning, Changelog,
 Onboarding), Grow (Contacts, Forms, Email, Revenue), Site (Pages, Blog, Legal,
-Brand) and Build (Errors, Flags, Developer & MCP), with Overview above them and
+Brand) and Build (Errors, Flags, Install & API), with Overview above them and
 Settings below. **Project → Settings → Sidebar** takes out the ones the project
 does not use, in the sidebar and the ⌘K list, in the web panel and the native
 app. Nothing is deleted: the pages and the API keep working, and a hidden section

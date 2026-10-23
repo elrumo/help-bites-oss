@@ -6,9 +6,11 @@ struct DeveloperScreen: View {
   @Environment(Workspace.self) private var workspace
   @Environment(\.openURL) private var openURL
   @Environment(\.horizontalSizeClass) private var sizeClass
+  @State private var mcpCopied = false
 
   private var base: String { session.endpoint }
   private var reference: URL? { URL(string: "\(base)/_docs/scalar") }
+  private var mcpURL: String { "\(base)/mcp" }
 
   private struct QuickLink: Identifiable {
     enum Target { case section(String), apiKeys, reference }
@@ -19,6 +21,7 @@ struct DeveloperScreen: View {
 
   private let links = [
     QuickLink(label: String(localized: "Get started"), hint: String(localized: "Project, token, widget — in three steps"), systemImage: "paperplane", target: .section("get-started")),
+    QuickLink(label: String(localized: "AI assistants (MCP)"), hint: String(localized: "Connect Claude, ChatGPT or Cursor"), systemImage: "powerplug", target: .section("mcp")),
     QuickLink(label: String(localized: "Admin API keys"), hint: String(localized: "Automate the complete operator API"), systemImage: "key", target: .apiKeys),
     QuickLink(label: String(localized: "API reference"), hint: String(localized: "OpenAPI schema for every /v1 route"), systemImage: "chevron.left.forwardslash.chevron.right", target: .reference),
     QuickLink(label: String(localized: "Widget"), hint: String(localized: "Loader options and JS commands"), systemImage: "bubble.left.and.bubble.right", target: .section("widget")),
@@ -75,6 +78,30 @@ struct DeveloperScreen: View {
               .buttonStyle(.plain)
             }
           }
+
+          section(String(localized: "AI assistants (MCP)"), String(localized: "Let Claude, ChatGPT or Cursor work in your workspace as you. Add this address to the assistant's connectors and sign in, or give it an API key.")) {
+            HStack(spacing: 8) {
+              Text(mcpURL).font(.lnMono).foregroundStyle(Theme.text).textSelection(.enabled).lineLimit(1).truncationMode(.middle)
+                .padding(.horizontal, 10).padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
+              IconButton(systemImage: mcpCopied ? "checkmark" : "doc.on.doc", label: "Copy", bordered: true) {
+                Clipboard.copy(mcpURL)
+                mcpCopied = true
+                Task { try? await Task.sleep(for: .seconds(1.5)); mcpCopied = false }
+              }
+            }
+            prose(String(localized: "Claude Code, Cursor and other clients take a key from API keys as a header:"))
+            CodeBlock(code: "claude mcp add --transport http helpbites \(mcpURL) \\\n  --header \"Authorization: Bearer ak_…\"")
+            HStack(spacing: 4) {
+              if let docs = URL(string: "\(base)/docs/mcp") {
+                Button { openURL(docs) } label: { Label("How to connect", systemImage: "book") }.buttonStyle(.lnGhost)
+              }
+              Button("API keys") { workspace.settingsPath.append(.apiKeys) }.buttonStyle(.lnGhost)
+            }
+            .padding(.leading, -10)
+          }
+          .id("mcp")
 
           section(String(localized: "Get started"), String(localized: "Three steps, about ten minutes.")) {
             step(1, String(localized: "Create a project")) {
@@ -164,7 +191,7 @@ struct DeveloperScreen: View {
         .frame(maxWidth: .infinity)
       }
     }
-    .panelScreen("Developer")
+    .panelScreen("Developer & MCP")
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
         Button { if let reference { openURL(reference) } } label: { Label("API reference", systemImage: "book") }
