@@ -13,12 +13,13 @@ struct ChangelogScreen: View {
 }
 
 private enum ChangelogSheet: Identifiable {
-  case entry(String?), release(String?), settings, generate, subscribers, importer
+  case entry(String?), release(String?), settings, style, generate, subscribers, importer
   var id: String {
     switch self {
     case .entry(let id): "entry-\(id ?? "new")"
     case .release(let id): "release-\(id ?? "new")"
     case .settings: "settings"
+    case .style: "style"
     case .generate: "generate"
     case .subscribers: "subscribers"
     case .importer: "import"
@@ -48,6 +49,7 @@ private struct ChangelogView: View {
         case .entry(let id): ChangelogEntryEditor(store: store, entryId: id)
         case .release(let id): ChangelogReleaseSheet(store: store, releaseId: id)
         case .settings: ChangelogSettingsSheet(store: store)
+        case .style: ChangelogStyleSheet(store: store)
         case .generate: ChangelogGenerateSheet(store: store)
         case .subscribers: ChangelogSubscribersSheet(store: store)
         case .importer: ChangelogImportSheet(store: store)
@@ -161,6 +163,7 @@ private struct ChangelogView: View {
           Button { sheet = .generate } label: { Label("From commits", systemImage: "sparkles") }
           Button { sheet = .subscribers } label: { Label("Subscribers and email", systemImage: "envelope") }
           Button { sheet = .importer } label: { Label("Import", systemImage: "square.and.arrow.down") }
+          Button { sheet = .style } label: { Label("Style", systemImage: "paintpalette") }
           Button { sheet = .settings } label: { Label("Settings", systemImage: "slider.horizontal.3") }
         } label: { Label("More", systemImage: "ellipsis.circle") }
         Menu {

@@ -110,7 +110,10 @@ struct ProjectSettingsScreen: View {
         VStack(alignment: .leading, spacing: 10) {
           Text("This is the accent of your Brand kit: widgets, boards, forms, legal, blog and hub pages and campaign mail all follow it.")
             .font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
-          Button { workspace.go(.project(projectId, .brand)) } label: { Label("Open the Brand kit", systemImage: "paintpalette") }.buttonStyle(.lnSecondaryCompact)
+          HStack(spacing: 8) {
+            Button { workspace.go(.project(projectId, .brand)) } label: { Label("Open the Brand kit", systemImage: "paintpalette") }.buttonStyle(.lnSecondaryCompact)
+            ProjectStyleActions(projectId: projectId)
+          }
           LazyVGrid(columns: [GridItem(.adaptive(minimum: 30, maximum: 30), spacing: 8)], alignment: .leading, spacing: 8) {
             ForEach(Self.swatches, id: \.self) { swatch in
               Button { form.accent = swatch } label: {

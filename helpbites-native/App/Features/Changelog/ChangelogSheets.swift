@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 // from commits, subscribers and email, and importing from another system.
 
 /// Chrome shared by the sheets: a navigation bar with Close, centred content on wide screens.
-private struct ChangelogSheetFrame<Content: View, Trailing: View>: View {
+struct ChangelogSheetFrame<Content: View, Trailing: View>: View {
   let title: String
   @ViewBuilder let content: () -> Content
   @ViewBuilder let trailing: () -> Trailing
