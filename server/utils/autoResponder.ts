@@ -155,7 +155,7 @@ export async function runAutoReply(conversationId: string, messageId: string): P
 
   const projectRow = await loadProjectUnscoped(projectId).catch(() => null)
   const senderName = String(agent.get('name') || '') || String(projectRow?.get('fromName') || '') || 'Support'
-  await appendMessage({
+  const { message, created } = await appendMessage({
     conversation,
     sender: 'agent',
     senderName,
@@ -163,4 +163,9 @@ export async function runAutoReply(conversationId: string, messageId: string): P
     // One answer per question, even when a retry runs after the first attempt got this far.
     input: { body: text, replyToId: '', clientId: `ai-${asked.id}`, attachments: [], context: null }
   })
+  // The widget shows the answer live; a customer who wrote by email has only their mailbox.
+  if (created && projectRow && conversation.get('channel') === 'email') {
+    const endUser = await (conversation.get('endUser') as ParseObject).fetch(MASTER).catch(() => null)
+    if (endUser) await notifyUserOfAgentMessage({ project: projectRow, conversation, endUser, message })
+  }
 }

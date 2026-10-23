@@ -35,6 +35,7 @@
             <span class="flex items-center justify-between gap-2">
               <span class="truncate text-[13px] text-highlighted" :class="item.unreadCount ? 'font-semibold' : 'font-medium'">{{ item.title }}</span>
               <span class="flex shrink-0 items-center gap-1.5 text-xs text-muted">
+                <UIcon v-if="item.viaEmail" name="i-lucide-mail" class="size-3.5" :title="$t('inbox.viaEmail')" />
                 <PriorityIcon v-if="item.priority === 'high' || item.priority === 'urgent'" :priority="item.priority" :title="item.priority === 'urgent' ? $t('chat.urgentPriority') : $t('chat.highPriority')" />
                 <StatusIcon v-if="item.done" category="resolved" :title="$t('chat.done')" />
                 {{ formatShort(item.timestamp) }}
@@ -70,6 +71,8 @@ export interface ChatListItem {
   projectIconUrl?: string
   /** The panel flags high and urgent tickets; the end user's inbox has no priority. */
   priority?: ConversationPriority
+  /** The conversation started as an email to one of the project's addresses. */
+  viaEmail?: boolean
   /** Undefined where the concept does not exist (the end user's own inbox). */
   done?: boolean
   /** Undefined where the team cannot archive or delete (the end user's own inbox). */

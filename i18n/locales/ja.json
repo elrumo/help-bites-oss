@@ -296,7 +296,12 @@
     "recentErrors": "最近のエラー",
     "actions": "アクション",
     "actionsNoWebhook": "このプロジェクトにはアクション用 webhook がないため、これらは失敗します。",
-    "actionsNoWebhookFix": "設定する"
+    "actionsNoWebhookFix": "設定する",
+    "channel": "チャネル",
+    "anyChannel": "すべてのチャネル",
+    "channelEmail": "メール",
+    "channelWidget": "チャットと API",
+    "viaEmail": "メールで始まりました"
   },
   "board": {
     "itemCount": "{count} 件",
@@ -2738,6 +2743,10 @@
         "none": {
           "term": "または、使わなくてもOK",
           "desc": "すべてのエンドポイントは公開され、ドキュメントもあります。代わりに /v1/* の上に独自のチャットUIを作ることもできます。"
+        },
+        "domains": {
+          "term": "自分のドメインで",
+          "desc": "フィードバックボード、変更履歴、ブログを feedback.yourapp.com に置けます。TXT と CNAME を追加すると、ページ、埋め込み、API がそのドメインで証明書付きで応答します。"
         }
       },
       "inbox": {
@@ -2766,6 +2775,10 @@
         "native": {
           "term": "iPhone、iPad、Mac",
           "desc": "受信トレイ、返信、パネルのほとんどに対応したネイティブアプリ。サーバーにAPNsを設定すると、プッシュ通知も届きます。"
+        },
+        "email": {
+          "term": "support@あなた宛のメールが会話になる",
+          "desc": "support@yourapp.com のようなアドレスをプロジェクトに。自分のドメイン、または今のメールボックスからの転送で使えます。メッセージはインボックスの会話になり、返信はお客様のメールアプリでスレッドのまま届きます。"
         }
       },
       "feedback": {
@@ -5559,5 +5572,79 @@
       "point2": "AI プロバイダーを選び、GitHub や Stripe を接続",
       "point3": "API キーで、クリックでできることを自動化"
     }
+  },
+  "projectDomains": {
+    "title": "カスタムドメイン",
+    "hint": "feedback.example.com のような自分のドメインで公開ページを配信します。",
+    "docs": "仕組み",
+    "add": "ドメインを追加",
+    "hostLabel": "ドメイン",
+    "hostPlaceholder": "feedback.example.com",
+    "targetLabel": "開くページ",
+    "target": {
+      "hub": "公開ハブ",
+      "feedback": "フィードバックボード",
+      "roadmap": "ロードマップ",
+      "changelog": "変更履歴",
+      "blog": "ブログ"
+    },
+    "empty": "ドメインはまだありません。",
+    "state": {
+      "pending": "DNS を待っています",
+      "verified": "公開中",
+      "failed": "DNS がまだ見つかりません"
+    },
+    "records": "DNS プロバイダーで次のレコードを追加してください",
+    "recordsHint": "反映には数分かかることがあります。その後、もう一度確認してください。",
+    "recordType": "種類",
+    "recordHost": "名前",
+    "recordValue": "値",
+    "verify": "DNS を確認",
+    "remove": "削除",
+    "copy": "コピー",
+    "removeConfirm": "{host} を削除しますか？ すぐに配信が止まります。",
+    "loadFailed": "ドメインを読み込めませんでした。",
+    "saveFailed": "ドメインを保存できませんでした。"
+  },
+  "inboundAddresses": {
+    "title": "サポート用メールアドレス",
+    "intro": "このアドレスに届いたメールはインボックスの会話になり、返信はメールで送られます。自分のドメインのアドレスを使うか、今のメールボックスを HelpBites のアドレスに転送してください。",
+    "docs": "仕組み",
+    "forward": "メールボックスを転送",
+    "forwardHint": "support{'@'}yourdomain.com はそのままにして、ここへ転送します。",
+    "domain": "自分のドメインを使う",
+    "domainHint": "MX レコードがメールプロバイダを指すドメインのアドレス。",
+    "publicAddress": "お客様が書き込むアドレス",
+    "publicPlaceholder": "support{'@'}example.com",
+    "address": "アドレス",
+    "addressPlaceholder": "support{'@'}mail.example.com",
+    "fromName": "返信の差出人名",
+    "create": "作成",
+    "cancel": "キャンセル",
+    "empty": "アドレスはまだありません。",
+    "forwardTo": "{public} 宛のメールの転送先",
+    "forwardAnywhere": "メールボックスの転送先",
+    "mxTitle": "DNS プロバイダーに次の MX レコードを追加してください",
+    "mxHint": "このドメイン宛のすべてのメールがメールプロバイダに送られます。通常のメールボックスに影響しないよう、サブドメイン（mail.example.com）を使ってください。",
+    "type": "種類",
+    "host": "名前",
+    "value": "値",
+    "priority": "優先度",
+    "verify": "DNS を確認",
+    "remove": "削除",
+    "copy": "コピー",
+    "removeConfirm": "{address} での受信をやめますか？ すでにできた会話は残ります。",
+    "kind": {
+      "forward": "転送",
+      "domain": "自分のドメイン"
+    },
+    "state": {
+      "pending": "MX を待っています",
+      "verified": "受信中",
+      "failed": "MX がまだ見つかりません"
+    },
+    "noForwarding": "このサーバーには転送用ドメイン（INBOUND_DOMAIN）がありません。",
+    "loadFailed": "アドレスを読み込めませんでした。",
+    "saveFailed": "アドレスを保存できませんでした。"
   }
 }

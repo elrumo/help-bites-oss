@@ -73,6 +73,7 @@ export function serializeConversation(row: ParseObject): Conversation {
     userReadAt: iso(row.get('userReadAt')),
     agentReadAt: iso(row.get('agentReadAt')),
     archivedAt: iso(row.get('archivedAt')),
+    channel: row.get('channel') === 'email' ? 'email' : 'widget',
     feedbackPostIds: Array.isArray(row.get('feedbackPostIds')) ? (row.get('feedbackPostIds') as unknown[]).filter((id): id is string => typeof id === 'string') : [],
     createdAt: iso(row.createdAt) || ''
   }
@@ -131,6 +132,8 @@ export type MessageInput = {
   clientId: string
   attachments: Attachment[]
   context: Context | null
+  /** Set by server code only (readMessageInput never reads it): the Message-ID of the email this message is. */
+  emailMessageId?: string
 }
 
 /** Attachments must be ours and belong to this project; anything else is dropped. */
@@ -317,6 +320,7 @@ export async function appendMessage({ conversation, sender, senderName, agent, s
   message.set('context', input.context)
   message.set('replyToId', replyToId)
   message.set('clientId', input.clientId)
+  if (input.emailMessageId) message.set('emailMessageId', input.emailMessageId)
   message.set('visibility', visibility)
   message.set('kind', 'message')
   await message.save(null, MASTER)

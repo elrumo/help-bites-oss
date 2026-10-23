@@ -47,6 +47,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   `data-*` attributes and one `HelpBites.push` queue, never adding a script twice.
   [HUB.md](HUB.md)
 
+**Custom domains** [CUSTOM-DOMAINS.md](CUSTOM-DOMAINS.md): serve a project's hub, feedback board, roadmap, changelog and blog on `feedback.example.com`; verify with a TXT and a CNAME; the bundled Caddy gets certificates on demand. Pro in the cloud edition.
+
 **Public hub** [HUB.md](HUB.md)
 
 - **One public page per project.** `/hub/pk_…` gathers the latest changelog
@@ -140,6 +142,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 ## 2. Operator inbox
 
+- **Email as a channel.** A project can have addresses such as `support@yourdomain.com` (an address on a domain whose MX points at Mailgun, or a HelpBites alias your own mailbox forwards to). Mail to them becomes conversations, replies go back by email threaded (`In-Reply-To`, `Reply-To` with the conversation id), auto-replies and loops are dropped, and the inbox shows an envelope and filters by channel. Web and native. Pro in the cloud edition. [INBOUND-EMAIL.md](INBOUND-EMAIL.md)
 - **Overview first.** Signing in opens the workspace overview: a card per project
   with its unread and open conversations, revenue and open errors, then unread and
   open totals, net revenue against the period before, MRR, the latest unread
@@ -777,8 +780,8 @@ repository. See [EDITIONS.md](EDITIONS.md).
   per-step drop-off yet. [ONBOARDING.md](ONBOARDING.md)
 - **Brand kit.** No download-everything archive yet; files download one by one.
   [BRAND.md](BRAND.md)
-- **Public hub and Home tab.** The hub page is English only, has no custom domain
-  (it lives at `/hub/<public key>`) and fixed sections plus up to 8 links. The chat
+- **Public hub and Home tab.** The hub page is English only (it lives at `/hub/<public key>`,
+  or on a [custom domain](CUSTOM-DOMAINS.md)) and has fixed sections plus up to 8 links. The chat
   widget's Home tab is web only (the native operator app edits its settings), is
   not shown in the wide inline layout, and offers every published onboarding flow.
   `helpbites.js` adds the chat, feedback, changelog and onboarding scripts only,
@@ -792,7 +795,7 @@ repository. See [EDITIONS.md](EDITIONS.md).
   entries (a block outline with each block's fields and animation, undo and redo, moving
   a block between lists), writes components (fields, HTML and CSS), runs the assistant
   and the page wizard, and manages files and settings; the live previews are web-only
-  (open the hosted page after publishing). No custom domains for hosted pages, no
+  (open the hosted page after publishing). No
   scripts in components, no per-field translations, scheduled publishing, version
   history or generated TypeScript types yet. [PAGES.md](PAGES.md)
 - **Translations.** Onboarding, pricing tables, legal documents, template emails, lead forms,
@@ -820,7 +823,7 @@ repository. See [EDITIONS.md](EDITIONS.md).
   snippet draws the cards template only. [PRICING.md](PRICING.md)
 - **Blog.** The native app edits a post's Markdown (or an imported post's HTML)
   as text, with a preview: the rich editor is web-only. No translations of posts
-  or the embed, no custom domain for the hosted blog, no paid tiers for
+  or the embed, no paid tiers for
   members-only posts (a member is a signed-in reader), images from a Ghost import
   stay on the old site, and no MCP tools for it yet. [BLOG.md](BLOG.md)
 - **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for

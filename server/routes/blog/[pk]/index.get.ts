@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
     hasMore: blog.hasMore,
     blogPath,
     feedUrl: blogFeedUrl(project),
-    canonical: hostedBlogUrl(project)
+    canonical: hostedBlogUrl(project, '', customOrigin(event) || undefined)
   }, await poweredByFor(project))
   if (handleCacheHeaders(event, { etag: createHash('sha1').update(html).digest('hex'), maxAge: 60, cacheControls: ['public', 'must-revalidate'] })) return
   return html

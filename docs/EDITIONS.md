@@ -47,8 +47,8 @@ A bot asks on the first pull request (`.github/workflows/cla.yml`).
 
 ## What the commercial layer adds
 
-Open sign-up with abuse checks, plans and Stripe billing, sending from a shared domain, verified custom domains and a
-staff console. It is a [Nuxt layer](https://nuxt.com/docs/getting-started/layers) called `ee/`.
+Open sign-up with abuse checks, plans and Stripe billing, sending from a shared domain, verified sending domains and a
+staff console. Custom domains for public pages and support email addresses are in both editions; the cloud edition limits them to Pro. It is a [Nuxt layer](https://nuxt.com/docs/getting-started/layers) called `ee/`.
 
 ## How the two builds differ
 

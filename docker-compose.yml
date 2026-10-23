@@ -57,7 +57,12 @@ services:
       # The app talks to Parse over the compose network; without this Parse 7+
       # refuses the master key from any non-loopback address. Only this
       # stack's own (pinned) network may use it.
-      PARSE_SERVER_MASTER_KEY_IPS: "127.0.0.1,::1,${SB_INTERNAL_SUBNET:-10.213.0.0/24}"
+      PARSE_SERVER_MASTER_KEY_IPS: "127.0.0.1,::1,${SB_INTERNAL_SUBNET:-10.213.0.0/24},${PARSE_MASTER_KEY_EXTRA_IPS:-::1}"
+      # Only for running a maintenance script from your own machine against a public Parse
+      # domain: also set PARSE_MASTER_KEY_EXTRA_IPS to your IP and PARSE_TRUST_PROXY to the
+      # number of proxies in front (1 for Traefik alone), so Parse sees your address, not the
+      # proxy's. Unset both afterwards.
+      PARSE_SERVER_TRUST_PROXY: ${PARSE_TRUST_PROXY:-false}
       PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION: "false"
       PARSE_SERVER_ENABLE_ANONYMOUS_USERS: "false"
       PARSE_SERVER_ALLOW_EXPIRED_AUTH_DATA_TOKEN: "false"

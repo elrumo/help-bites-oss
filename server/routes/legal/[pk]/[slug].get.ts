@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   const doc = toPublicLegalDocument(project, row, published)
   // Other documents in the same language; the same text in other languages is linked as its own list.
   const others = published.filter(r => r.id !== row.id && String(r.get('locale') || 'en') === doc.locale).map(r => toPublicLegalDocument(project, r)).map(d => ({ title: d.title, path: d.url }))
-  const page = renderLegalPage(project, { ...doc, html: doc.html, sections: sectionsOf(row), path: doc.url, origin: String(process.env.APP_URL || '').trim().replace(/\/+$/, '') }, others, await poweredByFor(project))
+  const page = renderLegalPage(project, { ...doc, html: doc.html, sections: sectionsOf(row), path: doc.url, origin: customOrigin(event) || String(process.env.APP_URL || '').trim().replace(/\/+$/, '') }, others, await poweredByFor(project))
   if (handleCacheHeaders(event, { etag: createHash('sha1').update(page).digest('hex'), maxAge: 60, cacheControls: ['public', 'must-revalidate'] })) return
   return page
 })

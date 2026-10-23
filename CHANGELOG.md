@@ -5,6 +5,24 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Support email addresses** (`docs/INBOUND-EMAIL.md`). A project can have addresses such as `support@yourdomain.com`: mail sent to them becomes
+  conversations in the inbox, and replies (yours, the assistant's, the API's) go back by email, threaded. Two kinds: an address on a domain whose
+  MX points at Mailgun, or a HelpBites alias your own mailbox forwards to. New routes `GET`/`POST /v1/admin/projects/:id/inbound-addresses`,
+  `DELETE …/inbound-addresses/:addressId`, `POST …/inbound-addresses/:addressId/verify` and `POST /v1/webhooks/mailgun-inbound`; conversations
+  gain `channel` and `GET /v1/admin/conversations?channel=email`. The inbox shows an envelope and filters by channel (web and native). **To
+  use it, add one Mailgun Route** (`match_recipient(".*")` → `forward("<APP_URL>/v1/webhooks/mailgun-inbound")`); optional env `INBOUND_DOMAIN`
+  for forwarding aliases. Schema (needs `schema:apply`; the container does it on boot): new class `InboundAddress`, new fields
+  `Conversation.channel` and `Message.emailMessageId` (indexed). New plan feature `inboundEmail` (on in community).
+- **Custom domains for public pages** (`docs/CUSTOM-DOMAINS.md`). A project's hub, feedback board, roadmap, changelog and blog can be
+  served on its own host (`feedback.example.com`): add it under Project → Settings → Custom domains (web and native), put a TXT and a
+  CNAME in DNS, verify. New routes `GET`/`POST /v1/admin/projects/:id/domains`, `PATCH`/`DELETE …/domains/:domainId`,
+  `POST …/domains/:domainId/verify` and `GET /v1/internal/domain-check` (the proxy's certificate check). Schema (needs `schema:apply`;
+  the container does it on boot): new class `ProjectDomain`. Optional env: `CUSTOM_DOMAIN_TARGET`, `CUSTOM_DOMAIN_IP`,
+  `CUSTOM_DOMAIN_RESERVED`. The bundled `Caddyfile` gains an on-demand TLS block (re-pull it if you copied it); any other proxy must
+  send `/` of custom hosts to `/_domain`. New plan feature `customPublicDomain` (on in community).
+- **Run maintenance scripts from your own machine.** Optional `PARSE_MASTER_KEY_EXTRA_IPS` (an extra IP allowed to use the master key)
+  and `PARSE_TRUST_PROXY` (proxies in front of Parse, `1` for Traefik) on `sb-parse`, both off by default. Needed together when a script
+  such as `backfill-contacts.mjs` runs outside the stack against a public Parse domain; unset them afterwards. No schema changes.
 - **Saved, scheduled AI reports on errors.** "Analyze with AI" on the Errors page now saves every run as a report (view, copy and delete
   them; the latest 100 are kept), can run daily, weekly or monthly on workers, and reads the source of the most frequent errors from the
   project's GitHub repos (web and native). New routes `GET /v1/admin/errors/reports`, `DELETE /v1/admin/errors/reports/:id`,

@@ -296,7 +296,12 @@
     "recentErrors": "최근 오류",
     "actions": "작업",
     "actionsNoWebhook": "이 프로젝트에는 작업 웹훅이 없어 이 작업들은 실패합니다.",
-    "actionsNoWebhookFix": "설정하기"
+    "actionsNoWebhookFix": "설정하기",
+    "channel": "채널",
+    "anyChannel": "모든 채널",
+    "channelEmail": "이메일",
+    "channelWidget": "채팅 및 API",
+    "viaEmail": "이메일로 시작됨"
   },
   "board": {
     "itemCount": "{count}개 항목",
@@ -2738,6 +2743,10 @@
         "none": {
           "term": "또는 아예 쓰지 않아도 됩니다",
           "desc": "모든 엔드포인트는 공개되어 있고 문서화되어 있습니다. 대신 /v1/*를 기반으로 직접 채팅 UI를 만들 수도 있습니다."
+        },
+        "domains": {
+          "term": "내 도메인으로",
+          "desc": "피드백 보드, 변경 내역, 블로그를 feedback.yourapp.com에 올리세요. TXT와 CNAME을 추가하면 페이지, 임베드, API가 자체 인증서와 함께 그 도메인에서 응답합니다."
         }
       },
       "inbox": {
@@ -2766,6 +2775,10 @@
         "native": {
           "term": "iPhone, iPad, Mac",
           "desc": "받은편지함, 답장, 패널 대부분을 제공하는 네이티브 앱. 서버에 APNs를 설정하면 푸시 알림도 받을 수 있습니다."
+        },
+        "email": {
+          "term": "support@내도메인 메일이 대화가 됩니다",
+          "desc": "프로젝트에 support@yourapp.com 같은 주소를 주세요. 내 도메인이나 기존 메일함에서의 전달 모두 가능합니다. 메시지는 받은편지함의 대화로 들어오고, 답장은 고객의 메일 앱에서 같은 스레드로 이어집니다."
         }
       },
       "feedback": {
@@ -5559,5 +5572,79 @@
       "point2": "AI 제공자를 고르고 GitHub나 Stripe를 연결하세요",
       "point3": "API 키로 클릭하는 모든 일을 자동화하세요"
     }
+  },
+  "projectDomains": {
+    "title": "사용자 지정 도메인",
+    "hint": "feedback.example.com 같은 내 도메인에서 공개 페이지를 제공합니다.",
+    "docs": "작동 방식",
+    "add": "도메인 추가",
+    "hostLabel": "도메인",
+    "hostPlaceholder": "feedback.example.com",
+    "targetLabel": "열리는 페이지",
+    "target": {
+      "hub": "공개 허브",
+      "feedback": "피드백 보드",
+      "roadmap": "로드맵",
+      "changelog": "변경 내역",
+      "blog": "블로그"
+    },
+    "empty": "아직 도메인이 없습니다.",
+    "state": {
+      "pending": "DNS 대기 중",
+      "verified": "사용 중",
+      "failed": "아직 DNS를 찾지 못함"
+    },
+    "records": "DNS 제공업체에 다음 레코드를 추가하세요",
+    "recordsHint": "반영되는 데 몇 분이 걸릴 수 있습니다. 그다음 다시 확인하세요.",
+    "recordType": "유형",
+    "recordHost": "이름",
+    "recordValue": "값",
+    "verify": "DNS 확인",
+    "remove": "삭제",
+    "copy": "복사",
+    "removeConfirm": "{host}을(를) 삭제할까요? 즉시 제공이 중단됩니다.",
+    "loadFailed": "도메인을 불러오지 못했습니다.",
+    "saveFailed": "도메인을 저장하지 못했습니다."
+  },
+  "inboundAddresses": {
+    "title": "지원 이메일 주소",
+    "intro": "이 주소로 온 메일은 받은편지함의 대화가 되고, 답장은 이메일로 나갑니다. 내 도메인의 주소를 쓰거나, 기존 메일함을 HelpBites 주소로 전달하세요.",
+    "docs": "작동 방식",
+    "forward": "내 메일함 전달",
+    "forwardHint": "support{'@'}yourdomain.com은 그대로 두고 여기로 전달합니다.",
+    "domain": "내 도메인 사용",
+    "domainHint": "MX 레코드가 메일 제공업체를 가리키는 도메인의 주소.",
+    "publicAddress": "고객이 보내는 주소",
+    "publicPlaceholder": "support{'@'}example.com",
+    "address": "주소",
+    "addressPlaceholder": "support{'@'}mail.example.com",
+    "fromName": "답장의 보낸 사람 이름",
+    "create": "만들기",
+    "cancel": "취소",
+    "empty": "아직 주소가 없습니다.",
+    "forwardTo": "{public}로 온 메일을 다음으로 전달",
+    "forwardAnywhere": "메일함을 다음으로 전달",
+    "mxTitle": "DNS 제공업체에 다음 MX 레코드를 추가하세요",
+    "mxHint": "이 도메인의 모든 메일이 메일 제공업체로 갑니다. 기존 메일함에 영향이 없도록 하위 도메인(mail.example.com)을 사용하세요.",
+    "type": "유형",
+    "host": "이름",
+    "value": "값",
+    "priority": "우선순위",
+    "verify": "DNS 확인",
+    "remove": "삭제",
+    "copy": "복사",
+    "removeConfirm": "{address}의 메일 수신을 중단할까요? 이미 만들어진 대화는 남습니다.",
+    "kind": {
+      "forward": "전달",
+      "domain": "내 도메인"
+    },
+    "state": {
+      "pending": "MX 대기 중",
+      "verified": "수신 중",
+      "failed": "아직 MX를 찾지 못함"
+    },
+    "noForwarding": "이 서버에는 전달용 도메인(INBOUND_DOMAIN)이 없습니다.",
+    "loadFailed": "주소를 불러오지 못했습니다.",
+    "saveFailed": "주소를 저장하지 못했습니다."
   }
 }

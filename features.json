@@ -11,613 +11,1947 @@
       "name": "Chat widget",
       "category": "support",
       "summary": "A floating bubble or inline chat in the customer's own app; users never make an account (the host app signs an identity token, or, where an admin opened guest access, they chat as a guest with no sign-in and no email). It wears the project's Brand kit look and can open on a Home tab (what is new, top feedback, onboarding flows to start) next to Messages.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/embed/index.vue", "app/composables/useGuestSession.ts"], "public": ["/embed"] },
+      "web": {
+        "panel": [
+          "app/pages/embed/index.vue",
+          "app/composables/useGuestSession.ts"
+        ],
+        "public": [
+          "/embed"
+        ]
+      },
       "native": null,
-      "api": { "prefixes": ["/v1/conversations", "/v1/messages", "/v1/events", "/v1/end-users", "/v1/unread", "/v1/attachments"], "docs": "docs/CONNECTING.md" },
-      "embed": { "web": "public/widget.js", "swift": null, "customize": ["data-mode", "data-position", "data-accent", "data-radius", "data-shadow", "data-theme", "the widget's style (the project's, light and dark, or its own)", "JS open/close API", "Home tab (hub.widgetHome)", "Guest access (guestSurfaces: chat, feedback, comments)"] },
-      "landing": { "listed": true, "key": "landing.features.app" }
+      "api": {
+        "prefixes": [
+          "/v1/conversations",
+          "/v1/messages",
+          "/v1/events",
+          "/v1/end-users",
+          "/v1/unread",
+          "/v1/attachments"
+        ],
+        "docs": "docs/CONNECTING.md"
+      },
+      "embed": {
+        "web": "public/widget.js",
+        "swift": null,
+        "customize": [
+          "data-mode",
+          "data-position",
+          "data-accent",
+          "data-radius",
+          "data-shadow",
+          "data-theme",
+          "the widget's style (the project's, light and dark, or its own)",
+          "JS open/close API",
+          "Home tab (hub.widgetHome)",
+          "Guest access (guestSurfaces: chat, feedback, comments)"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.features.app"
+      }
     },
     {
       "id": "public-hub",
       "name": "Public hub and chat Home tab",
       "category": "product",
       "summary": "One public page per project at /hub/<key> that gathers what it already publishes (changelog, roadmap, feedback board, blog, legal documents, brand kit), a way to chat and links of its own, in the project's style (Brand kit look, light and dark, or the hub's own over it); the same data as JSON for the chat widget's Home tab and for web and Swift snippets. A section appears only when its feature has something public.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/components/settings/ProjectHub.vue", "app/pages/embed/index.vue"], "public": ["/hub/:pk"] },
-      "native": { "folders": ["helpbites-native/App/Features/Projects"], "parity": "tests/hub.test.ts" },
-      "api": { "prefixes": ["/v1/hub"], "docs": "docs/HUB.md" },
-      "embed": { "web": "public/helpbites.js", "swift": "docs/HUB.md#in-a-swift-app", "customize": ["hub title, tagline, section order and links", "the project's Brand kit look (accent, logo, fonts, radius)", "Swift accent, font, cornerRadius", "the API (GET /v1/hub/{pk}) for your own UI"] },
-      "landing": { "listed": true, "key": "landing.features.app.hub" }
+      "web": {
+        "panel": [
+          "app/components/settings/ProjectHub.vue",
+          "app/pages/embed/index.vue"
+        ],
+        "public": [
+          "/hub/:pk"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Projects"
+        ],
+        "parity": "tests/hub.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/hub"
+        ],
+        "docs": "docs/HUB.md"
+      },
+      "embed": {
+        "web": "public/helpbites.js",
+        "swift": "docs/HUB.md#in-a-swift-app",
+        "customize": [
+          "hub title, tagline, section order and links",
+          "the project's Brand kit look (accent, logo, fonts, radius)",
+          "Swift accent, font, cornerRadius",
+          "the API (GET /v1/hub/{pk}) for your own UI"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.features.app.hub"
+      }
+    },
+    {
+      "id": "custom-domains",
+      "name": "Custom domains for public pages",
+      "category": "product",
+      "summary": "Serve a project's hub, feedback board, roadmap, changelog and blog on its own domain or subdomain (feedback.example.com): add the host, put a TXT (ownership) and a CNAME in DNS, verify; the pages, embeds and public API answer there, the panel does not. The bundled Caddy gets certificates on demand for verified hosts only.",
+      "editions": [
+        "community",
+        "cloud"
+      ],
+      "plan": "pro",
+      "entitlement": "customPublicDomain",
+      "status": "stable",
+      "web": {
+        "panel": [
+          "app/components/settings/ProjectDomains.vue"
+        ],
+        "public": [
+          "/_domain"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Projects"
+        ],
+        "parity": "tests/domainsNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/projects/:id/domains",
+          "/v1/internal/domain-check"
+        ],
+        "docs": "docs/CUSTOM-DOMAINS.md"
+      },
+      "embed": null,
+      "landing": {
+        "listed": true,
+        "key": "landing.features.app.domains"
+      }
     },
     {
       "id": "one-tag-loader",
       "name": "One-tag loader",
       "category": "product",
       "summary": "helpbites.js: one script tag that asks the project which embeds it has and adds the chat, feedback board, changelog and onboarding scripts with the same data-* attributes, never twice, with one HelpBites.push queue that forwards to each.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "public": ["/helpbites.js"] },
+      "web": {
+        "public": [
+          "/helpbites.js"
+        ]
+      },
       "native": null,
-      "api": { "prefixes": ["/v1/hub"], "docs": "docs/HUB.md" },
-      "embed": { "web": "public/helpbites.js", "swift": null, "customize": ["data-features", "data-changelog-target", "data-feedback-target", "data-flow", "data-accent", "data-theme", "data-position", "data-locale", "data-token", "data-mode", "data-target", "data-<module>-<name>", "data-host", "HelpBites.push queue", "helpbites:loaded event"] },
-      "landing": { "listed": false, "key": null }
+      "api": {
+        "prefixes": [
+          "/v1/hub"
+        ],
+        "docs": "docs/HUB.md"
+      },
+      "embed": {
+        "web": "public/helpbites.js",
+        "swift": null,
+        "customize": [
+          "data-features",
+          "data-changelog-target",
+          "data-feedback-target",
+          "data-flow",
+          "data-accent",
+          "data-theme",
+          "data-position",
+          "data-locale",
+          "data-token",
+          "data-mode",
+          "data-target",
+          "data-<module>-<name>",
+          "data-host",
+          "HelpBites.push queue",
+          "helpbites:loaded event"
+        ]
+      },
+      "landing": {
+        "listed": false,
+        "key": null
+      }
     },
     {
       "id": "server-rendering",
       "name": "Server rendering and caching",
       "category": "dev",
       "summary": "ssr.mjs: a dependency-free helper for your server that reads the public API within a time budget (answered from memory, refreshed behind the reader, or handed to the browser with a skeleton when HelpBites is slow), server-renders the changelog, roadmap, board and chat embeds as a snapshot or skeleton that the plug and play scripts then replace, and keeps self-hosted copies of the scripts. The scripts take data-host, helpbites.js remembers the project's embed list in the browser and loads modules from data-scripts.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "public": ["/ssr.mjs"] },
+      "web": {
+        "public": [
+          "/ssr.mjs"
+        ]
+      },
       "native": null,
-      "api": { "prefixes": ["/v1/changelog", "/v1/feedback", "/v1/legal", "/v1/hub"], "docs": "docs/SSR.md" },
-      "embed": { "web": "public/ssr.mjs", "swift": "docs/SSR.md#in-a-swift-app", "customize": ["budget", "ttl", "stale", "timeout", "store (Redis or KV)", "embed() kinds and scriptSrc", "data-host", "data-scripts", "data-cache", "--hb-ssr-* CSS variables", ".hb-ssr classes", "the API (hb.get) for your own UI", "Swift accent and cornerRadius"] },
-      "landing": { "listed": false, "key": null }
+      "api": {
+        "prefixes": [
+          "/v1/changelog",
+          "/v1/feedback",
+          "/v1/legal",
+          "/v1/hub"
+        ],
+        "docs": "docs/SSR.md"
+      },
+      "embed": {
+        "web": "public/ssr.mjs",
+        "swift": "docs/SSR.md#in-a-swift-app",
+        "customize": [
+          "budget",
+          "ttl",
+          "stale",
+          "timeout",
+          "store (Redis or KV)",
+          "embed() kinds and scriptSrc",
+          "data-host",
+          "data-scripts",
+          "data-cache",
+          "--hb-ssr-* CSS variables",
+          ".hb-ssr classes",
+          "the API (hb.get) for your own UI",
+          "Swift accent and cornerRadius"
+        ]
+      },
+      "landing": {
+        "listed": false,
+        "key": null
+      }
     },
     {
       "id": "company-profile",
       "name": "Company profile",
       "category": "platform",
       "summary": "Who is behind the product (name, legal name, postal address, email, phone, website, data protection officer), written once per project. Legal documents name it as the operator, campaign footers print its address, and email templates fill in {{project.company}}, {{project.address}} and {{project.email}}; projects that predate it start from their legal identity and postal address.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/components/settings/ProjectCompany.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Projects"] },
-      "api": { "prefixes": ["/v1/admin/projects"], "docs": "docs/LEGAL.md" },
+      "web": {
+        "panel": [
+          "app/components/settings/ProjectCompany.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Projects"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/projects"
+        ],
+        "docs": "docs/LEGAL.md"
+      },
       "embed": null,
-      "landing": { "listed": false, "key": null }
+      "landing": {
+        "listed": false,
+        "key": null
+      }
     },
     {
       "id": "inbox",
       "name": "Operator inbox",
       "category": "support",
-      "summary": "One inbox for every project: assign, prioritise, tag, internal notes, replies with images, email replies, live updates, archive. The panel beside a conversation is the customer's hub: Stripe plan and MRR, past conversations, an Open contact link, feedback posts they follow (link or file one as them), Save as FAQ on a reply, and an AI reply draft.",
-      "editions": ["community", "cloud"],
+      "summary": "One inbox for every project: assign, prioritise, tag, internal notes, replies with images, email replies, mail sent to a project's own address as conversations (see inbound-email), live updates, archive. The panel beside a conversation is the customer's hub: Stripe plan and MRR, past conversations, an Open contact link, feedback posts they follow (link or file one as them), Save as FAQ on a reply, and an AI reply draft.",
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/inbox.vue", "app/pages/projects/[id]/conversations.vue", "app/utils/paletteSearch.ts", "app/components/inbox/ConversationContext.vue", "app/components/FeedbackLinks.vue", "app/components/inbox/SaveFaqModal.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Inbox"], "parity": "tests/supportNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/admin/conversations", "/v1/admin/messages", "/v1/admin/search", "/v1/admin/events"], "docs": "docs/SUPPORT.md" },
+      "web": {
+        "panel": [
+          "app/pages/inbox.vue",
+          "app/pages/projects/[id]/conversations.vue",
+          "app/utils/paletteSearch.ts",
+          "app/components/inbox/ConversationContext.vue",
+          "app/components/FeedbackLinks.vue",
+          "app/components/inbox/SaveFaqModal.vue",
+          "app/components/chat/ChatConversationList.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Inbox"
+        ],
+        "parity": "tests/supportNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/conversations",
+          "/v1/admin/messages",
+          "/v1/admin/search",
+          "/v1/admin/events"
+        ],
+        "docs": "docs/SUPPORT.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.inbox" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.inbox"
+      }
+    },
+    {
+      "id": "inbound-email",
+      "name": "Support email addresses (inbound email)",
+      "category": "support",
+      "summary": "A project can have addresses such as support@yourdomain.com: an address on a domain whose MX points at Mailgun, or a HelpBites alias a mailbox forwards to. Mail sent to them becomes conversations (a reply continues the thread it answers, only for the same contact), and replies from the panel, the assistant or the API go back by email with In-Reply-To, References and a Reply-To that carries the conversation id. Auto-replies, mail from the project's own addresses and mail over a limit are dropped without a bounce.",
+      "editions": [
+        "community",
+        "cloud"
+      ],
+      "plan": "pro",
+      "entitlement": "inboundEmail",
+      "status": "stable",
+      "web": {
+        "panel": [
+          "app/components/email/InboundAddresses.vue",
+          "app/components/email/EmailSettings.vue",
+          "app/pages/inbox.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Email",
+          "helpbites-native/App/Features/Inbox"
+        ],
+        "parity": "tests/inboundNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/projects/:id/inbound-addresses",
+          "/v1/webhooks/mailgun-inbound"
+        ],
+        "docs": "docs/INBOUND-EMAIL.md"
+      },
+      "embed": null,
+      "landing": {
+        "listed": true,
+        "key": "landing.features.inbox.email"
+      }
     },
     {
       "id": "saved-replies",
       "name": "Saved replies and FAQ picker",
       "category": "support",
       "summary": "Canned replies per project ({{firstName}} and {{name}} filled from the customer), searched together with FAQs from the assistants' knowledge in a picker beside the reply box, plus an AI draft of a reply that the operator edits.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/components/inbox/ComposerTools.vue", "app/components/inbox/SavedRepliesModal.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Inbox"], "parity": "tests/supportNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/admin/saved-replies", "/v1/admin/conversations"], "docs": "docs/SUPPORT.md" },
+      "web": {
+        "panel": [
+          "app/components/inbox/ComposerTools.vue",
+          "app/components/inbox/SavedRepliesModal.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Inbox"
+        ],
+        "parity": "tests/supportNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/saved-replies",
+          "/v1/admin/conversations"
+        ],
+        "docs": "docs/SUPPORT.md"
+      },
       "embed": null,
-      "landing": { "listed": false, "key": null }
+      "landing": {
+        "listed": false,
+        "key": null
+      }
     },
     {
       "id": "overview",
       "name": "Workspace overview",
       "category": "platform",
       "summary": "The page the panel and the app open on: one list of what needs attention, a card per project (unread, open, revenue, errors), the latest unread messages, total revenue against the period before, and revenue by project.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/overview.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Overview"] },
-      "api": { "prefixes": ["/v1/admin/overview"], "docs": "docs/OVERVIEW.md" },
+      "web": {
+        "panel": [
+          "app/pages/overview.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Overview"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/overview"
+        ],
+        "docs": "docs/OVERVIEW.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.inbox.overview" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.inbox.overview"
+      }
     },
     {
       "id": "setup-attention",
       "name": "Setup checklist, needs attention and the sidebar",
       "category": "platform",
       "summary": "A per-project checklist judged from what HelpBites has actually seen (widget, signed identity, someone notified, sender, assistant, Stripe, GitHub, errors); one needs-attention list (drafts to approve, failed syncs, bounces, fired alerts, backlogs) for the workspace and each project, with the inbox badge live on every page; and a sidebar that groups a project's sections and lets it hide the ones it does not use.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/components/SetupChecklist.vue", "app/components/AttentionList.vue", "app/composables/useLiveCounts.ts", "app/components/AppSidebar.vue", "app/utils/projectSections.ts"] },
-      "native": { "folders": ["helpbites-native/App/Features/Overview", "helpbites-native/App/Features/Projects"] },
-      "api": { "prefixes": ["/v1/admin/attention", "/v1/admin/unread", "/v1/admin/projects"], "docs": "docs/OVERVIEW.md" },
+      "web": {
+        "panel": [
+          "app/components/SetupChecklist.vue",
+          "app/components/AttentionList.vue",
+          "app/composables/useLiveCounts.ts",
+          "app/components/AppSidebar.vue",
+          "app/utils/projectSections.ts"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Overview",
+          "helpbites-native/App/Features/Projects"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/attention",
+          "/v1/admin/unread",
+          "/v1/admin/projects"
+        ],
+        "docs": "docs/OVERVIEW.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.inbox.overview" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.inbox.overview"
+      }
     },
     {
       "id": "ticket-types",
       "name": "Ticket types and actions",
       "category": "support",
       "summary": "Per-project conversation types with statuses, intake fields and operator actions that call back to the host app through signed webhooks; the editor and the inbox warn when a project has no action webhook for them to go to.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/types.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Tickets"] },
-      "api": { "prefixes": ["/v1/tickets", "/v1/admin/projects/:id/types"], "docs": "docs/CONNECTING.md" },
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/types.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Tickets"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/tickets",
+          "/v1/admin/projects/:id/types"
+        ],
+        "docs": "docs/CONNECTING.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.team.types" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.team.types"
+      }
     },
     {
       "id": "knowledge-base",
       "name": "Knowledge base",
       "category": "ai",
       "summary": "Upload an FAQ file, review it, organise a path tree, hybrid Meilisearch search.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/knowledge/index.vue", "app/pages/projects/[id]/knowledge.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Knowledge"] },
-      "api": { "prefixes": ["/v1/admin/knowledge"], "docs": "docs/KNOWLEDGE.md" },
+      "web": {
+        "panel": [
+          "app/pages/knowledge/index.vue",
+          "app/pages/projects/[id]/knowledge.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Knowledge"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/knowledge"
+        ],
+        "docs": "docs/KNOWLEDGE.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.knowledge" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.knowledge"
+      }
     },
     {
       "id": "ai-assistants",
       "name": "AI assistants",
       "category": "ai",
       "summary": "Per-project assistants that send answers grounded in assigned knowledge, hand the rest to a human, with routing rules and a bring-your-own LLM; a readiness strip says what is missing before one answers by itself, and Test answer shows what it would do with a message and why.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "entitlement": "byoLlm",
       "status": "stable",
-      "web": { "panel": ["app/pages/assistants/[id].vue", "app/pages/projects/[id]/assistants.vue", "app/components/AssistantReadiness.vue", "app/components/AssistantTestAnswer.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Assistants"] },
-      "api": { "prefixes": ["/v1/admin/support-agents"], "docs": "docs/KNOWLEDGE.md" },
+      "web": {
+        "panel": [
+          "app/pages/assistants/[id].vue",
+          "app/pages/projects/[id]/assistants.vue",
+          "app/components/AssistantReadiness.vue",
+          "app/components/AssistantTestAnswer.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Assistants"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/support-agents"
+        ],
+        "docs": "docs/KNOWLEDGE.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.knowledge.assistants" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.knowledge.assistants"
+      }
     },
     {
       "id": "feedback-board",
       "name": "Public feedback",
       "category": "product",
       "summary": "A public feedback page per project: posts, votes, comments, reactions, mentions, moderation, followers, import. The page, roadmap and changelog views wear the project's style in light and dark, or the board's own over it.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/feedback.vue"], "public": ["/embed/feedback"] },
-      "native": { "folders": ["helpbites-native/App/Features/Feedback"] },
-      "api": { "prefixes": ["/v1/feedback"], "docs": "docs/FEEDBACK.md" },
-      "embed": { "web": "public/feedback.js", "swift": null, "customize": ["data-target", "data-view", "data-only", "data-label", "data-theme", "data-accent", "data-radius", "data-shadow", "data-header", "the board's style (the project's, light and dark, or its own)", "JS init options"] },
-      "landing": { "listed": true, "key": "landing.features.feedback" }
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/feedback.vue"
+        ],
+        "public": [
+          "/embed/feedback"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Feedback"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/feedback"
+        ],
+        "docs": "docs/FEEDBACK.md"
+      },
+      "embed": {
+        "web": "public/feedback.js",
+        "swift": null,
+        "customize": [
+          "data-target",
+          "data-view",
+          "data-only",
+          "data-label",
+          "data-theme",
+          "data-accent",
+          "data-radius",
+          "data-shadow",
+          "data-header",
+          "the board's style (the project's, light and dark, or its own)",
+          "JS init options"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.features.feedback"
+      }
     },
     {
       "id": "project-board",
       "name": "Planning and public roadmap",
       "category": "product",
       "summary": "Planning: a private Linear-style kanban per project linked to feedback posts and conversations; the items you publish form the public roadmap. Items can be filed from errors and list the GitHub commits and pull requests that mention them.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/board.vue", "app/components/GithubRefs.vue"], "public": ["/roadmap/:pk"] },
-      "native": { "folders": ["helpbites-native/App/Features/Board"] },
-      "api": { "prefixes": ["/v1/admin/board-items", "/v1/feedback/roadmap"], "docs": "docs/FEEDBACK.md" },
-      "embed": { "web": "public/feedback.js", "swift": null, "customize": ["data-view=roadmap", "data-only=roadmap"] },
-      "landing": { "listed": true, "key": "landing.features.feedback.roadmap" }
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/board.vue",
+          "app/components/GithubRefs.vue"
+        ],
+        "public": [
+          "/roadmap/:pk"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Board"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/board-items",
+          "/v1/feedback/roadmap"
+        ],
+        "docs": "docs/FEEDBACK.md"
+      },
+      "embed": {
+        "web": "public/feedback.js",
+        "swift": null,
+        "customize": [
+          "data-view=roadmap",
+          "data-only=roadmap"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.features.feedback.roadmap"
+      }
     },
     {
       "id": "changelog",
       "name": "Changelog",
       "category": "product",
       "summary": "Entries grouped into releases, drafted from shipped work, public page, JSON, RSS, digest emails, reader comments, git CLI. When an entry ships, the followers of the posts it answers are emailed once, and the editor offers a reply to the conversations it answers. The public page and embed wear the project's style in light and dark, or the changelog's own over it.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/changelog.vue", "app/components/ChangelogReplyDialog.vue"], "public": ["/changelog/:pk", "/embed/changelog", "/u/changelog"] },
-      "native": { "folders": ["helpbites-native/App/Features/Changelog"] },
-      "api": { "prefixes": ["/v1/changelog", "/v1/admin/changelog"], "docs": "docs/FEEDBACK.md" },
-      "embed": { "web": "public/changelog.js", "swift": null, "customize": ["data-target", "data-theme", "data-accent", "data-radius", "data-shadow", "data-header", "the page's style (the project's, light and dark, or its own)", "hosted page ?theme, ?accent, ?radius, ?shadow", "the API (GET /v1/changelog returns the finished `style`) for your own UI"] },
-      "landing": { "listed": true, "key": "landing.showcase.changelog" }
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/changelog.vue",
+          "app/components/ChangelogReplyDialog.vue"
+        ],
+        "public": [
+          "/changelog/:pk",
+          "/embed/changelog",
+          "/u/changelog"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Changelog"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/changelog",
+          "/v1/admin/changelog"
+        ],
+        "docs": "docs/FEEDBACK.md"
+      },
+      "embed": {
+        "web": "public/changelog.js",
+        "swift": null,
+        "customize": [
+          "data-target",
+          "data-theme",
+          "data-accent",
+          "data-radius",
+          "data-shadow",
+          "data-header",
+          "the page's style (the project's, light and dark, or its own)",
+          "hosted page ?theme, ?accent, ?radius, ?shadow",
+          "the API (GET /v1/changelog returns the finished `style`) for your own UI"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.showcase.changelog"
+      }
     },
     {
       "id": "project-style",
       "name": "Project style",
       "category": "product",
       "summary": "One style per project (logo and app icon, light and dark colours, corner radius, shadow, font) shared by the features that have a style panel. The public changelog and feedback board wear all of it, light and dark, or the project's with their own choices over it; the chat widget, hub, blog, brand page and legal pages wear it the same way (or their own over it), and forms, onboarding and pricing tables wear it under their own fields. Every style panel can edit it or save its own choices as the project's style.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/components/style/StyleEditor.vue", "app/components/style/StyleProjectActions.vue", "app/components/style/StylePreview.vue"], "public": ["/changelog/:pk", "/embed/changelog", "/embed/feedback", "/embed", "/hub/:pk", "/blog/:pk", "/legal/:pk", "/brand/:pk", "/f/:pk/:key", "/pricing/:pk/:key"] },
-      "native": { "folders": ["helpbites-native/App/Features/Brand"] },
-      "api": { "prefixes": ["/v1/admin/projects", "/v1/changelog"], "docs": "docs/STYLE.md" },
-      "embed": { "web": "public/changelog.js", "swift": "docs/STYLE.md#in-a-swift-app", "customize": ["the project style in the panel", "data-theme", "data-accent", "data-radius", "data-shadow", "the API (look.style, feedbackStyle, GET /v1/changelog style) for your own UI", "Swift cornerRadius"] },
-      "landing": { "listed": false }
+      "web": {
+        "panel": [
+          "app/components/style/StyleEditor.vue",
+          "app/components/style/StyleProjectActions.vue",
+          "app/components/style/StylePreview.vue"
+        ],
+        "public": [
+          "/changelog/:pk",
+          "/embed/changelog",
+          "/embed/feedback",
+          "/embed",
+          "/hub/:pk",
+          "/blog/:pk",
+          "/legal/:pk",
+          "/brand/:pk",
+          "/f/:pk/:key",
+          "/pricing/:pk/:key"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Brand"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/projects",
+          "/v1/changelog"
+        ],
+        "docs": "docs/STYLE.md"
+      },
+      "embed": {
+        "web": "public/changelog.js",
+        "swift": "docs/STYLE.md#in-a-swift-app",
+        "customize": [
+          "the project style in the panel",
+          "data-theme",
+          "data-accent",
+          "data-radius",
+          "data-shadow",
+          "the API (look.style, feedbackStyle, GET /v1/changelog style) for your own UI",
+          "Swift cornerRadius"
+        ]
+      },
+      "landing": {
+        "listed": false
+      }
     },
     {
       "id": "blog",
       "name": "Blog and newsletter",
       "category": "product",
       "summary": "A Ghost-like blog: posts and standalone pages in a rich editor (Nuxt UI's TipTap) with a preview of the draft in the blog's design, featured or members-only, scheduled or published on a designed hosted blog (layouts, navigation, search, SEO fields, sitemap, structured data), an embed and RSS; readers react and comment (moderated, threaded); any post can go to subscribers as a newsletter campaign (publish and email in one step); webhooks when posts go live; an import from Ghost; Write with AI drafts, continues or improves a post, or suggests its title, excerpt and tags, from the project's GitHub repos.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "entitlement": "campaigns",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/blog/index.vue", "app/pages/projects/[id]/blog/[postId].vue"], "public": ["/blog/:pk", "/blog/:pk/:slug", "/blog/:pk/sitemap.xml"] },
-      "native": { "folders": ["helpbites-native/App/Features/Blog"], "parity": "tests/blogNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/blog", "/v1/admin/blog", "/v1/projects/:pk/blog.rss"], "docs": "docs/BLOG.md" },
-      "embed": { "web": "public/blog.js", "swift": "docs/BLOG.md#in-a-swift-app", "customize": ["data-view (blog, post, extras)", "data-post", "data-tag", "data-q", "data-layout (list, grid, magazine)", "data-body (a members-only post's body)", "data-limit", "data-theme", "data-accent", "data-radius", "data-shadow", "data-font", "data-show", "data-deep-link-param", "data-host", "JS init options (getToken, onSignIn, labels)", "--hb-blog-* CSS variables", "::part() hooks", "helpbites:blog events", "Swift accent and cornerRadius"] },
-      "landing": { "listed": true, "key": "landing.features.feedback.blog" }
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/blog/index.vue",
+          "app/pages/projects/[id]/blog/[postId].vue"
+        ],
+        "public": [
+          "/blog/:pk",
+          "/blog/:pk/:slug",
+          "/blog/:pk/sitemap.xml"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Blog"
+        ],
+        "parity": "tests/blogNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/blog",
+          "/v1/admin/blog",
+          "/v1/projects/:pk/blog.rss"
+        ],
+        "docs": "docs/BLOG.md"
+      },
+      "embed": {
+        "web": "public/blog.js",
+        "swift": "docs/BLOG.md#in-a-swift-app",
+        "customize": [
+          "data-view (blog, post, extras)",
+          "data-post",
+          "data-tag",
+          "data-q",
+          "data-layout (list, grid, magazine)",
+          "data-body (a members-only post's body)",
+          "data-limit",
+          "data-theme",
+          "data-accent",
+          "data-radius",
+          "data-shadow",
+          "data-font",
+          "data-show",
+          "data-deep-link-param",
+          "data-host",
+          "JS init options (getToken, onSignIn, labels)",
+          "--hb-blog-* CSS variables",
+          "::part() hooks",
+          "helpbites:blog events",
+          "Swift accent and cornerRadius"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.features.feedback.blog"
+      }
     },
     {
       "id": "email-designer",
       "name": "Email designer",
       "category": "email",
       "summary": "Block designer with components, shared templates (linked into every project), linting, an AI designer, share links and a translation per language. Native editor on the same design format.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "entitlement": "emailAiUltra",
       "status": "stable",
-      "web": { "panel": ["app/pages/emails/index.vue", "app/pages/emails/[id].vue", "app/pages/projects/[id]/email.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Email"], "parity": "tests/emailNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/emails", "/v1/admin/emails", "/v1/admin/email-components", "/v1/admin/email-folders", "/v1/share/emails"], "docs": "docs/EMAIL.md" },
+      "web": {
+        "panel": [
+          "app/pages/emails/index.vue",
+          "app/pages/emails/[id].vue",
+          "app/pages/projects/[id]/email.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Email"
+        ],
+        "parity": "tests/emailNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/emails",
+          "/v1/admin/emails",
+          "/v1/admin/email-components",
+          "/v1/admin/email-folders",
+          "/v1/share/emails"
+        ],
+        "docs": "docs/EMAIL.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.showcase.email" }
+      "landing": {
+        "listed": true,
+        "key": "landing.showcase.email"
+      }
     },
     {
       "id": "email-sending",
       "name": "Email send API and delivery log",
       "category": "email",
       "summary": "POST /v1/emails/send with templates (in each recipient's language), HTML, variables, attachments, scheduling, idempotency; delivery log, stats and automatic suppressions. One Email section per project (Templates, Campaigns, Sequences, Log, Settings) with one sender form and a strip that says what is missing before mail can go out.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "entitlement": "customSendingDomain",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/email.vue", "app/components/email/EmailTabs.vue", "app/components/email/EmailSettings.vue", "app/components/email/EmailSetupStrip.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Email"] },
-      "api": { "prefixes": ["/v1/emails/send", "/v1/email-logs", "/v1/email-suppressions", "/v1/webhooks/mailgun"], "docs": "docs/EMAIL.md" },
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/email.vue",
+          "app/components/email/EmailTabs.vue",
+          "app/components/email/EmailSettings.vue",
+          "app/components/email/EmailSetupStrip.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Email"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/emails/send",
+          "/v1/email-logs",
+          "/v1/email-suppressions",
+          "/v1/webhooks/mailgun"
+        ],
+        "docs": "docs/EMAIL.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.email.api" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.email.api"
+      }
     },
     {
       "id": "contacts",
       "name": "Contacts, segments and database sync",
       "category": "marketing",
       "summary": "One record per person with how they were added (app, lead form, sign-up, import, sync, Stripe, API, by hand) and the language to write to them in, CSV import, batch API, segments (including built-in ones for open conversations, votes, errors, finished onboarding, Stripe plan and language), one activity timeline per person across support, feedback, email, sequences and billing, putting a person or a whole segment on a sequence, read-only sync from Parse, Postgres, Supabase and Firestore, erasure.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "entitlement": "contactSources",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/contacts.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Contacts"], "parity": "tests/contactGrowNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/contacts", "/v1/segments", "/v1/track", "/v1/admin/contact-sources"], "docs": "docs/CONTACTS.md" },
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/contacts.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Contacts"
+        ],
+        "parity": "tests/contactGrowNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/contacts",
+          "/v1/segments",
+          "/v1/track",
+          "/v1/admin/contact-sources"
+        ],
+        "docs": "docs/CONTACTS.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.email.contacts" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.email.contacts"
+      }
     },
     {
       "id": "lead-forms",
       "name": "Lead forms and waitlists",
       "category": "marketing",
       "summary": "Waitlist, \"notify me\" and interest forms, from a single email box to custom fields and file uploads, on a site (forms.js or plain HTML), a hosted page, in a SwiftUI app or over the API, in the visitor's language. Leads become contacts marked Added via: Lead form, in a segment made for each form, with optional double opt-in, a welcome email from a template and a sequence; files they send are kept privately for the team.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/forms/index.vue", "app/pages/projects/[id]/forms/[formId].vue", "app/components/contacts/LeadFileList.vue"], "public": ["/f/:pk/:key", "/f/confirm/:token"] },
-      "native": { "folders": ["helpbites-native/App/Features/Forms"], "parity": "tests/leadFormsNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/forms", "/v1/admin/lead-forms", "/v1/admin/lead-files"], "docs": "docs/FORMS.md" },
-      "embed": { "web": "public/forms.js", "swift": "docs/FORMS.md#plug-and-play-swift", "customize": ["data-form", "data-target", "data-theme", "data-accent", "data-radius", "data-shadow", "data-font", "data-layout", "data-show", "data-locale", "data-host", "JS init options (labels, values, locale, callbacks)", "--hb-form-* CSS variables", "::part() hooks", "plain HTML form", "hosted page /f/:pk/:key", "Swift accent, cornerRadius, design, locale, values"] },
-      "landing": { "listed": true, "key": "landing.features.email.forms" }
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/forms/index.vue",
+          "app/pages/projects/[id]/forms/[formId].vue",
+          "app/components/contacts/LeadFileList.vue"
+        ],
+        "public": [
+          "/f/:pk/:key",
+          "/f/confirm/:token"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Forms"
+        ],
+        "parity": "tests/leadFormsNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/forms",
+          "/v1/admin/lead-forms",
+          "/v1/admin/lead-files"
+        ],
+        "docs": "docs/FORMS.md"
+      },
+      "embed": {
+        "web": "public/forms.js",
+        "swift": "docs/FORMS.md#plug-and-play-swift",
+        "customize": [
+          "data-form",
+          "data-target",
+          "data-theme",
+          "data-accent",
+          "data-radius",
+          "data-shadow",
+          "data-font",
+          "data-layout",
+          "data-show",
+          "data-locale",
+          "data-host",
+          "JS init options (labels, values, locale, callbacks)",
+          "--hb-form-* CSS variables",
+          "::part() hooks",
+          "plain HTML form",
+          "hosted page /f/:pk/:key",
+          "Swift accent, cornerRadius, design, locale, values"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.features.email.forms"
+      }
     },
     {
       "id": "campaigns",
       "name": "Campaigns, sequences and sign-up forms",
       "category": "marketing",
       "summary": "Broadcast campaigns, drip sequences (started by a sign-up, an event, or by hand for a person or a whole segment), hosted sign-up with double opt-in, preferences page, one-click unsubscribe, event webhook. The footer's postal address is the project's company profile. Campaigns, sequence steps and welcome emails go out in each contact's language when the template has a translation of it. Tabs of a project's Email section.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "pro",
       "entitlement": "campaigns",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/campaigns/index.vue", "app/pages/projects/[id]/campaigns/[campaignId].vue"], "public": ["/s", "/u"] },
-      "native": { "folders": ["helpbites-native/App/Features/Campaigns"] },
-      "api": { "prefixes": ["/v1/campaigns", "/v1/sequences", "/v1/subscribe", "/v1/unsubscribe"], "docs": "docs/MARKETING.md" },
-      "embed": { "web": null, "swift": null, "customize": ["plain HTML sign-up form"] },
-      "landing": { "listed": true, "key": "landing.features.email" }
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/campaigns/index.vue",
+          "app/pages/projects/[id]/campaigns/[campaignId].vue"
+        ],
+        "public": [
+          "/s",
+          "/u"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Campaigns"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/campaigns",
+          "/v1/sequences",
+          "/v1/subscribe",
+          "/v1/unsubscribe"
+        ],
+        "docs": "docs/MARKETING.md"
+      },
+      "embed": {
+        "web": null,
+        "swift": null,
+        "customize": [
+          "plain HTML sign-up form"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.features.email"
+      }
     },
     {
       "id": "error-tracking",
       "name": "Error tracking",
       "category": "dev",
       "summary": "Connect GlitchTip or Bugsink, browse and triage issues, alert rules, AI cause-and-fix, saved and scheduled AI reports that read the GitHub repos, Telegram alerts, file an error on the project board.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/errors.vue", "app/components/ErrorDrawer.vue", "app/components/ErrorReportsModal.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Errors"] },
-      "api": { "prefixes": ["/v1/admin/errors", "/v1/admin/telegram", "/v1/webhooks/glitchtip", "/v1/webhooks/bugsink"], "docs": "docs/ERRORS.md" },
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/errors.vue",
+          "app/components/ErrorDrawer.vue",
+          "app/components/ErrorReportsModal.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Errors"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/errors",
+          "/v1/admin/telegram",
+          "/v1/webhooks/glitchtip",
+          "/v1/webhooks/bugsink"
+        ],
+        "docs": "docs/ERRORS.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.team.errors" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.team.errors"
+      }
     },
     {
       "id": "feature-flags",
       "name": "Feature flags",
       "category": "dev",
       "summary": "Off, on or admins-only flags with allow lists, fallbacks and per-client targets, read by server or browser.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/flags.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Flags"] },
-      "api": { "prefixes": ["/v1/flags"], "docs": "docs/FLAGS.md" },
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/flags.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Flags"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/flags"
+        ],
+        "docs": "docs/FLAGS.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.showcase.flags" }
+      "landing": {
+        "listed": true,
+        "key": "landing.showcase.flags"
+      }
     },
     {
       "id": "onboarding",
       "name": "Onboarding flows",
       "category": "product",
       "summary": "Welcome screens written in the panel and published as versions, in any number of languages; a web script or a SwiftUI file shows them once from a copy the app keeps, so they still show when HelpBites is unreachable. Given the person's identity token, the script (or one POST) reports who finished or skipped, which the Finished onboarding segment field and the onboarding.completed event use.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/onboarding/index.vue", "app/pages/projects/[id]/onboarding/[flowId].vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Onboarding"], "parity": "tests/onboardingNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/onboarding", "/v1/admin/onboarding"], "docs": "docs/ONBOARDING.md" },
-      "embed": { "web": "public/onboarding.js", "swift": "docs/ONBOARDING.md#plug-and-play-swift", "customize": ["data-flow", "data-show", "data-target", "data-theme", "data-accent", "data-radius", "data-shadow", "data-font", "data-fallback", "data-host", "data-token (identity token, to report who finished)", "JS init options (labels, token, callbacks)", "--hb-onboarding-* CSS variables", "::part() hooks", "Swift accent, cornerRadius, design"] },
-      "landing": { "listed": true, "key": "landing.features.app.onboarding" }
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/onboarding/index.vue",
+          "app/pages/projects/[id]/onboarding/[flowId].vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Onboarding"
+        ],
+        "parity": "tests/onboardingNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/onboarding",
+          "/v1/admin/onboarding"
+        ],
+        "docs": "docs/ONBOARDING.md"
+      },
+      "embed": {
+        "web": "public/onboarding.js",
+        "swift": "docs/ONBOARDING.md#plug-and-play-swift",
+        "customize": [
+          "data-flow",
+          "data-show",
+          "data-target",
+          "data-theme",
+          "data-accent",
+          "data-radius",
+          "data-shadow",
+          "data-font",
+          "data-fallback",
+          "data-host",
+          "data-token (identity token, to report who finished)",
+          "JS init options (labels, token, callbacks)",
+          "--hb-onboarding-* CSS variables",
+          "::part() hooks",
+          "Swift accent, cornerRadius, design"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.features.app.onboarding"
+      }
     },
     {
       "id": "pricing-tables",
       "name": "Pricing tables",
       "category": "marketing",
       "summary": "Plan cards, compact rows, a mobile paywall, a comparison table or one spotlight plan, for a site (pricing.js), a hosted page, a SwiftUI app, an onboarding step or the API. Plans can take their prices and checkout from Stripe (Checkout, a Payment Link or any URL) while the words and features stay in HelpBites; weekly, monthly, yearly and one-time prices, several currencies, translations and look options, numbers with purchases and revenue read from Stripe, A/B tests with a significance check, and AI suggestions from the project's repos, Stripe and revenue.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/pricing/index.vue", "app/pages/projects/[id]/pricing/[tableId].vue"], "public": ["/pricing/:pk/:key"] },
-      "native": { "folders": ["helpbites-native/App/Features/Pricing"], "parity": "tests/pricingNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/pricing", "/v1/admin/pricing-tables", "/v1/admin/stripe/catalog"], "docs": "docs/PRICING.md" },
-      "embed": { "web": "public/pricing.js", "swift": "docs/PRICING.md#plug-and-play-swift", "customize": ["data-table", "data-target", "data-template", "data-theme", "data-accent", "data-radius", "data-shadow", "data-font", "data-density", "data-interval", "data-currency", "data-locale", "data-show", "data-current", "data-email", "data-ref", "data-return", "data-host", "JS init options (labels, onSelect)", "--hb-pricing-* CSS variables", "::part() hooks", "hosted page /pricing/:pk/:key", "Swift accent, cornerRadius, design, locale, currency, current, onSelect"] },
-      "landing": { "listed": true, "key": "landing.features.app.pricing" }
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/pricing/index.vue",
+          "app/pages/projects/[id]/pricing/[tableId].vue"
+        ],
+        "public": [
+          "/pricing/:pk/:key"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Pricing"
+        ],
+        "parity": "tests/pricingNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/pricing",
+          "/v1/admin/pricing-tables",
+          "/v1/admin/stripe/catalog"
+        ],
+        "docs": "docs/PRICING.md"
+      },
+      "embed": {
+        "web": "public/pricing.js",
+        "swift": "docs/PRICING.md#plug-and-play-swift",
+        "customize": [
+          "data-table",
+          "data-target",
+          "data-template",
+          "data-theme",
+          "data-accent",
+          "data-radius",
+          "data-shadow",
+          "data-font",
+          "data-density",
+          "data-interval",
+          "data-currency",
+          "data-locale",
+          "data-show",
+          "data-current",
+          "data-email",
+          "data-ref",
+          "data-return",
+          "data-host",
+          "JS init options (labels, onSelect)",
+          "--hb-pricing-* CSS variables",
+          "::part() hooks",
+          "hosted page /pricing/:pk/:key",
+          "Swift accent, cornerRadius, design, locale, currency, current, onSelect"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.features.app.pricing"
+      }
     },
     {
       "id": "content-translation",
       "name": "Languages and AI translation",
       "category": "product",
       "summary": "Onboarding flows, pricing tables, legal documents, email templates and lead forms carry a translation per language, written by hand or by the workspace's AI; apps, sites and sends pick one with a locale and fall back to the original. Contacts have a language of their own, so campaigns, sequences and welcome emails pick the translation for each recipient.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/components/LanguageTabs.vue", "app/components/email/EmailLanguages.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Onboarding", "helpbites-native/App/Features/Pricing", "helpbites-native/App/Features/Legal", "helpbites-native/App/Features/Email", "helpbites-native/App/Features/Forms"], "parity": "tests/translateNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/onboarding", "/v1/admin/onboarding", "/v1/pricing", "/v1/admin/pricing-tables", "/v1/legal", "/v1/admin/legal", "/v1/emails", "/v1/admin/emails", "/v1/forms", "/v1/admin/lead-forms"], "docs": "docs/LANGUAGES.md" },
-      "embed": { "web": "public/onboarding.js", "swift": "docs/ONBOARDING.md#plug-and-play-swift", "customize": ["data-locale", "JS init locale and labels", "Swift locale parameter", "?locale= on the public onboarding, pricing, legal, lead form and email reads", "locale on the email send API", "data-locale on forms.js and locale on the lead form Swift snippet"] },
-      "landing": { "listed": false, "key": null }
+      "web": {
+        "panel": [
+          "app/components/LanguageTabs.vue",
+          "app/components/email/EmailLanguages.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Onboarding",
+          "helpbites-native/App/Features/Pricing",
+          "helpbites-native/App/Features/Legal",
+          "helpbites-native/App/Features/Email",
+          "helpbites-native/App/Features/Forms"
+        ],
+        "parity": "tests/translateNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/onboarding",
+          "/v1/admin/onboarding",
+          "/v1/pricing",
+          "/v1/admin/pricing-tables",
+          "/v1/legal",
+          "/v1/admin/legal",
+          "/v1/emails",
+          "/v1/admin/emails",
+          "/v1/forms",
+          "/v1/admin/lead-forms"
+        ],
+        "docs": "docs/LANGUAGES.md"
+      },
+      "embed": {
+        "web": "public/onboarding.js",
+        "swift": "docs/ONBOARDING.md#plug-and-play-swift",
+        "customize": [
+          "data-locale",
+          "JS init locale and labels",
+          "Swift locale parameter",
+          "?locale= on the public onboarding, pricing, legal, lead form and email reads",
+          "locale on the email send API",
+          "data-locale on forms.js and locale on the lead form Swift snippet"
+        ]
+      },
+      "landing": {
+        "listed": false,
+        "key": null
+      }
     },
     {
       "id": "legal-documents",
       "name": "Legal documents",
       "category": "product",
       "summary": "Privacy policy, terms, cookie and refund policies composed from reviewed clauses, importable, hosted on public pages, with a linked copy per language. The operator's name, address and contact come from the project's company profile, and a published document's public address is available to email as {{project.privacyUrl}}, {{project.termsUrl}}, {{project.cookiesUrl}} and {{project.refundUrl}}. Not legal advice.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "pro",
       "entitlement": "legalDocs",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/legal/index.vue", "app/pages/projects/[id]/legal/[docId].vue"], "public": ["/legal/:pk/:slug"] },
-      "native": { "folders": ["helpbites-native/App/Features/Legal"] },
-      "api": { "prefixes": ["/v1/legal", "/v1/admin/legal"], "docs": "docs/LEGAL.md" },
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/legal/index.vue",
+          "app/pages/projects/[id]/legal/[docId].vue"
+        ],
+        "public": [
+          "/legal/:pk/:slug"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Legal"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/legal",
+          "/v1/admin/legal"
+        ],
+        "docs": "docs/LEGAL.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.team.legal" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.team.legal"
+      }
     },
     {
       "id": "brand-kit",
       "name": "Brand kit",
       "category": "marketing",
       "summary": "Logos, icons, favicons, screenshots, colours, fonts and guidelines per project, shared on a public page in three templates with downloads, an embed and an API. The kit is the project's look: its accent, logo, fonts and corner radius are what the widget, boards, forms, onboarding, legal and blog pages, campaign mail and the public hub wear.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/brand.vue"], "public": ["/brand/:pk"] },
-      "native": { "folders": ["helpbites-native/App/Features/Brand"], "parity": "tests/brandNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/brand", "/v1/admin/brand"], "docs": "docs/BRAND.md" },
-      "embed": { "web": "public/brand.js", "swift": "docs/BRAND.md#in-a-swift-app", "customize": ["data-template", "data-theme", "data-radius", "data-shadow", "data-accent", "data-sections", "the same as URL parameters", "Swift cornerRadius"] },
-      "landing": { "listed": true, "key": "landing.features.team.brand" }
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/brand.vue"
+        ],
+        "public": [
+          "/brand/:pk"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Brand"
+        ],
+        "parity": "tests/brandNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/brand",
+          "/v1/admin/brand"
+        ],
+        "docs": "docs/BRAND.md"
+      },
+      "embed": {
+        "web": "public/brand.js",
+        "swift": "docs/BRAND.md#in-a-swift-app",
+        "customize": [
+          "data-template",
+          "data-theme",
+          "data-radius",
+          "data-shadow",
+          "data-accent",
+          "data-sections",
+          "the same as URL parameters",
+          "Swift cornerRadius"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.features.team.brand"
+      }
     },
     {
       "id": "pages-cms",
       "name": "Pages and headless CMS",
       "category": "marketing",
       "summary": "Landing pages built in a visual editor from templates and components (built-in or written in HTML and CSS), with files, scroll animations, an AI assistant and wizard that writes pages, copy and components from GitHub repos, hosting at /p/:pk, an embed, a delivery API for Vue, JS and Swift, and live editing of the developer's own site.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/pages/index.vue", "app/pages/projects/[id]/pages/[entryId].vue", "app/pages/projects/[id]/pages/components/[componentId].vue"], "public": ["/p/:pk", "/p/:pk/:slug"] },
-      "native": { "folders": ["helpbites-native/App/Features/Pages"], "parity": "tests/cmsNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/cms", "/v1/admin/cms"], "docs": "docs/PAGES.md" },
-      "embed": { "web": "public/pages.js", "swift": "docs/PAGES.md#in-a-swift-app", "customize": ["data-page", "data-target", "data-height", "data-title", "HelpBitesPages.push(['init', …])", "the page's own style (accent, mode, radius, fonts, width)", "CSS variables and .hb-* classes in components", "cms.mjs client, editable() and bridge() for your own UI", "Swift accent, titleFont and cornerRadius"] },
-      "landing": { "listed": true, "key": "landing.features.team.pages" }
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/pages/index.vue",
+          "app/pages/projects/[id]/pages/[entryId].vue",
+          "app/pages/projects/[id]/pages/components/[componentId].vue"
+        ],
+        "public": [
+          "/p/:pk",
+          "/p/:pk/:slug"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Pages"
+        ],
+        "parity": "tests/cmsNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/cms",
+          "/v1/admin/cms"
+        ],
+        "docs": "docs/PAGES.md"
+      },
+      "embed": {
+        "web": "public/pages.js",
+        "swift": "docs/PAGES.md#in-a-swift-app",
+        "customize": [
+          "data-page",
+          "data-target",
+          "data-height",
+          "data-title",
+          "HelpBitesPages.push(['init', …])",
+          "the page's own style (accent, mode, radius, fonts, width)",
+          "CSS variables and .hb-* classes in components",
+          "cms.mjs client, editable() and bridge() for your own UI",
+          "Swift accent, titleFont and cornerRadius"
+        ]
+      },
+      "landing": {
+        "listed": true,
+        "key": "landing.features.team.pages"
+      }
     },
     {
       "id": "revenue",
       "name": "Revenue",
       "category": "dev",
       "summary": "See revenue and MRR month by month, plans, top customers and recent payments from every place you sell: Stripe (a restricted key), RevenueCat (its webhook), the App Store (Sales and Trends reports), Paddle, Lemon Squeezy, or payments you send to the API. Sources add up and disconnect on their own; each shows its own share. A person's page lists their payments and subscriptions from every source, and for Stripe their customer (looked up live). Read-only, except that pricing tables open Stripe Checkout when the key allows it.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/[id]/revenue.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Revenue"] },
-      "api": { "prefixes": ["/v1/admin/revenue", "/v1/admin/stripe", "/v1/webhooks/revenuecat"], "docs": "docs/REVENUE.md" },
+      "web": {
+        "panel": [
+          "app/pages/projects/[id]/revenue.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Revenue"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/revenue",
+          "/v1/admin/stripe",
+          "/v1/webhooks/revenuecat"
+        ],
+        "docs": "docs/REVENUE.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.more.stripe" }
+      "landing": {
+        "listed": true,
+        "key": "landing.more.stripe"
+      }
     },
     {
       "id": "github",
       "name": "GitHub connection",
       "category": "dev",
       "summary": "Read-only repo access that powers AI error notes, the legal wizard's repo suggestions and changelog drafts from pushes; commits and merged pull requests that mention #12 link to the board item or post, and a closing keyword moves the item to done. A published setup guide with screenshots walks the server owner through registering the GitHub App, linked from the panel and the native app when it is not set up.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/components/settings/Project.vue", "app/components/settings/ProjectModal.vue", "app/components/settings/GithubConnection.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Settings"] },
-      "api": { "prefixes": ["/v1/github", "/v1/admin/github", "/v1/admin/github-refs", "/v1/webhooks/github"], "docs": "docs/GITHUB.md" },
+      "web": {
+        "panel": [
+          "app/components/settings/Project.vue",
+          "app/components/settings/ProjectModal.vue",
+          "app/components/settings/GithubConnection.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Settings"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/github",
+          "/v1/admin/github",
+          "/v1/admin/github-refs",
+          "/v1/webhooks/github"
+        ],
+        "docs": "docs/GITHUB.md"
+      },
       "embed": null,
-      "landing": { "listed": false, "key": null }
+      "landing": {
+        "listed": false,
+        "key": null
+      }
     },
     {
       "id": "team-workspaces",
       "name": "Teams, roles, workspaces and API keys",
       "category": "platform",
       "summary": "Agent, admin and owner roles, invitations, several workspaces, admin ak_ keys scoped to a workspace or projects, workspace export and deletion.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "entitlement": "multiWorkspace",
       "status": "stable",
-      "web": { "panel": ["app/pages/api-keys.vue", "app/pages/agents.vue", "app/pages/workspaces", "app/pages/invite"] },
-      "native": { "folders": ["helpbites-native/App/Features/Settings"] },
-      "api": { "prefixes": ["/v1/admin/agents", "/v1/admin/api-keys", "/v1/admin/invitations", "/v1/admin/workspace", "/v1/admin/workspaces", "/v1/exports"], "docs": "docs/CONNECTING.md" },
+      "web": {
+        "panel": [
+          "app/pages/api-keys.vue",
+          "app/pages/agents.vue",
+          "app/pages/workspaces",
+          "app/pages/invite"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Settings"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/agents",
+          "/v1/admin/api-keys",
+          "/v1/admin/invitations",
+          "/v1/admin/workspace",
+          "/v1/admin/workspaces",
+          "/v1/exports"
+        ],
+        "docs": "docs/CONNECTING.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.team.roles" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.team.roles"
+      }
     },
     {
       "id": "data-transfer",
       "name": "Export and import between instances",
       "category": "platform",
       "summary": "Download a whole workspace or one project as a portable file, import a file, or pull straight from another HelpBites (self-hosted or cloud) with an API key or login, in the background and all-or-nothing.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/components/settings/Transfer.vue", "app/components/settings/Workspace.vue", "app/components/settings/Project.vue", "app/components/settings/ProjectModal.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Settings"] },
-      "api": { "prefixes": ["/v1/admin/transfers"], "docs": "docs/TRANSFER.md" },
+      "web": {
+        "panel": [
+          "app/components/settings/Transfer.vue",
+          "app/components/settings/Workspace.vue",
+          "app/components/settings/Project.vue",
+          "app/components/settings/ProjectModal.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Settings"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/transfers"
+        ],
+        "docs": "docs/TRANSFER.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.team.roles" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.team.roles"
+      }
     },
     {
       "id": "projects",
       "name": "Projects",
       "category": "platform",
       "summary": "One project per app: keys and secret, allowed origins, accent (the Brand kit's), logo, company profile, public hub, notifications, guest access per surface (chat, feedback, comments), which sections show in its sidebar, overview with its setup checklist, and the Install & API page.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/projects/index.vue", "app/pages/projects/[id]/index.vue", "app/pages/projects/[id]/overview.vue", "app/components/settings/Project.vue", "app/components/settings/ProjectModal.vue", "app/pages/projects/[id]/settings.vue", "app/pages/projects/[id]/dev.vue", "app/pages/developer.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Projects"] },
-      "api": { "prefixes": ["/v1/admin/projects", "/v1/projects"], "docs": "docs/CONNECTING.md" },
+      "web": {
+        "panel": [
+          "app/pages/projects/index.vue",
+          "app/pages/projects/[id]/index.vue",
+          "app/pages/projects/[id]/overview.vue",
+          "app/components/settings/Project.vue",
+          "app/components/settings/ProjectModal.vue",
+          "app/pages/projects/[id]/settings.vue",
+          "app/pages/projects/[id]/dev.vue",
+          "app/pages/developer.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Projects"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/projects",
+          "/v1/projects"
+        ],
+        "docs": "docs/CONNECTING.md"
+      },
       "embed": null,
-      "landing": { "listed": false, "key": null }
+      "landing": {
+        "listed": false,
+        "key": null
+      }
     },
     {
       "id": "developer-platform",
       "name": "Developer platform",
       "category": "platform",
       "summary": "Documented REST API with OpenAPI at /_docs/scalar, four auth modes, SSE streams, signed webhooks, idempotency, health checks, MIT embed scripts, changelog CLI.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/docs/index.vue", "app/pages/docs/[slug].vue"], "public": ["/docs", "/_docs/scalar"] },
-      "native": { "folders": ["helpbites-native/App/Features/Settings"] },
-      "api": { "prefixes": ["/v1/health", "/v1/meta", "/v1/webhooks"], "docs": "docs/CONNECTING.md" },
+      "web": {
+        "panel": [
+          "app/pages/docs/index.vue",
+          "app/pages/docs/[slug].vue"
+        ],
+        "public": [
+          "/docs",
+          "/_docs/scalar"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Settings"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/health",
+          "/v1/meta",
+          "/v1/webhooks"
+        ],
+        "docs": "docs/CONNECTING.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.endpoints" }
+      "landing": {
+        "listed": true,
+        "key": "landing.endpoints"
+      }
     },
     {
       "id": "mcp",
       "name": "AI assistants (MCP)",
       "category": "platform",
       "summary": "An MCP server at /mcp lets Claude, ChatGPT, Cursor or any MCP client read the inbox, reply, triage feedback, move board items, write changelog entries, look into errors and edit, publish, A/B test and get AI suggestions for pricing tables, and manage feature flags, knowledge base answers, email, campaigns and legal documents as the operator who connected it. Signs in with the browser (OAuth, for claude.ai and ChatGPT) or an admin API key; every tool is a /v1 call, so roles, workspaces and a key's project limit apply.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/components/settings/ApiKeys.vue", "app/pages/developer.vue", "app/pages/oauth/authorize.vue"], "public": ["/mcp", "/oauth/authorize"] },
-      "native": { "folders": ["helpbites-native/App/Features/Settings"] },
-      "api": { "prefixes": ["/mcp", "/.well-known/oauth-protected-resource", "/.well-known/oauth-authorization-server", "/v1/oauth", "/v1/admin/oauth"], "docs": "docs/MCP.md" },
+      "web": {
+        "panel": [
+          "app/components/settings/ApiKeys.vue",
+          "app/pages/developer.vue",
+          "app/pages/oauth/authorize.vue"
+        ],
+        "public": [
+          "/mcp",
+          "/oauth/authorize"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Settings"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/mcp",
+          "/.well-known/oauth-protected-resource",
+          "/.well-known/oauth-authorization-server",
+          "/v1/oauth",
+          "/v1/admin/oauth"
+        ],
+        "docs": "docs/MCP.md"
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.team.mcp" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.team.mcp"
+      }
     },
     {
       "id": "native-app",
       "name": "Native app (iPhone, iPad, Mac)",
       "category": "platform",
       "summary": "One SwiftUI app covering every panel page, in the panel's six languages, with push notifications (needs APNs credentials) and a command palette.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
       "web": null,
-      "native": { "folders": ["helpbites-native/App/Shell", "helpbites-native/App/Core", "helpbites-native/App/Design"] },
-      "api": { "prefixes": ["/v1/admin/devices"], "docs": null },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Shell",
+          "helpbites-native/App/Core",
+          "helpbites-native/App/Design"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/devices"
+        ],
+        "docs": null
+      },
       "embed": null,
-      "landing": { "listed": true, "key": "landing.features.inbox.native" }
+      "landing": {
+        "listed": true,
+        "key": "landing.features.inbox.native"
+      }
     },
     {
       "id": "welcome-tour",
       "name": "Welcome tour",
       "category": "platform",
       "summary": "Five skippable cards a new account sees once after signing up (projects, inbox, feedback and changelog, team and API keys), replayable from Settings. Seen or skipped is stored on the account (`tourPending`, cleared with PATCH /v1/admin/me), so it stays gone on every device.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/components/WelcomeTour.vue", "app/components/settings/Modal.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Settings"] },
-      "api": { "prefixes": ["/v1/admin/me"], "docs": null },
+      "web": {
+        "panel": [
+          "app/components/WelcomeTour.vue",
+          "app/components/settings/Modal.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Settings"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/me"
+        ],
+        "docs": null
+      },
       "embed": null,
-      "landing": { "listed": false }
+      "landing": {
+        "listed": false
+      }
     },
     {
       "id": "demo",
       "name": "Live demo",
       "category": "platform",
       "summary": "/demo runs the real panel on sample data; nothing is saved.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "all",
       "status": "stable",
-      "web": { "panel": ["app/pages/demo.vue", "app/utils/demoApi.ts"] },
+      "web": {
+        "panel": [
+          "app/pages/demo.vue",
+          "app/utils/demoApi.ts"
+        ]
+      },
       "native": null,
       "api": null,
       "embed": null,
-      "landing": { "listed": true, "key": "landing.tryDemo" }
+      "landing": {
+        "listed": true,
+        "key": "landing.tryDemo"
+      }
     },
     {
       "id": "cloud-accounts-billing",
       "name": "Cloud sign-up, plans and billing",
       "category": "cloud",
       "summary": "Open sign-up, a public pricing page, Free and Pro plans with usage limits, locks on the features a plan leaves out (web and native), Stripe billing with optional Stripe Tax, email verification, verified sending domains, super-admin console, AI credits, 'Powered by HelpBites' branding on Free.",
-      "editions": ["cloud"],
+      "editions": [
+        "cloud"
+      ],
       "plan": "all",
       "entitlement": "removeBranding",
       "status": "stable",
-      "web": { "panel": ["../help-bites-cloud/ee/app/pages/signup.vue", "../help-bites-cloud/ee/app/pages/superadmin/index.vue"], "public": ["/pricing"] },
-      "native": { "folders": ["helpbites-native/App/Features/Settings"], "parity": "tests/planNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/admin/usage"], "docs": "docs/EDITIONS.md" },
+      "web": {
+        "panel": [
+          "../help-bites-cloud/ee/app/pages/signup.vue",
+          "../help-bites-cloud/ee/app/pages/superadmin/index.vue"
+        ],
+        "public": [
+          "/pricing"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Settings"
+        ],
+        "parity": "tests/planNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/usage"
+        ],
+        "docs": "docs/EDITIONS.md"
+      },
       "embed": null,
-      "landing": { "listed": false, "key": null }
+      "landing": {
+        "listed": false,
+        "key": null
+      }
     },
     {
       "id": "domain-events",
       "name": "Events and webhook endpoints",
       "category": "platform",
       "summary": "Every change in a project is a domain event on one bus. Webhook endpoints (each with its own signing secret and an event filter such as feedback.* or changelog.entry.published) receive them, signed and retried; sequences and in-process handlers listen on the same bus.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "pro",
       "entitlement": "eventWebhooks",
       "status": "stable",
-      "web": { "panel": ["app/components/settings/WebhookEndpoints.vue", "app/pages/projects/[id]/dev.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Projects"], "parity": "tests/webhookNativeParity.test.ts" },
-      "api": { "prefixes": ["/v1/admin/projects/:id/webhooks"], "docs": "docs/EVENTS.md" },
+      "web": {
+        "panel": [
+          "app/components/settings/WebhookEndpoints.vue",
+          "app/pages/projects/[id]/dev.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Projects"
+        ],
+        "parity": "tests/webhookNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/projects/:id/webhooks"
+        ],
+        "docs": "docs/EVENTS.md"
+      },
       "embed": null,
-      "landing": { "listed": false, "key": null }
+      "landing": {
+        "listed": false,
+        "key": null
+      }
     },
     {
       "id": "automation-recipes",
       "name": "Automation recipes",
       "category": "marketing",
       "summary": "Ready-made sequences started by an event (a sign-up, finishing onboarding, a feedback post, a resolved conversation): installed as a draft with the emails written, then edited and activated. Any sequence can wait for any domain event.",
-      "editions": ["community", "cloud"],
+      "editions": [
+        "community",
+        "cloud"
+      ],
       "plan": "pro",
       "entitlement": "sequences",
       "status": "stable",
-      "web": { "panel": ["app/components/campaigns/SequenceList.vue"] },
-      "native": { "folders": ["helpbites-native/App/Features/Campaigns"] },
-      "api": { "prefixes": ["/v1/automations"], "docs": "docs/MARKETING.md" },
+      "web": {
+        "panel": [
+          "app/components/campaigns/SequenceList.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Campaigns"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/automations"
+        ],
+        "docs": "docs/MARKETING.md"
+      },
       "embed": null,
-      "landing": { "listed": false, "key": null }
+      "landing": {
+        "listed": false,
+        "key": null
+      }
     }
   ],
   "notBuilt": [
@@ -634,25 +1968,26 @@
     "The native Pages screens list, create, edit (the block outline and each block's fields and animation, with undo and redo and moving a block to another list), publish and delete entries, write components (fields, HTML and CSS), run the AI assistant (for a page and for a component) and the page wizard, and manage files and settings. The live previews (a page's and a component's) are web-only: native opens the hosted page after publishing.",
     "Native translations: the legal screen lists and opens a document's other languages but cannot link an existing document as a translation (PATCH translationOf works on the API and the web); the email editor shows translation edits made elsewhere after a reload, since the live stream does not carry them; the onboarding offline copy is the flow's own language only.",
     "Translations cover onboarding, pricing tables, legal documents, emails sent from a template, and campaigns, sequences and lead-form welcome emails (by each contact's language). Blog newsletters, the mail HelpBites sends by itself, the chat, feedback and changelog embeds and CMS pages have no translations yet; the send API does not read a contact's language (pass locale).",
-    "Hosted pages have no custom domains yet; they live at /p/<public key> on the HelpBites host.",
     "Components are HTML and CSS only: nothing that needs JavaScript of its own (an autoplaying carousel, a calculator).",
     "CMS content has no per-field translations, scheduled publishing or version history; folders such as es/… stand in for languages.",
     "The CMS generates no TypeScript types from component schemas.",
     "The native app shows the plan, usage, plan locks and sending domains, and sends the owner to Stripe's Checkout and customer portal in the browser; the web panel's Settings → Billing is the same screen.",
     "Lead forms have no CAPTCHA (a honeypot and rate limits only) and no A/B tests; answers are saved on the contact rather than kept as separate submissions, and never overwrite an answer the contact already has. Uploaded files are checked for type and size but not scanned for malware, and the sequence a form starts sends in its templates' own language.",
-    "The native app edits a blog post's Markdown (or an imported post's HTML) as text with a preview; the rich (TipTap) editor and its slash menu are web-only. Blog posts, comments and the embed have no translations, the blog has no custom domain (it lives at /blog/<public key>), members-only posts have no paid tiers (a member is a signed-in reader), the Ghost import leaves images on the old site, and the MCP server has no blog tools yet.",
+    "The native app edits a blog post's Markdown (or an imported post's HTML) as text with a preview; the rich (TipTap) editor and its slash menu are web-only. Blog posts, comments and the embed have no translations, members-only posts have no paid tiers (a member is a signed-in reader), the Ghost import leaves images on the old site, and the MCP server has no blog tools yet.",
     "The needs-attention list is read every minute and whenever the web panel's tab comes back; only the inbox badge follows messages as they arrive. Its numbers can be up to 15 seconds old on the server.",
     "In the native app the iPad sidebar lists a project's sections in the grouped order without group headings.",
     "Pricing tables show fixed prices only (no metered or tiered Stripe prices), have no Stripe Customer Portal button and count purchases from Stripe only (not the App Store); the Swift snippet draws the cards template only.",
     "The people list has no row selection, so adding people to a sequence works for one contact or for a whole segment, not for hand-picked rows.",
     "The Has errors segment field is best effort: the latest event of the newest 50 open issues in the connected tracker, cached for 10 minutes, matched to contacts by the user id the app reports to the tracker.",
     "A contact's activity timeline links to a section of the panel (the feedback page, the email log), not to the post or log row itself, and its titles are English text written by the server.",
-    "The public hub page is English only, has no custom domain (it lives at /hub/<public key>) and no template choice; its sections are fixed (about, changelog, roadmap, feedback, blog, legal, brand, contact) plus up to 8 links. The chat widget's Home tab is not shown in the wide inline layout, offers every published onboarding flow (turn the section off to hide them) and is web only: the native operator app edits its settings but has no public surfaces.",
+    "The public hub page is English only, has no template choice; its sections are fixed (about, changelog, roadmap, feedback, blog, legal, brand, contact) plus up to 8 links. The chat widget's Home tab is not shown in the wide inline layout, offers every published onboarding flow (turn the section off to hide them) and is web only: the native operator app edits its settings but has no public surfaces.",
     "A project's legal page links for email (privacyUrl, termsUrl, cookiesUrl, refundUrl) are rebuilt when a legal document is published, unpublished, renamed or deleted, and are not carried by an export or import until the next publish; they are blank while APP_URL is unset. The project company profile has no per-document override: every legal document names the same operator.",
     "Guests (guest access) are not upgraded when the same person later signs in or gives an email: their conversations and posts stay with the guest contact. A guest who wrote something stays a contact after the session expires (only guests who never wrote, and expired sessions, are purged).",
     "helpbites.js adds the chat, feedback board, changelog and onboarding scripts; it does not add the blog, brand or forms embeds, and it cannot fetch an identity token for you (pass data-token or call HelpBites.push(['init', { getToken }])).",
     "The conversation panel: a contact with no user id (externalId) cannot follow a feedback post or have one filed as them (linking still works). Saved replies are inserted from the picker, not by typing /shortcut in the reply box; Save as FAQ is on a reply's context menu (right-click, long-press). The AI draft answers the customer's latest message only, takes no instructions, and the demo does not fake linking, drafting or saving.",
     "Revenue sources: RevenueCat's history starts when its webhook does (it cannot replay events, and HelpBites does not read RevenueCat's REST API to backfill; earlier months go in through POST /v1/admin/revenue/payments). The App Store source reads proceeds from the Sales and Trends reports, which name no customers, so it has no top customers, subscribers or MRR. There are no direct Google Play, PayPal, Gumroad or Polar sources: send them to the custom API, or read Google Play through RevenueCat.",
-    "Only Stripe customers are written onto contacts as stripe_* attributes, so the People billing filters, segments and campaigns do not see the customers of the other revenue sources (a contact's page and the report's customer rows do list and open them). The Paddle, Lemon Squeezy and App Store sources were written from those services' documentation and unit tests, not run against live accounts."
+    "Only Stripe customers are written onto contacts as stripe_* attributes, so the People billing filters, segments and campaigns do not see the customers of the other revenue sources (a contact's page and the report's customer rows do list and open them). The Paddle, Lemon Squeezy and App Store sources were written from those services' documentation and unit tests, not run against live accounts.",
+    "Custom domains: a verified host is not re-checked, so a moved domain keeps serving until it is removed; unsubscribe, confirmation and email legal links still use APP_URL; the host's \"/\" for the hub, feedback, blog, roadmap and changelog redirects to the page's path on the same host rather than showing it at \"/\"; the reverse proxy gets the certificate (the bundled Caddyfile does it on demand, other proxies need the same /v1/internal/domain-check hook); DNS behind a proxying CDN (Cloudflare orange cloud) cannot be verified.",
+    "Inbound email: only Mailgun receives mail (through one Route for the account); attachments other than PNG, JPEG, GIF and WebP images are listed as not shown, not kept; a mail that carries neither In-Reply-To nor the conversation tag starts a new conversation; there is no per-address signature stripping beyond Mailgun's quoted-text removal; replies to an email conversation are plain messages, not designed emails."
   ]
 }

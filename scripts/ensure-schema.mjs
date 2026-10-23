@@ -536,6 +536,28 @@ const SCHEMAS = {
       status_scheduled: { status: 1, scheduledAt: 1 }
     }
   },
+  // A host the project's public pages are served on (feedback.lightbites.app),
+  // see server/utils/projectDomains.ts. One project per host; `target` is what
+  // "/" shows; `token` is the value of the TXT record that proves ownership.
+  ProjectDomain: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      workspace: { type: 'Pointer', targetClass: 'Workspace' },
+      host: { type: 'String' },
+      // pending | verified | failed
+      state: { type: 'String' },
+      target: { type: 'String' },
+      token: { type: 'String' },
+      // The records to add, with the last check's result: shared/domains.ts DomainDnsRecord.
+      dnsRecords: { type: 'Array' },
+      verifiedAt: { type: 'Date' },
+      lastCheckedAt: { type: 'Date' }
+    },
+    indexes: {
+      host_1: { host: 1 },
+      project_created: { _p_project: 1, _created_at: 1 }
+    }
+  },
   // A webhook destination with its own signing secret and event filter
   // (server/utils/webhooks.ts): `events` holds `*`, `group.*` or exact types
   // from shared/domainEvents.ts. The project's original single URL stays on Project.
@@ -653,6 +675,8 @@ const SCHEMAS = {
       userReadAt: { type: 'Date' },
       agentReadAt: { type: 'Date' },
       archivedAt: { type: 'Date' },
+      // Where it started: widget (default, also absent) or email (an inbound address, server/utils/inboundEmail.ts).
+      channel: { type: 'String' },
       // Feedback posts the team linked to it (ids), changed with $addToSet / $pull; ids that no longer resolve are skipped on read.
       feedbackPostIds: { type: 'Array' }
     },
@@ -841,11 +865,34 @@ const SCHEMAS = {
       clientId: { type: 'String' },
       visibility: { type: 'String' },
       kind: { type: 'String' },
-      event: { type: 'Object' }
+      event: { type: 'Object' },
+      // The RFC 5322 Message-ID of the email this message came in as, or went out as; replies find their thread by it.
+      emailMessageId: { type: 'String' }
     },
     indexes: {
       conversation_createdAt: { _p_conversation: 1, _created_at: 1 },
-      conversation_clientId: { _p_conversation: 1, clientId: 1 }
+      conversation_clientId: { _p_conversation: 1, clientId: 1 },
+      project_emailMessageId: { _p_project: 1, emailMessageId: 1 }
+    }
+  },
+  // An email address a project receives mail at (server/utils/inboundEmail.ts): `domain` on a domain whose MX
+  // points at the mail provider, or `forward`, a HelpBites alias a mailbox forwards to. `address` is globally unique.
+  InboundAddress: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      workspace: { type: 'Pointer', targetClass: 'Workspace' },
+      address: { type: 'String' },
+      kind: { type: 'String' },
+      publicAddress: { type: 'String' },
+      fromName: { type: 'String' },
+      // pending | verified | failed
+      state: { type: 'String' },
+      verifiedAt: { type: 'Date' },
+      lastCheckedAt: { type: 'Date' }
+    },
+    indexes: {
+      address_1: { address: 1 },
+      project_created: { _p_project: 1, _created_at: 1 }
     }
   },
   // --- Feedback boards: public posts, one vote row per voter, comments. ---

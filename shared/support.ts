@@ -22,6 +22,10 @@ export type StatusCategory = typeof STATUS_CATEGORIES[number]
 export const CONVERSATION_PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const
 export type ConversationPriority = typeof CONVERSATION_PRIORITIES[number]
 
+/** Where a conversation started. Absent on older rows: they are `widget`. */
+export const CONVERSATION_CHANNELS = ['widget', 'email'] as const
+export type ConversationChannel = typeof CONVERSATION_CHANNELS[number]
+
 export const ATTACHMENT_MAX_BYTES = 8 * 1024 * 1024
 export const ATTACHMENT_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'] as const
 export const MAX_ATTACHMENTS_PER_MESSAGE = 4
@@ -157,6 +161,7 @@ export type Conversation = {
   agentReadAt: string | null
   /** Set while the team has archived it: hidden from the inbox queue, kept for history. */
   archivedAt: string | null
+  channel: ConversationChannel
   /** Feedback posts the team linked to this conversation (ids). Operators only: never sent to the customer. */
   feedbackPostIds: string[]
   createdAt: string

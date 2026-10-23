@@ -47,7 +47,7 @@ async function readSubmission(event: H3Event, fields: LeadFormField[]): Promise<
 export default defineEventHandler(async (event) => {
   const { project, row } = await findPublicLeadForm(getRouterParam(event, 'pk') || '', getRouterParam(event, 'key') || '')
   const own = (() => { try { return publicBaseUrl() } catch { return '' } })()
-  if (!signupOriginAllowed(String(getHeader(event, 'origin') || ''), (project.get('allowedOrigins') as string[] | undefined) || [], own)) throw createError({ statusCode: 403, statusMessage: 'This site may not sign people up for this project' })
+  if (!signupOriginAllowed(String(getHeader(event, 'origin') || ''), (project.get('allowedOrigins') as string[] | undefined) || [], customOrigin(event) || own)) throw createError({ statusCode: 403, statusMessage: 'This site may not sign people up for this project' })
   const type = String(getHeader(event, 'content-type') || '')
   // A browser's own form post (not fetch): plain forms always, multipart when the browser asks for a page.
   const form = type.startsWith('application/x-www-form-urlencoded') || (type.startsWith('multipart/form-data') && String(getHeader(event, 'accept') || '').includes('text/html'))

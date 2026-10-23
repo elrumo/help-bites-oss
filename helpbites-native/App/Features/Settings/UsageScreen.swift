@@ -79,7 +79,8 @@ enum PlanFeature {
   static let labels: [(key: String, label: String)] = [
     ("campaigns", "Campaigns"), ("sequences", "Sequences"), ("contactSources", "Database sync"), ("eventWebhooks", "Event webhooks"),
     ("customSendingDomain", "A custom sending domain"), ("removeBranding", "Removing the HelpBites branding"), ("byoLlm", "Your own AI provider"),
-    ("emailAiUltra", "The Ultra AI designer"), ("multiWorkspace", "More workspaces"), ("legalDocs", "Hosted legal documents")
+    ("emailAiUltra", "The Ultra AI designer"), ("multiWorkspace", "More workspaces"), ("legalDocs", "Hosted legal documents"),
+    ("customPublicDomain", "Your own domain for public pages"), ("inboundEmail", "Support email addresses")
   ]
 
   /// The labels stay literal pairs (a parity test reads them); they are looked up in the catalog where they are shown.

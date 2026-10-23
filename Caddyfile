@@ -1,3 +1,11 @@
+# Custom domains (docs/CUSTOM-DOMAINS.md): Caddy asks the app before it requests a
+# certificate for a host it has not seen, and the app says yes only for verified ones.
+{
+	on_demand_tls {
+		ask http://app:3000/v1/internal/domain-check
+	}
+}
+
 # Used by the optional `proxy` profile (docker-compose.yml). Caddy gets and
 # renews the certificate for HELPBITES_DOMAIN by itself; ports 80 and 443 must
 # reach this server. `flush_interval -1` keeps the live-update stream (SSE)
@@ -12,4 +20,18 @@
 # Public URL of the bundled bucket (S3_PUBLIC_URL), so browsers can load uploads.
 files.{$HELPBITES_DOMAIN:localhost} {
 	reverse_proxy sb-rustfs:9000
+}
+
+# Every other host that reaches this proxy: a project's custom domain. "/" is sent to
+# /_domain because the app's own home page is a static file it cannot redirect itself.
+https:// {
+	tls {
+		on_demand
+	}
+	encode zstd gzip
+	@root path /
+	rewrite @root /_domain
+	reverse_proxy app:3000 {
+		flush_interval -1
+	}
 }

@@ -8,7 +8,7 @@
 
 export const GAUGES = ['projects', 'seats', 'apiKeys', 'knowledgeModels', 'assistants', 'faqs', 'contacts', 'storageBytes'] as const
 export const COUNTERS = ['conversations', 'emails', 'emailsPerDay', 'aiCredits'] as const
-export const FEATURES = ['campaigns', 'sequences', 'contactSources', 'eventWebhooks', 'customSendingDomain', 'removeBranding', 'byoLlm', 'emailAiUltra', 'multiWorkspace', 'legalDocs'] as const
+export const FEATURES = ['campaigns', 'sequences', 'contactSources', 'eventWebhooks', 'customSendingDomain', 'removeBranding', 'byoLlm', 'emailAiUltra', 'multiWorkspace', 'legalDocs', 'customPublicDomain', 'inboundEmail'] as const
 
 export type Gauge = typeof GAUGES[number]
 export type Counter = typeof COUNTERS[number]
@@ -73,7 +73,9 @@ export const FEATURE_LABELS: Record<Feature, string> = {
   byoLlm: 'Your own AI provider',
   emailAiUltra: 'The Ultra AI designer',
   multiWorkspace: 'More workspaces',
-  legalDocs: 'Hosted legal documents'
+  legalDocs: 'Hosted legal documents',
+  customPublicDomain: 'Your own domain for public pages',
+  inboundEmail: 'Support email addresses'
 }
 
 /** The 402 body's `data`: enough for the panel to say what ran out and offer the way up. */

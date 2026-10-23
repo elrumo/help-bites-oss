@@ -296,7 +296,12 @@
     "recentErrors": "Errors recents",
     "actions": "Accions",
     "actionsNoWebhook": "Aquest projecte no té webhook d'accions, així que fallaran.",
-    "actionsNoWebhookFix": "Configura-ho"
+    "actionsNoWebhookFix": "Configura-ho",
+    "channel": "Canal",
+    "anyChannel": "Qualsevol canal",
+    "channelEmail": "Correu",
+    "channelWidget": "Xat i API",
+    "viaEmail": "Va començar com un correu"
   },
   "board": {
     "itemCount": "{count} element | {count} elements",
@@ -2738,6 +2743,10 @@
         "none": {
           "term": "O res d'això",
           "desc": "Tots els endpoints són públics i estan documentats. Crea la teva pròpia interfície de xat sobre /v1/* en lloc d'aquesta."
+        },
+        "domains": {
+          "term": "El teu propi domini",
+          "desc": "Posa el tauler de feedback, les novetats o el blog a feedback.lateva.app. Afegeix un TXT i un CNAME, i la pàgina, els embeds i l'API responen allà amb el seu propi certificat."
         }
       },
       "inbox": {
@@ -2766,6 +2775,10 @@
         "native": {
           "term": "iPhone, iPad i Mac",
           "desc": "Una app nativa per a la safata, les respostes i gairebé tot el panell, amb notificacions push quan el teu servidor tingui APNs configurat."
+        },
+        "email": {
+          "term": "El correu a suport@teu esdevé conversa",
+          "desc": "Dóna a un projecte una adreça com suport@lateva.app, al teu domini o reenviada des de la teva bústia. Els missatges arriben a la safata com a converses i les respostes surten per correu, al mateix fil del client."
         }
       },
       "feedback": {
@@ -5559,5 +5572,79 @@
       "point2": "Tria el teu proveïdor d'IA i connecta GitHub o Stripe",
       "point3": "Crea claus d'API per automatitzar tot el que fas amb clics"
     }
+  },
+  "projectDomains": {
+    "title": "Dominis propis",
+    "hint": "Serveix les teves pàgines públiques al teu propi domini, com feedback.exemple.com.",
+    "docs": "Com funciona",
+    "add": "Afegeix un domini",
+    "hostLabel": "Domini",
+    "hostPlaceholder": "feedback.exemple.com",
+    "targetLabel": "S'obre a",
+    "target": {
+      "hub": "Centre públic",
+      "feedback": "Tauler de feedback",
+      "roadmap": "Full de ruta",
+      "changelog": "Novetats",
+      "blog": "Blog"
+    },
+    "empty": "Encara no hi ha dominis.",
+    "state": {
+      "pending": "Esperant el DNS",
+      "verified": "Actiu",
+      "failed": "DNS encara no trobat"
+    },
+    "records": "Afegeix aquests registres al teu proveïdor de DNS",
+    "recordsHint": "Els canvis poden trigar uns minuts a propagar-se. Després, torna a comprovar.",
+    "recordType": "Tipus",
+    "recordHost": "Nom",
+    "recordValue": "Valor",
+    "verify": "Comprova el DNS",
+    "remove": "Treu",
+    "copy": "Copia",
+    "removeConfirm": "Vols treure {host}? Deixarà de servir-se a l'instant.",
+    "loadFailed": "No s'han pogut carregar els dominis.",
+    "saveFailed": "No s'ha pogut desar el domini."
+  },
+  "inboundAddresses": {
+    "title": "Adreces de correu de suport",
+    "intro": "El correu enviat a aquestes adreces es converteix en una conversa a la teva safata, i les teves respostes surten per correu. Fes servir una adreça del teu domini, o reenvia la teva bústia actual a una adreça de HelpBites.",
+    "docs": "Com funciona",
+    "forward": "Reenvia la meva bústia",
+    "forwardHint": "Deixa suport{'@'}eldteudomini.com on és i reenvia-ho aquí.",
+    "domain": "Fes servir el meu domini",
+    "domainHint": "Una adreça d'un domini amb registres MX que apunten al proveïdor de correu.",
+    "publicAddress": "L'adreça a la qual escriuen els teus clients",
+    "publicPlaceholder": "suport{'@'}exemple.com",
+    "address": "Adreça",
+    "addressPlaceholder": "suport{'@'}mail.exemple.com",
+    "fromName": "Nom a les respostes",
+    "create": "Crea",
+    "cancel": "Cancel·la",
+    "empty": "Encara no hi ha adreces.",
+    "forwardTo": "Reenvia el correu de {public} a",
+    "forwardAnywhere": "Reenvia la teva bústia a",
+    "mxTitle": "Afegeix aquests registres MX al teu proveïdor de DNS",
+    "mxHint": "Envien tot el correu d'aquest domini al proveïdor de correu. Fes servir un subdomini (mail.exemple.com) per no afectar la teva bústia habitual.",
+    "type": "Tipus",
+    "host": "Nom",
+    "value": "Valor",
+    "priority": "Prioritat",
+    "verify": "Comprova el DNS",
+    "remove": "Treu",
+    "copy": "Copia",
+    "removeConfirm": "Vols deixar de rebre correu a {address}? Les converses ja creades es conserven.",
+    "kind": {
+      "forward": "Reenviament",
+      "domain": "El teu domini"
+    },
+    "state": {
+      "pending": "Esperant MX",
+      "verified": "Rebent",
+      "failed": "MX encara no trobat"
+    },
+    "noForwarding": "Aquest servidor no té domini de reenviament (INBOUND_DOMAIN).",
+    "loadFailed": "No s'han pogut carregar les adreces.",
+    "saveFailed": "No s'ha pogut desar l'adreça."
   }
 }

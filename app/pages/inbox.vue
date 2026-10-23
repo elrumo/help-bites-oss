@@ -30,6 +30,7 @@
               <USelect v-model="projectFilter" :items="projectItems" size="sm" class="col-span-2" :aria-label="$t('inbox.project')" @update:model-value="loadList()" />
               <USelect v-model="statusFilter" :items="statusFilterItems" size="sm" :aria-label="$t('inbox.status')" @update:model-value="loadList()" />
               <USelect v-model="priorityFilter" :items="priorityFilterItems" size="sm" :aria-label="$t('inbox.priority')" @update:model-value="loadList()" />
+              <USelect v-model="channelFilter" :items="channelFilterItems" size="sm" class="col-span-2" :aria-label="$t('inbox.channel')" @update:model-value="loadList()" />
               <UInput v-model="typeFilter" :placeholder="$t('inbox.ticketType')" size="sm" class="col-span-2" :aria-label="$t('inbox.ticketType')" @update:model-value="scheduleLoad" />
               <UButton v-if="filtersActive" :label="$t('inbox.clearFilters')" color="neutral" variant="ghost" size="sm" class="col-span-2 justify-center" @click="clearFilters" />
             </div>
@@ -221,6 +222,7 @@ const projectFilter = ref('all')
 const statusFilter = ref('any')
 const priorityFilter = ref('any')
 const typeFilter = ref('')
+const channelFilter = ref('any')
 const searchQuery = ref('')
 const searchOpen = ref(false)
 // Shared with the sidebar's compose button and the C shortcut.
@@ -234,6 +236,7 @@ const projectsById = computed(() => Object.fromEntries(projects.value.map(projec
 const projectItems = computed(() => [{ label: t('inbox.allProjects'), value: 'all' }, ...projects.value.map(project => ({ label: project.name, value: project.id }))])
 const statusFilterItems = computed(() => [{ label: t('inbox.anyStatus'), value: 'any' }, { label: t('inbox.open'), value: 'open' }, { label: t('inbox.done'), value: 'done' }])
 const priorityFilterItems = computed(() => [{ label: t('inbox.anyPriority'), value: 'any' }, { label: t('inbox.low'), value: 'low' }, { label: t('inbox.normal'), value: 'normal' }, { label: t('inbox.high'), value: 'high' }, { label: t('inbox.urgent'), value: 'urgent' }])
+const channelFilterItems = computed(() => [{ label: t('inbox.anyChannel'), value: 'any' }, { label: t('inbox.channelEmail'), value: 'email' }, { label: t('inbox.channelWidget'), value: 'widget' }])
 const viewItems = computed(() => [
   { key: 'all' as const, label: t('inbox.all'), count: viewCounts.value.all },
   { key: 'unassigned' as const, label: t('inbox.unassigned'), count: viewCounts.value.unassigned },
@@ -251,9 +254,9 @@ function closeSearch() {
   searchOpen.value = false
   if (searchQuery.value) { searchQuery.value = ''; void loadList() }
 }
-const filtersActive = computed(() => projectFilter.value !== 'all' || statusFilter.value !== 'any' || priorityFilter.value !== 'any' || Boolean(typeFilter.value))
+const filtersActive = computed(() => projectFilter.value !== 'all' || statusFilter.value !== 'any' || priorityFilter.value !== 'any' || channelFilter.value !== 'any' || Boolean(typeFilter.value))
 function clearFilters() {
-  projectFilter.value = 'all'; statusFilter.value = 'any'; priorityFilter.value = 'any'; typeFilter.value = ''
+  projectFilter.value = 'all'; statusFilter.value = 'any'; priorityFilter.value = 'any'; channelFilter.value = 'any'; typeFilter.value = ''
   void loadList()
 }
 
@@ -266,7 +269,7 @@ async function setView(next: QueueView) {
 
 type QueuePage = { conversations: Conversation[], endUsers: Record<string, InboxEndUser>, hasMore: boolean, totalUnread: number, viewCounts?: ViewCounts }
 function queueQuery() {
-  return { project: projectFilter.value === 'all' ? undefined : projectFilter.value, status: statusFilter.value === 'any' ? undefined : statusFilter.value, priority: priorityFilter.value === 'any' ? undefined : priorityFilter.value, type: typeFilter.value || undefined, q: searchQuery.value.trim() || undefined, view: view.value === 'all' ? undefined : view.value }
+  return { project: projectFilter.value === 'all' ? undefined : projectFilter.value, status: statusFilter.value === 'any' ? undefined : statusFilter.value, priority: priorityFilter.value === 'any' ? undefined : priorityFilter.value, type: typeFilter.value || undefined, channel: channelFilter.value === 'any' ? undefined : channelFilter.value, q: searchQuery.value.trim() || undefined, view: view.value === 'all' ? undefined : view.value }
 }
 
 async function loadList(more = false) {
@@ -308,7 +311,7 @@ const filteredConversations = computed(() => conversations.value.filter((convers
 const listItems = computed<ChatListItem[]>(() => filteredConversations.value.map((conversation) => {
   const user = endUsers.value[conversation.endUserId]
   const project = projectsById.value[conversation.projectId]
-  return { id: conversation.id, title: user?.name || user?.email || user?.externalId || t('inbox.unknownCustomer'), subtitle: conversation.subject || conversation.context?.label || '', preview: conversation.lastMessageFrom === 'agent' ? t('inbox.youPreview', { text: conversation.lastMessagePreview }) : conversation.lastMessagePreview, timestamp: conversation.lastMessageAt, unreadCount: conversation.unreadByAgent, projectId: conversation.projectId, projectName: project?.name, projectAccent: project?.theme?.accent, projectIconUrl: project?.iconUrl, priority: conversation.priority, archived: Boolean(conversation.archivedAt), done: conversation.statusCategory === 'resolved' || conversation.statusCategory === 'closed' || conversation.status === 'done' }
+  return { id: conversation.id, title: user?.name || user?.email || user?.externalId || t('inbox.unknownCustomer'), subtitle: conversation.subject || conversation.context?.label || '', preview: conversation.lastMessageFrom === 'agent' ? t('inbox.youPreview', { text: conversation.lastMessagePreview }) : conversation.lastMessagePreview, timestamp: conversation.lastMessageAt, unreadCount: conversation.unreadByAgent, projectId: conversation.projectId, projectName: project?.name, projectAccent: project?.theme?.accent, projectIconUrl: project?.iconUrl, priority: conversation.priority, viaEmail: conversation.channel === 'email', archived: Boolean(conversation.archivedAt), done: conversation.statusCategory === 'resolved' || conversation.statusCategory === 'closed' || conversation.status === 'done' }
 }))
 
 const activeId = ref('')

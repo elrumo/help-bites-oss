@@ -36,6 +36,8 @@ export type EditionHooks = {
   brandUrl: string
   /** Who mail appears to come from; the cloud edition sends from its shared domain. Absent: the project's own settings. */
   rewriteSender?: (sender: EmailSender, project: ParseObject | null) => EmailSender
+  /** Whether a workspace may receive mail for a domain (an inbound address on it). Absent: yes. The cloud edition checks the domain is one the workspace has verified, so nobody claims another tenant's. */
+  canReceiveFor?: (workspace: ParseObject, domain: string) => boolean | Promise<boolean>
   /** Called when an owner deletes a workspace, before its data goes (the cloud edition cancels the subscription). */
   onWorkspaceDeleting?: (workspace: ParseObject) => Promise<void>
   /** More for /v1/admin/me, under `extras` (verification, billing state, super-admin). */

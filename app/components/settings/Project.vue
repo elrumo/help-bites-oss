@@ -163,6 +163,12 @@
             </div>
           </section>
 
+          <!-- Custom domains -->
+          <section id="domains" class="section">
+            <header><h2 class="section-title">{{ $t('projectDomains.title') }}</h2><p class="section-hint">{{ $t('projectDomains.hint') }} <NuxtLink to="/docs/custom-domains" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('projectDomains.docs') }}</NuxtLink></p></header>
+            <div class="card"><SettingsProjectDomains :project-id="id" /></div>
+          </section>
+
           <!-- Notifications -->
           <section id="notifications" class="section">
             <header><h2 class="section-title">{{ $t('projectPages.settings.notifications') }}</h2><p class="section-hint">{{ $t('projectPages.settings.notificationsHint') }}</p></header>
@@ -280,6 +286,7 @@ const sections = computed(() => [
   { id: 'company', label: t('projectPages.settings.company') },
   { id: 'widget', label: t('projectPages.settings.chatWidget') },
   { id: 'hub', label: t('projectPages.settings.hub') },
+  { id: 'domains', label: t('projectDomains.title') },
   { id: 'notifications', label: t('projectPages.settings.notifications') },
   { id: 'sidebar', label: t('projectPages.settings.sidebar') },
   { id: 'collaborators', label: t('projectPages.settings.collaborators') },

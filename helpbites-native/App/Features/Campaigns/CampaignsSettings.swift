@@ -64,6 +64,8 @@ struct ProjectEmailSettingsView: View {
           Text("Blank fields use the server's defaults, shown greyed out. The sending domain must be in the same Mailgun account as the server's API key, and the from address should be on it.")
         }
 
+        InboundAddressesSection(projectId: project.id, projectName: project.name)
+
         Section {
           Toggle("Send campaigns and sequences from a different address", isOn: $separate)
         } footer: {

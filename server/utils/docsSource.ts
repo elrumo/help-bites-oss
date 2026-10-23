@@ -3,6 +3,7 @@ import { docMarkdown, renderDoc, type RenderedDoc } from './docsRender'
 import blog from '../../docs/BLOG.md'
 import brand from '../../docs/BRAND.md'
 import connecting from '../../docs/CONNECTING.md'
+import customDomains from '../../docs/CUSTOM-DOMAINS.md'
 import deployment from '../../docs/DEPLOYMENT.md'
 import errors from '../../docs/ERRORS.md'
 import feedback from '../../docs/FEEDBACK.md'
@@ -11,6 +12,7 @@ import flags from '../../docs/FLAGS.md'
 import forms from '../../docs/FORMS.md'
 import github from '../../docs/GITHUB.md'
 import hub from '../../docs/HUB.md'
+import inboundEmail from '../../docs/INBOUND-EMAIL.md'
 import languages from '../../docs/LANGUAGES.md'
 import legal from '../../docs/LEGAL.md'
 import mcp from '../../docs/MCP.md'
@@ -30,6 +32,7 @@ const SOURCES: Record<string, string> = {
   'BLOG.md': blog,
   'BRAND.md': brand,
   'CONNECTING.md': connecting,
+  'CUSTOM-DOMAINS.md': customDomains,
   'DEPLOYMENT.md': deployment,
   'ERRORS.md': errors,
   'FEEDBACK.md': feedback,
@@ -38,6 +41,7 @@ const SOURCES: Record<string, string> = {
   'FORMS.md': forms,
   'GITHUB.md': github,
   'HUB.md': hub,
+  'INBOUND-EMAIL.md': inboundEmail,
   'LANGUAGES.md': languages,
   'LEGAL.md': legal,
   'MCP.md': mcp,

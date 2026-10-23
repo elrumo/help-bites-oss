@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     blogPath,
     feedUrl: blogFeedUrl(project),
     scriptSrc: '/blog.js',
-    blogUrl: hostedBlogUrl(project),
+    blogUrl: hostedBlogUrl(project, '', customOrigin(event) || undefined),
     related: related.map(one => listed(one)!),
     newer: listed(adjacent.newer),
     older: listed(adjacent.older),

@@ -6,6 +6,8 @@ picker for saved replies and FAQs, and a button that drafts a reply with AI. The
 same, through the endpoints below. They are admin endpoints (an operator session or an `ak_` admin key), so you can
 script all of it too.
 
+Conversations also start from email sent to a project's address ([INBOUND-EMAIL.md](INBOUND-EMAIL.md)); they carry `channel: "email"`, and `GET /v1/admin/conversations?channel=email` lists only those.
+
 Every request carries `Authorization: Bearer ak_…`. Project-scoped keys work for the projects they are limited to.
 
 ## What the panel shows

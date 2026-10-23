@@ -93,6 +93,11 @@ const snippet = computed(() => `<form action="${appUrl.value}/v1/subscribe" meth
         </section>
 
         <section class="space-y-3">
+          <h2 class="text-sm font-semibold text-highlighted">{{ $t('inboundAddresses.title') }}</h2>
+          <EmailInboundAddresses :project-id="project.id" :project-name="project.name" />
+        </section>
+
+        <section class="space-y-3">
           <h2 class="text-sm font-semibold text-highlighted">{{ $t('campaigns.settings.required') }}</h2>
           <UFormField :label="$t('campaigns.settings.postalAddress')" :hint="$t('campaigns.settings.postalAddressHint')">
             <UInput v-model="form.postalAddress" placeholder="Acme Inc, 1 Main Street, Lisbon, Portugal" class="w-full" />

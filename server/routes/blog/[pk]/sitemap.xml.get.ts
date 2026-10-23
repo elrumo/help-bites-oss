@@ -6,11 +6,12 @@ export default defineEventHandler(async (event) => {
   const project = await findProjectByPublicKey(getRouterParam(event, 'pk') || '')
   const config = project ? getBlogConfig(project) : null
   if (!project || !config?.enabled) throw createError({ statusCode: 404, statusMessage: 'No blog here' })
-  const home = hostedBlogUrl(project)
+  const origin = customOrigin(event) || undefined
+  const home = hostedBlogUrl(project, '', origin)
   const rows = await sitemapBlogPosts(project)
   const urls = rows
     .filter(row => !row.get('canonicalUrl') && blogPostUrl(project, row) === hostedBlogUrl(project, String(row.get('slug') || row.id || '')))
-    .map(row => ({ loc: hostedBlogUrl(project, String(row.get('slug') || row.id || '')), lastmod: (row.updatedAt || new Date()).toISOString() }))
+    .map(row => ({ loc: hostedBlogUrl(project, String(row.get('slug') || row.id || ''), origin), lastmod: (row.updatedAt || new Date()).toISOString() }))
   setHeader(event, 'Content-Type', 'application/xml; charset=utf-8')
   setHeader(event, 'Cache-Control', 'public, max-age=3600')
   return renderBlogSitemap([{ loc: home, lastmod: urls[0]?.lastmod || '' }, ...urls])

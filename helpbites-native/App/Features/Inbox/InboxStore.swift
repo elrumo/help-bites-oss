@@ -74,6 +74,8 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   var projectFilter = ""
   var statusFilter = ""
   var priorityFilter = ""
+  /// "", "email" or "widget".
+  var channelFilter = ""
   var typeFilter = ""
   var search = ""
   private var generation = 0
@@ -131,10 +133,10 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
   // MARK: - Queue
 
   /// Changes whenever the server query does; the screen reloads on it.
-  var queryKey: String { [projectFilter, statusFilter, priorityFilter, typeFilter, search.trimmingCharacters(in: .whitespaces), queue.rawValue].joined(separator: "\u{1f}") }
-  var filtersActive: Bool { !projectFilter.isEmpty || !statusFilter.isEmpty || !priorityFilter.isEmpty || !typeFilter.isEmpty }
+  var queryKey: String { [projectFilter, statusFilter, priorityFilter, channelFilter, typeFilter, search.trimmingCharacters(in: .whitespaces), queue.rawValue].joined(separator: "\u{1f}") }
+  var filtersActive: Bool { !projectFilter.isEmpty || !statusFilter.isEmpty || !priorityFilter.isEmpty || !channelFilter.isEmpty || !typeFilter.isEmpty }
 
-  func clearFilters() { projectFilter = ""; statusFilter = ""; priorityFilter = ""; typeFilter = "" }
+  func clearFilters() { projectFilter = ""; statusFilter = ""; priorityFilter = ""; channelFilter = ""; typeFilter = "" }
 
   /// The list's query: filters, search and the view.
   private func queueQuery() -> [String: String] {
@@ -142,6 +144,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
     if !projectFilter.isEmpty { query["project"] = projectFilter }
     if !statusFilter.isEmpty { query["status"] = statusFilter }
     if !priorityFilter.isEmpty { query["priority"] = priorityFilter }
+    if !channelFilter.isEmpty { query["channel"] = channelFilter }
     if !typeFilter.isEmpty { query["type"] = typeFilter }
     if queue != .all { query["view"] = queue.rawValue }
     let term = search.trimmingCharacters(in: .whitespaces)
@@ -634,6 +637,7 @@ private struct MessageResponse: Decodable, Sendable { let message: Message }
       && (projectFilter.isEmpty || conversation.projectId == projectFilter)
       && (statusFilter.isEmpty || conversation.status == statusFilter)
       && (priorityFilter.isEmpty || conversation.priority == priorityFilter)
+      && (channelFilter.isEmpty || (channelFilter == "email") == (conversation.channel == "email"))
       && (typeFilter.isEmpty || (conversation.type ?? "support") == typeFilter)
   }
 

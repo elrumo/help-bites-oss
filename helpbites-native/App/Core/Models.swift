@@ -64,6 +64,8 @@ struct Conversation: Codable, Identifiable, Equatable, Sendable {
   var userReadAt, agentReadAt: String?
   /// Set while the team has archived it; archived threads leave the inbox queue.
   let archivedAt: String?
+  /// Where it started: "email" for mail to an inbound address; nil or "widget" for everything else.
+  let channel: String?
   /// Feedback posts the team linked to it (ids); nil from an older server.
   let feedbackPostIds: [String]?
   let createdAt: String

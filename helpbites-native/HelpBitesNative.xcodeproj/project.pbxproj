@@ -100,6 +100,7 @@
 		6BFF2849C66F4D3D7DB86176 /* KnowledgeModelScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C046F32D80D62F9701168D /* KnowledgeModelScreen.swift */; };
 		6C40D67357E4DA55BFD2DDD3 /* BrandModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7505958314324AEB585815E9 /* BrandModels.swift */; };
 		6EF78C8AC45F900F83EFB5EB /* InboxNewConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B384FEDEACF5942FDB85E58 /* InboxNewConversation.swift */; };
+		6F3D0C3EC89422F5E0FA36BB /* InboundAddresses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CBB9714D3A05391716EBC31 /* InboundAddresses.swift */; };
 		7023404EF16FA58B2117AB05 /* BoardLinksSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC639C90F634EC463322EEBD /* BoardLinksSection.swift */; };
 		70A51A382BA70997E744F8AA /* EmailChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 633F469608738367F95618E4 /* EmailChat.swift */; };
 		70EF86D64D9D429F5ACEF928 /* LeadFormScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07FE52C1457DC5DDF7BFEFAE /* LeadFormScreen.swift */; };
@@ -168,6 +169,7 @@
 		CEFA998994A9B0BE10C49EE3 /* InboxChangelogLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B1B16B79FC4E958C1C0B767 /* InboxChangelogLinks.swift */; };
 		CF248BCF4AC66F657E9E749D /* ImageLoading.swift in Sources */ = {isa = PBXBuildFile; fileRef = DECDB02EB511FBBCE01A8B6F /* ImageLoading.swift */; };
 		CF66A889B1C949A7161D7AF0 /* LegalDocumentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9862C5F92D6B2B2A8C426B60 /* LegalDocumentStore.swift */; };
+		D0BF11C0E4985535D9B6A39C /* ProjectDomains.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEF5A636AFCAC8B5CD45EA12 /* ProjectDomains.swift */; };
 		D25E28A58DC77BEA53C0D489 /* Glyphs.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF53C87F2C1B484C2AE8F9B9 /* Glyphs.swift */; };
 		D3844AD4C4C71521BDB56ADD /* ProjectChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D85E56A5924EFCF147316F6 /* ProjectChrome.swift */; };
 		D6E854514D93D2B8E90F262A /* PricingPlanEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E26C1688D2BB2346355549 /* PricingPlanEditor.swift */; };
@@ -274,6 +276,7 @@
 		6ACB6FBC2FE382476B92BC3C /* ProjectDevScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDevScreen.swift; sourceTree = "<group>"; };
 		6C03509436E1534D77E37EFA /* EmailDesignPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailDesignPanel.swift; sourceTree = "<group>"; };
 		6C2D92B16E6CF9C9184F1044 /* AIScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIScreen.swift; sourceTree = "<group>"; };
+		6CBB9714D3A05391716EBC31 /* InboundAddresses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundAddresses.swift; sourceTree = "<group>"; };
 		706CDACB857404128A73530C /* LegalScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalScreen.swift; sourceTree = "<group>"; };
 		7119627BEEC60A69B83402E5 /* BlogModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlogModels.swift; sourceTree = "<group>"; };
 		7505958314324AEB585815E9 /* BrandModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandModels.swift; sourceTree = "<group>"; };
@@ -324,6 +327,7 @@
 		ADCDEFF3F2FB76DAF1734BB5 /* EmailTranslate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailTranslate.swift; sourceTree = "<group>"; };
 		ADD85BF67686EFF742ACAEF4 /* Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workspace.swift; sourceTree = "<group>"; };
 		AED7F95DF7B6F63DFCF49FBD /* ProfileScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileScreen.swift; sourceTree = "<group>"; };
+		AEF5A636AFCAC8B5CD45EA12 /* ProjectDomains.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDomains.swift; sourceTree = "<group>"; };
 		AF53C87F2C1B484C2AE8F9B9 /* Glyphs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glyphs.swift; sourceTree = "<group>"; };
 		B09FB00EA649539572608390 /* KnowledgeComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeComponents.swift; sourceTree = "<group>"; };
 		B178656D875D4D7C55EC5353 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -532,6 +536,7 @@
 				2C8862529C877EF137DE9E84 /* EmailStatus.swift */,
 				4711D007B64E1D08792D8CF0 /* EmailSuppressionsScreen.swift */,
 				ADCDEFF3F2FB76DAF1734BB5 /* EmailTranslate.swift */,
+				6CBB9714D3A05391716EBC31 /* InboundAddresses.swift */,
 			);
 			path = Email;
 			sourceTree = "<group>";
@@ -541,6 +546,7 @@
 			children = (
 				B40176AC267ECC00A49544BD /* ProjectConversationsScreen.swift */,
 				6ACB6FBC2FE382476B92BC3C /* ProjectDevScreen.swift */,
+				AEF5A636AFCAC8B5CD45EA12 /* ProjectDomains.swift */,
 				B3A63BBAA58C1D20D201D7CD /* ProjectsCompanyHub.swift */,
 				54980534EE0B68CF0ED125B9 /* ProjectScreen.swift */,
 				914029ADB1B3705EC808570B /* ProjectSettingsScreen.swift */,
@@ -997,6 +1003,7 @@
 				D25E28A58DC77BEA53C0D489 /* Glyphs.swift in Sources */,
 				A3C8222E6570D3CCC94B91F4 /* HelpBitesNativeApp.swift in Sources */,
 				CF248BCF4AC66F657E9E749D /* ImageLoading.swift in Sources */,
+				6F3D0C3EC89422F5E0FA36BB /* InboundAddresses.swift in Sources */,
 				CEFA998994A9B0BE10C49EE3 /* InboxChangelogLinks.swift in Sources */,
 				2597F4A9001C784ABD2BBE7E /* InboxConversation.swift in Sources */,
 				9B1D05F4CBACCCBE6A61B3ED /* InboxHub.swift in Sources */,
@@ -1061,6 +1068,7 @@
 				D3844AD4C4C71521BDB56ADD /* ProjectChrome.swift in Sources */,
 				1801796081B7AD8042DA1EA6 /* ProjectConversationsScreen.swift in Sources */,
 				0D630453518DCBB742AC811E /* ProjectDevScreen.swift in Sources */,
+				D0BF11C0E4985535D9B6A39C /* ProjectDomains.swift in Sources */,
 				816F107C970E43AE0D3495A9 /* ProjectScreen.swift in Sources */,
 				2D70EA12A7AABCFF6D83E124 /* ProjectSettingsScreen.swift in Sources */,
 				F866DA4E26577D7C82C0B73C /* ProjectStyleEditor.swift in Sources */,

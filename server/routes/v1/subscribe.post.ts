@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const project = await findProjectByPublicKey(String(body.pk || ''))
   if (!project) throw createError({ statusCode: 404, statusMessage: 'Unknown project' })
   const own = (() => { try { return publicBaseUrl() } catch { return '' } })()
-  if (!signupOriginAllowed(String(getHeader(event, 'origin') || ''), (project.get('allowedOrigins') as string[] | undefined) || [], own)) throw createError({ statusCode: 403, statusMessage: 'This site may not sign people up for this project' })
+  if (!signupOriginAllowed(String(getHeader(event, 'origin') || ''), (project.get('allowedOrigins') as string[] | undefined) || [], customOrigin(event) || own)) throw createError({ statusCode: 403, statusMessage: 'This site may not sign people up for this project' })
 
   let input: ReturnType<typeof readSignup>
   try {

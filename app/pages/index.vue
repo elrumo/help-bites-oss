@@ -472,6 +472,7 @@ const features = computed(() => [
       { term: t('landing.features.app.media.term'), desc: t('landing.features.app.media.desc') },
       { term: t('landing.features.app.colours.term'), desc: t('landing.features.app.colours.desc') },
       { term: t('landing.features.app.hub.term'), desc: t('landing.features.app.hub.desc') },
+      { term: t('landing.features.app.domains.term'), desc: t('landing.features.app.domains.desc') },
       { term: t('landing.features.app.none.term'), desc: t('landing.features.app.none.desc') }
     ]
   },
@@ -480,6 +481,7 @@ const features = computed(() => [
     hint: t('landing.features.inbox.hint'),
     items: [
       { term: t('landing.features.inbox.live.term'), desc: t('landing.features.inbox.live.desc') },
+      { term: t('landing.features.inbox.email.term'), desc: t('landing.features.inbox.email.desc') },
       { term: t('landing.features.inbox.overview.term'), desc: t('landing.features.inbox.overview.desc') },
       { term: t('landing.features.inbox.notes.term'), desc: t('landing.features.inbox.notes.desc') },
       { term: t('landing.features.inbox.hub.term'), desc: t('landing.features.inbox.hub.desc') },

@@ -76,6 +76,8 @@ export const NOT_PORTABLE: Record<string, string> = {
   StripePayment: 'comes from the revenue sources (Stripe and the others)',
   StripeSubscription: 'comes from the revenue sources (Stripe and the others)',
   WebhookEndpoint: 'its signing secret is not exported; add the endpoint again',
+  ProjectDomain: 'a host is verified and routed per instance; add it again',
+  InboundAddress: 'an address is verified and routed per instance; add it again',
   WebhookDelivery: 'the old instance\'s outbox',
   BrandAsset: 'a file in the old bucket',
   CmsAsset: 'a file in the old bucket; pages keep linking to it there',

@@ -217,6 +217,7 @@ function projectBrand(project: ParseObject) {
 
 /** Where links in answers point: APP_URL, or the address the request came to. */
 function baseUrl(event?: H3Event): string {
+  if (event && customOrigin(event)) return customOrigin(event)
   const set = String(process.env.APP_URL || '').trim().replace(/\/+$/, '')
   if (set || !event) return set
   return getRequestURL(event).origin

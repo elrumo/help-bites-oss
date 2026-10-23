@@ -70,6 +70,8 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   StripeSubscription: { scope: 'project' },
   Campaign: { scope: 'project' },
   WebhookEndpoint: { scope: 'project' },
+  ProjectDomain: { scope: 'project' },
+  InboundAddress: { scope: 'project' },
   WebhookDelivery: { scope: 'project' },
   Sequence: { scope: 'project' },
   SequenceEnrollment: { scope: 'project' },

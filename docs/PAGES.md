@@ -430,6 +430,8 @@ and unpublishing `cms.entry.unpublished`: rebuild a static site on them.
 | Delivery API | 1,200 requests a minute per address |
 | Assistant | 20 turns a minute per person |
 
-Not built yet: custom domains for hosted pages, scripts in components, content
+Hosted pages also answer on a project's [custom domain](CUSTOM-DOMAINS.md).
+
+Not built yet: scripts in components, content
 translations per field (folders such as `es/…` work today), scheduled
 publishing and version history, and generated TypeScript types.

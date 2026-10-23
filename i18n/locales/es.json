@@ -296,7 +296,12 @@
     "recentErrors": "Errores recientes",
     "actions": "Acciones",
     "actionsNoWebhook": "Este proyecto no tiene webhook de acciones, así que fallarán.",
-    "actionsNoWebhookFix": "Configurarlo"
+    "actionsNoWebhookFix": "Configurarlo",
+    "channel": "Canal",
+    "anyChannel": "Cualquier canal",
+    "channelEmail": "Correo",
+    "channelWidget": "Chat y API",
+    "viaEmail": "Empezó como un correo"
   },
   "board": {
     "itemCount": "{count} elemento | {count} elementos",
@@ -2738,6 +2743,10 @@
         "none": {
           "term": "O nada de esto",
           "desc": "Todos los endpoints son públicos y están documentados. Crea tu propia interfaz de chat sobre /v1/* en su lugar."
+        },
+        "domains": {
+          "term": "Tu propio dominio",
+          "desc": "Pon el tablero de feedback, las novedades o el blog en feedback.tuapp.com. Añade un TXT y un CNAME, y la página, los embeds y la API responden ahí con su propio certificado."
         }
       },
       "inbox": {
@@ -2766,6 +2775,10 @@
         "native": {
           "term": "iPhone, iPad y Mac",
           "desc": "Una app nativa para la bandeja, las respuestas y casi todo el panel, con notificaciones push una vez configurado APNs en tu servidor."
+        },
+        "email": {
+          "term": "El correo a soporte@tu se vuelve conversación",
+          "desc": "Dale a un proyecto una dirección como soporte@tuapp.com, en tu dominio o reenviada desde tu buzón. Los mensajes llegan a la bandeja como conversaciones y las respuestas salen por correo, en el mismo hilo del cliente."
         }
       },
       "feedback": {
@@ -5559,5 +5572,79 @@
       "point2": "Elige tu proveedor de IA y conecta GitHub o Stripe",
       "point3": "Crea claves de API para automatizar todo lo que haces con clics"
     }
+  },
+  "projectDomains": {
+    "title": "Dominios propios",
+    "hint": "Sirve tus páginas públicas en tu propio dominio, como feedback.ejemplo.com.",
+    "docs": "Cómo funciona",
+    "add": "Añadir dominio",
+    "hostLabel": "Dominio",
+    "hostPlaceholder": "feedback.ejemplo.com",
+    "targetLabel": "Abre en",
+    "target": {
+      "hub": "Centro público",
+      "feedback": "Tablero de feedback",
+      "roadmap": "Hoja de ruta",
+      "changelog": "Novedades",
+      "blog": "Blog"
+    },
+    "empty": "Aún no hay dominios.",
+    "state": {
+      "pending": "Esperando al DNS",
+      "verified": "Activo",
+      "failed": "DNS aún no encontrado"
+    },
+    "records": "Añade estos registros en tu proveedor de DNS",
+    "recordsHint": "Los cambios pueden tardar unos minutos en propagarse. Después, vuelve a comprobar.",
+    "recordType": "Tipo",
+    "recordHost": "Nombre",
+    "recordValue": "Valor",
+    "verify": "Comprobar DNS",
+    "remove": "Quitar",
+    "copy": "Copiar",
+    "removeConfirm": "¿Quitar {host}? Dejará de servirse al instante.",
+    "loadFailed": "No se pudieron cargar los dominios.",
+    "saveFailed": "No se pudo guardar el dominio."
+  },
+  "inboundAddresses": {
+    "title": "Direcciones de correo de soporte",
+    "intro": "El correo enviado a estas direcciones se convierte en una conversación en tu bandeja, y tus respuestas salen por correo. Usa una dirección de tu propio dominio, o reenvía tu buzón actual a una dirección de HelpBites.",
+    "docs": "Cómo funciona",
+    "forward": "Reenviar mi buzón",
+    "forwardHint": "Deja soporte{'@'}tudominio.com donde está y reenvíalo aquí.",
+    "domain": "Usar mi dominio",
+    "domainHint": "Una dirección de un dominio cuyos registros MX apuntan al proveedor de correo.",
+    "publicAddress": "La dirección a la que escriben tus clientes",
+    "publicPlaceholder": "soporte{'@'}ejemplo.com",
+    "address": "Dirección",
+    "addressPlaceholder": "soporte{'@'}mail.ejemplo.com",
+    "fromName": "Nombre en las respuestas",
+    "create": "Crear",
+    "cancel": "Cancelar",
+    "empty": "Aún no hay direcciones.",
+    "forwardTo": "Reenvía el correo de {public} a",
+    "forwardAnywhere": "Reenvía tu buzón a",
+    "mxTitle": "Añade estos registros MX en tu proveedor de DNS",
+    "mxHint": "Envían todo el correo de este dominio al proveedor de correo. Usa un subdominio (mail.ejemplo.com) para no afectar a tu buzón habitual.",
+    "type": "Tipo",
+    "host": "Nombre",
+    "value": "Valor",
+    "priority": "Prioridad",
+    "verify": "Comprobar DNS",
+    "remove": "Quitar",
+    "copy": "Copiar",
+    "removeConfirm": "¿Dejar de recibir correo en {address}? Las conversaciones ya creadas se conservan.",
+    "kind": {
+      "forward": "Reenvío",
+      "domain": "Tu dominio"
+    },
+    "state": {
+      "pending": "Esperando MX",
+      "verified": "Recibiendo",
+      "failed": "MX aún no encontrado"
+    },
+    "noForwarding": "Este servidor no tiene dominio de reenvío (INBOUND_DOMAIN).",
+    "loadFailed": "No se pudieron cargar las direcciones.",
+    "saveFailed": "No se pudo guardar la dirección."
   }
 }

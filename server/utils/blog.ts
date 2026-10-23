@@ -199,9 +199,9 @@ function appBase(): string {
 }
 
 /** The hosted blog, or one post on it. */
-export function hostedBlogUrl(project: ParseObject, slug = ''): string {
+export function hostedBlogUrl(project: ParseObject, slug = '', origin = appBase()): string {
   const pk = encodeURIComponent(String(project.get('publicKey') || ''))
-  return `${appBase()}/blog/${pk}${slug ? `/${encodeURIComponent(slug)}` : ''}`
+  return `${origin}/blog/${pk}${slug ? `/${encodeURIComponent(slug)}` : ''}`
 }
 
 export function blogFeedUrl(project: ParseObject): string {

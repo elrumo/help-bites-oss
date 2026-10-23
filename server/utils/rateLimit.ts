@@ -110,6 +110,9 @@ export const LIMITS = {
   brandReadsPerIp: { limit: 600, window: 60 },
   // The hub page, its JSON twin and the loader: helpbites.js reads the loader on every page view of a site.
   hubReadsPerIp: { limit: 1200, window: 60 },
+  // Inbound mail: per sender address and per project, an hour at a time.
+  inboundPerSender: { limit: 20, window: 3600 },
+  inboundPerProject: { limit: 300, window: 3600 },
   // Pages and the CMS delivery API: a site build can read many entries at once.
   cmsReadsPerIp: { limit: 1200, window: 60 }
 } as const

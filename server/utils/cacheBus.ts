@@ -6,7 +6,7 @@ import { randomBytes } from 'node:crypto'
 // runs out. invalidate() clears the local copy and publishes on `sb:inv`;
 // every process (plugins/cacheBus.ts) applies what the others publish.
 
-export type CacheKind = 'session' | 'agent' | 'members' | 'workspace' | 'workspaceProjects' | 'projectKey'
+export type CacheKind = 'session' | 'agent' | 'members' | 'workspace' | 'workspaceProjects' | 'projectKey' | 'projectHost'
 export const INVALIDATE_CHANNEL = 'sb:inv'
 
 const ORIGIN = randomBytes(6).toString('hex')

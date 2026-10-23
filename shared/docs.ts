@@ -130,6 +130,20 @@ export const DOCS: readonly DocPage[] = [
     file: 'HUB.md'
   },
   {
+    slug: 'custom-domains',
+    title: 'Custom domains',
+    description: 'Serve a project\'s feedback board, changelog, blog and hub on your own domain or subdomain: the DNS records, certificates and the API.',
+    group: 'Guides',
+    file: 'CUSTOM-DOMAINS.md'
+  },
+  {
+    slug: 'inbound-email',
+    title: 'Inbound email',
+    description: 'Give a project an address such as support@yourdomain.com: mail to it becomes a conversation, and replies go back by email, threaded.',
+    group: 'Guides',
+    file: 'INBOUND-EMAIL.md'
+  },
+  {
     slug: 'blog',
     title: 'Blog and newsletter',
     description: 'Write posts in a rich editor and publish them on a hosted blog, in your own site, by RSS and in your subscribers\' inboxes, with reactions and comments.',

@@ -204,6 +204,7 @@ private struct InboxRow: View {
             .foregroundStyle(Theme.textHighlighted)
             .lineLimit(1)
           Spacer(minLength: 4)
+          if conversation.channel == "email" { Image(systemName: "envelope").font(.system(size: 12)).foregroundStyle(Theme.textMuted).accessibilityLabel("Started as an email") }
           if let priority = conversation.priority, priority == "high" || priority == "urgent" { PriorityIcon(priority: priority, size: 13) }
           if done { StatusIcon(category: "resolved", size: 13) }
           Text(DateText.short(conversation.lastMessageAt ?? conversation.createdAt))
@@ -253,6 +254,12 @@ private struct InboxFilterMenu: View {
       Picker("Priority", selection: $store.priorityFilter) {
         Text("Any priority").tag("")
         ForEach(InboxPriority.all, id: \.self) { Text(InboxPriority.label($0)).tag($0) }
+      }
+      .pickerStyle(.menu)
+      Picker("Channel", selection: $store.channelFilter) {
+        Text("Any channel").tag("")
+        Text("Email").tag("email")
+        Text("Chat and API").tag("widget")
       }
       .pickerStyle(.menu)
       Picker("Ticket type", selection: $store.typeFilter) {

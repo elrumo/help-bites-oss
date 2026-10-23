@@ -290,6 +290,12 @@ support.yourdomain.com {
 }
 ```
 
+The bundled `Caddyfile` (the `proxy` profile) also serves your projects' [custom domains](CUSTOM-DOMAINS.md): it asks the app
+(`/v1/internal/domain-check`) before requesting a certificate for a new host. Any other proxy needs the same two things, described there.
+Optional variables: `CUSTOM_DOMAIN_TARGET`, `CUSTOM_DOMAIN_IP`, `CUSTOM_DOMAIN_RESERVED`.
+
+To receive mail at a project's address ([inbound email](INBOUND-EMAIL.md)), add one Mailgun Route (`match_recipient(".*")` → `forward("<APP_URL>/v1/webhooks/mailgun-inbound")`) and, for forwarding aliases, set `INBOUND_DOMAIN` to a Mailgun domain whose MX points at Mailgun.
+
 Or an **nginx** server block if you terminate TLS elsewhere:
 
 ```nginx
@@ -923,6 +929,11 @@ on the stack's network. The plain `sb-parse` can resolve to Dokploy's shared net
 once the service has a domain, and a call from there is outside the subnet. Parse logs
 `masterKeyIps` when it refuses one. Also confirm `PARSE_ID` and `PARSE_MASTER_KEY`
 match between the app and `sb-parse`.
+
+**A maintenance script run from your laptop gets `403 unauthorized`.** The same rule: your IP is
+outside the allow-list. Prefer `docker compose exec app bun scripts/<name>.mjs`. To run it from
+your machine instead, set `PARSE_MASTER_KEY_EXTRA_IPS=<your public IP>` and `PARSE_TRUST_PROXY=1`
+(one proxy, Traefik; use `2` behind Cloudflare too) on the stack, redeploy, and unset both when done.
 
 **Services resolve to the wrong container.** On a shared network, use the `sb-`
 prefixed names (`sb-parse`, `sb-redis`, `sb-mongo`, `sb-meili`). A bare `parse`

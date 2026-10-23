@@ -331,6 +331,10 @@ With an operator session or admin key:
 | `GET /v1/admin/projects/:id/email-setup` | What the project's email still needs (above). |
 | `PATCH /v1/admin/projects/:id` | A project's sender: `fromName`, `fromEmail`, `mailDomain`, `replyTo`, `emailLogContent` (and `marketing` for the campaigns sender). |
 
+## Inbound email
+
+Mail sent to a project's own address can become a conversation, and replies go back by email: see [INBOUND-EMAIL.md](INBOUND-EMAIL.md). It uses the same Mailgun account and `MAILGUN_WEBHOOK_SIGNING_KEY`, plus one Mailgun Route.
+
 ## The log
 
 One entry per recipient: when, to whom, from whom, the subject, the template

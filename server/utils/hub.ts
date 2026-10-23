@@ -35,6 +35,8 @@ export type HubData = {
 
 /** Where this deployment is reached: APP_URL when set, else the address the request came in on. */
 export function hubOrigin(event: H3Event): string {
+  const custom = customOrigin(event)
+  if (custom) return custom
   const configured = String(process.env.APP_URL || '').trim().replace(/\/+$/, '')
   if (configured) return configured
   return getRequestURL(event, { xForwardedHost: true, xForwardedProto: true }).origin

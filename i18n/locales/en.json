@@ -355,7 +355,12 @@
       "faqSaveError": "Could not save the FAQ"
     },
     "actionsNoWebhook": "This project has no action webhook, so these will fail.",
-    "actionsNoWebhookFix": "Set it up"
+    "actionsNoWebhookFix": "Set it up",
+    "channel": "Channel",
+    "anyChannel": "Any channel",
+    "channelEmail": "Email",
+    "channelWidget": "Chat and API",
+    "viaEmail": "Started as an email"
   },
   "board": {
     "itemCount": "{count} item | {count} items",
@@ -2889,6 +2894,10 @@
         "hub": {
           "term": "One tag, one public page",
           "desc": "helpbites.js adds the chat, feedback board, changelog and onboarding your project has. A page at /hub gathers your changelog, roadmap, feedback, blog and legal documents, and the chat can open on a Home tab with what is new."
+        },
+        "domains": {
+          "term": "Your own domain",
+          "desc": "Put the feedback board, changelog or blog on feedback.yourapp.com. Add a TXT and a CNAME, and the page, the embeds and the API answer there with their own certificate."
         }
       },
       "inbox": {
@@ -2921,6 +2930,10 @@
         "hub": {
           "term": "The customer, beside the chat",
           "desc": "Their plan and MRR from Stripe, their earlier conversations and the feedback they asked for, which they follow. Reply from saved replies and FAQs, or have AI draft an answer from your knowledge for you to edit."
+        },
+        "email": {
+          "term": "Mail to support@you becomes a conversation",
+          "desc": "Give a project an address like support@yourapp.com, on your own domain or forwarded from your mailbox. Messages land in the inbox as conversations, and replies go back by email, threaded in your customer's mail app."
         }
       },
       "feedback": {
@@ -5814,5 +5827,79 @@
       "point2": "Pick your AI provider, and connect GitHub or Stripe",
       "point3": "Create API keys to automate anything you can click"
     }
+  },
+  "projectDomains": {
+    "title": "Custom domains",
+    "hint": "Serve your public pages on your own domain, such as feedback.example.com.",
+    "docs": "How it works",
+    "add": "Add domain",
+    "hostLabel": "Domain",
+    "hostPlaceholder": "feedback.example.com",
+    "targetLabel": "Opens on",
+    "target": {
+      "hub": "Public hub",
+      "feedback": "Feedback board",
+      "roadmap": "Roadmap",
+      "changelog": "Changelog",
+      "blog": "Blog"
+    },
+    "empty": "No domains yet.",
+    "state": {
+      "pending": "Waiting for DNS",
+      "verified": "Live",
+      "failed": "DNS not found yet"
+    },
+    "records": "Add these records at your DNS provider",
+    "recordsHint": "Changes can take a few minutes to spread. Then check again.",
+    "recordType": "Type",
+    "recordHost": "Name",
+    "recordValue": "Value",
+    "verify": "Check DNS",
+    "remove": "Remove",
+    "copy": "Copy",
+    "removeConfirm": "Remove {host}? It stops being served at once.",
+    "loadFailed": "Could not load the domains.",
+    "saveFailed": "Could not save the domain."
+  },
+  "inboundAddresses": {
+    "intro": "Mail sent to these addresses becomes a conversation in your inbox, and your replies go back by email. Use an address on your own domain, or forward your existing mailbox to a HelpBites address.",
+    "docs": "How it works",
+    "title": "Support email addresses",
+    "forward": "Forward my mailbox",
+    "forwardHint": "Keep support{'@'}yourdomain.com where it is and forward it here.",
+    "domain": "Use my domain",
+    "domainHint": "An address on a domain whose MX records point at the mail provider.",
+    "publicAddress": "The address your customers write to",
+    "publicPlaceholder": "support{'@'}example.com",
+    "address": "Address",
+    "addressPlaceholder": "support{'@'}mail.example.com",
+    "fromName": "Name on replies",
+    "create": "Create",
+    "cancel": "Cancel",
+    "empty": "No addresses yet.",
+    "forwardTo": "Forward mail for {public} to",
+    "forwardAnywhere": "Forward your mailbox to",
+    "mxTitle": "Add these MX records at your DNS provider",
+    "mxHint": "They send all mail for this domain to the mail provider. Use a subdomain (mail.example.com) so your regular mailbox is not affected.",
+    "type": "Type",
+    "host": "Name",
+    "value": "Value",
+    "priority": "Priority",
+    "verify": "Check DNS",
+    "remove": "Remove",
+    "copy": "Copy",
+    "removeConfirm": "Stop receiving mail at {address}? Conversations already made from it stay.",
+    "kind": {
+      "forward": "Forwarding",
+      "domain": "Your domain"
+    },
+    "state": {
+      "pending": "Waiting for MX",
+      "verified": "Receiving",
+      "failed": "MX not found yet"
+    },
+    "noForwarding": "This server has no forwarding domain (INBOUND_DOMAIN).",
+    "loadFailed": "Could not load the addresses.",
+    "saveFailed": "Could not save the address."
   }
 }

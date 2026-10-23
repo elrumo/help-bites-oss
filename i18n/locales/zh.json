@@ -296,7 +296,12 @@
     "recentErrors": "最近的错误",
     "actions": "操作",
     "actionsNoWebhook": "此项目没有操作 webhook，因此这些操作会失败。",
-    "actionsNoWebhookFix": "去设置"
+    "actionsNoWebhookFix": "去设置",
+    "channel": "渠道",
+    "anyChannel": "所有渠道",
+    "channelEmail": "邮件",
+    "channelWidget": "聊天和 API",
+    "viaEmail": "以邮件开始"
   },
   "board": {
     "itemCount": "{count} 项",
@@ -2738,6 +2743,10 @@
         "none": {
           "term": "或者完全不用",
           "desc": "所有端点都是公开且有文档的。你也可以基于 /v1/* 构建自己的聊天界面。"
+        },
+        "domains": {
+          "term": "用你自己的域名",
+          "desc": "把反馈看板、更新日志或博客放到 feedback.yourapp.com。添加一条 TXT 和一条 CNAME，页面、嵌入和 API 就会在该域名下以独立证书响应。"
         }
       },
       "inbox": {
@@ -2766,6 +2775,10 @@
         "native": {
           "term": "iPhone、iPad 和 Mac",
           "desc": "原生应用，支持收件箱、回复和面板的大部分功能。服务器配置好 APNs 后即可接收推送通知。"
+        },
+        "email": {
+          "term": "发到 support@你的域名 的邮件成为会话",
+          "desc": "为项目设置 support@yourapp.com 这样的地址，用自己的域名或从现有邮箱转发均可。邮件会作为会话进入收件箱，回复则以邮件发出，并在客户的邮件应用中保持同一线程。"
         }
       },
       "feedback": {
@@ -5559,5 +5572,79 @@
       "point2": "选择你的 AI 服务商，并连接 GitHub 或 Stripe",
       "point3": "用 API 密钥自动化你能点击完成的一切"
     }
+  },
+  "projectDomains": {
+    "title": "自定义域名",
+    "hint": "用你自己的域名（如 feedback.example.com）提供公开页面。",
+    "docs": "工作原理",
+    "add": "添加域名",
+    "hostLabel": "域名",
+    "hostPlaceholder": "feedback.example.com",
+    "targetLabel": "打开页面",
+    "target": {
+      "hub": "公开中心",
+      "feedback": "反馈看板",
+      "roadmap": "路线图",
+      "changelog": "更新日志",
+      "blog": "博客"
+    },
+    "empty": "还没有域名。",
+    "state": {
+      "pending": "等待 DNS",
+      "verified": "已生效",
+      "failed": "尚未找到 DNS"
+    },
+    "records": "请在你的 DNS 服务商处添加以下记录",
+    "recordsHint": "生效可能需要几分钟，之后请重新检查。",
+    "recordType": "类型",
+    "recordHost": "名称",
+    "recordValue": "值",
+    "verify": "检查 DNS",
+    "remove": "移除",
+    "copy": "复制",
+    "removeConfirm": "移除 {host}？它将立即停止提供服务。",
+    "loadFailed": "无法加载域名。",
+    "saveFailed": "无法保存域名。"
+  },
+  "inboundAddresses": {
+    "title": "支持邮箱地址",
+    "intro": "发到这些地址的邮件会成为收件箱中的会话，你的回复会以邮件发出。可使用自己域名下的地址，或把现有邮箱转发到 HelpBites 地址。",
+    "docs": "工作原理",
+    "forward": "转发我的邮箱",
+    "forwardHint": "保留 support{'@'}yourdomain.com 不变，并转发到这里。",
+    "domain": "使用我的域名",
+    "domainHint": "MX 记录指向邮件服务商的域名下的地址。",
+    "publicAddress": "客户发信的地址",
+    "publicPlaceholder": "support{'@'}example.com",
+    "address": "地址",
+    "addressPlaceholder": "support{'@'}mail.example.com",
+    "fromName": "回复中的发件人名称",
+    "create": "创建",
+    "cancel": "取消",
+    "empty": "还没有地址。",
+    "forwardTo": "把发往 {public} 的邮件转发到",
+    "forwardAnywhere": "把你的邮箱转发到",
+    "mxTitle": "请在你的 DNS 服务商处添加以下 MX 记录",
+    "mxHint": "它们会把该域名的所有邮件发给邮件服务商。请使用子域名（mail.example.com），以免影响你平时的邮箱。",
+    "type": "类型",
+    "host": "名称",
+    "value": "值",
+    "priority": "优先级",
+    "verify": "检查 DNS",
+    "remove": "移除",
+    "copy": "复制",
+    "removeConfirm": "停止在 {address} 接收邮件？已创建的会话会保留。",
+    "kind": {
+      "forward": "转发",
+      "domain": "你的域名"
+    },
+    "state": {
+      "pending": "等待 MX",
+      "verified": "接收中",
+      "failed": "尚未找到 MX"
+    },
+    "noForwarding": "此服务器没有转发域名（INBOUND_DOMAIN）。",
+    "loadFailed": "无法加载地址。",
+    "saveFailed": "无法保存地址。"
   }
 }

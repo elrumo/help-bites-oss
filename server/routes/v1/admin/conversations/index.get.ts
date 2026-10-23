@@ -12,6 +12,7 @@ defineRouteMeta({
       { name: 'assignee', in: 'query', schema: { type: 'string' } },
       { name: 'priority', in: 'query', schema: { type: 'string' } },
       { name: 'tag', in: 'query', schema: { type: 'string' } },
+      { name: 'channel', in: 'query', schema: { type: 'string', enum: ['widget', 'email'] }, description: 'Where the conversation started: `email` is mail to an inbound address; `widget` is everything else.' },
       { name: 'view', in: 'query', schema: { type: 'string', enum: ['all', 'unassigned', 'mine', 'open', 'unread', 'archived'] }, description: 'A queue view: `mine` is the caller\'s own, `open` is the open status category, `archived` is the same as `archived=true`.' },
       { name: 'archived', in: 'query', schema: { type: 'string', enum: ['true', 'any'] }, description: 'Archived conversations are left out of the queue by default. `true` lists only the archived; `any` lists both.' },
       { name: 'unread', in: 'query', schema: { type: 'boolean' }, description: 'Only conversations with unread user messages' },
@@ -30,7 +31,7 @@ type InboxView = typeof INBOX_VIEWS[number]
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event)
   const Parse = useParse()
-  const { project, status, type, assignee, priority, tag, unread, archived, q, endUser, before, limit, view: rawView } = getQuery(event)
+  const { project, status, type, assignee, priority, tag, channel, unread, archived, q, endUser, before, limit, view: rawView } = getQuery(event)
   const size = Math.min(Math.max(Number(limit) || PAGE_SIZE, 1), 200)
   const only = typeof project === 'string' && project ? await requireProject(ctx, project) : null
   const workspaceProjects = await projectPointers(ctx)
@@ -55,6 +56,8 @@ export default defineEventHandler(async (event) => {
     if (typeof assignee === 'string' && assignee) query.equalTo('assignee', Parse.Object.extend('_User').createWithoutData(assignee))
     if (typeof priority === 'string' && priority) query.equalTo('priority', priority)
     if (typeof tag === 'string' && tag) query.equalTo('tags', tag.toLowerCase())
+    if (channel === 'email') query.equalTo('channel', 'email')
+    else if (channel === 'widget') query.notEqualTo('channel', 'email')
     if (unread === 'true' || unread === '1') query.greaterThan('unreadByAgent', 0)
     if (typeof endUser === 'string' && endUser) query.equalTo('endUser', Parse.Object.extend('EndUser').createWithoutData(endUser))
     if (contacts) query.containedIn('endUser', contacts)

@@ -38,6 +38,7 @@ struct ProjectSettingsScreen: View {
             companyCard
             widget
             hubCard(project)
+            section("Custom domains", "Serve your public pages on your own domain, such as feedback.example.com.") { ProjectDomainsSection(projectId: projectId) }
             notifications
             sidebar
             collaborators
