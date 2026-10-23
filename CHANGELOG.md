@@ -27,7 +27,7 @@ All notable changes to the community edition. Versions are Docker image tags
   `feedbackStyle` on the public project and `GET /v1/feedback/config`). `style` on `PATCH /v1/admin/projects/{id}`, `look.style` on the public project and `style` on `GET /v1/changelog`. The
   project style's accent outranks the Brand kit's, and saving the accent in Settings keeps it in step. Schema (needs `schema:apply`;
   the container does it on boot): new field `Project.style`. Forms, onboarding, pricing, blog and legal take its accent only; the native
-  app does not edit it yet.
+  app edits the project style and the changelog's style, not the feedback board's yet.
 - **Server rendering and caching for the embeds and the API** (`docs/SSR.md`, `public/ssr.mjs`). A helper for your server reads the public
   API within a time budget, keeps answers (stale-while-revalidate) and server-renders the changelog, roadmap, board and chat embeds as
   a snapshot or skeleton; `widget.js`, `feedback.js` and `changelog.js` show a skeleton while they load and accept `data-host` (a copy

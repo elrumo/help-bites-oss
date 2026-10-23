@@ -226,7 +226,7 @@
       "plan": "all",
       "status": "stable",
       "web": { "panel": ["app/components/style/StyleEditor.vue", "app/components/style/StyleProjectActions.vue", "app/components/style/StylePreview.vue"], "public": ["/changelog/:pk", "/embed/changelog", "/embed/feedback"] },
-      "native": { "folders": [] },
+      "native": { "folders": ["helpbites-native/App/Features/Brand"] },
       "api": { "prefixes": ["/v1/admin/projects", "/v1/changelog"], "docs": "docs/STYLE.md" },
       "embed": { "web": "public/changelog.js", "swift": "docs/STYLE.md#in-a-swift-app", "customize": ["the project style in the panel", "data-theme", "data-accent", "data-radius", "data-shadow", "the API (look.style, feedbackStyle, GET /v1/changelog style) for your own UI", "Swift cornerRadius"] },
       "landing": { "listed": false }
@@ -607,7 +607,7 @@
     }
   ],
   "notBuilt": [
-    "The native app does not edit the project style or the changelog's or feedback board's style yet (web panel and API only). The chat widget, hub, brand, blog and other public pages do not wear the full style yet. Forms, onboarding, pricing tables, the blog and legal pages take the project style's accent only: no dark palette, shadow or card colours there yet.",
+    "The native app edits the project style and the changelog's style but not the feedback board's style yet (web panel and API only). The chat widget, hub, brand, blog and other public pages do not wear the full style yet. Forms, onboarding, pricing tables, the blog and legal pages take the project style's accent only: no dark palette, shadow or card colours there yet.",
     "The native blog editor has no Preview or Live preview yet (the web panel renders the draft with POST /v1/admin/blog/preview, shown in a frame; native opens the hosted post after publishing).",
     "Contact sync does not notice rows deleted upstream.",
     "The MCP server offers tools only (no prompts, resources or live notifications), has no tools yet for creating legal documents, importing knowledge documents, the email designer, forms, onboarding or the blog, and issues no refresh tokens: an OAuth-connected assistant signs in again after a year.",

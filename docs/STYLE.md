@@ -17,6 +17,10 @@ forms, onboarding, pricing tables, the blog and legal pages take its accent (see
   as `style` (as saved) on the admin project and as `look.style` (every gap
   filled) on the public one.
 
+The native app edits the project style too: **Brand → Style**, **Settings →
+Branding** and **Changelog → More → Style** open the same editor (with a light and
+dark preview), and the changelog's Style screen has **Save as project style**.
+
 ## The layers
 
 Every value is optional. A value you leave empty comes from the layer below:
@@ -158,4 +162,4 @@ and `fontFamily` as they are, and pick `logoDarkUrl` on a dark background.
   **accent** when theirs is empty; the rest of the project style (dark palette,
   shadow, cards) is not applied to them yet. Their panels can save their
   choices as the project style, but not the other way round.
-- The chat widget, the public hub, the brand and blog pages and the other embeds do not wear the full style yet, only the accent they already read. The native app does not edit the project style or the changelog's or feedback board's style yet.
+- The chat widget, the public hub, the brand and blog pages and the other embeds do not wear the full style yet, only the accent they already read. The native app edits the project style and the changelog's style, but not the feedback board's yet.
