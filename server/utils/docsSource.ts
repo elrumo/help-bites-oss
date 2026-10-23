@@ -9,6 +9,7 @@ import feedback from '../../docs/FEEDBACK.md'
 import events from '../../docs/EVENTS.md'
 import flags from '../../docs/FLAGS.md'
 import forms from '../../docs/FORMS.md'
+import github from '../../docs/GITHUB.md'
 import hub from '../../docs/HUB.md'
 import languages from '../../docs/LANGUAGES.md'
 import legal from '../../docs/LEGAL.md'
@@ -35,6 +36,7 @@ const SOURCES: Record<string, string> = {
   'EVENTS.md': events,
   'FLAGS.md': flags,
   'FORMS.md': forms,
+  'GITHUB.md': github,
   'HUB.md': hub,
   'LANGUAGES.md': languages,
   'LEGAL.md': legal,

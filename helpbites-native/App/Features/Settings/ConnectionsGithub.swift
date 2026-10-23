@@ -38,7 +38,11 @@ struct GithubSection: View {
         if loading {
           SkeletonRows(count: 2).padding(-Metrics.gutter)
         } else if !configured {
-          DashedEmptyState(systemImage: "chevron.left.forwardslash.chevron.right", title: "GitHub isn't set up on this server", message: "The server owner registers a GitHub App once and sets GITHUB_APP_* (docs/GITHUB.md).")
+          DashedEmptyState(systemImage: "chevron.left.forwardslash.chevron.right", title: "GitHub isn't set up on this server", message: "The server owner registers a GitHub App once and sets GITHUB_APP_* (docs/GITHUB.md).") {
+            if let guide = URL(string: session.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/docs/github") {
+              Link(destination: guide) { Label("Read the guide", systemImage: "book") }.font(.lnMeta).foregroundStyle(Theme.accentText)
+            }
+          }
         } else if installations.isEmpty {
           DashedEmptyState(systemImage: "chevron.left.forwardslash.chevron.right", title: "No GitHub accounts connected", message: "Install the HelpBites app on your account or organisation and choose which repos it can see.")
         } else {

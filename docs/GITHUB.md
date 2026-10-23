@@ -57,19 +57,68 @@ can't be disconnected while a project uses its repos.
 
 ## Registering the GitHub App (server owner, once)
 
-GitHub → Settings → Developer settings → GitHub Apps → *New GitHub App*.
+Do this once per server, on the GitHub account that should own the app. Replace `https://helpbites.app` with
+your `APP_URL` everywhere below. It takes about five minutes.
+
+### 1. Create the app
+
+GitHub → your avatar → **Settings** → **Developer settings** → **GitHub Apps** → **New GitHub App**. Give it a name
+(it becomes the slug in `github.com/apps/<slug>`) and fill in:
+
+![The app's URL fields: homepage, callback URL and Request user authorization ticked](/docs-img/github/app-urls.webp)
 
 | Field | Value |
 | --- | --- |
 | Homepage URL | your `APP_URL` |
 | Callback URL | `<APP_URL>/v1/github/callback` |
-| Setup URL | `<APP_URL>/v1/github/callback` |
-| Request user authorization (OAuth) during installation | on |
-| Webhook | off, or on for changelog drafting and `#12` links: *Webhook URL* `<APP_URL>/v1/webhooks/github`, a *Secret* you invent, and subscribe to the **Push** and **Pull request** events |
-| Repository permissions | Contents: read-only; **Pull requests: read-only** (for the `#12` links on merged pull requests; Metadata: read-only is added for you) |
-| Where can this app be installed | *Any account* if your users connect their own, else *Only on this account* |
+| Request user authorization (OAuth) during installation | **tick it** |
+| Setup URL | greyed out while the box above is ticked; GitHub uses the callback URL instead |
+| Enable Device Flow | leave off |
 
-Then generate a client secret and a private key (`.pem`), and set:
+### 2. Turn the webhook on
+
+The webhook is optional, but it is what drafts changelog entries from pushes and links `#12` in commits and pull
+requests to the board. Without it the rest of the connection still works.
+
+![The webhook section: Active ticked, the webhook URL and a secret](/docs-img/github/webhook.webp)
+
+Tick **Active**, set *Webhook URL* to `<APP_URL>/v1/webhooks/github` and invent a *Secret* (for example
+`openssl rand -hex 32`). Keep it: it becomes `GITHUB_APP_WEBHOOK_SECRET`. Leave *Enable SSL verification* on.
+
+### 3. Give it read-only access
+
+Open **Permissions & events** (on the new-app form it is the same section) → **Repository permissions** and set:
+
+![Contents set to Read-only](/docs-img/github/permission-contents.webp)
+
+![Pull requests set to Read-only from the Access dropdown](/docs-img/github/permission-pull-requests.webp)
+
+- **Contents**: Read-only (file lists, dependency manifests, commit messages).
+- **Pull requests**: Read-only. HelpBites never reads pull requests through the API; the permission only exists so
+  GitHub will deliver the pull request event.
+- **Metadata**: Read-only is added for you and cannot be changed.
+
+Everything else stays *No access*. Setting a permission is what reveals the event checkboxes below it. Under
+**Subscribe to events** tick **Pull request** and **Push**:
+
+![The Pull request and Push events ticked](/docs-img/github/events.webp)
+
+### 4. Who can install it
+
+At the bottom of the form, *Where can this app be installed?*: **Any account** if your users connect their own
+GitHub (a public service), **Only on this account** if only you do. Then **Create GitHub App** (or **Save changes**
+on an existing app).
+
+### 5. Collect the credentials
+
+On the app's page, copy the **App ID** and **Client ID** from the top. Then open **Credentials**:
+
+![The Credentials page with the Client secrets and Key pairs tabs](/docs-img/github/credentials.webp)
+
+- **Client secrets** → *New secret*. GitHub shows it once; copy it now.
+- **Key pairs** → *Generate a private key*. GitHub downloads a `.pem`; keep it private.
+
+### 6. Set the environment variables
 
 ```
 GITHUB_APP_ID=…            # the App ID
@@ -80,6 +129,9 @@ GITHUB_APP_PRIVATE_KEY=…   # the .pem; literal \n is accepted
 HELPBITES_SECRET=…         # already needed for contacts; signs the install link
 GITHUB_APP_WEBHOOK_SECRET=…  # optional: the webhook's Secret; without it pushes are refused (503)
 ```
+
+Restart the server. Settings → **GitHub** now shows *Connect GitHub* instead of "GitHub isn't set up on this
+server". Click it, install the app on your account or organisation and pick the repos it may see.
 
 **Upgrading an existing app.** Merged pull requests need the *Pull requests: read-only* permission and the
 *Pull request* event, which an app registered before this existed does not have. On GitHub open the app's settings

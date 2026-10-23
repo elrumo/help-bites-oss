@@ -112,7 +112,7 @@ export async function requireProjectSecret(event: H3Event): Promise<ParseObject>
 }
 
 export function serializeAgent(agent: ParseObject) {
-  return { id: agent.id || '', username: String(agent.get('username') || ''), email: String(agent.get('email') || ''), name: String(agent.get('name') || agent.get('username') || '') }
+  return { id: agent.id || '', username: String(agent.get('username') || ''), email: String(agent.get('email') || ''), name: String(agent.get('name') || agent.get('username') || ''), tourPending: agent.get('tourPending') === true }
 }
 
 // ---- end users ------------------------------------------------------------

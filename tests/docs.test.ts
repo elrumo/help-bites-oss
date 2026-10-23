@@ -80,7 +80,7 @@ describe('docMarkdown', () => {
     for (const guide of DOCS) {
       const md = docMarkdown(source(guide.file), guide)
       expect(md.startsWith(`# ${guide.title}\n`)).toBe(true)
-      const relative = [...md.matchAll(/\]\(([^)\s]+)/g)].map(m => m[1]!).filter(href => !/^(https?:|mailto:|#|\/docs\/)/.test(href))
+      const relative = [...md.matchAll(/\]\(([^)\s]+)/g)].map(m => m[1]!).filter(href => !/^(https?:|mailto:|#|\/docs\/|\/docs-img\/)/.test(href))
       expect({ guide: guide.slug, relative }).toEqual({ guide: guide.slug, relative: [] })
     }
     expect(docMarkdownPath(doc)).toBe('/docs/connect.md')

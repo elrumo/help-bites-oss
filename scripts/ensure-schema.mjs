@@ -1821,7 +1821,8 @@ async function main() {
     pending = (await ensureClass(className, definition, apply)) || pending
   }
   // emailVerifiedAt: when they confirmed their address (editions that ask for it, server/utils/tenancy.ts).
-  pending = (await ensureClass('_User', { fields: { name: { type: 'String' }, defaultWorkspace: { type: 'Pointer', targetClass: 'Workspace' }, emailVerifiedAt: { type: 'Date' } }, indexes: {} }, apply)) || pending
+  // tourPending: set on a new account, cleared when they finish or skip the welcome tour (accounts from before it never had it).
+  pending = (await ensureClass('_User', { fields: { name: { type: 'String' }, defaultWorkspace: { type: 'Pointer', targetClass: 'Workspace' }, emailVerifiedAt: { type: 'Date' }, tourPending: { type: 'Boolean' } }, indexes: {} }, apply)) || pending
 
   if (!apply && pending) {
     console.log('\nPending changes. Re-run with --apply.')

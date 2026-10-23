@@ -72,6 +72,13 @@ enum SessionPhase { case loading, signedOut, signedIn }
     }
   }
 
+  /// The welcome tour is finished or skipped: clear it on the server so no device shows it again.
+  func finishTour() async {
+    struct Input: Encodable, Sendable { let tourPending: Bool }
+    let _: EmptyBody? = try? await send("/v1/admin/me", method: "PATCH", body: Input(tourPending: false))
+    await refreshContext()
+  }
+
   /// Re-reads `/me` (after a rename, a new workspace, a role change).
   func refreshContext() async {
     if let me: MeResponse = try? await get("/v1/admin/me") { apply(me) }

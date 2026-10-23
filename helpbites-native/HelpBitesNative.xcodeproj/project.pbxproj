@@ -116,6 +116,7 @@
 		80AA022D378F94CA41F26BEA /* EmailEditorFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD8A2598FD923CEB888755D /* EmailEditorFields.swift */; };
 		816F107C970E43AE0D3495A9 /* ProjectScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54980534EE0B68CF0ED125B9 /* ProjectScreen.swift */; };
 		8239B8C6BDECD03C60F0C30E /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA931ACDD34E4C9F39ED27B /* RootView.swift */; };
+		8287DBF0ACE85E3C44000794 /* WelcomeTourSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2469103F1ACA1FCEF5CAD7 /* WelcomeTourSheet.swift */; };
 		8600C6AA7705CD2A9FB5CC6F /* PageInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC04908756B97943FC69EB56 /* PageInspector.swift */; };
 		8D191CA8C16F49DD00A2EBBC /* EmailLogScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 097B8480C92448FAE7E66E7C /* EmailLogScreen.swift */; };
 		8D795040FC9B9BCB39359A4D /* LegalScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 706CDACB857404128A73530C /* LegalScreen.swift */; };
@@ -255,6 +256,7 @@
 		5BD712106360DDAD1CC21355 /* TeamScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamScreen.swift; sourceTree = "<group>"; };
 		5D5F0E3917C589E81B418ED1 /* TransferSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferSection.swift; sourceTree = "<group>"; };
 		5D85E56A5924EFCF147316F6 /* ProjectChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectChrome.swift; sourceTree = "<group>"; };
+		5F2469103F1ACA1FCEF5CAD7 /* WelcomeTourSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeTourSheet.swift; sourceTree = "<group>"; };
 		601798B799E5F51D6D54DC67 /* ConnectionsErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionsErrors.swift; sourceTree = "<group>"; };
 		601EE5315E319C541FE5D323 /* EmailLinkedPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailLinkedPanel.swift; sourceTree = "<group>"; };
 		6286A8CE54C5D1233C199F9F /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -781,6 +783,7 @@
 				5BD712106360DDAD1CC21355 /* TeamScreen.swift */,
 				5D5F0E3917C589E81B418ED1 /* TransferSection.swift */,
 				BE4DB7348D8A793EC7B5DD0C /* UsageScreen.swift */,
+				5F2469103F1ACA1FCEF5CAD7 /* WelcomeTourSheet.swift */,
 				EFFA789E61CDCAB8BF82EC97 /* WorkspaceScreen.swift */,
 			);
 			path = Settings;
@@ -1081,6 +1084,7 @@
 				B17B5CBDA2CD9865109C5836 /* TransferSection.swift in Sources */,
 				BBCDD521CEB807AE0C8DFA7C /* UsageScreen.swift in Sources */,
 				8F8D7699FE3AE6C82F9ED16D /* WebhookEndpoints.swift in Sources */,
+				8287DBF0ACE85E3C44000794 /* WelcomeTourSheet.swift in Sources */,
 				9D0F91CA2C9738B772A0DAE7 /* Workspace.swift in Sources */,
 				0573E44A3AB85F823F0EED97 /* WorkspaceScreen.swift in Sources */,
 			);

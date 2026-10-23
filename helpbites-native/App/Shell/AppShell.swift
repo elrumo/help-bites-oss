@@ -56,12 +56,14 @@ struct AppShell: View {
     .focusedSceneValue(\.workspace, workspace)
     .sheet(isPresented: $workspace.paletteOpen) { CommandPalette().environment(workspace) }
     .sheet(isPresented: $workspace.newProjectOpen) { NewProjectSheet().environment(workspace) }
+    .sheet(isPresented: $workspace.tourOpen) { WelcomeTourSheet().environment(workspace.session) }
     .onChange(of: sizeClass, initial: true) { _, size in
       workspace.sidebar = !Platform.isPhone && size == .regular
       // Narrowed to a tab bar (iPad split view): a section tab exists only in the sidebar.
       if !workspace.sidebar, case .section(let id, let section) = workspace.tab { workspace.go(.project(id, section)) }
     }
     .task {
+      if workspace.session.agent?.tourPending == true { workspace.tourOpen = true }
       async let projects: Void = workspace.loadProjects()
       async let inbox: Void = workspace.inbox.start()
       workspace.startAttention()

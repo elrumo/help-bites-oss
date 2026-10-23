@@ -5100,6 +5100,7 @@
       "connected": "GitHub connectat.",
       "notConfigured": "GitHub no està configurat en aquest servidor",
       "notConfiguredDescription": "El propietari del servidor registra una vegada una app de GitHub i defineix GITHUB_APP_* (docs/GITHUB.md).",
+      "setupGuide": "Llegeix la guia de configuració",
       "noAccounts": "No hi ha comptes de GitHub connectats",
       "noAccountsDescription": "Instal·la l'app de HelpBites al teu compte o organització i tria quins repos pot veure.",
       "organisation": "Organització",
@@ -5479,5 +5480,51 @@
     "errors": "{count} informe d'error obert | {count} informes d'error oberts",
     "documents": "{count} document de coneixement no s'ha pogut processar | {count} documents de coneixement no s'han pogut processar",
     "triage": "{count} publicació de comentaris per classificar | {count} publicacions de comentaris per classificar"
+  },
+  "welcomeTour": {
+    "skip": "Salta el tour",
+    "back": "Enrere",
+    "next": "Següent",
+    "done": "Fet",
+    "createProject": "Crea un projecte",
+    "progress": "Pas {current} de {total}",
+    "settingsTitle": "Tour de benvinguda",
+    "settingsHint": "Un minut per conèixer HelpBites. Salta'l quan vulguis.",
+    "replay": "Repeteix el tour",
+    "welcome": {
+      "title": "Et donem la benvinguda a HelpBites",
+      "body": "Un sol kit per a tot el que hi ha entre tu i els teus usuaris. Dura un minut.",
+      "point1": "Suport, feedback, novetats i correu en un sol lloc",
+      "point2": "Pots saltar-lo ara i repetir-lo després des de Configuració",
+      "point3": "No cal configurar res ara mateix"
+    },
+    "projects": {
+      "title": "Comença amb un projecte",
+      "body": "Un projecte és una de les teves apps o webs. Tota la resta hi viu a dins.",
+      "point1": "Cada projecte té la seva clau pública per al widget i l'API",
+      "point2": "Mostra a la barra lateral només les seccions que facis servir",
+      "point3": "Afegeix tants projectes com apps tinguis"
+    },
+    "talk": {
+      "title": "Parla amb els teus usuaris",
+      "body": "Cada missatge arriba a una safata compartida.",
+      "point1": "El xat del widget, el correu i els formularis arriben junts",
+      "point2": "Els assistents d'IA responen des de la teva base de coneixement i tu aproves els esborranys",
+      "point3": "Les respostes desades i les plantilles de correu agilitzen les respostes"
+    },
+    "grow": {
+      "title": "Escolta, llança, anuncia",
+      "body": "Tanca el cercle amb qui fa servir el teu producte.",
+      "point1": "Un tauler de feedback i un full de ruta públic",
+      "point2": "Un registre de canvis i un blog que els teus usuaris poden seguir",
+      "point3": "Seguiment d'errors i feature flags sense desplegar"
+    },
+    "team": {
+      "title": "Fes-ho teu",
+      "body": "Algunes coses que convé fer quan ja tinguis un projecte.",
+      "point1": "Convida el teu equip des de Configuració → Equip",
+      "point2": "Tria el teu proveïdor d'IA i connecta GitHub o Stripe",
+      "point3": "Crea claus d'API per automatitzar tot el que fas amb clics"
+    }
   }
 }

@@ -5100,6 +5100,7 @@
       "connected": "GitHub 已连接。",
       "notConfigured": "此服务器未设置 GitHub",
       "notConfiguredDescription": "服务器所有者需注册一次 GitHub App 并设置 GITHUB_APP_*（docs/GITHUB.md）。",
+      "setupGuide": "阅读设置指南",
       "noAccounts": "尚未连接 GitHub 账户",
       "noAccountsDescription": "在你的账户或组织中安装 HelpBites 应用，并选择它可以访问的仓库。",
       "organisation": "组织",
@@ -5479,5 +5480,51 @@
     "errors": "{count} 个未解决的错误报告",
     "documents": "{count} 份知识文档处理失败",
     "triage": "{count} 条反馈帖子待整理"
+  },
+  "welcomeTour": {
+    "skip": "跳过导览",
+    "back": "上一步",
+    "next": "下一步",
+    "done": "完成",
+    "createProject": "创建项目",
+    "progress": "第 {current} 步，共 {total} 步",
+    "settingsTitle": "欢迎导览",
+    "settingsHint": "用一分钟逛一逛 HelpBites，随时可以跳过。",
+    "replay": "重新播放导览",
+    "welcome": {
+      "title": "欢迎使用 HelpBites",
+      "body": "你与用户之间的一切，一套工具搞定。大约只需一分钟。",
+      "point1": "支持、反馈、动态和邮件集中在一处",
+      "point2": "现在可以跳过，之后在设置中重新播放",
+      "point3": "无需立刻配置任何东西"
+    },
+    "projects": {
+      "title": "从一个项目开始",
+      "body": "项目就是你的一个应用或网站，其余一切都在项目里。",
+      "point1": "每个项目都有用于小组件和 API 的公开密钥",
+      "point2": "侧边栏只显示你用到的板块",
+      "point3": "有多少个应用，就添加多少个项目"
+    },
+    "talk": {
+      "title": "与用户交流",
+      "body": "每条消息都汇入同一个共享收件箱。",
+      "point1": "小组件聊天、邮件和表单一起送达",
+      "point2": "AI 助手基于你的知识库作答，草稿由你批准",
+      "point3": "快捷回复和邮件模板让回复更快"
+    },
+    "grow": {
+      "title": "倾听、发布、宣布",
+      "body": "与使用你产品的人形成闭环。",
+      "point1": "反馈板和公开路线图",
+      "point2": "用户可以关注的更新日志和博客",
+      "point3": "无需部署的错误追踪和功能开关"
+    },
+    "team": {
+      "title": "按你的方式来",
+      "body": "有了项目之后，值得做的几件事。",
+      "point1": "在设置 → 团队中邀请队友",
+      "point2": "选择你的 AI 服务商，并连接 GitHub 或 Stripe",
+      "point3": "用 API 密钥自动化你能点击完成的一切"
+    }
   }
 }

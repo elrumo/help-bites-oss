@@ -133,6 +133,7 @@ async function onProseClick(event: MouseEvent) {
 .docs-prose :deep(li) { @apply my-1; }
 .docs-prose :deep(li > ul), .docs-prose :deep(li > ol) { @apply my-1; }
 .docs-prose :deep(strong) { @apply font-semibold text-highlighted; }
+.docs-prose :deep(img) { @apply my-5 h-auto max-w-full rounded-lg border border-default; }
 .docs-prose :deep(a) { @apply text-primary-600 underline decoration-primary-600/30 underline-offset-2 transition-colors hover:decoration-primary-600 dark:text-primary-400 dark:decoration-primary-400/30 dark:hover:decoration-primary-400; }
 
 .docs-prose :deep(h2), .docs-prose :deep(h3) { @apply scroll-mt-20 font-semibold text-highlighted; }

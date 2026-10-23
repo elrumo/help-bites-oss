@@ -165,6 +165,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'ERRORS.md'
   },
   {
+    slug: 'github',
+    title: 'GitHub connection',
+    description: 'Register the GitHub App once, with screenshots of every step, and let projects read their repos for AI error notes, legal suggestions, changelog drafts and #12 links.',
+    group: 'Guides',
+    file: 'GITHUB.md'
+  },
+  {
     slug: 'ssr',
     title: 'Server rendering and caching',
     description: 'Render the embeds and API reads on your server when HelpBites answers fast, fall back to a skeleton and the browser when it does not, and self-host and cache the scripts.',

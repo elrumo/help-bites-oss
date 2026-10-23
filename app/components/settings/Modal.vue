@@ -45,6 +45,13 @@
                 <span v-if="profileSaved && !profileDirty" class="text-[13px] text-muted">Saved</span>
                 <UButton :label="demo ? $t('nav.exitDemo') : $t('nav.signOut')" icon="i-lucide-log-out" color="neutral" variant="ghost" class="ml-auto" @click="logout()" />
               </div>
+              <div class="flex items-center gap-3 border-t border-default pt-6">
+                <div class="min-w-0 flex-1">
+                  <p class="text-[13px] font-medium text-highlighted">{{ $t('welcomeTour.settingsTitle') }}</p>
+                  <p class="text-xs text-muted">{{ $t('welcomeTour.settingsHint') }}</p>
+                </div>
+                <UButton type="button" icon="i-lucide-circle-play" color="neutral" variant="outline" size="sm" :label="$t('welcomeTour.replay')" @click="replayTour" />
+              </div>
             </form>
 
             <!-- Appearance -->
@@ -122,6 +129,7 @@
 // the open tab; '' is closed, so anything can open it on a given tab.
 const tab = useState('settings-tab', () => '')
 const newProjectOpen = useState('new-project-open', () => false)
+const tourOpen = useState('tour-open', () => false)
 const { api, agent, projects, demo, context, logout } = useAgent()
 const colorMode = useColorMode()
 const { t, locale, locales, setLocale } = useI18n()
@@ -186,6 +194,11 @@ async function saveProfile() {
   } finally {
     savingProfile.value = false
   }
+}
+
+function replayTour() {
+  open.value = false
+  tourOpen.value = true
 }
 
 function newProject() {

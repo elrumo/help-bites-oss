@@ -600,6 +600,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   cloud) with an API key or a login. Runs in the background, adds new projects,
   keeps public keys, and is all-or-nothing. Credentials, team members and uploaded
   files stay behind. [TRANSFER.md](TRANSFER.md)
+- **Welcome tour.** A new account (first run, an accepted invitation, a cloud sign-up) sees five short
+  cards once: projects, the inbox, feedback and the changelog, then team and API keys. Skip it at any
+  point; finishing or skipping is stored on the account, so no device shows it again. Replay it from
+  Settings → Account (web) or Settings (native). Accounts that predate it never see it unasked.
 - **Accounts.** Edit your name and email, reset your password by email, choose
   light, dark or system theme, and sign out.
 - **Admin API keys.** Create, rename and revoke `ak_…` keys for scripts and tools.

@@ -5308,6 +5308,7 @@
       "connected": "GitHub connected.",
       "notConfigured": "GitHub isn't set up on this server",
       "notConfiguredDescription": "The server owner registers a GitHub App once and sets GITHUB_APP_* (docs/GITHUB.md).",
+      "setupGuide": "Read the setup guide",
       "noAccounts": "No GitHub accounts connected",
       "noAccountsDescription": "Install the HelpBites app on your account or organisation and choose which repos it can see.",
       "organisation": "Organisation",
@@ -5732,5 +5733,51 @@
     "errors": "{count} open error report | {count} open error reports",
     "documents": "{count} knowledge document failed to process | {count} knowledge documents failed to process",
     "triage": "{count} feedback post to triage | {count} feedback posts to triage"
+  },
+  "welcomeTour": {
+    "skip": "Skip tour",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "createProject": "Create a project",
+    "progress": "Step {current} of {total}",
+    "settingsTitle": "Welcome tour",
+    "settingsHint": "A one-minute look around HelpBites. Skip it any time.",
+    "replay": "Replay tour",
+    "welcome": {
+      "title": "Welcome to HelpBites",
+      "body": "One toolkit for everything between you and your users. This takes about a minute.",
+      "point1": "Support, feedback, updates and email in one place",
+      "point2": "Free to skip now and replay later from Settings",
+      "point3": "Nothing to set up right away"
+    },
+    "projects": {
+      "title": "Start with a project",
+      "body": "A project is one of your apps or sites. Everything else lives inside it.",
+      "point1": "Each project has its own public key for the widget and API",
+      "point2": "Show only the sections you use in its sidebar",
+      "point3": "Add as many projects as you have apps"
+    },
+    "talk": {
+      "title": "Talk to your users",
+      "body": "Every message lands in one shared inbox.",
+      "point1": "Chat from the widget, email and forms arrive together",
+      "point2": "AI assistants answer from your knowledge base, and you approve the drafts",
+      "point3": "Saved replies and email templates keep answers quick"
+    },
+    "grow": {
+      "title": "Listen, ship, announce",
+      "body": "Close the loop with the people who use your product.",
+      "point1": "A feedback board and a public roadmap",
+      "point2": "A changelog and blog your users can follow",
+      "point3": "Error tracking and feature flags without a deploy"
+    },
+    "team": {
+      "title": "Make it yours",
+      "body": "A few things worth doing once you have a project.",
+      "point1": "Invite teammates from Settings → Team",
+      "point2": "Pick your AI provider, and connect GitHub or Stripe",
+      "point3": "Create API keys to automate anything you can click"
+    }
   }
 }

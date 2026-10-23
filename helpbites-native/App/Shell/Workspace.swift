@@ -190,6 +190,8 @@ struct SectionLayout {
   /// Opens the ⌘K palette.
   var paletteOpen = false
   var newProjectOpen = false
+  /// Opens the welcome tour: on a new account's first launch, and from Settings.
+  var tourOpen = false
   /// A new project's secret, shown once on its Dev page (the web passes it as ?secret=).
   var newProjectSecrets: [String: String] = [:]
   /// What waits on you across the workspace: the Overview's list and the badge on its tab.

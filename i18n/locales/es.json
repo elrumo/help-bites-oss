@@ -5100,6 +5100,7 @@
       "connected": "GitHub conectado.",
       "notConfigured": "GitHub no está configurado en este servidor",
       "notConfiguredDescription": "El propietario del servidor registra una vez una app de GitHub y define GITHUB_APP_* (docs/GITHUB.md).",
+      "setupGuide": "Leer la guía de configuración",
       "noAccounts": "No hay cuentas de GitHub conectadas",
       "noAccountsDescription": "Instala la app de HelpBites en tu cuenta u organización y elige qué repos puede ver.",
       "organisation": "Organización",
@@ -5479,5 +5480,51 @@
     "errors": "{count} informe de error abierto | {count} informes de error abiertos",
     "documents": "{count} documento de conocimiento no se pudo procesar | {count} documentos de conocimiento no se pudieron procesar",
     "triage": "{count} publicación de comentarios por clasificar | {count} publicaciones de comentarios por clasificar"
+  },
+  "welcomeTour": {
+    "skip": "Saltar tour",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "done": "Listo",
+    "createProject": "Crear un proyecto",
+    "progress": "Paso {current} de {total}",
+    "settingsTitle": "Tour de bienvenida",
+    "settingsHint": "Un minuto para conocer HelpBites. Sáltalo cuando quieras.",
+    "replay": "Repetir tour",
+    "welcome": {
+      "title": "Te damos la bienvenida a HelpBites",
+      "body": "Un solo kit para todo lo que hay entre tú y tus usuarios. Dura un minuto.",
+      "point1": "Soporte, feedback, novedades y correo en un mismo sitio",
+      "point2": "Puedes saltarlo ahora y repetirlo luego desde Ajustes",
+      "point3": "No tienes que configurar nada ya"
+    },
+    "projects": {
+      "title": "Empieza con un proyecto",
+      "body": "Un proyecto es una de tus apps o webs. Todo lo demás vive dentro.",
+      "point1": "Cada proyecto tiene su clave pública para el widget y la API",
+      "point2": "Muestra en su barra lateral solo las secciones que uses",
+      "point3": "Añade tantos proyectos como apps tengas"
+    },
+    "talk": {
+      "title": "Habla con tus usuarios",
+      "body": "Cada mensaje llega a una bandeja compartida.",
+      "point1": "El chat del widget, el correo y los formularios llegan juntos",
+      "point2": "Los asistentes de IA responden desde tu base de conocimiento y tú apruebas los borradores",
+      "point3": "Las respuestas guardadas y las plantillas de correo aceleran tus respuestas"
+    },
+    "grow": {
+      "title": "Escucha, lanza, anuncia",
+      "body": "Cierra el círculo con quienes usan tu producto.",
+      "point1": "Un tablero de feedback y una hoja de ruta pública",
+      "point2": "Un registro de cambios y un blog que tus usuarios pueden seguir",
+      "point3": "Seguimiento de errores y feature flags sin desplegar"
+    },
+    "team": {
+      "title": "Hazlo tuyo",
+      "body": "Unas cuantas cosas que conviene hacer cuando ya tengas un proyecto.",
+      "point1": "Invita a tu equipo desde Ajustes → Equipo",
+      "point2": "Elige tu proveedor de IA y conecta GitHub o Stripe",
+      "point3": "Crea claves de API para automatizar todo lo que haces con clics"
+    }
   }
 }

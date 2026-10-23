@@ -27,7 +27,7 @@ export async function createAgent(input: { username?: unknown, password?: unknow
   const res = await fetch(`${process.env.PARSE_URL}/users`, {
     method: 'POST',
     headers: { 'X-Parse-Application-Id': process.env.PARSE_ID || '', 'X-Parse-Master-Key': process.env.PARSE_MASTER_KEY || '', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password, ...(email ? { email } : {}), ...(name ? { name } : {}) })
+    body: JSON.stringify({ username, password, tourPending: true, ...(email ? { email } : {}), ...(name ? { name } : {}) })
   })
   const body = await res.json().catch(() => ({})) as { objectId?: string, sessionToken?: string, error?: string, code?: number }
   if (!res.ok || !body.objectId) {

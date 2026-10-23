@@ -56,20 +56,30 @@
     <EmptyState v-else-if="!keys.length" icon="i-lucide-key-round" :title="$t('workspaceSettings.apiKeys.emptyTitle')" :description="$t('workspaceSettings.apiKeys.emptyDescription')" class="rounded-xl border border-dashed border-default" />
     <ul v-else class="divide-y divide-default overflow-hidden rounded-xl border border-default">
       <li v-for="key in keys" :key="key.id" class="flex min-h-14 items-center gap-3 px-4 py-2">
+        
         <template v-if="editingId === key.id">
           <UInput v-model="editingName" size="sm" class="flex-1" :aria-label="$t('workspaceSettings.apiKeys.keyNameAria')" autofocus @keydown.enter.prevent="rename(key.id)" @keydown.esc.stop="editingId = ''" />
           <UButton size="sm" @click="rename(key.id)">{{ $t('workspaceSettings.save') }}</UButton>
           <UButton size="sm" color="neutral" variant="ghost" @click="editingId = ''">{{ $t('common.cancel') }}</UButton>
         </template>
+
         <template v-else>
           <UIcon name="i-lucide-key-round" class="size-4 shrink-0 text-muted" />
+          
           <span class="min-w-0 flex-1">
-            <span class="block truncate text-[13px] font-medium text-highlighted">{{ key.name }}</span>
+            <div class="flex flex-col gap-y-1">
+              <span class="block truncate text-[13px] font-medium text-highlighted">{{ key.name }}</span>
+              <span class="hidden truncate text-xs text-muted sm:block">{{ scopeLabel(key) }}</span>
+            </div>
+
             <code class="block font-mono text-xs text-muted">{{ key.prefix }}…</code>
           </span>
-          <span class="hidden truncate text-xs text-muted sm:block">{{ scopeLabel(key) }}</span>
-          <span class="hidden text-xs text-muted sm:block">{{ expiryLabel(key) }}</span>
-          <span class="hidden text-xs text-muted sm:block">{{ $t('workspaceSettings.apiKeys.created', { date: new Date(key.createdAt || '').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }) }}</span>
+
+          <div class="flex flex-col gap-1">
+            <span class="hidden text-xs text-muted sm:block">{{ expiryLabel(key) }}</span>
+            <span class="hidden text-xs text-muted sm:block">{{ $t('workspaceSettings.apiKeys.created', { date: new Date(key.createdAt || '').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }) }}</span>
+          </div>
+
           <UTooltip :text="$t('workspaceSettings.apiKeys.rename')"><UButton size="sm" color="neutral" variant="ghost" square icon="i-lucide-pencil" class="text-muted" :aria-label="$t('workspaceSettings.apiKeys.rename')" @click="edit(key)" /></UTooltip>
           <UTooltip :text="$t('workspaceSettings.revoke')"><UButton size="sm" color="neutral" variant="ghost" square icon="i-lucide-trash-2" class="text-muted" :aria-label="$t('workspaceSettings.revoke')" @click="revoke(key)" /></UTooltip>
         </template>

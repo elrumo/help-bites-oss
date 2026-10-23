@@ -10,7 +10,9 @@
     </p>
     <p v-if="error" class="text-[13px] text-error">{{ error }}</p>
     <div v-if="loading" class="space-y-2"><USkeleton v-for="i in 2" :key="i" class="h-12" /></div>
-    <EmptyState v-else-if="!configured" icon="i-lucide-github" :title="$t('workspaceSettings.github.notConfigured')" :description="$t('workspaceSettings.github.notConfiguredDescription')" class="rounded-xl border border-dashed border-default" />
+    <EmptyState v-else-if="!configured" icon="i-lucide-github" :title="$t('workspaceSettings.github.notConfigured')" :description="$t('workspaceSettings.github.notConfiguredDescription')" class="rounded-xl border border-dashed border-default">
+      <UButton to="/docs/github" target="_blank" icon="i-lucide-book-open" color="neutral" variant="outline" size="sm" :label="$t('workspaceSettings.github.setupGuide')" />
+    </EmptyState>
     <EmptyState v-else-if="!installations.length" icon="i-lucide-github" :title="$t('workspaceSettings.github.noAccounts')" :description="$t('workspaceSettings.github.noAccountsDescription')" class="rounded-xl border border-dashed border-default" />
     <ul v-else class="space-y-2">
       <li v-for="item in installations" :key="item.id" class="flex min-h-12 items-center gap-3 rounded-xl border border-default px-4 py-2">

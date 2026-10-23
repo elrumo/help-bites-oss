@@ -8,7 +8,7 @@ import { UNLIMITED_PLAN, type PlanLimitData } from '#shared/entitlements'
 // and names the workspace it acts in with X-Workspace (remembered per browser,
 // so two tabs stay in the workspace they were switched to on reload).
 
-export type Agent = { id: string, username: string, email: string, name: string }
+export type Agent = { id: string, username: string, email: string, name: string, /** A new account's welcome tour has not been finished or skipped yet. */ tourPending?: boolean }
 
 /** What /v1/admin/me says about where you are and what you may do. */
 export type AgentContext = {

@@ -5,6 +5,11 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **A welcome tour for new accounts.** Five skippable cards after sign-up or accepting an invitation, replayable from Settings (web and
+  native). `PATCH /v1/admin/me` takes `tourPending: false`; `/me` returns it on `agent`. Schema (needs `schema:apply`; the container does it
+  on boot): new field `_User.tourPending`. Existing accounts are not shown the tour. No env changes.
+- **A step-by-step GitHub App guide, with screenshots** (`docs/GITHUB.md`, published at `/docs/github`). Settings → GitHub links to it
+  (web and native) while the server has no `GITHUB_APP_*` set. No schema or env changes.
 - **Leave out the changelog's and the feedback board's header.** `data-header="false"` on `changelog.js` and `feedback.js` (`?header=0` on the hosted
   pages) hides the logo, title and description for a page that already shows them; the feedback board keeps its view tabs and *New post*.
   No schema or env changes.

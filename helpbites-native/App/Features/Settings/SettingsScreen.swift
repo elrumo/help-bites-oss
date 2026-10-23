@@ -4,6 +4,7 @@ import SwiftUI
 /// theme, the server this app talks to, and sign out.
 struct SettingsScreen: View {
   @Environment(SessionStore.self) private var session
+  @Environment(Workspace.self) private var workspace
   @AppStorage("hb-theme") private var theme: ThemePreference = .system
   @State private var endpoint = ""
   @State private var confirmSignOut = false
@@ -61,6 +62,20 @@ struct SettingsScreen: View {
           link(.connections, "Connections", "powerplug")
           if session.canManage { link(.apiKeys, "API keys", "key") }
           link(.developer, "Developer & MCP", "chevron.left.forwardslash.chevron.right", divider: false)
+        }
+
+        Card {
+          Button { workspace.tourOpen = true } label: {
+            CardRow(divider: false) {
+              HStack(spacing: 10) {
+                Image(systemName: "play.circle").font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
+                Text("Replay the welcome tour").font(.lnRow).foregroundStyle(Theme.text)
+                Spacer(minLength: 0)
+              }
+            }
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
         }
 
         VStack(alignment: .leading, spacing: 8) {

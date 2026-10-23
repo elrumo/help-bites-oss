@@ -1,6 +1,10 @@
 import Foundation
 
-struct Agent: Codable, Identifiable, Equatable, Sendable { let id, username, email, name: String }
+struct Agent: Codable, Identifiable, Equatable, Sendable {
+  let id, username, email, name: String
+  /// A new account's welcome tour has not been finished or skipped yet.
+  var tourPending: Bool? = nil
+}
 
 struct EndUser: Codable, Identifiable, Equatable, Sendable {
   let id, externalId, name, email: String

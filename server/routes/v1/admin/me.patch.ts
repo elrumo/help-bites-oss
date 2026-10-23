@@ -2,8 +2,8 @@ defineRouteMeta({
   openAPI: {
     tags: ['Agent'],
     summary: 'Update your profile',
-    description: 'Changes the signed-in agent\'s display name, email, and the workspace they land in by default. A blank email removes it (password reset emails then have nowhere to go). A new email is unconfirmed until its link is followed, where the edition asks for confirmation. Changing the email takes `currentPassword` and a signed-in session, not an API key, and the old address is told.',
-    requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { name: { type: 'string' }, email: { type: 'string', format: 'email' }, defaultWorkspaceId: { type: 'string', description: 'A workspace you belong to' }, currentPassword: { type: 'string', writeOnly: true } } } } } },
+    description: 'Changes the signed-in agent\'s display name, email, the workspace they land in by default, and whether the welcome tour still waits for them (`tourPending: false` marks it finished or skipped). A blank email removes it (password reset emails then have nowhere to go). A new email is unconfirmed until its link is followed, where the edition asks for confirmation. Changing the email takes `currentPassword` and a signed-in session, not an API key, and the old address is told.',
+    requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { name: { type: 'string' }, email: { type: 'string', format: 'email' }, defaultWorkspaceId: { type: 'string', description: 'A workspace you belong to' }, tourPending: { type: 'boolean', description: 'Send `false` once the welcome tour is finished or skipped; every new account starts with it `true`' }, currentPassword: { type: 'string', writeOnly: true } } } } } },
     responses: { 200: { description: '{ agent }' }, 400: { description: 'Invalid email' }, 403: { description: 'Wrong current password, or an API key tried to change the email' }, 409: { description: 'Email taken' } }
   }
 })
@@ -31,6 +31,8 @@ export default defineEventHandler(async (event) => {
     agent.set('defaultWorkspace', useParse().Object.extend('Workspace').createWithoutData(id))
   }
   if (typeof body.name === 'string') agent.set('name', body.name.trim().slice(0, 120))
+  // The tour only ever turns off here; the panel and the app replay it without asking the server.
+  if (body.tourPending === false) agent.unset('tourPending')
   if (typeof body.email === 'string') {
     // A confirmation belongs to the address that was confirmed, never to the next one typed in.
     if (emailChanged) agent.unset('emailVerifiedAt')
