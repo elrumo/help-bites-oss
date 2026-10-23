@@ -82,9 +82,9 @@
           </div>
 
           <section class="grid gap-x-4 gap-y-2 sm:grid-cols-2">
-            <UInput v-model="draft.summary" :placeholder="$t('changelog.summaryPlaceholder')" size="sm" class="w-full sm:col-span-2" :maxlength="300" :aria-label="$t('changelog.summary')" @blur="saveField('summary')" />
-            <UInput v-if="current" v-model="draft.slug" :placeholder="$t('changelog.slug')" size="sm" class="w-full" :maxlength="120" :aria-label="$t('changelog.slug')" :ui="{ base: 'font-mono text-xs' }" @blur="saveField('slug')" />
-            <UInput v-model="draft.area" :placeholder="project?.changelog.areas?.length ? $t('changelog.areaList', { areas: project.changelog.areas.join(', ') }) : $t('changelog.areaOptional')" size="sm" class="w-full" :maxlength="40" :aria-label="$t('changelog.area')" @blur="saveField('area')" />
+            <UInput variant="subtle" v-model="draft.summary" :placeholder="$t('changelog.summaryPlaceholder')" size="sm" class="w-full sm:col-span-2" :maxlength="300" :aria-label="$t('changelog.summary')" @blur="saveField('summary')" />
+            <UInput v-if="current" variant="subtle" v-model="draft.slug" :placeholder="$t('changelog.slug')" size="sm" class="w-full" :maxlength="120" :aria-label="$t('changelog.slug')" :ui="{ base: 'font-mono text-xs' }" @blur="saveField('slug')" />
+            <UInput variant="subtle" v-model="draft.area" :placeholder="project?.changelog.areas?.length ? $t('changelog.areaList', { areas: project.changelog.areas.join(', ') }) : $t('changelog.areaOptional')" size="sm" class="w-full" :maxlength="40" :aria-label="$t('changelog.area')" @blur="saveField('area')" />
           </section>
 
           <section class="grid gap-x-4 sm:grid-cols-2">
@@ -114,7 +114,7 @@
               <template v-if="current.reviewedBy"> · {{ current.reviewedBy }}<template v-if="current.reviewNotes">: {{ current.reviewNotes }}</template></template>
             </p>
             <div class="flex items-center gap-2">
-              <UInput v-model="reviewNotes" :placeholder="$t('changelog.notesOptional')" size="sm" class="min-w-0 flex-1" :maxlength="2000" :aria-label="$t('changelog.reviewNotes')" />
+              <UInput variant="subtle" v-model="reviewNotes" :placeholder="$t('changelog.notesOptional')" size="sm" class="min-w-0 flex-1" :maxlength="2000" :aria-label="$t('changelog.reviewNotes')" />
               <UButton :label="$t('changelog.reject')" size="sm" color="neutral" variant="soft" :loading="reviewing === 'reject'" @click="review('reject')" />
               <UButton :label="$t('changelog.approvePublish')" size="sm" color="primary" :loading="reviewing === 'approve'" @click="review('approve')" />
             </div>
@@ -136,7 +136,7 @@
               </ul>
               <form class="flex gap-2" @submit.prevent="addSource">
                 <USelect v-model="sourceKind" :items="sourceKindItems" size="sm" class="w-36" :aria-label="$t('changelog.kind')" />
-                <UInput v-model="sourceRef" size="sm" class="w-32" placeholder="#12" :aria-label="$t('changelog.number')" />
+                <UInput variant="subtle" v-model="sourceRef" size="sm" class="w-32" placeholder="#12" :aria-label="$t('changelog.number')" />
                 <UButton type="submit" :label="$t('changelog.link')" size="sm" color="neutral" variant="soft" :disabled="!sourceRef.trim()" :loading="linking" />
               </form>
               <p class="text-xs text-muted">{{ $t('changelog.linkHint') }}</p>
@@ -240,13 +240,13 @@
       <template #body>
         <form class="space-y-4" @submit.prevent="saveRelease">
           <UFormField :label="$t('changelog.version')" required :hint="$t('changelog.versionHint')">
-            <UInput v-model="releaseDraft.version" class="w-full" :maxlength="60" placeholder="2.4" />
+            <UInput variant="subtle" v-model="releaseDraft.version" class="w-full" :maxlength="60" placeholder="2.4" />
           </UFormField>
           <UFormField :label="$t('changelog.title')" :hint="$t('changelog.optionalHeadline')">
-            <UInput v-model="releaseDraft.title" class="w-full" :maxlength="200" :placeholder="$t('changelog.releasePlaceholder')" />
+            <UInput variant="subtle" v-model="releaseDraft.title" class="w-full" :maxlength="200" :placeholder="$t('changelog.releasePlaceholder')" />
           </UFormField>
           <UFormField :label="$t('changelog.summary')" :hint="$t('changelog.summaryHint')">
-            <UTextarea v-model="releaseDraft.summary" :rows="3" autoresize :maxrows="12" class="w-full" :maxlength="2000" />
+            <UTextarea variant="subtle" v-model="releaseDraft.summary" :rows="3" autoresize :maxrows="12" class="w-full" :maxlength="2000" />
           </UFormField>
           <p v-if="releaseError" class="text-sm text-error">{{ releaseError }}</p>
         </form>
