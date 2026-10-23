@@ -117,9 +117,12 @@ struct ChangelogSettings: Decodable, Equatable, Sendable {
   var onPush = false, autoPublish = false
   var timezone = "UTC"
   var weeklyHour = 8, quietMinutes = 30, maxWaitMinutes = 60
+  /// The page's own style over the project's (`changelog.style`).
+  var style = ChangelogStyle()
 
   init() {}
-  private enum Keys: String, CodingKey { case autoDraft, enabled, comments, notify, areas, commentNotify, siteName, entryUrl, pageUrl, commitAi, digest }
+  private enum Keys: String, CodingKey { case autoDraft, enabled, comments, notify, areas, commentNotify, siteName, entryUrl, pageUrl, commitAi, digest, style }
+  private enum StyleKeys: String, CodingKey { case source, custom }
   private enum AiKeys: String, CodingKey { case onPush, autoPublish }
   private enum DigestKeys: String, CodingKey { case timezone, weeklyHour, quietMinutes, maxWaitMinutes }
   init(from decoder: Decoder) throws {
@@ -133,6 +136,10 @@ struct ChangelogSettings: Decodable, Equatable, Sendable {
     siteName = try c.decodeIfPresent(String.self, forKey: .siteName) ?? ""
     entryUrl = try c.decodeIfPresent(String.self, forKey: .entryUrl) ?? ""
     pageUrl = try c.decodeIfPresent(String.self, forKey: .pageUrl) ?? ""
+    if let own = try? c.nestedContainer(keyedBy: StyleKeys.self, forKey: .style) {
+      style.source = try own.decodeIfPresent(String.self, forKey: .source) ?? "project"
+      style.custom = try own.decodeIfPresent(ProjectStyle.self, forKey: .custom) ?? ProjectStyle()
+    }
     if let ai = try? c.nestedContainer(keyedBy: AiKeys.self, forKey: .commitAi) {
       onPush = try ai.decodeIfPresent(Bool.self, forKey: .onPush) ?? false
       autoPublish = try ai.decodeIfPresent(Bool.self, forKey: .autoPublish) ?? false
@@ -150,6 +157,9 @@ struct ChangelogSettings: Decodable, Equatable, Sendable {
 struct ChangelogProject: Decodable, Sendable {
   let id, publicKey, name: String
   let changelog: ChangelogSettings?
+  /// The project's style and the Brand kit under it, for the Style screen; nil from an older server.
+  let style: ProjectStyle?
+  let look: StyleLook?
 
   @MainActor static func load(_ id: String, session: SessionStore) async throws -> ChangelogProject {
     struct Response: Decodable, Sendable { let projects: [ChangelogProject] }

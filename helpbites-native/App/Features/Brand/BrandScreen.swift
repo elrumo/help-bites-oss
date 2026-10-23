@@ -212,6 +212,7 @@ struct BrandScreen: View {
 
   private func style(_ config: Binding<BrandConfig>) -> some View {
     VStack(alignment: .leading, spacing: 16) {
+      ProjectStyleActions(projectId: projectId)
       LegalPanel("Words") {
         LabeledField(label: "Tagline") { TextField("One line about the app", text: config.tagline).textFieldStyle(.linear) }
         LabeledField(label: "About", hint: "Blank lines start a new paragraph") {

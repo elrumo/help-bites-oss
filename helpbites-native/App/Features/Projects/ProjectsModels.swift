@@ -31,6 +31,9 @@ struct ProjectsAdminProject: Decodable, Sendable {
   let identitySeenAt: String?
   /// Web paths of the sections hidden from the sidebar; nil from an older server.
   let hiddenSections: [String]?
+  /// The project's own style (shared/projectStyle.ts) and the Brand kit under it; nil from an older server.
+  let style: ProjectStyle?
+  let look: StyleLook?
 
   /// `ErrorLinkView` (server/utils/errorTracking.ts): one tracker project of this project.
   struct ErrorLink: Decodable, Identifiable, Sendable, Equatable {

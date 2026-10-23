@@ -341,6 +341,11 @@ enum ChangelogFilter: String, CaseIterable, Identifiable {
   // MARK: Options
 
   /// `PATCH /admin/projects/:id { changelog }`: partial, only the keys sent change.
+  /// The project's style changed elsewhere (the project style sheet): read it again.
+  func reloadProject() async {
+    if let fresh = try? await ChangelogProject.load(projectId, session: session) { project = fresh }
+  }
+
   func saveSettings(_ patch: [String: JSONValue]) async throws {
     struct Saved: Decodable, Sendable { let project: ChangelogProject }
     let saved: Saved = try await session.send("/v1/admin/projects/\(projectId)", method: "PATCH", body: ["changelog": JSONValue.object(patch)])
