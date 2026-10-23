@@ -487,8 +487,8 @@ struct ProjectSettingsScreen: View {
       name: form.name, siteUrl: form.siteUrl, inboxPath: form.inboxPath,
       iconUrl: form.iconUrl, brandLogoUrl: form.brandLogoUrl, assistantLogoUrl: form.assistantLogoUrl,
       chatNotice: form.chatNotice, allowAttachments: form.allowAttachments, allowAnonymousUsers: form.allowAnonymousUsers,
-      guestSurfaces: GuestSurfaces.all.filter { form.guestSurfaces.contains($0) },
       letUsersChooseType: form.letUsersChooseType, allowOtherType: form.allowOtherType,
+      guestSurfaces: GuestSurfaces.all.filter { form.guestSurfaces.contains($0) },
       notifyEmails: form.notifyEmails,
       company: form.company, hub: form.hub.droppingBlankLinks,
       // The whole set goes back, so a section only the web has (Pages) stays hidden.

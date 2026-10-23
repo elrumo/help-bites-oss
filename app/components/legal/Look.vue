@@ -22,6 +22,7 @@
           </UFormField>
           <UFormField :label="$t('legal.look.font')"><USelect v-model="form.font" :items="fonts" class="w-full" /></UFormField>
         </div>
+        <StyleProjectActions :project-id="projectId" :from="styleFrom({ accent: form.accent, font: form.font, logoUrl: form.logoUrl })" />
         <UFormField :label="$t('legal.look.logo')" :hint="$t('legal.look.logoHint')"><UInput v-model="form.logoUrl" placeholder="https://" class="w-full" /></UFormField>
         <UFormField :label="$t('legal.look.footer')"><UInput v-model="form.footerText" class="w-full" /></UFormField>
         <p v-if="error" class="text-sm text-error">{{ error }}</p>
@@ -35,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { styleFrom } from '#shared/projectStyle'
 import { normalizeLegalConfig, type LegalConfig } from '#shared/legal/config'
 import type { AdminProject } from '~~/server/utils/projects'
 

@@ -1,4 +1,5 @@
 import { normalizeBrandConfig, readableOn, type BrandColor, type BrandFont, type BrandRadius, type BrandTheme } from './brand'
+import { normalizeProjectStyle, resolveStyle, type ProjectStyle, type ResolvedStyle, type StyleBase } from './projectStyle'
 import { safeHttpUrl } from './support'
 
 // A project's look, read one way everywhere. The Brand kit (`Project.brand`)
@@ -26,6 +27,8 @@ export type ProjectLookInput = {
   iconUrl?: unknown
   /** The kit's own logo and icon files, kept on the project when a file is added or changed (server/utils/brand.ts). */
   brandLook?: unknown
+  /** The project's own style (shared/projectStyle.ts); it wins over the kit where it sets something. */
+  style?: unknown
 }
 
 export type ProjectLook = {
@@ -53,6 +56,12 @@ export type ProjectLook = {
   logoDarkUrl: string
   /** The square app icon, falling back to the logo. */
   iconUrl: string
+  /** The project's style resolved: light and dark colours, shadow, radius, font, logos. Features overlay their own on `projectStyle`. */
+  style: ResolvedStyle
+  /** The style as the project saved it (gaps empty), to layer a feature's own style over with `resolveStyle`. */
+  projectStyle: ProjectStyle
+  /** What the Brand kit alone gives, under the project style: the bottom layer for `resolveStyle`. */
+  kit: StyleBase
 }
 
 const HEX = /^#[0-9a-f]{6}$/i
@@ -72,30 +81,44 @@ export function projectLook(project: ProjectLookInput | null | undefined): Proje
   const p = project || {}
   const brand = normalizeBrandConfig(p.brand)
   const legacyAccent = text(record(p.theme).accent)
-  // The kit's page accent, its first colour, then the older Settings accent, then ours.
-  const accent = (brand.page.accent || brand.colors[0]?.hex || (HEX.test(legacyAccent) ? legacyAccent : '') || DEFAULT_ACCENT).toLowerCase()
-  const kit = record(p.brandLook)
-  const logoUrl = url(kit.logoUrl) || url(p.brandLogoUrl) || url(p.assistantLogoUrl)
-  const iconUrl = url(kit.iconUrl) || url(p.iconUrl) || logoUrl
+  const files = record(p.brandLook)
   const font = (role: BrandFont['role']) => brand.fonts.find(f => f.role === role) || null
   const display = font('display')
   const body = font('body') || display
   const mono = font('mono')
+  const fontFamily = { display: family(display, SYSTEM), body: family(body, SYSTEM), mono: family(mono, MONO) }
+  // What the Brand kit alone gives: the kit's page accent, its first colour, then the older Settings accent, then ours.
+  const logo = url(files.logoUrl) || url(p.brandLogoUrl) || url(p.assistantLogoUrl)
+  const kit: StyleBase = {
+    accent: (brand.page.accent || brand.colors[0]?.hex || (HEX.test(legacyAccent) ? legacyAccent : '') || DEFAULT_ACCENT).toLowerCase(),
+    radiusPx: RADIUS_PX[brand.page.radius],
+    fontFamily: fontFamily.body,
+    logoUrl: logo,
+    logoDarkUrl: url(files.logoDarkUrl) || logo,
+    iconUrl: url(files.iconUrl) || url(p.iconUrl)
+  }
+  // The project's own style wins over the kit wherever it sets something.
+  const projectStyle = normalizeProjectStyle(p.style)
+  const style = resolveStyle(kit, projectStyle)
+  const accent = style.light.accent
   return {
     name: text(p.name),
     accent,
     accentText: readableOn(accent),
     colors: brand.colors,
-    scheme: brand.page.theme,
+    scheme: projectStyle.scheme || brand.page.theme,
     radius: brand.page.radius,
-    radiusPx: RADIUS_PX[brand.page.radius],
+    radiusPx: style.radius,
     fonts: { display, body, mono },
     fontCssUrls: [...new Set([display, body, mono].map(f => f?.cssUrl || '').filter(Boolean))],
-    fontFamily: { display: family(display, SYSTEM), body: family(body, SYSTEM), mono: family(mono, MONO) },
+    fontFamily: { ...fontFamily, body: style.fontFamily },
     tagline: brand.tagline,
-    logoUrl,
-    logoDarkUrl: url(kit.logoDarkUrl) || logoUrl,
-    iconUrl
+    logoUrl: style.logoUrl,
+    logoDarkUrl: style.logoDarkUrl,
+    iconUrl: style.iconUrl,
+    style,
+    projectStyle,
+    kit
   }
 }
 

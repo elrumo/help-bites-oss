@@ -2,6 +2,8 @@
   <div class="space-y-5 text-[13px]">
     <p v-if="!canManage" class="rounded-lg border border-default bg-elevated px-3 py-2 text-muted">{{ $t('blog.adminsOnly') }}</p>
 
+    <StyleProjectActions :project-id="project.id" :from="styleOffer" :disabled="!canManage" />
+
     <UFormField :label="$t('blog.design.layout')">
       <div class="grid grid-cols-3 gap-2">
         <button
@@ -77,6 +79,7 @@
 </template>
 
 <script setup lang="ts">
+import { styleFrom } from '#shared/projectStyle'
 import { BLOG_NAVIGATION_MAX, BLOG_SOCIAL_NETWORKS, DEFAULT_BLOG_DESIGN, type BlogColorScheme, type BlogDesign, type BlogFont, type BlogLayout, type BlogNavLink, type BlogSocialNetwork } from '#shared/blog'
 import type { AdminProject } from '~~/server/utils/projects'
 
@@ -96,6 +99,8 @@ const SOCIAL_LABELS: Record<BlogSocialNetwork, string> = { x: 'X', bluesky: 'Blu
 const IMAGE_KEYS = ['logoUrl', 'coverImageUrl'] as const
 
 const design = computed<BlogDesign>(() => props.project.blog?.design || DEFAULT_BLOG_DESIGN)
+// The blog's `sans` is the project style's `system`; its own scheme is `auto`, `light` or `dark`.
+const styleOffer = computed(() => styleFrom({ accent: design.value.accent, font: design.value.font === 'sans' ? 'system' : design.value.font, scheme: design.value.colorScheme, logoUrl: design.value.logoUrl }))
 const projectAccent = computed(() => props.project.theme?.accent || '#4f46e5')
 const layouts = computed<{ value: BlogLayout, label: string, icon: string }[]>(() => [
   { value: 'list', label: t('blog.design.layouts.list'), icon: 'i-lucide-rows-3' },

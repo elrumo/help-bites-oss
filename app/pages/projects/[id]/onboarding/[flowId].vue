@@ -113,7 +113,10 @@
           </div>
 
           <section class="rounded-xl border border-default p-4">
-            <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.onboarding.look') }}</h3>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.onboarding.look') }}</h3>
+              <StyleProjectActions :project-id="id" :from="styleOffer" />
+            </div>
             <div class="mt-3 grid gap-4 sm:grid-cols-3">
               <UFormField v-for="field in colourFields" :key="field.key" :label="field.label" :hint="form.style[field.key] ? undefined : field.empty">
                 <div class="flex items-center gap-2">
@@ -182,6 +185,7 @@
 <script setup lang="ts">
 import { ONBOARDING_FONTS, ONBOARDING_KEY, ONBOARDING_LIMITS, ONBOARDING_PROGRESS, localizeOnboarding, newStepId, onboardingTexts, translationTexts, type OnboardingOptions, type OnboardingStep, type OnboardingStepText, type OnboardingStyle, type OnboardingTranslations } from '#shared/onboarding'
 import type { PublicPricingTable } from '#shared/pricing'
+import { styleFrom } from '#shared/projectStyle'
 
 definePageMeta({ middleware: 'agent' })
 
@@ -400,6 +404,7 @@ function pricingHelp(key: string) {
 }
 
 // ---- look ----
+const styleOffer = computed(() => styleFrom(form.value.style))
 const projectAccent = computed(() => project.value?.theme?.accent || '#4f46e5')
 const colourFields = computed(() => [
   { key: 'accent' as const, label: t('projectTools.onboarding.accent'), empty: t('projectTools.onboarding.projectAccent'), fallback: projectAccent.value },

@@ -9,9 +9,13 @@
  *   <div id="changelog"></div>
  *   <script src="https://support.example.com/changelog.js" data-project="pk_…" data-target="#changelog" defer></script>
  *
- * Options (data-*): project, target, theme ('system' | 'light' | 'dark';
- * defaults to a dark/light class on your <html>), host (the HelpBites to read
- * from, when you serve this file yourself or from a cache).
+ * It wears the changelog's style from Project -> Changelog -> Style (the
+ * project's own, in light and dark). Options (data-*): project, target, theme
+ * ('system' | 'light' | 'dark'; defaults to your style's scheme, else a
+ * dark/light class on your <html>), and, to override the style for one embed,
+ * accent ('#rrggbb'), radius (0 to 32, pixels) and shadow ('none' | 'soft' |
+ * 'medium' | 'strong'), host (the HelpBites to read from, when you serve this
+ * file yourself or from a cache).
  *
  * While it loads the target shows a skeleton, or a snapshot your server drew
  * into it (ssr.mjs, docs/SSR.md), which the frame then replaces.
@@ -63,11 +67,17 @@
   }
 
   var root = document.documentElement
-  var theme = attr('theme') || (root.classList.contains('dark') ? 'dark' : root.classList.contains('light') ? 'light' : 'system')
+  var theme = attr('theme') || (root.classList.contains('dark') ? 'dark' : root.classList.contains('light') ? 'light' : '')
   var frame = document.createElement('iframe')
   frame.setAttribute('style', 'display:block;width:100%;height:480px;border:0;background:transparent;color-scheme:normal;transition:height .2s ease;')
   frame.setAttribute('title', 'Changelog')
-  frame.src = origin + '/embed/changelog?inline=1&pk=' + encodeURIComponent(project) + '&theme=' + encodeURIComponent(theme)
+  var query = 'inline=1&pk=' + encodeURIComponent(project)
+  // No theme asked for: the style's own scheme applies (the page falls back to the visitor's).
+  ;['theme:' + theme, 'accent:' + attr('accent'), 'radius:' + attr('radius'), 'shadow:' + attr('shadow')].forEach(function (pair) {
+    var i = pair.indexOf(':')
+    if (pair.slice(i + 1)) query += '&' + pair.slice(0, i) + '=' + encodeURIComponent(pair.slice(i + 1))
+  })
+  frame.src = origin + '/embed/changelog?' + query
   host.appendChild(frame)
   var release = hold(host, frame)
 

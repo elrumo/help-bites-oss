@@ -297,7 +297,8 @@ export function brandPageData(project: ParseObject, config: BrandConfig, assets:
     iconUrl: /^https?:\/\//.test(icon) ? icon : '',
     tagline: config.tagline,
     about: config.about,
-    accent: look.accent,
+    // The page's own accent wins; else the project's look.
+    accent: config.page.accent || look.accent,
     config,
     guidelines: config.guidelines.map(g => ({ id: g.id, title: g.title, html: renderChangelogBody(g.body, 'markdown') })),
     assets: shown
@@ -311,7 +312,7 @@ export function toPublicBrand(project: ParseObject, config: BrandConfig, assets:
     name: String(project.get('name') || ''),
     tagline: config.tagline,
     about: config.about,
-    accent: lookOf(project, { brand: config }).accent,
+    accent: config.page.accent || lookOf(project, { brand: config }).accent,
     colors: config.colors,
     fonts: config.fonts,
     guidelines: config.guidelines.map(g => ({ ...g, html: renderChangelogBody(g.body, 'markdown') })),
