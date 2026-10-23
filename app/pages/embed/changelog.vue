@@ -114,6 +114,10 @@ onMounted(async () => {
     error.value = e?.statusCode === 404 ? t('embed.changelog.none') : t('embed.changelog.loadFailed')
   } finally {
     loading.value = false
+    // changelog.js keeps its skeleton (or the server's snapshot) until this.
+    await nextTick()
+    reportHeight()
+    if (inFrame) window.parent.postMessage({ source: 'help-bites-changelog', type: 'ready' }, '*')
   }
 })
 

@@ -143,11 +143,14 @@ it adds the chat; the others draw on your page, so you opt in:
 | `data-mode`, `data-target` | The chat's (`inline` and its element). |
 | `data-<module>-<name>` | Aims one attribute at one module: `data-feedback-position="left"`, `data-onboarding-show="update"`, `data-chat-mode="inline"`. |
 | `data-host` | Where HelpBites lives, when you serve `helpbites.js` from your own site. |
+| `data-scripts` | The folder the module scripts are loaded from (your own site or a cache) instead of HelpBites; they are told `data-host` themselves. |
+| `data-cache` | `false` stops it starting from the loader answer remembered in this browser (a week). |
 
 A module the project has not set up (a feedback board that is off, no published
 flows) is skipped, and a script already on the page is never added twice, so you
 can move to this tag one module at a time. If HelpBites cannot be reached for the
-loader call, the modules you named still load.
+loader call, the modules you named still load. Rendering on your server, serving the scripts
+from your own domain and caching them: [SSR.md](SSR.md).
 
 ### Calls
 

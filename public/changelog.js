@@ -10,19 +10,57 @@
  *   <script src="https://support.example.com/changelog.js" data-project="pk_…" data-target="#changelog" defer></script>
  *
  * Options (data-*): project, target, theme ('system' | 'light' | 'dark';
- * defaults to a dark/light class on your <html>).
+ * defaults to a dark/light class on your <html>), host (the HelpBites to read
+ * from, when you serve this file yourself or from a cache).
+ *
+ * While it loads the target shows a skeleton, or a snapshot your server drew
+ * into it (ssr.mjs, docs/SSR.md), which the frame then replaces.
  *
  * The same page stands alone at https://support.example.com/changelog/pk_…, and
  * the data is at GET /v1/changelog?pk=pk_… if you would rather build your own UI.
  */
 (function () {
   var script = document.currentScript || (function () { var s = document.getElementsByTagName('script'); return s[s.length - 1] })()
-  var origin = new URL(script.src, location.href).origin
   var attr = function (name) { return script.getAttribute('data-' + name) || '' }
+  var origin = (attr('host') || new URL(script.src, location.href).origin).replace(/\/+$/, '')
   var project = attr('project')
   var host = attr('target') && document.querySelector(attr('target'))
   if (!project) return console.warn('[help-bites] changelog.js needs data-project="pk_…"')
   if (!host) return console.warn('[help-bites] no element matches the changelog target ' + attr('target'))
+
+  // What stands in for the frame until it has something to show: a snapshot drawn on the server
+  // (ssr.mjs, marked data-hb-ssr) or, failing that, a skeleton. The frame loads out of sight under it
+  // and takes its place when it says it is ready (or after 8 s, so an error message still shows).
+  function hold(host, frame) {
+    var held = host.querySelector('[data-hb-ssr]')
+    if (!held) {
+      if (!document.getElementById('hb-sk-style')) {
+        var style = document.createElement('style')
+        style.id = 'hb-sk-style'
+        style.textContent = '@keyframes hb-pulse{50%{opacity:.45}}@media(prefers-reduced-motion:reduce){.hb-sk i{animation:none!important}}'
+        document.head.appendChild(style)
+      }
+      held = document.createElement('div')
+      held.className = 'hb-sk'
+      held.setAttribute('role', 'status')
+      held.setAttribute('aria-busy', 'true')
+      held.innerHTML = '<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Loading…</span>' + new Array(4).join('<i style="display:block;height:84px;margin:0 0 12px;border-radius:10px;background:rgba(127,127,127,.18);animation:hb-pulse 1.4s ease-in-out infinite"></i>')
+      host.appendChild(held)
+    }
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative'
+    frame.style.position = 'absolute'
+    frame.style.visibility = 'hidden'
+    frame.style.top = frame.style.left = '0'
+    var released = false
+    function release() {
+      if (released) return
+      released = true
+      if (held.parentNode) held.parentNode.removeChild(held)
+      frame.style.position = frame.style.visibility = frame.style.top = frame.style.left = ''
+    }
+    setTimeout(release, 8000)
+    return release
+  }
 
   var root = document.documentElement
   var theme = attr('theme') || (root.classList.contains('dark') ? 'dark' : root.classList.contains('light') ? 'light' : 'system')
@@ -31,10 +69,12 @@
   frame.setAttribute('title', 'Changelog')
   frame.src = origin + '/embed/changelog?inline=1&pk=' + encodeURIComponent(project) + '&theme=' + encodeURIComponent(theme)
   host.appendChild(frame)
+  var release = hold(host, frame)
 
   window.addEventListener('message', function (event) {
     var d = event.data
     if (event.source !== frame.contentWindow || event.origin !== origin || !d || d.source !== 'help-bites-changelog') return
+    if (d.type === 'ready') release()
     if (d.type === 'resize' && d.height > 0) frame.style.height = Math.ceil(d.height) + 'px'
   })
 })()

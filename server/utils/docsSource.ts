@@ -15,6 +15,7 @@ import legal from '../../docs/LEGAL.md'
 import mcp from '../../docs/MCP.md'
 import onboarding from '../../docs/ONBOARDING.md'
 import pages from '../../docs/PAGES.md'
+import ssr from '../../docs/SSR.md'
 import support from '../../docs/SUPPORT.md'
 import pricing from '../../docs/PRICING.md'
 import transfer from '../../docs/TRANSFER.md'
@@ -38,6 +39,7 @@ const SOURCES: Record<string, string> = {
   'MCP.md': mcp,
   'ONBOARDING.md': onboarding,
   'PAGES.md': pages,
+  'SSR.md': ssr,
   'SUPPORT.md': support,
   'PRICING.md': pricing,
   'TRANSFER.md': transfer

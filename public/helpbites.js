@@ -16,6 +16,9 @@
  *   data-changelog-target="#changelog"   the changelog, inline in that element
  *   data-feedback-target="#board"        the feedback board, inline (without it: a floating button)
  *   data-flow="welcome"                  an onboarding flow, shown once
+ *   data-scripts="/hb"                   load the module scripts from here (your own site or a cache)
+ *                                        instead of from HelpBites; they still talk to data-host
+ *   data-cache="false"                   do not start from the answer remembered in this browser
  *
  * Attributes pass through to the scripts. These reach every module that reads
  * them: data-accent, data-theme, data-position, data-locale, data-token.
@@ -39,6 +42,11 @@
  * one tag a module at a time. If HelpBites cannot be reached, the modules you
  * asked for by name still load. The `helpbites:loaded` event on window says
  * which were added. The data is GET /v1/hub/{pk}/loader.
+ *
+ * That answer is remembered in this browser (localStorage, a week): the next
+ * page starts from it at once and the fresh one is kept for the page after.
+ * Serve the scripts yourself (data-scripts, data-host) and cache them on your
+ * server with ssr.mjs: docs/SSR.md.
  */
 (function () {
   var script = document.currentScript || (function () { var s = document.getElementsByTagName('script'); return s[s.length - 1] })()
@@ -46,6 +54,8 @@
   // A copy served from your own site (it is MIT) names the HelpBites it reads from.
   var origin = (attr('host') || new URL(script.src, location.href).origin).replace(/\/+$/, '')
   var project = attr('project')
+  // Where the module scripts come from: HelpBites itself, or a copy of yours (they then need data-host).
+  var scriptBase = (attr('scripts') || origin).replace(/\/+$/, '')
   if (!project) return console.warn('[help-bites] helpbites.js needs data-project="pk_…"')
 
   var MODULES = ['chat', 'feedback', 'changelog', 'onboarding']
@@ -127,6 +137,7 @@
 
   function moduleAttrs(name, info) {
     var out = { project: project }
+    if (scriptBase !== origin) out.host = origin
     SHARED.forEach(function (key) { if (attr(key)) out[key] = attr(key) })
     ;(OWN[name] || []).forEach(function (key) { if (attr(key)) out[key] = attr(key) })
     // data-<module>-<name> aims one attribute at one module, whatever it is.
@@ -149,7 +160,7 @@
     if (name === 'changelog' && !attrs.target) { console.warn('[help-bites] changelog needs data-changelog-target="#element"'); return null }
     if (name === 'onboarding' && !attrs.flow) return null
     var tag = document.createElement('script')
-    tag.src = origin + '/' + file
+    tag.src = scriptBase + '/' + file
     tag.async = true
     for (var k in attrs) tag.setAttribute('data-' + k, attrs[k])
     loaded.push(name)
@@ -183,11 +194,26 @@
     window.dispatchEvent(new CustomEvent('helpbites:loaded', { detail: { modules: loaded.slice(), hub: info && info.hub ? info.hub : null } }))
   }
 
+  // The last answer, kept in this browser: start from it, then refresh it for next time.
+  var memo = 'helpbites:loader:' + project
+  function remembered() {
+    if (attr('cache') === 'false') return null
+    try {
+      var kept = JSON.parse(localStorage.getItem(memo))
+      return kept && kept.info && Date.now() - kept.at < 7 * 864e5 ? kept.info : null
+    } catch (e) { return null }
+  }
+  function remember(info) {
+    try { if (info) localStorage.setItem(memo, JSON.stringify({ at: Date.now(), info: info })) } catch (e) {}
+  }
+
   var done = false
   var finish = function (info) { if (!done) { done = true; start(info) } }
+  var before = remembered()
+  if (before) finish(before)
   var timer = setTimeout(function () { finish(null) }, 4000)
   fetch(origin + '/v1/hub/' + encodeURIComponent(project) + '/loader')
     .then(function (r) { return r.ok ? r.json() : null })
-    .then(function (info) { clearTimeout(timer); finish(info) })
+    .then(function (info) { clearTimeout(timer); remember(info); finish(info) })
     .catch(function () { clearTimeout(timer); finish(null) })
 })()

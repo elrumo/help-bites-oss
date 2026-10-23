@@ -49,6 +49,20 @@
       "landing": { "listed": false, "key": null }
     },
     {
+      "id": "server-rendering",
+      "name": "Server rendering and caching",
+      "category": "dev",
+      "summary": "ssr.mjs: a dependency-free helper for your server that reads the public API within a time budget (answered from memory, refreshed behind the reader, or handed to the browser with a skeleton when HelpBites is slow), server-renders the changelog, roadmap, board and chat embeds as a snapshot or skeleton that the plug and play scripts then replace, and keeps self-hosted copies of the scripts. The scripts take data-host, helpbites.js remembers the project's embed list in the browser and loads modules from data-scripts.",
+      "editions": ["community", "cloud"],
+      "plan": "all",
+      "status": "stable",
+      "web": { "public": ["/ssr.mjs"] },
+      "native": null,
+      "api": { "prefixes": ["/v1/changelog", "/v1/feedback", "/v1/legal", "/v1/hub"], "docs": "docs/SSR.md" },
+      "embed": { "web": "public/ssr.mjs", "swift": "docs/SSR.md#in-a-swift-app", "customize": ["budget", "ttl", "stale", "timeout", "store (Redis or KV)", "embed() kinds and scriptSrc", "data-host", "data-scripts", "data-cache", "--hb-ssr-* CSS variables", ".hb-ssr classes", "the API (hb.get) for your own UI", "Swift accent and cornerRadius"] },
+      "landing": { "listed": false, "key": null }
+    },
+    {
       "id": "company-profile",
       "name": "Company profile",
       "category": "platform",
