@@ -27,7 +27,7 @@
  *
  * Kinds: 'changelog', 'roadmap' (feedback.js, roadmap only), 'feedback' (the
  * board) and 'chat' (widget.js, inline). A framework that adds the script
- * itself takes `inner` (the container's content) and `attrs` (its data-*).
+ * itself takes `inner` (the container's content), `css` and `attrs` (its data-*).
  *
  * Self-host and cache the script. script() fetches a file of HelpBites's
  * (widget.js, feedback.js, changelog.js, …) once and keeps it, so serve it
@@ -36,7 +36,8 @@
  *
  * `store` is { get(key), set(key, entry) }, sync or async: pass your Redis or
  * KV to share the cache between servers. The default is a small in-memory map.
- * Everything here swallows failures: HelpBites being down never breaks a page.
+ * Everything here swallows failures: HelpBites being down never breaks a page, and a
+ * failed address is not asked again for `backoff` ms.
  * The HTML from the API (a changelog entry's body, a legal document) is
  * sanitised by HelpBites; the helper inserts it as it is.
  */
@@ -105,10 +106,17 @@ export function render(kind, data) {
   return kind === 'changelog' ? renderChangelog(data) : kind === 'roadmap' ? renderRoadmap(data) : null
 }
 
-export function createHelpBites({ host, pk, budget = 300, ttl = 60_000, stale = DAY, timeout = 8_000, store = memoryStore(), fetch: fetcher = globalThis.fetch } = {}) {
+export function createHelpBites({ host, pk, budget = 300, ttl = 60_000, stale = DAY, timeout = 8_000, backoff = 10_000, store = memoryStore(), fetch: fetcher = globalThis.fetch } = {}) {
   if (!host || !pk) throw new Error('createHelpBites needs { host, pk }')
   host = String(host).replace(/\/+$/, '')
   const inflight = new Map()
+  const failed = new Map()
+
+  // A failure is remembered for `backoff` ms: a HelpBites that is down costs one request in that time, not one per render.
+  function failure(url, status) {
+    failed.set(url, { at: Date.now(), status })
+    return { data: null, source: 'error', status }
+  }
 
   // One request per address at a time; it never rejects, and a good answer lands in the store even
   // when the caller has stopped waiting.
@@ -117,12 +125,13 @@ export function createHelpBites({ host, pk, budget = 300, ttl = 60_000, stale = 
     const run = (async () => {
       try {
         const res = await fetcher(url, { headers: { accept: as === 'json' ? 'application/json' : '*/*' }, signal: AbortSignal.timeout(timeout) })
-        if (!res.ok) return { data: null, source: 'error', status: res.status }
+        if (!res.ok) return failure(url, res.status)
         const data = as === 'json' ? await res.json() : await res.text()
         try { await store.set(url, { at: Date.now(), data }) } catch { /* a broken cache is a miss */ }
+        failed.delete(url)
         return { data, source: 'live' }
       } catch {
-        return { data: null, source: 'error', status: 0 }
+        return failure(url, 0)
       }
     })().finally(() => inflight.delete(url))
     inflight.set(url, run)
@@ -134,6 +143,8 @@ export function createHelpBites({ host, pk, budget = 300, ttl = 60_000, stale = 
     try { hit = await store.get(url) } catch { /* miss */ }
     const age = hit ? Date.now() - hit.at : Infinity
     if (hit && age < ttl) return { data: hit.data, source: 'cache' }
+    const down = failed.get(url)
+    if (!hit && down && Date.now() - down.at < backoff) return { data: null, source: 'error', status: down.status }
     const live = refresh(url, as)
     if (hit && age < stale) return { data: hit.data, source: 'stale' }
     let timer
@@ -159,7 +170,7 @@ export function createHelpBites({ host, pk, budget = 300, ttl = 60_000, stale = 
     const inner = snapshot || skeleton(kind)
     const data = { project: pk, host, target: `#${id}`, ...(kind === 'roadmap' ? { view: 'roadmap', only: 'roadmap' } : {}), ...(kind === 'chat' ? { mode: 'inline' } : {}), ...attrs }
     const tag = `<script src="${esc(scriptSrc || `${host}/${file}`)}" ${Object.entries(data).map(([k, v]) => `data-${esc(k)}="${esc(v)}"`).join(' ')} defer></script>`
-    return { html: `<style>${css}</style><div id="${esc(id)}">${inner}</div>${tag}`, inner, attrs: data, source: result.source, ssr: snapshot ? 'ready' : 'pending' }
+    return { html: `<style>${css}</style><div id="${esc(id)}">${inner}</div>${tag}`, inner, css, attrs: data, source: result.source, ssr: snapshot ? 'ready' : 'pending' }
   }
 
   /** A public legal document ({ title, html, … }); `data` is the document itself. */

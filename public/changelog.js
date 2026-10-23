@@ -14,7 +14,11 @@
  * ('system' | 'light' | 'dark'; defaults to your style's scheme, else a
  * dark/light class on your <html>), and, to override the style for one embed,
  * accent ('#rrggbb'), radius (0 to 32, pixels) and shadow ('none' | 'soft' |
- * 'medium' | 'strong').
+ * 'medium' | 'strong'), host (the HelpBites to read from, when you serve this
+ * file yourself or from a cache).
+ *
+ * While it loads the target shows a skeleton, or a snapshot your server drew
+ * into it (ssr.mjs, docs/SSR.md), which the frame then replaces.
  *
  * The same page stands alone at https://support.example.com/changelog/pk_…, and
  * the data is at GET /v1/changelog?pk=pk_… if you would rather build your own UI.

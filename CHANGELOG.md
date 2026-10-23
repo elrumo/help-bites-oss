@@ -28,6 +28,11 @@ All notable changes to the community edition. Versions are Docker image tags
   project style's accent outranks the Brand kit's, and saving the accent in Settings keeps it in step. Schema (needs `schema:apply`;
   the container does it on boot): new field `Project.style`. Forms, onboarding, pricing, blog and legal take its accent only; the native
   app does not edit it yet.
+- **Server rendering and caching for the embeds and the API** (`docs/SSR.md`, `public/ssr.mjs`). A helper for your server reads the public
+  API within a time budget, keeps answers (stale-while-revalidate) and server-renders the changelog, roadmap, board and chat embeds as
+  a snapshot or skeleton; `widget.js`, `feedback.js` and `changelog.js` show a skeleton while they load and accept `data-host` (a copy
+  you serve yourself), `helpbites.js` accepts `data-scripts` and remembers the loader answer in the browser. The changelog frame now
+  sends a `ready` message. No schema or env changes.
 - **Optional Plausible stats** for HelpBites' own site and panel: set `NUXT_PUBLIC_PLAUSIBLE_SRC` to the script's address (off by default; the panel reads it at run
   time, the prerendered landing page and docs need it as a Docker build arg too). It is not loaded in the embeds or on the invite and OAuth pages, and its origin joins the panel's script policy. No schema changes.
 - **Developer & MCP**: the workspace Developer page is now **Developer & MCP** and gains an AI assistants section with the

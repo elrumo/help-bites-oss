@@ -70,7 +70,7 @@
   }
 
   var queue = window.HelpBitesFeedback || []
-  var frame = null, launcher = null, open = false, ready = false, mounted = false, closeTimer = null, pendingPost = ''
+  var release = null, frame = null, launcher = null, open = false, ready = false, mounted = false, closeTimer = null, pendingPost = ''
   var still = matchMedia('(prefers-reduced-motion: reduce)').matches
   var SPRING = 'cubic-bezier(.16,1.02,.3,1)'
 

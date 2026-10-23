@@ -72,6 +72,19 @@ describe('createHelpBites reads', () => {
     expect((await hb.get('/v1/x')).data).toEqual({ v: 1 })
   })
 
+  test('after a failure the address is not asked again until the backoff has passed', async () => {
+    let status = 500
+    const f = fake(() => json({ ok: 1 }, status))
+    const hb = make(f, { backoff: 50 })
+    expect((await hb.get('/v1/x')).source).toBe('error')
+    expect((await hb.get('/v1/x')).source).toBe('error')
+    expect(f.calls).toHaveLength(1)
+    status = 200
+    await sleep(60)
+    expect((await hb.get('/v1/x')).data).toEqual({ ok: 1 })
+    expect(f.calls).toHaveLength(2)
+  })
+
   test('a broken store is a miss, not an error', async () => {
     const store = { get: () => { throw new Error('redis down') }, set: () => { throw new Error('redis down') } }
     expect((await make(fake(() => json({ a: 1 })), { store }).get('/v1/x')).data).toEqual({ a: 1 })
@@ -97,6 +110,7 @@ describe('embed', () => {
   test('a snapshot inside the budget: content, the style, and a script tag aimed at the container', async () => {
     const r = await make(fake(() => json(changelog))).embed('changelog', { scriptSrc: '/hb/changelog.js' })
     expect(r.ssr).toBe('ready')
+    expect(r.css).toContain('.hb-ssr')
     expect(r.html).toContain('data-hb-ssr="ready"')
     expect(r.html).toContain('<p>Body</p>')
     expect(r.html).toContain('Hello &lt;b&gt;')

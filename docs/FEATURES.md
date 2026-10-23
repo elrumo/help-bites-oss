@@ -677,6 +677,12 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   `pricing.js`, `forms.js` and `brand.js`, all MIT-licensed, so the site that embeds
   them carries no copyleft obligations. Onboarding, pricing tables, lead forms and
   the brand kit also have copy-paste SwiftUI snippets.
+- **Server rendering and caching.** `ssr.mjs` reads the public API from your server
+  within a time budget (from memory, refreshed behind the reader, or a skeleton and a
+  browser load when HelpBites is slow), server-renders the changelog, roadmap, board and
+  chat embeds so the scripts take over from a snapshot, and keeps self-hosted copies of
+  the scripts. The scripts show a skeleton while they load and take `data-host`;
+  `helpbites.js` remembers the project's embeds in the browser. [SSR.md](SSR.md)
 - **CLI.** `helpbites changelog` turns git changes into changelog entries. It never
   pushes. [cli/README.md](../cli/README.md)
 - **Scripts.** Backfills for feedback, changelog and contacts; a reindex; a demo

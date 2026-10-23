@@ -163,6 +163,13 @@ export const DOCS: readonly DocPage[] = [
     description: 'Connect GlitchTip or Bugsink to browse errors, get alert emails when one spikes, and fix them with AI that reads your GitHub repos.',
     group: 'Guides',
     file: 'ERRORS.md'
+  },
+  {
+    slug: 'ssr',
+    title: 'Server rendering and caching',
+    description: 'Render the embeds and API reads on your server when HelpBites answers fast, fall back to a skeleton and the browser when it does not, and self-host and cache the scripts.',
+    group: 'Guides',
+    file: 'SSR.md'
   }
 ]
 
