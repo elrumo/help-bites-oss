@@ -33,7 +33,6 @@ private struct LegalDocumentContent: View {
   @State private var previewing = false
   @State private var showWizard = false
   @State private var publishing = false
-  @State private var note = ""
   @State private var confirm: Confirm?
   @State private var translating = false
   /// Another language of this text, pushed on top of this screen.
@@ -66,12 +65,10 @@ private struct LegalDocumentContent: View {
     }
     .projectScreen(projectId, document.map { $0.title.isEmpty ? $0.kind.label : $0.title } ?? "Document")
     .toolbar { if let document { toolbar(document) } }
-    .alert(document?.isPublished == true ? "Publish a new version" : "Publish this document", isPresented: $publishing) {
-      TextField("What changed? (optional)", text: $note)
-      Button("Publish") { Task { await store.publish(note: note.trimmingCharacters(in: .whitespacesAndNewlines)); note = "" } }
-      Button("Cancel", role: .cancel) { note = "" }
-    } message: {
-      Text("It becomes public at its page, and this text is recorded as a version you can restore.")
+    .sheet(isPresented: $publishing) {
+      PublishNoteSheet(isNewVersion: document?.isPublished == true, suggest: { try await store.suggestChangeNote() }) { note in
+        Task { await store.publish(note: note) }
+      }
     }
     .confirmationDialog(confirmTitle, isPresented: Binding(get: { confirm != nil }, set: { if !$0 { confirm = nil } }), titleVisibility: .visible, presenting: confirm) { item in
       switch item {
@@ -364,6 +361,60 @@ private struct LegalDocumentContent: View {
           Button("Restore") { confirm = .restore(version.version) }.buttonStyle(GhostButtonStyle()).disabled(store.dirty || store.busy != "")
         }
       }
+    }
+  }
+}
+
+/// The note recorded with a version (web: the publish modal): typed, or suggested from what differs from the last published text.
+private struct PublishNoteSheet: View {
+  let isNewVersion: Bool
+  let suggest: () async throws -> String
+  let publish: (String) -> Void
+  @Environment(\.dismiss) private var dismiss
+  @State private var note = ""
+  @State private var suggesting = false
+  @State private var error = ""
+
+  var body: some View {
+    NavigationStack {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 16) {
+          Text("It becomes public at its page, and this text is recorded as a version you can restore.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+          LabeledField(label: "What changed? (optional)") {
+            LinearTextEditor(text: $note, minHeight: 96)
+          }
+          if isNewVersion {
+            HStack(spacing: 8) {
+              Button { Task { await fill() } } label: { Label(suggesting ? "Writing…" : "Suggest with AI", systemImage: "sparkles") }
+                .buttonStyle(.lnSecondaryCompact).disabled(suggesting)
+              if suggesting { ProgressView().controlSize(.small) }
+            }
+          }
+          ErrorText(message: error)
+        }
+        .padding(20)
+        .frame(maxWidth: 560, alignment: .leading)
+        .frame(maxWidth: .infinity)
+      }
+      .panelScreen(isNewVersion ? "Publish a new version" : "Publish this document")
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+        ToolbarItem(placement: .confirmationAction) {
+          Button("Publish") { publish(note.trimmingCharacters(in: .whitespacesAndNewlines)); dismiss() }.disabled(suggesting)
+        }
+      }
+    }
+    .presentationDetents([.medium, .large])
+  }
+
+  private func fill() async {
+    suggesting = true
+    error = ""
+    defer { suggesting = false }
+    do { note = try await suggest() }
+    catch {
+      if case APIError.cancelled = error { return }
+      self.error = error.localizedDescription
     }
   }
 }

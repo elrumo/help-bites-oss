@@ -153,6 +153,14 @@ import Observation
     }
   }
 
+  /// `POST …/change-note`: a suggested note for the next version (409 when nothing differs, 501 without an AI provider).
+  func suggestChangeNote() async throws -> String {
+    struct Empty: Encodable, Sendable {}
+    struct Suggested: Decodable, Sendable { let note: String }
+    let suggested: Suggested = try await LegalAPI.slow(session, path + "/change-note", Empty())
+    return suggested.note
+  }
+
   func unpublish() async {
     if let result: Loaded = await run("unpublish", { try await session.send(path + "/unpublish") }) { adopt(result.document) }
   }

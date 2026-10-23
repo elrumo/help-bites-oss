@@ -183,7 +183,7 @@ terms, cookies and refunds. `GET /v1/admin/legal/clauses` lists the clauses.
 `publish` makes a document public and records a version (a snapshot). Editing a
 published document changes the live page at once; publish again to record the
 next version. `GET …/versions` lists them and `POST …/versions/:n/restore` puts
-one back as the working draft (it is not republished). `unpublish` takes the page
+one back as the working draft (it is not republished). Pass `note` to `publish` to say what changed; `POST …/change-note` writes one with AI from the difference. `unpublish` takes the page
 down.
 
 ## Other languages
@@ -301,6 +301,7 @@ the body) and an operator session or admin API key. The full schema is at
 | `POST` `/documents/:id/publish` `unpublish` `recompose` `check` | Lifecycle and checks |
 | `POST` `/documents/:id/sections/:sid/rewrite` | AI rewrite of one section (`apply: true` to save it) |
 | `POST` `/documents/:id/tldr/generate` | AI summary |
+| `POST` `/documents/:id/change-note` | AI note for the next version, from what differs from the last published one (`{ "note": "…" }`; nothing saved; 409 when nothing differs) |
 | `POST` `/documents/:id/translate` | AI translation into `{ "locale": "es" }`: a new linked draft |
 | `GET` `/documents/:id/versions`, `POST` `…/:n/restore` | History |
 | `GET` `/wizard/:type`, `POST` `/wizard/:type/compose` | The questions (with pre-filled `defaults`); a preview |
