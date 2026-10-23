@@ -15,7 +15,8 @@
  * dark/light class on your <html>), and, to override the style for one embed,
  * accent ('#rrggbb'), radius (0 to 32, pixels) and shadow ('none' | 'soft' |
  * 'medium' | 'strong'), host (the HelpBites to read from, when you serve this
- * file yourself or from a cache).
+ * file yourself or from a cache), header ("false" leaves out the logo, title and
+ * description, when your page already shows them).
  *
  * While it loads the target shows a skeleton, or a snapshot your server drew
  * into it (ssr.mjs, docs/SSR.md), which the frame then replaces.
@@ -73,7 +74,7 @@
   frame.setAttribute('title', 'Changelog')
   var query = 'inline=1&pk=' + encodeURIComponent(project)
   // No theme asked for: the style's own scheme applies (the page falls back to the visitor's).
-  ;['theme:' + theme, 'accent:' + attr('accent'), 'radius:' + attr('radius'), 'shadow:' + attr('shadow')].forEach(function (pair) {
+  ;['theme:' + theme, 'accent:' + attr('accent'), 'radius:' + attr('radius'), 'shadow:' + attr('shadow'), 'header:' + attr('header')].forEach(function (pair) {
     var i = pair.indexOf(':')
     if (pair.slice(i + 1)) query += '&' + pair.slice(0, i) + '=' + encodeURIComponent(pair.slice(i + 1))
   })

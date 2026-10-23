@@ -186,7 +186,7 @@
       "web": { "panel": ["app/pages/projects/[id]/feedback.vue"], "public": ["/embed/feedback"] },
       "native": { "folders": ["helpbites-native/App/Features/Feedback"] },
       "api": { "prefixes": ["/v1/feedback"], "docs": "docs/FEEDBACK.md" },
-      "embed": { "web": "public/feedback.js", "swift": null, "customize": ["data-target", "data-view", "data-only", "data-label", "data-theme", "data-accent", "data-radius", "data-shadow", "the board's style (the project's, light and dark, or its own)", "JS init options"] },
+      "embed": { "web": "public/feedback.js", "swift": null, "customize": ["data-target", "data-view", "data-only", "data-label", "data-theme", "data-accent", "data-radius", "data-shadow", "data-header", "the board's style (the project's, light and dark, or its own)", "JS init options"] },
       "landing": { "listed": true, "key": "landing.features.feedback" }
     },
     {
@@ -214,7 +214,7 @@
       "web": { "panel": ["app/pages/projects/[id]/changelog.vue", "app/components/ChangelogReplyDialog.vue"], "public": ["/changelog/:pk", "/embed/changelog", "/u/changelog"] },
       "native": { "folders": ["helpbites-native/App/Features/Changelog"] },
       "api": { "prefixes": ["/v1/changelog", "/v1/admin/changelog"], "docs": "docs/FEEDBACK.md" },
-      "embed": { "web": "public/changelog.js", "swift": null, "customize": ["data-target", "data-theme", "data-accent", "data-radius", "data-shadow", "the page's style (the project's, light and dark, or its own)", "hosted page ?theme, ?accent, ?radius, ?shadow", "the API (GET /v1/changelog returns the finished `style`) for your own UI"] },
+      "embed": { "web": "public/changelog.js", "swift": null, "customize": ["data-target", "data-theme", "data-accent", "data-radius", "data-shadow", "data-header", "the page's style (the project's, light and dark, or its own)", "hosted page ?theme, ?accent, ?radius, ?shadow", "the API (GET /v1/changelog returns the finished `style`) for your own UI"] },
       "landing": { "listed": true, "key": "landing.showcase.changelog" }
     },
     {

@@ -1,6 +1,6 @@
 <template>
   <div ref="rootRef" class="sb-board" :class="inline ? 'min-h-[200px]' : 'min-h-full'" :style="rootStyle">
-    <header :style="{ borderBottom: '1px solid var(--hb-border)' }" :class="inline ? '' : 'backdrop-blur-xl'">
+    <header v-if="showHeader" :style="{ borderBottom: '1px solid var(--hb-border)' }" :class="inline ? '' : 'backdrop-blur-xl'">
       <div class="mx-auto flex max-w-3xl items-start gap-3 px-4 py-4">
         <img v-if="logoUrl" :src="logoUrl" alt="" class="size-9 shrink-0 object-contain" :style="{ borderRadius: 'var(--hb-radius)' }">
         <span v-else class="grid size-9 shrink-0 place-items-center text-sm font-semibold" :style="{ borderRadius: 'var(--hb-radius)', background: 'var(--hb-accent)', color: 'var(--hb-accent-text)' }" aria-hidden="true">{{ initials }}</span>
@@ -55,6 +55,8 @@ import { changelogTimeline, type PublicChangelog } from '#shared/changelog'
 definePageMeta({ layout: 'bare' })
 
 const route = useRoute()
+// ?header=0 (data-header="false") leaves out the logo, title and description, for a page that already shows them.
+const showHeader = computed(() => !['0', 'false', 'off'].includes(String(route.query.header || '').toLowerCase()))
 const pk = String(route.query.pk || '')
 const inline = route.query.inline === '1'
 const inFrame = import.meta.client && window.parent !== window

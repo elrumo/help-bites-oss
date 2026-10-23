@@ -5,6 +5,9 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Leave out the changelog's and the feedback board's header.** `data-header="false"` on `changelog.js` and `feedback.js` (`?header=0` on the hosted
+  pages) hides the logo, title and description for a page that already shows them; the feedback board keeps its view tabs and *New post*.
+  No schema or env changes.
 - **A domain on `sb-parse` no longer breaks the app on Dokploy.** The app and Parse now talk over `sb-parse-internal`, a name that exists
   only on the stack's own network. A Dokploy domain also joins a service to `dokploy-network`, and Docker could answer `sb-parse` with
   that address; the app then reached Parse from outside `SB_INTERNAL_SUBNET` and Parse refused the master key. Redeploy to pick it up

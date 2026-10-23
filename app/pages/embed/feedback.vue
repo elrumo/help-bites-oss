@@ -7,24 +7,27 @@
   >
     <!-- Header: who this board belongs to, the views, and the way to post. -->
     <header
+      v-if="headerVisible"
       class="shrink-0 border-b border-stone-200/80 dark:border-stone-800/80"
       :class="inline ? '' : 'bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl'"
     >
       <div class="mx-auto px-4 pt-4" :class="contentWidth">
         <div class="flex items-start gap-3">
-          <img v-if="logoUrl" :src="logoUrl" alt="" class="size-9 shrink-0 rounded-lg bg-elevated object-cover">
-          <span v-else class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-500 text-sm font-semibold text-white" aria-hidden="true">{{ initials }}</span>
-          <div class="min-w-0 flex-1">
-            <h1 class="text-[17px] font-semibold leading-tight truncate">{{ boardTitle }}</h1>
-            <p class="text-[13px] text-stone-500 dark:text-stone-400 line-clamp-2">{{ boardDescription }}</p>
-          </div>
+          <template v-if="showHeader">
+            <img v-if="logoUrl" :src="logoUrl" alt="" class="size-9 shrink-0 rounded-lg bg-elevated object-cover">
+            <span v-else class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-500 text-sm font-semibold text-white" aria-hidden="true">{{ initials }}</span>
+            <div class="min-w-0 flex-1">
+              <h1 class="text-[17px] font-semibold leading-tight truncate">{{ boardTitle }}</h1>
+              <p class="text-[13px] text-stone-500 dark:text-stone-400 line-clamp-2">{{ boardDescription }}</p>
+            </div>
+          </template>
           <UButton
             v-if="config && screen === 'list' && !only"
             icon="i-lucide-plus"
             :label="$t('embed.feedback.newPost')"
             color="primary"
             size="sm"
-            class="shrink-0"
+            class="ml-auto shrink-0"
             @click="startCompose"
           />
           <UButton
@@ -381,6 +384,9 @@ import type { RoadmapCard } from '~/components/feedback/RoadmapView.vue'
 definePageMeta({ layout: 'bare' })
 
 const route = useRoute()
+// ?header=0 (data-header="false") leaves out the logo, title and description, for a page that already shows them.
+// The view tabs and the New post button stay.
+const showHeader = computed(() => !['0', 'false', 'off'].includes(String(route.query.header || '').toLowerCase()))
 const pk = String(route.query.pk || '')
 // Inline: part of the host page, grows to its content (the loader resizes the
 // frame). Otherwise a fixed panel that scrolls inside.
@@ -419,6 +425,8 @@ const screen = ref<'list' | 'post' | 'compose'>('list')
 const nav = ref<'push' | 'pop'>('push')
 
 const contentWidth = computed(() => (view.value === 'roadmap' && screen.value === 'list' && roadmapLayout.value !== 'list' ? 'max-w-5xl' : 'max-w-3xl'))
+// With the title block left out, the header is only worth its space while it still holds controls.
+const headerVisible = computed(() => showHeader.value || tabs.value.length > 1 || (Boolean(config.value) && screen.value === 'list' && !only) || (!inline && inFrame))
 const boardTitle = computed(() => (only
   ? (projectInfo.value?.name ? (onlyRoadmap ? t('embed.roadmap.namedTitle', { name: projectInfo.value.name }) : t('embed.changelog.namedTitle', { name: projectInfo.value.name })) : onlyRoadmap ? t('embed.roadmap.title') : t('embed.changelog.title'))
   : config.value?.title || (projectInfo.value?.name ? t('embed.feedback.namedTitle', { name: projectInfo.value.name }) : t('embed.feedback.title'))))

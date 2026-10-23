@@ -64,7 +64,7 @@ light or dark, following the visitor unless the style fixes a `scheme`. The
 finished style is `feedbackStyle` on `GET /v1/projects/{pk}/public` (and on
 `GET /v1/feedback/config`'s `project`). The `feedback.js` script tag takes
 `data-theme`, `data-accent`, `data-radius` and `data-shadow` as the changelog's
-does, and the hosted board takes them as URL parameters.
+does, and the hosted board takes them as URL parameters. `data-header="false"` leaves out the logo, title and description (the view tabs and *New post* stay); `?header=0` does the same on the hosted board.
 
 ## The changelog
 
@@ -102,6 +102,7 @@ script tag's attributes, each overriding the style for this one embed:
 | `data-accent` | `#rrggbb`, in light and dark. |
 | `data-radius` | 0 to 32. |
 | `data-shadow` | `none`, `soft`, `medium` or `strong`. |
+| `data-header` | `false` leaves out the logo, title and description at the top, for a page that already shows them. The hosted page takes `?header=0`. |
 
 The hosted page takes the same as URL parameters (`?theme=dark&accent=%23e11d48`).
 

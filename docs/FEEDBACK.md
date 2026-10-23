@@ -76,7 +76,9 @@ The same settings are the `feedback` object on `PATCH /v1/admin/projects/:id`
   `light` · `dark`; default follows a `dark`/`light` class on your `<html>`, else
   the board's style, else the visitor), `platform` (preselected for new posts),
   `position` (`right` · `left`), `label`, `accent`, `radius` (0 to 32), `shadow`
-  (`none` · `soft` · `medium` · `strong`), `deepLinkParam` (default `feedback`), `syncUrl`.
+  (`none` · `soft` · `medium` · `strong`), `header` (`false` leaves out the logo,
+  title and description when your page already shows them; the view tabs and
+  *New post* stay), `deepLinkParam` (default `feedback`), `syncUrl`.
 - Deep links: `?feedback=<postId>` on your page opens that post. Inline boards
   keep that parameter in your URL as people open posts, so links are shareable.
 - The colours, logo and name come from the project settings.
@@ -92,7 +94,8 @@ site still gets a read-only board.
 (`data-theme` optional). It wears the changelog's **style** (Project → Changelog →
 Style: the project's own style, or the project's with the changelog's own choices
 over it), in light and dark; `data-accent`, `data-radius` and `data-shadow`
-override it for one embed, and `?accent=`, `?radius=` and `?shadow=` do on the
+override it for one embed, and `data-header="false"` leaves out the logo, title
+and description (your page already shows them), and `?accent=`, `?radius=` and `?shadow=` do on the
 hosted page. See [Project style](STYLE.md). The same
 entries are at `GET /v1/projects/pk_…/changelog.rss` and `GET /v1/changelog?pk=pk_…`;
 see [Changelog](#changelog).

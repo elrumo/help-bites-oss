@@ -40,7 +40,8 @@
  * ('system' | 'light' | 'dark'; defaults to a dark/light class on your <html>, else the
  * board's style, else the visitor's), platform (preselected for new posts), position
  * ('right' | 'left'), label, accent, radius (0 to 32), shadow ('none' | 'soft' |
- * 'medium' | 'strong'), deepLinkParam ('feedback'), syncUrl
+ * 'medium' | 'strong'), header ("false" leaves out the logo, title and description,
+ * when your page already shows them; the view tabs and New post stay), deepLinkParam ('feedback'), syncUrl
  * (inline default true), host (the HelpBites to read from, when you serve this
  * file yourself or from a cache).
  *
@@ -65,6 +66,7 @@
     accent: attr('accent'),
     radius: attr('radius'),
     shadow: attr('shadow'),
+    header: attr('header'),
     deepLinkParam: attr('deep-link-param') || 'feedback',
     syncUrl: attr('sync-url') ? attr('sync-url') !== 'false' : null
   }
@@ -133,6 +135,7 @@
       + (/^#[0-9a-f]{6}$/i.test(options.accent) ? '&accent=' + encodeURIComponent(options.accent) : '')
       + (options.radius ? '&radius=' + encodeURIComponent(options.radius) : '')
       + (options.shadow ? '&shadow=' + encodeURIComponent(options.shadow) : '')
+      + (/^(0|false|off)$/i.test(options.header) ? '&header=0' : '')
       + (options.view ? '&view=' + encodeURIComponent(options.view) : '')
       + (options.only ? '&only=' + encodeURIComponent(options.only) : '')
       + (options.layout ? '&layout=' + encodeURIComponent(options.layout) : '')
