@@ -117,7 +117,7 @@
           </UFormField>
           <USwitch :model-value="settings.reactions" :disabled="!canManage" :label="$t('blog.reactions')" :description="$t('blog.reactionsDescription')" @update:model-value="saveSettings({ reactions: $event })" />
           <USwitch :model-value="settings.comments" :disabled="!canManage" :label="$t('blog.comments')" :description="$t('blog.commentsDescription')" @update:model-value="saveSettings({ comments: $event })" />
-          <p v-if="settings.comments && project && !project.allowAnonymousUsers" class="-mt-2 text-xs text-muted">{{ $t('blog.emailOnlyHint') }} <NuxtLink :to="`/projects/${id}/settings`" class="underline underline-offset-2">{{ $t('nav.settings') }}</NuxtLink>{{ $t('blog.emailOnlyHintEnd') }}</p>
+          <p v-if="settings.comments && project && !project.allowAnonymousUsers" class="-mt-2 text-xs text-muted">{{ $t('blog.emailOnlyHint') }} <NuxtLink :to="`/projects/${id}/settings`" @click.prevent="openProjectSettings(id)" class="underline underline-offset-2">{{ $t('nav.settings') }}</NuxtLink>{{ $t('blog.emailOnlyHintEnd') }}</p>
           <UFormField :label="$t('blog.commentNotify')" :description="$t('blog.commentNotifyHint')">
             <UInput v-model="settingsDraft.commentNotify" :disabled="!canManage" class="w-full" placeholder="you@example.com" @blur="saveText('commentNotify')" />
           </UFormField>
@@ -169,6 +169,7 @@
 </template>
 
 <script setup lang="ts">
+const { openProjectSettings } = useProjectSettings()
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { blogTitle, DEFAULT_BLOG_CONFIG, isBlogPostLive, type BlogCommentStatus, type BlogCommentWithPost, type BlogConfig, type BlogPost } from '#shared/blog'
 import { can } from '#shared/roles'

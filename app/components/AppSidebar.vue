@@ -46,10 +46,15 @@
             <div class="space-y-px pt-px pb-1 pl-5">
               <template v-for="part in layoutOf(p)" :key="part.id">
                 <p v-if="part.group" class="pr-2 pb-0.5 pl-1 pt-2.5 text-[11px] font-medium text-dimmed">{{ $t('nav.groups.' + part.group) }}</p>
-                <NuxtLink v-for="s in part.sections" :key="s.path" :to="`/projects/${p.id}/${s.path}`" class="nav-item pl-7" active-class="nav-item-active">
+                <template v-for="s in part.sections" :key="s.path">
+                <button v-if="s.path === 'settings'" type="button" class="nav-item pl-7" @click="openProjectSettings(p.id)">
+                  <UIcon :name="s.icon" class="size-4 shrink-0 text-muted" />{{ $t('sections.settings') }}
+                </button>
+                <NuxtLink v-else :to="`/projects/${p.id}/${s.path}`" class="nav-item pl-7" active-class="nav-item-active">
                   <UIcon :name="s.icon" class="size-4 shrink-0 text-muted" />{{ $t('sections.' + s.path) }}
                   <UIcon v-if="locked(s.feature)" name="i-lucide-lock" class="ml-auto size-3 shrink-0 text-dimmed" :title="$t('workspaceSettings.planLimit.notInPlan')" />
                 </NuxtLink>
+                </template>
               </template>
             </div>
           </template>
@@ -97,6 +102,7 @@ const totalUnread = useState<number>('inbox-total-unread', () => 0)
 const attention = useState<WorkspaceAttention | null>('attention', () => null)
 const settingsTab = useState('settings-tab', () => '')
 const { locked } = usePlanLocks()
+const { openProjectSettings } = useProjectSettings()
 
 const { agent, projects, demo, context, logout, switchWorkspace } = useAgent()
 const { t } = useI18n()

@@ -5117,6 +5117,7 @@
       "removeRepo": "저장소 제거",
       "githubAccount": "GitHub 계정",
       "addRepo": "저장소 추가",
+      "adding": "추가 중…",
       "repo": "저장소",
       "privateRepo": "{name} (비공개)",
       "listFailed": "저장소 목록을 가져올 수 없습니다",

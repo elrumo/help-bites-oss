@@ -10,7 +10,7 @@
       <div v-if="project" class="mx-auto max-w-4xl space-y-10 px-6 py-8">
         <header class="space-y-1">
           <h1 class="text-xl font-semibold tracking-tight text-highlighted">{{ $t('projectPages.dev.connect', { name: project.name }) }}</h1>
-          <p class="text-[13px] text-muted">{{ $t('projectPages.dev.intro') }} <NuxtLink :to="`/projects/${id}/settings`" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('projectPages.dev.projectSettings') }}</NuxtLink>{{ $t('projectPages.dev.introEnd') }}</p>
+          <p class="text-[13px] text-muted">{{ $t('projectPages.dev.intro') }} <NuxtLink :to="`/projects/${id}/settings`" @click.prevent="openProjectSettings(id)" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('projectPages.dev.projectSettings') }}</NuxtLink>{{ $t('projectPages.dev.introEnd') }}</p>
           <p class="text-[13px] text-muted">{{ $t('projectPages.dev.mcpMoved') }} <NuxtLink to="/developer#mcp" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('projectPages.dev.mcpMovedLink') }}</NuxtLink>{{ $t('projectPages.dev.mcpMovedEnd') }}</p>
         </header>
 
@@ -71,7 +71,7 @@
             <template v-if="tab === 'chat'">
               <div class="panel-head">
                 <p>{{ $t('projectPages.dev.chatIntro') }}</p>
-                <UButton :to="`/projects/${id}/settings#widget`" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('projectPages.dev.widgetSettings')" />
+                <UButton :to="`/projects/${id}/settings#widget`" @click.prevent="openProjectSettings(id,'widget')" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('projectPages.dev.widgetSettings')" />
               </div>
               <ol class="steps">
                 <li><p class="step-title">{{ $t('projectPages.dev.mintTitle') }}</p><p class="step-text">{{ $t('projectPages.dev.mintText') }}</p><CodeBlock :code="mintSnippet" lang="js" /></li>
@@ -163,6 +163,7 @@
 </template>
 
 <script setup lang="ts">
+const { openProjectSettings } = useProjectSettings()
 import type { AdminProject } from '~~/server/utils/projects'
 
 definePageMeta({ middleware: 'agent' })

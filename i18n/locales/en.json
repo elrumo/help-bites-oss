@@ -5325,6 +5325,7 @@
       "removeRepo": "Remove repo",
       "githubAccount": "GitHub account",
       "addRepo": "Add a repo",
+      "adding": "Adding…",
       "repo": "Repo",
       "privateRepo": "{name} (private)",
       "listFailed": "Could not list the repos",

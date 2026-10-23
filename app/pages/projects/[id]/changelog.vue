@@ -196,7 +196,7 @@
       <template #body>
         <div class="space-y-4">
           <p v-if="repos && !repos.length" class="rounded-lg border border-default bg-elevated px-3 py-2 text-[13px] text-muted">
-            {{ $t('changelog.noRepos') }} <NuxtLink :to="`/projects/${id}/settings`" class="font-medium text-default underline underline-offset-2">{{ $t('nav.settings') }}</NuxtLink>{{ $t('changelog.noReposAfter') }}
+            {{ $t('changelog.noRepos') }} <NuxtLink :to="`/projects/${id}/settings`" @click.prevent="openProjectSettings(id)" class="font-medium text-default underline underline-offset-2">{{ $t('nav.settings') }}</NuxtLink>{{ $t('changelog.noReposAfter') }}
           </p>
           <UFormField :label="$t('changelog.commitsToRead')">
             <USelect v-model="range" :items="rangeItems" class="w-full" />
@@ -250,6 +250,7 @@
 </template>
 
 <script setup lang="ts">
+const { openProjectSettings } = useProjectSettings()
 import { CHANGELOG_TAGS, CHANGELOG_TAG_LABELS, isEntryPublic, type ChangelogEntry, type ChangelogLinkKind, type ChangelogRelease, type ChangelogSource, type ChangelogStatus, type ChangelogTag } from '#shared/changelog'
 import type { ChangelogLinkedConversations } from '#shared/changelogReply'
 import type { AdminProject } from '~~/server/utils/projects'

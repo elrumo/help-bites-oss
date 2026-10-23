@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { openProjectSettings } = useProjectSettings()
 /**
  * A project's email settings, in one place: the sender every message goes out
  * from (with an optional second one for campaigns and sequences), and the
@@ -98,7 +99,7 @@ const snippet = computed(() => `<form action="${appUrl.value}/v1/subscribe" meth
           </UFormField>
           <p class="text-xs text-muted">
             <i18n-t keypath="campaigns.settings.postalAddressCompany" tag="span">
-              <template #company><NuxtLink :to="`/projects/${project.id}/settings#company`" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('campaigns.settings.postalAddressCompanyLink') }}</NuxtLink></template>
+              <template #company><NuxtLink :to="`/projects/${project.id}/settings#company`" @click.prevent="openProjectSettings(project.id,'company')" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('campaigns.settings.postalAddressCompanyLink') }}</NuxtLink></template>
             </i18n-t>
           </p>
         </section>

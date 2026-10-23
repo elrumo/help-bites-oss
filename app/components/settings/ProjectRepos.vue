@@ -7,18 +7,24 @@
       <UButton v-if="configured" size="xs" color="neutral" variant="outline" icon="i-lucide-github" @click="settingsTab = 'github'">{{ $t('workspaceSettings.github.connect') }}</UButton>
     </template>
     <template v-else>
-      <ul v-if="repos.length" class="divide-y divide-default overflow-hidden rounded-xl border border-default">
+      <ul v-if="repos.length || adding" class="divide-y divide-default overflow-hidden rounded-xl border border-default">
         <li v-for="repo in repos" :key="repo.id" class="flex min-h-10 items-center gap-3 px-4 py-1.5">
           <UIcon name="i-lucide-git-branch" class="size-4 shrink-0 text-muted" />
           <span class="min-w-0 flex-1 truncate text-[13px] font-medium text-highlighted">{{ repo.fullName }}</span>
           <span class="text-xs text-muted">{{ repo.defaultBranch }}</span>
           <UButton size="sm" color="neutral" variant="ghost" square icon="i-lucide-x" class="text-muted" :aria-label="$t('workspaceSettings.projectRepos.removeRepo')" :disabled="saving" @click="save(repos.filter(r => r.id !== repo.id))" />
         </li>
+        <!-- The repo just picked, until the server has saved it. -->
+        <li v-if="adding" class="flex min-h-10 items-center gap-3 px-4 py-1.5 text-muted" role="status">
+          <UIcon name="i-lucide-loader-circle" class="size-4 shrink-0 animate-spin" />
+          <span class="min-w-0 flex-1 truncate text-[13px] font-medium">{{ adding }}</span>
+          <span class="text-xs">{{ $t('workspaceSettings.projectRepos.adding') }}</span>
+        </li>
       </ul>
       <p v-else class="text-[13px] text-muted">{{ $t('workspaceSettings.projectRepos.noRepos') }}</p>
       <div v-if="repos.length < 10" class="flex items-center gap-2">
         <USelectMenu v-model="connection" :items="connections.map(c => ({ label: c.account, value: c.id }))" value-key="value" class="w-40" :aria-label="$t('workspaceSettings.projectRepos.githubAccount')" @update:model-value="load" />
-        <USelectMenu v-model="pick" :items="choices" value-key="value" :loading="listing" :placeholder="$t('workspaceSettings.projectRepos.addRepo')" searchable class="min-w-0 flex-1" :aria-label="$t('workspaceSettings.projectRepos.repo')" :disabled="saving" @update:model-value="add" />
+        <USelectMenu v-model="pick" :items="choices" value-key="value" :loading="listing || saving" :placeholder="$t('workspaceSettings.projectRepos.addRepo')" searchable class="min-w-0 flex-1" :aria-label="$t('workspaceSettings.projectRepos.repo')" :disabled="saving" @update:model-value="add" />
       </div>
     </template>
   </div>
@@ -43,6 +49,7 @@ const pick = ref<number>()
 const loading = ref(true)
 const listing = ref(false)
 const saving = ref(false)
+const adding = ref('')
 const error = ref('')
 
 const choices = computed(() => available.value.filter(a => !repos.value.some(r => r.id === a.id)).map(a => ({ label: a.private ? t('workspaceSettings.projectRepos.privateRepo', { name: a.fullName }) : a.fullName, value: a.id })))
@@ -61,7 +68,8 @@ async function save(next: Array<{ installationId: string, id: number }>) {
 
 async function add(id: number) {
   pick.value = undefined
-  await save([...repos.value, { installationId: connection.value, id }])
+  adding.value = available.value.find(a => a.id === id)?.fullName || ''
+  try { await save([...repos.value, { installationId: connection.value, id }]) } finally { adding.value = '' }
 }
 
 onMounted(async () => {

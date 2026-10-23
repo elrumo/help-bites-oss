@@ -3,6 +3,7 @@
     <PageHeader :project-id="id" :title="$t('sections.overview')">
       <template #actions>
         <UTooltip :text="$t('projectPages.overview.refresh')"><UButton icon="i-lucide-refresh-cw" size="sm" color="neutral" variant="ghost" square class="text-muted" :aria-label="$t('projectPages.overview.refresh')" :loading="loading" @click="load" /></UTooltip>
+        <UButton icon="i-lucide-settings" size="sm" color="neutral" variant="outline" :label="$t('sections.settings')" @click="openProjectSettings(id)" />
       </template>
     </PageHeader>
     <div class="min-h-0 flex-1 overflow-y-auto">
@@ -60,6 +61,7 @@ definePageMeta({ middleware: 'agent' })
 const route = useRoute()
 const id = String(route.params.id)
 const { api } = useAgent()
+const { openProjectSettings } = useProjectSettings()
 const { t, te } = useI18n()
 
 const overview = ref<ProjectOverview | null>(null)

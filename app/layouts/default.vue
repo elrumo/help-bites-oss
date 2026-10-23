@@ -34,6 +34,7 @@
     </USlideover>
 
     <SettingsModal />
+    <SettingsProjectModal />
     <WelcomeTour />
 
     <UModal v-model:open="paletteOpen" :ui="{ content: 'sm:max-w-xl' }">

@@ -5117,6 +5117,7 @@
       "removeRepo": "リポジトリを削除",
       "githubAccount": "GitHub アカウント",
       "addRepo": "リポジトリを追加",
+      "adding": "追加中…",
       "repo": "リポジトリ",
       "privateRepo": "{name}（プライベート）",
       "listFailed": "リポジトリを一覧表示できませんでした",

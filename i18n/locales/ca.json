@@ -5117,6 +5117,7 @@
       "removeRepo": "Treu el repo",
       "githubAccount": "Compte de GitHub",
       "addRepo": "Afegeix un repo",
+      "adding": "Afegint…",
       "repo": "Repo",
       "privateRepo": "{name} (privat)",
       "listFailed": "No s'han pogut llistar els repos",

@@ -5117,6 +5117,7 @@
       "removeRepo": "移除仓库",
       "githubAccount": "GitHub 账户",
       "addRepo": "添加仓库",
+      "adding": "正在添加…",
       "repo": "仓库",
       "privateRepo": "{name}（私有）",
       "listFailed": "无法列出仓库",

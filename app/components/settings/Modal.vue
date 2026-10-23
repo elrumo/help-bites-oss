@@ -93,7 +93,7 @@
               </div>
               <ul v-if="projects.length" class="divide-y divide-default overflow-hidden rounded-xl border border-default">
                 <li v-for="p in projects" :key="p.id">
-                  <NuxtLink :to="`/projects/${p.id}/settings`" class="flex min-h-12 items-center gap-3 px-4 transition-colors hover:bg-elevated" @click="open = false">
+                  <NuxtLink :to="`/projects/${p.id}/settings`" class="flex min-h-12 items-center gap-3 px-4 transition-colors hover:bg-elevated" @click.prevent="open = false; openProjectSettings(p.id)">
                     <ProjectDot tile :project-id="p.id" :accent="p.theme?.accent" :name="p.name" :icon-url="p.iconUrl" class="!size-6 !rounded-md !text-xs" />
                     <span class="min-w-0 flex-1 truncate text-[13px] font-medium text-highlighted">{{ p.name }}</span>
                     <span class="hidden truncate text-xs text-muted sm:block">{{ p.siteUrl }}</span>
@@ -131,6 +131,7 @@ const tab = useState('settings-tab', () => '')
 const newProjectOpen = useState('new-project-open', () => false)
 const tourOpen = useState('tour-open', () => false)
 const { api, agent, projects, demo, context, logout } = useAgent()
+const { openProjectSettings } = useProjectSettings()
 const colorMode = useColorMode()
 const { t, locale, locales, setLocale } = useI18n()
 const localeItems = computed(() => locales.value.map(l => ({ label: l.name || l.code, value: l.code })))
