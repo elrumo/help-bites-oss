@@ -37,8 +37,10 @@
  * (['openPost', id]), (['setView', 'board' | 'roadmap' | 'changelog']).
  * Options (init or data-*): target, view, only ('roadmap'), layout (the
  * roadmap's: 'columns' | 'timeline' | 'list'; defaults to the board's), theme
- * ('system' | 'light' | 'dark'), platform (preselected for new posts), position
- * ('right' | 'left'), label, accent, deepLinkParam ('feedback'), syncUrl
+ * ('system' | 'light' | 'dark'; defaults to a dark/light class on your <html>, else the
+ * board's style, else the visitor's), platform (preselected for new posts), position
+ * ('right' | 'left'), label, accent, radius (0 to 32), shadow ('none' | 'soft' |
+ * 'medium' | 'strong'), deepLinkParam ('feedback'), syncUrl
  * (inline default true), host (the HelpBites to read from, when you serve this
  * file yourself or from a cache).
  *
@@ -61,6 +63,8 @@
     position: attr('position') === 'left' ? 'left' : 'right',
     label: attr('label') || 'Feedback',
     accent: attr('accent'),
+    radius: attr('radius'),
+    shadow: attr('shadow'),
     deepLinkParam: attr('deep-link-param') || 'feedback',
     syncUrl: attr('sync-url') ? attr('sync-url') !== 'false' : null
   }
@@ -118,14 +122,17 @@
     var root = document.documentElement
     if (root.classList.contains('dark')) return 'dark'
     if (root.classList.contains('light')) return 'light'
-    return 'system'
+    return ''
   }
 
   function frameSrc() {
     var linked = deepLink()
     return origin + '/embed/feedback?pk=' + encodeURIComponent(options.project)
       + (inline() ? '&inline=1' : '')
-      + '&theme=' + encodeURIComponent(theme())
+      + (theme() ? '&theme=' + encodeURIComponent(theme()) : '')
+      + (/^#[0-9a-f]{6}$/i.test(options.accent) ? '&accent=' + encodeURIComponent(options.accent) : '')
+      + (options.radius ? '&radius=' + encodeURIComponent(options.radius) : '')
+      + (options.shadow ? '&shadow=' + encodeURIComponent(options.shadow) : '')
       + (options.view ? '&view=' + encodeURIComponent(options.view) : '')
       + (options.only ? '&only=' + encodeURIComponent(options.only) : '')
       + (options.layout ? '&layout=' + encodeURIComponent(options.layout) : '')

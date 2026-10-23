@@ -41,7 +41,6 @@
 
 <script setup lang="ts">
 import { changelogTimeline, type PublicChangelog } from '#shared/changelog'
-import { STYLE_RADIUS_MAX, STYLE_SHADOWS, STYLE_SHADOW_CSS, resolveStyle, styleVars, type ResolvedStyle, type StyleShadow } from '#shared/projectStyle'
 
 // The plug-and-play changelog (see public/changelog.js), also the page at
 // /changelog/<public key>. Read-only and independent of the feedback board: it
@@ -64,16 +63,6 @@ const colorMode = useColorMode()
 const themeParam = String(route.query.theme || '')
 if (['light', 'dark', 'system'].includes(themeParam)) colorMode.preference = themeParam
 
-// Per-embed overrides from the script tag's data-accent, data-radius and data-shadow.
-const accentParam = String(route.query.accent || '')
-const radiusParam = route.query.radius === undefined ? NaN : Number(route.query.radius)
-const shadowParam = String(route.query.shadow || '')
-const override = {
-  accent: /^#[0-9a-f]{6}$/i.test(accentParam) ? accentParam.toLowerCase() : '',
-  radius: Number.isInteger(radiusParam) && radiusParam >= 0 && radiusParam <= STYLE_RADIUS_MAX ? radiusParam : null,
-  shadow: (STYLE_SHADOWS as readonly string[]).includes(shadowParam) ? shadowParam as StyleShadow : ''
-}
-
 type ProjectInfo = { name: string, theme: { accent?: string }, brandLogoUrl: string, poweredBy?: { url: string } | null }
 
 const { t } = useI18n()
@@ -85,30 +74,10 @@ const error = ref('')
 
 const items = computed(() => changelogTimeline(changelog.value))
 const title = computed(() => (projectInfo.value?.name ? t('embed.changelog.namedTitle', { name: projectInfo.value.name }) : t('embed.changelog.title')))
-// Until the changelog arrives (or when it fails) the page wears our defaults.
-const FALLBACK = { accent: '#4f46e5', radiusPx: 8, fontFamily: 'ui-sans-serif, system-ui, sans-serif', logoUrl: '', logoDarkUrl: '', iconUrl: '' }
-const style = computed<ResolvedStyle>(() => {
-  const base = changelog.value.style || resolveStyle(FALLBACK)
-  const shadow = override.shadow || base.shadow
-  const accent = (palette: ResolvedStyle['light']) => ({ ...palette, accent: override.accent || palette.accent })
-  return { ...base, radius: override.radius ?? base.radius, shadow, shadowCss: STYLE_SHADOW_CSS[shadow], light: accent(base.light), dark: accent(base.dark) }
-})
+const style = computed(() => embedStyle(changelog.value.style, route.query))
 const mode = computed<'light' | 'dark'>(() => (colorMode.value === 'dark' ? 'dark' : 'light'))
-const vars = computed(() => styleVars(style.value, mode.value))
 const logoUrl = computed(() => (mode.value === 'dark' ? style.value.logoDarkUrl : style.value.logoUrl) || style.value.iconUrl || projectInfo.value?.brandLogoUrl || '')
-// The page's colours, and Nuxt UI's own tokens (text, borders, prose) pointed at them.
-const rootStyle = computed(() => ({
-  ...vars.value,
-  background: 'var(--hb-bg)',
-  color: 'var(--hb-text)',
-  fontFamily: 'var(--hb-font)',
-  '--ui-bg': 'var(--hb-bg)',
-  '--ui-text': 'var(--hb-text)',
-  '--ui-text-highlighted': 'var(--hb-text)',
-  '--ui-text-muted': 'var(--hb-muted)',
-  '--ui-text-dimmed': 'var(--hb-muted)',
-  '--ui-border': 'var(--hb-border)'
-}))
+const rootStyle = computed(() => styleRootStyle(style.value, mode.value))
 const cardStyle = { background: 'var(--hb-surface)', border: '1px solid var(--hb-border)', borderRadius: 'var(--hb-radius)', boxShadow: 'var(--hb-shadow)' }
 
 // A style that fixes the scheme applies it, unless the embed's own ?theme asked for one.

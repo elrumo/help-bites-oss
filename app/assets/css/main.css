@@ -102,6 +102,8 @@ body { font-family: var(--font-sans); font-size: 13px; line-height: 1.5; -webkit
 @layer components {
   /* Linear's view pills: "Active · Backlog · All issues", and filter chips. */
   .chip { @apply inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-default px-3 text-[13px] font-medium whitespace-nowrap text-muted transition-colors hover:bg-elevated hover:text-highlighted; }
+  /* A public page's cards wear the style's shadow (see app/utils/styleRoot.ts); outside one there is none. */
+  .hb-card { box-shadow: var(--hb-shadow, none); }
   .chip-active { @apply border-accented bg-elevated text-highlighted; }
   /* A list group's header row: "Todo 4". */
   .group-row { @apply mx-2 mt-2 flex h-9 items-center gap-2 rounded-lg bg-elevated px-3 text-[13px] font-medium text-highlighted; }

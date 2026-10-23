@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { copyFile, mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { DOCS, docPath } from './shared/docs'
+import { DOCS, DOCS_INDEX_MARKDOWN, docMarkdownPath, docPath } from './shared/docs'
 
 // Two editions from one codebase (docs/EDITIONS.md). A cloud build adds the
 // ee/ layer; every other build leaves it out, and the Dockerfile deletes the
@@ -105,7 +105,7 @@ export default defineNuxtConfig({
     experimental: { openAPI: true },
     // Nitro only prerenders the routes it is told about (it does not follow
     // links), so the guides are listed.
-    prerender: { routes: DOCS.map(docPath) },
+    prerender: { routes: [DOCS_INDEX_MARKDOWN, ...DOCS.flatMap(doc => [docPath(doc), docMarkdownPath(doc)])] },
     openAPI: {
       // Served in production too: the API is the product, and integrators need the spec.
       production: 'runtime',

@@ -34,7 +34,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   roadmap, changelog, post pages and composer. [FEEDBACK.md](FEEDBACK.md)
 - **Your Brand kit's look.** The chat, boards, forms, onboarding, legal and blog
   pages and campaign mail all wear the project's Brand kit: its accent, logo,
-  typefaces and corner radius, set once. [BRAND.md](BRAND.md)
+  typefaces and corner radius, set once. [BRAND.md](BRAND.md) A **project style**
+  on top of it adds light and dark colours, a shadow and its own logo and icon.
+  [STYLE.md](STYLE.md)
 - **A Home tab.** Turn it on and the chat opens on Home, with what is new, the top
   feedback and a button per onboarding flow, next to Messages. [HUB.md](HUB.md)
 - **One tag for everything.** `helpbites.js` asks the project which embeds it has
@@ -322,6 +324,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Writable by script.** Batch, import and release-publish endpoints, plus the
   `helpbites changelog` CLI, which writes entries from git history
   ([cli/README.md](../cli/README.md)).
+- **A style of its own.** The public page and embed (and the feedback board) wear the project's style in
+  light and dark (logo, colours, corners, shadow, font), or the project's with
+  the changelog's own choices over it. `data-accent`, `data-radius` and
+  `data-shadow` override it per embed. [STYLE.md](STYLE.md)
 
 **Blog and newsletter** [BLOG.md](BLOG.md)
 
@@ -635,6 +641,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 ## 11. Developer platform
 
 - **Documented REST API** under `/v1`, with OpenAPI docs at `/_docs/scalar`.
+- **Every guide as Markdown.** `/docs/<slug>.md` serves a published guide as plain Markdown (links
+  go to the other guides' `.md` or to GitHub), `/docs.md` lists them, and each `/docs` page has
+  **Copy MD** and **Copy MD link** buttons at the top, so a guide can be pasted or linked to an AI
+  assistant. `/llms.txt` is the same list with absolute links, for assistants that look for it.
 - **Four ways in.** The project secret (server only), the public key (browser
   reads), an identity token (one user), and an admin API key (operators and tools).
   [CONNECTING.md](CONNECTING.md)
@@ -717,6 +727,11 @@ repository. See [EDITIONS.md](EDITIONS.md).
   from the server (error messages, names, AI output) stays as the server wrote it.
   In the hosted edition it shows the plan, usage, locks and
   sending domains, and opens Stripe's Checkout and customer portal in the browser.
+- **Project style.** The native app does not edit the project style or the
+  changelog's style yet (the panel does, and the API is the same). Forms,
+  onboarding, pricing tables, the blog and legal pages take the project style's
+  accent only: no dark palette, shadow or card colours there yet.
+  [STYLE.md](STYLE.md)
 - **Blog preview.** The web editor has Preview and Live preview (the draft in the
   blog's design, `POST /v1/admin/blog/preview`); the native editor has neither yet.
   [BLOG.md](BLOG.md)

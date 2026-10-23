@@ -1,6 +1,6 @@
 <template>
   <article
-    class="group relative flex gap-3 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 p-3 sm:p-3.5 transition-[border-color,box-shadow,transform] duration-150 hover:border-stone-300 dark:hover:border-stone-700 hover:shadow-sm cursor-pointer"
+    class="hb-card group relative flex gap-3 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 p-3 sm:p-3.5 transition-[border-color,box-shadow,transform] duration-150 hover:border-stone-300 dark:hover:border-stone-700 hover:shadow-sm cursor-pointer"
     @click="emit('open')"
   >
     <FeedbackVote :count="post.voteCount" :voted="post.hasVoted" :closed="closed" :readonly="readonlyVotes" @vote="emit('vote')" />

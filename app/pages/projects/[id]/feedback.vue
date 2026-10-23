@@ -8,6 +8,7 @@
       <template v-if="config && (config.enabled || showSettings)" #actions>
         <UButton icon="i-lucide-sparkles" :label="$t('feedback.publicChangelog')" color="neutral" variant="ghost" size="sm" @click="copyChangelogUrl" />
         <UButton v-if="changelogReady" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="changelogUrl" target="_blank" :aria-label="$t('feedback.openChangelog')" />
+        <UButton icon="i-lucide-palette" :label="$t('style.title')" color="neutral" variant="ghost" size="sm" @click="showStyle = true" />
         <UButton icon="i-lucide-settings-2" :label="$t('nav.settings')" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
         <UButton icon="i-lucide-plus" :label="$t('feedback.newPost')" size="sm" @click="openNew" />
       </template>
@@ -223,6 +224,13 @@
       </template>
     </USlideover>
 
+    <!-- Style -->
+    <USlideover v-model:open="showStyle" :title="$t('feedback.styleTitle')" :description="$t('feedback.styleDescription')" :ui="{ content: 'sm:max-w-2xl' }">
+      <template #body>
+        <StyleChoicePanel v-if="project" :project="project" target="feedback" />
+      </template>
+    </USlideover>
+
     <!-- Board settings -->
     <USlideover v-model:open="showSettings" :title="$t('feedback.boardSettings')" :description="$t('feedback.boardSettingsDescription')" :ui="{ content: 'sm:max-w-3xl' }">
       <template #body>
@@ -315,6 +323,7 @@ function upsert(post: FeedbackPost) {
 
 // ---- settings ----
 const showSettings = ref(false)
+const showStyle = ref(false)
 const saving = ref(false)
 const saved = ref(false)
 const saveError = ref('')

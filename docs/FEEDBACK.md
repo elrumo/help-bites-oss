@@ -36,6 +36,13 @@ Panel → your project → **Feedback** → *Turn on feedback*. Then open
 | Post URL | Where a post lives on your site. `{id}`, `{number}` and `{slug}` are replaced: `https://app.example.com/feedback/{number}-{slug}`. Used by emails and RSS. |
 | Options | Comments, authors editing their own posts, showing author names publicly, email notifications, roadmap and changelog views. |
 
+**Style.** Project → Feedback → **Style** sets how the public board, its roadmap
+and changelog views look, in light and dark: the project's own style (see
+[Project style](STYLE.md)), or the project's with the board's own choices over
+it (`feedback.style`: `{ "source": "project" | "custom", "custom": { … } }`). The
+board's finished style is `feedbackStyle` on `GET /v1/projects/:pk/public`
+and on `GET /v1/feedback/config`'s `project`.
+
 The same settings are the `feedback` object on `PATCH /v1/admin/projects/:id`
 (partial: send only what changes).
 
@@ -66,9 +73,10 @@ The same settings are the `feedback` object on `PATCH /v1/admin/projects/:id`
 - Options (in `init` or as `data-*` on the script tag): `target`, `view`,
   `only` (`roadmap`: the roadmap alone, see below), `layout` (the roadmap's:
   `columns` · `timeline` · `list`; default the board's), `theme` (`system` ·
-  `light` · `dark`; default follows a `dark`/`light` class on your `<html>`),
-  `platform` (preselected for new posts), `position` (`right` · `left`),
-  `label`, `accent`, `deepLinkParam` (default `feedback`), `syncUrl`.
+  `light` · `dark`; default follows a `dark`/`light` class on your `<html>`, else
+  the board's style, else the visitor), `platform` (preselected for new posts),
+  `position` (`right` · `left`), `label`, `accent`, `radius` (0 to 32), `shadow`
+  (`none` · `soft` · `medium` · `strong`), `deepLinkParam` (default `feedback`), `syncUrl`.
 - Deep links: `?feedback=<postId>` on your page opens that post. Inline boards
   keep that parameter in your URL as people open posts, so links are shareable.
 - The colours, logo and name come from the project settings.
@@ -81,7 +89,11 @@ site still gets a read-only board.
 *Public changelog* on in Project → Changelog → Settings, not the board; the
 *Public changelog* button there copies the link. To put it in your page, add
 `<div id="changelog"></div><script src="https://YOUR-SUPPORT-HOST/changelog.js" data-project="pk_…" data-target="#changelog" defer></script>`
-(`data-theme` optional). The same
+(`data-theme` optional). It wears the changelog's **style** (Project → Changelog →
+Style: the project's own style, or the project's with the changelog's own choices
+over it), in light and dark; `data-accent`, `data-radius` and `data-shadow`
+override it for one embed, and `?accent=`, `?radius=` and `?shadow=` do on the
+hosted page. See [Project style](STYLE.md). The same
 entries are at `GET /v1/projects/pk_…/changelog.rss` and `GET /v1/changelog?pk=pk_…`;
 see [Changelog](#changelog).
 

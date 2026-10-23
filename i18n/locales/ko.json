@@ -401,6 +401,11 @@
     "unlinkItem": "#{number} {title} 연결 해제"
   },
   "style": {
+    "useProject": "프로젝트 스타일 사용",
+    "useProjectHint": "다른 공개 페이지와 같은 로고, 색상, 모서리, 그림자입니다.",
+    "custom": "이 페이지용으로 맞춤 설정",
+    "customHint": "프로젝트 스타일에서 시작해 이 페이지에 필요한 부분만 바꿉니다.",
+    "projectNote": "이 페이지는 프로젝트 스타일을 사용합니다. 한 번 바꾸면 스타일이 있는 모든 기능이 따라갑니다.",
     "title": "스타일",
     "scheme": "색상 모드",
     "shadow": "그림자",
@@ -461,11 +466,6 @@
   "changelog": {
     "styleTitle": "페이지 스타일",
     "styleDescription": "공개 변경 로그 페이지와 임베드의 모양을 선택합니다.",
-    "styleProjectNote": "변경 로그는 프로젝트 스타일을 사용합니다. 한 번 바꾸면 스타일이 있는 모든 기능이 따라갑니다.",
-    "styleUseProject": "프로젝트 스타일 사용",
-    "styleUseProjectHint": "다른 공개 페이지와 같은 로고, 색상, 모서리, 그림자입니다.",
-    "styleCustom": "변경 로그용으로 맞춤 설정",
-    "styleCustomHint": "프로젝트 스타일에서 시작해 변경 로그에 필요한 부분만 바꿉니다.",
     "publicCount": "공개 {count}개",
     "draftCount": "초안 {count}개",
     "publicChangelog": "공개 변경 내역",
@@ -2125,6 +2125,8 @@
     }
   },
   "feedback": {
+    "styleTitle": "보드 스타일",
+    "styleDescription": "공개 피드백 보드와 로드맵·변경 로그 보기의 모양을 선택합니다.",
     "postCount": "게시물 {count}개",
     "voteCount": "{count}표",
     "commentCount": "댓글 {count}개",

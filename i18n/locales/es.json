@@ -401,6 +401,11 @@
     "unlinkItem": "Desvincular #{number} {title}"
   },
   "style": {
+    "useProject": "Usar el estilo del proyecto",
+    "useProjectHint": "El mismo logotipo, colores, esquinas y sombra que tus otras páginas públicas.",
+    "custom": "Personalizar para esta página",
+    "customHint": "Parte del estilo del proyecto y cambia solo lo que esta página necesite.",
+    "projectNote": "Esta página usa el estilo del proyecto. Cámbialo una vez y todas las funciones con estilo lo siguen.",
     "title": "Estilo",
     "scheme": "Esquema de color",
     "shadow": "Sombra",
@@ -461,11 +466,6 @@
   "changelog": {
     "styleTitle": "Estilo de la página",
     "styleDescription": "Elige el aspecto de la página pública del changelog y de su embed.",
-    "styleProjectNote": "El changelog usa el estilo del proyecto. Cámbialo una vez y todas las funciones con estilo lo siguen.",
-    "styleUseProject": "Usar el estilo del proyecto",
-    "styleUseProjectHint": "El mismo logotipo, colores, esquinas y sombra que tus otras páginas públicas.",
-    "styleCustom": "Personalizar para el changelog",
-    "styleCustomHint": "Parte del estilo del proyecto y cambia solo lo que el changelog necesite.",
     "publicCount": "{count} públicas",
     "draftCount": "{count} borrador | {count} borradores",
     "publicChangelog": "Changelog público",
@@ -2125,6 +2125,8 @@
     }
   },
   "feedback": {
+    "styleTitle": "Estilo del tablero",
+    "styleDescription": "Elige el aspecto del tablero público de feedback y de sus vistas de hoja de ruta y changelog.",
     "postCount": "{count} publicación | {count} publicaciones",
     "voteCount": "{count} voto | {count} votos",
     "commentCount": "{count} comentario | {count} comentarios",

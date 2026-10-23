@@ -1,5 +1,5 @@
 import type { DocPage } from '#shared/docs'
-import { renderDoc, type RenderedDoc } from './docsRender'
+import { docMarkdown, renderDoc, type RenderedDoc } from './docsRender'
 import blog from '../../docs/BLOG.md'
 import brand from '../../docs/BRAND.md'
 import connecting from '../../docs/CONNECTING.md'
@@ -15,6 +15,7 @@ import legal from '../../docs/LEGAL.md'
 import mcp from '../../docs/MCP.md'
 import onboarding from '../../docs/ONBOARDING.md'
 import pages from '../../docs/PAGES.md'
+import style from '../../docs/STYLE.md'
 import support from '../../docs/SUPPORT.md'
 import pricing from '../../docs/PRICING.md'
 import revenue from '../../docs/REVENUE.md'
@@ -39,6 +40,7 @@ const SOURCES: Record<string, string> = {
   'MCP.md': mcp,
   'ONBOARDING.md': onboarding,
   'PAGES.md': pages,
+  'STYLE.md': style,
   'SUPPORT.md': support,
   'PRICING.md': pricing,
   'REVENUE.md': revenue,
@@ -47,14 +49,21 @@ const SOURCES: Record<string, string> = {
 
 const rendered = new Map<string, Promise<RenderedDoc>>()
 
+function sourceOf(doc: DocPage) {
+  const source = SOURCES[doc.file]
+  if (source === undefined) throw new Error(`docs/${doc.file} is published but not imported in server/utils/docsSource.ts`)
+  return source
+}
+
 /** A published guide as HTML. Rendered once per process; the text never changes while it runs. */
 export function renderPublishedDoc(doc: DocPage): Promise<RenderedDoc> {
   let page = rendered.get(doc.slug)
   if (!page) {
-    const source = SOURCES[doc.file]
-    if (source === undefined) throw new Error(`docs/${doc.file} is published but not imported in server/utils/docsSource.ts`)
-    page = renderDoc(source)
+    page = renderDoc(sourceOf(doc))
     rendered.set(doc.slug, page)
   }
   return page
 }
+
+/** A published guide as Markdown: /docs/<slug>.md and the page's Copy MD button. */
+export const publishedDocMarkdown = (doc: DocPage) => docMarkdown(sourceOf(doc), doc)

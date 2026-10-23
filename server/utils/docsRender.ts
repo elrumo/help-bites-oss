@@ -1,6 +1,6 @@
 import MarkdownIt, { type Token } from 'markdown-it'
 import { highlightText } from '@speed-highlight/core'
-import { resolveDocLink } from '#shared/docs'
+import { DOCS, DOC_GROUPS, REPO_URL, docMarkdownPath, resolveDocLink, type DocPage } from '#shared/docs'
 
 // The public docs are the repository's own docs/*.md, so they read the same on
 // GitHub and on the site. This turns one of them into the HTML /docs serves.
@@ -137,6 +137,50 @@ async function highlightFences(tokens: Token[]) {
     const code = token.content.replace(/\n$/, '')
     token.meta = { lang, html: await highlightText(code, lang, false) } satisfies FenceMeta
   }))
+}
+
+/** Root-relative for a published guide (its .md), absolute for anything else, so a link still works once the text is pasted elsewhere. */
+function markdownLink(href: string) {
+  const { href: to } = resolveDocLink(href)
+  return to.startsWith('/docs/') ? to.replace(/(#|$)/, '.md$1') : to
+}
+
+/**
+ * A guide as the Markdown served at /docs/<slug>.md: the file itself, under the
+ * page's title, with its links made to work away from GitHub. Fenced code is
+ * left exactly as written.
+ */
+export function docMarkdown(source: string, doc: DocPage): string {
+  let fenced = false
+  let titled = false
+  return source.split('\n').map((line) => {
+    if (/^\s*(```|~~~)/.test(line)) fenced = !fenced
+    else if (!fenced && !titled && line.startsWith('# ')) {
+      titled = true
+      return `# ${doc.title}`
+    } else if (!fenced) return line.replace(/\]\(([^)\s]+)/g, (_, href: string) => `](${markdownLink(href)}`)
+    return line
+  }).join('\n')
+}
+
+/**
+ * The guides as one Markdown list: /docs.md links by path, /llms.txt (the
+ * llmstxt.org index assistants look for) passes the deployment's `origin` so
+ * every link is absolute.
+ */
+export function docsIndexMarkdown(origin = ''): string {
+  const guide = (doc: DocPage) => `- [${doc.title}](${origin}${docMarkdownPath(doc)}): ${doc.description}`
+  return [
+    '# HelpBites documentation',
+    '> HelpBites is an all-in-one toolkit for indie developers: a support inbox, feedback and roadmap, changelog, email, legal pages, feature flags, error tracking and more. It is open source (AGPL-3.0); run it yourself or use the hosted version.',
+    'Every guide below is plain Markdown. The REST API is described by an OpenAPI document.',
+    ...DOC_GROUPS.map(group => `## ${group}\n\n${DOCS.filter(doc => doc.group === group).map(guide).join('\n')}`),
+    `## Reference
+
+- [OpenAPI document](${origin}/_docs/openapi.json): every endpoint with its request and response shapes, as JSON.
+- [API reference](${origin}/_docs/scalar): the same, to browse.
+- [Source code](${REPO_URL}): the repository on GitHub.`
+  ].join('\n\n') + '\n'
 }
 
 export async function renderDoc(source: string): Promise<RenderedDoc> {

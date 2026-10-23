@@ -16,6 +16,18 @@ All notable changes to the community edition. Versions are Docker image tags
   `StripeSubscription.source` and `StripeSubscription.eventAtSec`. No env changes. RevenueCat's history starts when the webhook
   does; Paddle, Lemon Squeezy and the App Store were written from the services' documentation and unit tests and have not been run
   against live accounts.
+- **Every docs page as Markdown.** `/docs/<slug>.md` (for example `/docs/connect.md`) serves the guide as plain Markdown, `/docs.md` lists
+  them, and each page has **Copy MD** and **Copy MD link** buttons at the top. `/llms.txt` is the same list with absolute links (it uses
+  `APP_URL` when set). No schema changes.
+- **Project style, and a style for the public changelog** (`docs/STYLE.md`). One style per project (logo and app icon, light and dark
+  colours, corner radius, shadow, font) is edited from any style panel (changelog, Brand page, forms, onboarding, pricing, blog design,
+  legal look: **Edit project style**, or **Save as project style** from what that panel has chosen). The public changelog page and embed
+  wear it in light and dark, or the project's with `changelog.style` over it; `changelog.js` takes `data-accent`, `data-radius` and
+  `data-shadow`; the public feedback board (list, roadmap and changelog views, `feedback.js`) takes the same (`feedback.style`,
+  `feedbackStyle` on the public project and `GET /v1/feedback/config`). `style` on `PATCH /v1/admin/projects/{id}`, `look.style` on the public project and `style` on `GET /v1/changelog`. The
+  project style's accent outranks the Brand kit's, and saving the accent in Settings keeps it in step. Schema (needs `schema:apply`;
+  the container does it on boot): new field `Project.style`. Forms, onboarding, pricing, blog and legal take its accent only; the native
+  app does not edit it yet.
 - **Optional Plausible stats** for HelpBites' own site and panel: set `NUXT_PUBLIC_PLAUSIBLE_SRC` to the script's address (off by default; the panel reads it at run
   time, the prerendered landing page and docs need it as a Docker build arg too). It is not loaded in the embeds or on the invite and OAuth pages, and its origin joins the panel's script policy. No schema changes.
 - **Developer & MCP**: the workspace Developer page is now **Developer & MCP** and gains an AI assistants section with the

@@ -1,5 +1,5 @@
 import { createError, getHeader, getQuery, type H3Event } from 'h3'
-import { DEFAULT_PROJECT_STYLE, resolveStyle, type ResolvedStyle } from '#shared/projectStyle'
+import type { ResolvedStyle } from '#shared/projectStyle'
 import {
   CHANGELOG_LINKS_MAX,
   CHANGELOG_LINK_KINDS,
@@ -34,7 +34,7 @@ import {
 import { feedbackStatusCategory, parsePostRef } from '#shared/feedback'
 import { deriveChangelogExcerpt, nextChangelogSlug, renderChangelogBody } from './changelogRender'
 import { emitDomainEventLater } from './domainEvents'
-import { lookOf } from './projects'
+import { styleOf } from './projects'
 
 // The changelog: entries (what shipped, in the project's own words) grouped
 // into releases, linked to the feedback posts, board items and conversations
@@ -400,9 +400,7 @@ export async function listChangelogReleases(project: ParseObject): Promise<Chang
  */
 /** The changelog's style: the project's, with the changelog's own choices laid over it when it has any. */
 export function changelogStyleOf(project: ParseObject): ResolvedStyle {
-  const look = lookOf(project)
-  const { style } = getChangelogConfig(project)
-  return resolveStyle(look.kit, look.projectStyle, style.source === 'custom' ? style.custom : DEFAULT_PROJECT_STYLE)
+  return styleOf(project, getChangelogConfig(project).style)
 }
 
 export async function listPublicChangelog(project: ParseObject): Promise<PublicChangelog> {

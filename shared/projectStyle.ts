@@ -164,6 +164,40 @@ export function styleFrom(own: { accent?: string, background?: string, text?: st
   }
 }
 
+export const STYLE_SOURCES = ['project', 'custom'] as const
+
+/**
+ * How one feature (the changelog, the feedback board…) takes its style.
+ * `project` wears the project's style as it is. `custom` lays `custom` over it:
+ * whatever `custom` leaves empty still comes from the project, so changing the
+ * project style keeps changing the feature.
+ */
+export type StyleChoice = { source: (typeof STYLE_SOURCES)[number], custom: ProjectStyle }
+export const DEFAULT_STYLE_CHOICE: StyleChoice = { source: 'project', custom: DEFAULT_PROJECT_STYLE }
+
+/** A (partial) choice on top of `base`: only the keys sent change, and `custom` merges like `validateProjectStyle`. */
+export function validateStyleChoice(value: unknown, base: StyleChoice = DEFAULT_STYLE_CHOICE): { choice: StyleChoice, errors: string[] } {
+  const errors: string[] = []
+  const raw = record(value)
+  if (value !== undefined && value !== null && (typeof value !== 'object' || Array.isArray(value))) errors.push('style must be an object')
+  const choice = { ...base }
+  if (raw.source !== undefined) {
+    if ((STYLE_SOURCES as readonly unknown[]).includes(raw.source)) choice.source = raw.source as StyleChoice['source']
+    else errors.push(`style.source is one of ${STYLE_SOURCES.join(', ')}`)
+  }
+  if (raw.custom !== undefined) {
+    const custom = validateProjectStyle(raw.custom, base.custom)
+    errors.push(...custom.errors.map(error => `style.custom: ${error}`))
+    if (!custom.errors.length) choice.custom = custom.style
+  }
+  return { choice: errors.length ? base : choice, errors }
+}
+
+/** The layers a feature's style resolves from: the project's, then the feature's own when it has chosen `custom`. */
+export function styleLayers(projectStyle: ProjectStyle, choice: StyleChoice): ProjectStyle[] {
+  return [projectStyle, choice.source === 'custom' ? choice.custom : DEFAULT_PROJECT_STYLE]
+}
+
 /** True when nothing is set. */
 export function isEmptyStyle(style: ProjectStyle): boolean {
   return JSON.stringify(style) === JSON.stringify(DEFAULT_PROJECT_STYLE)

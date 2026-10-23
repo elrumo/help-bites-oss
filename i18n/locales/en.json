@@ -461,6 +461,11 @@
     "openInTracker": "Open in {provider}"
   },
   "style": {
+    "useProject": "Use the project style",
+    "useProjectHint": "The same logo, colours, corners and shadow as your other public pages.",
+    "custom": "Customise for this page",
+    "customHint": "Start from the project style and change only what this page needs.",
+    "projectNote": "This page wears the project style. Change it once and every styled feature follows.",
     "title": "Style",
     "scheme": "Colour scheme",
     "shadow": "Shadow",
@@ -521,11 +526,6 @@
   "changelog": {
     "styleTitle": "Page style",
     "styleDescription": "Choose how the public changelog page and embed look.",
-    "styleProjectNote": "The changelog wears the project style. Change it once and every styled feature follows.",
-    "styleUseProject": "Use the project style",
-    "styleUseProjectHint": "The same logo, colours, corners and shadow as your other public pages.",
-    "styleCustom": "Customise for the changelog",
-    "styleCustomHint": "Start from the project style and change only what the changelog needs.",
     "publicCount": "{count} public",
     "draftCount": "{count} draft | {count} drafts",
     "publicChangelog": "Public changelog",
@@ -2270,6 +2270,8 @@
     }
   },
   "feedback": {
+    "styleTitle": "Board style",
+    "styleDescription": "Choose how the public feedback board, roadmap and changelog views look.",
     "postCount": "{count} post | {count} posts",
     "voteCount": "{count} vote | {count} votes",
     "commentCount": "{count} comment | {count} comments",

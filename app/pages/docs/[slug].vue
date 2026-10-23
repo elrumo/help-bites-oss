@@ -5,7 +5,10 @@
         <NuxtLink to="/docs" class="transition-colors hover:text-highlighted">{{ $t('docs.home') }}</NuxtLink>
         <span class="mx-1.5 text-dimmed">/</span>{{ doc.group }}
       </p>
-      <h1 class="mt-2 text-[clamp(1.9rem,4vw,2.5rem)] font-semibold leading-tight tracking-[-0.03em] text-highlighted">{{ doc.title }}</h1>
+      <div class="mt-2 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <h1 class="text-[clamp(1.9rem,4vw,2.5rem)] font-semibold leading-tight tracking-[-0.03em] text-highlighted">{{ doc.title }}</h1>
+        <DocsCopyMarkdown :path="markdownPath" class="sm:mt-1.5" />
+      </div>
 
       <div class="docs-prose mt-8" @click="onProseClick" v-html="page.html" />
 
@@ -45,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { DOCS, docBySlug, docEditUrl, docPath } from '#shared/docs'
+import { DOCS, docBySlug, docEditUrl, docMarkdownPath, docPath } from '#shared/docs'
 import type { RenderedDoc } from '~~/server/utils/docsRender'
 
 definePageMeta({ layout: 'docs' })
@@ -70,6 +73,10 @@ useSeoMeta({
   ogDescription: doc.description,
   ogType: 'article'
 })
+
+// Points assistants and crawlers at the Markdown of this page.
+const markdownPath = docMarkdownPath(doc)
+useHead({ link: [{ rel: 'alternate', type: 'text/markdown', href: markdownPath }] })
 
 const at = DOCS.indexOf(doc)
 const previous = DOCS[at - 1]

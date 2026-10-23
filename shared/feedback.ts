@@ -4,6 +4,8 @@
 // run its own public "feature requests & bug reports" board without HelpBites
 // knowing anything about it.
 
+import { DEFAULT_STYLE_CHOICE, validateStyleChoice, type StyleChoice } from './projectStyle'
+
 export const FEEDBACK_TITLE_MAX_LENGTH = 200
 export const FEEDBACK_BODY_MAX_LENGTH = 20000
 export const FEEDBACK_COMMENT_MAX_LENGTH = 8000
@@ -80,6 +82,8 @@ export type FeedbackBoardConfig = {
   /** Offer the roadmap and changelog views in the embed. */
   roadmap: boolean
   changelog: boolean
+  /** How the public board (its list, roadmap and changelog views) takes its style. */
+  style: StyleChoice
 }
 
 export const DEFAULT_FEEDBACK_STATUSES: FeedbackStatusDefinition[] = [
@@ -111,7 +115,8 @@ export const DEFAULT_FEEDBACK_CONFIG: FeedbackBoardConfig = {
   emailNotifications: true,
   postUrlTemplate: '',
   roadmap: true,
-  changelog: true
+  changelog: true,
+  style: DEFAULT_STYLE_CHOICE
 }
 
 // ---- wire types -------------------------------------------------------------
@@ -306,6 +311,11 @@ export function validateFeedbackConfig(value: unknown, base: FeedbackBoardConfig
   const raw = (value && typeof value === 'object' && !Array.isArray(value) ? value : {}) as Record<string, unknown>
   const errors: string[] = []
   const config: FeedbackBoardConfig = { ...base }
+  if (raw.style !== undefined) {
+    const style = validateStyleChoice(raw.style, base.style ?? DEFAULT_STYLE_CHOICE)
+    errors.push(...style.errors)
+    config.style = style.choice
+  }
 
   for (const flag of ['enabled', 'showAuthorNames', 'allowComments', 'allowUserEdits', 'emailNotifications', 'roadmap', 'changelog'] as const) {
     if (raw[flag] !== undefined) config[flag] = Boolean(raw[flag])

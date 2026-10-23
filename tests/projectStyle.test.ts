@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { DEFAULT_FEEDBACK_CONFIG, validateFeedbackConfig } from '../shared/feedback'
 import { DEFAULT_CHANGELOG_CONFIG, normalizeChangelogConfig, validateChangelogConfig } from '../shared/changelog'
 import { projectLook } from '../shared/projectLook'
 import { DEFAULT_PROJECT_STYLE, normalizeProjectStyle, overlayStyle, resolveStyle, styleFrom, styleVars, validateProjectStyle } from '../shared/projectStyle'
@@ -85,6 +86,19 @@ describe('changelog style', () => {
     const two = validateChangelogConfig({ style: { custom: { dark: { background: '#101010' } } } }, one.config)
     expect(two.config.style).toMatchObject({ source: 'custom', custom: { shadow: 'medium', light: { accent: '#123456' }, dark: { background: '#101010' } } })
     const bad = validateChangelogConfig({ style: { source: 'both', custom: { shadow: 'huge' } } }, two.config)
+    expect(bad.errors).toHaveLength(2)
+    expect(bad.config.style).toEqual(two.config.style)
+  })
+})
+
+describe('feedback board style', () => {
+  test('the board takes its style like the changelog does, and keeps it when other settings change', () => {
+    expect(DEFAULT_FEEDBACK_CONFIG.style.source).toBe('project')
+    const one = validateFeedbackConfig({ style: { source: 'custom', custom: { radius: 20, dark: { background: '#101010' } } } })
+    expect(one.errors).toEqual([])
+    const two = validateFeedbackConfig({ title: 'Ideas' }, one.config)
+    expect(two.config.style).toMatchObject({ source: 'custom', custom: { radius: 20, dark: { background: '#101010' } } })
+    const bad = validateFeedbackConfig({ style: { source: 'nope', custom: { radius: 99 } } }, two.config)
     expect(bad.errors).toHaveLength(2)
     expect(bad.config.style).toEqual(two.config.style)
   })

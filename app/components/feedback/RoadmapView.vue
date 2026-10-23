@@ -12,7 +12,7 @@
       </header>
       <div class="space-y-2">
         <template v-for="card in group.items" :key="card.id">
-          <component :is="card.posts.length === 1 ? 'button' : 'div'" :type="card.posts.length === 1 ? 'button' : undefined" class="block w-full rounded-lg border border-default bg-default p-2.5 text-left shadow-[0_1px_2px_rgb(0_0_0/0.04)]" :class="card.posts.length === 1 ? 'transition-colors hover:border-accented' : ''" @click="card.posts.length === 1 && emit('open', card.posts[0]!.id)">
+          <component :is="card.posts.length === 1 ? 'button' : 'div'" :type="card.posts.length === 1 ? 'button' : undefined" class="hb-card block w-full rounded-lg border border-default bg-default p-2.5 text-left shadow-[0_1px_2px_rgb(0_0_0/0.04)]" :class="card.posts.length === 1 ? 'transition-colors hover:border-accented' : ''" @click="card.posts.length === 1 && emit('open', card.posts[0]!.id)">
             <span class="flex items-start gap-2.5">
               <span class="flex w-6 shrink-0 flex-col items-center pt-0.5 text-[11px] font-semibold tabular-nums text-stone-500" :title="$t('feedback.voteCount', card.voteCount)"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ card.voteCount }}</span>
               <span class="min-w-0 flex-1">
@@ -51,7 +51,7 @@
         <span class="tabular-nums text-stone-400">{{ group.items.length }}</span>
       </h2>
       <div class="grid items-start gap-2 sm:grid-cols-2">
-        <component :is="card.posts.length === 1 ? 'button' : 'div'" v-for="card in group.items" :key="card.id" :type="card.posts.length === 1 ? 'button' : undefined" class="block w-full rounded-lg border border-default bg-default p-3 text-left shadow-[0_1px_2px_rgb(0_0_0/0.04)]" :class="card.posts.length === 1 ? 'transition-colors hover:border-accented' : ''" @click="card.posts.length === 1 && emit('open', card.posts[0]!.id)">
+        <component :is="card.posts.length === 1 ? 'button' : 'div'" v-for="card in group.items" :key="card.id" :type="card.posts.length === 1 ? 'button' : undefined" class="hb-card block w-full rounded-lg border border-default bg-default p-3 text-left shadow-[0_1px_2px_rgb(0_0_0/0.04)]" :class="card.posts.length === 1 ? 'transition-colors hover:border-accented' : ''" @click="card.posts.length === 1 && emit('open', card.posts[0]!.id)">
           <span class="flex items-center gap-2">
             <FeedbackStatusBadge :status="statusFor(card.status)" />
             <span v-if="card.targetDate" class="text-[11px] text-stone-500">{{ dayLabel(card.targetDate) }}</span>

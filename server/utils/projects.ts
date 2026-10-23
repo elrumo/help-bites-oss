@@ -12,7 +12,7 @@ import { normalizeBlogConfig, validateBlogConfig, type BlogConfig } from '#share
 import { normalizeFlags, validateFlags, type FeatureFlag } from '#shared/flags'
 import { normalizeMarketingConfig, validateMarketingConfig, type MarketingConfig } from '#shared/marketing'
 import { normalizeBrandConfig, validateBrandConfig } from '#shared/brand'
-import { normalizeProjectStyle, validateProjectStyle, type ProjectStyle } from '#shared/projectStyle'
+import { normalizeProjectStyle, resolveStyle, styleLayers, validateProjectStyle, type ProjectStyle, type ResolvedStyle, type StyleChoice } from '#shared/projectStyle'
 import { normalizeHubConfig, validateHubConfig, type HubConfig } from '#shared/hub'
 import { companyEntity, type CompanyProfile } from '#shared/company'
 import { applyCompany, companyOf } from './company'
@@ -52,6 +52,8 @@ export type PublicProject = {
   types?: PublicConversationType[]
   /** The project's feedback board; `enabled: false` when it has none. */
   feedback: FeedbackBoardConfig
+  /** What the public board (list, roadmap, changelog views) wears: the project's style with the board's own choices over it. */
+  feedbackStyle: ResolvedStyle
   /** The chat embed shows a Home tab (read from GET /v1/hub/{pk}); the hub settings turn it on. */
   widgetHome: boolean
   /** The "Powered by HelpBites" link, null when the plan removes it. Set by the public routes, since it needs the workspace's plan. */
@@ -353,8 +355,15 @@ export function lookOf(project: { get: (key: string) => unknown }, overrides: Pr
   })
 }
 
+/** A feature's style: the project's, with the feature's own choices laid over it when it has chosen `custom` (shared/projectStyle.ts). */
+export function styleOf(project: { get: (key: string) => unknown }, choice: StyleChoice): ResolvedStyle {
+  const look = lookOf(project)
+  return resolveStyle(look.kit, ...styleLayers(look.projectStyle, choice))
+}
+
 export function serializePublicProject(project: ParseObject): PublicProject {
   const look = lookOf(project)
+  const feedback = normalizeFeedbackConfig(project.get('feedback'))
   return {
     publicKey: String(project.get('publicKey') || ''),
     name: String(project.get('name') || ''),
@@ -369,7 +378,8 @@ export function serializePublicProject(project: ParseObject): PublicProject {
     assistantLogoUrl: String(project.get('assistantLogoUrl') || ''),
     letUsersChooseType: project.get('letUsersChooseType') === true,
     allowOtherType: project.get('allowOtherType') === true,
-    feedback: normalizeFeedbackConfig(project.get('feedback')),
+    feedback,
+    feedbackStyle: styleOf(project, feedback.style),
     widgetHome: normalizeHubConfig(project.get('hub')).widgetHome.enabled
   }
 }

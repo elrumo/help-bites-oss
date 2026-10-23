@@ -116,6 +116,13 @@ export const DOCS: readonly DocPage[] = [
     file: 'BRAND.md'
   },
   {
+    slug: 'style',
+    title: 'Project style',
+    description: 'One style for the whole project (logo and icon, light and dark colours, corners, shadow, font) that the changelog page and your other styled features share, with the API and a SwiftUI snippet.',
+    group: 'Guides',
+    file: 'STYLE.md'
+  },
+  {
     slug: 'hub',
     title: 'Public hub and one-tag loader',
     description: 'One public page per project, a Home tab in the chat widget and a single script tag that adds the chat, feedback, changelog and onboarding. Web and Swift snippets.',
@@ -162,6 +169,17 @@ export const DOCS: readonly DocPage[] = [
 export const docBySlug = (slug: string) => DOCS.find(doc => doc.slug === slug)
 export const docByFile = (file: string) => DOCS.find(doc => doc.file === file)
 export const docPath = (doc: DocPage) => `/docs/${doc.slug}`
+/** The same guide as plain Markdown (server/middleware/docsMarkdown.ts). */
+export const docMarkdownPath = (doc: DocPage) => `${docPath(doc)}.md`
+/** The list of guides as Markdown; /llms.txt is the same list with absolute links. */
+export const DOCS_INDEX_MARKDOWN = '/docs.md'
+
+/** What a request path asks for: a guide's Markdown, the index's, or neither (null: not ours). */
+export function markdownRequest(path: string): DocPage | 'index' | null {
+  const match = /^\/docs(?:\/([a-z0-9-]+))?\.md$/.exec(path.split('?')[0]!)
+  if (!match) return null
+  return match[1] ? docBySlug(match[1]) ?? null : 'index'
+}
 export const docEditUrl = (doc: DocPage) => `${REPO_URL}/edit/${BRANCH}/docs/${doc.file}`
 
 export interface ResolvedLink {

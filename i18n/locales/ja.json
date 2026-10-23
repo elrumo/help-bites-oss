@@ -401,6 +401,11 @@
     "unlinkItem": "#{number} {title} のリンクを解除"
   },
   "style": {
+    "useProject": "プロジェクトのスタイルを使う",
+    "useProjectHint": "他の公開ページと同じロゴ、色、角、影です。",
+    "custom": "このページ用にカスタマイズ",
+    "customHint": "プロジェクトのスタイルを基に、このページに必要な部分だけ変更します。",
+    "projectNote": "このページはプロジェクトのスタイルを使います。一度変更すれば、スタイル対応の全機能が従います。",
     "title": "スタイル",
     "scheme": "カラースキーム",
     "shadow": "影",
@@ -461,11 +466,6 @@
   "changelog": {
     "styleTitle": "ページのスタイル",
     "styleDescription": "公開チェンジログのページと埋め込みの見た目を選びます。",
-    "styleProjectNote": "チェンジログはプロジェクトのスタイルを使います。一度変更すれば、スタイル対応の全機能が従います。",
-    "styleUseProject": "プロジェクトのスタイルを使う",
-    "styleUseProjectHint": "他の公開ページと同じロゴ、色、角、影です。",
-    "styleCustom": "チェンジログ用にカスタマイズ",
-    "styleCustomHint": "プロジェクトのスタイルを基に、チェンジログに必要な部分だけ変更します。",
     "publicCount": "{count} 件公開",
     "draftCount": "{count} 件の下書き",
     "publicChangelog": "公開の変更履歴",
@@ -2125,6 +2125,8 @@
     }
   },
   "feedback": {
+    "styleTitle": "ボードのスタイル",
+    "styleDescription": "公開フィードバックボードと、ロードマップ・チェンジログ表示の見た目を選びます。",
     "postCount": "{count} 件の投稿",
     "voteCount": "{count} 票",
     "commentCount": "コメント {count}件",

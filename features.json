@@ -165,14 +165,14 @@
       "id": "feedback-board",
       "name": "Public feedback",
       "category": "product",
-      "summary": "A public feedback page per project: posts, votes, comments, reactions, mentions, moderation, followers, import.",
+      "summary": "A public feedback page per project: posts, votes, comments, reactions, mentions, moderation, followers, import. The page, roadmap and changelog views wear the project's style in light and dark, or the board's own over it.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "status": "stable",
       "web": { "panel": ["app/pages/projects/[id]/feedback.vue"], "public": ["/embed/feedback"] },
       "native": { "folders": ["helpbites-native/App/Features/Feedback"] },
       "api": { "prefixes": ["/v1/feedback"], "docs": "docs/FEEDBACK.md" },
-      "embed": { "web": "public/feedback.js", "swift": null, "customize": ["data-target", "data-view", "data-only", "data-label", "data-theme", "JS init options"] },
+      "embed": { "web": "public/feedback.js", "swift": null, "customize": ["data-target", "data-view", "data-only", "data-label", "data-theme", "data-accent", "data-radius", "data-shadow", "the board's style (the project's, light and dark, or its own)", "JS init options"] },
       "landing": { "listed": true, "key": "landing.features.feedback" }
     },
     {
@@ -193,15 +193,29 @@
       "id": "changelog",
       "name": "Changelog",
       "category": "product",
-      "summary": "Entries grouped into releases, drafted from shipped work, public page, JSON, RSS, digest emails, reader comments, git CLI. When an entry ships, the followers of the posts it answers are emailed once, and the editor offers a reply to the conversations it answers.",
+      "summary": "Entries grouped into releases, drafted from shipped work, public page, JSON, RSS, digest emails, reader comments, git CLI. When an entry ships, the followers of the posts it answers are emailed once, and the editor offers a reply to the conversations it answers. The public page and embed wear the project's style in light and dark, or the changelog's own over it.",
       "editions": ["community", "cloud"],
       "plan": "all",
       "status": "stable",
       "web": { "panel": ["app/pages/projects/[id]/changelog.vue", "app/components/ChangelogReplyDialog.vue"], "public": ["/changelog/:pk", "/embed/changelog", "/u/changelog"] },
       "native": { "folders": ["helpbites-native/App/Features/Changelog"] },
       "api": { "prefixes": ["/v1/changelog", "/v1/admin/changelog"], "docs": "docs/FEEDBACK.md" },
-      "embed": { "web": "public/changelog.js", "swift": null, "customize": ["data-target", "data-theme"] },
+      "embed": { "web": "public/changelog.js", "swift": null, "customize": ["data-target", "data-theme", "data-accent", "data-radius", "data-shadow", "the page's style (the project's, light and dark, or its own)", "hosted page ?theme, ?accent, ?radius, ?shadow", "the API (GET /v1/changelog returns the finished `style`) for your own UI"] },
       "landing": { "listed": true, "key": "landing.showcase.changelog" }
+    },
+    {
+      "id": "project-style",
+      "name": "Project style",
+      "category": "product",
+      "summary": "One style per project (logo and app icon, light and dark colours, corner radius, shadow, font) shared by the features that have a style panel. The public changelog and feedback board wear all of it, light and dark, or the project's with their own choices over it; forms, onboarding, pricing, blog and legal take its accent. Every style panel can edit it or save its own choices as the project's style.",
+      "editions": ["community", "cloud"],
+      "plan": "all",
+      "status": "stable",
+      "web": { "panel": ["app/components/style/StyleEditor.vue", "app/components/style/StyleProjectActions.vue", "app/components/style/StylePreview.vue"], "public": ["/changelog/:pk", "/embed/changelog", "/embed/feedback"] },
+      "native": { "folders": [] },
+      "api": { "prefixes": ["/v1/admin/projects", "/v1/changelog"], "docs": "docs/STYLE.md" },
+      "embed": { "web": "public/changelog.js", "swift": "docs/STYLE.md#in-a-swift-app", "customize": ["the project style in the panel", "data-theme", "data-accent", "data-radius", "data-shadow", "the API (look.style, feedbackStyle, GET /v1/changelog style) for your own UI", "Swift cornerRadius"] },
+      "landing": { "listed": false }
     },
     {
       "id": "blog",
@@ -579,6 +593,7 @@
     }
   ],
   "notBuilt": [
+    "The native app does not edit the project style or the changelog's or feedback board's style yet (web panel and API only). The chat widget, hub, brand, blog and other public pages do not wear the full style yet. Forms, onboarding, pricing tables, the blog and legal pages take the project style's accent only: no dark palette, shadow or card colours there yet.",
     "The native blog editor has no Preview or Live preview yet (the web panel renders the draft with POST /v1/admin/blog/preview, shown in a frame; native opens the hosted post after publishing).",
     "Contact sync does not notice rows deleted upstream.",
     "The MCP server offers tools only (no prompts, resources or live notifications), has no tools yet for creating legal documents, importing knowledge documents, the email designer, forms, onboarding or the blog, and issues no refresh tokens: an OAuth-connected assistant signs in again after a year.",

@@ -15,5 +15,5 @@ export default defineEventHandler(async (event) => {
   const roadmapSource = await roadmapSourceOf(ctx.project)
   // Readers get the Changelog tab only when the option and the project's public changelog are both on; operators see the stored option.
   const config = ctx.actor.kind === 'agent' ? ctx.config : { ...ctx.config, changelog: ctx.config.changelog && changelogIsPublic(ctx.project) }
-  return { config, roadmapSource, changelogPublic: changelogIsPublic(ctx.project), project: { name: project.name, publicKey: project.publicKey, theme: project.theme, look: project.look, brandLogoUrl: project.brandLogoUrl, allowedOrigins: project.allowedOrigins, guestSurfaces: project.guestSurfaces, poweredBy: await poweredByFor(ctx.project) }, viewer: feedbackViewer(ctx.actor) }
+  return { config, roadmapSource, changelogPublic: changelogIsPublic(ctx.project), project: { name: project.name, publicKey: project.publicKey, theme: project.theme, look: project.look, feedbackStyle: project.feedbackStyle, brandLogoUrl: project.brandLogoUrl, allowedOrigins: project.allowedOrigins, guestSurfaces: project.guestSurfaces, poweredBy: await poweredByFor(ctx.project) }, viewer: feedbackViewer(ctx.actor) }
 })

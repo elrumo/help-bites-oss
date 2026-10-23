@@ -1,6 +1,9 @@
 <template>
   <main class="py-10 md:py-14">
-    <h1 class="text-[clamp(1.9rem,4vw,2.5rem)] font-semibold leading-tight tracking-[-0.03em] text-highlighted">{{ $t('docs.title') }}</h1>
+    <div class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+      <h1 class="text-[clamp(1.9rem,4vw,2.5rem)] font-semibold leading-tight tracking-[-0.03em] text-highlighted">{{ $t('docs.title') }}</h1>
+      <DocsCopyMarkdown :path="DOCS_INDEX_MARKDOWN" class="sm:mt-1.5" />
+    </div>
     <p class="mt-3 max-w-[56ch] text-muted">
       {{ $t('docs.lead') }}
     </p>
@@ -40,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { DOCS, DOC_GROUPS, REPO_URL, docBySlug, docPath } from '#shared/docs'
+import { DOCS, DOCS_INDEX_MARKDOWN, DOC_GROUPS, REPO_URL, docBySlug, docPath } from '#shared/docs'
 
 definePageMeta({ layout: 'docs' })
 
@@ -53,6 +56,8 @@ useSeoMeta({
   ogDescription: () => t('docs.seoOgDescription'),
   ogType: 'website'
 })
+
+useHead({ link: [{ rel: 'alternate', type: 'text/markdown', href: DOCS_INDEX_MARKDOWN }] })
 
 const selfHost = docBySlug('self-host')!
 // The self-hosting guide has the big card above; the grid holds the others.

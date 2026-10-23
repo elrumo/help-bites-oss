@@ -401,6 +401,11 @@
     "unlinkItem": "Desenllaça #{number} {title}"
   },
   "style": {
+    "useProject": "Fes servir l'estil del projecte",
+    "useProjectHint": "El mateix logotip, colors, vores i ombra que les teves altres pàgines públiques.",
+    "custom": "Personalitza per a aquesta pàgina",
+    "customHint": "Parteix de l'estil del projecte i canvia només el que aquesta pàgina necessiti.",
+    "projectNote": "Aquesta pàgina fa servir l'estil del projecte. Canvia'l una vegada i totes les funcions amb estil el segueixen.",
     "title": "Estil",
     "scheme": "Esquema de color",
     "shadow": "Ombra",
@@ -461,11 +466,6 @@
   "changelog": {
     "styleTitle": "Estil de la pàgina",
     "styleDescription": "Tria l'aspecte de la pàgina pública del changelog i del seu embed.",
-    "styleProjectNote": "El changelog fa servir l'estil del projecte. Canvia'l una vegada i totes les funcions amb estil el segueixen.",
-    "styleUseProject": "Fes servir l'estil del projecte",
-    "styleUseProjectHint": "El mateix logotip, colors, vores i ombra que les teves altres pàgines públiques.",
-    "styleCustom": "Personalitza per al changelog",
-    "styleCustomHint": "Parteix de l'estil del projecte i canvia només el que el changelog necessiti.",
     "publicCount": "{count} públiques",
     "draftCount": "{count} esborrany | {count} esborranys",
     "publicChangelog": "Novetats públiques",
@@ -2125,6 +2125,8 @@
     }
   },
   "feedback": {
+    "styleTitle": "Estil del tauler",
+    "styleDescription": "Tria l'aspecte del tauler públic de feedback i de les seves vistes de full de ruta i changelog.",
     "postCount": "{count} publicació | {count} publicacions",
     "voteCount": "{count} vot | {count} vots",
     "commentCount": "{count} comentari | {count} comentaris",

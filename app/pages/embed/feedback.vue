@@ -2,6 +2,7 @@
   <div
     ref="rootRef"
     class="sb-board bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100"
+    :style="rootStyle"
     :class="inline ? 'min-h-[420px]' : 'h-full flex flex-col'"
   >
     <!-- Header: who this board belongs to, the views, and the way to post. -->
@@ -11,7 +12,7 @@
     >
       <div class="mx-auto px-4 pt-4" :class="contentWidth">
         <div class="flex items-start gap-3">
-          <img v-if="projectInfo?.brandLogoUrl" :src="projectInfo.brandLogoUrl" alt="" class="size-9 shrink-0 rounded-lg bg-elevated object-cover">
+          <img v-if="logoUrl" :src="logoUrl" alt="" class="size-9 shrink-0 rounded-lg bg-elevated object-cover">
           <span v-else class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-500 text-sm font-semibold text-white" aria-hidden="true">{{ initials }}</span>
           <div class="min-w-0 flex-1">
             <h1 class="text-[17px] font-semibold leading-tight truncate">{{ boardTitle }}</h1>
@@ -368,6 +369,7 @@ import {
 import { BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, roadmapGroups, type BoardRoadmapLayout, type RoadmapResponse } from '#shared/board'
 import { changelogTimeline, type PublicChangelog } from '#shared/changelog'
 import type { GuestSurface } from '#shared/guest'
+import type { ResolvedStyle } from '#shared/projectStyle'
 import type { RoadmapCard } from '~/components/feedback/RoadmapView.vue'
 
 // The plug-and-play feedback board, inside the host site's iframe (see
@@ -397,7 +399,7 @@ const colorMode = useColorMode()
 const themeParam = String(route.query.theme || '')
 if (['light', 'dark', 'system'].includes(themeParam)) colorMode.preference = themeParam
 
-type ProjectInfo = { name: string, publicKey: string, theme: { accent?: string }, brandLogoUrl: string, allowedOrigins: string[], guestSurfaces?: GuestSurface[], poweredBy?: { url: string } | null }
+type ProjectInfo = { name: string, publicKey: string, theme: { accent?: string }, feedbackStyle?: ResolvedStyle, brandLogoUrl: string, allowedOrigins: string[], guestSurfaces?: GuestSurface[], poweredBy?: { url: string } | null }
 type View = 'board' | 'roadmap' | 'changelog'
 
 const { t } = useI18n()
@@ -431,7 +433,16 @@ const backLabel = computed(() => (view.value === 'board' ? t('embed.feedback.all
 
 // Nuxt UI's theme is `inline`, so utilities read the --ui-color-* scale
 // directly: derive the shades from the project accent.
-useHead({ title: boardTitle, htmlAttrs: { style: computed(() => accentStyle(projectInfo.value?.theme?.accent)) } })
+// It wears the board's style (the project's, with the board's own choices over it), in light or dark.
+const style = computed(() => embedStyle(projectInfo.value?.feedbackStyle, route.query))
+const mode = computed<'light' | 'dark'>(() => (colorMode.value === 'dark' ? 'dark' : 'light'))
+const logoUrl = computed(() => (mode.value === 'dark' ? style.value.logoDarkUrl : style.value.logoUrl) || style.value.iconUrl || projectInfo.value?.brandLogoUrl || '')
+const rootStyle = computed(() => styleRootStyle(style.value, mode.value))
+// A style that fixes the scheme applies it, unless the embed's own ?theme asked for one.
+watch(() => style.value.scheme, (scheme) => {
+  if (!themeParam && scheme !== 'auto') colorMode.preference = scheme
+}, { immediate: true })
+useHead({ title: boardTitle, htmlAttrs: { style: computed(() => accentStyle(style.value[mode.value].accent)) } })
 
 // ---- notices ----
 const notice = ref('')
