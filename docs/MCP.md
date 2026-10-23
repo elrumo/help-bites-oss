@@ -140,6 +140,28 @@ a key's project limit apply exactly as they do in the panel and the native app.
 | `add_pricing_variant` | Copy a table to test against it. |
 | `start_pricing_experiment` | Start an A/B test: asks first. |
 | `stop_pricing_experiment` | End it, optionally keeping the winner. |
+| `update_project_flags` | Replace a project's feature flags (send them all; one left out is deleted). |
+| `list_knowledge_models` | The knowledge bases, with their ids. |
+| `list_faqs` | Knowledge base answers: filter or search. |
+| `get_faq` | One answer. |
+| `create_faq` | Add a question and answer. |
+| `update_faq` | Edit an answer, its tags or status. |
+| `delete_faq` | Remove one: asks first. |
+| `list_knowledge_documents` | Documents uploaded as knowledge sources. |
+| `list_email_templates` | A project's email templates, or the shared masters. |
+| `get_email_template` | One template: subject, design, variables. |
+| `send_test_email` | Send a template, with sample values, to up to five addresses: asks first. |
+| `list_email_logs` | Everything sent or tried: filter by address, template, status, campaign. |
+| `list_email_suppressions` | Addresses a project no longer mails. |
+| `list_campaigns` | A project's email campaigns with their numbers. |
+| `get_campaign` | One campaign: numbers, audience size, what stops it sending. |
+| `create_campaign` | A draft: template, segment or topic. Sends nothing. |
+| `update_campaign` | Edit a draft, or schedule, send, pause or cancel: sending asks first. |
+| `list_legal_documents` | A project's legal documents, drafts included. |
+| `get_legal_document` | One document with its sections and rule coverage. |
+| `update_legal_document` | Edit sections or the summary: asks first when it is published. |
+| `publish_legal_document` | Make it public and record a version: asks first. |
+| `unpublish_legal_document` | Back to draft. |
 
 Try: *"Which conversations are unread? Draft a reply to the one about the failed
 export, and show it to me before sending."* Or: *"Suggest plans for our pricing
@@ -213,5 +235,8 @@ is an ordinary admin API key, minted when the code is exchanged.
 
 - No refresh tokens (the key lasts a year, then the assistant signs in again).
 - No prompts, resources or live notifications: the server offers tools.
-- No tools for email, campaigns, contacts sync, legal documents, flags or
-  knowledge base editing yet; the API has them, and they are the next to add.
+- No tools yet for creating a legal document (the wizard), importing knowledge
+  documents, the email template designer, forms, onboarding or the blog; the API
+  has them.
+- A connection has your role: there is no read-only option or lower role yet, only
+  a project limit and an expiry.
