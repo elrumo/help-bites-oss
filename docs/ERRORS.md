@@ -20,6 +20,31 @@ Needs Mailgun for the emails.
 impact; needs an LLM endpoint, saved for 6 hours) and **Copy prompt for a coding agent** (the
 same context, no AI call).
 
+**AI reports.** **Analyze with AI** triages every unresolved error (the first page of each tracker project) and
+saves the answer as a *report*; the newest shows on the Errors page with a **Copy report** button, and the
+menu next to the button opens **View all reports** (read, copy or delete any; the latest 100 are kept). The same
+menu sets **Run automatically**: off, every day, every week or every month, from when you pick it (a run is
+booked before the AI is asked, so a failing one is not retried every tick; scheduled runs with nothing open
+save nothing, and a suspended workspace's wait). When the project has [GitHub repos](GITHUB.md) connected, the
+report also reads the source of the up to 3 most frequent errors (the files in their stack traces, the same
+matching rules as *Repo context* below), lists the files it read, and sends them as untrusted data. Needs an LLM
+endpoint and counts against the AI budget like any analysis. Scheduled runs happen on workers (`runsWorkers()`).
+
+```bash
+# Run one now (saves a report), list them, delete one
+curl -X POST -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  https://YOUR_HOST/v1/admin/errors/analyze -d '{ "project": "PROJECT_ID" }'
+curl -H "Authorization: Bearer ak_…" "https://YOUR_HOST/v1/admin/errors/reports?project=PROJECT_ID"
+# { "reports": [{ "id": "…", "text": "…markdown…", "files": ["owner/repo/src/a.ts"], "count": 12, "source": "scheduled", "at": "2026-10-23T09:00:00.000Z" }] }
+curl -X DELETE -H "Authorization: Bearer ak_…" "https://YOUR_HOST/v1/admin/errors/reports/REPORT_ID?project=PROJECT_ID"
+# Schedule: frequency is off | daily | weekly | monthly (needs the projects.manage permission)
+curl -X PUT -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  https://YOUR_HOST/v1/admin/errors/schedule -d '{ "project": "PROJECT_ID", "frequency": "weekly" }'
+# { "frequency": "weekly", "nextAt": "2026-10-30T09:00:00.000Z" }   (GET the same path to read it)
+```
+
+This is an operator feature (an admin session or `ak_` key); there is no visitor-facing embed.
+
 **File on board.** An expanded error has **File on board** (when the [project board](FEEDBACK.md) is on). It
 makes a board item in the board's first status, titled from the issue, with the culprit, how many times it
 happened and a link to the issue in the tracker in its internal description. The item remembers where it came

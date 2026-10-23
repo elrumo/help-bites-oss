@@ -5,9 +5,25 @@
         <UButton v-if="doc?.status === 'published'" :to="publicUrl" target="_blank" icon="i-lucide-external-link" :label="$t('projectTools.legalDoc.viewPage')" size="sm" color="neutral" variant="ghost" />
         <UButton v-if="dirty" :label="$t('projectTools.shared.save')" size="sm" :loading="busy === 'save'" @click="save" />
         <UButton v-if="doc?.status === 'published'" :label="$t('projectTools.legalDoc.unpublish')" size="sm" color="neutral" variant="ghost" :loading="busy === 'unpublish'" @click="act('unpublish', 'unpublish')" />
-        <UButton v-if="doc" :label="doc.status === 'published' ? $t('projectTools.legalDoc.publishNewVersion') : $t('projectTools.shared.publish')" size="sm" :color="dirty ? 'neutral' : 'primary'" :disabled="dirty" :loading="busy === 'publish'" @click="publish" />
+        <UButton v-if="doc" :label="doc.status === 'published' ? $t('projectTools.legalDoc.publishNewVersion') : $t('projectTools.shared.publish')" size="sm" :color="dirty ? 'neutral' : 'primary'" :disabled="dirty" :loading="busy === 'publish'" @click="doc.status === 'published' ? openPublish() : publish()" />
       </template>
     </PageHeader>
+
+    <UModal v-model:open="publishOpen" :title="$t('projectTools.legalDoc.publishNewVersion')" :description="$t('projectTools.legalDoc.publishNewVersionHint')">
+      <template #body>
+        <form class="space-y-4" @submit.prevent="publish">
+          <UFormField :label="$t('projectTools.legalDoc.whatChanged')">
+            <UTextarea v-model="note" :rows="3" :maxlength="300" autofocus class="w-full" />
+          </UFormField>
+          <UButton icon="i-lucide-sparkles" :label="$t('projectTools.legalDoc.suggestWithAi')" size="xs" color="neutral" variant="soft" :loading="busy === 'note'" @click="suggestNote" />
+          <p v-if="noteError" class="text-sm text-error">{{ noteError }}</p>
+          <div class="flex justify-end gap-2">
+            <UButton color="neutral" variant="ghost" :label="$t('common.cancel')" @click="publishOpen = false" />
+            <UButton type="submit" :label="$t('projectTools.legalDoc.publishNewVersion')" :loading="busy === 'publish'" />
+          </div>
+        </form>
+      </template>
+    </UModal>
 
     <div v-if="loading" class="mx-auto w-full max-w-5xl space-y-3 px-6 py-8"><USkeleton v-for="n in 4" :key="n" class="h-24 w-full" /></div>
     <p v-else-if="!doc" class="px-6 py-8 text-[13px] text-error">{{ error || $t('projectTools.legalDoc.notFound') }}</p>
@@ -271,9 +287,31 @@ async function save() {
   if (result) adopt(result.document, result.coverage)
 }
 
+const publishOpen = ref(false)
+const note = ref('')
+const noteError = ref('')
+
+function openPublish() {
+  note.value = ''
+  noteError.value = ''
+  publishOpen.value = true
+}
+
+async function suggestNote() {
+  noteError.value = ''
+  busy.value = 'note'
+  try {
+    note.value = (await call<{ note: string }>('/change-note')).note
+  } catch (e: any) {
+    noteError.value = e?.data?.statusMessage || e?.message || t('projectTools.shared.somethingWrong')
+  } finally {
+    busy.value = ''
+  }
+}
+
 async function publish() {
-  const note = doc.value?.status === 'published' ? (prompt(t('projectTools.legalDoc.whatChanged')) ?? '') : ''
-  const result = await run('publish', () => call<{ document: Doc }>('/publish', 'POST', { note }))
+  const result = await run('publish', () => call<{ document: Doc }>('/publish', 'POST', { note: doc.value?.status === 'published' ? note.value.trim() : '' }))
+  publishOpen.value = false
   if (result) { adopt(result.document); await loadVersions() }
 }
 

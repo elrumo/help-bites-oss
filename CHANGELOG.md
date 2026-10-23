@@ -5,6 +5,11 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Saved, scheduled AI reports on errors.** "Analyze with AI" on the Errors page now saves every run as a report (view, copy and delete
+  them; the latest 100 are kept), can run daily, weekly or monthly on workers, and reads the source of the most frequent errors from the
+  project's GitHub repos (web and native). New routes `GET /v1/admin/errors/reports`, `DELETE /v1/admin/errors/reports/:id`,
+  `GET`/`PUT /v1/admin/errors/schedule`. Schema (needs `schema:apply`; the container does it on boot): new class `ErrorReport`, new fields
+  `Project.errorReportFrequency` and `Project.errorReportNextAt`. No env changes.
 - **A welcome tour for new accounts.** Five skippable cards after sign-up or accepting an invitation, replayable from Settings (web and
   native). `PATCH /v1/admin/me` takes `tourPending: false`; `/me` returns it on `agent`. Schema (needs `schema:apply`; the container does it
   on boot): new field `_User.tourPending`. Existing accounts are not shown the tour. No env changes.

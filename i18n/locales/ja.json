@@ -3815,6 +3815,8 @@
       "restore": "復元",
       "deleteDocument": "ドキュメントを削除",
       "whatChanged": "何が変わりましたか？（任意）",
+      "publishNewVersionHint": "現在のテキストが公開され、このメモがバージョンとともに記録されます。",
+      "suggestWithAi": "AIで提案",
       "restoreConfirm": "作業中のテキストをバージョン {version} で置き換えますか？その後、確認して公開できます。",
       "replaceSummaryConfirm": "作成した要約を AI が書いた要約で置き換えますか？",
       "deleteConfirm": "このドキュメントとそのバージョンを削除しますか？公開ページは表示されなくなります。",

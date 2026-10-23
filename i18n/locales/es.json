@@ -3815,6 +3815,8 @@
       "restore": "Restaurar",
       "deleteDocument": "Eliminar documento",
       "whatChanged": "¿Qué ha cambiado? (opcional)",
+      "publishNewVersionHint": "Se publica el texto actual y esta nota queda registrada con la versión.",
+      "suggestWithAi": "Sugerir con IA",
       "restoreConfirm": "¿Reemplazar el texto de trabajo por la versión {version}? Después podrás revisarlo y publicarlo.",
       "replaceSummaryConfirm": "¿Reemplazar el resumen que escribiste por uno escrito por IA?",
       "deleteConfirm": "¿Eliminar este documento y sus versiones? Su página pública dejará de funcionar.",

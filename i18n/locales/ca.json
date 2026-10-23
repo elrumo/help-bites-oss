@@ -3815,6 +3815,8 @@
       "restore": "Restaura",
       "deleteDocument": "Elimina el document",
       "whatChanged": "Què ha canviat? (opcional)",
+      "publishNewVersionHint": "Es publica el text actual i aquesta nota queda registrada amb la versió.",
+      "suggestWithAi": "Suggereix amb IA",
       "restoreConfirm": "Vols substituir el text de treball per la versió {version}? Després el podràs revisar i publicar.",
       "replaceSummaryConfirm": "Vols substituir el resum que has escrit per un de generat per IA?",
       "deleteConfirm": "Vols eliminar aquest document i les seves versions? La seva pàgina pública deixarà de funcionar.",

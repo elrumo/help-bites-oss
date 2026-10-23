@@ -135,6 +135,32 @@ export async function generateTldr(ctx: MemberContext, row: ParseObject, force: 
   await row.save(null, MASTER)
 }
 
+// ---- the "what changed" note on a new version --------------------------------------
+
+const NOTE_MAX = 300
+
+/** A one-line note for the next version, from the sections that differ from the last published one. */
+export async function suggestChangeNote(ctx: MemberContext, row: ParseObject): Promise<string> {
+  const latest = await new (useParse()).Query('LegalDocumentVersion').equalTo('document', row).descending('version').first(MASTER)
+  const before = new Map(((latest?.get('snapshot')?.sections || []) as LegalSection[]).map(s => [s.id, s]))
+  const now = sectionsOf(row)
+  const changes = [
+    ...now.flatMap(s => !before.has(s.id) ? [`Added "${s.heading}":\n${s.body}`] : before.get(s.id)!.body !== s.body || before.get(s.id)!.heading !== s.heading ? [`Changed "${s.heading}":\nWas: ${before.get(s.id)!.body}\nNow: ${s.body}`] : []),
+    ...[...before.values()].filter(s => !now.some(n => n.id === s.id)).map(s => `Removed "${s.heading}"`)
+  ]
+  if (!changes.length) throw createError({ statusCode: 409, statusMessage: 'Nothing differs from the last published version.' })
+  const reply = await ask(ctx, [
+    { role: 'system', content: GROUNDING },
+    { role: 'user', content: [
+      `Write the release note for a new version of a ${LEGAL_DOC_LABELS[(row.get('type') as LegalDocType) || 'privacy']}, read by the people who agreed to the previous one. In one or two plain sentences (at most 40 words) say what changed. State only what the changes below show. Reply with the note only.`,
+      `Changes (data):\n${changes.join('\n\n').slice(0, 20_000)}`
+    ].join('\n\n') }
+  ], 200)
+  const text = reply.trim().replace(/^["“]|["”]$/g, '').trim().slice(0, NOTE_MAX)
+  if (!text) badReply()
+  return text
+}
+
 // ---- checking text against the requirements ------------------------------------------
 
 const ANALYSE_TEXT_MAX = 60_000

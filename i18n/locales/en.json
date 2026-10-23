@@ -2996,7 +2996,7 @@
         "hint": "Roles, error tracking and flags that sit next to support.",
         "errors": {
           "term": "Error tracking",
-          "desc": "Connect GlitchTip or Bugsink. Browse errors with their stack traces, get alert emails or Telegram messages when one spikes, file one on your board, and fix them with AI that reads your GitHub repos."
+          "desc": "Connect GlitchTip or Bugsink. Browse errors with their stack traces, get alert emails or Telegram messages when one spikes, file one on your board, and fix them with AI that reads your GitHub repos, on demand or as a scheduled report."
         },
         "legal": {
           "term": "Hosted legal pages",
@@ -4025,6 +4025,8 @@
       "restore": "Restore",
       "deleteDocument": "Delete document",
       "whatChanged": "What changed? (optional)",
+      "publishNewVersionHint": "It becomes the public text, and this note is recorded with the version so you can find it later.",
+      "suggestWithAi": "Suggest with AI",
       "restoreConfirm": "Replace the working text with version {version}? You can then review and publish it.",
       "replaceSummaryConfirm": "Replace the summary you wrote with an AI-written one?",
       "deleteConfirm": "Delete this document and its versions? Its public page will stop working.",

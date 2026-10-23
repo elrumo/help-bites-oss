@@ -3815,6 +3815,8 @@
       "restore": "恢复",
       "deleteDocument": "删除文档",
       "whatChanged": "有什么变化？（可选）",
+      "publishNewVersionHint": "当前文本将被发布，此说明会与该版本一同记录。",
+      "suggestWithAi": "用 AI 建议",
       "restoreConfirm": "用版本 {version} 替换当前编辑中的文本？之后可以再审阅并发布。",
       "replaceSummaryConfirm": "要用 AI 撰写的摘要替换你写的摘要吗？",
       "deleteConfirm": "删除此文档及其所有版本？其公开页面将停止工作。",

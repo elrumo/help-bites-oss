@@ -567,6 +567,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Fix with AI.** Analyze an error for cause and fix (reading the stack-trace files
   from the project's GitHub repos), or copy the same context as a prompt for a
   coding agent (the analysis needs an LLM endpoint).
+- **AI reports.** Analyze with AI triages all open errors into a saved report (the
+  most frequent errors' source is read from connected GitHub repos). Reports can be
+  copied, listed and deleted, and made to run daily, weekly or monthly.
 - **Customer errors.** A customer's recent errors show alongside their
   conversation.
 - **File on board.** Turn an error into a board item (titled from the issue, with
