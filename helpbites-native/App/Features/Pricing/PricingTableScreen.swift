@@ -98,6 +98,7 @@ struct PricingTableScreen: View {
         Button { Clipboard.copy(snippet("web")) } label: { Label("Copy install snippet", systemImage: "chevron.left.forwardslash.chevron.right") }
         Button { if let url = URL(string: base + table.pagePath) { openURL(url) } } label: { Label("Open the hosted page", systemImage: "safari") }.disabled(!table.isPublished)
         if table.isPublished {
+          Button { Task { await run("publish", force: true) } } label: { Label("Push live now", systemImage: "bolt") }.disabled(busy != "")
           Button { confirm = .unpublish } label: { Label("Unpublish", systemImage: "eye.slash") }.disabled(busy != "")
         }
         Divider()
@@ -472,13 +473,15 @@ struct PricingTableScreen: View {
     apply(response.table)
   }
 
-  /// publish or unpublish.
-  private func run(_ action: String) async {
+  /// publish or unpublish. `force` publishes again with Stripe read fresh, even with nothing new.
+  private func run(_ action: String, force: Bool = false) async {
     busy = action
     error = ""
     defer { busy = "" }
     do {
-      let response: PricingTableResponse = try await session.send("/v1/admin/pricing-tables/\(tableId)/\(action)")
+      struct Force: Encodable, Sendable { let force: Bool }
+      let path = "/v1/admin/pricing-tables/\(tableId)/\(action)"
+      let response: PricingTableResponse = force ? try await session.send(path, body: Force(force: true)) : try await session.send(path)
       apply(response.table)
     } catch {
       self.error = error.localizedDescription

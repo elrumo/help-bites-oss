@@ -4768,7 +4768,10 @@
       "suggestApplied": "適用しました。確認してから保存または公開してください。",
       "suggestAdvice": "確認しておきたい点",
       "suggestReposRead": "読み取り済み：{repos}",
-      "suggestError": "提案できませんでした"
+      "suggestError": "提案できませんでした",
+      "pushLive": "今すぐ反映",
+      "pushedLive": "反映しました",
+      "pushedLiveHint": "最新の Stripe の価格で再公開しました。古いコピーをキャッシュしているサイトも 1 分以内に切り替わります。"
     },
     "forms": {
       "guide": "ガイド",

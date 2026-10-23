@@ -4768,7 +4768,10 @@
       "suggestApplied": "적용했습니다. 확인한 다음 저장하거나 게시하세요.",
       "suggestAdvice": "살펴볼 점",
       "suggestReposRead": "읽은 저장소: {repos}",
-      "suggestError": "제안할 수 없습니다"
+      "suggestError": "제안할 수 없습니다",
+      "pushLive": "지금 반영",
+      "pushedLive": "반영했습니다",
+      "pushedLiveHint": "최신 Stripe 가격으로 다시 게시했습니다. 이전 사본을 캐시한 사이트도 1분 안에 바뀝니다."
     },
     "forms": {
       "guide": "가이드",

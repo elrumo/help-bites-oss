@@ -45,6 +45,11 @@ of its own keeps the table exactly as it was.
 **Drafts and versions.** You edit a working copy. Nothing changes on your site
 or in your app until you publish; each publish is a new version, and
 **Unpublish** takes the table down everywhere.
+**Push live now** (the ⋯ menu, web and native) saves, publishes again even with nothing new
+and re-reads Stripe at once, instead of from its short cache (`POST …/{id}/publish`
+with `{ "force": true }`). The server keeps no copy of the public JSON, so it is live
+at once; a visitor's browser or a CDN may hold the old answer for up to a minute. On the
+web the panel also reloads the public JSON past its own browser's cache.
 
 ## Stripe
 

@@ -309,11 +309,11 @@ async function save(quiet = false) {
   }
 }
 
-async function act(action: 'publish' | 'unpublish') {
+async function act(action: 'publish' | 'unpublish', force = false) {
   busy.value = action
   error.value = ''
   try {
-    fill((await api<{ table: Table }>(`/admin/pricing-tables/${tableId}/${action}`, { method: 'POST' })).table)
+    fill((await api<{ table: Table }>(`/admin/pricing-tables/${tableId}/${action}`, { method: 'POST', body: force ? { force } : undefined })).table)
     toast.add({ title: action === 'publish' ? t('projectTools.pricing.publishedToast', { version: table.value!.version }) : t('projectTools.pricing.unpublishedToast'), icon: 'i-lucide-check', color: 'success' })
   } catch (e: any) {
     error.value = e?.message || t('projectTools.pricing.saveError')
@@ -326,6 +326,17 @@ async function act(action: 'publish' | 'unpublish') {
 async function publish() {
   if (dirty.value && !(await save(true))) return
   await act('publish')
+}
+
+// Saves, publishes again (even with nothing new), re-reads Stripe, then reloads the public JSON past this browser's cache.
+async function pushLive() {
+  if (dirty.value && !(await save(true))) return
+  await act('publish', true)
+  if (error.value) return
+  const base = `${appUrl.value}${table.value?.path}`
+  const tags = ['', ...Object.keys(form.value.translations)]
+  await Promise.all(tags.map(tag => fetch(tag ? `${base}?locale=${encodeURIComponent(tag)}` : base, { cache: 'reload', credentials: 'omit' }).catch(() => {})))
+  toast.add({ title: t('projectTools.pricing.pushedLive'), description: t('projectTools.pricing.pushedLiveHint'), icon: 'i-lucide-zap', color: 'success' })
 }
 
 async function remove() {
@@ -349,6 +360,7 @@ function downloadOfflineCopy() {
 }
 
 const menu = computed(() => [[
+  { label: t('projectTools.pricing.pushLive'), icon: 'i-lucide-zap', disabled: table.value?.status !== 'published' || busy.value === 'publish', onSelect: pushLive },
   { label: t('projectTools.pricing.downloadOffline'), icon: 'i-lucide-download', disabled: !table.value?.published, onSelect: downloadOfflineCopy },
   { label: t('projectTools.pricing.openJson'), icon: 'i-lucide-braces', disabled: table.value?.status !== 'published', onSelect: () => window.open(`${appUrl.value}${table.value?.path}`, '_blank') },
   { label: t('projectTools.pricing.openPage'), icon: 'i-lucide-external-link', disabled: table.value?.status !== 'published', onSelect: () => window.open(`${appUrl.value}${table.value?.pagePath}`, '_blank') }

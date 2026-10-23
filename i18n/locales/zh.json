@@ -4768,7 +4768,10 @@
       "suggestApplied": "已应用。检查一下，然后保存或发布。",
       "suggestAdvice": "值得一看",
       "suggestReposRead": "已读取：{repos}",
-      "suggestError": "无法生成建议"
+      "suggestError": "无法生成建议",
+      "pushLive": "立即推送上线",
+      "pushedLive": "已推送上线",
+      "pushedLiveHint": "已用最新的 Stripe 价格重新发布。缓存了旧版本的网站会在一分钟内更新。"
     },
     "forms": {
       "guide": "指南",

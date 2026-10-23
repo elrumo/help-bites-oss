@@ -117,7 +117,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   GitHub repos, Stripe, revenue and the table's numbers; nothing changes until
   you apply it.
 - **A live preview** in the panel and the native app, light and dark, desktop and
-  phone. On the web, click a word in it to edit it there.
+  phone. On the web, click a word in it to edit it there. **Push live now** publishes again and re-reads Stripe at once.
 
 **Languages and AI translation** [LANGUAGES.md](LANGUAGES.md)
 

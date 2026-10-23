@@ -4768,7 +4768,10 @@
       "suggestApplied": "Aplicat. Revisa-ho i després desa o publica.",
       "suggestAdvice": "Val la pena revisar",
       "suggestReposRead": "Llegits: {repos}",
-      "suggestError": "No s'ha pogut suggerir res"
+      "suggestError": "No s'ha pogut suggerir res",
+      "pushLive": "Publica ara",
+      "pushedLive": "Publicat",
+      "pushedLiveHint": "Publicat de nou amb preus de Stripe actualitzats. Els llocs amb la còpia antiga a la memòria cau la canvien en menys d’un minut."
     },
     "forms": {
       "guide": "Guia",

@@ -5148,7 +5148,10 @@
       "suggestApplied": "Applied. Check it, then save or publish.",
       "suggestAdvice": "Worth a look",
       "suggestReposRead": "Read: {repos}",
-      "suggestError": "Could not suggest anything"
+      "suggestError": "Could not suggest anything",
+      "pushLive": "Push live now",
+      "pushedLive": "Pushed live",
+      "pushedLiveHint": "Published again with fresh Stripe prices. Sites that cached the old copy pick it up within a minute."
     }
   },
   "workspaceSettings": {

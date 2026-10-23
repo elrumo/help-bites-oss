@@ -4768,7 +4768,10 @@
       "suggestApplied": "Aplicado. Revísalo y luego guarda o publica.",
       "suggestAdvice": "Vale la pena revisar",
       "suggestReposRead": "Leídos: {repos}",
-      "suggestError": "No se pudo sugerir nada"
+      "suggestError": "No se pudo sugerir nada",
+      "pushLive": "Publicar ahora",
+      "pushedLive": "Publicado",
+      "pushedLiveHint": "Publicado de nuevo con precios de Stripe actualizados. Los sitios con la copia antigua en caché la cambian en menos de un minuto."
     },
     "forms": {
       "guide": "Guía",
