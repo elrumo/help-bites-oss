@@ -1,5 +1,6 @@
 import { ATTRIBUTE_KEY_RE, CONTACT_LIMITS, cleanTags, normalizeEmail, type ContactAttributeValue } from './contacts'
 import { DEFAULT_CONTENT_LOCALE, normalizeLocale } from './locales'
+import type { ResolvedStyle } from './projectStyle'
 import { safeHttpUrl } from './support'
 
 // Lead forms: "notify me", waitlist and interest forms that collect people
@@ -125,6 +126,8 @@ export type PublicLeadForm = {
   content: LeadFormContent
   /** `accent` is the project's when the form leaves it empty. */
   style: LeadFormStyle
+  /** The finished look: the project's style (light and dark, shadow…) with this form's own fields over it. */
+  look: ResolvedStyle
   doubleOptIn: boolean
   project: { name: string, logoUrl: string }
 }

@@ -58,6 +58,23 @@ The page is plain server-rendered HTML with a strict Content Security Policy:
 nothing from a user is shown as HTML, every link must be http(s), and the only
 scripts are one fixed click handler and `helpbites.js` from the same origin.
 
+### Its style
+
+The page wears the **hub's style**: the [project style](STYLE.md) (logo, light and
+dark colours, corner radius, shadow, font), or the hub's own over it. Choose in
+Project → Settings → Public hub → **Style**, or over the API with
+`PATCH /v1/admin/projects/{id}`:
+
+```bash
+curl -X PATCH "https://YOUR-SUPPORT-HOST/v1/admin/projects/PROJECT_ID" \
+  -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{ "hub": { "style": { "source": "custom", "custom": { "scheme": "dark", "dark": { "accent": "#22c55e" } } } } }'
+```
+
+The page follows the visitor's light or dark setting unless the style fixes a
+`scheme`; while the style leaves it open, the Brand kit's page theme still
+applies. The finished style is `style` in the JSON below.
+
 ## JSON: `GET /v1/hub/{pk}`
 
 The same data, for the widget's Home tab, the snippets below, or your own UI.
@@ -139,7 +156,7 @@ it adds the chat; the others draw on your page, so you opt in:
 | `data-changelog-target` | A selector: the changelog draws inline there. The changelog is inline-only, so it needs this. |
 | `data-feedback-target` | A selector: the feedback board draws inline there. Without it the board is a floating button (on the left when the chat is on the right). |
 | `data-flow` | An onboarding flow's key to show. With `data-features="onboarding"` and no flow, the project's `welcome` (else its first). |
-| `data-accent`, `data-theme`, `data-position`, `data-locale`, `data-token` | Passed to every module that reads them. `data-token` is the person's identity token as a string; to fetch one when needed, call `HelpBites.push(['init', { getToken }])` as for the [chat](CONNECTING.md#3-show-the-chat). |
+| `data-accent`, `data-theme`, `data-radius`, `data-shadow`, `data-position`, `data-locale`, `data-token` | Passed to every module that reads them. `data-token` is the person's identity token as a string; to fetch one when needed, call `HelpBites.push(['init', { getToken }])` as for the [chat](CONNECTING.md#3-show-the-chat). |
 | `data-mode`, `data-target` | The chat's (`inline` and its element). |
 | `data-<module>-<name>` | Aims one attribute at one module: `data-feedback-position="left"`, `data-onboarding-show="update"`, `data-chat-mode="inline"`. |
 | `data-host` | Where HelpBites lives, when you serve `helpbites.js` from your own site. |

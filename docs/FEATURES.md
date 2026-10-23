@@ -35,8 +35,11 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Your Brand kit's look.** The chat, boards, forms, onboarding, legal and blog
   pages and campaign mail all wear the project's Brand kit: its accent, logo,
   typefaces and corner radius, set once. [BRAND.md](BRAND.md) A **project style**
-  on top of it adds light and dark colours, a shadow and its own logo and icon.
-  [STYLE.md](STYLE.md)
+  on top of it adds light and dark colours, a shadow and its own logo and icon,
+  and the chat widget, hub, blog, brand and legal pages, forms, onboarding and
+  pricing tables wear all of it in light and dark (the blog, legal, brand, hub and
+  widget can take their own over it; a form, flow or table keeps its own fields on
+  top). [STYLE.md](STYLE.md)
 - **A Home tab.** Turn it on and the chat opens on Home, with what is new, the top
   feedback and a button per onboarding flow, next to Messages. [HUB.md](HUB.md)
 - **One tag for everything.** `helpbites.js` asks the project which embeds it has
@@ -727,10 +730,10 @@ repository. See [EDITIONS.md](EDITIONS.md).
   from the server (error messages, names, AI output) stays as the server wrote it.
   In the hosted edition it shows the plan, usage, locks and
   sending domains, and opens Stripe's Checkout and customer portal in the browser.
-- **Project style.** The native app does not edit the project style or the
-  changelog's style yet (the panel does, and the API is the same). Forms,
-  onboarding, pricing tables, the blog and legal pages take the project style's
-  accent only: no dark palette, shadow or card colours there yet.
+- **Project style.** The native app does not edit the project style or any
+  feature's style yet (the panel does, and the API is the same), and its Swift
+  snippets do not read the finished `look` the public payloads carry. Kit
+  typefaces are not loaded on the blog, legal, form, onboarding or pricing pages.
   [STYLE.md](STYLE.md)
 - **Blog preview.** The web editor has Preview and Live preview (the draft in the
   blog's design, `POST /v1/admin/blog/preview`); the native editor has neither yet.

@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { createError, getQuery, getRouterParam, type H3Event } from 'h3'
 import {
-  BRAND_ASSET_BACKGROUNDS, BRAND_ASSET_KINDS, BRAND_LIMITS, normalizeBrandConfig, validateBrandConfig,
+  BRAND_RADIUS_PX, BRAND_ASSET_BACKGROUNDS, BRAND_ASSET_KINDS, BRAND_LIMITS, normalizeBrandConfig, validateBrandConfig,
   type BrandAssetBackground, type BrandAssetKind, type BrandConfig
 } from '#shared/brand'
 import type { BrandPageData } from './brandPage'
 import { renderChangelogBody } from './changelogRender'
+import { overlayStyle, ownLayer, resolveStyle, styleLayers, type ResolvedStyle } from '#shared/projectStyle'
 import { forgetProject, lookOf } from './projects'
 import { detectImageMime } from './s3'
 
@@ -286,6 +287,19 @@ export function projectAccent(project: ParseObject): string {
   return lookOf(project).accent
 }
 
+/**
+ * What the brand page wears: the project's style, the page's own choices over it
+ * (`page.style`), then the page's `theme`, `radius` and `accent` over both. Read
+ * from the config being shown, like the look: a preview carries unsaved edits.
+ */
+export function brandStyleOf(project: ParseObject, config: BrandConfig): ResolvedStyle {
+  const look = lookOf(project, { brand: config })
+  const layers = styleLayers(look.projectStyle, config.page.style)
+  const { accent, theme, radius } = config.page
+  const own = ownLayer({ accent, scheme: theme, radius: BRAND_RADIUS_PX[radius] }, layers.reduce(overlayStyle), { radius: BRAND_RADIUS_PX.soft })
+  return resolveStyle(look.kit, ...layers, own)
+}
+
 /** Everything the page renders, from a kit and the files it may show. */
 export function brandPageData(project: ParseObject, config: BrandConfig, assets: BrandAssetView[]): BrandPageData {
   const shown = assets.filter(a => a.public)
@@ -299,6 +313,7 @@ export function brandPageData(project: ParseObject, config: BrandConfig, assets:
     about: config.about,
     // The page's own accent wins; else the project's look.
     accent: config.page.accent || look.accent,
+    style: brandStyleOf(project, config),
     config,
     guidelines: config.guidelines.map(g => ({ id: g.id, title: g.title, html: renderChangelogBody(g.body, 'markdown') })),
     assets: shown
@@ -313,6 +328,7 @@ export function toPublicBrand(project: ParseObject, config: BrandConfig, assets:
     tagline: config.tagline,
     about: config.about,
     accent: config.page.accent || lookOf(project, { brand: config }).accent,
+    style: brandStyleOf(project, config),
     colors: config.colors,
     fonts: config.fonts,
     guidelines: config.guidelines.map(g => ({ ...g, html: renderChangelogBody(g.body, 'markdown') })),

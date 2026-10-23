@@ -246,9 +246,11 @@ describe('the hosted blog', () => {
     const p = blogPageProject(project, designed)
     expect(p).toMatchObject({ accent: '#ff0066', logo: 'https://cdn.test/logo.png' })
     const html = renderBlogIndex(p, designed, { ...index, lead: { ...item, featured: true, title: 'Lead story' } }, null)
-    expect(html).toContain('<html lang="en" data-scheme="dark">')
+    // A fixed dark scheme gets the dark palette only, with no prefers-color-scheme switch.
+    expect(html).toContain('--bg:#0c0a09')
+    expect(html).not.toContain('@media (prefers-color-scheme')
     expect(html).toContain('class="wide layout-magazine"')
-    expect(html).toContain('--font: "Iowan Old Style"')
+    expect(html).toContain('--font:ui-serif, Georgia')
     expect(html).toContain('<a href="/blog/pk_test/about">About</a>')
     expect(html).toContain('<a href="/blog/pk_test" aria-current="page">Home</a>')
     expect(html).toContain('<a href="https://shop.test/" rel="noopener">Shop</a>')

@@ -5,6 +5,7 @@
 // (tests/blogNativeParity.test.ts keeps them equal).
 
 import { readDate } from './feedback'
+import { DEFAULT_STYLE_CHOICE, validateStyleChoice, type ResolvedStyle, type StyleChoice } from './projectStyle'
 import { safeHttpUrl } from './support'
 
 export const BLOG_TITLE_MAX_LENGTH = 200
@@ -170,6 +171,8 @@ export type BlogConfig = {
   subscribeForm: boolean
   /** How the hosted blog looks. */
   design: BlogDesign
+  /** How the hosted blog takes its style: the project's, or its own over it. `design` stays the blog's own layer over both. */
+  style: StyleChoice
 }
 
 export const DEFAULT_BLOG_CONFIG: BlogConfig = {
@@ -182,7 +185,8 @@ export const DEFAULT_BLOG_CONFIG: BlogConfig = {
   postUrl: '',
   newsletterTopic: '',
   subscribeForm: false,
-  design: DEFAULT_BLOG_DESIGN
+  design: DEFAULT_BLOG_DESIGN,
+  style: DEFAULT_STYLE_CHOICE
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -232,6 +236,11 @@ export function validateBlogConfig(value: unknown, base: BlogConfig = DEFAULT_BL
   }
   // Partial too: a layout change does not resend the navigation.
   config.design = validateDesign(raw.design, config.design, errors)
+  if (raw.style !== undefined) {
+    const style = validateStyleChoice(raw.style, base.style ?? DEFAULT_STYLE_CHOICE)
+    errors.push(...style.errors)
+    config.style = style.choice
+  }
   return { config, errors }
 }
 
@@ -360,6 +369,8 @@ export type PublicBlog = {
   description: string
   /** The hosted blog's layout, for an embed that wants to match it. */
   layout: BlogLayout
+  /** What the blog wears (the project's style with the blog's own over it), every gap filled: light and dark palettes, radius, shadow, font. */
+  style: ResolvedStyle
   /** RSS 2.0 of the latest posts. */
   feedUrl: string
   /** Whether readers may react and comment at all. */

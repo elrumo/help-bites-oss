@@ -35,6 +35,13 @@ accent and the visitor's light or dark), corner radius, font (system, rounded,
 serif, mono), spacing, flat, outlined or shadowed cards, and how the highlighted
 plan stands out.
 
+**Project style.** Whatever the table leaves empty comes from the project style
+(**Project style** in the Look section, or [STYLE.md](STYLE.md)): its light and
+dark colours, corner radius and shadow, and its font. A table that sets a colour
+keeps it in light and dark; a radius or font left at the table's default (16,
+system) follows the project's once the project sets one. A project with no style
+of its own keeps the table exactly as it was.
+
 **Drafts and versions.** You edit a working copy. Nothing changes on your site
 or in your app until you publish; each publish is a new version, and
 **Unpublish** takes the table down everywhere.
@@ -138,8 +145,9 @@ Set them as `data-*` attributes or in `init`:
 | `table` | The table's key. |
 | `target` | A selector to draw into, instead of where the script tag is. |
 | `template` | `tiers`, `rows`, `paywall`, `matrix` or `spotlight`: overrides the table's. |
-| `theme` | `light`, `dark` or `system`. Defaults to a `dark` or `light` class on your `<html>`, then the colour behind the table. |
-| `accent`, `radius`, `font`, `density` | Override the table's look. |
+| `theme` | `light`, `dark` or `system`. Defaults to a `dark` or `light` class on your `<html>`, then the project style's scheme if it fixes one, then the colour behind the table. |
+| `accent`, `radius`, `font`, `density` | Override the table's look. `radius` is 0 to 32. |
+| `shadow` | `none`, `soft`, `medium` or `strong`: the shadow of tables whose cards are shadowed. Defaults to the project style's. |
 | `interval` | `week`, `month` or `year`: where the toggle starts. |
 | `currency` | A three-letter code, or `auto` for the visitor's region. A switcher offers the others when there are any. |
 | `locale` | A language tag. Defaults to your `<html lang>`, then the browser's. See [Languages](LANGUAGES.md). |
@@ -203,7 +211,7 @@ an app's web view, or to put in an iframe:
 https://YOUR-SUPPORT-HOST/pricing/PROJECT_PUBLIC_KEY/pricing
 ```
 
-It shows in the visitor's language, and checkout comes back to it when the table
+It wears the project style in light and dark (following the visitor unless the style fixes a scheme), shows in the visitor's language, and checkout comes back to it when the table
 names nowhere else.
 
 ## Plug and play: Swift
@@ -555,6 +563,7 @@ curl -s "https://YOUR-SUPPORT-HOST/v1/pricing/PROJECT_PUBLIC_KEY/pricing?locale=
     "experiment": null, "savings": 16,
     "content": { "title": "Precios sencillos", "subtitle": "…", "footnote": "…", "monthlyLabel": "", "yearlyLabel": "", "savingsLabel": "" },
     "style": { "accent": "#5e6ad2", "radius": 16, "font": "system", "density": "comfortable", "surface": "outline", "highlight": "border" },
+    "look": { "scheme": "auto", "radius": 16, "shadow": "soft", "fontFamily": "…", "light": { "accent": "#5e6ad2", "background": "#ffffff", "surface": "#fafaf9", "text": "#1c1917", "muted": "#78716c", "border": "#e7e5e4" }, "dark": { "…": "…" } },
     "options": { "defaultInterval": "year", "yearlyAs": "total", "cumulative": true, "showExcluded": false, "compare": false },
     "plans": [{
       "key": "pro", "name": "Pro", "description": "…", "badge": "Más popular", "highlighted": true,

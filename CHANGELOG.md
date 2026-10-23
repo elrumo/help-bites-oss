@@ -26,8 +26,13 @@ All notable changes to the community edition. Versions are Docker image tags
   `data-shadow`; the public feedback board (list, roadmap and changelog views, `feedback.js`) takes the same (`feedback.style`,
   `feedbackStyle` on the public project and `GET /v1/feedback/config`). `style` on `PATCH /v1/admin/projects/{id}`, `look.style` on the public project and `style` on `GET /v1/changelog`. The
   project style's accent outranks the Brand kit's, and saving the accent in Settings keeps it in step. Schema (needs `schema:apply`;
-  the container does it on boot): new field `Project.style`. Forms, onboarding, pricing, blog and legal take its accent only; the native
-  app does not edit it yet.
+  the container does it on boot): new field `Project.style`. The chat widget, hub, blog, brand page, legal pages, forms, onboarding and
+  pricing tables wear it too, in light and dark (`widget.style`, `hub.style`, `blog.style`, `legal.style`, `brand.page.style` choose
+  the project's or their own over it; a form, flow or table keeps its own fields on top; `widgetStyle`, `style` and `look` carry the
+  finished style in the public payloads); `widget.js`, `helpbites.js`, `forms.js`, `onboarding.js`, `pricing.js`, `blog.js` and
+  `brand.js` take `data-accent`, `data-radius`, `data-shadow` and `data-theme`. Schema (needs `schema:apply`): new field `Project.widget`.
+  Blog and legal pages with no project style now render the default stone palette; pricing tables with no accent anywhere get the
+  Brand kit's default accent. The native app does not edit any of it yet.
 - **Optional Plausible stats** for HelpBites' own site and panel: set `NUXT_PUBLIC_PLAUSIBLE_SRC` to the script's address (off by default; the panel reads it at run
   time, the prerendered landing page and docs need it as a Docker build arg too). It is not loaded in the embeds or on the invite and OAuth pages, and its origin joins the panel's script policy. No schema changes.
 - **Developer & MCP**: the workspace Developer page is now **Developer & MCP** and gains an AI assistants section with the

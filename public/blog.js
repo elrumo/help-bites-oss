@@ -34,8 +34,9 @@
  * Options (data-* or init): project, target, view ('blog' | 'post' | 'extras'),
  * post, tag, q (a search), layout ('list' | 'grid' | 'magazine'; defaults to
  * the hosted blog's), body, limit (posts per page, default 10), theme ('system' | 'light' |
- * 'dark'; defaults to a dark/light class on your <html>), accent (defaults to
- * the project's), radius, font ('inherit' | 'system' | 'serif' | 'mono'),
+ * 'dark'; defaults to a dark/light class on your <html>, else the blog's style, else the visitor's),
+ * accent (defaults to the project's), radius (card corners in px; defaults to the blog's style), shadow
+ * ('none' | 'soft' | 'medium' | 'strong'; defaults to the blog's style), font ('inherit' | 'system' | 'serif' | 'mono'),
  * show (which parts: 'cover,excerpt,tags,author,date,badges,search,reactions,comments,subscribe'),
  * deep-link-param ('post': the URL parameter an open post is kept in), host
  * (when you serve this file yourself), labels (init only: any of WORDS below).
@@ -43,7 +44,7 @@
  *
  * Restyle it from your CSS with variables on .help-bites-blog
  * (--hb-blog-accent, -on-accent, -bg, -card, -text, -muted, -line, -radius,
- * -font, -width) or parts (::part(header), search, list, card, cover, title, meta,
+ * -shadow, -font, -width) or parts (::part(header), search, list, card, cover, title, meta,
  * excerpt, tag, badge, post, body, gate, reactions, reaction, comments, comment,
  * composer, button, subscribe). Every reader action is also a `helpbites:blog` event on
  * window ({ type: 'open' | 'react' | 'comment' | 'subscribe', slug }).
@@ -67,6 +68,7 @@
     theme: attr('theme'),
     accent: attr('accent'),
     radius: attr('radius'),
+    shadow: attr('shadow'),
     font: attr('font') || 'inherit',
     show: attr('show'),
     deepLinkParam: attr('deep-link-param') || 'post',
@@ -79,6 +81,12 @@
     system: '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif',
     serif: 'ui-serif, "Iowan Old Style", Georgia, serif',
     mono: 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace'
+  }
+  var SHADOWS = {
+    none: 'none',
+    soft: '0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08)',
+    medium: '0 4px 12px rgb(0 0 0 / 0.1)',
+    strong: '0 12px 32px rgb(0 0 0 / 0.18)'
   }
   var EMOJI = { 'heart': '❤️', '+1': '👍', 'hooray': '🎉', 'laugh': '😄', 'rocket': '🚀', 'eyes': '👀' }
   var REACTIONS = ['heart', '+1', 'hooray', 'laugh', 'rocket', 'eyes']
@@ -137,14 +145,31 @@
   function theme() {
     if (options.theme) return options.theme
     var html = document.documentElement
-    return html.classList.contains('dark') ? 'dark' : html.classList.contains('light') ? 'light' : 'system'
+    if (html.classList.contains('dark')) return 'dark'
+    if (html.classList.contains('light')) return 'light'
+    var scheme = state.blog && state.blog.style && state.blog.style.scheme
+    return scheme === 'dark' || scheme === 'light' ? scheme : 'system'
+  }
+
+  // The blog's style (GET /v1/blog `style`): the project's, light and dark, with the blog's own over it.
+  function onAccent(hex) {
+    var n = parseInt(hex.slice(1), 16)
+    return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 150 ? '#000' : '#fff'
+  }
+  function palette(p) {
+    var accent = /^#[0-9a-f]{6}$/i.test(options.accent) ? options.accent : p.accent
+    return '--hb-blog-accent: ' + accent + '; --hb-blog-on-accent: ' + onAccent(accent) + '; --hb-blog-card: ' + p.surface + '; --hb-blog-text: ' + p.text + '; --hb-blog-muted: ' + p.muted + '; --hb-blog-line: ' + p.border + ';'
   }
 
   function css() {
-    var accent = options.accent || (state.project && state.project.theme && state.project.theme.accent) || '#4f46e5'
-    var dark = ':host { --hb-blog-bg: #111113; --hb-blog-card: #19191c; --hb-blog-text: #ececf0; --hb-blog-muted: #a2a2ad; --hb-blog-line: #2b2b31; }'
+    var style = state.blog && state.blog.style
+    var fallback = (state.project && state.project.theme && state.project.theme.accent) || '#4f46e5'
+    var light = style ? style.light : { accent: fallback, surface: '#fff', text: '#1c1c21', muted: '#62626d', border: '#e6e6ea' }
+    var darkPalette = style ? style.dark : { accent: fallback, surface: '#19191c', text: '#ececf0', muted: '#a2a2ad', border: '#2b2b31' }
+    var dark = ':host { ' + palette(darkPalette) + ' }'
     var mode = theme()
-    return ':host { all: initial; display: block; font-family: inherit; --hb-blog-accent: ' + accent + '; --hb-blog-on-accent: #fff; --hb-blog-bg: transparent; --hb-blog-card: #fff; --hb-blog-text: #1c1c21; --hb-blog-muted: #62626d; --hb-blog-line: #e6e6ea; --hb-blog-radius: ' + (options.radius ? options.radius + 'px' : '14px') + '; --hb-blog-font: ' + (FONTS[options.font] || 'inherit') + '; --hb-blog-width: 760px; }'
+    var radius = options.radius ? options.radius : style ? style.radius * 2 : 14
+    return ':host { all: initial; display: block; font-family: inherit; ' + palette(light) + ' --hb-blog-bg: transparent; --hb-blog-radius: ' + radius + 'px; --hb-blog-shadow: ' + (Object.prototype.hasOwnProperty.call(SHADOWS, options.shadow) ? SHADOWS[options.shadow] : (style && style.shadowCss) || 'none') + '; --hb-blog-font: ' + (FONTS[options.font] || 'inherit') + '; --hb-blog-width: 760px; }'
       + (mode === 'dark' ? dark : mode === 'system' ? '@media (prefers-color-scheme: dark) { ' + dark + ' }' : '')
       + '.wrap { max-width: var(--hb-blog-width); margin: 0 auto; color: var(--hb-blog-text); background: var(--hb-blog-bg); font-size: 16px; line-height: 1.65; font-family: var(--hb-blog-font); }'
       + '* { box-sizing: border-box; } a { color: var(--hb-blog-accent); }'
@@ -153,20 +178,20 @@
       + '.quiet { background: none; border: 0; color: var(--hb-blog-muted); font-size: 14px; padding: 4px 6px; } .quiet:hover { color: var(--hb-blog-text); }'
       + '.head { margin: 0 0 24px; } .head h2 { font-size: 1.8em; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.02em; } .head p { margin: 0; color: var(--hb-blog-muted); }'
       + '.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }'
-      + '.card { display: block; width: 100%; text-align: left; color: inherit; background: var(--hb-blog-card); border: 1px solid var(--hb-blog-line); border-radius: var(--hb-blog-radius); overflow: hidden; padding: 0; }'
+      + '.card { display: block; width: 100%; text-align: left; color: inherit; background: var(--hb-blog-card); border: 1px solid var(--hb-blog-line); border-radius: var(--hb-blog-radius); box-shadow: var(--hb-blog-shadow); overflow: hidden; padding: 0; }'
       + '.card:hover { border-color: color-mix(in srgb, var(--hb-blog-accent) 45%, var(--hb-blog-line)); }'
       + '.cover { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: cover; background: var(--hb-blog-line); }'
       + '.card .in { padding: 18px 22px 20px; } .title { font-size: 1.25em; line-height: 1.3; margin: 0 0 4px; font-weight: 700; letter-spacing: -0.01em; }'
       + '.meta { color: var(--hb-blog-muted); font-size: 14px; margin: 0; } .excerpt { margin: 8px 0 0; color: var(--hb-blog-muted); font-size: 15px; }'
       + '.tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; } .tag { font-size: 13px; line-height: 1; padding: 6px 10px; border-radius: 999px; background: color-mix(in srgb, var(--hb-blog-accent) 10%, transparent); color: var(--hb-blog-accent); border: 0; }'
-      + '.post { background: var(--hb-blog-card); border: 1px solid var(--hb-blog-line); border-radius: var(--hb-blog-radius); overflow: hidden; } .post .in { padding: 32px 36px 36px; }'
+      + '.post { background: var(--hb-blog-card); border: 1px solid var(--hb-blog-line); border-radius: var(--hb-blog-radius); box-shadow: var(--hb-blog-shadow); overflow: hidden; } .post .in { padding: 32px 36px 36px; }'
       + '.post h1 { font-size: 2em; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.02em; } .post .meta { margin-bottom: 24px; }'
       + '.body h2 { font-size: 1.4em; margin: 1.8em 0 .5em; } .body h3 { font-size: 1.2em; margin: 1.5em 0 .5em; } .body img { max-width: 100%; height: auto; border-radius: 10px; }'
       + '.body pre { background: color-mix(in srgb, var(--hb-blog-text) 6%, transparent); border-radius: 10px; padding: 14px; overflow-x: auto; font-size: 14px; } .body code { font-size: .9em; }'
       + '.body blockquote { margin: 0 0 1em; padding-left: 14px; border-left: 3px solid var(--hb-blog-accent); color: var(--hb-blog-muted); } .body table { border-collapse: collapse; width: 100%; } .body th, .body td { border: 1px solid var(--hb-blog-line); padding: 6px 8px; }'
       + '.reactions { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 0; } .reaction { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--hb-blog-line); background: var(--hb-blog-card); color: var(--hb-blog-text); border-radius: 999px; padding: 5px 12px; font-size: 14px; }'
       + '.reaction[aria-pressed="true"] { border-color: var(--hb-blog-accent); background: color-mix(in srgb, var(--hb-blog-accent) 12%, var(--hb-blog-card)); }'
-      + '.box { margin-top: 24px; background: var(--hb-blog-card); border: 1px solid var(--hb-blog-line); border-radius: var(--hb-blog-radius); padding: 20px 22px; } .box h3 { margin: 0 0 12px; font-size: 1.1em; }'
+      + '.box { margin-top: 24px; background: var(--hb-blog-card); border: 1px solid var(--hb-blog-line); border-radius: var(--hb-blog-radius); box-shadow: var(--hb-blog-shadow); padding: 20px 22px; } .box h3 { margin: 0 0 12px; font-size: 1.1em; }'
       + '.comment { padding: 12px 0; border-top: 1px solid var(--hb-blog-line); } .comment:first-of-type { border-top: 0; } .comment.reply { margin-left: 28px; }'
       + '.who { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; } .who strong { font-weight: 600; } .badge { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: color-mix(in srgb, var(--hb-blog-accent) 14%, transparent); color: var(--hb-blog-accent); }'
       + '.cbody { margin: 4px 0 0; font-size: 15px; } .cbody p { margin: 4px 0; } .actions { display: flex; gap: 4px; margin-top: 2px; }'

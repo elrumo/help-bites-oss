@@ -267,6 +267,19 @@ they follow the project's [Brand kit](BRAND.md), like every other public page;
 `font` is one of `system`, `serif` or `mono`. Pages follow the reader's light or
 dark setting and print cleanly.
 
+The pages wear the [project style](STYLE.md) too: its light and dark colours,
+corner radius, shadow and font. **Project → Legal → Style** uses it as it is, or
+lays the pages' own choices over it (`legal.style`, `{ "source": "custom",
+"custom": { … } }`, same fields as the project style). The `accent` and `font`
+above stay the pages' own layer on top of both (a `font` left at `system` follows
+the style's font when it sets one).
+
+```bash
+curl -X PATCH "https://YOUR-SUPPORT-HOST/v1/admin/projects/PROJECT_ID" \
+  -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{ "legal": { "style": { "source": "custom", "custom": { "light": { "background": "#fffdf7" } } } } }'
+```
+
 ### Links to your documents in email
 
 Once a document is published, `{{project.privacyUrl}}`, `{{project.termsUrl}}`,

@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto'
 import {
-  BRAND_RADII, BRAND_SECTIONS, BRAND_SECTION_LABELS, BRAND_TEMPLATES, BRAND_THEMES, brandSectionOf, hexToRgb, readableOn,
+  BRAND_RADII, BRAND_RADIUS_PX, BRAND_SECTIONS, BRAND_SECTION_LABELS, BRAND_TEMPLATES, BRAND_THEMES, brandSectionOf, hexToRgb, readableOn,
   type BrandConfig, type BrandFont, type BrandRadius, type BrandSection, type BrandTemplate, type BrandTheme
 } from '#shared/brand'
 import { formatBytes } from '#shared/entitlements'
+import { STYLE_RADIUS_MAX, STYLE_SHADOWS, STYLE_SHADOW_CSS, styleCss, type ResolvedStyle, type StyleShadow } from '#shared/projectStyle'
 import { poweredByHtml, type PoweredBy } from './branding'
 import { escapeHtml } from './messageEmail'
 import type { BrandAssetView } from './brand'
@@ -17,8 +18,10 @@ import type { BrandAssetView } from './brand'
 export type BrandPageOptions = {
   template?: BrandTemplate
   theme?: BrandTheme
-  radius?: BrandRadius
+  /** A named radius, or a number of pixels (0 to 32). */
+  radius?: string
   accent?: string
+  shadow?: StyleShadow
   sections?: BrandSection[]
   /** Inside brand.js's iframe: no top bar, a static side panel, height reports. */
   embed?: boolean
@@ -34,8 +37,6 @@ const MONO = 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospac
 
 const RADII: Record<BrandRadius, [string, string]> = { sharp: ['0px', '0px'], soft: ['12px', '8px'], round: ['28px', '14px'] }
 
-const LIGHT = '--bg: #ffffff; --surface: #f4f4f5; --text: #18181b; --muted: #6b6b74; --line: #e4e4e7; --checker: #ececee;'
-const DARK = '--bg: #0f0f11; --surface: #1b1b1f; --text: #f4f4f5; --muted: #a1a1aa; --line: #2a2a2f; --checker: #232327;'
 
 const FONT_ROLE_NOTE: Record<BrandFont['role'], string> = { display: 'For headlines', body: 'For text', mono: 'For code and numbers', other: '' }
 
@@ -137,6 +138,8 @@ export type BrandPageData = {
   tagline: string
   about: string
   accent: string
+  /** The page's finished style: the project's, the page's own over it, `theme`, `radius` and `accent` on top. */
+  style: ResolvedStyle
   config: BrandConfig
   guidelines: { id: string, title: string, html: string }[]
   assets: BrandAssetView[]
@@ -145,9 +148,21 @@ export type BrandPageData = {
 export function renderBrandPage(data: BrandPageData, poweredBy: PoweredBy | null, options: BrandPageOptions = {}): string {
   const page = data.config.page
   const template = BRAND_TEMPLATES.includes(options.template as BrandTemplate) ? options.template! : page.template
-  const theme = BRAND_THEMES.includes(options.theme as BrandTheme) ? options.theme! : page.theme
-  const radius = BRAND_RADII.includes(options.radius as BrandRadius) ? options.radius! : page.radius
-  const accent = /^#[0-9a-f]{6}$/i.test(options.accent || '') ? options.accent!.toLowerCase() : data.accent
+  // The query's choices (brand.js passes its data-* options this way) lie over the page's finished style.
+  const queryAccent = /^#[0-9a-f]{6}$/i.test(options.accent || '') ? options.accent!.toLowerCase() : ''
+  const named = BRAND_RADII.includes(options.radius as BrandRadius) ? options.radius as BrandRadius : null
+  const queryPx = /^\d{1,2}$/.test(String(options.radius ?? '')) && Number(options.radius) <= STYLE_RADIUS_MAX ? Number(options.radius) : null
+  const shadow = STYLE_SHADOWS.includes(options.shadow as StyleShadow) ? options.shadow! : data.style.shadow
+  const style: ResolvedStyle = {
+    ...data.style,
+    scheme: BRAND_THEMES.includes(options.theme as BrandTheme) ? options.theme! : data.style.scheme,
+    shadow,
+    shadowCss: STYLE_SHADOW_CSS[shadow],
+    radius: named ? BRAND_RADIUS_PX[named] : queryPx ?? data.style.radius,
+    light: { ...data.style.light, accent: queryAccent || data.style.light.accent },
+    dark: { ...data.style.dark, accent: queryAccent || data.style.dark.accent }
+  }
+  const accent = style.light.accent
   const onAccent = readableOn(accent)
   const order = (options.sections?.length ? options.sections : page.sections).filter(s => BRAND_SECTIONS.includes(s))
   const assets = data.assets
@@ -168,11 +183,10 @@ export function renderBrandPage(data: BrandPageData, poweredBy: PoweredBy | null
   const display = data.config.fonts.find(f => f.role === 'display') || data.config.fonts.find(f => f.role === 'body')
   const body = data.config.fonts.find(f => f.role === 'body') || display
   const fontLinks = [...new Set(data.config.fonts.map(f => f.cssUrl).filter(Boolean))].map(url => `<link rel="stylesheet" href="${escapeHtml(url)}">`).join('\n')
-  const [r, rs] = RADII[radius]
-  const palette = theme === 'light' ? `:root { ${LIGHT} color-scheme: light; }`
-    : theme === 'dark' ? `:root { ${DARK} color-scheme: dark; }`
-      : `:root { ${LIGHT} color-scheme: light dark; } @media (prefers-color-scheme: dark) { :root { ${DARK} } }`
-  const vars = `:root { --accent: ${accent}; --on-accent: ${onAccent}; --display: ${stack(display, template === 'editorial' ? SERIF : SANS)}; --body: ${stack(body, SANS)}; --mono: ${MONO}; --r: ${r}; --r-sm: ${rs}; }`
+  // The named radii keep their own corner pairs; any other radius scales from the style's.
+  const key = (Object.keys(BRAND_RADIUS_PX) as BrandRadius[]).find(k => BRAND_RADIUS_PX[k] === style.radius)
+  const [r, rs] = key ? RADII[key] : [`${Math.round(style.radius * 1.5)}px`, `${style.radius}px`]
+  const vars = `:root { --display: ${stack(display, template === 'editorial' ? SERIF : SANS)}; --body: ${stack(body, SANS)}; --mono: ${MONO}; --r: ${r}; --r-sm: ${rs}; --checker: color-mix(in srgb, var(--text) 8%, var(--bg)); }`
 
   const headline = page.headline || data.name
   const lede = page.intro || data.tagline
@@ -206,7 +220,7 @@ ${lede ? `<meta name="description" content="${escapeHtml(lede)}">` : ''}
 ${og ? `<meta property="og:image" content="${escapeHtml(og.url)}">` : ''}
 ${data.iconUrl ? `<link rel="icon" href="${escapeHtml(data.iconUrl)}">` : ''}
 ${fontLinks}
-<style>${palette}${vars}${CSS}${TEMPLATE_CSS[template]}</style>
+<style>${styleCss(style)}${vars}${CSS}${TEMPLATE_CSS[template]}</style>
 </head>
 <body>
 ${content}
@@ -257,7 +271,7 @@ a { color: inherit; text-underline-offset: 3px; }
 .chip-meta p { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
 
 .fonts { display: grid; gap: 20px; }
-.font { display: grid; grid-template-columns: minmax(180px, 0.8fr) 2fr; gap: 32px; padding: 32px; background: var(--surface); border-radius: var(--r); }
+.font { display: grid; grid-template-columns: minmax(180px, 0.8fr) 2fr; gap: 32px; padding: 32px; background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); }
 .specimen { font: 500 clamp(96px, 14vw, 168px)/0.9 var(--face); letter-spacing: -0.04em; }
 .font-meta h3 { margin: 0; font: 600 22px/1.2 var(--face); letter-spacing: -0.01em; }
 .facts { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0 18px; color: var(--muted); font-size: 14px; }

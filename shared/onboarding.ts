@@ -1,5 +1,6 @@
 import { DEFAULT_CONTENT_LOCALE, normalizeLocale } from './locales'
 import { PRICING_KEY, type PublicPricingTable } from './pricing'
+import type { ResolvedStyle } from './projectStyle'
 import { safeHttpUrl } from './support'
 
 // Onboarding flows: a few screens an app shows a new user. The operator edits a
@@ -67,6 +68,8 @@ export type PublicOnboardingFlow = {
   publishedAt: string | null
   project: { name: string, logoUrl: string }
   style: OnboardingStyle
+  /** The finished look: the project's style (light and dark, shadow…) with this flow's own fields over it. */
+  look: ResolvedStyle
   options: OnboardingOptions
   steps: PublicOnboardingStep[]
 }

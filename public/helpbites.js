@@ -21,7 +21,7 @@
  *   data-cache="false"                   do not start from the answer remembered in this browser
  *
  * Attributes pass through to the scripts. These reach every module that reads
- * them: data-accent, data-theme, data-position, data-locale, data-token.
+ * them: data-accent, data-theme, data-radius, data-shadow, data-position, data-locale, data-token.
  * data-mode and data-target are the chat's, data-flow is onboarding's. Prefix
  * any attribute with a module to aim it: data-feedback-position="left",
  * data-onboarding-show="update", data-chat-mode="inline".
@@ -62,7 +62,7 @@
   var FILES = { chat: 'widget.js', feedback: 'feedback.js', changelog: 'changelog.js', onboarding: 'onboarding.js' }
   var QUEUES = { feedback: 'HelpBitesFeedback', onboarding: 'HelpBitesOnboarding' }
   // Reach every module that reads them.
-  var SHARED = ['accent', 'theme', 'position', 'locale', 'token']
+  var SHARED = ['accent', 'theme', 'radius', 'shadow', 'position', 'locale', 'token']
   // Reach one module without a prefix.
   var OWN = { chat: ['mode', 'target'], onboarding: ['flow'] }
 

@@ -30,7 +30,7 @@ describe('legal rendering', () => {
       [{ title: 'Terms', path: '/legal/pk_x/terms' }],
       null
     )
-    expect(page).toContain('--brand: #ff0066')
+    expect(page).toContain('--accent:#ff0066')
     expect(page).toContain('Georgia')
     expect(page).toContain('Acme &lt;b&gt;')
     expect(page).toContain('We &quot;collect&quot; &lt;little&gt;.')

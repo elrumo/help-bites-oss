@@ -1,6 +1,7 @@
 import { createError, getRequestURL, getRouterParam, type H3Event } from 'h3'
 import { composeHubSections, hubTitle, HUB_SECTION_TITLES, normalizeHubConfig, type HubHome, type HubHomeSection, type HubItem, type HubLink, type HubLoader, type HubSectionContent, type HubSectionView } from '#shared/hub'
 import type { ProjectLook } from '#shared/projectLook'
+import type { ResolvedStyle } from '#shared/projectStyle'
 import { brandConfigOf } from './brand'
 import { getBlogConfig, listPublicBlog } from './blog'
 import { changelogIsPublic, listPublicChangelogEntries } from './changelog'
@@ -8,7 +9,7 @@ import { getFeedbackConfig, listFeedbackPosts, readFeedbackListQuery } from './f
 import { listLegalDocuments } from './legal'
 import { listOnboardingFlows } from './onboarding'
 import { roadmapSourceOf } from './board'
-import { findProjectByPublicKey, lookOf } from './projects'
+import { findProjectByPublicKey, lookOf, styleOf } from './projects'
 import { LIMITS, clientIp, rateLimit } from './rateLimit'
 import type { ParseObject } from './parse'
 
@@ -22,6 +23,8 @@ export type HubData = {
   project: { name: string, publicKey: string }
   /** Accent, logo, fonts and radius from the Brand kit (shared/projectLook.ts): draw with these to wear the project. */
   look: ProjectLook
+  /** What the hub page wears: the project's style with the hub's own choices over it (shared/projectStyle.ts): light and dark palettes, radius, shadow, font, logos. */
+  style: ResolvedStyle
   hub: { enabled: boolean, title: string, tagline: string, url: string }
   /** Empty while the page is off. */
   sections: HubSectionView[]
@@ -78,7 +81,7 @@ export async function buildHub(project: ParseObject, origin: string): Promise<Hu
   const url = paths(origin, pk)
   const home = config.widgetHome.enabled ? await buildHome(project, origin, config.widgetHome.sections) : null
   const hub: HubData['hub'] = { enabled: config.enabled, title: hubTitle(config, look.name), tagline: config.tagline || look.tagline, url: url.hub }
-  const base = { project: { name: look.name, publicKey: pk }, look, hub, home }
+  const base = { project: { name: look.name, publicKey: pk }, look, style: styleOf(project, config.style), hub, home }
   if (!config.enabled) return { ...base, sections: [], links: [] }
 
   const content: Partial<Record<keyof typeof HUB_SECTION_TITLES, HubSectionContent | null>> = {}

@@ -3,6 +3,7 @@
     <PageHeader :project-id="id" :title="$t('sections.legal')">
       <template #actions>
         <UButton icon="i-lucide-palette" :label="$t('projectTools.legal.identityAndLook')" size="sm" color="neutral" variant="ghost" @click="lookOpen = true" />
+        <UButton icon="i-lucide-swatch-book" :label="$t('style.title')" size="sm" color="neutral" variant="ghost" @click="styleOpen = true" />
         <UButton icon="i-lucide-scan-search" :label="$t('projectTools.legal.analyse')" size="sm" color="neutral" variant="ghost" @click="analyseOpen = true" />
         <UButton icon="i-lucide-plus" :label="$t('projectTools.legal.newDocument')" size="sm" @click="wizardOpen = true" />
       </template>
@@ -43,6 +44,11 @@
     <LegalWizard v-model:open="wizardOpen" :project-id="id" @done="(doc, analyse) => navigateTo({ path: `/projects/${id}/legal/${doc.id}`, query: analyse ? { analyse: '1' } : {} })" />
     <LegalAnalyse v-model:open="analyseOpen" />
     <LegalLook v-model:open="lookOpen" :project-id="id" />
+    <USlideover v-model:open="styleOpen" :title="$t('legal.styleTitle')" :description="$t('legal.styleDescription')" :ui="{ content: 'sm:max-w-2xl' }">
+      <template #body>
+        <StyleChoicePanel v-if="project" :project="project" target="legal" />
+      </template>
+    </USlideover>
   </div>
 </template>
 
@@ -52,7 +58,7 @@ import { localeName } from '#shared/locales'
 
 definePageMeta({ middleware: 'agent' })
 
-const { api } = useAgent()
+const { api, projects } = useAgent()
 const { t, locale: uiLocale } = useI18n()
 const id = String(useRoute().params.id)
 const documents = ref<any[]>([])
@@ -61,6 +67,8 @@ const error = ref('')
 const wizardOpen = ref(false)
 const analyseOpen = ref(false)
 const lookOpen = ref(false)
+const styleOpen = ref(false)
+const project = computed(() => projects.value.find(p => p.id === id) || null)
 
 const publicUrl = (doc: { path: string }) => `${location.origin}${doc.path}`
 

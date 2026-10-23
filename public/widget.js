@@ -17,6 +17,13 @@
  * element (ssr.mjs, docs/SSR.md). data-host names the HelpBites to talk to when
  * you serve this file yourself or from a cache.
  *
+ * The chat wears the widget's style (the project's, light and dark, or its own
+ * over it: Project → Settings → Style). Each of these overrides it for this
+ * page: data-accent ('#rrggbb', also the launcher's colour), data-radius (0 to
+ * 32), data-shadow ('none' | 'soft' | 'medium' | 'strong'), data-theme
+ * ('light' | 'dark' | 'system'; without it a dark/light class on your <html>,
+ * else the style's scheme, else the visitor's). The same names work as init options.
+ *
  * Renders a launcher button and an iframe of the chat. The identity token is
  * fetched from your `getToken` and posted into the iframe; it never lives in
  * a URL. Calls: HelpBites.push(['open']), (['close']), (['setContext', {...}]).
@@ -32,6 +39,7 @@
   var position = script.getAttribute('data-position') === 'left' ? 'left' : 'right'
   var accentGiven = script.getAttribute('data-accent')
   var accent = accentGiven || '#4f46e5'
+  var look = { accent: accentGiven || '', theme: script.getAttribute('data-theme') || '', radius: script.getAttribute('data-radius') || '', shadow: script.getAttribute('data-shadow') || '' }
   // 'floating' is the launcher + popover; 'inline' fills an element you point at
   // with data-target (or the `target` init option) — no launcher, always open.
   var mode = script.getAttribute('data-mode') === 'inline' ? 'inline' : 'floating'
@@ -87,9 +95,15 @@
   var icons = {}
 
   function frameSrc() {
+    var root = document.documentElement.classList
+    var theme = look.theme || (root.contains('dark') ? 'dark' : root.contains('light') ? 'light' : '')
     return origin + '/embed?pk=' + encodeURIComponent(projectKey)
       + (mode === 'inline' ? '&inline=1' : '')
-      + (document.documentElement.classList.contains('dark') ? '&theme=dark' : '')
+      // No theme asked for: the style's own scheme applies (the page falls back to the visitor's).
+      + (theme ? '&theme=' + encodeURIComponent(theme) : '')
+      + (/^#[0-9a-f]{6}$/i.test(look.accent) ? '&accent=' + encodeURIComponent(look.accent) : '')
+      + (look.radius ? '&radius=' + encodeURIComponent(look.radius) : '')
+      + (look.shadow ? '&shadow=' + encodeURIComponent(look.shadow) : '')
   }
 
   function mountInline() {
@@ -127,10 +141,10 @@
     if (still) { frame.style.transition = 'none'; icons.chat.style.transition = 'none'; icons.close.style.transition = 'none' }
     document.body.appendChild(frame)
     document.body.appendChild(launcher)
-    // No accent given: wear the project's own, as the feedback loader does.
+    // No accent given: wear the widget style's own, as the feedback loader does.
     if (!accentGiven && !(options && options.accent)) {
       fetch(origin + '/v1/projects/' + encodeURIComponent(projectKey) + '/public').then(function (r) { return r.ok ? r.json() : null }).then(function (r) {
-        var projectAccent = r && r.theme && r.theme.accent
+        var projectAccent = r && ((r.widgetStyle && r.widgetStyle.light && r.widgetStyle.light.accent) || (r.theme && r.theme.accent))
         if (projectAccent && /^#[0-9a-f]{6}$/i.test(projectAccent)) launcher.style.background = projectAccent
       }).catch(function () {})
     }
@@ -239,7 +253,8 @@
     var name = cmd[0], arg = cmd[1]
     if (name === 'init') {
       options = arg || {}
-      if (arg && arg.accent) accent = arg.accent
+      if (arg && arg.accent) accent = look.accent = arg.accent
+      if (arg) ['theme', 'radius', 'shadow'].forEach(function (k) { if (arg[k] !== undefined && arg[k] !== '') look[k] = String(arg[k]) })
       if (arg && arg.target) { target = arg.target; mode = 'inline' }
       if (arg && arg.mode) mode = arg.mode === 'inline' ? 'inline' : 'floating'
       mount()

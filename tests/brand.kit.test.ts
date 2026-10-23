@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DEFAULT_BRAND_CONFIG, brandAccent, googleFontsCssUrl, normalizeBrandConfig, readableOn, validateBrandConfig } from '../shared/brand'
 import { detectBrandMime, guessAssetKind, imageSize, svgIsActive, type BrandAssetView } from '../server/utils/brand'
+import { resolveStyle } from '../shared/projectStyle'
 import { BRAND_PAGE_CSP, renderBrandPage, type BrandPageData } from '../server/utils/brandPage'
 
 // tests/branding.test.ts is the "Powered by HelpBites" badge; this is the brand kit.
@@ -94,7 +95,7 @@ describe('brand page', () => {
   const asset = (over: Partial<BrandAssetView>): BrandAssetView => ({ id: 'a1', kind: 'logo', name: 'Wordmark', description: '', url: 'https://cdn.test/w.svg', downloadUrl: '/brand/pk_x/files/a1', mime: 'image/svg+xml', size: 2048, width: 120, height: 40, background: 'dark', public: true, order: 0, createdAt: null, ...over })
   const data = (over: Partial<BrandPageData> = {}): BrandPageData => {
     const config = normalizeBrandConfig({ tagline: 'Orders, <sorted>.', colors: [{ name: 'Ink', hex: '#14213d' }], fonts: [{ name: 'Fraunces"; }', role: 'display', cssUrl: 'https://fonts.googleapis.com/css2?family=Fraunces' }], guidelines: [{ title: 'Space', body: 'Keep **room**.' }] })
-    return { name: 'Acme <b>', iconUrl: '', tagline: config.tagline, about: '', accent: '#14213d', config, guidelines: [{ id: 'g', title: 'Space', html: '<p>Keep <strong>room</strong>.</p>' }], assets: [asset({})], ...over }
+    return { name: 'Acme <b>', iconUrl: '', tagline: config.tagline, about: '', accent: '#14213d', style: resolveStyle({ accent: '#14213d', radiusPx: 8, fontFamily: 'system-ui', logoUrl: '', logoDarkUrl: '', iconUrl: '' }), config, guidelines: [{ id: 'g', title: 'Space', html: '<p>Keep <strong>room</strong>.</p>' }], assets: [asset({})], ...over }
   }
 
   test('every template renders the kit, escaped, in its own fonts', () => {

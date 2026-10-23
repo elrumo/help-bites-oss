@@ -122,6 +122,7 @@
               <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.pricing.look') }}</h3>
               <StyleProjectActions :project-id="id" :from="styleOffer" />
             </div>
+              <p class="mt-1 text-xs text-muted">{{ $t('projectTools.pricing.lookNote') }}</p>
               <div class="mt-3 grid gap-4 sm:grid-cols-3">
                 <UFormField v-for="field in colourFields" :key="field.key" :label="field.label" :hint="form.style[field.key] ? undefined : field.empty">
                   <div class="flex items-center gap-2">
@@ -231,7 +232,7 @@
 import { localeName } from '#shared/locales'
 import { styleFrom } from '#shared/projectStyle'
 import {
-  PRICING_DENSITIES, PRICING_FONTS, PRICING_HIGHLIGHTS, PRICING_KEY, PRICING_LIMITS, PRICING_RECURRING, PRICING_SURFACES, PRICING_YEARLY_AS, blankPlan, buildPublicPricing, newFeatureId,
+  PRICING_DENSITIES, PRICING_FONTS, PRICING_HIGHLIGHTS, PRICING_KEY, PRICING_LIMITS, PRICING_RECURRING, PRICING_SURFACES, PRICING_YEARLY_AS, blankPlan, buildPublicPricing, newFeatureId, pricingLook,
   pricingTextLimits, pricingTexts,
   type PricingCheckout, type PricingContent, type PricingExperiment, type PricingFeature, type PricingOptions, type PricingPlan, type PricingStyle, type PricingSnapshot, type PricingTemplate, type PricingTranslations,
   type PublicPricingTable, type StripeCatalog
@@ -516,6 +517,7 @@ const previewTable = computed(() => buildPublicPricing({
   version: table.value?.version || 0,
   publishedAt: null,
   project: { name: project.value?.name || '', logoUrl: project.value?.iconUrl || '', accent: projectAccent.value },
+  look: project.value ? pricingLook(project.value.look.kit, project.value.style, form.value.style) : null,
   snapshot: { ...form.value, options: { ...form.value.options, currency: /^[a-z]{3}$/i.test(form.value.options.currency) ? form.value.options.currency.toLowerCase() : 'usd' } },
   catalog: stripe.value.catalog,
   wanted: { locales: [lang.value || form.value.locale] }

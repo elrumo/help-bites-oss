@@ -1,12 +1,14 @@
 import { createHash } from 'node:crypto'
 import type { HubSectionView } from '#shared/hub'
+import { styleCss } from '#shared/projectStyle'
 import { poweredByHtml, type PoweredBy } from './branding'
 import { escapeHtml } from './messageEmail'
 import type { HubData } from './hub'
 
 // The hub page, /hub/<publicKey>: server-rendered HTML in the style of
-// legalPage.ts and brandPage.ts. It wears the project's look (accent, logo,
-// typefaces, corner radius, light or dark) and lists what hub.ts gathered.
+// legalPage.ts and brandPage.ts. It wears the hub's style (the project's, with the
+// hub's own choices over it: light and dark colours, corner radius, shadow, font,
+// logos) and lists what hub.ts gathered.
 // Nothing here is user HTML: every value is escaped, every link must be http(s).
 // The one script opens the chat on "Contact us"; the CSP allows it by hash
 // and helpbites.js (the loader) from this origin.
@@ -38,16 +40,18 @@ function sectionHtml(section: HubSectionView): string {
 
 export function renderHubPage(data: HubData, poweredBy: PoweredBy | null = null): string {
   const look = data.look
+  // The Brand kit's page theme still decides while the style leaves the scheme to the visitor.
+  const style = data.style.scheme === 'auto' ? { ...data.style, scheme: look.scheme } : data.style
   const logo = (url: string, cls: string) => (HREF.test(url) ? `<img class="logo ${cls}" src="${escapeHtml(url)}" alt="" height="40">` : '')
-  const split = look.logoDarkUrl && look.logoDarkUrl !== look.logoUrl
-  const mark = look.logoUrl || look.iconUrl
-    ? (split ? `${logo(look.logoUrl, 'on-light')}${logo(look.logoDarkUrl, 'on-dark')}` : logo(look.logoUrl || look.iconUrl, ''))
+  const split = style.logoDarkUrl && style.logoDarkUrl !== style.logoUrl
+  const mark = style.logoUrl || style.iconUrl
+    ? (split ? `${logo(style.logoUrl, 'on-light')}${logo(style.logoDarkUrl, 'on-dark')}` : logo(style.logoUrl || style.iconUrl, ''))
     : ''
   const sheets = fontSheets(look.fontCssUrls).map(url => `<link rel="stylesheet" href="${escapeHtml(url)}">`).join('\n')
   const title = data.hub.title || data.project.name
-  const radius = Math.max(0, Math.min(32, Math.round(look.radiusPx)))
+  const displayFont = look.fonts.display ? look.fontFamily.display : style.fontFamily
   return `<!doctype html>
-<html lang="en" data-scheme="${look.scheme === 'dark' || look.scheme === 'light' ? look.scheme : 'auto'}">
+<html lang="en" data-scheme="${style.scheme}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -57,9 +61,8 @@ ${data.hub.tagline ? `<meta name="description" content="${escapeHtml(data.hub.ta
 <meta name="robots" content="index,follow">
 ${sheets}
 <style>
-:root { --accent: ${css(look.accent)}; --on-accent: ${css(look.accentText)}; --radius: ${radius}px; --font: ${css(look.fontFamily.body)}; --font-display: ${css(look.fontFamily.display)}; --bg: #fafafa; --card: #fff; --text: #1c1c21; --muted: #62626d; --line: #e6e6ea; color-scheme: light; }
-:root[data-scheme="dark"] { --bg: #111113; --card: #19191c; --text: #ececf0; --muted: #a2a2ad; --line: #2b2b31; color-scheme: dark; }
-@media (prefers-color-scheme: dark) { :root[data-scheme="auto"] { --bg: #111113; --card: #19191c; --text: #ececf0; --muted: #a2a2ad; --line: #2b2b31; color-scheme: dark; } }
+${styleCss(style)}
+:root { --font-display: ${css(displayFont)}; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font); -webkit-text-size-adjust: 100%; }
 a { color: var(--accent); text-underline-offset: 2px; }
@@ -72,7 +75,7 @@ header { text-align: center; margin-bottom: 32px; }
 @media (prefers-color-scheme: dark) { :root[data-scheme="auto"] .on-light { display: none; } :root[data-scheme="auto"] .on-dark { display: inline-block; } }
 h1 { font: 700 2rem/1.2 var(--font-display); letter-spacing: -0.02em; margin: 0 0 6px; }
 .tagline { margin: 0; color: var(--muted); }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: calc(var(--radius) + 6px); padding: 22px 24px; margin-bottom: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: calc(var(--radius) + 6px); box-shadow: var(--shadow); padding: 22px 24px; margin-bottom: 16px; }
 h2 { font: 600 1.05rem/1.3 var(--font-display); margin: 0 0 10px; }
 .text p { margin: 0 0 10px; }
 .items { list-style: none; margin: 0; padding: 0; }

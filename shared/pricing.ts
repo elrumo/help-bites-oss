@@ -1,4 +1,5 @@
 import { DEFAULT_CONTENT_LOCALE, matchLocale, normalizeLocale } from './locales'
+import { isEmptyStyle, ownLayer, resolveStyle, type ProjectStyle, type ResolvedStyle, type StyleBase } from './projectStyle'
 import { fromMinor } from './stripe'
 import { safeHttpUrl } from './support'
 
@@ -261,7 +262,14 @@ export type PublicPricingTable = {
   publishedAt: string | null
   project: { name: string, logoUrl: string }
   template: PricingTemplate
+  /** The table's own style fields, as set; an empty accent is filled with the project's. */
   style: PricingStyle
+  /**
+   * The project's style (light and dark palette, radius, shadow) with this table's own fields laid over it
+   * (`ownLayer`). Null while the project has no style of its own: the table then wears only its own fields and
+   * the host page, as before.
+   */
+  look: ResolvedStyle | null
   options: Omit<PricingOptions, 'currency'>
   content: PricingContent
   /** The slots some plan has a price for, in order; a toggle shows when it has two that bill again. */
@@ -820,6 +828,16 @@ export function planLines(plan: Pick<PricingPlan, 'features'>, features: Pricing
 }
 
 /**
+ * What a table wears: the project's style under the table's own accent, background, text, radius and
+ * font (a radius or font left at the default follows the project's, see `ownLayer`). Null when the
+ * project has no style, so a table of a project that styled nothing looks as it always did.
+ */
+export function pricingLook(kit: StyleBase, projectStyle: ProjectStyle, own: PricingStyle): ResolvedStyle | null {
+  if (isEmptyStyle(projectStyle)) return null
+  return resolveStyle(kit, projectStyle, ownLayer(own, projectStyle, { radius: DEFAULT_PRICING_STYLE.radius, font: DEFAULT_PRICING_STYLE.font }))
+}
+
+/**
  * What apps receive for a snapshot: the copy in the first of `wanted.locales` the table has,
  * with prices from `catalog` (null: hand-written prices only). `checkoutUrl` is the table's
  * checkout link ('' in the panel's preview, so its buttons go nowhere).
@@ -829,6 +847,8 @@ export function buildPublicPricing(input: {
   version: number
   publishedAt: string | null
   project: { name: string, logoUrl: string, accent: string }
+  /** `pricingLook(…)`; omitted, the table has no project style to wear. */
+  look?: ResolvedStyle | null
   snapshot: PricingSnapshot
   catalog: StripeCatalog | null
   wanted?: { locales?: unknown[], currency?: string }
@@ -884,6 +904,7 @@ export function buildPublicPricing(input: {
     project: { name: input.project.name, logoUrl: input.project.logoUrl },
     template: snapshot.template,
     style: { ...snapshot.style, accent: snapshot.style.accent || input.project.accent },
+    look: input.look || null,
     options,
     content: words.content,
     intervals: PRICING_INTERVALS.filter(slot => plans.some(p => p.prices[slot])),

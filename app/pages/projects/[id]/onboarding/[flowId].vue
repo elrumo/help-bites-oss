@@ -117,6 +117,7 @@
               <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.onboarding.look') }}</h3>
               <StyleProjectActions :project-id="id" :from="styleOffer" />
             </div>
+            <p class="mt-1 text-[13px] text-muted">{{ $t('projectTools.onboarding.followsProjectStyle') }}</p>
             <div class="mt-3 grid gap-4 sm:grid-cols-3">
               <UFormField v-for="field in colourFields" :key="field.key" :label="field.label" :hint="form.style[field.key] ? undefined : field.empty">
                 <div class="flex items-center gap-2">
@@ -183,9 +184,9 @@
 </template>
 
 <script setup lang="ts">
-import { ONBOARDING_FONTS, ONBOARDING_KEY, ONBOARDING_LIMITS, ONBOARDING_PROGRESS, localizeOnboarding, newStepId, onboardingTexts, translationTexts, type OnboardingOptions, type OnboardingStep, type OnboardingStepText, type OnboardingStyle, type OnboardingTranslations } from '#shared/onboarding'
+import { DEFAULT_ONBOARDING_STYLE, ONBOARDING_FONTS, ONBOARDING_KEY, ONBOARDING_LIMITS, ONBOARDING_PROGRESS, localizeOnboarding, newStepId, onboardingTexts, translationTexts, type OnboardingOptions, type OnboardingStep, type OnboardingStepText, type OnboardingStyle, type OnboardingTranslations } from '#shared/onboarding'
 import type { PublicPricingTable } from '#shared/pricing'
-import { styleFrom } from '#shared/projectStyle'
+import { ownLayer, resolveStyle, styleFrom } from '#shared/projectStyle'
 
 definePageMeta({ middleware: 'agent' })
 
@@ -406,6 +407,8 @@ function pricingHelp(key: string) {
 // ---- look ----
 const styleOffer = computed(() => styleFrom(form.value.style))
 const projectAccent = computed(() => project.value?.theme?.accent || '#4f46e5')
+// The finished look apps get: the project's style with this flow's own fields over it.
+const previewLook = computed(() => (project.value ? resolveStyle(project.value.look.kit, project.value.style, ownLayer(form.value.style, project.value.style, { radius: DEFAULT_ONBOARDING_STYLE.radius, font: DEFAULT_ONBOARDING_STYLE.font })) : undefined))
 const colourFields = computed(() => [
   { key: 'accent' as const, label: t('projectTools.onboarding.accent'), empty: t('projectTools.onboarding.projectAccent'), fallback: projectAccent.value },
   { key: 'background' as const, label: t('projectTools.onboarding.background'), empty: t('projectTools.onboarding.followsTheme'), fallback: previewTheme.value === 'dark' ? '#18181b' : '#ffffff' },
@@ -453,12 +456,12 @@ function onboardingQueue(): Queue {
 
 function drawPreview() {
   if (!previewEl.value || !flow.value) return
-  const style = { ...form.value.style, accent: form.value.style.accent || projectAccent.value }
+  const style = { ...form.value.style, accent: form.value.style.accent || previewLook.value?.light.accent || projectAccent.value }
   onboardingQueue().push(['preview', {
     target: previewEl.value,
     step: previewStep.value,
     theme: previewTheme.value,
-    flow: { key: form.value.key, locale: lang.value || form.value.locale, version: flow.value.version, style, options: form.value.options, ...withPricing(localizeOnboarding(form.value.name, form.value.steps, lang.value ? form.value.translations[lang.value] : undefined)) }
+    flow: { key: form.value.key, locale: lang.value || form.value.locale, version: flow.value.version, style, look: previewLook.value, options: form.value.options, ...withPricing(localizeOnboarding(form.value.name, form.value.steps, lang.value ? form.value.translations[lang.value] : undefined)) }
   }])
 }
 
@@ -467,7 +470,7 @@ function withPricing<T extends { steps: OnboardingStep[] }>(copy: T): T {
   return { ...copy, steps: copy.steps.map(step => (step.pricingTable ? { ...step, pricing: pricingTables.value.find(table => table.key === step.pricingTable)?.published || null } : step)) }
 }
 
-watch([form, lang, previewStep, previewTheme, previewEl, projectAccent, pricingTables], drawPreview, { deep: true, flush: 'post' })
+watch([form, lang, previewStep, previewTheme, previewEl, projectAccent, previewLook, pricingTables], drawPreview, { deep: true, flush: 'post' })
 
 onMounted(async () => {
   if (!project.value) loadProjects().catch(() => {})

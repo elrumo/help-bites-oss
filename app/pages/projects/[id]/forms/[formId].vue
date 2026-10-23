@@ -129,6 +129,7 @@
               <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.forms.look') }}</h3>
               <StyleProjectActions :project-id="id" :from="styleOffer" />
             </div>
+            <p class="mt-1 text-[13px] text-muted">{{ $t('projectTools.forms.followsProjectStyle') }}</p>
             <div class="mt-3 grid gap-4 sm:grid-cols-3">
               <UFormField v-for="colour in colourFields" :key="colour.key" :label="colour.label" :hint="form.style[colour.key] ? undefined : colour.empty">
                 <div class="flex items-center gap-2">
@@ -246,10 +247,10 @@
  * put it on a site or in an app, and the people it brought in.
  */
 import { ATTRIBUTE_KEY_RE, type Contact } from '#shared/contacts'
-import { styleFrom } from '#shared/projectStyle'
+import { ownLayer, resolveStyle, styleFrom } from '#shared/projectStyle'
 import type { Sequence } from '#shared/marketing'
 import {
-  LEAD_FIELD_LABELS, LEAD_FIELD_TYPES, LEAD_FILE_EXTENSIONS, LEAD_FILE_KINDS, LEAD_FORM_FONTS, LEAD_FORM_KEY, LEAD_FORM_LIMITS, fieldKeyFrom, leadFormTexts, leadTranslationTexts, localizeLeadForm, newFieldId,
+  DEFAULT_LEAD_STYLE, LEAD_FIELD_LABELS, LEAD_FIELD_TYPES, LEAD_FILE_EXTENSIONS, LEAD_FILE_KINDS, LEAD_FORM_FONTS, LEAD_FORM_KEY, LEAD_FORM_LIMITS, fieldKeyFrom, leadFormTexts, leadTranslationTexts, localizeLeadForm, newFieldId,
   type LeadFieldText, type LeadFieldType, type LeadForm, type LeadFormContent, type LeadFormField, type LeadFormTranslation
 } from '#shared/leadForms'
 import type { EmailTemplate } from '~~/server/utils/emails'
@@ -451,6 +452,8 @@ async function translate(locales: string[], overwrite: boolean) {
 // ---- look ----
 const styleOffer = computed(() => styleFrom(form.value.style))
 const projectAccent = computed(() => project.value?.theme?.accent || '#4f46e5')
+// The finished look visitors get: the project's style with this form's own fields over it.
+const previewLook = computed(() => (project.value ? resolveStyle(project.value.look.kit, project.value.style, ownLayer(form.value.style, project.value.style, { radius: DEFAULT_LEAD_STYLE.radius, font: DEFAULT_LEAD_STYLE.font })) : undefined))
 const colourFields = computed(() => [
   { key: 'accent' as const, label: t('projectTools.forms.accent'), empty: t('projectTools.forms.projectAccent'), fallback: projectAccent.value },
   { key: 'background' as const, label: t('projectTools.forms.background'), empty: t('projectTools.forms.noBackground'), fallback: previewTheme.value === 'dark' ? '#18181b' : '#ffffff' },
@@ -541,11 +544,11 @@ function drawPreview() {
     target: previewEl.value,
     theme: previewTheme.value,
     state: previewState.value,
-    form: { key: f.key, name: f.name, locale: lang.value || f.locale, ...words, style: { ...f.style, accent: f.style.accent || projectAccent.value }, doubleOptIn: f.settings.doubleOptIn, project: { name: project.value?.name || '', logoUrl: '' } }
+    form: { key: f.key, name: f.name, locale: lang.value || f.locale, ...words, style: { ...f.style, accent: f.style.accent || previewLook.value?.light.accent || projectAccent.value }, look: previewLook.value, doubleOptIn: f.settings.doubleOptIn, project: { name: project.value?.name || '', logoUrl: '' } }
   }])
 }
 
-watch([form, lang, previewState, previewTheme, previewEl, projectAccent], drawPreview, { deep: true, flush: 'post' })
+watch([form, lang, previewState, previewTheme, previewEl, projectAccent, previewLook], drawPreview, { deep: true, flush: 'post' })
 
 onMounted(async () => {
   if (!project.value) loadProjects().catch(() => {})

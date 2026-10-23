@@ -1,3 +1,4 @@
+import { DEFAULT_STYLE_CHOICE, validateStyleChoice, type StyleChoice } from '../projectStyle'
 import { safeHttpUrl } from '../support'
 import type { LegalAnswers } from './types'
 
@@ -15,6 +16,8 @@ export type LegalConfig = {
   /** '' falls back to the project's look (the Brand kit's logo): an override for the legal pages only. */
   logoUrl: string
   footerText: string
+  /** How the hosted pages take their style: the project's, or their own over it. `accent` and `font` above stay the pages' own layer over both. */
+  style: StyleChoice
 }
 
 export const DEFAULT_LEGAL_CONFIG: LegalConfig = {
@@ -22,7 +25,8 @@ export const DEFAULT_LEGAL_CONFIG: LegalConfig = {
   accent: '',
   font: 'system',
   logoUrl: '',
-  footerText: ''
+  footerText: '',
+  style: DEFAULT_STYLE_CHOICE
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -69,6 +73,11 @@ export function validateLegalConfig(value: unknown, base: LegalConfig = DEFAULT_
   if (raw.footerText !== undefined) {
     if (typeof raw.footerText !== 'string' || raw.footerText.trim().length > 300) errors.push('footerText is up to 300 characters')
     else config.footerText = raw.footerText.trim()
+  }
+  if (raw.style !== undefined) {
+    const style = validateStyleChoice(raw.style, base.style ?? DEFAULT_STYLE_CHOICE)
+    errors.push(...style.errors)
+    config.style = style.choice
   }
   return { config, errors }
 }
