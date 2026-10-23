@@ -118,7 +118,10 @@
             </section>
 
             <section class="rounded-xl border border-default p-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
               <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.pricing.look') }}</h3>
+              <StyleProjectActions :project-id="id" :from="styleOffer" />
+            </div>
               <div class="mt-3 grid gap-4 sm:grid-cols-3">
                 <UFormField v-for="field in colourFields" :key="field.key" :label="field.label" :hint="form.style[field.key] ? undefined : field.empty">
                   <div class="flex items-center gap-2">
@@ -226,6 +229,7 @@
 
 <script setup lang="ts">
 import { localeName } from '#shared/locales'
+import { styleFrom } from '#shared/projectStyle'
 import {
   PRICING_DENSITIES, PRICING_FONTS, PRICING_HIGHLIGHTS, PRICING_KEY, PRICING_LIMITS, PRICING_RECURRING, PRICING_SURFACES, PRICING_YEARLY_AS, blankPlan, buildPublicPricing, newFeatureId,
   pricingTextLimits, pricingTexts,
@@ -474,6 +478,7 @@ async function translate(locales: string[], overwrite: boolean) {
 }
 
 // ---- look ----
+const styleOffer = computed(() => styleFrom(form.value.style))
 const projectAccent = computed(() => project.value?.theme?.accent || '#5e6ad2')
 const colourFields = computed(() => [
   { key: 'accent' as const, label: t('projectTools.pricing.accent'), empty: t('projectTools.pricing.projectAccent'), fallback: projectAccent.value },

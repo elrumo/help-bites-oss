@@ -91,6 +91,7 @@ export default defineNuxtConfig({
     '/forms.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/pricing.js': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     '/cms.mjs': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
+    '/ssr.mjs': { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=86400' } },
     // Versioned file names: a new version is a new path.
     '/vendor/**': { headers: { 'Cache-Control': 'public, max-age=31536000, immutable' } },
     '/v1/**': { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Workspace', 'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS' } },

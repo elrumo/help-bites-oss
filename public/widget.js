@@ -13,6 +13,9 @@
  *
  * data-mode="inline" data-target="#support" instead renders the chat inside
  * that element (no launcher, always open) — a message panel in your own page.
+ * It shows a skeleton while the chat loads, or what your server drew into the
+ * element (ssr.mjs, docs/SSR.md). data-host names the HelpBites to talk to when
+ * you serve this file yourself or from a cache.
  *
  * Renders a launcher button and an iframe of the chat. The identity token is
  * fetched from your `getToken` and posted into the iframe; it never lives in
@@ -24,7 +27,7 @@
  */
 (function () {
   var script = document.currentScript || (function () { var s = document.getElementsByTagName('script'); return s[s.length - 1] })()
-  var origin = new URL(script.src, location.href).origin
+  var origin = (script.getAttribute('data-host') || new URL(script.src, location.href).origin).replace(/\/+$/, '')
   var projectKey = script.getAttribute('data-project') || ''
   var position = script.getAttribute('data-position') === 'left' ? 'left' : 'right'
   var accentGiven = script.getAttribute('data-accent')
@@ -36,7 +39,41 @@
 
   // legacy: old snippets queued on window.SupportBites — drop once no site uses it
   var queue = window.HelpBites || window.SupportBites || []
-  var options = null, frame = null, launcher = null, badge = null, open = false, unread = 0, ready = false
+  var options = null, release = null, frame = null, launcher = null, badge = null, open = false, unread = 0, ready = false
+
+  // What stands in for the frame until it has something to show: a snapshot drawn on the server
+  // (ssr.mjs, marked data-hb-ssr) or, failing that, a skeleton. The frame loads out of sight under it
+  // and takes its place when it says it is ready (or after 8 s, so an error message still shows).
+  function hold(host, frame) {
+    var held = host.querySelector('[data-hb-ssr]')
+    if (!held) {
+      if (!document.getElementById('hb-sk-style')) {
+        var style = document.createElement('style')
+        style.id = 'hb-sk-style'
+        style.textContent = '@keyframes hb-pulse{50%{opacity:.45}}@media(prefers-reduced-motion:reduce){.hb-sk i{animation:none!important}}'
+        document.head.appendChild(style)
+      }
+      held = document.createElement('div')
+      held.className = 'hb-sk'
+      held.setAttribute('role', 'status')
+      held.setAttribute('aria-busy', 'true')
+      held.innerHTML = '<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Loading…</span>' + new Array(4).join('<i style="display:block;height:84px;margin:0 0 12px;border-radius:10px;background:rgba(127,127,127,.18);animation:hb-pulse 1.4s ease-in-out infinite"></i>')
+      host.appendChild(held)
+    }
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative'
+    frame.style.position = 'absolute'
+    frame.style.visibility = 'hidden'
+    frame.style.top = frame.style.left = '0'
+    var released = false
+    function release() {
+      if (released) return
+      released = true
+      if (held.parentNode) held.parentNode.removeChild(held)
+      frame.style.position = frame.style.visibility = frame.style.top = frame.style.left = ''
+    }
+    setTimeout(release, 8000)
+    return release
+  }
 
   function el(tag, style, attrs) {
     var e = document.createElement(tag)
@@ -60,6 +97,7 @@
     if (!host) { console.warn('[help-bites] no element matches data-target ' + target); return }
     frame = el('iframe', 'display:block;width:100%;height:100%;min-height:420px;border:0;border-radius:12px;background:transparent;', { src: frameSrc(), title: 'Support chat', allow: 'clipboard-write' })
     host.appendChild(frame)
+    release = hold(host, frame)
     open = true
   }
 
@@ -168,7 +206,7 @@
   window.addEventListener('message', function (event) {
     if (event.origin !== origin || !event.data || event.data.source !== 'help-bites') return
     var d = event.data
-    if (d.type === 'ready') { ready = true; sendToken(); sendContext(); openFromUrl() }
+    if (d.type === 'ready') { ready = true; if (release) release(); sendToken(); sendContext(); openFromUrl() }
     if (d.type === 'token-needed') sendToken()
     if (d.type === 'unread') setBadge(d.count || 0)
     if (d.type === 'close') toggle(false)

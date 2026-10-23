@@ -11,7 +11,10 @@
       </section>
 
       <section class="rounded-xl border border-default p-4">
-        <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.brand.page.template') }}</h3>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.brand.page.template') }}</h3>
+          <StyleProjectActions :project-id="projectId" :from="styleOffer" />
+        </div>
         <div class="mt-3 grid gap-2 sm:grid-cols-3" role="radiogroup" :aria-label="$t('projectTools.brand.page.template')">
           <button
             v-for="template in BRAND_TEMPLATES"
@@ -108,6 +111,7 @@
 </template>
 
 <script setup lang="ts">
+import { styleFrom } from '#shared/projectStyle'
 import { BRAND_LIMITS, BRAND_RADII, BRAND_SECTIONS, BRAND_TEMPLATES, BRAND_THEMES, brandAccent, type BrandConfig, type BrandSection } from '#shared/brand'
 import { useElementSize, watchDebounced } from '@vueuse/core'
 
@@ -122,7 +126,9 @@ const appUrl = useAppUrl()
 const page = computed(() => config.value.page)
 const project = computed(() => projects.value.find(p => p.id === props.projectId) || null)
 const projectName = computed(() => project.value?.name || '')
-const accent = computed(() => brandAccent(config.value, project.value?.theme?.accent || ''))
+const accent = computed(() => config.value.page.accent || project.value?.style.light.accent || brandAccent(config.value, project.value?.theme?.accent || ''))
+// What the page can offer the project style: its accent, corners and scheme.
+const styleOffer = computed(() => styleFrom({ accent: config.value.page.accent, radius: { sharp: 2, soft: 8, round: 16 }[config.value.page.radius], scheme: config.value.page.theme }))
 const themeItems = computed(() => BRAND_THEMES.map(value => ({ value, label: t(`projectTools.brand.themes.${value}`) })))
 const radiusItems = computed(() => BRAND_RADII.map(value => ({ value, label: t(`projectTools.brand.radii.${value}`) })))
 

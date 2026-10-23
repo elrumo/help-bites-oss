@@ -12,6 +12,7 @@ import { normalizeBlogConfig, validateBlogConfig, type BlogConfig } from '#share
 import { normalizeFlags, validateFlags, type FeatureFlag } from '#shared/flags'
 import { normalizeMarketingConfig, validateMarketingConfig, type MarketingConfig } from '#shared/marketing'
 import { normalizeBrandConfig, validateBrandConfig } from '#shared/brand'
+import { normalizeProjectStyle, validateProjectStyle, type ProjectStyle } from '#shared/projectStyle'
 import { normalizeHubConfig, validateHubConfig, type HubConfig } from '#shared/hub'
 import { companyEntity, type CompanyProfile } from '#shared/company'
 import { applyCompany, companyOf } from './company'
@@ -78,6 +79,8 @@ export type AdminProject = PublicProject & {
   flags: FeatureFlag[]
   /** The project board. Admin-only: its statuses and labels are internal until an item is made public. */
   board: BoardConfig
+  /** The project's own style, as saved (gaps empty); features wear it unless they set their own. `look.style` is the resolved one. */
+  style: ProjectStyle
   /** Changelog options. Admin-only; what the changelog shows publicly is the entries themselves. */
   changelog: ChangelogConfig
   /** Legal pages: the look of the hosted pages (the operator's identity is `company`; `legal.entity` mirrors it). Admin-only. */
@@ -261,6 +264,12 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
     project.set('changelog', config)
   }
+  if (input.style !== undefined) {
+    // Partial, like `changelog`: only the keys sent change; light and dark merge colour by colour.
+    const { style, errors } = validateProjectStyle(input.style, normalizeProjectStyle(project.get('style')))
+    if (errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') })
+    project.set('style', style)
+  }
   if (input.blog !== undefined) {
     // Partial, like `changelog`: only the keys sent change.
     const { config, errors } = validateBlogConfig(input.blog, normalizeBlogConfig(project.get('blog')))
@@ -322,6 +331,9 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
     if ('accent' in theme && (accent || !theme.accent)) {
       const { config } = validateBrandConfig({ page: { accent } }, normalizeBrandConfig(project.get('brand')))
       project.set('brand', config)
+      // The project style's accent outranks the kit's; when it has one, Settings changes it too, or this field would do nothing.
+      const own = normalizeProjectStyle(project.get('style'))
+      if (own.light.accent) project.set('style', validateProjectStyle({ light: { accent } }, own).style)
     }
   }
 }
@@ -336,6 +348,7 @@ export function lookOf(project: { get: (key: string) => unknown }, overrides: Pr
     assistantLogoUrl: project.get('assistantLogoUrl'),
     iconUrl: project.get('iconUrl'),
     brandLook: project.get('brandLook'),
+    style: project.get('style'),
     ...overrides
   })
 }
@@ -401,6 +414,7 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
     hasActionWebhookSecret: Boolean(project.get('actionWebhookSecret')),
     flags: normalizeFlags(project.get('flags')),
     board: normalizeBoardConfig(project.get('board')),
+    style: normalizeProjectStyle(project.get('style')),
     changelog: normalizeChangelogConfig(project.get('changelog')),
     legal: { ...normalizeLegalConfig(project.get('legal')), entity: companyEntity(company) },
     company,

@@ -8,6 +8,7 @@
         <UButton icon="i-lucide-sparkles" :label="$t('changelog.publicChangelog')" color="neutral" variant="ghost" size="sm" @click="copyChangelogUrl" />
         <UButton v-if="changelogReady" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="changelogUrl" target="_blank" :aria-label="$t('changelog.openPublic')" />
         <UButton icon="i-lucide-git-commit-horizontal" :label="$t('changelog.fromCommits')" color="neutral" variant="ghost" size="sm" @click="openGenerate" />
+        <UButton icon="i-lucide-palette" :label="$t('style.title')" color="neutral" variant="ghost" size="sm" @click="showStyle = true" />
         <UButton icon="i-lucide-settings-2" :label="$t('nav.settings')" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
         <UButton icon="i-lucide-package-plus" :label="$t('changelog.newRelease')" color="neutral" variant="soft" size="sm" @click="openNewRelease" />
         <UButton icon="i-lucide-plus" :label="$t('changelog.newEntry')" size="sm" @click="openNewEntry" />
@@ -183,6 +184,26 @@
       </template>
     </USlideover>
 
+    <!-- Style -->
+    <USlideover v-model:open="showStyle" :title="$t('changelog.styleTitle')" :description="$t('changelog.styleDescription')" :ui="{ content: 'sm:max-w-2xl' }">
+      <template #body>
+        <form v-if="project" class="space-y-4" @submit.prevent="saveStyle">
+          <URadioGroup v-model="styleSource" :items="styleSourceItems" variant="card" />
+          <div v-if="styleSource === 'project'" class="space-y-3">
+            <p class="text-[13px] text-muted">{{ $t('changelog.styleProjectNote') }}</p>
+            <StylePreview :style="project.look.style" />
+          </div>
+          <StyleEditor v-else v-model="styleCustom" :kit="project.look.kit" :under="[project.style]" />
+          <StyleProjectActions :project-id="id" :from="styleSource === 'custom' ? styleCustom : null" />
+          <p v-if="styleError" class="text-sm text-error">{{ styleError }}</p>
+          <div class="flex items-center justify-end gap-2">
+            <span v-if="styleSaved" class="text-xs text-muted">{{ $t('common.saved') }}</span>
+            <UButton type="submit" :label="$t('style.save')" :loading="savingStyle" />
+          </div>
+        </form>
+      </template>
+    </USlideover>
+
     <!-- Write from commits -->
     <USlideover v-model:open="generateOpen" :title="$t('changelog.writeFromCommits')" :description="$t('changelog.writeFromCommitsDescription')" :ui="{ content: 'sm:max-w-lg' }">
       <template #body>
@@ -242,8 +263,9 @@
 </template>
 
 <script setup lang="ts">
-import { CHANGELOG_TAGS, CHANGELOG_TAG_LABELS, isEntryPublic, type ChangelogEntry, type ChangelogLinkKind, type ChangelogRelease, type ChangelogSource, type ChangelogStatus, type ChangelogTag } from '#shared/changelog'
+import { CHANGELOG_TAGS, CHANGELOG_TAG_LABELS, isEntryPublic, type ChangelogEntry, type ChangelogLinkKind, type ChangelogRelease, type ChangelogSource, type ChangelogStyle, type ChangelogStatus, type ChangelogTag } from '#shared/changelog'
 import type { ChangelogLinkedConversations } from '#shared/changelogReply'
+import { DEFAULT_PROJECT_STYLE, type ProjectStyle } from '#shared/projectStyle'
 import type { AdminProject } from '~~/server/utils/projects'
 
 // A project's changelog: entries (what shipped, in your own words) grouped into
@@ -679,6 +701,43 @@ async function saveSettings(next: { autoDraft?: boolean, enabled?: boolean, comm
     settingsError.value = e?.message || t('changelog.saveError')
   } finally {
     savingSettings.value = false
+  }
+}
+
+// ---- style ----
+// The public page wears the project's style (Brand → project style), or the project's with this
+// changelog's own choices laid over it. `custom` keeps what was chosen even while `project` is selected.
+const showStyle = ref(false)
+const styleSource = ref<ChangelogStyle['source']>('project')
+const styleCustom = ref<ProjectStyle>(structuredClone(DEFAULT_PROJECT_STYLE))
+const savingStyle = ref(false)
+const styleSaved = ref(false)
+const styleError = ref('')
+const styleSourceItems = computed(() => [
+  { value: 'project', label: t('changelog.styleUseProject'), description: t('changelog.styleUseProjectHint') },
+  { value: 'custom', label: t('changelog.styleCustom'), description: t('changelog.styleCustomHint') }
+])
+
+watch(showStyle, (isOpen) => {
+  if (!isOpen || !project.value) return
+  styleSource.value = project.value.changelog.style.source
+  styleCustom.value = structuredClone(toRaw(project.value.changelog.style.custom))
+  styleSaved.value = false
+  styleError.value = ''
+})
+
+async function saveStyle() {
+  savingStyle.value = true
+  styleSaved.value = false
+  styleError.value = ''
+  try {
+    const { project: saved } = await api<{ project: AdminProject }>(`/admin/projects/${id}`, { method: 'PATCH', body: { changelog: { style: { source: styleSource.value, custom: styleCustom.value } } } })
+    projects.value = projects.value.map(p => (p.id === saved.id ? saved : p))
+    styleSaved.value = true
+  } catch (e: any) {
+    styleError.value = e?.message || t('changelog.saveError')
+  } finally {
+    savingStyle.value = false
   }
 }
 

@@ -1,27 +1,27 @@
 <template>
-  <div ref="rootRef" class="sb-board bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100" :class="inline ? 'min-h-[200px]' : 'min-h-full'">
-    <header class="border-b border-stone-200/80 dark:border-stone-800/80" :class="inline ? '' : 'bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl'">
+  <div ref="rootRef" class="sb-board" :class="inline ? 'min-h-[200px]' : 'min-h-full'" :style="rootStyle">
+    <header :style="{ borderBottom: '1px solid var(--hb-border)' }" :class="inline ? '' : 'backdrop-blur-xl'">
       <div class="mx-auto flex max-w-3xl items-start gap-3 px-4 py-4">
-        <img v-if="projectInfo?.brandLogoUrl" :src="projectInfo.brandLogoUrl" alt="" class="size-9 shrink-0 rounded-lg bg-elevated object-cover">
-        <span v-else class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-500 text-sm font-semibold text-white" aria-hidden="true">{{ initials }}</span>
+        <img v-if="logoUrl" :src="logoUrl" alt="" class="size-9 shrink-0 object-contain" :style="{ borderRadius: 'var(--hb-radius)' }">
+        <span v-else class="grid size-9 shrink-0 place-items-center text-sm font-semibold" :style="{ borderRadius: 'var(--hb-radius)', background: 'var(--hb-accent)', color: 'var(--hb-accent-text)' }" aria-hidden="true">{{ initials }}</span>
         <div class="min-w-0 flex-1">
           <h1 class="truncate text-[17px] font-semibold leading-tight">{{ title }}</h1>
-          <p class="line-clamp-2 text-[13px] text-stone-500 dark:text-stone-400">{{ $t('embed.changelog.description') }}</p>
+          <p class="line-clamp-2 text-[13px]" style="color: var(--hb-muted)">{{ $t('embed.changelog.description') }}</p>
         </div>
       </div>
     </header>
 
     <main class="mx-auto max-w-3xl px-4 py-4">
-      <p v-if="error" class="py-12 text-center text-sm text-stone-500">{{ error }}</p>
-      <div v-else-if="loading" class="py-12 text-center text-sm text-stone-500">{{ $t('embed.loading') }}</div>
+      <p v-if="error" class="py-12 text-center text-sm" style="color: var(--hb-muted)">{{ error }}</p>
+      <div v-else-if="loading" class="py-12 text-center text-sm" style="color: var(--hb-muted)">{{ $t('embed.loading') }}</div>
       <EmptyState v-else-if="!items.length" icon="i-lucide-sparkles" :title="$t('embed.changelog.empty')" :description="$t('embed.changelog.emptyDescription')" />
-      <ol v-else class="relative space-y-8 border-l border-stone-200 pl-5 dark:border-stone-800">
-        <li v-for="item in items" :key="item.kind === 'release' ? `r-${item.release.id}` : `e-${item.entry.id}`" class="relative">
-          <span class="absolute -left-[27px] top-1 grid size-3.5 place-items-center rounded-full bg-primary-600 ring-4 ring-stone-50 dark:ring-stone-950" aria-hidden="true" />
+      <ol v-else class="relative space-y-4 pl-5" :style="{ borderLeft: '1px solid var(--hb-border)' }">
+        <li v-for="item in items" :key="item.kind === 'release' ? `r-${item.release.id}` : `e-${item.entry.id}`" class="relative p-4" :style="cardStyle">
+          <span class="absolute -left-[27px] top-5 grid size-3.5 place-items-center rounded-full" :style="{ background: 'var(--hb-accent)', boxShadow: '0 0 0 4px var(--hb-bg)' }" aria-hidden="true" />
           <template v-if="item.kind === 'release'">
             <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
               <h2 :id="`release-${item.release.version}`" class="scroll-mt-4 text-base font-semibold leading-snug">{{ item.release.version }}<template v-if="item.release.title"> · {{ item.release.title }}</template></h2>
-              <time v-if="item.date" class="text-xs text-stone-500 dark:text-stone-400" :datetime="item.date">{{ shortDate(item.date) }}</time>
+              <time v-if="item.date" class="text-xs" style="color: var(--hb-muted)" :datetime="item.date">{{ shortDate(item.date) }}</time>
             </div>
             <MarkdownBlock v-if="item.release.summary" :text="item.release.summary" class="mt-1" />
             <div class="mt-3 space-y-4">
@@ -34,18 +34,24 @@
     </main>
 
     <p v-if="projectInfo?.poweredBy" class="py-3 text-center text-[11px] leading-tight">
-      <a :href="projectInfo.poweredBy.url" target="_blank" rel="noopener" class="text-dimmed transition-colors hover:text-muted">{{ $t('embed.poweredBy') }}</a>
+      <a :href="projectInfo.poweredBy.url" target="_blank" rel="noopener" class="transition-opacity hover:opacity-80" style="color: var(--hb-muted)">{{ $t('embed.poweredBy') }}</a>
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { changelogTimeline, type PublicChangelog } from '#shared/changelog'
+import { STYLE_RADIUS_MAX, STYLE_SHADOWS, STYLE_SHADOW_CSS, resolveStyle, styleVars, type ResolvedStyle, type StyleShadow } from '#shared/projectStyle'
 
 // The plug-and-play changelog (see public/changelog.js), also the page at
 // /changelog/<public key>. Read-only and independent of the feedback board: it
 // needs only the project's public key and its public changelog switched on.
 // Your own UI can read the same data from GET /v1/changelog.
+//
+// It wears the changelog's style (the project's, with the changelog's own
+// choices over it; `style` in GET /v1/changelog), in light or dark. The URL can
+// override a few things for one embed: ?theme, ?accent=%23rrggbb, ?radius=0-32
+// and ?shadow=none|soft|medium|strong.
 
 definePageMeta({ layout: 'bare' })
 
@@ -58,6 +64,16 @@ const colorMode = useColorMode()
 const themeParam = String(route.query.theme || '')
 if (['light', 'dark', 'system'].includes(themeParam)) colorMode.preference = themeParam
 
+// Per-embed overrides from the script tag's data-accent, data-radius and data-shadow.
+const accentParam = String(route.query.accent || '')
+const radiusParam = route.query.radius === undefined ? NaN : Number(route.query.radius)
+const shadowParam = String(route.query.shadow || '')
+const override = {
+  accent: /^#[0-9a-f]{6}$/i.test(accentParam) ? accentParam.toLowerCase() : '',
+  radius: Number.isInteger(radiusParam) && radiusParam >= 0 && radiusParam <= STYLE_RADIUS_MAX ? radiusParam : null,
+  shadow: (STYLE_SHADOWS as readonly string[]).includes(shadowParam) ? shadowParam as StyleShadow : ''
+}
+
 type ProjectInfo = { name: string, theme: { accent?: string }, brandLogoUrl: string, poweredBy?: { url: string } | null }
 
 const { t } = useI18n()
@@ -69,10 +85,41 @@ const error = ref('')
 
 const items = computed(() => changelogTimeline(changelog.value))
 const title = computed(() => (projectInfo.value?.name ? t('embed.changelog.namedTitle', { name: projectInfo.value.name }) : t('embed.changelog.title')))
+// Until the changelog arrives (or when it fails) the page wears our defaults.
+const FALLBACK = { accent: '#4f46e5', radiusPx: 8, fontFamily: 'ui-sans-serif, system-ui, sans-serif', logoUrl: '', logoDarkUrl: '', iconUrl: '' }
+const style = computed<ResolvedStyle>(() => {
+  const base = changelog.value.style || resolveStyle(FALLBACK)
+  const shadow = override.shadow || base.shadow
+  const accent = (palette: ResolvedStyle['light']) => ({ ...palette, accent: override.accent || palette.accent })
+  return { ...base, radius: override.radius ?? base.radius, shadow, shadowCss: STYLE_SHADOW_CSS[shadow], light: accent(base.light), dark: accent(base.dark) }
+})
+const mode = computed<'light' | 'dark'>(() => (colorMode.value === 'dark' ? 'dark' : 'light'))
+const vars = computed(() => styleVars(style.value, mode.value))
+const logoUrl = computed(() => (mode.value === 'dark' ? style.value.logoDarkUrl : style.value.logoUrl) || style.value.iconUrl || projectInfo.value?.brandLogoUrl || '')
+// The page's colours, and Nuxt UI's own tokens (text, borders, prose) pointed at them.
+const rootStyle = computed(() => ({
+  ...vars.value,
+  background: 'var(--hb-bg)',
+  color: 'var(--hb-text)',
+  fontFamily: 'var(--hb-font)',
+  '--ui-bg': 'var(--hb-bg)',
+  '--ui-text': 'var(--hb-text)',
+  '--ui-text-highlighted': 'var(--hb-text)',
+  '--ui-text-muted': 'var(--hb-muted)',
+  '--ui-text-dimmed': 'var(--hb-muted)',
+  '--ui-border': 'var(--hb-border)'
+}))
+const cardStyle = { background: 'var(--hb-surface)', border: '1px solid var(--hb-border)', borderRadius: 'var(--hb-radius)', boxShadow: 'var(--hb-shadow)' }
+
+// A style that fixes the scheme applies it, unless the embed's own ?theme asked for one.
+watch(() => style.value.scheme, (scheme) => {
+  if (!themeParam && scheme !== 'auto') colorMode.preference = scheme
+}, { immediate: true })
+
 const initials = computed(() => (projectInfo.value?.name || 'C').trim().slice(0, 1).toUpperCase())
 
 // Nuxt UI's theme is `inline`: derive the shades from the project accent.
-useHead({ title, htmlAttrs: { style: computed(() => accentStyle(projectInfo.value?.theme?.accent)) } })
+useHead({ title, htmlAttrs: { style: computed(() => accentStyle(style.value[mode.value].accent)) } })
 
 let resizeObserver: ResizeObserver | null = null
 let lastHeight = 0
@@ -114,6 +161,10 @@ onMounted(async () => {
     error.value = e?.statusCode === 404 ? t('embed.changelog.none') : t('embed.changelog.loadFailed')
   } finally {
     loading.value = false
+    // changelog.js keeps its skeleton (or the server's snapshot) until this.
+    await nextTick()
+    reportHeight()
+    if (inFrame) window.parent.postMessage({ source: 'help-bites-changelog', type: 'ready' }, '*')
   }
 })
 

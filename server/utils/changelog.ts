@@ -1,4 +1,5 @@
 import { createError, getHeader, getQuery, type H3Event } from 'h3'
+import { DEFAULT_PROJECT_STYLE, resolveStyle, type ResolvedStyle } from '#shared/projectStyle'
 import {
   CHANGELOG_LINKS_MAX,
   CHANGELOG_LINK_KINDS,
@@ -33,6 +34,7 @@ import {
 import { feedbackStatusCategory, parsePostRef } from '#shared/feedback'
 import { deriveChangelogExcerpt, nextChangelogSlug, renderChangelogBody } from './changelogRender'
 import { emitDomainEventLater } from './domainEvents'
+import { lookOf } from './projects'
 
 // The changelog: entries (what shipped, in the project's own words) grouped
 // into releases, linked to the feedback posts, board items and conversations
@@ -396,13 +398,20 @@ export async function listChangelogReleases(project: ParseObject): Promise<Chang
  * Nothing about sources goes out (see `buildPublicChangelog`).
  * ponytail: one page — the 200 newest releases and 1000 newest entries; page it when a changelog outgrows that.
  */
+/** The changelog's style: the project's, with the changelog's own choices laid over it when it has any. */
+export function changelogStyleOf(project: ParseObject): ResolvedStyle {
+  const look = lookOf(project)
+  const { style } = getChangelogConfig(project)
+  return resolveStyle(look.kit, look.projectStyle, style.source === 'custom' ? style.custom : DEFAULT_PROJECT_STYLE)
+}
+
 export async function listPublicChangelog(project: ParseObject): Promise<PublicChangelog> {
   const Parse = useParse()
   const [releaseRows, entryRows] = await Promise.all([
     new Parse.Query('ChangelogRelease').equalTo('project', project).equalTo('status', 'published').descending('publishedAt').limit(200).find(MASTER),
     new Parse.Query('ChangelogEntry').equalTo('project', project).equalTo('status', 'published').descending('publishedAt').addDescending('number').limit(1000).find(MASTER)
   ])
-  return buildPublicChangelog(releaseRows.map(serializeChangelogRelease), entryRows.map(row => ({ ...entryFields(row) })))
+  return { ...buildPublicChangelog(releaseRows.map(serializeChangelogRelease), entryRows.map(row => ({ ...entryFields(row) }))), style: changelogStyleOf(project) }
 }
 
 export type PublicEntryQuery = { limit: number, skip: number, tag?: ChangelogTag, area?: string, version?: string, since?: Date }

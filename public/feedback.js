@@ -39,12 +39,16 @@
  * roadmap's: 'columns' | 'timeline' | 'list'; defaults to the board's), theme
  * ('system' | 'light' | 'dark'), platform (preselected for new posts), position
  * ('right' | 'left'), label, accent, deepLinkParam ('feedback'), syncUrl
- * (inline default true).
+ * (inline default true), host (the HelpBites to read from, when you serve this
+ * file yourself or from a cache).
+ *
+ * Inline, the target shows a skeleton while the board loads, or a snapshot your
+ * server drew into it (ssr.mjs, docs/SSR.md), which the board then replaces.
  */
 (function () {
   var script = document.currentScript || (function () { var s = document.getElementsByTagName('script'); return s[s.length - 1] })()
-  var origin = new URL(script.src, location.href).origin
   var attr = function (name) { return script.getAttribute('data-' + name) || '' }
+  var origin = (attr('host') || new URL(script.src, location.href).origin).replace(/\/+$/, '')
 
   var options = {
     project: attr('project'),
@@ -67,6 +71,40 @@
   var SPRING = 'cubic-bezier(.16,1.02,.3,1)'
 
   function inline() { return Boolean(options.target) }
+
+  // What stands in for the frame until it has something to show: a snapshot drawn on the server
+  // (ssr.mjs, marked data-hb-ssr) or, failing that, a skeleton. The frame loads out of sight under it
+  // and takes its place when it says it is ready (or after 8 s, so an error message still shows).
+  function hold(host, frame) {
+    var held = host.querySelector('[data-hb-ssr]')
+    if (!held) {
+      if (!document.getElementById('hb-sk-style')) {
+        var style = document.createElement('style')
+        style.id = 'hb-sk-style'
+        style.textContent = '@keyframes hb-pulse{50%{opacity:.45}}@media(prefers-reduced-motion:reduce){.hb-sk i{animation:none!important}}'
+        document.head.appendChild(style)
+      }
+      held = document.createElement('div')
+      held.className = 'hb-sk'
+      held.setAttribute('role', 'status')
+      held.setAttribute('aria-busy', 'true')
+      held.innerHTML = '<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Loading…</span>' + new Array(4).join('<i style="display:block;height:84px;margin:0 0 12px;border-radius:10px;background:rgba(127,127,127,.18);animation:hb-pulse 1.4s ease-in-out infinite"></i>')
+      host.appendChild(held)
+    }
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative'
+    frame.style.position = 'absolute'
+    frame.style.visibility = 'hidden'
+    frame.style.top = frame.style.left = '0'
+    var released = false
+    function release() {
+      if (released) return
+      released = true
+      if (held.parentNode) held.parentNode.removeChild(held)
+      frame.style.position = frame.style.visibility = frame.style.top = frame.style.left = ''
+    }
+    setTimeout(release, 8000)
+    return release
+  }
 
   function el(tag, style, attrs) {
     var e = document.createElement(tag)
@@ -104,6 +142,7 @@
     if (!host) { console.warn('[help-bites] no element matches the feedback target ' + options.target); return }
     frame = el('iframe', 'display:block;width:100%;height:560px;border:0;background:transparent;color-scheme:normal;transition:height .2s ease;', { src: frameSrc(), title: 'Feedback', allow: 'clipboard-write' })
     host.appendChild(frame)
+    release = hold(host, frame)
     open = true
   }
 
@@ -189,6 +228,7 @@
     if (!d || d.source !== 'help-bites-feedback') return
     if (d.type === 'ready') {
       ready = true
+      if (release) release()
       sendToken()
       if (pendingPost) { send({ type: 'open-post', postId: pendingPost }); pendingPost = '' }
     }

@@ -4,6 +4,7 @@
 // only what an admin wrote, or what was already public, ever goes out.
 
 import { FEEDBACK_BODY_MAX_LENGTH, FEEDBACK_TITLE_MAX_LENGTH, readDate } from './feedback'
+import { DEFAULT_PROJECT_STYLE, validateProjectStyle, type ProjectStyle, type ResolvedStyle } from './projectStyle'
 import { safeHttpUrl } from './support'
 
 /** Posts, board items and conversations one entry may link to, each. */
@@ -91,8 +92,22 @@ export type ChangelogConfig = {
   digest: ChangelogDigestConfig
   /** Entries an AI writes from the project's GitHub commits. They start as drafts nobody has approved. */
   commitAi: ChangelogCommitAiConfig
+  /** How the public changelog page and embed look. */
+  style: ChangelogStyle
   /** Overrides of the words in the emails; see `DEFAULT_CHANGELOG_COPY` for the keys and what `{site}`, `{count}` and `{window}` become. */
   copy: Record<string, string>
+}
+
+export const CHANGELOG_STYLE_SOURCES = ['project', 'custom'] as const
+
+/**
+ * `project` wears the project's style (shared/projectStyle.ts) as it is. `custom`
+ * lays `custom` over it: whatever `custom` leaves empty still comes from the
+ * project, so changing the project style keeps changing the changelog.
+ */
+export type ChangelogStyle = {
+  source: (typeof CHANGELOG_STYLE_SOURCES)[number]
+  custom: ProjectStyle
 }
 
 export type ChangelogCommitAiConfig = {
@@ -167,6 +182,7 @@ export const DEFAULT_CHANGELOG_CONFIG: ChangelogConfig = {
   unsubscribeUrl: '',
   digest: DEFAULT_CHANGELOG_DIGEST,
   commitAi: { onPush: false, autoPublish: false },
+  style: { source: 'project', custom: DEFAULT_PROJECT_STYLE },
   copy: {}
 }
 
@@ -197,7 +213,7 @@ export function validateChangelogConfig(value: unknown, base: ChangelogConfig = 
   const errors: string[] = []
   if (value !== undefined && value !== null && (typeof value !== 'object' || Array.isArray(value))) errors.push('changelog must be an object')
   const raw = record(value)
-  const config: ChangelogConfig = { ...base, areas: [...base.areas], reservedSlugs: [...base.reservedSlugs], commentNotify: [...base.commentNotify], digest: { ...base.digest }, commitAi: { ...base.commitAi }, copy: { ...base.copy } }
+  const config: ChangelogConfig = { ...base, areas: [...base.areas], reservedSlugs: [...base.reservedSlugs], commentNotify: [...base.commentNotify], digest: { ...base.digest }, commitAi: { ...base.commitAi }, style: { ...base.style }, copy: { ...base.copy } }
   if (raw.autoDraft !== undefined) config.autoDraft = Boolean(raw.autoDraft)
   if (raw.enabled !== undefined) config.enabled = Boolean(raw.enabled)
   if (raw.comments !== undefined) config.comments = Boolean(raw.comments)
@@ -211,6 +227,20 @@ export function validateChangelogConfig(value: unknown, base: ChangelogConfig = 
     const c = record(raw.commitAi)
     if (c.onPush !== undefined) config.commitAi.onPush = Boolean(c.onPush)
     if (c.autoPublish !== undefined) config.commitAi.autoPublish = Boolean(c.autoPublish)
+  }
+  if (raw.style !== undefined) {
+    const s = record(raw.style)
+    const next = { ...config.style }
+    if (s.source !== undefined) {
+      if ((CHANGELOG_STYLE_SOURCES as readonly unknown[]).includes(s.source)) next.source = s.source as ChangelogStyle['source']
+      else errors.push(`style.source is one of ${CHANGELOG_STYLE_SOURCES.join(', ')}`)
+    }
+    if (s.custom !== undefined) {
+      const custom = validateProjectStyle(s.custom, config.style.custom)
+      errors.push(...custom.errors.map(error => `style.custom: ${error}`))
+      if (!custom.errors.length) next.custom = custom.style
+    }
+    config.style = next
   }
   if (raw.siteName !== undefined) {
     if (typeof raw.siteName !== 'string' || raw.siteName.trim().length > 80) errors.push('siteName is up to 80 characters')
@@ -605,6 +635,8 @@ export type PublicChangelog = {
   releases: PublicChangelogRelease[]
   /** Published entries that belong to no release, newest first. */
   entries: PublicChangelogEntry[]
+  /** How the page wears the project: its style with the changelog's own laid over it. Set by the public routes. */
+  style?: ResolvedStyle
 }
 
 /** A page of published entries, newest first, each carrying its release's version. */

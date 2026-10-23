@@ -5,10 +5,11 @@ import { DEFAULT_MARKETING_CONFIG } from '#shared/marketing'
 import { DEFAULT_COMPANY } from '#shared/company'
 import { DEFAULT_HUB_CONFIG } from '#shared/hub'
 import { projectLook } from '#shared/projectLook'
+import { DEFAULT_PROJECT_STYLE, validateProjectStyle } from '#shared/projectStyle'
 import { presetForm } from '#shared/leadForms'
 import { DEFAULT_PRICING_CHECKOUT, DEFAULT_PRICING_EXPERIMENT, DEFAULT_PRICING_OPTIONS, DEFAULT_PRICING_STYLE, addFunnel, buildPublicPricing, emptyFunnel, pricingTexts, starterPricing, type PricingFunnel, type PricingSnapshot } from '#shared/pricing'
 import { ALL_LEADS_SEGMENT, leadFormSegmentFilter } from '#shared/segments'
-import { DEFAULT_CHANGELOG_CONFIG, type ChangelogEntry, type ChangelogRelease } from '#shared/changelog'
+import { DEFAULT_CHANGELOG_CONFIG, validateChangelogConfig, type ChangelogEntry, type ChangelogRelease } from '#shared/changelog'
 import { DEFAULT_BLOG_CONFIG, type BlogPost } from '#shared/blog'
 import { normalizeBrandConfig } from '#shared/brand'
 import { normalizeSettings } from '#shared/cms/content'
@@ -87,7 +88,7 @@ const bugType = (projectId: string): ConversationType => ({
 
 function project(id: string, name: string, siteUrl: string, accent: string, flags: FeatureFlag[]): AdminProject {
   return {
-    id, slug: slug(name), publicKey: `pk_demo_${id}`, name, siteUrl, allowedOrigins: [siteUrl], theme: { accent }, look: projectLook({ name, theme: { accent } }), widgetHome: false,
+    id, slug: slug(name), publicKey: `pk_demo_${id}`, name, siteUrl, allowedOrigins: [siteUrl], theme: { accent }, look: projectLook({ name, theme: { accent } }), style: DEFAULT_PROJECT_STYLE, widgetHome: false,
     company: { ...DEFAULT_COMPANY, name, address: '1 Demo Street, Lisbon, Portugal', email: `hello@${new URL(siteUrl).host}` }, legalLinks: { privacyUrl: '', termsUrl: '', cookiesUrl: '', refundUrl: '' }, hub: DEFAULT_HUB_CONFIG,
     allowAttachments: true, allowAnonymousUsers: false, guestSurfaces: [], chatNotice: '', brandLogoUrl: '', iconUrl: '', assistantLogoUrl: '', letUsersChooseType: false, allowOtherType: false,
     feedback: { ...DEFAULT_FEEDBACK_CONFIG, enabled: true, title: `${name} feedback` },
@@ -428,12 +429,18 @@ function withMaster(t: EmailTemplate): EmailTemplate {
 }
 
 function applyProject(p: AdminProject, body: Record<string, any>) {
-  const { notifyEmails, feedback, board, theme, actionWebhookSecret, ...rest } = body
+  const { notifyEmails, feedback, board, theme, style, changelog, actionWebhookSecret, ...rest } = body
   for (const key of Object.keys(rest)) if (key in p) (p as any)[key] = rest[key]
   if (notifyEmails !== undefined) p.notifyEmails = Array.isArray(notifyEmails) ? notifyEmails : String(notifyEmails).split(/[,\s]+/).filter(Boolean)
   if (feedback) p.feedback = { ...p.feedback, ...feedback }
   if (board) p.board = { ...p.board, ...board, roadmap: { ...p.board.roadmap, ...board.roadmap } }
   if (theme) p.theme = { ...p.theme, ...theme }
+  if (changelog) p.changelog = validateChangelogConfig(changelog, p.changelog).config
+  if (style) {
+    p.style = validateProjectStyle(style, p.style).style
+    p.look = projectLook({ name: p.name, theme: p.theme, style: p.style })
+    p.theme = { ...p.theme, accent: p.look.accent }
+  }
   if (actionWebhookSecret) p.hasActionWebhookSecret = true
 }
 

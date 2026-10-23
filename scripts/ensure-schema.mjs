@@ -221,6 +221,8 @@ const SCHEMAS = {
       // The project board (statuses, labels, roadmap options) and its `#N` counter.
       board: { type: 'Object' },
       boardItemSeq: { type: 'Number' },
+      // The project's own style, shared by every styled feature: scheme, light and dark palettes, radius, shadow, font, logos (shared/projectStyle.ts).
+      style: { type: 'Object' },
       // Changelog options (`autoDraft`) and its entries' `#N` counter.
       changelog: { type: 'Object' },
       changelogSeq: { type: 'Number' },
