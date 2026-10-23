@@ -209,7 +209,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   signed with HMAC-SHA256 to your webhook. [CONNECTING.md](CONNECTING.md)
 - **A warning when an action has nowhere to go.** The type editor, and the actions
   in the inbox, say so while the project has no action webhook URL and secret
-  (they would fail), and link to Developer & MCP where it is set.
+  (they would fail), and link to Install & API where it is set.
 
 ## 4. Knowledge base and AI assistants
 
@@ -645,7 +645,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   key. Each tool is a `/v1` call, so the operator's role, the workspace and a key's
   project limit apply; connections are API keys you can revoke in **Settings → API
   keys** and from the address and a ready-made `claude mcp add` command on the
-  project's **Developer & MCP** page, in the panel and the native app.
+  workspace's **Developer & MCP** page (the old Developer page), in the panel and the native app.
   [MCP.md](MCP.md)
 - **Realtime streams.** Server-sent events for end users, operators, the feedback
   page, and shared email previews.

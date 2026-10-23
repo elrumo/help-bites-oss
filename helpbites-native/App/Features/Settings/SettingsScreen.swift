@@ -60,7 +60,7 @@ struct SettingsScreen: View {
           link(.ai, "AI", "sparkles")
           link(.connections, "Connections", "powerplug")
           if session.canManage { link(.apiKeys, "API keys", "key") }
-          link(.developer, "Developer", "chevron.left.forwardslash.chevron.right", divider: false)
+          link(.developer, "Developer & MCP", "chevron.left.forwardslash.chevron.right", divider: false)
         }
 
         VStack(alignment: .leading, spacing: 8) {

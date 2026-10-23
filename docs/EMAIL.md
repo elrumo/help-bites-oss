@@ -199,7 +199,7 @@ off for messages that carry sign-in or reset links.
 ## API
 
 Everything is in the OpenAPI docs at `/_docs/scalar`. With the project secret
-(`sk_…`, under project → *Developer & MCP*) a call acts for its own project. With an
+(`sk_…`, under project → *Install & API*) a call acts for its own project. With an
 operator session or admin key (`ak_…`) it can act for any project by passing
 `project`, and sends are logged as that operator's.
 

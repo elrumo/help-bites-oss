@@ -15,7 +15,7 @@ https://YOUR-SUPPORT-HOST/mcp
 
 It is stateless Streamable HTTP (JSON-RPC 2.0), so it needs nothing beyond the
 app itself, so it runs on a self-hosted instance as is. The same address is shown,
-ready to copy, under **Settings → API keys** and on a project's **Developer & MCP**
+ready to copy, under **Settings → API keys** and on the workspace's **Developer & MCP**
 page (with the Claude Code command below).
 
 ## Connect

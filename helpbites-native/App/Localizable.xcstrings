@@ -45795,36 +45795,36 @@
         }
       }
     },
-    "From your server, with this project's secret (Project → Developer & MCP). Never from a browser." : {
+    "From your server, with this project's secret (Project → Install & API). Never from a browser." : {
       "localizations" : {
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Des del teu servidor, amb el secret d'aquest projecte (Projecte → Desenvolupador i MCP). Mai des d'un navegador."
+            "value" : "Des del teu servidor, amb el secret d'aquest projecte (Projecte → Instal·lació i API). Mai des d'un navegador."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Desde tu servidor, con el secreto de este proyecto (Proyecto → Desarrollador y MCP). Nunca desde un navegador."
+            "value" : "Desde tu servidor, con el secreto de este proyecto (Proyecto → Instalación y API). Nunca desde un navegador."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "サーバーから、このプロジェクトのシークレット（プロジェクト → 開発者と MCP）を使って呼び出します。ブラウザからは呼び出さないでください。"
+            "value" : "サーバーから、このプロジェクトのシークレット（プロジェクト → インストールと API）を使って呼び出します。ブラウザからは呼び出さないでください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "서버에서 이 프로젝트의 시크릿(프로젝트 → 개발자 및 MCP)으로 호출하세요. 브라우저에서는 절대 호출하지 마세요."
+            "value" : "서버에서 이 프로젝트의 시크릿(프로젝트 → 설치 및 API)으로 호출하세요. 브라우저에서는 절대 호출하지 마세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请从你的服务器调用，使用此项目的密钥（项目 → 开发者与 MCP）。切勿从浏览器调用。"
+            "value" : "请从你的服务器调用，使用此项目的密钥（项目 → 安装与 API）。切勿从浏览器调用。"
           }
         }
       }
@@ -52286,6 +52286,108 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "如何连接"
+          }
+        }
+      }
+    },
+    "Install & API" : {
+      "localizations" : {
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instal·lació i API"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instalación y API"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "インストールと API"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설치 및 API"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安装与 API"
+          }
+        }
+      }
+    },
+    "AI assistants (MCP) connect to the whole workspace." : {
+      "localizations" : {
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Els assistents d'IA (MCP) es connecten a tot l'espai."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los asistentes de IA (MCP) se conectan a todo el espacio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI アシスタント（MCP）はワークスペース全体に接続します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 어시스턴트(MCP)는 워크스페이스 전체에 연결됩니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 助手（MCP）连接到整个工作区。"
+          }
+        }
+      }
+    },
+    "Connect Claude, ChatGPT or Cursor" : {
+      "localizations" : {
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecta Claude, ChatGPT o Cursor"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecta Claude, ChatGPT o Cursor"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claude、ChatGPT、Cursor を接続"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claude, ChatGPT, Cursor 연결"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接 Claude、ChatGPT 或 Cursor"
           }
         }
       }

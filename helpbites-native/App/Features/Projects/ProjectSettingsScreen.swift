@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 
 /// A project's name, branding, chat widget, notifications and sidebar, its
 /// collaborators and GitHub repos (web: projects/[id]/settings.vue). The email
-/// sender is on Email; keys, snippets and webhooks are on Developer & MCP.
+/// sender is on Email; keys, snippets and webhooks are on Install & API.
 struct ProjectSettingsScreen: View {
   let projectId: String
   @Environment(Workspace.self) private var workspace

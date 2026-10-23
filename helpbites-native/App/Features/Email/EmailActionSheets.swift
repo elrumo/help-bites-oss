@@ -228,7 +228,7 @@ struct EmailAPISheet: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 24) {
           Text(isProject
-            ? "From your server, with this project's secret (Project → Developer & MCP). Never from a browser."
+            ? "From your server, with this project's secret (Project → Install & API). Never from a browser."
             : "Shared templates are read by id with an admin API key. Projects that link this template fetch and send it by their own key.")
             .font(.lnMeta)
             .foregroundStyle(Theme.textMuted)

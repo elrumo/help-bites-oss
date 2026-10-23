@@ -11,6 +11,7 @@
         <header class="space-y-1">
           <h1 class="text-xl font-semibold tracking-tight text-highlighted">{{ $t('projectPages.dev.connect', { name: project.name }) }}</h1>
           <p class="text-[13px] text-muted">{{ $t('projectPages.dev.intro') }} <NuxtLink :to="`/projects/${id}/settings`" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('projectPages.dev.projectSettings') }}</NuxtLink>{{ $t('projectPages.dev.introEnd') }}</p>
+          <p class="text-[13px] text-muted">{{ $t('projectPages.dev.mcpMoved') }} <NuxtLink to="/developer#mcp" class="font-medium text-default underline-offset-2 hover:underline">{{ $t('projectPages.dev.mcpMovedLink') }}</NuxtLink>{{ $t('projectPages.dev.mcpMovedEnd') }}</p>
         </header>
 
         <!-- Credentials -->
@@ -130,24 +131,6 @@
               <p class="step-text">{{ $t('projectPages.dev.emailSendPart') }} <code class="inline-code">html</code> {{ $t('projectPages.dev.emailFilePart') }} <code class="inline-code">GET /v1/email-logs</code> {{ $t('projectPages.dev.emailReadPart') }} <NuxtLink :to="`/projects/${id}/email?view=settings`" class="underline">{{ $t('projectPages.settings.senderMovedLink') }}</NuxtLink>{{ $t('projectPages.dev.period') }}</p>
               <CodeBlock :code="emailSnippet" lang="js" />
             </template>
-          </div>
-        </section>
-
-        <!-- AI assistants: the workspace-wide MCP server, shown here next to the keys it uses. -->
-        <section id="mcp" class="scroll-mt-6 space-y-3">
-          <h2 class="section-title">{{ $t('projectPages.dev.mcp') }}</h2>
-          <div class="space-y-3 rounded-xl border border-default p-5">
-            <p class="step-text">{{ $t('projectPages.dev.mcpIntro') }}</p>
-            <div class="cred-value">
-              <code class="cred-code">{{ mcpUrl }}</code>
-              <UTooltip :text="copied === 'mcp' ? $t('projectPages.dev.copied') : $t('projectPages.dev.copy')"><UButton :icon="copied === 'mcp' ? 'i-lucide-check' : 'i-lucide-copy'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="$t('workspaceSettings.apiKeys.mcpAddress')" @click="copy(mcpUrl, 'mcp')" /></UTooltip>
-            </div>
-            <p class="step-text">{{ $t('projectPages.dev.mcpKeyHint') }}</p>
-            <CodeBlock :code="mcpSnippet" lang="bash" />
-            <div class="flex gap-1">
-              <UButton to="/docs/mcp" target="_blank" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('workspaceSettings.apiKeys.mcpDocs')" />
-              <UButton to="/api-keys" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('projectPages.dev.mcpKeys')" />
-            </div>
           </div>
         </section>
 
@@ -293,9 +276,6 @@ async function saveSecurity() {
 
 const appUrl = useAppUrl()
 
-const mcpUrl = computed(() => `${appUrl.value}/mcp`)
-const mcpSnippet = computed(() => `claude mcp add --transport http helpbites ${mcpUrl.value} \\
-  --header "Authorization: Bearer ak_…"`)
 const mintSnippet = computed(() => `import { createHmac } from 'node:crypto'
 
 // GET /api/support/token — only for a signed-in user of your app
