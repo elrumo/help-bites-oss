@@ -2,9 +2,9 @@
 
 One style for the whole project, shared by the features that have a style
 panel: its logo and app icon, **light and dark** colours, corner radius, shadow
-and font. Set it once and the public changelog and feedback board wear all of it;
-forms, onboarding, pricing tables, the blog and legal pages take its accent (see
-[Limits](#limits)).
+and font. Set it once and every public page wears all of it, in light and dark:
+the changelog, feedback board, chat widget, hub, blog, brand page, legal pages,
+forms, onboarding and pricing tables (see [Limits](#limits)).
 
 ## Where it is set
 
@@ -155,11 +155,37 @@ extension Color {
 the colours of the current scheme as CSS variables, use `radius`, `shadowCss`
 and `fontFamily` as they are, and pick `logoDarkUrl` on a dark background.
 
+## The other public pages
+
+**Hub, chat widget, blog, legal pages and brand page** each have a `style`
+choice like the changelog's (`hub.style`, `widget.style`, `blog.style`,
+`legal.style`, `brand.page.style`: `{ "source": "project" | "custom", "custom": { … } }`),
+edited from a **Style** button in their panel and sent in a partial `PATCH` of
+the project. The blog's design (accent, font, colour scheme), the legal look and
+the brand page's theme, radius and accent stay as that feature's own layer on
+top. The finished style is `style` on `GET /v1/hub/{pk}`, `GET /v1/blog` and
+`GET /v1/brand/{pk}`, and `widgetStyle` on the public project.
+
+**Forms, onboarding flows and pricing tables** keep the `style` each one has
+(accent, background, text, radius, font…) as their own layer over the project
+style: what a form, flow or table sets wins, in light and dark; what it leaves
+empty comes from the project (dark palette, card colours, shadow, and the
+project's radius and font where the form's are still at their default). The
+finished style is `look` in their public payload.
+
+Every script takes `data-accent`, `data-radius`, `data-shadow` and `data-theme`
+(`widget.js` / `helpbites.js`, `blog.js`, `brand.js`, `forms.js`,
+`onboarding.js`, `pricing.js`), each overriding the style for that embed;
+the hosted pages take the same as URL parameters where they have them.
+
 ## Limits
 
-- Forms, onboarding, pricing tables, the blog and legal pages keep their own
-  accent, background, text, radius and font fields. They take the project's
-  **accent** when theirs is empty; the rest of the project style (dark palette,
-  shadow, cards) is not applied to them yet. Their panels can save their
-  choices as the project style, but not the other way round.
-- The chat widget, the public hub, the brand and blog pages and the other embeds do not wear the full style yet, only the accent they already read. The native app edits the project style and the changelog's style, but not the feedback board's yet.
+- The Brand kit's typefaces are not loaded on the blog, legal, form, onboarding
+  and pricing pages: they use the style's `system`, `serif` or `mono` family.
+  The brand page and hub still load the kit's fonts.
+- Forms, onboarding and pricing have no separate project-or-custom choice: their
+  own style fields are that choice. Their panels can save their choices as the
+  project style, and the project style shows through where they leave a field empty.
+- The CMS pages (`pages.js`) do not wear the style yet.
+- The native app edits the project style and the changelog's style, but not any
+  other feature's, and its Swift snippets do not read the finished `look` / `style`.

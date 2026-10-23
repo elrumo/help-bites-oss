@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { createError, getHeader, getQuery, getRouterParam, type H3Event } from 'h3'
 import { extractTemplateVariables } from '#shared/email/placeholders'
 import {
-  DEFAULT_LEAD_SETTINGS, LEAD_FIELD_LABELS, LEAD_FILE_EXTENSIONS, LEAD_FORM_KEY, LEAD_FORM_WORDS, LEAD_FORM_LIMITS, LEAD_FORM_MAX_LOCALES, LEAD_FORM_PRESETS, checkLeadFiles, fillWords, leadFieldsOf,
+  DEFAULT_LEAD_SETTINGS, DEFAULT_LEAD_STYLE, LEAD_FIELD_LABELS, LEAD_FILE_EXTENSIONS, LEAD_FORM_KEY, LEAD_FORM_WORDS, LEAD_FORM_LIMITS, LEAD_FORM_MAX_LOCALES, LEAD_FORM_PRESETS, checkLeadFiles, fillWords, leadFieldsOf,
   leadFormKeyFrom, leadFormLocaleOf, leadFormTexts, leadFormWords, leadOptionAliases, leadTranslationFromTexts, leadTranslationTexts, leadTranslationsOf, localizeLeadForm,
   normalizeLeadContent, normalizeLeadSettings, normalizeLeadStyle, presetForm, readLeadSubmission, validateLeadContent, validateLeadFields, validateLeadSettings, validateLeadStyle,
   validateLeadTranslations, type AcceptedLeadFile, type LeadFile, type LeadForm, type LeadFormPreset, type LeadFormSettings, type LeadFormWords, type PublicLeadField,
@@ -18,7 +18,7 @@ import { findProjectEmail } from './emails'
 import { escapeHtml } from './messageEmail'
 import { messagePage, pageBrand, renderMarketingPage, type PageBrand } from './marketingPages'
 import { MASTER, iso, pointerId, useParse, type ParseObject } from './parse'
-import { loadProjectUnscoped, lookOf } from './projects'
+import { loadProjectUnscoped, lookOf, styleOf } from './projects'
 import { LIMITS, rateLimit } from './rateLimit'
 import { runExclusive } from './redis'
 import { deleteDocumentObject, getDocumentBuffer, s3Configured, storeHiddenFile } from './s3'
@@ -312,6 +312,11 @@ export function formProjectLook(project: ParseObject) {
   return { name: look.name, accent: look.accent, logoUrl: look.logoUrl || look.iconUrl }
 }
 
+/** The form's finished look: the project's style, with the form's own accent, background, text, radius and font over it. */
+export function formStyleOf(project: ParseObject, style: LeadForm['style']) {
+  return styleOf(project, undefined, { look: style, defaults: { radius: DEFAULT_LEAD_STYLE.radius, font: DEFAULT_LEAD_STYLE.font } })
+}
+
 /** The languages a visitor asks for, best first: `locale` in the body, then in the query, then the browser's. */
 export function wantedLocales(event: H3Event, body: Record<string, unknown> = {}): unknown[] {
   return [body.locale, getQuery(event).locale, ...parseAcceptLanguage(getHeader(event, 'accept-language'))]
@@ -327,6 +332,7 @@ export function localizedLeadForm(form: LeadForm, wanted: unknown[]): { locale: 
 export function toPublicLeadForm(project: ParseObject, row: ParseObject, wanted: unknown[] = []): PublicLeadForm {
   const form = serializeLeadForm(project, row)
   const look = formProjectLook(project)
+  const finished = formStyleOf(project, form.style)
   const { locale, locales, content, fields } = localizedLeadForm(form, wanted)
   return {
     key: form.key,
@@ -335,7 +341,8 @@ export function toPublicLeadForm(project: ParseObject, row: ParseObject, wanted:
     locales,
     fields,
     content,
-    style: { ...form.style, accent: form.style.accent || look.accent },
+    style: { ...form.style, accent: form.style.accent || finished.light.accent },
+    look: finished,
     doubleOptIn: form.settings.doubleOptIn,
     project: { name: look.name, logoUrl: look.logoUrl }
   }
@@ -623,7 +630,7 @@ function fieldHtml(f: PublicLeadField, value: string, words: LeadFormWords): str
 export function leadFormPage(project: ParseObject, row: ParseObject, options: { sent?: boolean, error?: string, values?: Record<string, unknown>, poweredBy?: PoweredBy | null, wanted?: unknown[] } = {}): string {
   const form = serializeLeadForm(project, row)
   const { locale, content, fields, words } = localizedLeadForm(form, options.wanted || [])
-  const brand = { ...pageBrand(project, options.poweredBy), ...(form.style.accent ? { accent: form.style.accent } : {}), lang: locale }
+  const brand = { ...pageBrand(project, options.poweredBy), ...(form.style.accent ? { accent: form.style.accent } : {}), style: formStyleOf(project, form.style), own: form.style, lang: locale }
   if (options.sent) {
     return renderMarketingPage(brand, content.successTitle, `<h1>${escapeHtml(content.successTitle)}</h1><p>${escapeHtml(form.settings.doubleOptIn ? content.confirmMessage : content.successMessage)}</p>`)
   }
@@ -650,13 +657,13 @@ export function leadMessagePage(brand: PageBrand, wanted: unknown[], which: 'clo
 
 export function leadConfirmPage(project: ParseObject, token: string, locale: string, poweredBy: PoweredBy | null = null): string {
   const words = leadFormWords(locale)
-  return renderMarketingPage({ ...pageBrand(project, poweredBy), lang: normalizeLocale(locale) || 'en' }, words.confirmTitle, `<h1>${escapeHtml(words.confirmTitle)}</h1><p>${escapeHtml(words.confirmBody)}</p>
+  return renderMarketingPage({ ...pageBrand(project, poweredBy), style: styleOf(project), lang: normalizeLocale(locale) || 'en' }, words.confirmTitle, `<h1>${escapeHtml(words.confirmTitle)}</h1><p>${escapeHtml(words.confirmBody)}</p>
 <form method="post" action="/f/confirm/${encodeURIComponent(token)}"><button type="submit">${escapeHtml(words.confirmButton)}</button></form>`)
 }
 
 /** After the confirmation click: the form's thank-you words in the person's language. */
 export function leadConfirmedPage(project: ParseObject, form: LeadForm | null, locale: string, poweredBy: PoweredBy | null = null): string {
-  const brand = { ...pageBrand(project, poweredBy), ...(form?.style.accent ? { accent: form.style.accent } : {}) }
+  const brand = { ...pageBrand(project, poweredBy), ...(form?.style.accent ? { accent: form.style.accent } : {}), style: form ? formStyleOf(project, form.style) : styleOf(project), own: form?.style }
   if (!form) return messagePage({ ...brand, lang: 'en' }, 'You are on the list', `Thanks for confirming. You will hear from ${project.get('name') || 'us'} soon.`)
   const { locale: lang, content } = localizedLeadForm(form, [locale])
   return messagePage({ ...brand, lang }, content.successTitle, content.successMessage)

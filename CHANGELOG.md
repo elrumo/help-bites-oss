@@ -26,7 +26,13 @@ All notable changes to the community edition. Versions are Docker image tags
   `data-shadow`; the public feedback board (list, roadmap and changelog views, `feedback.js`) takes the same (`feedback.style`,
   `feedbackStyle` on the public project and `GET /v1/feedback/config`). `style` on `PATCH /v1/admin/projects/{id}`, `look.style` on the public project and `style` on `GET /v1/changelog`. The
   project style's accent outranks the Brand kit's, and saving the accent in Settings keeps it in step. Schema (needs `schema:apply`;
-  the container does it on boot): new field `Project.style`. Forms, onboarding, pricing, blog and legal take its accent only; the native
+  the container does it on boot): new field `Project.style`. The chat widget, hub, blog, brand page, legal pages, forms, onboarding and
+  pricing tables wear it too, in light and dark (`widget.style`, `hub.style`, `blog.style`, `legal.style`, `brand.page.style` choose
+  the project's or their own over it; a form, flow or table keeps its own fields on top; `widgetStyle`, `style` and `look` carry the
+  finished style in the public payloads); `widget.js`, `helpbites.js`, `forms.js`, `onboarding.js`, `pricing.js`, `blog.js` and
+  `brand.js` take `data-accent`, `data-radius`, `data-shadow` and `data-theme`. Schema (needs `schema:apply`): new field `Project.widget`.
+  Blog and legal pages with no project style now render the default stone palette; pricing tables with no accent anywhere get the
+  Brand kit's default accent. The native app edits the project style and the changelog's style, not the other features' yet.
   app edits the project style and the changelog's style, not the feedback board's yet.
 - **Server rendering and caching for the embeds and the API** (`docs/SSR.md`, `public/ssr.mjs`). A helper for your server reads the public
   API within a time budget, keeps answers (stale-while-revalidate) and server-renders the changelog, roadmap, board and chat embeds as

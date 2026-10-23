@@ -3,7 +3,7 @@ import { BRAND_SECTIONS, type BrandSection } from '#shared/brand'
 
 // The public brand page. `template`, `theme`, `radius`, `accent` and `sections`
 // (comma-separated) override the kit's own settings for this view, which is how
-// brand.js embeds pass their options; `embed=1` drops the top bar and reports
+// brand.js embeds pass their options (`shadow` too); `embed=1` drops the top bar and reports
 // the height to the frame.
 
 export default defineEventHandler(async (event) => {
@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
     theme: String(query.theme || '') as never,
     radius: String(query.radius || '') as never,
     accent: String(query.accent || ''),
+    shadow: String(query.shadow || '') as never,
     sections,
     embed: query.embed === '1'
   })

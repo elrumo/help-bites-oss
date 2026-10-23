@@ -35,6 +35,11 @@ A flow has up to 12 steps, and a project up to 50 flows. The flow also has a
 | `options.skippable` | Show **Skip** (and let Escape close it). Default `true`. |
 | `options.progress` | `bar`, `dots` or `none`. |
 
+The flow wears the [project style](STYLE.md) (light and dark colours, radius,
+shadow, font); the `style` fields above are a layer over it and win, in light and
+dark. A `radius` or `font` left at the default (20, `system`) follows the project
+style when that sets one. The finished result is `look` on the public flow.
+
 Create and edit flows under **Project → Onboarding**, in the web panel or the
 native app.
 
@@ -71,8 +76,9 @@ Set them as `data-*` attributes or in `init`:
 | `flow` | The flow's key. Default `welcome`. |
 | `show` | `once` (default) shows it one time per browser. `update` shows it again after each publish. `always` shows it on every load (handy while you test). `manual` only shows it when you call `open`. |
 | `target` | A selector. Draws the flow inline in that element, as a card on your own welcome page, instead of a dialog. |
-| `theme` | `system`, `light` or `dark`. Defaults to a `dark` or `light` class on your `<html>`, then the visitor's system setting. |
+| `theme` | `system`, `light` or `dark`. Defaults to a `dark` or `light` class on your `<html>`, then the project style's fixed scheme, then the visitor's system setting. |
 | `accent`, `radius`, `font` | Override the flow's style. |
+| `shadow` | `none`, `soft`, `medium` or `strong`: the shadow of the inline card (`target`); the dialog keeps its own. Default: the project style's. |
 | `fallback` | A selector for a `<script type="application/json">` holding an offline copy (see below), or the copy itself in `init`. |
 | `locale` | The translation to show, a language tag such as `es` or `pt-BR`. Defaults to your `<html lang>`, then the browser's language. A flow without that translation shows in its own language. See [Languages](LANGUAGES.md). |
 | `host` | Where HelpBites is, when you serve `onboarding.js` from your own site. |
@@ -399,6 +405,7 @@ curl -s https://YOUR-SUPPORT-HOST/v1/onboarding/PROJECT_PUBLIC_KEY/welcome
     "key": "welcome", "name": "Welcome", "locale": "en", "locales": ["en", "es"], "version": 3, "publishedAt": "2026-10-21T09:00:00.000Z",
     "project": { "name": "Acme", "logoUrl": "https://cdn.acme.test/icon.png" },
     "style": { "accent": "#0ea5e9", "background": "", "text": "", "radius": 20, "font": "system" },
+    "look": { "scheme": "auto", "radius": 20, "shadow": "soft", "shadowCss": "0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08)", "fontFamily": "ui-sans-serif, system-ui, sans-serif", "light": { "accent": "#0ea5e9", "background": "#ffffff", "surface": "#fafaf9", "text": "#1c1917", "muted": "#78716c", "border": "#e7e5e4" }, "dark": { "accent": "#0ea5e9", "background": "#0c0a09", "surface": "#1c1917", "text": "#f5f5f4", "muted": "#a8a29e", "border": "#292524" } },
     "options": { "skippable": true, "progress": "bar" },
     "steps": [{ "id": "st_1", "title": "Welcome to Acme", "body": "Track every order in one place.", "imageUrl": "", "imageAlt": "", "buttonLabel": "" }]
   }

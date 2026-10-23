@@ -72,6 +72,14 @@ tokens minted with the old one stop verifying immediately.
   looking at. Update it with `HelpBites.push(['setContext', {...}])`.
 - `HelpBites.push(['open'])` / `(['close'])` control the panel.
 - `data-position="left"` and `data-accent="#hex"` on the script tag tweak the launcher.
+- The chat wears the **widget's style**: the [project style](STYLE.md), light and
+  dark, or its own over it (Project → Settings → Chat widget → Style). For this
+  page only, `data-accent` (`#rrggbb`, also the launcher), `data-radius` (0 to
+  32), `data-shadow` (`none`, `soft`, `medium`, `strong`) and `data-theme`
+  (`light`, `dark`, `system`; without it a `dark` or `light` class on your
+  `<html>`, else the style's scheme, else the visitor's) override it. They work
+  as `init` options too. The finished style is `widgetStyle` on
+  `GET /v1/projects/{pk}/public`, for your own UI.
 - A link with `?sb=<conversationId>` (what notification emails use) opens that
   conversation on load.
 
@@ -89,7 +97,7 @@ adds the chat, the feedback board, the changelog and onboarding that are set up:
 
 It adds the chat by default; name more with `data-features="chat,feedback"` or
 give one its own setting (`data-changelog-target="#changelog"`, `data-flow="welcome"`).
-`data-position`, `data-accent`, `data-mode`, `data-token` and `data-locale` pass
+`data-position`, `data-accent`, `data-theme`, `data-radius`, `data-shadow`, `data-mode`, `data-token` and `data-locale` pass
 through to the scripts, `HelpBites.push([...])` keeps working, and a script
 already on the page is never added twice. The project can also turn on a Home
 tab in the chat (what's new, top feedback, onboarding) and a public page at

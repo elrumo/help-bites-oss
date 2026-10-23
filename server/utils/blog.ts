@@ -27,6 +27,8 @@ import { literalBraceText } from './blogRender'
 import { anonymousWriteGate } from './endUserSessions'
 import type { IdentityClaims } from './jwt'
 import { emitDomainEvent } from './domainEvents'
+import { lookOf, styleOf } from './projects'
+import type { ResolvedStyle } from '#shared/projectStyle'
 
 // The blog: posts the team writes in the panel (or through the API) and
 // readers find on the hosted page, through the embed, in the RSS feed and, as
@@ -58,6 +60,21 @@ function stringList(value: unknown): string[] {
 export function getBlogConfig(project: ParseObject): BlogConfig {
   return normalizeBlogConfig(project.get('blog'))
 }
+
+/**
+ * What the blog wears: the project's style, the blog's own choices over it
+ * (`config.style`), and the design's accent, font and colour scheme over both.
+ * The design's default font (sans) follows the project's font when it sets one.
+ */
+export function blogStyleOf(project: ParseObject, config: BlogConfig): ResolvedStyle {
+  const { accent, font, colorScheme } = config.design
+  const style = styleOf(project, config.style, { look: { accent, font: font === 'serif' ? 'serif' : 'system', scheme: colorScheme }, defaults: { font: 'system' } })
+  // Without any style font, sans keeps the blog's own type stack (the kit's fonts are not loaded on the page).
+  const setsFont = font === 'serif' || lookOf(project).projectStyle.font || (config.style.source === 'custom' && config.style.custom.font)
+  return setsFont ? style : { ...style, fontFamily: SANS_STACK }
+}
+
+const SANS_STACK = '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif'
 
 /** Operators and the host's admins: they see drafts and moderate. */
 export function isBlogStaff(actor: BlogActor): boolean {
@@ -326,6 +343,7 @@ export async function listPublicBlog(ctx: BlogContext, page: BlogPage): Promise<
     title: blogTitle(ctx.config, String(ctx.project.get('name') || '')),
     description: ctx.config.description,
     layout: ctx.config.design.layout,
+    style: blogStyleOf(ctx.project, ctx.config),
     feedUrl: blogFeedUrl(ctx.project),
     reactions: ctx.config.reactions,
     comments: ctx.config.comments,

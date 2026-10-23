@@ -20,7 +20,9 @@
  * Options (data-* or init): flow, target (a selector: draw it inline in that
  * element instead of as a dialog), show ('once' | 'update': again after each
  * publish | 'always' | 'manual': only on ['open']), theme ('system' | 'light' |
- * 'dark'; defaults to a dark/light class on your <html>), accent, radius, font
+ * 'dark'; defaults to a dark/light class on your <html>, then the project style's
+ * fixed scheme, then the visitor's), accent, radius (0 to 32), shadow ('none' |
+ * 'soft' | 'medium' | 'strong': the inline card's; the dialog keeps its own), font
  * ('system' | 'rounded' | 'serif' | 'mono'), fallback, locale (a language tag such as
  * 'es' or 'pt-BR': the translation to show; defaults to your <html lang>, then the
  * browser's language; a flow without that translation shows in its own language).
@@ -47,6 +49,10 @@
  * A step with a pricing table (a paywall at the end of a tour) draws it with
  * pricing.js, which it loads from the same HelpBites when it gets there.
  *
+ * The project's style (Project -> Style: light and dark colours, radius, shadow)
+ * is the base; what the flow sets itself (accent, background, text, radius, font)
+ * wins over it, and these options win over both.
+ *
  * Restyle it from your CSS with variables on .help-bites-onboarding
  * (--hb-onboarding-accent, -on-accent, -bg, -text, -muted, -radius, -font,
  * -backdrop, -width) or parts (::part(card), overlay, progress, skip, media,
@@ -68,6 +74,7 @@
     theme: attr('theme'),
     accent: attr('accent'),
     radius: attr('radius'),
+    shadow: attr('shadow'),
     font: attr('font'),
     fallback: attr('fallback'),
     locale: attr('locale'),
@@ -198,30 +205,38 @@
     return 0.2126 * lin(n >> 16 & 255) + 0.7152 * lin(n >> 8 & 255) + 0.0722 * lin(n & 255) > 0.179 ? '#000000' : '#ffffff'
   }
 
-  function dark(theme) {
+  // The project style's shadows (shared/projectStyle.ts STYLE_SHADOW_CSS), for data-shadow.
+  var SHADOWS = { none: 'none', soft: '0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08)', medium: '0 4px 12px rgb(0 0 0 / 0.1)', strong: '0 12px 32px rgb(0 0 0 / 0.18)' }
+
+  function dark(theme, look) {
     var t = theme || options.theme
     if (t === 'dark') return true
     if (t === 'light') return false
     var root = document.documentElement
     if (root.classList.contains('dark')) return true
     if (root.classList.contains('light')) return false
+    if (look && (look.scheme === 'dark' || look.scheme === 'light')) return look.scheme === 'dark'
     return matchMedia('(prefers-color-scheme: dark)').matches
   }
 
   function css(flow, inline, theme) {
     var style = flow.style || {}
-    var accent = /^#[0-9a-f]{6}$/i.test(options.accent) ? options.accent : style.accent || '#4f46e5'
-    var radius = options.radius !== '' && !isNaN(+options.radius) ? +options.radius : (typeof style.radius === 'number' ? style.radius : 20)
-    var night = dark(theme)
-    var bg = style.background || (night ? '#18181b' : '#ffffff')
-    var text = style.text || (night ? '#f4f4f5' : '#18181b')
-    var font = FONTS[options.font] || FONTS[style.font] || FONTS.system
-    return ':host{all:initial;--_accent:var(--hb-onboarding-accent,' + accent + ');--_on:var(--hb-onboarding-on-accent,' + onColour(accent) + ');--_bg:var(--hb-onboarding-bg,' + bg + ');--_text:var(--hb-onboarding-text,' + text + ');--_muted:var(--hb-onboarding-muted,color-mix(in srgb,var(--_text) 62%,transparent));--_r:var(--hb-onboarding-radius,' + radius + 'px);--_font:var(--hb-onboarding-font,' + font + ');--_w:var(--hb-onboarding-width,400px)}'
+    var look = flow.look
+    var night = dark(theme, look)
+    var pal = look && look[night ? 'dark' : 'light']
+    var accent = /^#[0-9a-f]{6}$/i.test(options.accent) ? options.accent : (pal && pal.accent) || style.accent || '#4f46e5'
+    var radius = options.radius !== '' && !isNaN(+options.radius) ? Math.max(0, Math.min(32, +options.radius)) : (look && typeof look.radius === 'number' ? look.radius : typeof style.radius === 'number' ? style.radius : 20)
+    var bg = style.background || (pal && pal.surface) || (night ? '#18181b' : '#ffffff')
+    var text = style.text || (pal && pal.text) || (night ? '#f4f4f5' : '#18181b')
+    var theirs = pal && !style.text
+    var shadow = SHADOWS[options.shadow] || (look && look.shadowCss) || ''
+    var font = FONTS[options.font] || (style.font && style.font !== 'system' && FONTS[style.font]) || (look && look.fontFamily) || FONTS.system
+    return ':host{all:initial;--_accent:var(--hb-onboarding-accent,' + accent + ');--_on:var(--hb-onboarding-on-accent,' + onColour(accent) + ');--_bg:var(--hb-onboarding-bg,' + bg + ');--_text:var(--hb-onboarding-text,' + text + ');--_muted:var(--hb-onboarding-muted,' + (theirs ? pal.muted : 'color-mix(in srgb,var(--_text) 62%,transparent)') + ');--_r:var(--hb-onboarding-radius,' + radius + 'px);--_font:var(--hb-onboarding-font,' + font + ');--_w:var(--hb-onboarding-width,400px)}'
       + '*{box-sizing:border-box}'
       + '.overlay{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--hb-onboarding-backdrop,rgba(9,9,11,.48));-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;transition:opacity .24s ease}'
       + '.overlay.in{opacity:1}'
       + '.card{position:relative;width:min(var(--_w),100%);max-height:calc(100vh - 32px);overflow:auto;display:flex;flex-direction:column;background:var(--_bg);color:var(--_text);font:15px/1.55 var(--_font);border-radius:var(--_r);-webkit-font-smoothing:antialiased;color-scheme:' + (night ? 'dark' : 'light') + '}'
-      + (inline ? '.card{margin:0 auto;box-shadow:0 0 0 1px color-mix(in srgb,var(--_text) 10%,transparent)}' : '.card{box-shadow:0 0 0 1px color-mix(in srgb,var(--_text) 8%,transparent),0 24px 80px rgba(0,0,0,.28);transform:translateY(14px) scale(.98);transition:transform .32s cubic-bezier(.2,.8,.2,1)}.in .card{transform:none}')
+      + (inline ? '.card{margin:0 auto;box-shadow:0 0 0 1px ' + (theirs ? pal.border : 'color-mix(in srgb,var(--_text) 10%,transparent)') + (shadow && shadow !== 'none' ? ',' + shadow : '') + '}' : '.card{box-shadow:0 0 0 1px color-mix(in srgb,var(--_text) 8%,transparent),0 24px 80px rgba(0,0,0,.28);transform:translateY(14px) scale(.98);transition:transform .32s cubic-bezier(.2,.8,.2,1)}.in .card{transform:none}')
       + '.top{display:flex;align-items:center;gap:12px;min-height:44px;padding:16px 20px 0}'
       + '.progress{flex:1;display:flex;gap:5px;align-items:center}'
       + '.seg{flex:1;height:3px;border-radius:3px;background:color-mix(in srgb,var(--_text) 14%,transparent);transition:background .2s}'
@@ -338,7 +353,7 @@
           // The step's own title says what it is; the table brings its plans, toggle and small print.
           var plans = el('div', 'pricing', 'pricing')
           step.appendChild(plans)
-          pricing([how.preview ? 'preview' : 'draw', { table: s.pricing, target: plans, compact: true, theme: how.theme || options.theme, show: 'toggle,features,footnote', project: options.project, host: origin, onSelect: function () { if (!how.preview) chose() } }])
+          pricing([how.preview ? 'preview' : 'draw', { table: s.pricing, target: plans, compact: true, theme: how.theme || options.theme || (flow.look && flow.look.scheme !== 'auto' ? flow.look.scheme : ''), show: 'toggle,features,footnote', project: options.project, host: origin, onSelect: function () { if (!how.preview) chose() } }])
         }
         var actions = el('div', 'actions', 'actions')
         if (index > 0) {

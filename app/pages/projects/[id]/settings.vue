@@ -130,6 +130,13 @@
                 <p class="text-xs text-muted">{{ $t('projectPages.settings.guestAccessDescription') }}</p>
                 <UCheckbox v-for="surface in GUEST_SURFACES" :key="surface" :model-value="form.guestSurfaces.includes(surface)" :label="$t('projectPages.settings.guest.' + surface)" :description="$t('projectPages.settings.guest.' + surface + 'Description')" class="pl-6" @update:model-value="setGuestSurface(surface, $event === true)" />
               </div>
+              <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
+                <div class="min-w-0">
+                  <p class="text-sm font-medium">{{ $t('projectPages.settings.widgetStyle') }}</p>
+                  <p class="text-xs text-muted">{{ $t('projectPages.settings.widgetStyleHint') }}</p>
+                </div>
+                <UButton icon="i-lucide-palette" :label="$t('style.title')" color="neutral" variant="outline" size="sm" @click="showStyle = 'widget'" />
+              </div>
               <div class="space-y-2">
                 <UCheckbox v-model="form.letUsersChooseType" :label="$t('projectPages.settings.letUsersChoose')" :description="$t('projectPages.settings.letUsersChooseDescription')" />
                 <UCheckbox v-model="form.allowOtherType" :label="$t('projectPages.settings.offerOther')" :description="$t('projectPages.settings.offerOtherDescription')" :disabled="!form.letUsersChooseType" class="pl-6" />
@@ -140,7 +147,16 @@
           <!-- Public hub -->
           <section id="hub" class="section">
             <header><h2 class="section-title">{{ $t('projectPages.settings.hub') }}</h2><p class="section-hint">{{ $t('projectPages.settings.hubHint') }}</p></header>
-            <div class="card"><SettingsProjectHub v-model="form.hub" :public-key="project.publicKey" :project-name="project.name" /></div>
+            <div class="card">
+              <SettingsProjectHub v-model="form.hub" :public-key="project.publicKey" :project-name="project.name" />
+              <div v-if="form.hub.enabled" class="flex items-center justify-between gap-3 border-t border-default pt-4">
+                <div class="min-w-0">
+                  <p class="text-sm font-medium">{{ $t('projectPages.settings.hubStyle') }}</p>
+                  <p class="text-xs text-muted">{{ $t('projectPages.settings.hubStyleHint') }}</p>
+                </div>
+                <UButton icon="i-lucide-palette" :label="$t('style.title')" color="neutral" variant="outline" size="sm" @click="showStyle = 'hub'" />
+              </div>
+            </div>
           </section>
 
           <!-- Notifications -->
@@ -208,6 +224,13 @@
       <p v-else-if="error" class="p-8 text-[13px] text-error">{{ error }}</p>
       <div v-else class="mx-auto max-w-2xl space-y-3 px-6 py-8"><USkeleton v-for="i in 5" :key="i" class="h-24 rounded-xl" /></div>
     </div>
+
+    <!-- The chat widget's and the public hub's style. It saves on its own, apart from this form. -->
+    <USlideover v-model:open="styleOpen" :title="$t(`projectPages.settings.${showStyle || 'hub'}StyleTitle`)" :description="$t(`projectPages.settings.${showStyle || 'hub'}StyleDescription`)" :ui="{ content: 'sm:max-w-2xl' }">
+      <template #body>
+        <StyleChoicePanel v-if="project && showStyle" :project="project" :target="showStyle" />
+      </template>
+    </USlideover>
   </div>
 </template>
 
@@ -224,7 +247,7 @@ definePageMeta({ middleware: 'agent' })
 
 type ImageField = 'iconUrl' | 'brandLogoUrl' | 'assistantLogoUrl'
 
-const { api, loadProjects, agentHeaders, context } = useAgent()
+const { api, loadProjects, agentHeaders, context, projects } = useAgent()
 const { t } = useI18n()
 const route = useRoute()
 const id = String(route.params.id)
@@ -233,6 +256,12 @@ const settingsTab = useState('settings-tab', () => '')
 const canExport = computed(() => can(context.value?.role, 'workspace.export'))
 
 const project = ref<AdminProject | null>(null)
+const showStyle = ref<'hub' | 'widget' | null>(null)
+const styleOpen = computed({ get: () => showStyle.value !== null, set: (open) => { if (!open) showStyle.value = null } })
+// The style panel saves on its own: pick its result up without touching the unsaved form.
+watch(showStyle, (now) => {
+  if (!now) project.value = projects.value.find(p => p.id === id) || project.value
+})
 const error = ref('')
 const saving = ref(false)
 const saveError = ref('')
@@ -327,6 +356,9 @@ async function upload(event: Event) {
   }
 }
 
+// The style panel saves `hub.style` on its own; the form must not send an older copy back.
+const omitStyle = ({ style: _style, ...config }: typeof form.hub) => config
+
 function setGuestSurface(surface: GuestSurface, on: boolean) {
   form.guestSurfaces = normalizeGuestSurfaces(on ? [...form.guestSurfaces, surface] : form.guestSurfaces.filter(item => item !== surface))
 }
@@ -343,7 +375,7 @@ async function save() {
       method: 'PATCH',
       // The server replaces theme wholesale; keep the keys this page doesn't edit.
       // A link row left blank is dropped rather than rejected.
-      body: { ...rest, hub: { ...rest.hub, links: rest.hub.links.filter(link => link.label.trim() || link.url.trim()) }, notifyEmails: notifyEmailsText, ...(accentChanged ? { theme: { ...project.value?.theme, accent: accent.trim() } } : {}) }
+      body: { ...rest, hub: { ...omitStyle(rest.hub), links: rest.hub.links.filter(link => link.label.trim() || link.url.trim()) }, notifyEmails: notifyEmailsText, ...(accentChanged ? { theme: { ...project.value?.theme, accent: accent.trim() } } : {}) }
     })
     fill(result.project)
     await loadProjects()

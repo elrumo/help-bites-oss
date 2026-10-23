@@ -55,6 +55,15 @@ Choose how it looks:
 | `headline`, `intro` | The page's heading and lead. Empty uses the project's name and the tagline. |
 | `sections` | Which sections show, in order: `colors`, `typography`, `logos` (logos and app icons), `screenshots`, `assets` (favicons, social images and other files) and `guidelines`. A section with nothing in it is left out. |
 
+The page wears the [project style](STYLE.md): its light and dark colours (page,
+card and text colours follow the visitor's scheme), corner radius and shadow.
+**Brand → Page → Style** uses it as it is, or lays the page's own choices over it
+(`page.style`, `{ "source": "custom", "custom": { … } }`, same fields as the
+project style). `theme`, `radius` and `accent` above stay the page's own layer on
+top of both; a `soft` radius (the default) follows the style's when it sets one.
+The kit's own typefaces still set the page's type. `GET /v1/brand/{pk}` returns the
+finished style as `style`.
+
 The hero shows a logo drawn for the accent's shade (`background: dark` on a dark
 accent), else any logo, else the app icon, else your name set in your display
 font. With the page off, `/brand/…` and `GET /v1/brand/…` answer `404`.
@@ -75,12 +84,15 @@ settings can be overridden per embed:
 
 ```html
 <script src="https://YOUR-SUPPORT-HOST/brand.js" data-project="pk_…" data-target="#press"
-  data-template="editorial" data-theme="dark" data-radius="round" data-accent="#fca311"
+  data-template="editorial" data-theme="dark" data-radius="round" data-accent="#fca311" data-shadow="none"
   data-sections="logos,colors,typography" defer></script>
 ```
 
+`data-radius` is `sharp`, `soft` or `round`, or a number of pixels (0 to 32);
+`data-shadow` is `none`, `soft`, `medium` or `strong`.
+
 Without `data-theme` the frame follows a `dark` or `light` class on your
-`<html>`, then the kit's own setting. The same overrides work on the page's URL
+`<html>`, then the kit page's style. The same overrides work on the page's URL
 (`/brand/pk_…?template=split&theme=light&sections=logos,colors`), which is handy
 for linking a journalist straight to the logos.
 

@@ -242,6 +242,7 @@ const SCHEMAS = {
       legalLinks: { type: 'Object' },
       // The public hub page and the chat widget's Home tab { enabled, title, tagline, sections, links, widgetHome } (shared/hub.ts).
       hub: { type: 'Object' },
+      widget: { type: 'Object' },
       // Pages and CMS settings { previewUrl, brief } (shared/cms/content.ts).
       cms: { type: 'Object' },
       flags: { type: 'Array' },

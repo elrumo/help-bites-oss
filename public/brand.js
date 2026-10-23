@@ -11,8 +11,9 @@
  *
  * Options (data-*), each overriding the kit's own page settings: template
  * ('minimal' | 'editorial' | 'split'), theme ('auto' | 'light' | 'dark'; defaults
- * to a dark/light class on your <html>), radius ('sharp' | 'soft' | 'round'),
- * accent ('#rrggbb'), sections (which to show, in order: colors, typography,
+ * to a dark/light class on your <html>, else the kit page's style), radius ('sharp' |
+ * 'soft' | 'round', or 0 to 32 pixels), accent ('#rrggbb'), shadow ('none' | 'soft' |
+ * 'medium' | 'strong'), sections (which to show, in order: colors, typography,
  * logos, screenshots, assets, guidelines; comma-separated).
  *
  * The same page stands alone at https://support.example.com/brand/pk_…, and the
@@ -31,7 +32,7 @@
   var theme = attr('theme') || (root.classList.contains('dark') ? 'dark' : root.classList.contains('light') ? 'light' : '')
   var params = new URLSearchParams({ embed: '1' })
   if (theme) params.set('theme', theme)
-  ;['template', 'radius', 'accent', 'sections'].forEach(function (name) { if (attr(name)) params.set(name, attr(name)) })
+  ;['template', 'radius', 'accent', 'shadow', 'sections'].forEach(function (name) { if (attr(name)) params.set(name, attr(name)) })
 
   var frame = document.createElement('iframe')
   frame.setAttribute('style', 'display:block;width:100%;height:720px;border:0;background:transparent;color-scheme:normal;')

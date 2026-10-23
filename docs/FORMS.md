@@ -51,6 +51,11 @@ accent; no background, so the form sits on your page; text that follows your
 page's light or dark), `radius`, `font` (`system`, `rounded`, `serif`, `mono`) and `layout`:
 `stacked`, or `inline` for the inputs and the button on one row.
 
+The form wears the [project style](STYLE.md) (light and dark colours, radius,
+shadow, font); what the form sets itself is a layer over it and wins, in light and
+dark. A `radius` or `font` left at the form's default (12, `system`) follows the
+project style when that sets one. The finished result is `look` on the public form.
+
 ### Files
 
 A `file` field takes one file: `accept` says which kind (`images`: PNG, JPEG,
@@ -153,8 +158,9 @@ Set them as `data-*` attributes or in `init`:
 |---|---|
 | `form` | The form's key. Default: the project's first form. |
 | `target` | A selector. Draws the form in that element instead of after the script tag. |
-| `theme` | `light`, `dark` or `system` (the visitor's setting). Defaults to a `dark` or `light` class on your `<html>`, then the colour behind the form, so it reads on your page whatever the visitor's setting. A form with a background colour of its own picks its text from that. |
+| `theme` | `light`, `dark` or `system` (the visitor's setting). Defaults to a `dark` or `light` class on your `<html>`, then the project style's fixed scheme, then the colour behind the form, so it reads on your page whatever the visitor's setting. A form with a background colour of its own picks its text from that. |
 | `accent`, `radius`, `font`, `layout` | Override the form's look. |
+| `shadow` | `none`, `soft`, `medium` or `strong`: the shadow of a form that has a background of its own (a card). Default: the project style's. |
 | `show` | The parts to show besides the inputs: `title,description,footnote` (default), any of them plus `logo`, or `none`. |
 | `locale` | The language to show it in, when the form has a translation for it. Default: your `<html lang>`, then the visitor's browser. |
 | `host` | Where HelpBites is, when you serve `forms.js` from your own site. |
@@ -236,7 +242,7 @@ QR code or an app, or frame it:
 <iframe src="https://YOUR-SUPPORT-HOST/f/pk_…/waitlist" title="Join the waitlist" style="width:100%;max-width:480px;height:520px;border:0"></iframe>
 ```
 
-It is plain HTML with no JavaScript, in the form's words and accent. Add
+It is plain HTML with no JavaScript, in the form's words and the project style (light or dark following the visitor, unless the style fixes one). Add
 `?locale=es` for a language of the form's (else the browser's is used).
 
 ## Plug and play: Swift
@@ -491,7 +497,8 @@ curl -s 'https://YOUR-SUPPORT-HOST/v1/forms/PROJECT_PUBLIC_KEY/waitlist?locale=e
       { "id": "fd_3", "key": "cv", "type": "file", "label": "Currículum", "placeholder": "", "required": false, "options": [], "optionLabels": [], "accept": "documents", "maxMB": 5 }
     ],
     "content": { "title": "Join the waitlist", "description": "…", "buttonLabel": "Join the waitlist", "successTitle": "You are on the list", "successMessage": "…", "confirmMessage": "…", "footnote": "" },
-    "style": { "accent": "#0ea5e9", "background": "", "text": "", "radius": 12, "font": "system", "layout": "stacked" }
+    "style": { "accent": "#0ea5e9", "background": "", "text": "", "radius": 12, "font": "system", "layout": "stacked" },
+    "look": { "scheme": "auto", "radius": 12, "shadow": "soft", "shadowCss": "0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08)", "fontFamily": "ui-sans-serif, system-ui, sans-serif", "light": { "accent": "#0ea5e9", "background": "#ffffff", "surface": "#fafaf9", "text": "#1c1917", "muted": "#78716c", "border": "#e7e5e4" }, "dark": { "accent": "#0ea5e9", "background": "#0c0a09", "surface": "#1c1917", "text": "#f5f5f4", "muted": "#a8a29e", "border": "#292524" } }
   }
 }
 ```

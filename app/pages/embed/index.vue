@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full flex-col bg-default text-default">
+  <div class="flex h-full flex-col bg-default text-default" :style="rootStyle">
     <!-- Linear's page bar: where you are on the left, close on the right. -->
     <header class="flex h-12 shrink-0 items-center gap-2 border-b border-default bg-default px-2">
       <UButton
@@ -12,7 +12,7 @@
         :aria-label="$t('embed.chat.backToConversations')"
         @click="back"
       />
-      <img v-else-if="project?.brandLogoUrl" :src="project.brandLogoUrl" alt="" class="ml-1.5 size-6 shrink-0 rounded-md bg-elevated object-cover">
+      <img v-else-if="headerLogo" :src="headerLogo" alt="" class="ml-1.5 size-6 shrink-0 rounded-md bg-elevated object-cover">
       <span v-else class="ml-1.5 grid size-6 shrink-0 place-items-center rounded-md bg-primary-500 text-[11px] font-semibold text-white" aria-hidden="true">{{ headerInitials }}</span>
       <div class="min-w-0 flex-1 pl-0.5">
         <p class="truncate text-[13px] font-semibold leading-tight text-highlighted">{{ headerTitle }}</p>
@@ -63,7 +63,7 @@
                 :href="entry.url"
                 target="_blank"
                 rel="noopener"
-                class="block rounded-lg border border-default px-3 py-2.5 transition-colors hover:bg-elevated"
+                class="hb-card block rounded-lg border border-default px-3 py-2.5 transition-colors hover:bg-elevated"
               >
                 <span class="block truncate text-[13px] font-medium text-highlighted">{{ entry.title }}</span>
                 <span v-if="entry.summary" class="line-clamp-2 text-xs text-muted">{{ entry.summary }}</span>
@@ -79,7 +79,7 @@
                 :href="post.url"
                 target="_blank"
                 rel="noopener"
-                class="flex items-center gap-3 rounded-lg border border-default px-3 py-2.5 transition-colors hover:bg-elevated"
+                class="hb-card flex items-center gap-3 rounded-lg border border-default px-3 py-2.5 transition-colors hover:bg-elevated"
               >
                 <span class="min-w-0 flex-1 truncate text-[13px] font-medium text-highlighted">{{ post.title }}</span>
                 <span class="flex shrink-0 items-center gap-0.5 text-xs text-muted" :title="$t('embed.home.votes')"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ post.votes }}</span>
@@ -93,7 +93,7 @@
                 v-for="flow in home.onboarding.flows"
                 :key="flow.key"
                 type="button"
-                class="flex w-full items-center gap-3 rounded-lg border border-default px-3 py-2.5 text-left transition-colors hover:bg-elevated"
+                class="hb-card flex w-full items-center gap-3 rounded-lg border border-default px-3 py-2.5 text-left transition-colors hover:bg-elevated"
                 @click="startFlow(flow.key)"
               >
                 <span class="min-w-0 flex-1 truncate text-[13px] font-medium text-highlighted">{{ flow.name }}</span>
@@ -219,6 +219,7 @@
 
 <script setup lang="ts">
 import type { Attachment, Context, Conversation, Message } from '#shared/support'
+import type { ResolvedStyle } from '#shared/projectStyle'
 import { replyTarget, sortByCreatedAt } from '#shared/conversations'
 import type { PublicProject } from '~~/server/utils/projects'
 import type { SupportEvent } from '~~/server/utils/events'
@@ -234,6 +235,10 @@ definePageMeta({ layout: 'bare' })
 
 const route = useRoute()
 const pk = String(route.query.pk || '')
+// ?theme (light, dark, system) is the host's; without it a style that fixes a scheme applies, else the visitor's.
+const colorMode = useColorMode()
+const themeParam = String(route.query.theme || '')
+if (['light', 'dark', 'system'].includes(themeParam)) colorMode.preference = themeParam
 // Inline embeds sit in the host's own layout: no close button, and when there's
 // room the conversation list stays beside the thread.
 const inline = route.query.inline === '1'
@@ -320,7 +325,17 @@ function startComposing() {
   composing.value = true
 }
 
-useHead({ htmlAttrs: { style: computed(() => accentStyle(project.value?.theme?.accent)) } })
+// It wears the widget's style (the project's, with the widget's own choices over it), in light or dark.
+// The host's data-accent, data-radius and data-shadow arrive as ?accent, ?radius and ?shadow.
+const style = computed<ResolvedStyle>(() => embedStyle(project.value?.widgetStyle, route.query))
+const mode = computed<'light' | 'dark'>(() => (colorMode.value === 'dark' ? 'dark' : 'light'))
+const rootStyle = computed(() => styleRootStyle(style.value, mode.value))
+const headerLogo = computed(() => (mode.value === 'dark' ? style.value.logoDarkUrl : style.value.logoUrl) || project.value?.brandLogoUrl || '')
+watch(() => style.value.scheme, (scheme) => {
+  if (!themeParam && scheme !== 'auto') colorMode.preference = scheme
+}, { immediate: true })
+
+useHead({ htmlAttrs: { style: computed(() => accentStyle(style.value[mode.value].accent)) } })
 
 // ---- host bridge ----
 function post(message: Record<string, unknown>) {

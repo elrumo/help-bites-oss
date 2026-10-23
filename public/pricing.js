@@ -14,7 +14,9 @@
  * Options (data-* or init): table, target (a selector), template ('tiers' |
  * 'rows' | 'paywall' | 'matrix' | 'spotlight': overrides the table's), theme
  * ('light' | 'dark' | 'system'; defaults to a dark/light class on your <html>,
- * then the colour behind the table), accent, radius, font ('system' | 'rounded'
+ * the project style's scheme, then the colour behind the table), accent, radius
+ * (0 to 32), shadow ('none' | 'soft' | 'medium' | 'strong': the card shadow of tables
+ * whose surface is 'shadow'), font ('system' | 'rounded'
  * | 'serif' | 'mono'), density ('compact' | 'comfortable' | 'spacious'),
  * interval ('week' | 'month' | 'year': where the toggle starts), currency (a
  * three-letter code, or 'auto' for the visitor's region; shown when every price
@@ -43,6 +45,10 @@
  *     HelpBitesPricing.push(['render', { table: 'teams', target: '#team-pricing' }])   // another table
  *   </script>
  *
+ * The table wears the project's style (the Style panel's light and dark colours,
+ * corner radius, shadow) wherever the table's own look leaves a field empty; the
+ * options above win over both.
+ *
  * Restyle it from your CSS with variables on .help-bites-pricing
  * (--hb-pricing-accent, -on-accent, -bg, -card, -text, -muted, -border,
  * -radius, -font, -gap, -max-width) or parts (::part(root), head, title,
@@ -59,7 +65,7 @@
   var origin = (attr('host') || new URL(script.src, location.href).origin).replace(/\/+$/, '')
   var own = {
     project: attr('project'), table: attr('table'), target: attr('target'), template: attr('template'), theme: attr('theme'), accent: attr('accent'),
-    radius: attr('radius'), font: attr('font'), density: attr('density'), interval: attr('interval'), currency: attr('currency'), locale: attr('locale'),
+    radius: attr('radius'), shadow: attr('shadow'), font: attr('font'), density: attr('density'), interval: attr('interval'), currency: attr('currency'), locale: attr('locale'),
     show: attr('show'), current: attr('current'), email: attr('email'), ref: attr('ref'), returnUrl: attr('return'), host: origin, anchor: script
   }
 
@@ -73,6 +79,13 @@
     rounded: 'ui-rounded, "SF Pro Rounded", Nunito, "Varela Round", -apple-system, BlinkMacSystemFont, sans-serif',
     serif: 'ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif',
     mono: 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace'
+  }
+  // The project style's shadows (shared/projectStyle.ts STYLE_SHADOW_CSS).
+  var SHADOWS = {
+    none: 'none',
+    soft: '0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08)',
+    medium: '0 4px 12px rgb(0 0 0 / 0.1)',
+    strong: '0 12px 32px rgb(0 0 0 / 0.18)'
   }
   var DENSITY = { compact: [16, 12, 14], comfortable: [24, 16, 15], spacious: [32, 24, 16] }
   // The words the table uses when the operator left one empty, by language (labels in your options win).
@@ -114,13 +127,15 @@
     return null
   }
 
-  function dark(theme, host) {
+  function dark(theme, host, scheme) {
     if (theme === 'dark') return true
     if (theme === 'light') return false
     if (theme === 'system') return matchMedia('(prefers-color-scheme: dark)').matches
     var root = document.documentElement
     if (root.classList.contains('dark')) return true
     if (root.classList.contains('light')) return false
+    // The project style fixes a scheme: that one.
+    if (scheme === 'dark' || scheme === 'light') return scheme === 'dark'
     var rgb = host && behind(host.parentElement)
     // A page that paints no background of its own is the browser's white.
     return rgb ? (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) < 128 : false
@@ -131,18 +146,24 @@
 
   function css(table, o, host) {
     var style = table.style || {}
-    var accent = /^#[0-9a-f]{6}$/i.test(pick(o, 'accent') || '') ? pick(o, 'accent') : style.accent || '#5e6ad2'
+    // The project's style under the table's own fields (table.look, null while the project has none).
+    var look = table.look
+    var night = style.background ? onColour(style.background) === '#ffffff' : dark(pick(o, 'theme'), host, look && look.scheme)
+    var p = look && look[night ? 'dark' : 'light']
+    var accent = /^#[0-9a-f]{6}$/i.test(pick(o, 'accent') || '') ? pick(o, 'accent') : (p && p.accent) || style.accent || '#5e6ad2'
     var r = pick(o, 'radius')
-    var radius = r !== undefined && r !== '' && !isNaN(+r) ? +r : (typeof style.radius === 'number' ? style.radius : 16)
-    var night = style.background ? onColour(style.background) === '#ffffff' : dark(pick(o, 'theme'), host)
-    var text = style.text || (night ? '#f4f4f5' : '#18181b')
-    var card = style.background || (night ? '#18181b' : '#ffffff')
-    var font = FONTS[pick(o, 'font')] || FONTS[style.font] || FONTS.system
+    var radius = r !== undefined && r !== '' && !isNaN(+r) ? +r : (look ? look.radius : typeof style.radius === 'number' ? style.radius : 16)
+    var text = style.text || (p ? p.text : night ? '#f4f4f5' : '#18181b')
+    var card = style.background || (p ? p.surface : night ? '#18181b' : '#ffffff')
+    // Muted and border follow the project's palette, unless the table sets its own background or text.
+    var tinted = p && !style.background && !style.text
+    var shadow = SHADOWS[pick(o, 'shadow')] || (look && look.shadowCss) || ''
+    var font = FONTS[pick(o, 'font')] || (look && style.font === 'system' ? look.fontFamily : FONTS[style.font]) || FONTS.system
     var d = DENSITY[pick(o, 'density')] || DENSITY[style.density] || DENSITY.comfortable
     var surface = style.surface || 'outline'
     var highlight = style.highlight || 'border'
     var on = onColour(accent)
-    return ':host{all:initial;display:block;--_accent:var(--hb-pricing-accent,' + accent + ');--_on:var(--hb-pricing-on-accent,' + on + ');--_bg:var(--hb-pricing-bg,transparent);--_card:var(--hb-pricing-card,' + card + ');--_text:var(--hb-pricing-text,' + text + ');--_muted:var(--hb-pricing-muted,color-mix(in srgb,var(--_text) 62%,transparent));--_border:var(--hb-pricing-border,color-mix(in srgb,var(--_text) 13%,transparent));--_r:var(--hb-pricing-radius,' + radius + 'px);--_font:var(--hb-pricing-font,' + font + ');--_pad:' + d[0] + 'px;--_gap:var(--hb-pricing-gap,' + d[1] + 'px)}'
+    return ':host{all:initial;display:block;--_accent:var(--hb-pricing-accent,' + accent + ');--_on:var(--hb-pricing-on-accent,' + on + ');--_bg:var(--hb-pricing-bg,transparent);--_card:var(--hb-pricing-card,' + card + ');--_text:var(--hb-pricing-text,' + text + ');--_muted:var(--hb-pricing-muted,' + (tinted ? p.muted : 'color-mix(in srgb,var(--_text) 62%,transparent)') + ');--_border:var(--hb-pricing-border,' + (tinted ? p.border : 'color-mix(in srgb,var(--_text) 13%,transparent)') + ');--_r:var(--hb-pricing-radius,' + radius + 'px);--_font:var(--hb-pricing-font,' + font + ');--_pad:' + d[0] + 'px;--_gap:var(--hb-pricing-gap,' + d[1] + 'px)}'
       + '*{box-sizing:border-box}'
       + '.root{position:relative;max-width:var(--hb-pricing-max-width,1120px);margin:0 auto;background:var(--_bg);color:var(--_text);font:' + d[2] + 'px/1.5 var(--_font);-webkit-font-smoothing:antialiased;color-scheme:' + (night ? 'dark' : 'light') + '}'
       + '.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}'
@@ -160,7 +181,7 @@
       + '.tpl-paywall .currency{justify-content:flex-start;margin:0 0 var(--_gap)}'
       + '.plans{display:grid;gap:var(--_gap);grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:stretch}'
       + '.card{position:relative;display:flex;flex-direction:column;min-width:0;padding:var(--_pad);border-radius:var(--_r);background:var(--_card);'
-      + (surface === 'flat' ? 'background:color-mix(in srgb,var(--_text) 4%,var(--_card))}' : surface === 'shadow' ? 'box-shadow:0 1px 2px rgba(0,0,0,.06),0 12px 32px rgba(0,0,0,' + (night ? '.4' : '.08') + ')}' : 'box-shadow:0 0 0 1px var(--_border)}')
+      + (surface === 'flat' ? 'background:color-mix(in srgb,var(--_text) 4%,var(--_card))}' : surface === 'shadow' ? 'box-shadow:' + (shadow || '0 1px 2px rgba(0,0,0,.06),0 12px 32px rgba(0,0,0,' + (night ? '.4' : '.08') + ')') + '}' : 'box-shadow:0 0 0 1px var(--_border)}')
       + (highlight === 'fill' ? '.card.hl{background:var(--_accent);color:var(--_on);--_muted:color-mix(in srgb,var(--_on) 75%,transparent);--_border:color-mix(in srgb,var(--_on) 25%,transparent)}.card.hl .button.primary{background:var(--_on);color:var(--_accent)}.card.hl .badge{background:var(--_on);color:var(--_accent)}.card.hl .check{color:var(--_on)}'
         : highlight === 'raise' ? '.card.hl{box-shadow:0 0 0 1px var(--_accent),0 18px 48px color-mix(in srgb,var(--_accent) 28%,transparent);transform:translateY(-8px)}@media (max-width:640px){.card.hl{transform:none}}'
           : '.card.hl{box-shadow:0 0 0 2px var(--_accent)}')

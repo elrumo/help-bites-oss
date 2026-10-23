@@ -244,6 +244,24 @@ Google Search Console.
 The design is the hosted blog's. The embed takes your page's look instead, and
 the layout (`layout` below).
 
+### Style
+
+The hosted blog wears the [project style](STYLE.md): its light and dark colours
+(including the card and border colours), corner radius, shadow and font.
+**Project → Blog → Style** either uses it as it is, or lays the blog's own
+choices over it (`blog.style`, `{ "source": "custom", "custom": { … } }`, same
+fields as the project style; whatever it leaves empty still comes from the
+project). The design above stays the blog's own layer on top of both: its
+**accent**, its **typeface** (when serif, or sans while no style sets a font) and its **colour scheme**
+(when not "follow the reader's system"). `GET /v1/blog` returns the finished style
+as `style`, so your own UI can wear it too.
+
+```bash
+curl -X PATCH "https://YOUR-SUPPORT-HOST/v1/admin/projects/PROJECT_ID" \
+  -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{ "blog": { "style": { "source": "custom", "custom": { "radius": 4, "shadow": "none" } } } }'
+```
+
 
 ## Put it on your site
 
@@ -294,9 +312,10 @@ As `data-*` attributes or in `init`:
 | `layout` | `list`, `grid` or `magazine` (the first post across the top); defaults to the hosted blog's. |
 | `body` | With `view="extras"` under your own copy of a members-only post: a selector the post's HTML goes into once the reader may read it. |
 | `limit` | Posts per page (10). |
-| `theme` | `system`, `light` or `dark`; defaults to a `dark`/`light` class on your `<html>`. |
-| `accent` | A colour; defaults to the project's. |
-| `radius` | Corner radius in px (14). |
+| `theme` | `system`, `light` or `dark`; defaults to a `dark`/`light` class on your `<html>`, else the blog's style (when it fixes light or dark), else the reader's. |
+| `accent` | A colour; defaults to the blog's style (the project's accent unless it sets one). |
+| `radius` | Corner radius of cards in px; defaults to twice the blog's style radius (16 with the default style). |
+| `shadow` | `none`, `soft`, `medium` or `strong`; defaults to the blog's style. |
 | `font` | `inherit` (your page's; the default), `system`, `serif` or `mono`. |
 | `show` | Which parts: `cover,excerpt,tags,author,date,badges,search,reactions,comments,subscribe`. |
 | `deep-link-param` | The URL parameter an open post is kept in (`post`). |
@@ -322,6 +341,7 @@ on purpose with variables on `.help-bites-blog`:
   --hb-blog-muted: #666;
   --hb-blog-line: #e5e5e5;
   --hb-blog-radius: 8px;
+  --hb-blog-shadow: none;
   --hb-blog-font: inherit;
   --hb-blog-width: 720px;
 }

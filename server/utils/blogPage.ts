@@ -1,4 +1,6 @@
 import { blogTitle, type BlogConfig, type BlogSocialNetwork, type PublicBlogPost } from '#shared/blog'
+import { styleCss, type ResolvedStyle } from '#shared/projectStyle'
+import { blogStyleOf } from './blog'
 import { poweredByHtml, type PoweredBy } from './branding'
 import { escapeHtml } from './messageEmail'
 import { lookOf } from './projects'
@@ -11,17 +13,19 @@ import { lookOf } from './projects'
 // host site uses). All text is escaped here; `bodyHtml` is the one raw value,
 // sanitised when it was saved.
 
-export type BlogPageProject = { name: string, publicKey: string, accent: string, logo: string }
+export type BlogPageProject = { name: string, publicKey: string, accent: string, logo: string, style: ResolvedStyle }
 export type BlogListItem = Pick<PublicBlogPost, 'title' | 'excerpt' | 'coverImageUrl' | 'coverImageAlt' | 'publishedAt' | 'readingMinutes' | 'tags' | 'authorName' | 'featured' | 'locked'> & { path: string }
 export type BlogPageView = BlogListItem & Pick<PublicBlogPost, 'type' | 'slug' | 'metaTitle' | 'metaDescription' | 'ogImageUrl'> & { bodyHtml: string, canonical: string, commentsOpen: boolean }
 
-/** The project's look, with the blog's own accent and logo over it. */
+/** The project's look, with the blog's own style, accent and logo over it. */
 export function blogPageProject(project: ParseObject, config: BlogConfig): BlogPageProject {
   const look = lookOf(project)
+  const style = blogStyleOf(project, config)
   return {
     name: look.name,
     publicKey: String(project.get('publicKey') || ''),
-    accent: /^#[0-9a-f]{6}$/i.test(config.design.accent) ? config.design.accent : look.accent,
+    style,
+    accent: style.light.accent,
     logo: [config.design.logoUrl, look.logoUrl, look.iconUrl].find(url => /^https?:\/\//.test(url)) || ''
   }
 }
@@ -33,18 +37,7 @@ function formatDate(value: string): string {
 
 const SOCIAL_LABELS: Record<BlogSocialNetwork, string> = { x: 'X', bluesky: 'Bluesky', mastodon: 'Mastodon', github: 'GitHub', linkedin: 'LinkedIn', instagram: 'Instagram', youtube: 'YouTube', website: 'Website' }
 
-const FONTS = {
-  sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif',
-  serif: '"Iowan Old Style", "Palatino Linotype", Georgia, Cambria, "Times New Roman", serif'
-}
-
-const DARK = '--bg: #111113; --card: #19191c; --text: #ececf0; --muted: #a2a2ad; --line: #2b2b31;'
-
 const CSS = `
-:root { --accent: var(--brand); --bg: #fafafa; --card: #fff; --text: #1c1c21; --muted: #62626d; --line: #e6e6ea; color-scheme: light dark; }
-@media (prefers-color-scheme: dark) { :root:not([data-scheme="light"]) { ${DARK} } }
-:root[data-scheme="dark"] { ${DARK} color-scheme: dark; }
-:root[data-scheme="light"] { color-scheme: light; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 17px; line-height: 1.7; -webkit-text-size-adjust: 100%; }
 a { color: var(--accent); text-underline-offset: 2px; }
@@ -52,19 +45,19 @@ a { color: var(--accent); text-underline-offset: 2px; }
 .wide .wrap { max-width: 1120px; }
 .top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; margin-bottom: 32px; font-size: 15px; }
 .brand { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 12px; font-weight: 650; }
-.brand img { width: 32px; height: 32px; border-radius: 8px; object-fit: cover; }
+.brand img { width: 32px; height: 32px; border-radius: var(--radius); object-fit: cover; }
 .nav { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .nav a { color: var(--muted); text-decoration: none; font-weight: 500; }
 .nav a:hover, .nav a[aria-current] { color: var(--text); }
 .tools { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .tools a { color: var(--muted); text-decoration: none; font-weight: 500; font-size: 14px; }
 .search input { font: inherit; font-size: 14px; color: inherit; width: 160px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); }
-.hero-cover { display: block; width: 100%; max-height: 360px; aspect-ratio: 3 / 1; object-fit: cover; border-radius: 16px; margin: 0 0 28px; background: var(--line); }
+.hero-cover { display: block; width: 100%; max-height: 360px; aspect-ratio: 3 / 1; object-fit: cover; border-radius: calc(var(--radius) * 2); margin: 0 0 28px; background: var(--line); }
 .intro h1 { font-size: 2.2rem; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.02em; }
 .intro p { margin: 0 0 32px; color: var(--muted); }
 .posts { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
 .layout-grid .posts, .layout-magazine .posts { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-.card { display: flex; flex-direction: column; height: 100%; background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; color: inherit; text-decoration: none; transition: border-color .15s ease; }
+.card { display: flex; flex-direction: column; height: 100%; background: var(--card); border: 1px solid var(--line); border-radius: calc(var(--radius) * 2); box-shadow: var(--shadow); overflow: hidden; color: inherit; text-decoration: none; transition: border-color .15s ease; }
 .card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
 .card img { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: cover; background: var(--line); }
 .card div { padding: 20px 24px 22px; }
@@ -82,7 +75,7 @@ a { color: var(--accent); text-underline-offset: 2px; }
 .tags a { display: inline-block; font-size: 13px; line-height: 1; padding: 6px 10px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 10%, transparent); text-decoration: none; }
 .filter { margin: -16px 0 24px; font-size: 14px; color: var(--muted); }
 .pager { display: flex; justify-content: space-between; gap: 16px; margin-top: 28px; font-size: 15px; }
-article { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+article { background: var(--card); border: 1px solid var(--line); border-radius: calc(var(--radius) * 2); box-shadow: var(--shadow); overflow: hidden; }
 article > img { display: block; width: 100%; max-height: 440px; object-fit: cover; }
 article .body { padding: 36px 44px 40px; }
 article h1 { font-size: 2.2rem; line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.02em; }
@@ -102,7 +95,7 @@ article .meta { margin-bottom: 28px; }
 .content table { border-collapse: collapse; width: 100%; margin: 0 0 1.1rem; font-size: 15px; }
 .content th, .content td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
 .content hr { border: 0; border-top: 1px solid var(--line); margin: 2rem 0; }
-.gate { margin-top: 8px; padding: 20px 22px; border-radius: 12px; border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--line)); text-align: center; }
+.gate { margin-top: 8px; padding: 20px 22px; border-radius: calc(var(--radius) * 1.5); border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--line)); text-align: center; }
 .gate strong { display: block; font-size: 1.1rem; }
 .gate p { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
 .extras { margin-top: 24px; }
@@ -145,7 +138,7 @@ function shell(p: BlogPageProject, config: BlogConfig, page: Shell, poweredBy: P
   // rel="me" lets Mastodon verify the link back to the profile.
   const social = Object.entries(design.social).filter(([, url]) => url).map(([key, url]) => `<a href="${escapeHtml(url!)}" rel="${key === 'mastodon' ? 'me noopener' : 'noopener'}">${escapeHtml(SOCIAL_LABELS[key as BlogSocialNetwork] || key)}</a>`).join('')
   return `<!doctype html>
-<html lang="en"${design.colorScheme === 'auto' ? '' : ` data-scheme="${design.colorScheme}"`}>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -154,7 +147,7 @@ ${page.description ? `<meta name="description" content="${escapeHtml(page.descri
 <meta name="robots" content="index,follow">
 <link rel="alternate" type="application/rss+xml" title="${escapeHtml(name)}" href="${escapeHtml(page.feedUrl)}">
 ${page.head}
-<style>:root { --brand: ${p.accent}; --font: ${FONTS[design.font]}; }${CSS}</style>
+<style>${styleCss(p.style)}${CSS}</style>
 </head>
 <body class="${page.wide ? 'wide ' : ''}layout-${design.layout}">
 <div class="wrap">

@@ -1,3 +1,4 @@
+import { DEFAULT_STYLE_CHOICE, validateStyleChoice, type StyleChoice } from './projectStyle'
 import { safeHttpUrl } from './support'
 
 // The public hub (`Project.hub`): one page per project at /hub/<publicKey> that
@@ -31,6 +32,8 @@ export type HubConfig = {
   links: HubLink[]
   /** The chat widget's Home tab (default off). It works without the page being on. */
   widgetHome: { enabled: boolean, sections: HubHomeSection[] }
+  /** How the hub page takes its style: the project's, or its own over it. */
+  style: StyleChoice
 }
 
 export const DEFAULT_HUB_CONFIG: HubConfig = {
@@ -39,7 +42,8 @@ export const DEFAULT_HUB_CONFIG: HubConfig = {
   tagline: '',
   sections: [...HUB_SECTIONS],
   links: [],
-  widgetHome: { enabled: false, sections: [...HUB_HOME_SECTIONS] }
+  widgetHome: { enabled: false, sections: [...HUB_HOME_SECTIONS] },
+  style: DEFAULT_STYLE_CHOICE
 }
 
 const record = (value: unknown): Record<string, unknown> => (value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {})
@@ -103,6 +107,11 @@ export function validateHubConfig(value: unknown, base: HubConfig = DEFAULT_HUB_
       const sections = pickList(home.sections, HUB_HOME_SECTIONS, 'widgetHome.sections', errors)
       if (sections) config.widgetHome.sections = sections
     }
+  }
+  if (raw.style !== undefined) {
+    const style = validateStyleChoice(raw.style, base.style ?? DEFAULT_STYLE_CHOICE)
+    errors.push(...style.errors)
+    config.style = style.choice
   }
   return { config, errors }
 }

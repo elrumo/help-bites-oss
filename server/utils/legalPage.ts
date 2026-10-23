@@ -1,10 +1,11 @@
-import { LEGAL_FONTS, normalizeLegalConfig, type LegalFont } from '#shared/legal/config'
+import { normalizeLegalConfig } from '#shared/legal/config'
 import { fillLabel, legalLabels } from '#shared/legal/labels'
 import { localeName, normalizeLocale } from '#shared/locales'
 import { poweredByHtml, type PoweredBy } from './branding'
 import { legalToc } from './legalRender'
 import { escapeHtml } from './messageEmail'
-import { lookOf } from './projects'
+import { styleCss } from '#shared/projectStyle'
+import { lookOf, styleOf } from './projects'
 import type { LegalSection } from '#shared/legal/types'
 
 // The hosted legal pages, as plain server-rendered HTML in the style of
@@ -12,29 +13,30 @@ import type { LegalSection } from '#shared/legal/types'
 // crawlers. Unlike those pages they are meant to be indexed. All text is
 // escaped here; `bodyHtml` is the one raw value, sanitised when it was saved.
 
-const FONT_STACKS: Record<LegalFont, string> = {
-  system: '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif',
-  serif: 'Georgia, "Iowan Old Style", "Times New Roman", serif',
-  mono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
-}
+const SANS_STACK = '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif'
 
 /** The same document in another language, published: where it lives. */
 export type LegalTranslationLink = { locale: string, title: string, path: string }
 type Doc = { type: string, slug: string, title: string, tldr: string, effectiveDate: string | null, version: number, html: string, sections: LegalSection[], locale?: string, translations?: LegalTranslationLink[], /** This page's own path, and the site's origin: both needed for hreflang links. */ path?: string, origin?: string }
 
 /**
- * The project's look (Brand kit) with the legal pages' own settings on top:
- * `legal.accent`, `legal.logoUrl` and `legal.font` are optional per-document-set
- * overrides, blank by default, so a project that never touched them wears the kit.
+ * The project's look (Brand kit and project style) with the legal pages' own settings on top:
+ * `legal.style` (the project's style, or the pages' own over it), then `legal.accent`, `legal.logoUrl`
+ * and `legal.font`, optional overrides blank by default, so a project that never touched them wears the project.
  */
 export function legalLook(project: ParseObject) {
   const config = normalizeLegalConfig(project.get('legal'))
   const base = lookOf(project)
   const own = (url: string) => (/^https?:\/\//.test(url) ? url : '')
+  const style = styleOf(project, config.style, { look: { accent: config.accent, font: config.font }, defaults: { font: 'system' } })
+  // Without a style font, sans keeps the pages' own type stack (the kit's fonts are not loaded on the page).
+  const setsFont = config.font !== 'system' || base.projectStyle.font || (config.style.source === 'custom' && config.style.custom.font)
+  const wearing = setsFont ? style : { ...style, fontFamily: SANS_STACK }
   return {
     name: base.name,
-    accent: config.accent || base.accent,
-    font: FONT_STACKS[LEGAL_FONTS.includes(config.font) ? config.font : 'system'],
+    accent: wearing.light.accent,
+    style: wearing,
+    font: wearing.fontFamily,
     logo: own(config.logoUrl) || base.logoUrl || base.iconUrl,
     footer: config.footerText
   }
@@ -52,8 +54,6 @@ function formatDate(value: string | null, locale = 'en'): string {
 }
 
 const CSS = `
-:root { --accent: var(--brand); --bg: #fafafa; --card: #fff; --text: #1c1c21; --muted: #62626d; --line: #e6e6ea; color-scheme: light dark; }
-@media (prefers-color-scheme: dark) { :root { --bg: #111113; --card: #19191c; --text: #ececf0; --muted: #a2a2ad; --line: #2b2b31; } }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.7 var(--font); -webkit-text-size-adjust: 100%; }
@@ -61,8 +61,8 @@ a { color: var(--accent); text-underline-offset: 2px; }
 .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; }
 .top { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; font-weight: 600; }
 .top a { color: inherit; text-decoration: none; }
-.top img { width: 36px; height: 36px; border-radius: 9px; object-fit: cover; }
-article { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 40px 44px; }
+.top img { width: 36px; height: 36px; border-radius: calc(var(--radius) + 1px); object-fit: cover; }
+article { background: var(--card); border: 1px solid var(--line); border-radius: calc(var(--radius) * 2); box-shadow: var(--shadow); padding: 40px 44px; }
 h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.02em; }
 .meta { color: var(--muted); font-size: 0.875rem; margin: 0 0 28px; }
 .tldr { border-left: 4px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 0 0 28px; }
@@ -87,7 +87,7 @@ footer.legal-foot { margin-top: 28px; text-align: center; color: var(--muted); f
 .list li:first-child { border-top: 0; }
 .list a { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; text-decoration: none; font-weight: 600; }
 .list span { color: var(--muted); font-weight: 400; font-size: 0.875rem; }
-@media (max-width: 640px) { article { padding: 24px 20px; border-radius: 12px; } h1 { font-size: 1.6rem; } details.toc ol { columns: 1; } }
+@media (max-width: 640px) { article { padding: 24px 20px; border-radius: calc(var(--radius) * 1.5); } h1 { font-size: 1.6rem; } details.toc ol { columns: 1; } }
 @media print { body { background: #fff; color: #000; } article { border: 0; padding: 0; } details.toc, .top a[href]::after { display: none; } a { color: inherit; } }
 `
 
@@ -104,7 +104,7 @@ ${description ? `<meta name="description" content="${escapeHtml(description)}">`
 <meta property="og:title" content="${escapeHtml(title)} · ${escapeHtml(l.name)}">
 <meta name="robots" content="index,follow">
 ${page.head || ''}
-<style>:root { --brand: ${l.accent}; --font: ${l.font}; }${CSS}</style>
+<style>${styleCss(l.style)}${CSS}</style>
 </head>
 <body>
 <div class="wrap">

@@ -1,11 +1,12 @@
 import { createError, getHeader, getQuery, getRequestURL, getRouterParam, setResponseHeader, type H3Event } from 'h3'
 import { normalizeEmail } from '#shared/contacts'
 import { normalizeLocale, parseAcceptLanguage } from '#shared/locales'
+import { styleCss } from '#shared/projectStyle'
 import { safeHttpUrl } from '#shared/support'
 import {
   DEFAULT_PRICING_CHECKOUT, DEFAULT_PRICING_EXPERIMENT, DEFAULT_PRICING_OPTIONS, DEFAULT_PRICING_STYLE, PRICING_INTERVALS, PRICING_KEY, PRICING_LIMITS, PRICING_TEMPLATES,
   pickPricingArm, pricingExperimentOf, validatePricingExperiment,
-  buildPublicPricing, catalogSubset, normalizePricingCheckout, normalizePricingContent, normalizePricingOptions, normalizePricingStyle,
+  buildPublicPricing, catalogSubset, pricingLook, normalizePricingCheckout, normalizePricingContent, normalizePricingOptions, normalizePricingStyle,
   pricingFeaturesOf, pricingKeyFrom, pricingLocaleOf, pricingPlansOf, pricingTemplateOf, pricingTextLimits, pricingTexts, pricingTranslationsOf, starterPricing,
   stripePriceFor, validatePricingCheckout, validatePricingContent, validatePricingFeatures, validatePricingOptions, validatePricingPlans, validatePricingStyle,
   validatePricingTranslations,
@@ -13,6 +14,7 @@ import {
   type StripeCatalogLink, type StripeCatalogPrice, type StripeCatalogProduct
 } from '#shared/pricing'
 import { poweredByHtml, type PoweredBy } from './branding'
+import { lookOf } from './projects'
 import { escapeHtml } from './messageEmail'
 import { countPricing } from './pricingStats'
 import { findStripeAccount, pricingCatalogKey, stripeGet, stripeListAll } from './stripe'
@@ -204,12 +206,11 @@ function publishedOf(row: ParseObject): { snapshot: PricingSnapshot, stripe: Str
   return { snapshot: snapshotOf(raw.snapshot as Record<string, unknown>), stripe: (raw.stripe as StripeCatalog | null) || null }
 }
 
-/** The project's accent and logo fill what a table leaves to them. */
-function projectLook(project: ParseObject) {
-  const theme = (project.get('theme') || {}) as { accent?: string }
+/** The project's accent (its style's, else the Brand kit's) and logo fill what a table leaves to them. */
+function projectBrand(project: ParseObject) {
   return {
     name: String(project.get('name') || ''),
-    accent: /^#[0-9a-f]{6}$/i.test(String(theme.accent || '')) ? String(theme.accent).toLowerCase() : '#5e6ad2',
+    accent: lookOf(project).accent,
     logoUrl: [String(project.get('iconUrl') || ''), String(project.get('brandLogoUrl') || '')].find(url => /^https?:\/\//.test(url)) || ''
   }
 }
@@ -229,7 +230,8 @@ export function pricingTableFor(project: ParseObject, row: ParseObject, snapshot
     key: String(row.get('key') || ''),
     version: typeof row.get('version') === 'number' ? row.get('version') as number : 0,
     publishedAt: iso(row.get('publishedAt')),
-    project: projectLook(project),
+    project: projectBrand(project),
+    look: pricingLook(lookOf(project).kit, lookOf(project).projectStyle, snapshot.style),
     snapshot,
     catalog,
     ...extra
@@ -769,9 +771,11 @@ export function pricingPage(table: PublicPricingTable, pk: string, options: { ch
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)} · ${escapeHtml(table.project.name)}</title>
 <style>
-:root { color-scheme: light dark; --bg: #f6f6f7; --text: #18181b; --muted: #6b6b76; }
+${table.look
+    ? `${styleCss(table.look)}\nbody { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 var(--font); }`
+    : `:root { color-scheme: light dark; --bg: #f6f6f7; --text: #18181b; --muted: #6b6b76; }
 @media (prefers-color-scheme: dark) { :root { --bg: #111113; --text: #ededf0; --muted: #a0a0ab; } }
-body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }`}
 main { max-width: 1120px; margin: 0 auto; padding: 48px 16px 32px; }
 .note { max-width: 640px; margin: 0 auto 32px; padding: 12px 16px; border-radius: 12px; background: color-mix(in srgb, ${accent} 14%, transparent); text-align: center; }
 noscript ul { max-width: 640px; margin: 0 auto; padding: 0; list-style: none; }
@@ -786,7 +790,7 @@ ${note}
 <noscript><h1>${escapeHtml(title)}</h1><ul>${plans}</ul></noscript>
 ${poweredByHtml(options.poweredBy)}
 </main>
-<script src="/pricing.js" data-project="${escapeHtml(pk)}" data-table="${escapeHtml(table.key)}" data-target="#pricing" data-theme="system" data-locale="${escapeHtml(table.locale)}" defer></script>
+<script src="/pricing.js" data-project="${escapeHtml(pk)}" data-table="${escapeHtml(table.key)}" data-target="#pricing" data-theme="${table.look && table.look.scheme !== 'auto' ? table.look.scheme : 'system'}" data-locale="${escapeHtml(table.locale)}" defer></script>
 </body>
 </html>`
 }

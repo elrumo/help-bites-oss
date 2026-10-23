@@ -2,7 +2,7 @@ defineRouteMeta({
   openAPI: {
     tags: ['Brand'], operationId: 'getPublicBrandKit', security: [],
     summary: 'Read a public brand kit',
-    description: 'Public, no sign-in: `pk` is the project\'s public key. Returns the name, tagline, about text, accent, colours, fonts, guidelines (Markdown `body` and sanitised `html`), the public files (each with its `url` in the bucket and a `downloadUrl` that saves it under its name) and the page\'s `url`. Open to any origin, so your own site can build its press page from it. 404 unless the kit\'s page is public.',
+    description: 'Public, no sign-in: `pk` is the project\'s public key. Returns the name, tagline, about text, accent, colours, fonts, guidelines (Markdown `body` and sanitised `html`), the public files (each with its `url` in the bucket and a `downloadUrl` that saves it under its name) and the page\'s `url`. `style` is the page\'s finished style (the project\'s with the page\'s own over it): complete `light` and `dark` palettes, `radius`, `shadowCss`. Open to any origin, so your own site can build its press page from it. 404 unless the kit\'s page is public.',
     parameters: [{ name: 'pk', in: 'path', required: true, schema: { type: 'string' } }],
     responses: { 200: { description: '`{ brand }`' }, 404: { description: 'Unknown project, or the kit is not public.' }, 429: { description: 'Too many requests.' } }
   }

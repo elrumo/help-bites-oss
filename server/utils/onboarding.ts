@@ -8,7 +8,7 @@ import {
 } from '#shared/onboarding'
 import { findPricingTableByKey, publishedPricingTableByKey, readVisitor } from './pricing'
 import { readTargetLocales, translateMissing } from './translate'
-import { lookOf } from './projects'
+import { lookOf, styleOf } from './projects'
 
 // Onboarding flows: the store behind /v1/admin/onboarding and the public read.
 // A flow keeps a working copy (steps, style, options) and, once published, a
@@ -72,11 +72,17 @@ export function flowProjectLook(project: ParseObject) {
   return { name: look.name, accent: look.accent, logoUrl: look.logoUrl || look.iconUrl }
 }
 
+/** The flow's finished look: the project's style, with the flow's own accent, background, text, radius and font over it. */
+export function flowStyleOf(project: ParseObject, style: OnboardingStyle) {
+  return styleOf(project, undefined, { look: style, defaults: { radius: DEFAULT_ONBOARDING_STYLE.radius, font: DEFAULT_ONBOARDING_STYLE.font } })
+}
+
 type Snapshot = { name: string, steps: OnboardingStep[], style: OnboardingStyle, options: OnboardingOptions, locale: string, translations: OnboardingTranslations }
 
 /** What an app receives for a published snapshot, in the first of `wanted` the flow has (its own language otherwise). */
 function toPublicFlow(project: ParseObject, row: ParseObject, snapshot: Snapshot, wanted: unknown[] = []): PublicOnboardingFlow {
   const look = flowProjectLook(project)
+  const finished = flowStyleOf(project, snapshot.style)
   // A language added but not yet written has nothing to show: it is not offered.
   const locales = [snapshot.locale, ...Object.entries(snapshot.translations).filter(([, t]) => t.name || Object.keys(t.steps).length).map(([tag]) => tag)]
   const locale = matchLocale(wanted, locales) || snapshot.locale
@@ -89,7 +95,8 @@ function toPublicFlow(project: ParseObject, row: ParseObject, snapshot: Snapshot
     version: typeof row.get('version') === 'number' ? row.get('version') as number : 0,
     publishedAt: iso(row.get('publishedAt')),
     project: { name: look.name, logoUrl: look.logoUrl },
-    style: { ...snapshot.style, accent: snapshot.style.accent || look.accent },
+    style: { ...snapshot.style, accent: snapshot.style.accent || finished.light.accent },
+    look: finished,
     options: snapshot.options,
     steps
   }

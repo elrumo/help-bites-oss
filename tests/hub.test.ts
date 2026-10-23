@@ -58,9 +58,11 @@ describe('hub sections', () => {
   })
 })
 
+const aLook = () => projectLook({ name: 'Acme <b>', brand: { colors: [{ name: 'Sky', hex: '#0ea5e9' }], page: { accent: '#16a34a', radius: 'round', theme: 'dark' }, fonts: [{ name: 'Fraunces', role: 'display', cssUrl: 'https://fonts.googleapis.com/css2?family=Fraunces' }] }, brandLook: { logoUrl: 'https://cdn.test/logo.svg', logoDarkUrl: 'https://cdn.test/logo-dark.svg' } })
 const data = (over: Partial<HubData> = {}): HubData => ({
   project: { name: 'Acme <b>', publicKey: 'pk_abc' },
-  look: projectLook({ name: 'Acme <b>', brand: { colors: [{ name: 'Sky', hex: '#0ea5e9' }], page: { accent: '#16a34a', radius: 'round', theme: 'dark' }, fonts: [{ name: 'Fraunces', role: 'display', cssUrl: 'https://fonts.googleapis.com/css2?family=Fraunces' }] }, brandLook: { logoUrl: 'https://cdn.test/logo.svg', logoDarkUrl: 'https://cdn.test/logo-dark.svg' } }),
+  look: aLook(),
+  style: aLook().style,
   hub: { enabled: true, title: 'Acme <help>', tagline: 'We "ship" <fast>', url: 'https://help.test/hub/pk_abc' },
   sections: [
     { key: 'changelog', title: 'What is new', url: 'https://help.test/changelog/pk_abc', text: '', action: '', items: [{ title: '<script>alert(1)</script>', url: 'https://help.test/changelog/pk_abc', meta: 'Oct 1, 2026' }, { title: 'Bad link', url: 'javascript:alert(1)', meta: '' }] },
@@ -76,8 +78,8 @@ describe('hub page', () => {
   const html = renderHubPage(data())
 
   test('wears the project look', () => {
-    expect(html).toContain('--accent: #16a34a')
-    expect(html).toContain('--radius: 16px')
+    expect(html).toContain('--accent:#16a34a')
+    expect(html).toContain('--radius:16px')
     expect(html).toContain('data-scheme="dark"')
     expect(html).toContain('"Fraunces"')
     expect(html).toContain('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces">')
@@ -120,8 +122,9 @@ describe('hub page', () => {
   })
 
   test('colours and fonts cannot close the style block', () => {
-    const look = { ...data().look, accent: '#fff;}</style><script>alert(1)</script>', fontFamily: { display: '"A</style>"', body: '"B</style>"', mono: 'monospace' } }
-    const out = renderHubPage(data({ look }))
+    const look = { ...data().look, fontFamily: { display: '"A</style>"', body: '"B</style>"', mono: 'monospace' } }
+    const style = { ...data().style, fontFamily: '"B</style>"', light: { ...data().style.light, accent: '#fff;}</style><script>alert(1)</script>' } }
+    const out = renderHubPage(data({ look, style }))
     expect(out).not.toContain('</style><script>alert(1)')
     expect(out.match(/<\/style>/g)).toHaveLength(1)
   })

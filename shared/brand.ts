@@ -1,3 +1,4 @@
+import { validateStyleChoice, type StyleChoice } from './projectStyle'
 import { safeHttpUrl } from './support'
 
 // A project's brand kit (`Project.brand`): its words, colours, type and
@@ -7,6 +8,8 @@ import { safeHttpUrl } from './support'
 
 export const BRAND_TEMPLATES = ['minimal', 'editorial', 'split'] as const
 export const BRAND_THEMES = ['auto', 'light', 'dark'] as const
+/** What each named radius is in style pixels (the kit's, shared/projectLook.ts). */
+export const BRAND_RADIUS_PX = { sharp: 2, soft: 8, round: 16 } as const
 export const BRAND_RADII = ['sharp', 'soft', 'round'] as const
 export const BRAND_SECTIONS = ['colors', 'typography', 'logos', 'screenshots', 'assets', 'guidelines'] as const
 export const BRAND_ASSET_KINDS = ['logo', 'icon', 'favicon', 'screenshot', 'social', 'other'] as const
@@ -78,10 +81,16 @@ export type BrandPage = {
   intro: string
   /** The sections shown, in order. */
   sections: BrandSection[]
+  /** How the page takes its style: the project's, or its own over it. `theme`, `radius` and `accent` above stay the page's own layer over both. */
+  style: StyleChoice
 }
 export type BrandConfig = { tagline: string, about: string, colors: BrandColor[], fonts: BrandFont[], guidelines: BrandGuideline[], page: BrandPage }
 
-export const DEFAULT_BRAND_PAGE: BrandPage = { public: false, template: 'minimal', theme: 'auto', radius: 'soft', accent: '', headline: '', intro: '', sections: [...BRAND_SECTIONS] }
+// Written out, not DEFAULT_STYLE_CHOICE: projectStyle.ts imports readableOn from this file, so reading its exports while this module loads can hit the cycle.
+const NO_PALETTE = { accent: '', background: '', surface: '', text: '', muted: '', border: '' }
+const PROJECT_STYLE: StyleChoice = { source: 'project', custom: { scheme: '', light: NO_PALETTE, dark: NO_PALETTE, radius: null, shadow: '', font: '', logoUrl: '', logoDarkUrl: '', iconUrl: '' } }
+
+export const DEFAULT_BRAND_PAGE: BrandPage = { public: false, template: 'minimal', theme: 'auto', radius: 'soft', accent: '', headline: '', intro: '', sections: [...BRAND_SECTIONS], style: PROJECT_STYLE }
 export const DEFAULT_BRAND_CONFIG: BrandConfig = { tagline: '', about: '', colors: [], fonts: [], guidelines: [], page: DEFAULT_BRAND_PAGE }
 
 const HEX = /^#[0-9a-f]{6}$/i
@@ -218,6 +227,11 @@ export function validateBrandConfig(value: unknown, base: BrandConfig = DEFAULT_
     if (p.sections !== undefined) {
       if (!Array.isArray(p.sections) || p.sections.some(s => !BRAND_SECTIONS.includes(s as BrandSection))) errors.push(`page.sections is a list of ${BRAND_SECTIONS.join(', ')}`)
       else page.sections = [...new Set(p.sections as BrandSection[])]
+    }
+    if (p.style !== undefined) {
+      const style = validateStyleChoice(p.style, page.style ?? PROJECT_STYLE)
+      errors.push(...style.errors.map(error => `page.${error}`))
+      page.style = style.choice
     }
   }
   return { config, errors }

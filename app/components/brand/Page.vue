@@ -60,6 +60,13 @@
         </div>
       </section>
 
+      <section class="space-y-3 rounded-xl border border-default p-4">
+        <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.brand.page.style') }}</h3>
+        <p class="text-[13px] text-muted">{{ $t('projectTools.brand.page.styleHint') }}</p>
+        <URadioGroup v-model="page.style.source" :items="styleSources" variant="card" />
+        <StyleEditor v-if="page.style.source === 'custom' && project" v-model="page.style.custom" :kit="project.look.kit" :under="[project.style]" />
+      </section>
+
       <section class="space-y-4 rounded-xl border border-default p-4">
         <h3 class="text-[13px] font-semibold text-highlighted">{{ $t('projectTools.brand.page.words') }}</h3>
         <UFormField :label="$t('projectTools.brand.page.headline')" :hint="$t('projectTools.brand.page.headlineHint')"><UInput v-model="page.headline" :maxlength="BRAND_LIMITS.headline" :placeholder="projectName" class="w-full" /></UFormField>
@@ -129,6 +136,10 @@ const projectName = computed(() => project.value?.name || '')
 const accent = computed(() => config.value.page.accent || project.value?.style.light.accent || brandAccent(config.value, project.value?.theme?.accent || ''))
 // What the page can offer the project style: its accent, corners and scheme.
 const styleOffer = computed(() => styleFrom({ accent: config.value.page.accent, radius: { sharp: 2, soft: 8, round: 16 }[config.value.page.radius], scheme: config.value.page.theme }))
+const styleSources = computed(() => [
+  { value: 'project', label: t('style.useProject'), description: t('style.useProjectHint') },
+  { value: 'custom', label: t('style.custom'), description: t('style.customHint') }
+])
 const themeItems = computed(() => BRAND_THEMES.map(value => ({ value, label: t(`projectTools.brand.themes.${value}`) })))
 const radiusItems = computed(() => BRAND_RADII.map(value => ({ value, label: t(`projectTools.brand.radii.${value}`) })))
 

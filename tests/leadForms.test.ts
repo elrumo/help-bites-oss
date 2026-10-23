@@ -162,7 +162,7 @@ describe('server', () => {
     expect(html).toContain('<option value="B" selected>B</option>')
     expect(html).toContain('A &lt;b&gt;')
     expect(html).not.toContain('<script>')
-    expect(html).toContain('--accent: #ff0000')
+    expect(html).toContain('--accent:#ff0000')
     expect(leadFormPage(project, row, { sent: true })).toContain('confirm your email')
   })
 

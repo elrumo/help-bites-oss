@@ -8,6 +8,7 @@
         <UButton v-if="blogOn" icon="i-lucide-external-link" :label="$t('blog.openPublic')" color="neutral" variant="ghost" size="sm" :to="blogUrl" target="_blank" />
         <UButton v-if="blogOn" icon="i-lucide-rss" color="neutral" variant="ghost" size="sm" square :aria-label="$t('blog.copyFeed')" @click="copy(feedUrl, $t('blog.feed'))" />
         <UButton icon="i-lucide-palette" :label="$t('blog.design.title')" color="neutral" variant="ghost" size="sm" class="hidden sm:inline-flex" @click="showDesign = true" />
+        <UButton icon="i-lucide-swatch-book" :label="$t('style.title')" color="neutral" variant="ghost" size="sm" class="hidden sm:inline-flex" @click="showStyle = true" />
         <UButton icon="i-lucide-settings-2" :label="$t('nav.settings')" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
         <UDropdownMenu :items="moreItems" :content="{ align: 'end' }">
           <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" size="sm" square :aria-label="$t('blog.more')" />
@@ -157,6 +158,12 @@
       </template>
     </USlideover>
 
+    <USlideover v-model:open="showStyle" :title="$t('blog.styleTitle')" :description="$t('blog.styleDescription')" :ui="{ content: 'sm:max-w-2xl' }">
+      <template #body>
+        <StyleChoicePanel v-if="project" :project="project" target="blog" />
+      </template>
+    </USlideover>
+
     <BlogImportModal v-model:open="showImport" :project-id="id" @imported="loadPosts" />
   </div>
 </template>
@@ -199,9 +206,11 @@ const tab = ref<'posts' | 'pages' | 'comments'>(route.query.tab === 'comments' |
 const tabs = computed(() => [{ label: t('blog.posts'), value: 'posts', icon: 'i-lucide-newspaper' }, { label: t('blog.pages'), value: 'pages', icon: 'i-lucide-file-text' }, { label: t('blog.commentsTab'), value: 'comments', icon: 'i-lucide-message-circle' }])
 const newLink = computed(() => `/projects/${id}/blog/new${tab.value === 'pages' ? '?type=page' : ''}`)
 const showDesign = ref(false)
+const showStyle = ref(false)
 const showImport = ref(false)
 const moreItems = computed<DropdownMenuItem[][]>(() => [[
   { label: t('blog.design.title'), icon: 'i-lucide-palette', class: 'sm:hidden', onSelect: (): void => { showDesign.value = true } },
+  { label: t('style.title'), icon: 'i-lucide-swatch-book', class: 'sm:hidden', onSelect: (): void => { showStyle.value = true } },
   { label: t('blog.import.title'), icon: 'i-lucide-download', onSelect: (): void => { showImport.value = true } }
 ]])
 

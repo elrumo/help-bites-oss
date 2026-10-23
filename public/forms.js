@@ -13,8 +13,9 @@
  *
  * Options (data-* or init): form, target (a selector), theme ('light' |
  * 'dark' | 'system'; defaults to a dark/light class on your <html>, then the
- * colour behind the form), accent,
- * radius, font ('system' | 'rounded' | 'serif' | 'mono'), layout ('stacked' |
+ * project style's fixed scheme, then the colour behind the form), accent,
+ * radius (0 to 32), shadow ('none' | 'soft' | 'medium' | 'strong': a form with a
+ * background of its own is a card and wears it), font ('system' | 'rounded' | 'serif' | 'mono'), layout ('stacked' |
  * 'inline': the inputs and the button on one row), show (the parts to show:
  * 'title,description,footnote' by default; 'none' for just the inputs), locale
  * (the language to show it in, when the form has a translation for it; defaults
@@ -34,6 +35,11 @@
  *     HelpBitesForms.push(['render', { form: 'beta', target: '#beta-form' }])   // another form
  *   </script>
  *
+ * The project's style (Project -> Style: light and dark colours, radius, shadow)
+ * is the base; what the form sets itself (accent, background, text, radius, font)
+ * wins over it, and these options win over both. A form with no background of its
+ * own sits on your page without a card and takes the style's text colours.
+ *
  * Restyle it from your CSS with variables on .help-bites-form
  * (--hb-form-accent, -on-accent, -bg, -text, -muted, -border, -input-bg,
  * -radius, -font, -gap, -max-width) or parts (::part(form), title,
@@ -49,7 +55,7 @@
   // A copy served from your own site (it is MIT) names the HelpBites it reads from.
   var origin = (attr('host') || new URL(script.src, location.href).origin).replace(/\/+$/, '')
   var own = {
-    project: attr('project'), form: attr('form'), target: attr('target'), theme: attr('theme'), accent: attr('accent'), radius: attr('radius'),
+    project: attr('project'), form: attr('form'), target: attr('target'), theme: attr('theme'), accent: attr('accent'), radius: attr('radius'), shadow: attr('shadow'),
     font: attr('font'), layout: attr('layout'), show: attr('show'), locale: attr('locale'), host: origin, anchor: script
   }
 
@@ -109,13 +115,17 @@
     return null
   }
 
-  function dark(theme, host) {
+  // The project style's shadows (shared/projectStyle.ts STYLE_SHADOW_CSS), for data-shadow.
+  var SHADOWS = { none: 'none', soft: '0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08)', medium: '0 4px 12px rgb(0 0 0 / 0.1)', strong: '0 12px 32px rgb(0 0 0 / 0.18)' }
+
+  function dark(theme, host, look) {
     if (theme === 'dark') return true
     if (theme === 'light') return false
     if (theme === 'system') return matchMedia('(prefers-color-scheme: dark)').matches
     var root = document.documentElement
     if (root.classList.contains('dark')) return true
     if (root.classList.contains('light')) return false
+    if (look && (look.scheme === 'dark' || look.scheme === 'light')) return look.scheme === 'dark'
     var rgb = host && behind(host.parentElement)
     // A page that paints no background of its own is the browser's white.
     return rgb ? (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) < 128 : false
@@ -125,17 +135,22 @@
 
   function css(form, o, host) {
     var style = form.style || {}
-    var accent = /^#[0-9a-f]{6}$/i.test(pick(o, 'accent') || '') ? pick(o, 'accent') : style.accent || '#4f46e5'
-    var r = pick(o, 'radius')
-    var radius = r !== undefined && r !== '' && !isNaN(+r) ? +r : (typeof style.radius === 'number' ? style.radius : 12)
+    var look = form.look
     // No background of its own: the form sits on your page, without a card, in its light or dark.
     var card = !!style.background
-    var night = card ? onColour(style.background) === '#ffffff' : dark(pick(o, 'theme'), host)
-    var text = style.text || (night ? '#f4f4f5' : '#18181b')
-    var font = FONTS[pick(o, 'font')] || FONTS[style.font] || FONTS.system
-    return ':host{all:initial;display:block;--_accent:var(--hb-form-accent,' + accent + ');--_on:var(--hb-form-on-accent,' + onColour(accent) + ');--_bg:var(--hb-form-bg,' + (style.background || 'transparent') + ');--_text:var(--hb-form-text,' + text + ');--_muted:var(--hb-form-muted,color-mix(in srgb,var(--_text) 62%,transparent));--_border:var(--hb-form-border,color-mix(in srgb,var(--_text) 16%,transparent));--_input:var(--hb-form-input-bg,' + (night ? 'rgba(255,255,255,.04)' : '#ffffff') + ');--_r:var(--hb-form-radius,' + radius + 'px);--_font:var(--hb-form-font,' + font + ');--_gap:var(--hb-form-gap,12px)}'
+    var night = card ? onColour(style.background) === '#ffffff' : dark(pick(o, 'theme'), host, look)
+    var pal = look && look[night ? 'dark' : 'light']
+    var accent = /^#[0-9a-f]{6}$/i.test(pick(o, 'accent') || '') ? pick(o, 'accent') : (pal && pal.accent) || style.accent || '#4f46e5'
+    var r = pick(o, 'radius')
+    var radius = r !== undefined && r !== '' && !isNaN(+r) ? Math.max(0, Math.min(32, +r)) : (look && typeof look.radius === 'number' ? look.radius : typeof style.radius === 'number' ? style.radius : 12)
+    var text = style.text || (pal && pal.text) || (night ? '#f4f4f5' : '#18181b')
+    // The style's muted and border colours suit its own text; a text colour the form sets derives them instead.
+    var theirs = pal && !style.text
+    var shadow = SHADOWS[pick(o, 'shadow')] || (look && look.shadowCss) || 'none'
+    var font = FONTS[pick(o, 'font')] || (style.font && style.font !== 'system' && FONTS[style.font]) || (look && look.fontFamily) || FONTS.system
+    return ':host{all:initial;display:block;--_accent:var(--hb-form-accent,' + accent + ');--_on:var(--hb-form-on-accent,' + onColour(accent) + ');--_bg:var(--hb-form-bg,' + (style.background || 'transparent') + ');--_text:var(--hb-form-text,' + text + ');--_muted:var(--hb-form-muted,' + (theirs ? pal.muted : 'color-mix(in srgb,var(--_text) 62%,transparent)') + ');--_border:var(--hb-form-border,' + (theirs ? pal.border : 'color-mix(in srgb,var(--_text) 16%,transparent)') + ');--_input:var(--hb-form-input-bg,' + (card || !pal ? (night ? 'rgba(255,255,255,.04)' : '#ffffff') : pal.surface) + ');--_r:var(--hb-form-radius,' + radius + 'px);--_font:var(--hb-form-font,' + font + ');--_gap:var(--hb-form-gap,12px)}'
       + '*{box-sizing:border-box}'
-      + '.root{max-width:var(--hb-form-max-width,520px);background:var(--_bg);color:var(--_text);font:15px/1.5 var(--_font);-webkit-font-smoothing:antialiased;color-scheme:' + (night ? 'dark' : 'light') + (card ? ';padding:24px;border-radius:var(--_r);box-shadow:0 0 0 1px var(--_border)' : '') + '}'
+      + '.root{max-width:var(--hb-form-max-width,520px);background:var(--_bg);color:var(--_text);font:15px/1.5 var(--_font);-webkit-font-smoothing:antialiased;color-scheme:' + (night ? 'dark' : 'light') + (card ? ';padding:24px;border-radius:var(--_r);box-shadow:0 0 0 1px var(--_border),' + shadow : '') + '}'
       + '.logo{display:block;width:40px;height:40px;border-radius:calc(var(--_r) * .6);object-fit:cover;margin:0 0 14px}'
       + '.title{margin:0;font-size:22px;line-height:1.25;font-weight:650;letter-spacing:-.015em;text-wrap:balance}'
       + '.description{margin:8px 0 0;color:var(--_muted);text-wrap:pretty;white-space:pre-line}'
