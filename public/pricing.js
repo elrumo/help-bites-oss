@@ -297,6 +297,25 @@
     return e
   }
 
+  /** The panel's preview: `edit(key, value)` is called when a word is edited in place; `key` is the table's text key. */
+  function editable(node, key, state) {
+    var cb = state.o.edit
+    if (!cb || !key) return node
+    var before = ''
+    node.setAttribute('contenteditable', 'plaintext-only')
+    node.setAttribute('spellcheck', 'false')
+    node.setAttribute('data-edit', '')
+    node.addEventListener('focus', function () { before = node.textContent })
+    node.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); node.blur() } else if (e.key === 'Escape') { node.textContent = before; node.blur() }
+    })
+    node.addEventListener('blur', function () {
+      var value = node.textContent.replace(/\s+/g, ' ').trim()
+      if (value !== before.trim()) cb(key, value)
+    })
+    return node
+  }
+
   var CHECK = '<path d="M5 10.5l3.2 3.2L15 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
   var CROSS = '<path d="M6.5 6.5l7 7M13.5 6.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'
   function icon(on) {
@@ -400,7 +419,10 @@
     var current = pick(o, 'current') && pick(o, 'current') === plan.key
     var href = current ? null : (price && price.href) || (plan.action && plan.action.href) || null
     var b = el(href && !o.preview ? 'a' : 'button', 'button ' + (primary ? 'primary' : 'secondary'), 'button')
-    b.textContent = buttonWords(plan, price, o, w)
+    var label = buttonWords(plan, price, o, w)
+    // Inside a button a space would press it, so the editable words sit in a span.
+    if (o.edit) b.appendChild(editable(text('span', '', '', label), 'plans/' + plan.id + '/action', state))
+    else b.textContent = label
     if (b.tagName === 'A') { b.href = withDetails(href, table, o); b.rel = 'nofollow' } else b.type = 'button'
     if (current) b.setAttribute('aria-disabled', 'true')
     if (state.ids[plan.id]) b.setAttribute('aria-describedby', state.ids[plan.id])
@@ -457,6 +479,8 @@
       li.appendChild(icon(line.included))
       li.appendChild(text('span', 'sr', '', line.included ? state.w.included + ': ' : state.w.notIncluded + ': '))
       var t = text('span', 'text', '', line.text)
+      // A hint's button sits inside the words, so those are edited in the panel.
+      if (!line.hint) editable(t, 'features/' + line.id + '/text', state)
       if (line.hint) t.appendChild(hint(line))
       li.appendChild(t)
       if (line.value) li.appendChild(text('span', 'value', 'value', line.value))
@@ -484,8 +508,8 @@
     var table = state.table, show = state.show, c = table.content || {}
     var box = el('div', 'head', 'head')
     if (show.logo && state.template === 'paywall' && table.project && /^https?:\/\//.test(table.project.logoUrl || '')) { var logo = el('img', 'logo', 'logo'); logo.src = table.project.logoUrl; logo.alt = ''; box.appendChild(logo) }
-    if (show.title && c.title) box.appendChild(text('h2', 'title', 'title', c.title))
-    if (show.subtitle && c.subtitle) box.appendChild(text('p', 'subtitle', 'subtitle', c.subtitle))
+    if (show.title && c.title) box.appendChild(editable(text('h2', 'title', 'title', c.title), 'content/title', state))
+    if (show.subtitle && c.subtitle) box.appendChild(editable(text('p', 'subtitle', 'subtitle', c.subtitle), 'content/subtitle', state))
     return box.childNodes.length ? box : null
   }
 
@@ -540,12 +564,12 @@
       var card = el('div', 'card' + (plan.highlighted ? ' hl' : ''), plan.highlighted ? 'plan plan-highlighted' : 'plan')
       card.setAttribute('role', 'listitem')
       var who = el('div', 'who')
-      var name = text('h3', 'name', 'name', plan.name)
+      var name = editable(text('h3', 'name', 'name', plan.name), 'plans/' + plan.id + '/name', state)
       name.id = 'hbp-' + (++uid)
       // A row's badge sits by its name; a card's on its top edge.
-      if (plan.badge) (state.template === 'rows' ? name : card).appendChild(text('span', 'badge', 'badge', plan.badge))
+      if (plan.badge) (state.template === 'rows' ? name : card).appendChild(editable(text('span', 'badge', 'badge', plan.badge), 'plans/' + plan.id + '/badge', state))
       who.appendChild(name)
-      if (plan.description) who.appendChild(text('p', 'description', 'description', plan.description))
+      if (plan.description) who.appendChild(editable(text('p', 'description', 'description', plan.description), 'plans/' + plan.id + '/description', state))
       var p = priceBlock(plan, price, state)
       state.ids[plan.id] = name.id + ' ' + p.id
       if (state.template === 'spotlight') {
@@ -637,8 +661,8 @@
       var price = priceFor(plan, state.interval)
       var th = el('th', plan.highlighted ? 'hl' : '')
       th.setAttribute('scope', 'col')
-      if (plan.badge) th.appendChild(text('span', 'badge', 'badge', plan.badge))
-      var name = text('div', 'name', 'name', plan.name)
+      if (plan.badge) th.appendChild(editable(text('span', 'badge', 'badge', plan.badge), 'plans/' + plan.id + '/badge', state))
+      var name = editable(text('div', 'name', 'name', plan.name), 'plans/' + plan.id + '/name', state)
       name.id = 'hbp-' + (++uid)
       th.appendChild(name)
       var p = priceBlock(plan, price, state)
@@ -660,6 +684,7 @@
         tr.appendChild(g)
       } else {
         var th = text('th', '', '', f.text)
+        if (!f.hint) editable(th, 'features/' + f.id + '/text', state)
         th.setAttribute('scope', 'row')
         if (f.hint) th.appendChild(hint(f))
         tr.appendChild(th)
@@ -702,7 +727,7 @@
     }
     shadow.innerHTML = ''
     var styleEl = el('style')
-    styleEl.textContent = css(table, o, host)
+    styleEl.textContent = css(table, o, host) + (o.edit ? '[data-edit]{cursor:text;border-radius:4px;transition:box-shadow .12s}[data-edit]:hover{box-shadow:0 0 0 2px color-mix(in srgb,var(--_accent,currentColor) 45%,transparent)}[data-edit]:focus{outline:none;box-shadow:0 0 0 2px var(--_accent,currentColor)}' : '')
     shadow.appendChild(styleEl)
     var root = el('div', 'root tpl-' + template, 'root')
     root.setAttribute('role', 'region')
@@ -719,7 +744,7 @@
     if (money2) root.appendChild(money2)
     root.appendChild(template === 'paywall' ? paywall(state) : template === 'matrix' ? matrix(state) : cards(state))
     var c = table.content || {}
-    if (state.show.footnote && c.footnote) root.appendChild(text('p', 'footnote', 'footnote', c.footnote))
+    if (state.show.footnote && c.footnote) root.appendChild(editable(text('p', 'footnote', 'footnote', c.footnote), 'content/footnote', state))
     if (c.termsUrl || c.privacyUrl) {
       var links = el('p', 'links', 'links')
       ;[[c.termsUrl, state.w.terms], [c.privacyUrl, state.w.privacy]].forEach(function (l) {
@@ -886,7 +911,7 @@
       var host = into(opts)
       if (!host) return
       // The interval and paywall choice picked in it survive the next redraw, as you type.
-      host.__hbPricing = draw(host, opts.table, { preview: true, theme: opts.theme, template: opts.template, interval: opts.interval, compact: opts.compact, show: opts.show, labels: {} }, host.__hbPricing && { interval: host.__hbPricing.interval, choice: host.__hbPricing.choice })
+      host.__hbPricing = draw(host, opts.table, { preview: true, theme: opts.theme, template: opts.template, interval: opts.interval, compact: opts.compact, show: opts.show, labels: {}, edit: opts.edit }, host.__hbPricing && { interval: host.__hbPricing.interval, choice: host.__hbPricing.choice })
     }
   }
 

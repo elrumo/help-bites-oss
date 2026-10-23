@@ -523,9 +523,25 @@ const previewTable = computed(() => buildPublicPricing({
   wanted: { locales: [lang.value || form.value.locale] }
 }))
 
+/** A word edited in the preview goes to the field behind its text key, or to the open translation. */
+function editWord(key: string, value: string) {
+  if (lang.value) return setWord(key, value)
+  const [area, id, field, cellId] = key.split('/')
+  if (area === 'content') (form.value.content as Record<string, string>)[id!] = value
+  else if (area === 'features') {
+    const feature = form.value.features.find(f => f.id === id)
+    if (feature) feature.text = value
+  } else if (area === 'plans') {
+    const plan = form.value.plans.find(p => p.id === id)
+    if (!plan) return
+    if (field === 'action') plan.action.label = value
+    else (plan as unknown as Record<string, string>)[field!] = value
+  }
+}
+
 function drawPreview() {
   if (!previewEl.value || !table.value) return
-  pricingQueue().push(['preview', { target: previewEl.value, table: previewTable.value, theme: previewTheme.value }])
+  pricingQueue().push(['preview', { target: previewEl.value, table: previewTable.value, theme: previewTheme.value, edit: editWord }])
 }
 
 watch([previewTable, previewTheme, previewEl, previewSize], drawPreview, { flush: 'post' })

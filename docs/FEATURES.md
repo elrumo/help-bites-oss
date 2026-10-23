@@ -117,7 +117,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   GitHub repos, Stripe, revenue and the table's numbers; nothing changes until
   you apply it.
 - **A live preview** in the panel and the native app, light and dark, desktop and
-  phone.
+  phone. On the web, click a word in it to edit it there.
 
 **Languages and AI translation** [LANGUAGES.md](LANGUAGES.md)
 
@@ -735,6 +735,9 @@ repository. See [EDITIONS.md](EDITIONS.md).
 
 ## 14. Not built yet, and known limits
 
+- **Pricing preview.** On the web the preview can be edited in place (click a title,
+  plan name, description, badge, button, feature or footnote and type); the native
+  preview is read-only. [PRICING.md](PRICING.md)
 - **Conversation panel.** A contact with no user id cannot follow a feedback post
   or have one filed as them (linking still works). Saved replies are inserted from
   the picker, not by typing `/shortcut`; Save as FAQ lives on a reply's context menu;
