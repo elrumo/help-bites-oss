@@ -54,7 +54,8 @@ export const IMPORT_ORDER = [
   'EmailLog',
   'EmailSuppression',
   'Sequence',
-  'ErrorAnalysis'
+  'ErrorAnalysis',
+  'ErrorReport'
 ] as const
 
 /**

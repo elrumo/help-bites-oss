@@ -64,6 +64,7 @@
 		367BBF05A3E9A284E35B0BC4 /* SavedReplies.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1992ADC9479FCC8AA835644 /* SavedReplies.swift */; };
 		36C3A0892A450753190941C0 /* ConnectionsErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601798B799E5F51D6D54DC67 /* ConnectionsErrors.swift */; };
 		37CD212EA34793247DE48519 /* RevenueModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E7E2AD55AC0892685EA1D8E /* RevenueModels.swift */; };
+		3AF7B3A88A3ED906C8A2F103 /* ErrorReportsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 804FA1F2135D8B709BE9946E /* ErrorReportsSheet.swift */; };
 		3B2CB8C89BA91A04DE370CEB /* EmailActionSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 994B21B0BA5D44F33314C606 /* EmailActionSheets.swift */; };
 		3ED9AF6015CBDED4588870C5 /* EmailCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07E76A35B657E0E0E4633811 /* EmailCanvas.swift */; };
 		3EFDB0482C05CCCAE7509439 /* ContactBillingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853CBA686AC8E4445BF2F19A /* ContactBillingSection.swift */; };
@@ -285,6 +286,7 @@
 		7C659FF68BBA2D8885B01547 /* EmailLibraryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailLibraryScreen.swift; sourceTree = "<group>"; };
 		7E6BDD85FB44FEBC0D961BAB /* CampaignsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampaignsScreen.swift; sourceTree = "<group>"; };
 		7E7E2AD55AC0892685EA1D8E /* RevenueModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueModels.swift; sourceTree = "<group>"; };
+		804FA1F2135D8B709BE9946E /* ErrorReportsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorReportsSheet.swift; sourceTree = "<group>"; };
 		843921FF3A1A1DEF70413574 /* RevenueSources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueSources.swift; sourceTree = "<group>"; };
 		84B147D62FD0297A61E28D0A /* AssistantDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantDetailScreen.swift; sourceTree = "<group>"; };
 		853CBA686AC8E4445BF2F19A /* ContactBillingSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactBillingSection.swift; sourceTree = "<group>"; };
@@ -417,6 +419,7 @@
 				E40774513B4DFF4DFA8E3B07 /* ConnectErrorTrackingSheet.swift */,
 				2399517F1102BEB28EB85E93 /* ErrorAlertsSheet.swift */,
 				A58782826D9C2587ADAA2F68 /* ErrorIssueCard.swift */,
+				804FA1F2135D8B709BE9946E /* ErrorReportsSheet.swift */,
 				3405C68EBDBA7CF773F10E27 /* ErrorsModels.swift */,
 				4587E4E535D670DBA6FA42D0 /* ErrorsScreen.swift */,
 				CF171218B4A26DA6061C5C81 /* ManageErrorLinksSheet.swift */,
@@ -979,6 +982,7 @@
 				02693935C833647F68A545EF /* EmailTranslate.swift in Sources */,
 				0B25432EF3FC75AB05CC009B /* ErrorAlertsSheet.swift in Sources */,
 				B1E58D3335EF7AC9DEE2CFB8 /* ErrorIssueCard.swift in Sources */,
+				3AF7B3A88A3ED906C8A2F103 /* ErrorReportsSheet.swift in Sources */,
 				60421F967C5A1257FA7A5C67 /* ErrorsModels.swift in Sources */,
 				9EBB69A2DCC7EC31A64314C2 /* ErrorsScreen.swift in Sources */,
 				AD397FB2CB9827CA65B1F978 /* FeedbackBoardSettings.swift in Sources */,

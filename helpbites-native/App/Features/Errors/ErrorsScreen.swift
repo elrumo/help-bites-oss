@@ -23,6 +23,8 @@ struct ErrorsScreen: View {
   @State private var overviewError = ""
   @State private var analyzing = false
   @State private var copied = ""
+  @State private var reportsOpen = false
+  @State private var frequency = ErrorReportFrequency.off
   /// Answers can arrive out of order when pills are tapped quickly; only the latest counts.
   @State private var latest = 0
 
@@ -69,7 +71,15 @@ struct ErrorsScreen: View {
     .toolbar {
       if connected {
         ToolbarItemGroup(placement: .primaryAction) {
-          Button { Task { await analyzeAll() } } label: { Label("Analyze with AI", systemImage: "wand.and.stars") }.disabled(analyzing)
+          Menu {
+            Button { Task { await analyzeAll() } } label: { Label("Analyze now", systemImage: "wand.and.stars") }.disabled(analyzing)
+            Button { reportsOpen = true } label: { Label("View all reports", systemImage: "clock.arrow.circlepath") }
+            Divider()
+            Picker("Run automatically", selection: Binding(get: { frequency }, set: { value in Task { await setFrequency(value) } })) {
+              ForEach(ErrorReportFrequency.allCases, id: \.self) { Text($0.label).tag($0) }
+            }
+          } label: { Label("Analyze with AI", systemImage: "wand.and.stars") } primaryAction: { Task { await analyzeAll() } }
+            .disabled(analyzing)
           Button { alertsOpen = true } label: { Label("Error alerts", systemImage: "bell") }
           Menu {
             Button { connectOpen = true } label: { Label("Connect another", systemImage: "plus") }
@@ -81,7 +91,10 @@ struct ErrorsScreen: View {
         }
       }
     }
-    .task(id: connected) { if connected { await loadAdmin() } }
+    .task(id: connected) { if connected { await loadAdmin(); await loadSchedule() } }
+    .sheet(isPresented: $reportsOpen) {
+      ErrorReportsSheet(projectId: projectId) { overview = $0 }
+    }
     .task(id: "\(status)|\(linkFilter)|\(connected)") { await load() }
     .sheet(isPresented: $connectOpen) {
       ConnectErrorTrackingSheet(projectId: projectId, projectName: workspace.project(projectId)?.name ?? "", existing: links) { connectedProject in
@@ -135,6 +148,11 @@ struct ErrorsScreen: View {
         ErrorMarkdown(text: overview.text)
         Text(overview.count == 1 ? "Based on 1 unresolved error: titles, locations and counts. Open an error to analyze its stack trace." : "Based on \(overview.count) unresolved errors: titles, locations and counts. Open an error to analyze its stack trace.")
           .font(.lnCaption).foregroundStyle(Theme.textMuted)
+        if !overview.files.isEmpty {
+          Text("Read code from: \(overview.files.joined(separator: ", "))").font(.lnCaption).foregroundStyle(Theme.textMuted)
+        }
+        Button { Clipboard.copy(overview.text); copied = "overview"; Task { try? await Task.sleep(for: .seconds(1.5)); if copied == "overview" { copied = "" } } } label: { Label(copied == "overview" ? "Copied" : "Copy report", systemImage: copied == "overview" ? "checkmark" : "doc.on.doc") }
+          .buttonStyle(.lnSecondaryCompact)
       }
     }
     .padding(12)
@@ -224,6 +242,21 @@ struct ErrorsScreen: View {
       let _: Output = try await session.send("/v1/admin/errors/\(issue.issueId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? issue.issueId)", method: "PUT", body: Input(project: projectId, status: value, link: issue.linkId))
       await load()
     } catch { self.error = error.localizedDescription }
+  }
+
+  private func loadSchedule() async {
+    struct Loaded: Decodable, Sendable { let frequency: String }
+    if let loaded: Loaded = try? await session.get("/v1/admin/errors/schedule", query: ["project": projectId]) { frequency = ErrorReportFrequency(rawValue: loaded.frequency) ?? .off }
+  }
+
+  private func setFrequency(_ value: ErrorReportFrequency) async {
+    struct Input: Encodable, Sendable { let project: String; let frequency: String }
+    struct Output: Decodable, Sendable {}
+    let before = frequency
+    frequency = value
+    do {
+      let _: Output = try await session.send("/v1/admin/errors/schedule", method: "PUT", body: Input(project: projectId, frequency: value.rawValue))
+    } catch { frequency = before; overviewError = error.localizedDescription }
   }
 
   private func analyzeAll() async {

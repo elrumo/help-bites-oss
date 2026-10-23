@@ -249,6 +249,9 @@ const SCHEMAS = {
       errors: { type: 'Object' },
       // Error alert rules { rules, emails } (shared/errorAlerts.ts).
       errorAlerts: { type: 'Object' },
+      // Scheduled AI reports on the errors: off | daily | weekly | monthly, and when the next one is due (shared/errorReports.ts).
+      errorReportFrequency: { type: 'String' },
+      errorReportNextAt: { type: 'Date' },
       // Telegram bot for alerts: { tokenSealed, chatId, botName, chatName } (server/utils/telegram.ts).
       telegram: { type: 'Object' },
       // GitHub repos the project uses: [{ installationId, id, fullName, defaultBranch }] (server/utils/github.ts).
@@ -1714,6 +1717,19 @@ const SCHEMAS = {
     },
     indexes: {
       project_key: { _p_project: 1, key: 1 }
+    }
+  },
+  // One saved AI report on a project's unresolved errors; the project keeps the newest 100.
+  ErrorReport: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      text: { type: 'String' },
+      files: { type: 'Array' },
+      count: { type: 'Number' },
+      source: { type: 'String' }
+    },
+    indexes: {
+      project_created: { _p_project: 1, _created_at: -1 }
     }
   },
   Device: {

@@ -72,7 +72,6 @@
     "errors": "エラー",
     "dev": "インストールと API",
     "settings": "設定",
-    "pages": "ページ",
     "blog": "ブログ",
     "forms": "フォーム",
     "pricing": "料金"
@@ -732,7 +731,12 @@
       "title": "AI で書く",
       "intro": "接続済みの GitHub リポジトリとこの投稿を読み、文章を提案します。適用するまで何も変更されません。",
       "mode": "やること",
-      "modes": { "write": "投稿を書く", "continue": "続きを書く", "improve": "文章を改善", "meta": "タイトル・抜粋・タグ" },
+      "modes": {
+        "write": "投稿を書く",
+        "continue": "続きを書く",
+        "improve": "文章を改善",
+        "meta": "タイトル・抜粋・タグ"
+      },
       "selectionInstruction": "このテキストをどう変えますか？",
       "selectionPlaceholder": "もっと短く、親しみやすく。空欄なら整えるだけです。",
       "applyInsert": "この文章を挿入",
@@ -3539,7 +3543,19 @@
       "resolved": "解決済み",
       "ignored": "無視",
       "analyzeError": "エラーを分析できませんでした",
-      "loadError": "エラーを読み込めませんでした"
+      "loadError": "エラーを読み込めませんでした",
+      "analyzeOptions": "Analyze options",
+      "viewReports": "View all reports",
+      "scheduleLabel": "Run automatically",
+      "scheduleError": "Couldn't save the schedule.",
+      "copyReport": "Copy report",
+      "readCode": "Read code from: {files}.",
+      "schedule": {
+        "off": "Off",
+        "daily": "Every day",
+        "weekly": "Every week",
+        "monthly": "Every month"
+      }
     }
   },
   "projectTools": {
@@ -5324,6 +5340,20 @@
       "connectName": "{name} に接続",
       "loadFailed": "エラートラッキングサーバーを読み込めませんでした",
       "connectFailed": "エラートラッキングを接続できませんでした"
+    },
+    "reports": {
+      "title": "AI reports",
+      "description": "Every AI analysis of this project’s errors, newest first. The latest 100 are kept.",
+      "empty": "No reports yet. Run “Analyze with AI” or set a schedule.",
+      "scheduled": "Scheduled",
+      "manual": "Manual",
+      "errorCount": "{count} error | {count} errors",
+      "copy": "Copy report",
+      "delete": "Delete report",
+      "deleteConfirm": "Delete the report from {date}?",
+      "sources": "Read code from: {files}",
+      "loadFailed": "Couldn't load the reports.",
+      "deleteFailed": "Couldn't delete the report."
     }
   },
   "translations": {

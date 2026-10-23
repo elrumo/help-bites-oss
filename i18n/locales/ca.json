@@ -72,7 +72,6 @@
     "errors": "Errors",
     "dev": "Instal·lació i API",
     "settings": "Configuració",
-    "pages": "Pàgines",
     "blog": "Blog",
     "forms": "Formularis",
     "pricing": "Preus"
@@ -732,7 +731,12 @@
       "title": "Escriu amb IA",
       "intro": "Llegeix els teus repos de GitHub connectats i aquesta entrada, i proposa text. No canvia res fins que l'apliquis.",
       "mode": "Què fer",
-      "modes": { "write": "Escriure l'entrada", "continue": "Continuar-la", "improve": "Millorar el text", "meta": "Títol, extracte i etiquetes" },
+      "modes": {
+        "write": "Escriure l'entrada",
+        "continue": "Continuar-la",
+        "improve": "Millorar el text",
+        "meta": "Títol, extracte i etiquetes"
+      },
       "selectionInstruction": "Com hauria de canviar aquest text?",
       "selectionPlaceholder": "Fes-lo més curt i proper. Deixa-ho buit per només polir-lo.",
       "applyInsert": "Insereix el passatge",
@@ -3539,7 +3543,19 @@
       "resolved": "Resolts",
       "ignored": "Ignorats",
       "analyzeError": "No s'han pogut analitzar els errors",
-      "loadError": "No s'han pogut carregar els errors"
+      "loadError": "No s'han pogut carregar els errors",
+      "analyzeOptions": "Analyze options",
+      "viewReports": "View all reports",
+      "scheduleLabel": "Run automatically",
+      "scheduleError": "Couldn't save the schedule.",
+      "copyReport": "Copy report",
+      "readCode": "Read code from: {files}.",
+      "schedule": {
+        "off": "Off",
+        "daily": "Every day",
+        "weekly": "Every week",
+        "monthly": "Every month"
+      }
     }
   },
   "projectTools": {
@@ -5324,6 +5340,20 @@
       "connectName": "Connecta {name}",
       "loadFailed": "No s'han pogut carregar els servidors de seguiment d'errors",
       "connectFailed": "No s'ha pogut connectar el seguiment d'errors"
+    },
+    "reports": {
+      "title": "AI reports",
+      "description": "Every AI analysis of this project’s errors, newest first. The latest 100 are kept.",
+      "empty": "No reports yet. Run “Analyze with AI” or set a schedule.",
+      "scheduled": "Scheduled",
+      "manual": "Manual",
+      "errorCount": "{count} error | {count} errors",
+      "copy": "Copy report",
+      "delete": "Delete report",
+      "deleteConfirm": "Delete the report from {date}?",
+      "sources": "Read code from: {files}",
+      "loadFailed": "Couldn't load the reports.",
+      "deleteFailed": "Couldn't delete the report."
     }
   },
   "translations": {

@@ -71,8 +71,28 @@ struct ErrorBoardState: Decodable, Sendable {
 /// `POST /v1/admin/errors/:id/analyze`.
 struct ErrorAnalysis: Decodable, Sendable { let text: String; let files: [String]; let cached: Bool }
 
-/// `POST /v1/admin/errors/analyze`: AI triage of every unresolved error.
-struct ErrorOverview: Decodable, Sendable { let text: String; let count: Int }
+/// `POST /v1/admin/errors/analyze`: AI triage of every unresolved error, saved as a report (`GET /v1/admin/errors/reports` lists them).
+struct ErrorOverview: Decodable, Identifiable, Equatable, Sendable {
+  let id: String
+  let text: String
+  let count: Int
+  let files: [String]
+  let source: String
+  let at: String?
+}
+
+/// How often the AI triage runs on its own: shared/errorReports.ts `REPORT_FREQUENCIES` (tests/errorReportsNativeParity.test.ts keeps them equal).
+enum ErrorReportFrequency: String, CaseIterable, Sendable {
+  case off, daily, weekly, monthly
+  var label: String {
+    switch self {
+    case .off: String(localized: "Off")
+    case .daily: String(localized: "Every day")
+    case .weekly: String(localized: "Every week")
+    case .monthly: String(localized: "Every month")
+    }
+  }
+}
 
 /// shared/errorAlerts.ts `ErrorAlertRule`.
 struct ErrorAlertRule: Codable, Identifiable, Sendable, Equatable {

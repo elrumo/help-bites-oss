@@ -72,7 +72,6 @@
     "errors": "오류",
     "dev": "설치 및 API",
     "settings": "설정",
-    "pages": "페이지",
     "blog": "블로그",
     "forms": "양식",
     "pricing": "요금"
@@ -732,7 +731,12 @@
       "title": "AI로 작성",
       "intro": "연결된 GitHub 저장소와 이 게시물을 읽고 글을 제안합니다. 적용하기 전에는 아무것도 바뀌지 않습니다.",
       "mode": "할 일",
-      "modes": { "write": "게시물 쓰기", "continue": "이어서 쓰기", "improve": "글 다듬기", "meta": "제목, 요약, 태그" },
+      "modes": {
+        "write": "게시물 쓰기",
+        "continue": "이어서 쓰기",
+        "improve": "글 다듬기",
+        "meta": "제목, 요약, 태그"
+      },
       "selectionInstruction": "이 텍스트를 어떻게 바꿀까요?",
       "selectionPlaceholder": "더 짧고 친근하게. 비워 두면 다듬기만 합니다.",
       "applyInsert": "이 글 삽입",
@@ -3539,7 +3543,19 @@
       "resolved": "해결됨",
       "ignored": "무시됨",
       "analyzeError": "오류를 분석할 수 없습니다",
-      "loadError": "오류를 불러올 수 없습니다"
+      "loadError": "오류를 불러올 수 없습니다",
+      "analyzeOptions": "Analyze options",
+      "viewReports": "View all reports",
+      "scheduleLabel": "Run automatically",
+      "scheduleError": "Couldn't save the schedule.",
+      "copyReport": "Copy report",
+      "readCode": "Read code from: {files}.",
+      "schedule": {
+        "off": "Off",
+        "daily": "Every day",
+        "weekly": "Every week",
+        "monthly": "Every month"
+      }
     }
   },
   "projectTools": {
@@ -5324,6 +5340,20 @@
       "connectName": "{name} 연결",
       "loadFailed": "오류 추적 서버를 불러올 수 없습니다",
       "connectFailed": "오류 추적을 연결할 수 없습니다"
+    },
+    "reports": {
+      "title": "AI reports",
+      "description": "Every AI analysis of this project’s errors, newest first. The latest 100 are kept.",
+      "empty": "No reports yet. Run “Analyze with AI” or set a schedule.",
+      "scheduled": "Scheduled",
+      "manual": "Manual",
+      "errorCount": "{count} error | {count} errors",
+      "copy": "Copy report",
+      "delete": "Delete report",
+      "deleteConfirm": "Delete the report from {date}?",
+      "sources": "Read code from: {files}",
+      "loadFailed": "Couldn't load the reports.",
+      "deleteFailed": "Couldn't delete the report."
     }
   },
   "translations": {

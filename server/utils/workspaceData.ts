@@ -120,7 +120,8 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   // Mail a workspace sends without a project (a master's test) carries the workspace instead.
   EmailLog: { scope: 'project', orWorkspace: true },
   EmailSuppression: { scope: 'project' },
-  ErrorAnalysis: { scope: 'project' }
+  ErrorAnalysis: { scope: 'project' },
+  ErrorReport: { scope: 'project' }
 }
 
 const PAGE = 500

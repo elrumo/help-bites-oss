@@ -11,7 +11,12 @@
             <USelect v-model="status" :items="statusItems" class="w-40" @update:model-value="load()" />
             <UInput v-model="search" icon="i-lucide-search" :placeholder="$t('projectPages.errors.searchPlaceholder')" class="min-w-48 flex-1" @keyup.enter="load()" />
             <UButton color="neutral" variant="soft" icon="i-lucide-refresh-cw" :aria-label="$t('projectPages.errors.refreshErrors')" @click="load()" />
-            <UButton color="primary" variant="soft" icon="i-lucide-wand-sparkles" :label="$t('projectPages.errors.analyze')" :loading="analyzing" @click="analyzeAll()" />
+            <UFieldGroup>
+              <UButton color="primary" variant="soft" icon="i-lucide-wand-sparkles" :label="$t('projectPages.errors.analyze')" :loading="analyzing" @click="analyzeAll()" />
+              <UDropdownMenu :items="analyzeMenu" :content="{ align: 'end' }">
+                <UButton color="primary" variant="soft" icon="i-lucide-chevron-down" :aria-label="$t('projectPages.errors.analyzeOptions')" />
+              </UDropdownMenu>
+            </UFieldGroup>
             <UButton color="neutral" variant="soft" icon="i-lucide-plus" :label="$t('projectPages.errors.new')" @click="connectOpen = true" />
             <UButton color="neutral" variant="soft" icon="i-lucide-bell" :label="$t('projectPages.errors.alerts')" :aria-label="$t('projectPages.errors.alertsAria')" @click="alertsOpen = true" />
             <UButton color="neutral" variant="soft" icon="i-lucide-settings-2" :label="$t('projectPages.errors.manage')" :aria-label="$t('projectPages.errors.manageAria')" @click="manageOpen = true" />
@@ -26,7 +31,10 @@
               <template #content>
                 <div class="pt-3">
                   <MarkdownBlock :text="overview!.text" />
-                  <p class="mt-2 text-xs text-muted">{{ $t('projectPages.errors.basedOn', overview!.count) }}</p>
+                  <div class="mt-2 flex items-center gap-2">
+                    <p class="min-w-0 flex-1 text-xs text-muted">{{ $t('projectPages.errors.basedOn', overview!.count) }}<template v-if="overview!.files.length"> {{ $t('projectPages.errors.readCode', { files: overview!.files.join(', ') }) }}</template></p>
+                    <UButton color="neutral" variant="ghost" size="xs" :icon="copied === 'overview' ? 'i-lucide-check' : 'i-lucide-copy'" :label="$t('projectPages.errors.copyReport')" @click="copy(overview!.text, 'overview')" />
+                  </div>
                 </div>
               </template>
             </UCollapsible>
@@ -69,6 +77,7 @@
           <UButton v-if="next" color="neutral" variant="soft" :label="$t('projectPages.errors.loadMore')" @click="load(next)" />
         </template>
         <ErrorDrawer v-model:issue="selected" :project-id="id" :saved="selected ? analyses[analysisKey(selected)] : undefined" @analyzed="(issue, result) => analyses[analysisKey(issue)] = result" />
+        <ErrorReportsModal v-model:open="reportsOpen" :project-id="id" @changed="onReportsChanged" />
         <ConnectErrorTrackingModal v-model:open="connectOpen" :project-id="id" @connected="onConnected" />
         <ErrorAlertsModal v-model:open="alertsOpen" :project-id="id" :links="links" />
         <ManageErrorProjectsModal v-model:open="manageOpen" :project-id="id" @changed="onManaged" />
@@ -78,6 +87,7 @@
 </template>
 
 <script setup lang="ts">
+import { REPORT_FREQUENCIES, type ReportFrequency } from '#shared/errorReports'
 import type { SavedAnalysis } from '~~/server/utils/errorAi'
 import type { AdminProject } from '~~/server/utils/projects'
 
@@ -93,6 +103,7 @@ const next = ref('')
 const connectOpen = ref(false)
 const manageOpen = ref(false)
 const alertsOpen = ref(false)
+const reportsOpen = ref(false)
 const loading = ref(true)
 const linkFilter = ref('')
 const links = computed(() => project.value?.errorLinks || [])
@@ -110,6 +121,22 @@ const analyzing = ref(false)
 async function analyzeAll() {
   analyzing.value = true; overviewError.value = ''
   try { analyses.value = { ...analyses.value, overview: await api('/admin/errors/analyze', { method: 'POST', body: { project: id } }) }; overviewOpen.value = true } catch (cause: any) { overviewError.value = cause.message || t('projectPages.errors.analyzeError') } finally { analyzing.value = false }
+}
+const frequencies = computed(() => REPORT_FREQUENCIES.map(value => ({ value, label: t(`projectPages.errors.schedule.${value}`) })))
+const frequency = ref<ReportFrequency>('off')
+const analyzeMenu = computed(() => [
+  [{ label: t('projectPages.errors.viewReports'), icon: 'i-lucide-history', onSelect: () => { reportsOpen.value = true } }],
+  [{ label: t('projectPages.errors.scheduleLabel'), type: 'label' as const }, ...frequencies.value.map(item => ({ label: item.label, icon: frequency.value === item.value ? 'i-lucide-check' : 'i-lucide-calendar-clock', onSelect: () => setFrequency(item.value) }))]
+])
+async function setFrequency(value: ReportFrequency) {
+  const before = frequency.value
+  frequency.value = value
+  try { await api('/admin/errors/schedule', { method: 'PUT', body: { project: id, frequency: value } }) } catch (cause: any) { frequency.value = before; overviewError.value = cause.message || t('projectPages.errors.scheduleError') }
+}
+// Deleting the newest report makes the next one the overview, or none.
+function onReportsChanged(latest: SavedAnalysis | null) {
+  const { overview: _gone, ...rest } = analyses.value
+  analyses.value = latest ? { ...rest, overview: latest } : rest
 }
 async function copy(text: string, key: string) {
   try { await navigator.clipboard.writeText(text); copied.value = key; setTimeout(() => { if (copied.value === key) copied.value = '' }, 1500) } catch {}
@@ -145,6 +172,7 @@ async function update(issue: any, value: string) { await api(`/admin/errors/${is
 onMounted(async () => {
   if (!projects.value.length) await loadProjects()
   api<Record<string, SavedAnalysis>>('/admin/errors/analyses', { query: { project: id } }).then((saved) => { analyses.value = saved }).catch(() => {})
+  api<{ frequency: ReportFrequency }>('/admin/errors/schedule', { query: { project: id } }).then((saved) => { frequency.value = saved.frequency }).catch(() => {})
   await load()
 })
 </script>

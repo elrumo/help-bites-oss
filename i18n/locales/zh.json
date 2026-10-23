@@ -72,7 +72,6 @@
     "errors": "错误",
     "dev": "安装与 API",
     "settings": "设置",
-    "pages": "页面",
     "blog": "博客",
     "forms": "表单",
     "pricing": "定价"
@@ -732,7 +731,12 @@
       "title": "用 AI 写作",
       "intro": "读取已连接的 GitHub 仓库和这篇文章，并提出文字建议。你应用之前不会有任何改动。",
       "mode": "要做什么",
-      "modes": { "write": "撰写文章", "continue": "继续写", "improve": "改进文字", "meta": "标题、摘要和标签" },
+      "modes": {
+        "write": "撰写文章",
+        "continue": "继续写",
+        "improve": "改进文字",
+        "meta": "标题、摘要和标签"
+      },
       "selectionInstruction": "要如何修改这段文字？",
       "selectionPlaceholder": "更简短、更亲切。留空则只做润色。",
       "applyInsert": "插入这段文字",
@@ -3539,7 +3543,19 @@
       "resolved": "已解决",
       "ignored": "已忽略",
       "analyzeError": "无法分析错误",
-      "loadError": "无法加载错误"
+      "loadError": "无法加载错误",
+      "analyzeOptions": "Analyze options",
+      "viewReports": "View all reports",
+      "scheduleLabel": "Run automatically",
+      "scheduleError": "Couldn't save the schedule.",
+      "copyReport": "Copy report",
+      "readCode": "Read code from: {files}.",
+      "schedule": {
+        "off": "Off",
+        "daily": "Every day",
+        "weekly": "Every week",
+        "monthly": "Every month"
+      }
     }
   },
   "projectTools": {
@@ -5324,6 +5340,20 @@
       "connectName": "连接 {name}",
       "loadFailed": "无法加载错误追踪服务器",
       "connectFailed": "无法连接错误追踪"
+    },
+    "reports": {
+      "title": "AI reports",
+      "description": "Every AI analysis of this project’s errors, newest first. The latest 100 are kept.",
+      "empty": "No reports yet. Run “Analyze with AI” or set a schedule.",
+      "scheduled": "Scheduled",
+      "manual": "Manual",
+      "errorCount": "{count} error | {count} errors",
+      "copy": "Copy report",
+      "delete": "Delete report",
+      "deleteConfirm": "Delete the report from {date}?",
+      "sources": "Read code from: {files}",
+      "loadFailed": "Couldn't load the reports.",
+      "deleteFailed": "Couldn't delete the report."
     }
   },
   "translations": {

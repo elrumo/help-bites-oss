@@ -74,7 +74,7 @@ const FILE_WINDOW = 40
 const FILE_CHARS = 4_000
 
 /** Around the failing line when it is known, else the top of the file. */
-function excerpt(text: string, line: number): string {
+export function excerpt(text: string, line: number): string {
   const lines = text.split('\n')
   const from = line > 0 ? Math.max(0, line - 1 - FILE_WINDOW) : 0
   const body = lines.slice(from, from + 2 * FILE_WINDOW + 1).map((l, i) => `${from + i + 1}: ${l}`).join('\n')

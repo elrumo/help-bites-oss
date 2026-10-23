@@ -811,7 +811,12 @@
       "title": "Write with AI",
       "intro": "Reads your connected GitHub repos and this post, then proposes text. Nothing changes until you apply it.",
       "mode": "What to do",
-      "modes": { "write": "Write the post", "continue": "Continue it", "improve": "Improve the text", "meta": "Title, excerpt and tags" },
+      "modes": {
+        "write": "Write the post",
+        "continue": "Continue it",
+        "improve": "Improve the text",
+        "meta": "Title, excerpt and tags"
+      },
       "selectionInstruction": "How should it change this text?",
       "selectionPlaceholder": "Make it shorter and friendlier. Leave empty to just tidy it.",
       "applyInsert": "Insert the passage",
@@ -2927,7 +2932,8 @@
         },
         "roadmap": {
           "term": "A roadmap from your own planning",
-          "desc": "Plan internal work on a kanban, link it to posts and conversations, and publish only the items you pick. File an error on it in one click, and see the GitHub commits and pull requests that finished each item."        },
+          "desc": "Plan internal work on a kanban, link it to posts and conversations, and publish only the items you pick. File an error on it in one click, and see the GitHub commits and pull requests that finished each item."
+        },
         "changelog": {
           "term": "A changelog from what shipped",
           "desc": "Entries grouped into releases, drafted from finished work and reviewed before they go public. Includes RSS and digest emails."
@@ -3747,7 +3753,19 @@
       "resolved": "Resolved",
       "ignored": "Ignored",
       "analyzeError": "Could not analyze errors",
-      "loadError": "Could not load errors"
+      "loadError": "Could not load errors",
+      "analyzeOptions": "Analyze options",
+      "viewReports": "View all reports",
+      "scheduleLabel": "Run automatically",
+      "scheduleError": "Couldn't save the schedule.",
+      "copyReport": "Copy report",
+      "readCode": "Read code from: {files}.",
+      "schedule": {
+        "off": "Off",
+        "daily": "Every day",
+        "weekly": "Every week",
+        "monthly": "Every month"
+      }
     }
   },
   "projectTools": {
@@ -5537,6 +5555,20 @@
       "file": "File on board",
       "onBoard": "On the board: #{number} {title}",
       "failed": "Could not file this error on the board."
+    },
+    "reports": {
+      "title": "AI reports",
+      "description": "Every AI analysis of this project’s errors, newest first. The latest 100 are kept.",
+      "empty": "No reports yet. Run “Analyze with AI” or set a schedule.",
+      "scheduled": "Scheduled",
+      "manual": "Manual",
+      "errorCount": "{count} error | {count} errors",
+      "copy": "Copy report",
+      "delete": "Delete report",
+      "deleteConfirm": "Delete the report from {date}?",
+      "sources": "Read code from: {files}",
+      "loadFailed": "Couldn't load the reports.",
+      "deleteFailed": "Couldn't delete the report."
     }
   },
   "translations": {

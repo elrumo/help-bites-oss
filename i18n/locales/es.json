@@ -72,7 +72,6 @@
     "errors": "Errores",
     "dev": "Instalación y API",
     "settings": "Ajustes",
-    "pages": "Páginas",
     "blog": "Blog",
     "forms": "Formularios",
     "pricing": "Precios"
@@ -732,7 +731,12 @@
       "title": "Escribir con IA",
       "intro": "Lee tus repos de GitHub conectados y esta entrada, y propone texto. No cambia nada hasta que lo apliques.",
       "mode": "Qué hacer",
-      "modes": { "write": "Escribir la entrada", "continue": "Continuarla", "improve": "Mejorar el texto", "meta": "Título, extracto y etiquetas" },
+      "modes": {
+        "write": "Escribir la entrada",
+        "continue": "Continuarla",
+        "improve": "Mejorar el texto",
+        "meta": "Título, extracto y etiquetas"
+      },
       "selectionInstruction": "¿Cómo debería cambiar este texto?",
       "selectionPlaceholder": "Hazlo más corto y cercano. Déjalo vacío para solo pulirlo.",
       "applyInsert": "Insertar el pasaje",
@@ -3539,7 +3543,19 @@
       "resolved": "Resueltos",
       "ignored": "Ignorados",
       "analyzeError": "No se pudieron analizar los errores",
-      "loadError": "No se pudieron cargar los errores"
+      "loadError": "No se pudieron cargar los errores",
+      "analyzeOptions": "Opciones de análisis",
+      "viewReports": "Ver todos los informes",
+      "scheduleLabel": "Ejecutar automáticamente",
+      "scheduleError": "No se pudo guardar la programación.",
+      "copyReport": "Copiar informe",
+      "readCode": "Código leído de: {files}.",
+      "schedule": {
+        "off": "Desactivado",
+        "daily": "Cada día",
+        "weekly": "Cada semana",
+        "monthly": "Cada mes"
+      }
     }
   },
   "projectTools": {
@@ -5324,6 +5340,20 @@
       "connectName": "Conectar {name}",
       "loadFailed": "No se pudieron cargar los servidores de seguimiento de errores",
       "connectFailed": "No se pudo conectar el seguimiento de errores"
+    },
+    "reports": {
+      "title": "Informes de IA",
+      "description": "Todos los análisis de IA de los errores de este proyecto, del más reciente al más antiguo. Se guardan los últimos 100.",
+      "empty": "Aún no hay informes. Usa «Analizar con IA» o define una programación.",
+      "scheduled": "Programado",
+      "manual": "Manual",
+      "errorCount": "{count} error | {count} errores",
+      "copy": "Copiar informe",
+      "delete": "Eliminar informe",
+      "deleteConfirm": "¿Eliminar el informe del {date}?",
+      "sources": "Código leído de: {files}",
+      "loadFailed": "No se pudieron cargar los informes.",
+      "deleteFailed": "No se pudo eliminar el informe."
     }
   },
   "translations": {
