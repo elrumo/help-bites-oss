@@ -70,7 +70,7 @@
     "email": "Correu",
     "flags": "Flags",
     "errors": "Errors",
-    "dev": "Instal·lació i API",
+    "dev": "Desenvolupador i MCP",
     "settings": "Configuració",
     "pages": "Pàgines",
     "blog": "Blog",
@@ -1644,7 +1644,7 @@
       "copyUrl": "Copia l'URL",
       "defaultsTo": "per defecte “{value}”",
       "descriptionMaster": "Les plantilles compartides es llegeixen per ID amb una clau d'API d'administrador. Els projectes que enllacen aquesta plantilla l'obtenen i l'envien amb la seva pròpia clau.",
-      "descriptionProject": "Des del teu servidor, amb el secret d'aquest projecte (Projecte → Instal·lació i API). Mai des del navegador.",
+      "descriptionProject": "Des del teu servidor, amb el secret d'aquest projecte (Projecte → Desenvolupador i MCP). Mai des del navegador.",
       "fetchNote": "Les variables són paràmetres de consulta. Sense {format} reps JSON: {json}, a punt per a qualsevol proveïdor de correu.",
       "fetchTitle": "Obtén-lo renderitzat",
       "fullReference": "Referència completa: {link}.",
@@ -3288,6 +3288,10 @@
       "senderMovedLink": "Correu → Configuració"
     },
     "dev": {
+      "mcp": "Assistents d'IA (MCP)",
+      "mcpIntro": "Deixa que Claude, ChatGPT o Cursor treballin al teu espai com tu. Afegeix aquesta adreça als connectors de l'assistent i inicia sessió, o dona-li una clau d'API.",
+      "mcpKeyHint": "Claude Code, Cursor i altres clients fan servir una clau de Claus d'API com a capçalera:",
+      "mcpKeys": "Claus d'API",
       "guide": "Guia",
       "apiReference": "Referència de l'API",
       "connect": "Connecta {name}",

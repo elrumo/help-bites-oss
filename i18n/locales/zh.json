@@ -70,7 +70,7 @@
     "email": "邮件",
     "flags": "功能开关",
     "errors": "错误",
-    "dev": "安装与 API",
+    "dev": "开发者与 MCP",
     "settings": "设置",
     "pages": "页面",
     "blog": "博客",
@@ -1644,7 +1644,7 @@
       "copyUrl": "复制 URL",
       "defaultsTo": "默认为“{value}”",
       "descriptionMaster": "共享模板通过管理员 API 密钥按 ID 读取。链接该模板的项目使用各自的密钥获取和发送。",
-      "descriptionProject": "从你的服务器调用，使用此项目的密钥（项目 → 安装与 API）。切勿在浏览器中使用。",
+      "descriptionProject": "从你的服务器调用，使用此项目的密钥（项目 → 开发者与 MCP）。切勿在浏览器中使用。",
       "fetchNote": "变量作为查询参数传递。不加 {format} 时将返回 JSON：{json}，可直接用于任何邮件服务商。",
       "fetchTitle": "获取渲染结果",
       "fullReference": "完整参考：{link}。",
@@ -3288,6 +3288,10 @@
       "senderMovedLink": "邮件 → 设置"
     },
     "dev": {
+      "mcp": "AI 助手（MCP）",
+      "mcpIntro": "让 Claude、ChatGPT 或 Cursor 以你的身份在工作区中工作。将此地址添加到助手的连接器并登录，或给它一个 API 密钥。",
+      "mcpKeyHint": "Claude Code、Cursor 等客户端将 API 密钥中的密钥作为请求头传入：",
+      "mcpKeys": "API 密钥",
       "guide": "指南",
       "apiReference": "API 参考",
       "connect": "连接 {name}",

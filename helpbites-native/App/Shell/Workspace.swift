@@ -88,7 +88,7 @@ enum ProjectSection: String, CaseIterable, Identifiable, Hashable {
     case .email: "Email"
     case .flags: "Flags"
     case .errors: "Errors"
-    case .dev: "Install & API"
+    case .dev: "Developer & MCP"
     case .settings: "Settings"
     }
   }

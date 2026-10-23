@@ -28,7 +28,7 @@ export const projectSections: ProjectSection[] = [
   { path: 'brand', label: 'Brand', icon: 'i-lucide-swatch-book' },
   { path: 'errors', label: 'Errors', icon: 'i-lucide-bug' },
   { path: 'flags', label: 'Flags', icon: 'i-lucide-toggle-right' },
-  { path: 'dev', label: 'Install & API', icon: 'i-lucide-code-xml' },
+  { path: 'dev', label: 'Developer & MCP', icon: 'i-lucide-code-xml' },
   { path: 'settings', label: 'Settings', icon: 'i-lucide-settings' }
 ]
 

@@ -54,7 +54,7 @@ written from the event alone.
 Add your trackers once in **Settings → Error tracking**: a name, the URL and API
 token (plus the organisation slug for GlitchTip). Add as many servers as you
 like, GlitchTip and Bugsink alike; every project in the workspace can use any
-of them. Then open Project → Install & API (or Errors) → **Connect error tracking**,
+of them. Then open Project → Developer & MCP (or Errors) → **Connect error tracking**,
 pick a server from the list (or add a new one right there) and connect. No env
 vars or restart needed. Tokens are stored master-key-only in the workspace's
 settings and never sent back to the browser. A project uses one server at a
@@ -107,14 +107,14 @@ can't add alert destinations, so the dialog then shows a webhook URL: in
 Bugsink open **Projects** and the **Other Projects** tab (the API creates the
 team and project without adding any user as a member, so they're not under
 My Projects), click the alerts (megaphone) icon next to the project, click **Add**, set Kind to **Slack** and paste the URL as the
-Webhook url (older Bugsink has no Custom kind; HelpBites reads the Slack payload and still accepts Custom). The webhook is optional: it only makes alert rules run right away instead of within a minute. The same URL stays on the Install & API and Errors pages. If Bugsink and
+Webhook url (older Bugsink has no Custom kind; HelpBites reads the Slack payload and still accepts Custom). The webhook is optional: it only makes alert rules run right away instead of within a minute. The same URL stays on the Developer & MCP and Errors pages. If Bugsink and
 HelpBites talk over a private network, set `ALERTS_WEBHOOK_DENY_NON_GLOBAL=false`
 on Bugsink.
 
 ### More than one tracker project
 
 A HelpBites project can report to several tracker projects (a web app and an
-API, say). Run **Connect error tracking** again from the Errors or Install & API page and
+API, say). Run **Connect error tracking** again from the Errors or Developer & MCP page and
 give a different **Project name**; a name that already exists in the team is
 reused. Each one has its own DSN, alert webhook URL and token. The Errors page
 shows one pill per tracker project ("All" merges each one's newest page;
@@ -130,7 +130,7 @@ page apply to each page of 250 issues.
 
 ## SDKs
 
-Use any Sentry SDK with the DSN shown in Project → Install & API. Always set the same
+Use any Sentry SDK with the DSN shown in Project → Developer & MCP. Always set the same
 stable identity value used in the HelpBites token's `sub` claim:
 
 ```js

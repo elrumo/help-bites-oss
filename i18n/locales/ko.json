@@ -70,7 +70,7 @@
     "email": "이메일",
     "flags": "플래그",
     "errors": "오류",
-    "dev": "설치 및 API",
+    "dev": "개발자 및 MCP",
     "settings": "설정",
     "pages": "페이지",
     "blog": "블로그",
@@ -1644,7 +1644,7 @@
       "copyUrl": "URL 복사",
       "defaultsTo": "기본값 “{value}”",
       "descriptionMaster": "공유 템플릿은 관리자 API 키로 ID를 지정해 읽습니다. 이 템플릿을 연결한 프로젝트는 자체 키로 가져오고 발송합니다.",
-      "descriptionProject": "서버에서 이 프로젝트의 시크릿(프로젝트 → 설치 및 API)으로 호출하세요. 브라우저에서는 절대 사용하지 마세요.",
+      "descriptionProject": "서버에서 이 프로젝트의 시크릿(프로젝트 → 개발자 및 MCP)으로 호출하세요. 브라우저에서는 절대 사용하지 마세요.",
       "fetchNote": "변수는 쿼리 매개변수입니다. {format}을(를) 붙이지 않으면 JSON으로 응답합니다: {json}. 어떤 메일 제공업체에도 바로 사용할 수 있습니다.",
       "fetchTitle": "렌더링된 결과 가져오기",
       "fullReference": "전체 참조 자료: {link}.",
@@ -3288,6 +3288,10 @@
       "senderMovedLink": "이메일 → 설정"
     },
     "dev": {
+      "mcp": "AI 어시스턴트(MCP)",
+      "mcpIntro": "Claude, ChatGPT, Cursor가 내 워크스페이스에서 나로서 작업하게 합니다. 이 주소를 어시스턴트의 커넥터에 추가하고 로그인하거나 API 키를 전달하세요.",
+      "mcpKeyHint": "Claude Code, Cursor 등의 클라이언트는 API 키의 키를 헤더로 전달합니다:",
+      "mcpKeys": "API 키",
       "guide": "가이드",
       "apiReference": "API 참조",
       "connect": "{name} 연결",

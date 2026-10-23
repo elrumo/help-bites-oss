@@ -70,7 +70,7 @@
     "email": "Correo",
     "flags": "Flags",
     "errors": "Errores",
-    "dev": "Instalación y API",
+    "dev": "Desarrollador y MCP",
     "settings": "Ajustes",
     "pages": "Páginas",
     "blog": "Blog",
@@ -1644,7 +1644,7 @@
       "copyUrl": "Copiar URL",
       "defaultsTo": "por defecto “{value}”",
       "descriptionMaster": "Las plantillas compartidas se leen por ID con una clave de API de administrador. Los proyectos que enlazan esta plantilla la obtienen y la envían con su propia clave.",
-      "descriptionProject": "Desde tu servidor, con el secreto de este proyecto (Proyecto → Instalación y API). Nunca desde el navegador.",
+      "descriptionProject": "Desde tu servidor, con el secreto de este proyecto (Proyecto → Desarrollador y MCP). Nunca desde el navegador.",
       "fetchNote": "Las variables son parámetros de consulta. Sin {format} recibes JSON: {json}, listo para cualquier proveedor de correo.",
       "fetchTitle": "Obtenerlo renderizado",
       "fullReference": "Referencia completa: {link}.",
@@ -3288,6 +3288,10 @@
       "senderMovedLink": "Correo → Ajustes"
     },
     "dev": {
+      "mcp": "Asistentes de IA (MCP)",
+      "mcpIntro": "Deja que Claude, ChatGPT o Cursor trabajen en tu espacio como tú. Añade esta dirección a los conectores del asistente e inicia sesión, o dale una clave de API.",
+      "mcpKeyHint": "Claude Code, Cursor y otros clientes usan una clave de Claves de API como cabecera:",
+      "mcpKeys": "Claves de API",
       "guide": "Guía",
       "apiReference": "Referencia de la API",
       "connect": "Conectar {name}",

@@ -331,7 +331,7 @@ Details in [FLAGS.md](FLAGS.md).
 
 ## Error tracking
 
-If the operator enables Project → Install & API → Error tracking, copy its DSN into any
+If the operator enables Project → Developer & MCP → Error tracking, copy its DSN into any
 Sentry-compatible SDK and call `Sentry.setUser({ id: user.id })`, where `user.id`
 is the same stable value used as this document's token `sub`. That associates a
 customer's recent errors with their HelpBites conversations. See [ERRORS.md](ERRORS.md).

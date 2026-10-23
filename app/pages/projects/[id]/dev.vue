@@ -133,6 +133,24 @@
           </div>
         </section>
 
+        <!-- AI assistants: the workspace-wide MCP server, shown here next to the keys it uses. -->
+        <section id="mcp" class="scroll-mt-6 space-y-3">
+          <h2 class="section-title">{{ $t('projectPages.dev.mcp') }}</h2>
+          <div class="space-y-3 rounded-xl border border-default p-5">
+            <p class="step-text">{{ $t('projectPages.dev.mcpIntro') }}</p>
+            <div class="cred-value">
+              <code class="cred-code">{{ mcpUrl }}</code>
+              <UTooltip :text="copied === 'mcp' ? $t('projectPages.dev.copied') : $t('projectPages.dev.copy')"><UButton :icon="copied === 'mcp' ? 'i-lucide-check' : 'i-lucide-copy'" color="neutral" variant="ghost" size="sm" square class="text-muted" :aria-label="$t('workspaceSettings.apiKeys.mcpAddress')" @click="copy(mcpUrl, 'mcp')" /></UTooltip>
+            </div>
+            <p class="step-text">{{ $t('projectPages.dev.mcpKeyHint') }}</p>
+            <CodeBlock :code="mcpSnippet" lang="bash" />
+            <div class="flex gap-1">
+              <UButton to="/docs/mcp" target="_blank" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('workspaceSettings.apiKeys.mcpDocs')" />
+              <UButton to="/api-keys" size="xs" color="neutral" variant="ghost" trailing-icon="i-lucide-arrow-right" :label="$t('projectPages.dev.mcpKeys')" />
+            </div>
+          </div>
+        </section>
+
         <!-- Security and webhooks -->
         <form id="security" class="scroll-mt-6 space-y-3" @submit.prevent="saveSecurity">
           <h2 class="section-title">{{ $t('projectPages.dev.securityWebhooks') }}</h2>
@@ -275,6 +293,9 @@ async function saveSecurity() {
 
 const appUrl = useAppUrl()
 
+const mcpUrl = computed(() => `${appUrl.value}/mcp`)
+const mcpSnippet = computed(() => `claude mcp add --transport http helpbites ${mcpUrl.value} \\
+  --header "Authorization: Bearer ak_…"`)
 const mintSnippet = computed(() => `import { createHmac } from 'node:crypto'
 
 // GET /api/support/token — only for a signed-in user of your app

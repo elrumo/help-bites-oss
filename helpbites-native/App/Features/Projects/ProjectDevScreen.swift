@@ -59,6 +59,7 @@ struct ProjectDevScreen: View {
             header(project)
             credentials(project)
             integrations(project)
+            mcp
             security(project)
             WebhookEndpointsSection(projectId: projectId)
           }
@@ -74,7 +75,7 @@ struct ProjectDevScreen: View {
       .frame(maxWidth: .infinity)
     }
     .scrollDismissesKeyboard(.interactively)
-    .projectScreen(projectId, "Install & API")
+    .projectScreen(projectId, "Developer & MCP")
     .toolbar {
       ToolbarItemGroup(placement: .primaryAction) {
         Button { workspace.go(.developer) } label: { Label("Guide", systemImage: "book") }
@@ -316,6 +317,32 @@ struct ProjectDevScreen: View {
       CodeBlock(code: emailSnippet)
     }
   }
+
+  // MARK: AI assistants: the workspace-wide MCP server, shown next to the keys it uses.
+
+  private var mcp: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      heading(String(localized: "AI assistants (MCP)"))
+      VStack(alignment: .leading, spacing: 12) {
+        paragraph(String(localized: "Let Claude, ChatGPT or Cursor work in your workspace as you. Add this address to the assistant's connectors and sign in, or give it an API key."))
+        HStack(spacing: 8) { code(mcpURL); copyButton(mcpURL, id: "mcp") }
+        paragraph(String(localized: "Claude Code, Cursor and other clients take a key from API keys as a header:"))
+        CodeBlock(code: "claude mcp add --transport http helpbites \(mcpURL) \\\n  --header \"Authorization: Bearer ak_…\"")
+        HStack(spacing: 4) {
+          if let docs = URL(string: appURL + "/docs/mcp") {
+            Button { openURL(docs) } label: { Label("How to connect", systemImage: "book") }.buttonStyle(.lnGhost)
+          }
+          Button("API keys") { workspace.go(.apiKeys) }.buttonStyle(.lnGhost)
+        }
+        .padding(.leading, -10)
+      }
+      .padding(16)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
+    }
+  }
+
+  private var mcpURL: String { appURL + "/mcp" }
 
   // MARK: Security and webhooks
 

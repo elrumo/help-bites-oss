@@ -69,7 +69,7 @@
     "email": "Email",
     "flags": "Flags",
     "errors": "Errors",
-    "dev": "Install & API",
+    "dev": "Developer & MCP",
     "settings": "Settings",
     "pages": "Pages",
     "blog": "Blog",
@@ -1775,7 +1775,7 @@
       "copyUrl": "Copy URL",
       "defaultsTo": "defaults to “{value}”",
       "descriptionMaster": "Shared templates are read by id with an admin API key. Projects that link this template fetch and send it by their own key.",
-      "descriptionProject": "From your server, with this project's secret (Project → Install & API). Never from a browser.",
+      "descriptionProject": "From your server, with this project's secret (Project → Developer & MCP). Never from a browser.",
       "fetchNote": "Variables are query parameters. Without {format} you get JSON: {json}, ready for any mail provider.",
       "fetchTitle": "Fetch it rendered",
       "fullReference": "Full reference: {link}.",
@@ -3496,6 +3496,10 @@
       "senderMovedLink": "Email → Settings"
     },
     "dev": {
+      "mcp": "AI assistants (MCP)",
+      "mcpIntro": "Let Claude, ChatGPT or Cursor work in your workspace as you. Add this address to the assistant's connectors and sign in, or give it an API key.",
+      "mcpKeyHint": "Claude Code, Cursor and other clients take a key from API keys as a header:",
+      "mcpKeys": "API keys",
       "guide": "Guide",
       "apiReference": "API reference",
       "connect": "Connect {name}",

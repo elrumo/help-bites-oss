@@ -151,7 +151,7 @@ struct ProjectOverviewScreen: View {
     .task { await load() }
   }
 
-  /// `#anchor` is dropped; an unknown section opens Install & API.
+  /// `#anchor` is dropped; an unknown section opens Developer & MCP.
   private func section(_ path: String) -> ProjectSection {
     ProjectSection.fromWeb(path) ?? .dev
   }
