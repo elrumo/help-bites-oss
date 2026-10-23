@@ -50,6 +50,10 @@ and re-reads Stripe at once, instead of from its short cache (`POST …/{id}/pub
 with `{ "force": true }`). The server keeps no copy of the public JSON, so it is live
 at once; a visitor's browser or a CDN may hold the old answer for up to a minute. On the
 web the panel also reloads the public JSON past its own browser's cache.
+With `BUNNY_NET_API_KEY` set (your Bunny.net account API key), it also purges the CDN's
+copies of the table's JSON (every language and currency) and hosted page, on `APP_URL`
+and the address you opened the panel at; the answer then carries `cdn: { purged, error }`,
+and a failed purge is reported but never blocks the publish.
 
 ## Stripe
 

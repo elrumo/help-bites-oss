@@ -17,6 +17,7 @@ import { poweredByHtml, type PoweredBy } from './branding'
 import { lookOf } from './projects'
 import { escapeHtml } from './messageEmail'
 import { countPricing } from './pricingStats'
+import { purgeCdn } from './cdnPurge'
 import { findStripeAccount, pricingCatalogKey, stripeGet, stripeListAll } from './stripe'
 import { readTargetLocales, translateMissing } from './translate'
 
@@ -455,6 +456,14 @@ export async function publishPricingTable(project: ParseObject, row: ParseObject
   row.set('status', 'published')
   row.set('publishedAt', new Date())
   await row.save(null, MASTER)
+}
+
+/** Asks the CDN to drop its copies of a table's public JSON (every locale and currency) and hosted page; null without a CDN key. */
+export function purgePricingCdn(event: H3Event, project: ParseObject, row: ParseObject) {
+  const pk = String(project.get('publicKey') || '')
+  const key = String(row.get('key') || '')
+  const origins = [baseUrl(event), String(process.env.APP_URL || '').trim().replace(/\/+$/, '')].filter(Boolean)
+  return purgeCdn(origins.flatMap(origin => [`${origin}/v1/pricing/${pk}/${key}*`, `${origin}/pricing/${pk}/${key}*`]))
 }
 
 /** Apps get a 404; the published copy is kept for the next publish to replace. */

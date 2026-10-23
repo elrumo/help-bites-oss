@@ -5,6 +5,8 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Push live now** on a pricing table (⋯ menu, web and native): publishes again and re-reads Stripe at once; `POST /v1/admin/pricing-tables/:id/publish`
+  takes `{ "force": true }`. New optional env `BUNNY_NET_API_KEY` (Bunny.net account API key) makes it purge the CDN's cached copies too.
 - **Support email addresses** (`docs/INBOUND-EMAIL.md`). A project can have addresses such as `support@yourdomain.com`: mail sent to them becomes
   conversations in the inbox, and replies (yours, the assistant's, the API's) go back by email, threaded. Two kinds: an address on a domain whose
   MX points at Mailgun, or a HelpBites alias your own mailbox forwards to. New routes `GET`/`POST /v1/admin/projects/:id/inbound-addresses`,

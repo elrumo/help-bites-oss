@@ -4771,7 +4771,9 @@
       "suggestError": "제안할 수 없습니다",
       "pushLive": "지금 반영",
       "pushedLive": "반영했습니다",
-      "pushedLiveHint": "최신 Stripe 가격으로 다시 게시했습니다. 이전 사본을 캐시한 사이트도 1분 안에 바뀝니다."
+      "pushedLiveHint": "최신 Stripe 가격으로 다시 게시했습니다. 이전 사본을 캐시한 사이트도 1분 안에 바뀝니다.",
+      "pushedLiveCdn": "최신 Stripe 가격으로 다시 게시하고 Bunny.net 캐시를 비웠습니다.",
+      "pushedLiveCdnError": "다시 게시했지만 Bunny.net 캐시를 비우지 못했습니다: {error}"
     },
     "forms": {
       "guide": "가이드",

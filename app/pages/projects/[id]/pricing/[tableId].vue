@@ -309,11 +309,16 @@ async function save(quiet = false) {
   }
 }
 
+const cdnPurge = ref<{ purged: number, error: string } | null>(null)
+
 async function act(action: 'publish' | 'unpublish', force = false) {
   busy.value = action
   error.value = ''
+  cdnPurge.value = null
   try {
-    fill((await api<{ table: Table }>(`/admin/pricing-tables/${tableId}/${action}`, { method: 'POST', body: force ? { force } : undefined })).table)
+    const res = await api<{ table: Table, cdn?: { purged: number, error: string } }>(`/admin/pricing-tables/${tableId}/${action}`, { method: 'POST', body: force ? { force } : undefined })
+    fill(res.table)
+    cdnPurge.value = res.cdn || null
     toast.add({ title: action === 'publish' ? t('projectTools.pricing.publishedToast', { version: table.value!.version }) : t('projectTools.pricing.unpublishedToast'), icon: 'i-lucide-check', color: 'success' })
   } catch (e: any) {
     error.value = e?.message || t('projectTools.pricing.saveError')
@@ -336,7 +341,13 @@ async function pushLive() {
   const base = `${appUrl.value}${table.value?.path}`
   const tags = ['', ...Object.keys(form.value.translations)]
   await Promise.all(tags.map(tag => fetch(tag ? `${base}?locale=${encodeURIComponent(tag)}` : base, { cache: 'reload', credentials: 'omit' }).catch(() => {})))
-  toast.add({ title: t('projectTools.pricing.pushedLive'), description: t('projectTools.pricing.pushedLiveHint'), icon: 'i-lucide-zap', color: 'success' })
+  const cdn = cdnPurge.value
+  toast.add({
+    title: t('projectTools.pricing.pushedLive'),
+    description: cdn?.purged && !cdn.error ? t('projectTools.pricing.pushedLiveCdn') : cdn?.error ? t('projectTools.pricing.pushedLiveCdnError', { error: cdn.error }) : t('projectTools.pricing.pushedLiveHint'),
+    icon: 'i-lucide-zap',
+    color: cdn?.error ? 'warning' : 'success'
+  })
 }
 
 async function remove() {

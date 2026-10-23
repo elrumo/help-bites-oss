@@ -67,3 +67,22 @@ describe('checkout return addresses', () => {
     expect(allowedReturnUrl('javascript:alert(1)', [], 'https://hb.test')).toBe('')
   })
 })
+
+describe('purging the CDN', () => {
+  test('does nothing without a key, else asks Bunny.net to drop each URL', async () => {
+    const { purgeCdn } = await import('../server/utils/cdnPurge')
+    delete process.env.BUNNY_NET_API_KEY
+    expect(await purgeCdn(['https://a.test/x*'])).toBeNull()
+    process.env.BUNNY_NET_API_KEY = 'k'
+    const seen: { url: string, key: string }[] = []
+    globalThis.fetch = (async (url: string, init: RequestInit) => {
+      seen.push({ url, key: (init.headers as Record<string, string>).AccessKey! })
+      return new Response('', { status: seen.length === 2 ? 401 : 200 })
+    }) as never
+    const out = await purgeCdn(['https://a.test/v1/pricing/pk/p*', 'https://a.test/pricing/pk/p*', 'https://a.test/v1/pricing/pk/p*'])
+    delete process.env.BUNNY_NET_API_KEY
+    expect(seen.map(s => s.url)).toEqual([`https://api.bunny.net/purge?url=${encodeURIComponent('https://a.test/v1/pricing/pk/p*')}&async=false`, `https://api.bunny.net/purge?url=${encodeURIComponent('https://a.test/pricing/pk/p*')}&async=false`])
+    expect(seen[0]!.key).toBe('k')
+    expect(out).toEqual({ purged: 1, error: 'Bunny.net answered 401' })
+  })
+})

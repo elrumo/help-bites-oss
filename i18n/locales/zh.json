@@ -4771,7 +4771,9 @@
       "suggestError": "无法生成建议",
       "pushLive": "立即推送上线",
       "pushedLive": "已推送上线",
-      "pushedLiveHint": "已用最新的 Stripe 价格重新发布。缓存了旧版本的网站会在一分钟内更新。"
+      "pushedLiveHint": "已用最新的 Stripe 价格重新发布。缓存了旧版本的网站会在一分钟内更新。",
+      "pushedLiveCdn": "已用最新的 Stripe 价格重新发布，并清除了 Bunny.net 缓存。",
+      "pushedLiveCdnError": "已重新发布，但未能清除 Bunny.net 缓存：{error}"
     },
     "forms": {
       "guide": "指南",

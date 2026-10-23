@@ -4771,7 +4771,9 @@
       "suggestError": "No s'ha pogut suggerir res",
       "pushLive": "Publica ara",
       "pushedLive": "Publicat",
-      "pushedLiveHint": "Publicat de nou amb preus de Stripe actualitzats. Els llocs amb la còpia antiga a la memòria cau la canvien en menys d’un minut."
+      "pushedLiveHint": "Publicat de nou amb preus de Stripe actualitzats. Els llocs amb la còpia antiga a la memòria cau la canvien en menys d’un minut.",
+      "pushedLiveCdn": "Publicat de nou amb preus de Stripe actualitzats i la memòria cau de Bunny.net purgada.",
+      "pushedLiveCdnError": "Publicat de nou, però no s’ha purgat la memòria cau de Bunny.net: {error}"
     },
     "forms": {
       "guide": "Guia",

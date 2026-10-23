@@ -5151,7 +5151,9 @@
       "suggestError": "Could not suggest anything",
       "pushLive": "Push live now",
       "pushedLive": "Pushed live",
-      "pushedLiveHint": "Published again with fresh Stripe prices. Sites that cached the old copy pick it up within a minute."
+      "pushedLiveHint": "Published again with fresh Stripe prices. Sites that cached the old copy pick it up within a minute.",
+      "pushedLiveCdn": "Published again with fresh Stripe prices, and the Bunny.net cache purged.",
+      "pushedLiveCdnError": "Published again, but the Bunny.net cache was not purged: {error}"
     }
   },
   "workspaceSettings": {

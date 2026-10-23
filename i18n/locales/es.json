@@ -4771,7 +4771,9 @@
       "suggestError": "No se pudo sugerir nada",
       "pushLive": "Publicar ahora",
       "pushedLive": "Publicado",
-      "pushedLiveHint": "Publicado de nuevo con precios de Stripe actualizados. Los sitios con la copia antigua en caché la cambian en menos de un minuto."
+      "pushedLiveHint": "Publicado de nuevo con precios de Stripe actualizados. Los sitios con la copia antigua en caché la cambian en menos de un minuto.",
+      "pushedLiveCdn": "Publicado de nuevo con precios de Stripe actualizados y la caché de Bunny.net purgada.",
+      "pushedLiveCdnError": "Publicado de nuevo, pero no se purgó la caché de Bunny.net: {error}"
     },
     "forms": {
       "guide": "Guía",

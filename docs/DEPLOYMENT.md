@@ -470,6 +470,7 @@ API answers 503).
 |---|---|---|---|
 | `MAILGUN_API_KEY` | Optional | _(off)_ | — |
 | `MAILGUN_DOMAIN` | Optional | _(off)_ | Your Mailgun sending domain. A project can send through another domain of the same account (Project → Email → Settings). |
+| `BUNNY_NET_API_KEY` | No | _(off)_ | Your Bunny.net account API key. With it, **Push live now** on a pricing table also purges the CDN's cached copies of the table's JSON and hosted page. |
 | `MAILGUN_API_BASE_URL` | No | `https://api.eu.mailgun.net` | Use `https://api.mailgun.net` for US region. |
 | `MAILGUN_FROM_EMAIL` | Optional | `support@example.com` | The default from-address. Projects can set their own address and from name. |
 | `MAILGUN_WEBHOOK_SIGNING_KEY` | Optional | _(off)_ | Turns on `/v1/webhooks/mailgun`: delivery status in the email log, and automatic suppression of bounces, complaints and unsubscribes. |
