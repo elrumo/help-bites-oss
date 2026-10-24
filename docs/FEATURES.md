@@ -506,7 +506,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   opens their page from the report. It reads from every place you sell through,
   and the sources add up: Stripe (a restricted key, read hourly), RevenueCat (its
   webhook, so purchases, renewals, refunds and expirations show as they happen),
-  the App Store (the Sales and Trends reports: your proceeds, no customers), Paddle
+  the App Store (the Sales and Trends reports: your proceeds, no customers; the same key
+  also shows TestFlight installs, sessions, crashes, invites and feedback per build), Paddle
   and Lemon Squeezy (an API key, read hourly), and a custom API for anything else
   (Google Play reports, Gumroad, PayPal, past months). Each source connects and
   disconnects on its own and the tab shows what each brought in. A person's page

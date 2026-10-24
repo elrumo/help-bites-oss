@@ -1485,7 +1485,7 @@
       "id": "revenue",
       "name": "Revenue",
       "category": "dev",
-      "summary": "See revenue and MRR month by month, plans, top customers and recent payments from every place you sell: Stripe (a restricted key), RevenueCat (its webhook), the App Store (Sales and Trends reports), Paddle, Lemon Squeezy, or payments you send to the API. Sources add up and disconnect on their own; each shows its own share. A person's page lists their payments and subscriptions from every source, and for Stripe their customer (looked up live). Read-only, except that pricing tables open Stripe Checkout when the key allows it.",
+      "summary": "See revenue and MRR month by month, plans, top customers and recent payments from every place you sell: Stripe (a restricted key), RevenueCat (its webhook), the App Store (Sales and Trends reports, plus TestFlight installs, sessions, crashes, invites and feedback per build), Paddle, Lemon Squeezy, or payments you send to the API. Sources add up and disconnect on their own; each shows its own share. A person's page lists their payments and subscriptions from every source, and for Stripe their customer (looked up live). Read-only, except that pricing tables open Stripe Checkout when the key allows it.",
       "editions": [
         "community",
         "cloud"

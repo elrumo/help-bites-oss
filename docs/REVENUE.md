@@ -10,7 +10,7 @@ touching the others.
 |---|---|---|---|
 | [Stripe](#stripe) | HelpBites reads it with a restricted key, hourly | Charges, subscriptions, MRR | Stripe customer id, then email |
 | [RevenueCat](#revenuecat) | RevenueCat sends events to HelpBites | Purchases, renewals, refunds, subscriptions, MRR | The app's user id (the contact's external id), then email |
-| [App Store](#app-store) | HelpBites reads Apple's sales reports, hourly | Daily proceeds per product | None |
+| [App Store](#app-store) | HelpBites reads Apple's sales reports, hourly | Daily proceeds per product, and [TestFlight usage](#testflight) | None |
 | [Paddle](#paddle) | HelpBites reads it with an API key, hourly | Transactions, refunds, subscriptions, MRR | Email |
 | [Lemon Squeezy](#lemon-squeezy) | HelpBites reads it with an API key, hourly | Orders, invoices, subscriptions, MRR | Email |
 | [Custom API](#custom-api) | You send it | Whatever you send | Email, or the app's user id |
@@ -114,6 +114,31 @@ refunds are their own negative lines and subtract.
 Limits: Apple's reports name no customers, so there are no top customers, no contact
 links, no subscribers and no MRR from this source. Use RevenueCat as well if you
 need those. A day Apple later removes keeps its old row.
+
+### TestFlight
+
+With the App Store connected, the Revenue tab (web and native) also shows **TestFlight**
+beta usage, read through the same key: installs, sessions, crashes, invites and
+feedback, in total and for the 8 newest builds of each app (up to 10 apps). It is read
+from Apple when the tab opens and cached for ten minutes.
+
+The key needs a role that can see apps, such as **Developer**, **App Manager** or
+**Admin**. A key that can only read Sales and Reports still syncs revenue; the
+TestFlight section then shows Apple's refusal and nothing else is affected.
+
+```bash
+curl "https://YOUR-SUPPORT-HOST/v1/admin/revenue/testflight?project=PROJECT_ID" \
+  -H "Authorization: Bearer ak_…"
+# add &fresh=1 to skip the ten-minute cache
+```
+
+`{ report }` has `totals` and `apps[]`; each app has `id`, `name`, `bundleId`, `totals`
+and `builds[]` (`version`, `build`, `uploadedAt`, `expired`, `installs`, `sessions`,
+`crashes`, `invites`, `feedback`). Counts are the sum of Apple's daily data points for
+each build (`/v1/builds/{id}/metrics/betaBuildUsages`), so they are whatever TestFlight
+itself reports; a build Apple no longer has metrics for shows zeros. This is
+TestFlight only: App Store downloads are not read (Apple's Summary Sales report counts
+them under Units, but HelpBites keeps just the proceeds).
 
 ## Paddle
 

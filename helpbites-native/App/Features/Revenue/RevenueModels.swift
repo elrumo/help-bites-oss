@@ -153,3 +153,18 @@ enum Money {
     return Calendar.current.isDate(date, equalTo: Date(), toGranularity: .year) ? date.formatted(.dateTime.month(.abbreviated).day()) : date.formatted(.dateTime.month(.abbreviated).day().year())
   }
 }
+
+/// `GET /v1/admin/revenue/testflight?project=` → `{ report }` (shared/revenue.ts `TestflightReport`):
+/// the App Store Connect account's apps, each with its newest builds and their TestFlight usage.
+struct TestflightReport: Decodable, Equatable, Sendable {
+  struct Counts: Decodable, Equatable, Sendable { let installs, sessions, crashes, invites, feedback: Int }
+  struct Build: Decodable, Equatable, Sendable, Identifiable {
+    let id, version, build: String
+    let uploadedAt: String?
+    let expired: Bool
+    let installs, sessions, crashes, invites, feedback: Int
+  }
+  struct App: Decodable, Equatable, Sendable, Identifiable { let id, name, bundleId: String; let totals: Counts; let builds: [Build] }
+  let totals: Counts
+  let apps: [App]
+}

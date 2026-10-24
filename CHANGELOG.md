@@ -5,6 +5,9 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **TestFlight usage on the Revenue tab** (web and native) when the App Store source is connected: installs, sessions, crashes, invites and
+  feedback for each app's newest builds. New route `GET /v1/admin/revenue/testflight?project=` (`docs/REVENUE.md`). No schema or env change; the
+  App Store API key needs a role that can see apps (Developer, App Manager or Admin), not only Sales and Reports.
 - **Push live now** on a pricing table (⋯ menu, web and native): publishes again and re-reads Stripe at once; `POST /v1/admin/pricing-tables/:id/publish`
   takes `{ "force": true }`. New optional env `BUNNY_NET_API_KEY` (Bunny.net account API key) makes it purge the CDN's cached copies too.
 - **Support email addresses** (`docs/INBOUND-EMAIL.md`). A project can have addresses such as `support@yourdomain.com`: mail sent to them becomes

@@ -41,7 +41,7 @@ export async function requireRevenueSource(project: ParseObject, source: Revenue
   return row
 }
 
-function credentialsOf(row: ParseObject): Credentials {
+export function credentialsOf(row: ParseObject): Credentials {
   try { return JSON.parse(readCredential(row.get('secretSealed')) || '{}') } catch { return {} }
 }
 

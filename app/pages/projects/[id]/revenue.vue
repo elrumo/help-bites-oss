@@ -142,6 +142,32 @@
             </section>
             <p v-if="report.otherCurrencies.length" class="text-xs text-muted">{{ $t('projectTools.revenue.totalsIn', { currency: report.currency.toUpperCase(), others: report.otherCurrencies.map(c => formatMoney(c.net, c.currency)).join(', ') }) }}</p>
           </template>
+
+          <!-- TestFlight shares the App Store source's key; it loads on its own so a key that only reads sales does not hide the revenue. -->
+          <section v-if="apple" class="space-y-2">
+            <h2 class="text-xs font-semibold text-muted">{{ $t('projectTools.revenue.testflight.title') }}<span class="ml-2 font-normal text-dimmed">{{ $t('projectTools.revenue.testflight.note') }}</span></h2>
+            <USkeleton v-if="testflightLoading" class="h-24 rounded-xl" :aria-label="$t('projectTools.revenue.testflight.loading')" />
+            <UAlert v-else-if="testflightError" color="warning" variant="subtle" icon="i-lucide-triangle-alert" :title="$t('projectTools.revenue.testflight.error')" :description="testflightError" />
+            <p v-else-if="!testflight?.apps.some(a => a.builds.length)" class="text-xs text-dimmed">{{ $t('projectTools.revenue.testflight.none') }}</p>
+            <template v-else>
+              <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                <div v-for="k in TESTFLIGHT_COUNTS" :key="k" class="rounded-xl border border-default p-4">
+                  <p class="text-xs text-muted">{{ $t(`projectTools.revenue.testflight.${k}`) }}</p>
+                  <p class="mt-1 text-2xl font-semibold tabular-nums text-highlighted">{{ testflight!.totals[k].toLocaleString() }}</p>
+                </div>
+              </div>
+              <div v-for="a in testflight!.apps.filter(a => a.builds.length)" :key="a.id" class="rounded-xl border border-default text-[13px]">
+                <p class="flex items-center gap-2 border-b border-default px-3 py-2 font-medium"><span class="min-w-0 flex-1 truncate">{{ a.name }}</span><span class="text-xs font-normal text-muted">{{ a.bundleId }}</span></p>
+                <ul class="divide-y divide-default">
+                  <li v-for="b in a.builds" :key="b.id" class="flex items-center gap-3 px-3 py-2">
+                    <span class="min-w-0 flex-1 truncate">{{ $t('projectTools.revenue.testflight.build', { version: b.version || '?', build: b.build }) }}<UBadge v-if="b.expired" :label="$t('projectTools.revenue.testflight.expired')" color="neutral" variant="subtle" size="sm" class="ml-2" /></span>
+                    <span v-for="k in TESTFLIGHT_COUNTS" :key="k" class="hidden w-16 text-right tabular-nums sm:block" :title="$t(`projectTools.revenue.testflight.${k}`)">{{ b[k].toLocaleString() }}</span>
+                    <span class="w-14 text-right text-xs text-muted">{{ b.uploadedAt ? logTime(b.uploadedAt) : '' }}</span>
+                  </li>
+                </ul>
+              </div>
+            </template>
+          </section>
         </template>
       </div>
     </main>
@@ -163,7 +189,7 @@
 </template>
 
 <script setup lang="ts">
-import { revenueSource, type RevenueConnection } from '#shared/revenue'
+import { revenueSource, type RevenueConnection, type TestflightCounts, type TestflightReport } from '#shared/revenue'
 import { REVENUE_RANGES, formatMoney, fromMinor, type RevenueRange, type RevenueReport } from '#shared/stripe'
 import { logTime } from '~/utils/emailStatus'
 
@@ -178,12 +204,17 @@ const sources = ref<RevenueConnection[]>([])
 const report = ref<RevenueReport | null>(null)
 const range = ref<RevenueRange>('30d')
 const loading = ref(true)
+const testflight = ref<TestflightReport | null>(null)
+const testflightLoading = ref(false)
+const testflightError = ref('')
+const TESTFLIGHT_COUNTS: (keyof TestflightCounts)[] = ['installs', 'sessions', 'crashes', 'invites', 'feedback']
 const adding = ref(false)
 // The source whose setup (webhook details, API example) is open; '' while closed.
 const setupFor = ref('')
 const setupOpen = computed({ get: () => Boolean(setupFor.value), set: (open) => { if (!open) setupFor.value = '' } })
 const setupConnection = computed(() => sources.value.find(c => c.source === setupFor.value))
 // The sources HelpBites reads; the rest send to it.
+const apple = computed(() => sources.value.some(c => c.source === 'apple'))
 const pulled = computed(() => sources.value.filter(c => revenueSource(c.source)?.kind === 'pull'))
 
 const money = (amount: number) => formatMoney(amount, report.value?.currency || 'usd')
@@ -234,9 +265,23 @@ async function loadReport() {
   if (!sources.value.length) { report.value = null; return }
   report.value = (await api<{ report: RevenueReport | null }>('/admin/revenue/report', { query: { project: id, range: range.value } })).report
 }
+async function loadTestflight() {
+  if (!apple.value) { testflight.value = null; testflightError.value = ''; return }
+  // Once per visit: the revenue poll above calls load() every few seconds while a sync runs.
+  if (testflight.value || testflightError.value || testflightLoading.value) return
+  testflightLoading.value = true
+  try {
+    testflight.value = (await api<{ report: TestflightReport }>('/admin/revenue/testflight', { query: { project: id } })).report
+  } catch (e: any) {
+    testflightError.value = e?.message || t('projectTools.revenue.testflight.error')
+  } finally {
+    testflightLoading.value = false
+  }
+}
 async function load() {
   try {
     await loadSources()
+    void loadTestflight()
     await loadReport()
   } catch (e: any) {
     toast.add({ title: e?.message || t('projectTools.revenue.loadError'), color: 'error' })

@@ -147,6 +147,7 @@
 		B1E58D3335EF7AC9DEE2CFB8 /* ErrorIssueCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A58782826D9C2587ADAA2F68 /* ErrorIssueCard.swift */; };
 		B52EC2EEFA13F6DB4A9A7E54 /* AssistantDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84B147D62FD0297A61E28D0A /* AssistantDetailScreen.swift */; };
 		B58047DA669F5FAFA74DEB89 /* BrandAssetSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38F8D2D6865E1FFC4CFDE887 /* BrandAssetSheet.swift */; };
+		B5E1FAB3CDDE780424D95CA5 /* TestflightSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F913050CBAD078D07EAAD064 /* TestflightSection.swift */; };
 		B982765FE7B22938AD5E87BE /* MacShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B776E74CB4112F4D0EB6B6 /* MacShell.swift */; };
 		B9D55CD86EE83CAC23EAA59D /* AssistantModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6FEF3D31E62C471E5EA0584 /* AssistantModels.swift */; };
 		BBCDD521CEB807AE0C8DFA7C /* UsageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4DB7348D8A793EC7B5DD0C /* UsageScreen.swift */; };
@@ -387,6 +388,7 @@
 		F566C847DA17376021C6A1F5 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		F685F682E640A82AD6F5CF0D /* FeedbackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackModels.swift; sourceTree = "<group>"; };
 		F7FFC773425AFD980758F3B2 /* HelpBitesNative.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HelpBitesNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F913050CBAD078D07EAAD064 /* TestflightSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestflightSection.swift; sourceTree = "<group>"; };
 		FAC97D2281787653CEBB896D /* OnboardingFlowScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowScreen.swift; sourceTree = "<group>"; };
 		FACEE864352A0CFB92921C68 /* PagesSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagesSettingsView.swift; sourceTree = "<group>"; };
 		FB32ACBB8C379B356FAB4079 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
@@ -656,6 +658,7 @@
 				7E7E2AD55AC0892685EA1D8E /* RevenueModels.swift */,
 				0F2DF44EE451F96493D8BF78 /* RevenueScreen.swift */,
 				843921FF3A1A1DEF70413574 /* RevenueSources.swift */,
+				F913050CBAD078D07EAAD064 /* TestflightSection.swift */,
 			);
 			path = Revenue;
 			sourceTree = "<group>";
@@ -1091,6 +1094,7 @@
 				4F008105786F4BB1CD645E69 /* SnapshotCache.swift in Sources */,
 				741F75DC9DBF70BDBABAB4F0 /* TeamInvite.swift in Sources */,
 				01C093A3256DD469F2321DCD /* TeamScreen.swift in Sources */,
+				B5E1FAB3CDDE780424D95CA5 /* TestflightSection.swift in Sources */,
 				3007F5A5D41727F257769438 /* Theme.swift in Sources */,
 				225E89A3EA05823FE6FCBBA3 /* TicketTypesScreen.swift in Sources */,
 				B17B5CBDA2CD9865109C5836 /* TransferSection.swift in Sources */,

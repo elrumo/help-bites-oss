@@ -106,3 +106,18 @@ export type CustomSubscription = {
   /** When it stopped being a customer (the end of the period they paid for); leave out while it runs. */
   endedAt?: string | number
 }
+
+/** What TestFlight reports for a build, an app or all of them. */
+export type TestflightCounts = { installs: number, sessions: number, crashes: number, invites: number, feedback: number }
+
+/** `GET /v1/admin/revenue/testflight`: the newest builds of each app on the App Store Connect account, with their beta usage. */
+export type TestflightReport = {
+  totals: TestflightCounts
+  apps: {
+    id: string
+    name: string
+    bundleId: string
+    totals: TestflightCounts
+    builds: (TestflightCounts & { id: string, version: string, build: string, uploadedAt: string | null, expired: boolean })[]
+  }[]
+}

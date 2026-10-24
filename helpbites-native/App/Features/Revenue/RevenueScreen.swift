@@ -122,6 +122,9 @@ struct RevenueScreen: View {
     } else {
       EmptyState(systemImage: "hourglass", title: "Waiting for the first payments", message: "Payments show up here as soon as a source has read some or sent its first event.")
     }
+
+    // TestFlight shares the App Store source's key.
+    if sources.contains(where: { $0.source == "apple" }) { TestflightSection(projectId: projectId) }
   }
 
   /// One line per source: its name, Live or Test mode for the ones HelpBites reads, when it last ran or heard from the service, and how much it has brought.

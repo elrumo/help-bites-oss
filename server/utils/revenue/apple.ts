@@ -30,7 +30,7 @@ const SHAPES = {
   vendorNumber: { re: /^\d{4,12}$/, hint: 'the Vendor Number (digits only, under Payments and Financial Reports)' }
 } as const
 
-function parseCredentials(raw: Credentials) {
+export function parseCredentials(raw: Credentials) {
   const out = { issuerId: '', keyId: '', vendorNumber: '', privateKey: String(raw.privateKey ?? '') }
   for (const [key, { re, hint }] of Object.entries(SHAPES)) {
     const value = String(raw[key] ?? '').trim()
