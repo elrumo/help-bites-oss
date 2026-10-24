@@ -1146,6 +1146,8 @@
       "eraseConfirm": "¿Borrar a {who}? También se eliminarán sus conversaciones, comentarios e historial de correos. No se puede deshacer.",
       "marketingEmail": "Correo de marketing",
       "userIdLine": "ID de usuario {id}",
+      "unverified": "Sin verificar",
+      "unverifiedHint": "Escribió esta dirección pero aún no la ha confirmado con un código. Tus respuestas se envían a ella.",
       "optedIn": "Aceptó recibir correos mediante {source} el {date}",
       "confirmedOn": ", confirmado el {date}",
       "fromForm": " desde {url}",

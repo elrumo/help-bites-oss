@@ -143,8 +143,10 @@ POST /v1/anonymous/session   { "pk": "pk_…", "email": "ann@example.com", "name
   write. Show a code field and call the two verify routes above. Verified people
   are never asked again.
 - Until verified, the address is a claim only: the session has no `email`, so it
-  cannot trigger reply mail, flag allow-lists or changelog subscriptions, and
-  unverified people cannot upload images.
+  cannot reach flag allow-lists or changelog subscriptions, and unverified people
+  cannot upload images. The contact keeps it as `pendingEmail` (shown as
+  unverified in the panel), and a reply someone on your team writes is mailed to
+  it; nothing automatic is.
 - `DELETE /v1/anonymous/me` with the token erases everything the person left.
 - Turning the setting off ends all email-only access at once.
 

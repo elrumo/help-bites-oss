@@ -38,9 +38,11 @@
           <dt class="text-muted">{{ $t('inbox.id') }}</dt>
           <dd class="min-w-0 truncate font-mono text-xs leading-5 text-toned" :title="user.externalId">{{ user.externalId }}</dd>
         </dl>
-        <NuxtLink v-if="project && context" :to="`/projects/${project.id}/contacts?contact=${context.contact.id}`" class="-mx-1 flex h-8 items-center gap-2 rounded-lg px-1 text-[13px] text-default transition-colors hover:bg-elevated">
-          <UIcon name="i-lucide-user-round" class="size-3.5 shrink-0 text-muted" />{{ $t('inbox.hub.openContact') }}<UIcon name="i-lucide-arrow-up-right" class="ml-auto size-3.5 shrink-0 text-dimmed" />
-        </NuxtLink>
+        <!-- The contact opens over the conversation, so the reply in progress stays where it is. -->
+        <button v-if="project && context" type="button" class="-mx-1 flex h-8 w-[calc(100%+0.5rem)] items-center gap-2 rounded-lg px-1 text-left text-[13px] text-default transition-colors hover:bg-elevated" @click="contactId = context.contact.id">
+          <UIcon name="i-lucide-user-round" class="size-3.5 shrink-0 text-muted" />{{ $t('inbox.hub.openContact') }}<UIcon name="i-lucide-panel-right-open" class="ml-auto size-3.5 shrink-0 text-dimmed" />
+        </button>
+        <ContactDrawer v-if="project" v-model:id="contactId" :project="project" />
       </section>
 
       <!-- Only when the Stripe sync found this person: plan, what they pay a month, and where the subscription stands. -->
@@ -127,6 +129,7 @@ import { actionWebhookReady, type Conversation, type ConversationAction, type Co
 import type { ConversationContextResponse, HubFeedbackPost } from '#shared/conversationHub'
 import { formatMoney } from '#shared/stripe'
 import type { AdminProject } from '~~/server/utils/projects'
+import ContactDrawer from '~/components/contacts/ContactDrawer.vue'
 
 export type InboxEndUser = { id: string, externalId: string, name: string, email: string }
 type HumanAgent = { id: string, username: string, email: string, name: string }
@@ -144,6 +147,7 @@ const assigneeId = ref('')
 const priority = ref<ConversationPriority>('normal')
 const tags = ref<string[]>([])
 const fieldValues = ref<Record<string, unknown>>({})
+const contactId = ref('')
 const recentErrors = ref<{ id: string, title: string, url: string, conversationId: string }[]>([])
 const { api } = useAgent()
 const { t, te } = useI18n()

@@ -1236,6 +1236,8 @@
       "eraseConfirm": "Erase {who}? Their conversations, feedback and email history go too. This can't be undone.",
       "marketingEmail": "Marketing email",
       "userIdLine": "User id {id}",
+      "unverified": "Unverified",
+      "unverifiedHint": "They typed this address but have not confirmed it with a code yet. Your replies are emailed to it.",
       "optedIn": "Opted in via {source} on {date}",
       "confirmedOn": ", confirmed {date}",
       "fromForm": " from {url}",
@@ -2932,8 +2934,8 @@
           "desc": "Their plan and MRR from Stripe, their earlier conversations and the feedback they asked for, which they follow. Reply from saved replies and FAQs, or have AI draft an answer from your knowledge for you to edit."
         },
         "email": {
-          "term": "Mail to support@you becomes a conversation",
-          "desc": "Give a project an address like support@yourapp.com, on your own domain or forwarded from your mailbox. Messages land in the inbox as conversations, and replies go back by email, threaded in your customer's mail app."
+          "term": "Mail to support{'@'}you becomes a conversation",
+          "desc": "Give a project an address like support{'@'}yourapp.com, on your own domain or forwarded from your mailbox. Messages land in the inbox as conversations, and replies go back by email, threaded in your customer's mail app."
         }
       },
       "feedback": {

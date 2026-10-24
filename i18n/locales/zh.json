@@ -1146,6 +1146,8 @@
       "eraseConfirm": "删除 {who}？其会话、反馈和邮件记录也会一并删除。此操作无法撤销。",
       "marketingEmail": "营销邮件",
       "userIdLine": "用户 ID {id}",
+      "unverified": "未验证",
+      "unverifiedHint": "对方输入了此地址，但尚未用验证码确认。你的回复会发送到这个地址。",
       "optedIn": "于 {date} 通过 {source} 同意接收邮件",
       "confirmedOn": "，确认于 {date}",
       "fromForm": "，来自 {url}",
@@ -2777,8 +2779,8 @@
           "desc": "原生应用，支持收件箱、回复和面板的大部分功能。服务器配置好 APNs 后即可接收推送通知。"
         },
         "email": {
-          "term": "发到 support@你的域名 的邮件成为会话",
-          "desc": "为项目设置 support@yourapp.com 这样的地址，用自己的域名或从现有邮箱转发均可。邮件会作为会话进入收件箱，回复则以邮件发出，并在客户的邮件应用中保持同一线程。"
+          "term": "发到 support{'@'}你的域名 的邮件成为会话",
+          "desc": "为项目设置 support{'@'}yourapp.com 这样的地址，用自己的域名或从现有邮箱转发均可。邮件会作为会话进入收件箱，回复则以邮件发出，并在客户的邮件应用中保持同一线程。"
         }
       },
       "feedback": {

@@ -5,6 +5,10 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Email-only users get your replies by email.** The address they typed shows on their contact (marked unverified until they enter the code,
+  `pendingEmail` on `GET /v1/contacts`) and in the inbox, and replies from the team are mailed to it. Before, the reply failed with "User has
+  no email" until they verified. In the inbox, **Open contact** now opens the contact over the conversation instead of leaving it. No schema
+  or env change.
 - **TestFlight usage on the Revenue tab** (web and native) when the App Store source is connected: installs, sessions, crashes, invites and
   feedback for each app's newest builds. New route `GET /v1/admin/revenue/testflight?project=` (`docs/REVENUE.md`). No schema or env change; the
   App Store API key needs a role that can see apps (Developer, App Manager or Admin), not only Sales and Reports.

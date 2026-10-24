@@ -223,7 +223,8 @@ export function serializeEndUser(row: ParseObject) {
     id: row.id || '',
     externalId: String(row.get('externalId') || ''),
     name: String(row.get('name') || ''),
-    email: String(row.get('email') || ''),
+    // Where the team's replies are mailed: an email-only user's address before they confirm it counts (notifyUserOfAgentMessage).
+    email: String(row.get('email') || row.get('pendingEmail') || ''),
     lastSeenAt: iso(row.get('lastSeenAt')),
     createdAt: iso(row.createdAt)
   }

@@ -74,7 +74,7 @@ export async function notifyAgentsOfUserMessage(opts: { project: ParseObject, co
     senderName: from,
     recipientName: '',
     subject,
-    body: `From ${from}${opts.endUser.get('email') ? ` (${opts.endUser.get('email')})` : ''}\n\n${String(opts.message.get('body') || '')}`,
+    body: `From ${from}${opts.endUser.get('email') || opts.endUser.get('pendingEmail') ? ` (${opts.endUser.get('email') || opts.endUser.get('pendingEmail')})` : ''}\n\n${String(opts.message.get('body') || '')}`,
     ctaUrl: `${String(process.env.ADMIN_URL || process.env.APP_URL || '').replace(/\/+$/, '')}/inbox?c=${opts.conversation.id}`,
     ctaLabel: 'Open the inbox',
     attachmentUrls: attachmentUrls(opts.message),
@@ -84,12 +84,13 @@ export async function notifyAgentsOfUserMessage(opts: { project: ParseObject, co
 }
 
 /**
- * The team replied: tell the user, if the host app gave us an email. A conversation that came in by email
+ * The team replied: tell the user, if the host app gave us an email, or an email-only user typed one they have
+ * not confirmed yet (a person wrote this reply after reading what they sent; nothing automatic mails that address). A conversation that came in by email
  * is a mail thread: every reply is mailed (no five-minute batching), as a reply to the thread, and
  * answers to it come back to the project's address.
  */
 export async function notifyUserOfAgentMessage(opts: { project: ParseObject, conversation: ParseObject, endUser: ParseObject, message: ParseObject }): Promise<Result> {
-  const email = String(opts.endUser.get('email') || '').trim()
+  const email = String(opts.endUser.get('email') || opts.endUser.get('pendingEmail') || '').trim()
   if (!isProbablyEmail(email)) return { sent: false, error: 'User has no email' }
   const viaEmail = opts.conversation.get('channel') === 'email'
   if (!viaEmail && await throttled(opts.conversation.id || '', 'user')) return { sent: false, error: 'throttled' }

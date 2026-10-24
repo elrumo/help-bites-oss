@@ -18,9 +18,9 @@ import { runExclusive } from './redis'
 // (sub = the row's externalId), so every route downstream is unchanged.
 //
 // Trust: an address is a claim until a mailed code proves it. Until then the
-// address lives in `pendingEmail`, the token's claims carry no email (so flags,
-// changelog subscriptions and reply mail ignore it), and after a few writes the
-// person must verify. An address that is already known never gets a token from
+// address lives in `pendingEmail`, the token's claims carry no email (so flags
+// and changelog subscriptions ignore it; only a reply a person on the team wrote
+// is mailed there), and after a few writes the person must verify. An address that is already known never gets a token from
 // the session call alone: it gets a code, so nobody can pick up someone else's
 // history by typing their address.
 //

@@ -27,6 +27,8 @@ export type Contact = {
   id: string
   externalId: string
   email: string
+  /** An address an email-only user typed but has not confirmed with a code yet; '' once it is their `email`. */
+  pendingEmail: string
   name: string
   username: string
   avatarUrl: string

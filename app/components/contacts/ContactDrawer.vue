@@ -207,7 +207,7 @@ const dirty = computed(() => contact.value && (name.value !== contact.value.name
         </section>
 
         <dl class="grid grid-cols-[7rem_1fr] gap-x-4 gap-y-1.5 border-t border-default pt-4">
-          <dt class="text-muted">{{ $t('contacts.form.email') }}</dt><dd class="min-w-0 break-words">{{ contact.email || '—' }}</dd>
+          <dt class="text-muted">{{ $t('contacts.form.email') }}</dt><dd class="min-w-0 break-words">{{ contact.email || contact.pendingEmail || '—' }}<UBadge v-if="!contact.email && contact.pendingEmail" :label="$t('contacts.drawer.unverified')" color="warning" variant="subtle" size="sm" class="ms-2" :title="$t('contacts.drawer.unverifiedHint')" /></dd>
           <dt class="text-muted">{{ $t('contacts.form.userId') }}</dt><dd class="min-w-0 break-words font-mono text-xs">{{ contact.externalId || '—' }}</dd>
           <template v-if="contact.username"><dt class="text-muted">{{ $t('contacts.drawer.handle') }}</dt><dd>@{{ contact.username }}</dd></template>
           <dt class="text-muted">{{ $t('contacts.added') }}</dt><dd>{{ fullDate(contact.createdAt) }}</dd>

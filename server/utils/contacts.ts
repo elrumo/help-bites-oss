@@ -31,6 +31,7 @@ export function serializeContact(row: ParseObject): Contact {
     id: row.id || '',
     externalId: String(row.get('externalId') || ''),
     email: String(row.get('email') || ''),
+    pendingEmail: String(row.get('pendingEmail') || ''),
     name: String(row.get('name') || ''),
     username: String(row.get('username') || ''),
     avatarUrl: String(row.get('avatarUrl') || ''),

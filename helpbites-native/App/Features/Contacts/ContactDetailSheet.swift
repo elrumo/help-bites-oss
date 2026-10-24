@@ -61,7 +61,16 @@ struct ContactDetailSheet: View {
         } header: { Text("Attributes") } footer: { Text("Synced columns and your own values. Numbers stay numbers.") }
 
         Section {
-          LabeledContent("Email", value: contact.email.isEmpty ? "—" : contact.email)
+          if contact.email.isEmpty, let pending = contact.pendingEmail, !pending.isEmpty {
+            LabeledContent("Email") {
+              VStack(alignment: .trailing, spacing: 2) {
+                Text(pending)
+                Text("Unverified: your replies are emailed to it").font(.caption).foregroundStyle(.orange)
+              }
+            }
+          } else {
+            LabeledContent("Email", value: contact.email.isEmpty ? "—" : contact.email)
+          }
           LabeledContent("User id", value: contact.externalId.isEmpty ? "—" : contact.externalId)
           LabeledContent("Added", value: DateText.day(contact.createdAt))
           if contact.origin != nil {

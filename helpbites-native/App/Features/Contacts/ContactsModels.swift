@@ -53,6 +53,8 @@ enum ContactOriginKind: String, CaseIterable, Identifiable {
 
 struct Contact: Codable, Identifiable, Equatable, Sendable {
   let id, externalId, email, name, username, avatarUrl, subscription: String
+  /// An address an email-only user typed but has not confirmed with a code yet; absent on servers from before it.
+  let pendingEmail: String?
   /// The language to write to them in ("es", "pt-BR"); nil or blank until known, and absent on servers from before it.
   let language: String?
   let attributes: [String: JSONValue]

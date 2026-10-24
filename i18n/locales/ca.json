@@ -1146,6 +1146,8 @@
       "eraseConfirm": "Esborrar {who}? També s'eliminaran les seves converses, comentaris i historial de correus. No es pot desfer.",
       "marketingEmail": "Correu de màrqueting",
       "userIdLine": "Id d'usuari {id}",
+      "unverified": "Sense verificar",
+      "unverifiedHint": "Ha escrit aquesta adreça però encara no l'ha confirmada amb un codi. Les teves respostes s'hi envien.",
       "optedIn": "Ha acceptat rebre correus mitjançant {source} el {date}",
       "confirmedOn": ", confirmat el {date}",
       "fromForm": " des de {url}",
