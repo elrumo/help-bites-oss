@@ -5,6 +5,7 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **AI cards on Feedback and Planning** (web and native): an AI chat that turns pasted text into separate feedback posts or board items. New route `POST /v1/admin/projects/:id/ai-cards` (`docs/FEEDBACK.md`). Uses the workspace AI provider or `LITELLM_API_BASE_URL`; no schema or env change.
 - **Email-only users get your replies by email.** The address they typed shows on their contact (marked unverified until they enter the code,
   `pendingEmail` on `GET /v1/contacts`) and in the inbox, and replies from the team are mailed to it. Before, the reply failed with "User has
   no email" until they verified. In the inbox, **Open contact** now opens the contact over the conversation instead of leaving it. No schema

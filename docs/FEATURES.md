@@ -286,6 +286,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Import an existing feedback page.** Up to 100 posts per call, keeping votes, comments
   and numbers.
 
+- **AI cards.** On Feedback and Planning, an AI chat turns pasted text into
+  separate posts or board items, using only the types, tags and labels you
+  defined. [FEEDBACK.md](FEEDBACK.md#file-cards-with-ai)
+
 **Planning and the public roadmap** [FEEDBACK.md](FEEDBACK.md#planning--roadmap)
 
 - **Planning.** Linear-style items on a kanban: title, Markdown description,

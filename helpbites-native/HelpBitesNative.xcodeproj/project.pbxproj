@@ -182,6 +182,7 @@
 		DD90306D989E9CF6954EBC66 /* FeedbackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F685F682E640A82AD6F5CF0D /* FeedbackModels.swift */; };
 		DE0B62D726A764904B58D84C /* NewWorkspaceSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19D1594D7BD0E5AB18C737A2 /* NewWorkspaceSheet.swift */; };
 		DEF88320748825F1D7EE2DF9 /* LegalDocumentParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB7820DCD292B8678533DFB0 /* LegalDocumentParts.swift */; };
+		E58509E4550B85DFAE9A72B3 /* AiCardsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F252753D1DECB1CC6BF7A86 /* AiCardsSheet.swift */; };
 		E61FACDBE74EF777AFC7F7CA /* LegalAnalyseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4C6B16FC2FB8D1ABFC81F89 /* LegalAnalyseSheet.swift */; };
 		E7367895A8150077E874F6F2 /* PageEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 484BE6DDC11D882CA0DFDC64 /* PageEntryScreen.swift */; };
 		E87DBDB9882C3D8C5818F7C6 /* EmailLinkedPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601EE5315E319C541FE5D323 /* EmailLinkedPanel.swift */; };
@@ -302,6 +303,7 @@
 		8C0465125AA9FA69799D788C /* CampaignDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampaignDetail.swift; sourceTree = "<group>"; };
 		8E19D97076657D58C844FAA9 /* AcceptInvitation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptInvitation.swift; sourceTree = "<group>"; };
 		8E805F2A63C0FBD8F96B2BAE /* BillingSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BillingSection.swift; sourceTree = "<group>"; };
+		8F252753D1DECB1CC6BF7A86 /* AiCardsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiCardsSheet.swift; sourceTree = "<group>"; };
 		8FA931ACDD34E4C9F39ED27B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		914029ADB1B3705EC808570B /* ProjectSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSettingsScreen.swift; sourceTree = "<group>"; };
 		962DE386D5AA9C17E6EDC13E /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
@@ -721,6 +723,7 @@
 		C5CF1C1C1D8475BFEA85E8E5 /* Feedback */ = {
 			isa = PBXGroup;
 			children = (
+				8F252753D1DECB1CC6BF7A86 /* AiCardsSheet.swift */,
 				88D56F686CAAD419199DB268 /* FeedbackBoardSettings.swift */,
 				CED2FB233E74DBD705178743 /* FeedbackChangelogLinks.swift */,
 				F685F682E640A82AD6F5CF0D /* FeedbackModels.swift */,
@@ -918,6 +921,7 @@
 				73C91F75051DF76707AF73AD /* APIClient.swift in Sources */,
 				A1BAC14F0486F6D3C03705CB /* APIKeysScreen.swift in Sources */,
 				0F1CD8348636FD1BE6A7A857 /* AcceptInvitation.swift in Sources */,
+				E58509E4550B85DFAE9A72B3 /* AiCardsSheet.swift in Sources */,
 				50D0CB4888182A3314F88DDC /* AppShell.swift in Sources */,
 				B52EC2EEFA13F6DB4A9A7E54 /* AssistantDetailScreen.swift in Sources */,
 				7C500E2A939AF1DB371227E3 /* AssistantKnowledge.swift in Sources */,

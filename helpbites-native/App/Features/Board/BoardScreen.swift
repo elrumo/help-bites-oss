@@ -49,7 +49,7 @@ struct BoardScreen: View {
     self.workspace = workspace
   }
 
-  private var session: SessionStore { workspace.session }
+  var session: SessionStore { workspace.session }
 
   var publicCount: Int { items.filter(\.isPublic).count }
   var roadmapReady: Bool { feedbackRoadmap && config?.enabled == true }
@@ -275,6 +275,7 @@ private struct BoardEditorRoute: Identifiable {
 private struct BoardView: View {
   @State var store: BoardStore
   @State private var showSettings = false
+  @State private var showAi = false
   @State private var editor: BoardEditorRoute?
   @State private var roadmapHelp = false
   @Environment(\.scenePhase) private var scenePhase
@@ -284,6 +285,7 @@ private struct BoardView: View {
       .panelScreen("Planning")
       .toolbar { toolbar }
       .sheet(item: $editor) { route in BoardItemEditor(store: store, itemId: route.itemId) }
+      .sheet(isPresented: $showAi) { AiCardsSheet(session: store.session, projectId: store.projectId, kind: .board) { try? await store.loadItems() } }
       .sheet(isPresented: $showSettings) { BoardSettingsSheet(store: store) }
       .feedbackErrorAlert($store.alert)
       .alert("Turn on feedback first", isPresented: $roadmapHelp) {
@@ -338,6 +340,7 @@ private struct BoardView: View {
       ToolbarItemGroup(placement: .topBarTrailing) {
         roadmapMenu
         Button { showSettings = true } label: { Label("Settings", systemImage: "slider.horizontal.3") }
+        Button { showAi = true } label: { Label("File with AI", systemImage: "sparkles") }
         Button { editor = BoardEditorRoute(itemId: nil) } label: { Label("New item", systemImage: "plus") }
       }
     }

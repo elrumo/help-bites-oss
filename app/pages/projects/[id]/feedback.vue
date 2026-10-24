@@ -10,6 +10,7 @@
         <UButton v-if="changelogReady" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="changelogUrl" target="_blank" :aria-label="$t('feedback.openChangelog')" />
         <UButton icon="i-lucide-palette" :label="$t('style.title')" color="neutral" variant="ghost" size="sm" @click="showStyle = true" />
         <UButton icon="i-lucide-settings-2" :label="$t('nav.settings')" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
+        <UButton icon="i-lucide-sparkles" :label="$t('aiCards.button')" color="neutral" variant="soft" size="sm" @click="showAi = true" />
         <UButton icon="i-lucide-plus" :label="$t('feedback.newPost')" size="sm" @click="openNew" />
       </template>
     </PageHeader>
@@ -224,6 +225,8 @@
       </template>
     </USlideover>
 
+    <AiCardsChat v-model:open="showAi" :project-id="id" kind="feedback" @created="loadPosts" />
+
     <!-- Style -->
     <USlideover v-model:open="showStyle" :title="$t('feedback.styleTitle')" :description="$t('feedback.styleDescription')" :ui="{ content: 'sm:max-w-2xl' }">
       <template #body>
@@ -324,6 +327,7 @@ function upsert(post: FeedbackPost) {
 // ---- settings ----
 const showSettings = ref(false)
 const showStyle = ref(false)
+const showAi = ref(false)
 const saving = ref(false)
 const saved = ref(false)
 const saveError = ref('')

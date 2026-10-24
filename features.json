@@ -1154,6 +1154,40 @@
       }
     },
     {
+      "id": "ai-cards",
+      "name": "AI cards",
+      "category": "product",
+      "summary": "An AI chat on the Feedback and Planning pages: paste or type text and the AI splits it into separate feedback posts or board items, using only the types, tags and labels the project defines, and files them like hand-made ones.",
+      "editions": [
+        "community",
+        "cloud"
+      ],
+      "plan": "all",
+      "status": "stable",
+      "web": {
+        "panel": [
+          "app/components/AiCardsChat.vue",
+          "app/pages/projects/[id]/feedback.vue",
+          "app/pages/projects/[id]/board.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Feedback"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/projects"
+        ],
+        "docs": "docs/FEEDBACK.md"
+      },
+      "embed": null,
+      "landing": {
+        "listed": false
+      }
+    },
+    {
       "id": "onboarding",
       "name": "Onboarding flows",
       "category": "product",

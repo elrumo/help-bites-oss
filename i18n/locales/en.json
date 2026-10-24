@@ -82,7 +82,6 @@
     "emptyTitle": "Add your first project",
     "emptyDescription": "A project is one of your apps. Its conversations, revenue and everything else show up here.",
     "unread": "Unread",
-    "open": "Open",
     "revenue": "Revenue",
     "noStripe": "Stripe not connected",
     "openErrorsCount": "{count} open error report | {count} open error reports",
@@ -217,7 +216,6 @@
     "allProjects": "All projects",
     "anyStatus": "Any status",
     "anyPriority": "Any priority",
-    "open": "Open",
     "done": "Done",
     "low": "Low",
     "normal": "Normal",
@@ -590,7 +588,6 @@
     "notPublicYet": "Not public yet: its release is still a draft. Publish the release and it goes out with it.",
     "madeFrom": "Made from",
     "done": "Done",
-    "open": "Open",
     "unlinkSource": "Unlink {label}",
     "kind": "Kind",
     "number": "Number",
@@ -1154,7 +1151,6 @@
       "failed": "failed"
     },
     "conversationStatus": {
-      "open": "Open",
       "done": "Done"
     },
     "builder": {
@@ -1880,7 +1876,6 @@
       "edit": "Edit",
       "loadMore": "Load more",
       "master": "Shared template",
-      "open": "Open",
       "project": "Project",
       "remove": "Remove",
       "rename": "Rename",
@@ -2283,6 +2278,19 @@
       "welcome": "How can we help?"
     }
   },
+  "aiCards": {
+    "button": "AI cards",
+    "titleFeedback": "File feedback with AI",
+    "titleBoard": "File board items with AI",
+    "description": "Paste or type some text. The AI splits it into separate cards and creates them.",
+    "placeholderFeedback": "Paste customer emails, reviews or notes. Each request becomes its own post.",
+    "placeholderBoard": "Paste a plan, meeting notes or a list. Each task becomes its own item.",
+    "send": "Create cards",
+    "created": "Created {count}:",
+    "failed": "Could not create “{title}”: {message}",
+    "none": "Nothing to file in that.",
+    "error": "The AI could not file that. Try again."
+  },
   "feedback": {
     "styleTitle": "Board style",
     "styleDescription": "Choose how the public feedback board, roadmap and changelog views look.",
@@ -2409,7 +2417,6 @@
     "statusKey": "Status key",
     "category": "Category",
     "categories": {
-      "open": "Open",
       "planned": "Planned",
       "active": "Active",
       "done": "Done",
@@ -5478,7 +5485,6 @@
     "analyzed": "Analyzed",
     "changeStatus": "Change status",
     "status": {
-      "open": "Open",
       "resolve": "Resolve",
       "ignore": "Ignore"
     },

@@ -326,6 +326,7 @@ private struct FeedbackEditorRoute: Identifiable {
 private struct FeedbackBoardView: View {
   @State var store: FeedbackBoardStore
   @State private var showSettings = false
+  @State private var showAi = false
   @State private var editor: FeedbackEditorRoute?
   @Environment(Workspace.self) private var workspace
 
@@ -334,6 +335,7 @@ private struct FeedbackBoardView: View {
       .panelScreen("Feedback")
       .toolbar { toolbar }
       .sheet(item: $editor) { route in FeedbackPostEditor(store: store, postId: route.postId) }
+      .sheet(isPresented: $showAi) { AiCardsSheet(session: store.session, projectId: store.projectId, kind: .feedback) { try? await store.loadPosts() } }
       .sheet(isPresented: $showSettings) {
         if let config = store.config { FeedbackBoardSettingsSheet(store: store, config: config) }
       }
@@ -383,6 +385,7 @@ private struct FeedbackBoardView: View {
       ToolbarItemGroup(placement: .topBarTrailing) {
         changelogMenu
         Button { showSettings = true } label: { Label("Settings", systemImage: "slider.horizontal.3") }
+        Button { showAi = true } label: { Label("File with AI", systemImage: "sparkles") }
         Button { editor = FeedbackEditorRoute(postId: nil) } label: { Label("New post", systemImage: "plus") }
       }
     }

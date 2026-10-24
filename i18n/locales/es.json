@@ -2137,6 +2137,19 @@
       "missingKey": "Falta la clave del proyecto. Revisa el atributo data-project del script de novedades."
     }
   },
+  "aiCards": {
+    "button": "Tarjetas con IA",
+    "titleFeedback": "Crear feedback con IA",
+    "titleBoard": "Crear elementos del tablero con IA",
+    "description": "Pega o escribe un texto. La IA lo separa en tarjetas distintas y las crea.",
+    "placeholderFeedback": "Pega correos de clientes, reseñas o notas. Cada petición se convierte en su propia publicación.",
+    "placeholderBoard": "Pega un plan, notas de una reunión o una lista. Cada tarea se convierte en su propio elemento.",
+    "send": "Crear tarjetas",
+    "created": "Creadas {count}:",
+    "failed": "No se pudo crear «{title}»: {message}",
+    "none": "No hay nada que crear con eso.",
+    "error": "La IA no pudo crearlas. Inténtalo de nuevo."
+  },
   "feedback": {
     "styleTitle": "Estilo del tablero",
     "styleDescription": "Elige el aspecto del tablero público de feedback y de sus vistas de hoja de ruta y changelog.",

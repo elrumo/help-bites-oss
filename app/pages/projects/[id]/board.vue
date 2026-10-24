@@ -9,6 +9,7 @@
         <UButton icon="i-lucide-map" :label="$t('board.publicRoadmap')" color="neutral" variant="ghost" size="sm" @click="copyRoadmapUrl" />
         <UButton v-if="roadmapReady" icon="i-lucide-external-link" color="neutral" variant="ghost" size="sm" square :to="roadmapUrl" target="_blank" :aria-label="$t('board.openRoadmap')" />
         <UButton icon="i-lucide-settings-2" :label="$t('nav.settings')" color="neutral" variant="ghost" size="sm" @click="showSettings = true" />
+        <UButton icon="i-lucide-sparkles" :label="$t('aiCards.button')" color="neutral" variant="soft" size="sm" @click="showAi = true" />
         <UButton icon="i-lucide-plus" :label="$t('board.newItem')" size="sm" @click="openNew" />
       </template>
     </PageHeader>
@@ -220,6 +221,8 @@
     </USlideover>
 
     <!-- Board settings -->
+    <AiCardsChat v-model:open="showAi" :project-id="id" kind="board" @created="loadItems" />
+
     <USlideover v-model:open="showSettings" :title="$t('board.settingsTitle')" :description="$t('board.settingsDescription')" :ui="{ content: 'sm:max-w-3xl' }">
       <template #body>
         <div v-if="board" class="space-y-8">
@@ -588,6 +591,7 @@ async function addPost() {
 
 // ---- settings ----
 const showSettings = ref(false)
+const showAi = ref(false)
 const savingBoard = ref(false)
 const boardSaved = ref(false)
 const boardError = ref('')

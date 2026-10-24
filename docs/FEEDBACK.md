@@ -177,6 +177,24 @@ Things to know:
   reach admins; a comment hidden after the fact arrives as `comment.deleted`.
   With `?pk=` the stream works with a plain `EventSource`.
 
+## File cards with AI
+
+The **AI cards** button on a project's Feedback and Planning pages (web and native) opens a chat. Paste or type text (customer emails, reviews, meeting notes, a list) and the AI splits it into separate cards: feedback posts on Feedback, board items on Planning. Each card is filed the way a hand-made one is, so numbers, events and webhooks are the usual ones; posts are authored by the team. You can keep talking to refine or add more.
+
+- It only uses the post types, tags and labels the project defines (and a priority on board items); anything else is dropped, not guessed. It files at most 20 cards per message and treats pasted text as data, never as instructions.
+- Cards that fail to create are listed in `failed`; the rest are kept. A message with nothing to file creates none.
+- It runs on the workspace's AI provider, or on the server's gateway where it spends AI credits. `501` when no AI is configured, `429` past 10 requests a minute per operator.
+- It is an operator tool, so it has no embed. Build your own flow on the API, which needs an operator session or an `ak_` admin key:
+
+```bash
+curl -X POST https://helpbites.example/v1/admin/projects/$PROJECT_ID/ai-cards \
+  -H "Authorization: Bearer $ADMIN_KEY" -H "Content-Type: application/json" \
+  -d '{"kind":"feedback","messages":[{"role":"user","content":"Customers want CSV export. iOS crashes when I open settings."}]}'
+# {"reply":"Filed 2 posts.","created":[{"id":"…","number":41,"title":"Export as CSV"},…],"failed":[]}
+```
+
+`kind` is `feedback` or `board`; `messages` is the conversation so far (`user` and `assistant` turns, the last 12 are read, the last must be the user's).
+
 ## Planning & roadmap
 
 Each project can also use **Planning**: Linear-style items on a kanban, for
