@@ -350,7 +350,7 @@ async function createPlanningItem(post: FeedbackPost) {
 
 function postMenu(post: FeedbackPost) {
   return [[
-    { label: t('feedback.open'), icon: 'i-lucide-panel-right-open', onSelect: () => openPost(post.id) }
+    { label: t('feedbackPlan.openPost'), icon: 'i-lucide-panel-right-open', onSelect: () => openPost(post.id) }
   ], ...(planning.enabled.value
     ? [[
         { label: t('feedbackPlan.createItem'), icon: 'i-lucide-sparkles', onSelect: () => createPlanningItem(post) },

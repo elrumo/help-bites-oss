@@ -402,7 +402,10 @@
     "untitled": "Sin título",
     "setUpBoard": "Configurar la planificación",
     "addToExisting": "Añadir a uno existente…",
-    "unlinkItem": "Desvincular #{number} {title}"
+    "unlinkItem": "Desvincular #{number} {title}",
+    "attachFeedback": "Buscar feedback para adjuntar…",
+    "searchFeedback": "Buscar feedback…",
+    "noFeedbackMatches": "Ningún feedback coincide."
   },
   "style": {
     "useProject": "Usar el estilo del proyecto",
@@ -2156,6 +2159,26 @@
     "failed": "No se pudo crear «{title}»: {message}",
     "none": "No hay nada que crear con eso.",
     "error": "La IA no pudo crearlas. Inténtalo de nuevo."
+  },
+  "feedbackPlan": {
+    "button": "Planificación",
+    "createItem": "Crear elemento de planificación",
+    "addToItem": "Añadir a un elemento de planificación…",
+    "openPost": "Abrir publicación",
+    "modalTitle": "Añadir a planificación",
+    "modalDescription": "Crea un elemento de planificación a partir de esta publicación o adjúntala a uno existente. Una publicación puede alimentar varios elementos, y un elemento puede reunir varias publicaciones.",
+    "newItemTitle": "Nuevo elemento de planificación",
+    "newItemHint": "La IA redacta el título, el texto y la urgencia a partir de la publicación. Sin proveedor de IA, la copia tal cual. Puedes editarlo después.",
+    "searchItems": "Buscar elementos de planificación…",
+    "noItems": "Ningún elemento coincide.",
+    "linked": "Vinculado",
+    "created": "Creado {name}",
+    "createdAi": "Redactado por la IA a partir de la publicación y vinculado a ella.",
+    "createdPlain": "Copiado de la publicación y vinculado a ella.",
+    "attached": "Añadido a {name}",
+    "open": "Abrir",
+    "createFailed": "No se pudo crear el elemento de planificación",
+    "attachFailed": "No se pudo añadir la publicación al elemento"
   },
   "feedback": {
     "styleTitle": "Estilo del tablero",

@@ -16,7 +16,7 @@
         <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100" :aria-label="$t('board.unlinkItem', { number: item.number ?? '', title: item.title })" :loading="busy === item.id" @click="unlink(item)" />
       </div>
       <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-        <UButton icon="i-lucide-plus" :label="$t('board.newItem')" size="xs" color="neutral" variant="outline" :loading="creating" @click="createItem" />
+        <UButton :icon="kind === 'feedback' ? 'i-lucide-sparkles' : 'i-lucide-plus'" :label="$t('board.newItem')" size="xs" color="neutral" variant="outline" :loading="creating" @click="createItem" />
         <USelectMenu
           v-model="picked"
           :items="candidates"
@@ -40,8 +40,9 @@ import { feedbackPlainText } from '#shared/feedback'
 import type { BoardItem } from '#shared/board'
 
 // Used by the inbox (kind "conversation") and the feedback post editor (kind
-// "feedback"). "New item" files one straight away, prefilled with `title` and
-// `description` and already linked; the board page is where it gets triaged.
+// "feedback"). "New item" files one straight away, already linked; the board page is where it
+// gets triaged. From a conversation it is prefilled with `title` and `description`; from a post the
+// server writes it (AI when configured, else a copy of the post).
 
 const props = defineProps<{ projectId: string, kind: 'feedback' | 'conversation', targetId: string, title: string, description?: string }>()
 
@@ -131,6 +132,13 @@ async function createItem() {
   const text = (props.description || '').trim()
   const title = props.title.trim() || feedbackPlainText(text, 80).split('\n')[0] || t('board.untitled')
   try {
+    if (props.kind === 'feedback') {
+      // A post gets an item written from it (by the AI, when there is one) rather than an empty one.
+      const { item } = await api<{ item: BoardItem }>('/admin/board-items/from-feedback', { method: 'POST', query: { project: props.projectId }, body: { postId: props.targetId } })
+      linked.value = [...linked.value, item]
+      all.value = []
+      return
+    }
     const { item } = await api<{ item: BoardItem }>('/admin/board-items', {
       method: 'POST',
       query: { project: props.projectId },

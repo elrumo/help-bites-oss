@@ -157,6 +157,19 @@
             <AttachmentsField v-model="draft.attachments" :project-id="id" @update:model-value="current && patch({ attachments: draft.attachments })" />
           </section>
 
+          <!-- A new item can already take feedback: it is linked once the item exists -->
+          <section v-if="!current" class="space-y-2">
+            <h3 class="text-sm font-semibold">{{ $t('board.feedback') }} <span class="font-normal text-muted">{{ draft.posts.length }}</span></h3>
+            <ul v-if="draft.posts.length" class="divide-y divide-default rounded-lg border border-default">
+              <li v-for="post in draft.posts" :key="post.id" class="group flex items-center gap-2.5 px-2.5 py-2 text-[13px]">
+                <span class="inline-flex w-8 shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums text-muted"><UIcon name="i-lucide-chevron-up" class="size-3" />{{ post.voteCount }}</span>
+                <span class="min-w-0 flex-1 truncate"><span v-if="post.number" class="mr-1 tabular-nums text-muted">#{{ post.number }}</span>{{ post.title }}</span>
+                <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square :aria-label="$t('board.unlinkPost', { number: post.number ?? '' })" @click="draft.posts = draft.posts.filter(p => p.id !== post.id)" />
+              </li>
+            </ul>
+            <FeedbackSearchPicker :project-id="id" :exclude="draft.posts.map(p => p.id)" class="w-full" @pick="post => draft.posts.push({ id: post.id, number: post.number, title: post.title, voteCount: post.voteCount })" />
+          </section>
+
           <template v-if="current">
             <section class="space-y-2">
               <h3 class="flex items-center gap-2 text-sm font-semibold">{{ $t('board.feedback') }} <span class="font-normal text-muted">{{ current.posts.length }}</span><span v-if="current.posts.length" class="ml-auto inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-muted"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ $t('board.votes', current.voteCount) }}</span></h3>
@@ -169,10 +182,7 @@
                   <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" :aria-label="$t('board.unlinkPost', { number: post.number ?? '' })" @click="setLink('feedback', post.id, false)" />
                 </li>
               </ul>
-              <form class="flex gap-2" @submit.prevent="addPost">
-                <UInput v-model="postRef" size="sm" class="w-36" placeholder="#12" :aria-label="$t('board.postNumber')" />
-                <UButton type="submit" :label="$t('board.linkPost')" size="sm" color="neutral" variant="soft" :disabled="!postRef.trim()" :loading="linking" />
-              </form>
+              <FeedbackSearchPicker :project-id="id" :exclude="current.feedbackPostIds" class="w-full" @pick="post => setLink('feedback', post.id, true)" />
             </section>
 
             <section class="space-y-2">
@@ -450,13 +460,12 @@ async function dropOn(status: string) {
 const editorOpen = ref(false)
 const editingId = ref('')
 const current = computed(() => (editingId.value ? items.value.find(i => i.id === editingId.value) || null : null))
-const draft = reactive({ title: '', description: '', publicDescription: '', status: '', priority: 'none' as BoardItemPriority | 'none', assigneeId: 'unassigned', labels: [] as string[], attachments: [] as ItemAttachment[], targetDate: '', public: false })
+const draft = reactive({ title: '', description: '', publicDescription: '', status: '', priority: 'none' as BoardItemPriority | 'none', assigneeId: 'unassigned', labels: [] as string[], attachments: [] as ItemAttachment[], targetDate: '', public: false, posts: [] as { id: string, number: number | null, title: string, voteCount: number }[] })
 const draftAssignee = computed(() => agents.value.find(agent => agent.id === draft.assigneeId) || null)
 const roadmapStatus = computed(() => ROADMAP_CATEGORIES.includes(statusOf(draft.status)?.category || 'open'))
 const editorError = ref('')
 const savingItem = ref(false)
 const confirmDelete = ref(false)
-const postRef = ref('')
 const linking = ref(false)
 
 function fill(item: BoardItem | null) {
@@ -470,11 +479,11 @@ function fill(item: BoardItem | null) {
     labels: [...(item?.labels || [])],
     attachments: [...(item?.attachments || [])],
     targetDate: item?.targetDate ? item.targetDate.slice(0, 10) : '',
-    public: item?.public || false
+    public: item?.public || false,
+    posts: []
   })
   editorError.value = ''
   confirmDelete.value = false
-  postRef.value = ''
 }
 
 function openItem(itemId: string) {
@@ -547,7 +556,8 @@ async function createItem() {
         labels: draft.labels,
         attachments: draft.attachments,
         targetDate: draft.targetDate || null,
-        public: draft.public
+        public: draft.public,
+        feedbackPostIds: draft.posts.map(post => post.id)
       }
     })
     replaceItem(item)
@@ -590,11 +600,6 @@ async function setLink(kind: 'feedback' | 'conversation', targetId: string, link
   } finally {
     linking.value = false
   }
-}
-
-async function addPost() {
-  const value = postRef.value.trim()
-  if (value && await setLink('feedback', value, true)) postRef.value = ''
 }
 
 // ---- settings ----
