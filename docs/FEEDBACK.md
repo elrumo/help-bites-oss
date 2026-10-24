@@ -108,7 +108,8 @@ Every route is in the OpenAPI spec (`/_docs/scalar`, tag *Feedback*).
 |---|---|
 | `GET /v1/feedback/config` | Statuses, types, platforms, options, project name/theme, the viewer |
 | `GET /v1/feedback` | Posts. Filters: `view` (`board`, `roadmap`, `changelog` — posts marked `showOnChangelog`; **deprecated**, read `GET /v1/changelog`), `status`, `category`, `type`, `platform`, `tag`, `featured`, `mine`, `subscribed`, `q`; `sort` (`top`, `new`, `activity`, `completed`); `limit` ≤ 500, `offset` |
-| `POST /v1/feedback` | New post: `{ title, body, type, platform, tags }` |
+| `POST /v1/feedback` | New post: `{ title, body, type, platform, tags, attachments }` |
+| `POST /v1/feedback/attachments` | Upload an image or file (multipart `file`); see *Images and files* below |
 | `GET /v1/feedback/:id` | One post with its comments, plus `linked` (the `#N` posts it and its comments mention) and `backrefs` (posts mentioning it). `:id` may be the id, the number (`12` or `12-any-slug`) or the `externalId` it was imported with — in every per-post route |
 | `PATCH /v1/feedback/:id` | Edit |
 | `DELETE /v1/feedback/:id` | Delete |
@@ -194,6 +195,50 @@ curl -X POST https://helpbites.example/v1/admin/projects/$PROJECT_ID/ai-cards \
 ```
 
 `kind` is `feedback` or `board`; `messages` is the conversation so far (`user` and `assistant` turns, the last 12 are read, the last must be the user's).
+
+## Images and files
+
+Posts and Planning items can carry up to 10 images and files. Upload each with `POST /v1/feedback/attachments` (multipart field `file`), then pass what it returns as `attachments` when you create or edit the post (`POST`/`PATCH /v1/feedback`) or the board item (`POST`/`PATCH /v1/admin/board-items`).
+
+- **Types and sizes.** Images (PNG, JPEG, GIF, WebP) up to 8 MB; PDF, TXT, MD, CSV, LOG, JSON, ZIP, DOC(X), XLS(X), PPT(X), MP4 and MOV up to 25 MB. Files are stored and served as downloads under the type their extension implies, never as HTML. Uploads count against the workspace's storage (`402` when it is full).
+- **Who.** Operators (session or `ak_` key, with `?project=<id>`) upload for posts and board items. End users upload with their identity token once their address is verified, and only where the project allows attachments (`403` otherwise); they can attach to their own posts. Each attachment must be one of the project's own uploads (`400` otherwise).
+- **Where they show.** In the panel and native editors, and on the post in the public board. Board item attachments are private: the roadmap shows only the public description.
+- **Your own UI.** `attachments` is `[{ url, name, mime, size }]` on every post and item; `PATCH` with the list you want to keep removes the rest.
+
+```bash
+curl -X POST "https://helpbites.example/v1/feedback/attachments?project=$PROJECT_ID" \
+  -H "Authorization: Bearer $ADMIN_KEY" -F file=@crash.png
+# {"url":"https://cdn.example/…/crash.png","name":"crash.png","mime":"image/png","size":48213}
+curl -X POST "https://helpbites.example/v1/feedback?project=$PROJECT_ID" \
+  -H "Authorization: Bearer $ADMIN_KEY" -H "Content-Type: application/json" \
+  -d '{"title":"Crash on launch","attachments":[{"url":"https://cdn.example/…/crash.png","name":"crash.png","mime":"image/png","size":48213}]}'
+```
+
+Web (an end user's signed-in post, with the identity token):
+
+```js
+const data = new FormData(); data.append('file', input.files[0])
+const file = await (await fetch('/v1/feedback/attachments', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: data })).json()
+await fetch('/v1/feedback', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ title, attachments: [file] }) })
+```
+
+Swift (plain `URLSession`):
+
+```swift
+func upload(_ data: Data, name: String, token: String) async throws -> [String: Any] {
+  let boundary = UUID().uuidString
+  var request = URLRequest(url: URL(string: "https://helpbites.example/v1/feedback/attachments")!)
+  request.httpMethod = "POST"
+  request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+  request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+  var body = Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(name)\"\r\n\r\n".utf8)
+  body.append(data); body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+  let (result, _) = try await URLSession.shared.upload(for: request, from: body)
+  return try JSONSerialization.jsonObject(with: result) as? [String: Any] ?? [:]
+}
+```
+
+Pass the returned dictionary in `attachments` when you post.
 
 ## Planning & roadmap
 

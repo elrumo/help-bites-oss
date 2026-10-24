@@ -301,6 +301,7 @@ export function serializeFeedbackPost(row: ParseObject, ctx: FeedbackContext, vi
     pinnedCommentId: String(row.get('pinnedCommentId') || '') || null,
     // A pointer without its data (not included) still names the post.
     duplicateOf: duplicateOf?.id ? (duplicateOf.get('title') === undefined ? { id: duplicateOf.id, number: null, title: '', status: '', statusCategory: 'open' } : feedbackPostRef(duplicateOf, ctx.config)) : null,
+    attachments: itemAttachments(row.get('attachments')),
     refs: numberList(row.get('refs')),
     reactions: summarizeFeedbackReactions(row.get('reactions'), viewer ? feedbackActorId(ctx.actor) : undefined),
     editedAt: date(row.get('editedAt')),
@@ -686,6 +687,7 @@ export async function createFeedbackPost(ctx: FeedbackContext, payload: unknown)
   const { values, errors } = readFeedbackPostInput(payload, ctx.config, { admin, create: true })
   if (errors.length) badRequest(errors)
   if (values.pinnedCommentId) badRequest(['A new post has no comments to pin'])
+  assertOwnAttachments(ctx.project, values.attachments)
   if (ctx.actor.kind === 'user' && !ctx.actor.onBehalf) await rateLimit(`sb:rl:fbpost:${ctx.project.id}:${ctx.actor.externalId}`, LIMITS.feedbackPostsPerUser.limit, LIMITS.feedbackPostsPerUser.window)
 
   const Parse = useParse()
@@ -755,6 +757,7 @@ export async function updateFeedbackPost(ctx: FeedbackContext, row: ParseObject,
   const { values, errors } = readFeedbackPostInput(payload, ctx.config, { admin, create: false })
   if (errors.length) badRequest(errors)
   if (values.pinnedCommentId) await checkPin(row, values.pinnedCommentId)
+  assertOwnAttachments(ctx.project, values.attachments)
 
   const now = new Date()
   const from = String(row.get('status') || '')

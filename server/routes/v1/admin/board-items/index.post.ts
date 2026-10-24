@@ -12,6 +12,7 @@ defineRouteMeta({
       priority: { type: 'string', enum: ['', 'low', 'normal', 'high', 'urgent'] },
       assigneeId: { type: 'string', description: 'An agent id; empty for nobody' },
       labels: { type: 'array', items: { type: 'string' } },
+      attachments: { type: 'array', maxItems: 10, items: { type: 'object', properties: { url: { type: 'string' }, name: { type: 'string' }, mime: { type: 'string' }, size: { type: 'integer' } } }, description: 'Images and files from POST /v1/feedback/attachments' },
       targetDate: { type: 'string', format: 'date', nullable: true },
       public: { type: 'boolean', default: false },
       rank: { type: 'number', description: 'Sort key within a column; lower comes first' },

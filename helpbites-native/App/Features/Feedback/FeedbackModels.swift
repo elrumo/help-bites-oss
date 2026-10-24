@@ -129,6 +129,8 @@ struct FeedbackPost: Decodable, Equatable, Sendable, Identifiable {
   var externalId: String?
   var metadata: [String: JSONValue]?
   var adminNote: String?
+  /// Images and files; absent from a server that predates them.
+  var attachments: [ItemAttachment]?
 
   /// Live events carry the anonymous view of a post: no admin fields, and maybe no
   /// author name or email. Keep what we already know, like mergeFeedbackPost on the web.
@@ -172,6 +174,7 @@ struct FeedbackPostInput: Encodable, Sendable {
   let title, body, status, type, platform: String
   /// Only sent when the board defines tags.
   let tags: [String]?
+  let attachments: [ItemAttachment]
   let featured, showOnChangelog, hidden, locked: Bool
   let shippedIn, adminNote, changelogTitle, changelogBody, icon: String
   /// ISO, or '' to clear; left out of a new post without a date.

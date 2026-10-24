@@ -196,6 +196,14 @@
             </div>
 
             <MarkdownBlock v-if="activePost.body" :text="activePost.body" class="mt-4 !text-[15px] leading-relaxed" />
+            <ul v-if="activePost.attachments?.length" class="mt-4 flex flex-wrap gap-2">
+              <li v-for="file in activePost.attachments" :key="file.url">
+                <a :href="file.url" target="_blank" rel="noopener" class="block overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 text-[13px] hover:border-stone-400">
+                  <img v-if="isImageMime(file.mime)" :src="file.url" :alt="file.name" class="max-h-48 max-w-full object-contain" loading="lazy">
+                  <span v-else class="flex items-center gap-1.5 px-2.5 py-1.5"><UIcon name="i-lucide-file" class="size-4 text-stone-500" />{{ file.name }}</span>
+                </a>
+              </li>
+            </ul>
 
             <div v-if="activePost.canEdit || activePost.canDelete" class="mt-4 flex items-center gap-2">
               <UButton v-if="activePost.canEdit" :label="$t('embed.feedback.edit')" icon="i-lucide-pencil" size="xs" color="neutral" variant="outline" @click="startEdit(activePost)" />
@@ -340,6 +348,19 @@
               </div>
             </div>
 
+            <div class="space-y-1.5">
+              <ul v-if="form.attachments.length" class="flex flex-wrap gap-2">
+                <li v-for="(file, i) in form.attachments" :key="file.url" class="flex items-center gap-1.5 rounded-lg border border-stone-200 dark:border-stone-800 py-1 pl-2 pr-1 text-[13px]">
+                  <img v-if="isImageMime(file.mime)" :src="file.url" :alt="file.name" class="size-6 rounded object-cover">
+                  <UIcon v-else name="i-lucide-file" class="size-4 text-stone-500" />
+                  <span class="max-w-40 truncate">{{ file.name }}</span>
+                  <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square :aria-label="$t('attachments.remove', { name: file.name })" @click="form.attachments.splice(i, 1)" />
+                </li>
+              </ul>
+              <input ref="fileInput" type="file" multiple class="hidden" :accept="ITEM_ATTACHMENT_ACCEPT" @change="attachFiles(($event.target as HTMLInputElement).files)">
+              <UButton icon="i-lucide-paperclip" :label="$t('attachments.add')" size="xs" color="neutral" variant="soft" :loading="uploading > 0" :disabled="form.attachments.length >= ITEM_ATTACHMENTS_MAX" @click="fileInput?.click()" />
+            </div>
+
             <p v-if="formError" class="text-sm text-error">{{ formError }}</p>
             <div class="flex items-center justify-end gap-2 pt-1">
               <UButton :label="$t('common.cancel')" color="neutral" variant="ghost" @click="back" />
@@ -358,6 +379,7 @@
 
 <script setup lang="ts">
 import Fuse from 'fuse.js'
+import { isImageMime, ITEM_ATTACHMENT_ACCEPT, ITEM_ATTACHMENTS_MAX, ITEM_FILE_MAX_BYTES, type ItemAttachment } from '#shared/itemAttachments'
 import {
   ACTIVE_FEEDBACK_CATEGORIES,
   feedbackPlainText,
@@ -884,7 +906,29 @@ async function removeComment(comment: FeedbackComment) {
 
 // ---- compose / edit ----
 const editingId = ref('')
-const form = reactive({ title: '', body: '', type: '', platform: '' })
+const form = reactive({ title: '', body: '', type: '', platform: '', attachments: [] as ItemAttachment[] })
+const fileInput = ref<HTMLInputElement | null>(null)
+const uploading = ref(0)
+
+async function attachFiles(files: FileList | null) {
+  formError.value = ''
+  for (const file of [...(files || [])]) {
+    if (form.attachments.length >= ITEM_ATTACHMENTS_MAX) break
+    if (file.size > ITEM_FILE_MAX_BYTES) { formError.value = t('attachments.tooLarge', { name: file.name }); continue }
+    uploading.value++
+    try {
+      const data = new FormData()
+      data.append('file', file)
+      form.attachments.push(await api<ItemAttachment>('/feedback/attachments', { method: 'POST', body: data }))
+    } catch (error) {
+      if (error instanceof SignInNeeded) requestSignIn('post')
+      else formError.value = (error as Error).message
+    } finally {
+      uploading.value--
+    }
+  }
+  if (fileInput.value) fileInput.value.value = ''
+}
 const submitting = ref(false)
 const formError = ref('')
 
@@ -892,7 +936,7 @@ async function startCompose() {
   if (await needSignIn('post')) return
   nav.value = 'push'
   editingId.value = ''
-  Object.assign(form, { title: search.value.trim(), body: '', type: typeFilter.value || config.value?.types[0]?.key || '', platform: config.value?.platforms.some(p => p.key === defaultPlatform) ? defaultPlatform : '' })
+  Object.assign(form, { title: search.value.trim(), body: '', type: typeFilter.value || config.value?.types[0]?.key || '', platform: config.value?.platforms.some(p => p.key === defaultPlatform) ? defaultPlatform : '', attachments: [] })
   formError.value = ''
   screen.value = 'compose'
 }
@@ -900,7 +944,7 @@ async function startCompose() {
 function startEdit(item: FeedbackPost) {
   nav.value = 'push'
   editingId.value = item.id
-  Object.assign(form, { title: item.title, body: item.body, type: item.type, platform: item.platform })
+  Object.assign(form, { title: item.title, body: item.body, type: item.type, platform: item.platform, attachments: [...(item.attachments || [])] })
   formError.value = ''
   screen.value = 'compose'
 }
@@ -920,7 +964,7 @@ async function submitPost() {
   if (!form.title.trim() || submitting.value) return
   submitting.value = true
   formError.value = ''
-  const body = { title: form.title.trim(), body: form.body.trim(), type: form.type, platform: form.platform }
+  const body = { title: form.title.trim(), body: form.body.trim(), type: form.type, platform: form.platform, attachments: form.attachments }
   try {
     const result = editingId.value
       ? await api<{ post: FeedbackPost }>(`/feedback/${editingId.value}`, { method: 'PATCH', body })

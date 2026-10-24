@@ -58,7 +58,9 @@
             <UButton v-if="!posts.length" icon="i-lucide-plus" :label="$t('feedback.newPost')" @click="openNew" />
           </EmptyState>
           <TransitionGroup v-else tag="div" name="fade" class="space-y-2">
-            <FeedbackPostRow v-for="post in visible" :key="post.id" :post="post" :config="config" readonly-votes @open="openPost(post.id)" />
+            <UContextMenu v-for="post in visible" :key="post.id" :items="postMenu(post)">
+              <FeedbackPostRow :post="post" :config="config" readonly-votes @open="openPost(post.id)" />
+            </UContextMenu>
           </TransitionGroup>
         </div>
       </div>
@@ -80,9 +82,8 @@
               <span class="text-xs tabular-nums text-muted">{{ (byStatus[status.key] || []).length }}</span>
             </header>
             <div class="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-2">
+              <UContextMenu v-for="post in byStatus[status.key] || []" :key="post.id" :items="postMenu(post)">
               <button
-                v-for="post in byStatus[status.key] || []"
-                :key="post.id"
                 type="button"
                 draggable="true"
                 class="w-full cursor-grab rounded-lg border border-default bg-default p-3 text-left shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-[border-color,opacity] hover:border-accented active:cursor-grabbing"
@@ -101,6 +102,7 @@
                   <span v-if="feedbackTypeFor(config, post.type)" class="inline-flex items-center gap-1 truncate"><FeedbackIcon :icon="feedbackTypeFor(config, post.type)!.icon" class="size-3" />{{ feedbackTypeFor(config, post.type)!.label }}</span>
                 </span>
               </button>
+              </UContextMenu>
             </div>
           </section>
         </div>
@@ -138,6 +140,8 @@
             <USelectMenu v-model="editing.tags" :items="tagItems" value-key="value" multiple class="w-full" :placeholder="$t('feedback.noTags')" />
           </UFormField>
 
+          <UFormField :label="$t('attachments.title')"><AttachmentsField v-model="editing.attachments" :project-id="id" /></UFormField>
+
           <div class="grid sm:grid-cols-2 gap-3">
             <USwitch v-model="editing.featured" :label="$t('feedback.featured')" :description="$t('feedback.featuredDescription')" />
             <USwitch v-model="editing.hidden" :label="$t('feedback.hidden')" :description="$t('feedback.hiddenDescription')" />
@@ -168,7 +172,7 @@
         <!-- Board items this post feeds -->
         <section v-if="current" class="mt-8 border-t border-muted pt-5">
           <h3 class="mb-2 text-sm font-semibold">{{ $t('sections.board') }}</h3>
-          <BoardLinks :project-id="id" kind="feedback" :target-id="current.id" :title="current.title" :description="current.body" />
+          <BoardLinks :key="planningKey" :project-id="id" kind="feedback" :target-id="current.id" :title="current.title" :description="current.body" />
         </section>
 
         <!-- Changelog entries this post is behind -->
@@ -218,6 +222,7 @@
       <template #footer>
         <div class="flex w-full items-center gap-2">
           <UButton v-if="editing.id" :label="confirmDelete ? $t('feedback.clickAgainToDelete') : $t('feedback.delete')" icon="i-lucide-trash-2" :color="confirmDelete ? 'error' : 'neutral'" :variant="confirmDelete ? 'solid' : 'ghost'" @click="deletePost" />
+          <UButton v-if="current && planning.enabled.value" icon="i-lucide-square-kanban" :label="$t('feedbackPlan.button')" color="neutral" variant="soft" @click="planPost(current)" />
           <UButton v-if="current && config?.postUrlTemplate" icon="i-lucide-external-link" :label="$t('feedback.openOnSite')" color="neutral" variant="ghost" :to="feedbackPostUrl(config, '', current)" target="_blank" />
           <UButton class="ml-auto" :label="$t('common.cancel')" color="neutral" variant="ghost" @click="editorOpen = false" />
           <UButton type="submit" form="feedback-post-form" :label="editing.id ? $t('feedback.save') : $t('feedback.submitPost')" color="primary" :loading="savingPost" :disabled="!editing.title.trim()" />
@@ -226,6 +231,8 @@
     </USlideover>
 
     <AiCardsChat v-model:open="showAi" :project-id="id" kind="feedback" @created="loadPosts" />
+
+    <PlanningPickerModal v-model:open="showPlanning" :project-id="id" :post="planningPost" @changed="planningKey++" />
 
     <!-- Style -->
     <USlideover v-model:open="showStyle" :title="$t('feedback.styleTitle')" :description="$t('feedback.styleDescription')" :ui="{ content: 'sm:max-w-2xl' }">
@@ -246,6 +253,7 @@
 <script setup lang="ts">
 import Fuse from 'fuse.js'
 import { ACTIVE_FEEDBACK_CATEGORIES, feedbackPostUrl, type FeedbackBoardConfig, type FeedbackComment, type FeedbackEvent, type FeedbackPost } from '#shared/feedback'
+import type { ItemAttachment } from '#shared/itemAttachments'
 import type { AdminProject } from '~~/server/utils/projects'
 
 // The operator's side of a project's feedback board: triage (list or kanban),
@@ -324,6 +332,33 @@ function upsert(post: FeedbackPost) {
   else posts.value.splice(index, 1, mergeFeedbackPost(posts.value[index], post))
 }
 
+// ---- planning: right click a post, or use the editor's Planning button ----
+const planning = useFeedbackPlanning(id)
+const showPlanning = ref(false)
+const planningPost = ref<{ id: string, number: number | null, title: string } | null>(null)
+// Bumped when a post is filed or attached, so the editor's list of linked items reloads.
+const planningKey = ref(0)
+
+function planPost(post: FeedbackPost) {
+  planningPost.value = { id: post.id, number: post.number, title: post.title }
+  showPlanning.value = true
+}
+
+async function createPlanningItem(post: FeedbackPost) {
+  if (await planning.createFor(post)) planningKey.value++
+}
+
+function postMenu(post: FeedbackPost) {
+  return [[
+    { label: t('feedback.open'), icon: 'i-lucide-panel-right-open', onSelect: () => openPost(post.id) }
+  ], ...(planning.enabled.value
+    ? [[
+        { label: t('feedbackPlan.createItem'), icon: 'i-lucide-sparkles', onSelect: () => createPlanningItem(post) },
+        { label: t('feedbackPlan.addToItem'), icon: 'i-lucide-square-kanban', onSelect: () => planPost(post) }
+      ]]
+    : [])]
+}
+
 // ---- settings ----
 const showSettings = ref(false)
 const showStyle = ref(false)
@@ -351,7 +386,7 @@ async function saveConfig(next: Partial<FeedbackBoardConfig>) {
 
 // ---- editor ----
 const editorOpen = ref(false)
-const editing = reactive({ id: '', title: '', body: '', status: '', type: '__none__', platform: '__none__', tags: [] as string[], featured: false, hidden: false, locked: false, shippedIn: '', adminNote: '', completedAt: '' })
+const editing = reactive({ id: '', title: '', body: '', status: '', type: '__none__', platform: '__none__', tags: [] as string[], attachments: [] as ItemAttachment[], featured: false, hidden: false, locked: false, shippedIn: '', adminNote: '', completedAt: '' })
 const current = computed(() => posts.value.find(p => p.id === editing.id) || null)
 const comments = ref<FeedbackComment[]>([])
 const editorError = ref('')
@@ -369,6 +404,7 @@ function fill(post: FeedbackPost | null) {
     type: post?.type || '__none__',
     platform: post?.platform || '__none__',
     tags: [...(post?.tags || [])],
+    attachments: [...(post?.attachments || [])],
     featured: post?.featured || false,
     hidden: post?.hidden || false,
     locked: post?.locked || false,
@@ -411,6 +447,7 @@ async function savePost() {
     type: editing.type === '__none__' ? '' : editing.type,
     platform: editing.platform === '__none__' ? '' : editing.platform,
     ...(config.value?.tags.length ? { tags: editing.tags } : {}),
+    attachments: editing.attachments,
     featured: editing.featured,
     hidden: editing.hidden,
     locked: editing.locked,

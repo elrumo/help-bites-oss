@@ -2278,6 +2278,13 @@
       "welcome": "How can we help?"
     }
   },
+  "attachments": {
+    "title": "Images and files",
+    "add": "Add files",
+    "remove": "Remove {name}",
+    "tooLarge": "{name} is larger than 25 MB.",
+    "uploadError": "Could not upload that file."
+  },
   "aiCards": {
     "button": "AI cards",
     "titleFeedback": "File feedback with AI",

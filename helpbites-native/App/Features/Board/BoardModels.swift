@@ -75,6 +75,8 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   var priority: String
   var assigneeId: String
   var labels: [String]
+  /// Images and files; absent from a server that predates them.
+  var attachments: [ItemAttachment]?
   /// An ISO date at UTC midnight, or nil.
   var targetDate: String?
   /// On the public roadmap once its status is planned, active or done.
@@ -92,7 +94,7 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   var updatedAt: String
 
   enum CodingKeys: String, CodingKey {
-    case id, projectId, number, title, description, publicDescription, status, statusCategory, rank, priority, assigneeId, labels, targetDate
+    case id, projectId, number, title, description, publicDescription, status, statusCategory, rank, priority, assigneeId, labels, attachments, targetDate
     case isPublic = "public"
     case feedbackPostIds, conversationIds, errorRefs, voteCount, posts, conversations, completedAt, createdAt, updatedAt
   }

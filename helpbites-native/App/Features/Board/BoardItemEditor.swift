@@ -88,6 +88,7 @@ struct BoardItemEditor: View {
     }
     LabeledField(label: "Target date") { targetDate }
     if !config.labels.isEmpty { labelPicker(config) }
+    AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId)
     roadmap(config)
   }
 
@@ -415,6 +416,7 @@ struct BoardItemEditor: View {
 private struct BoardItemDraft: Equatable {
   var title = "", description = "", publicDescription = "", status = "", priority = "", assigneeId = ""
   var labels: [String] = []
+  var attachments: [ItemAttachment] = []
   /// "2026-11-15", like a date input; '' for none.
   var targetDay = ""
   var isPublic = false
@@ -431,6 +433,7 @@ private struct BoardItemDraft: Equatable {
     priority = item.priority
     assigneeId = item.assigneeId
     labels = item.labels
+    attachments = item.attachments ?? []
     targetDay = item.targetDay
     isPublic = item.isPublic
   }
@@ -442,6 +445,7 @@ private struct BoardItemDraft: Equatable {
       "description": .string(description),
       "publicDescription": .string(publicDescription),
       "labels": .array(labels.map(JSONValue.string)),
+      "attachments": .array(attachments.map(\.asJSON)),
       "public": .bool(isPublic)
     ]
     if !status.isEmpty { fields["status"] = .string(status) }
@@ -462,6 +466,7 @@ private struct BoardItemDraft: Equatable {
     if priority != original.priority { patch["priority"] = .string(priority) }
     if assigneeId != original.assigneeId { patch["assigneeId"] = .string(assigneeId) }
     if labels != original.labels { patch["labels"] = .array(labels.map(JSONValue.string)) }
+    if attachments != original.attachments { patch["attachments"] = .array(attachments.map(\.asJSON)) }
     if targetDay != original.targetDay { patch["targetDate"] = targetDay.isEmpty ? .null : .string(targetDay) }
     if isPublic != original.isPublic { patch["public"] = .bool(isPublic) }
     return patch

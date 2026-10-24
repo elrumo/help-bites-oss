@@ -5,6 +5,7 @@
 // knowing anything about it.
 
 import { DEFAULT_STYLE_CHOICE, validateStyleChoice, type StyleChoice } from './projectStyle'
+import { readItemAttachments, type ItemAttachment } from './itemAttachments'
 
 export const FEEDBACK_TITLE_MAX_LENGTH = 200
 export const FEEDBACK_BODY_MAX_LENGTH = 20000
@@ -172,6 +173,8 @@ export type FeedbackPost = {
   pinnedCommentId: string | null
   /** Set when an admin merged this post into another. */
   duplicateOf: FeedbackPostRef | null
+  /** Images and files the author attached. */
+  attachments: ItemAttachment[]
   /** `#N` numbers the body mentions. */
   refs: number[]
   reactions: FeedbackReactionSummary[]
@@ -513,6 +516,7 @@ export type FeedbackPostValues = Partial<{
   icon: string
   pinnedCommentId: string | null
   adminNote: string
+  attachments: ItemAttachment[]
   completedAt: Date | null
   metadata: Record<string, unknown>
   externalId: string
@@ -568,6 +572,11 @@ export function readFeedbackPostInput(payload: unknown, config: FeedbackBoardCon
       else if (tags.length > FEEDBACK_POST_TAGS_MAX) errors.push(`A post can have at most ${FEEDBACK_POST_TAGS_MAX} tags`)
       else values.tags = tags
     }
+  }
+
+  if (has('attachments')) {
+    const attachments = readItemAttachments(raw.attachments, errors)
+    if (attachments) values.attachments = attachments
   }
 
   if (!options.admin) return { values, errors }

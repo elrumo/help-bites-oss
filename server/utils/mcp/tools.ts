@@ -178,6 +178,15 @@ export const MCP_TOOLS: readonly McpTool[] = [
     }
   },
   {
+    name: 'create_board_item_from_feedback', title: 'Plan a feedback post', method: 'POST', path: '/v1/admin/board-items/from-feedback',
+    description: 'Files a board item for a feedback post and links the post to it. The AI (when the workspace has one) writes the title, description and priority from the post; otherwise the item copies the post.',
+    params: {
+      project: { ...projectId, in: 'query' },
+      postId: { type: 'string', required: true, description: 'The post\'s id or `#12`.' },
+      ai: { type: 'boolean', description: 'false skips the AI and copies the post. Default true.' }
+    }
+  },
+  {
     name: 'update_board_item', title: 'Update a board item', method: 'PATCH', path: '/v1/admin/board-items/{id}',
     description: 'Changes a board item (move it by changing `status`). Only the fields you pass change.',
     params: {

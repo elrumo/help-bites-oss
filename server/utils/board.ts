@@ -110,6 +110,7 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
       priority: (['low', 'normal', 'high', 'urgent'].includes(priority) ? priority : '') as BoardItemPriority,
       assigneeId: pointerId(row.get('assignee')),
       labels: stringList(row.get('labels')),
+      attachments: itemAttachments(row.get('attachments')),
       targetDate: iso(row.get('targetDate')),
       public: row.get('public') === true,
       feedbackPostIds: stringList(row.get('feedbackPostIds')),
@@ -151,7 +152,7 @@ async function setAssignee(row: ParseObject, assigneeId: string): Promise<void> 
 }
 
 function applyValues(row: ParseObject, values: BoardItemValues): void {
-  for (const key of ['title', 'description', 'publicDescription', 'status', 'rank', 'priority', 'labels', 'public'] as const) {
+  for (const key of ['title', 'description', 'publicDescription', 'status', 'rank', 'priority', 'labels', 'attachments', 'public'] as const) {
     if (values[key] !== undefined) row.set(key, values[key])
   }
   if (values.targetDate === null) row.unset('targetDate')
@@ -205,6 +206,7 @@ export async function createBoardItem(project: ParseObject, agent: ParseObject, 
   const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>
   const { values, errors } = readBoardItemInput(raw, board, { create: true })
   if (errors.length) badRequest(errors)
+  assertOwnAttachments(project, values.attachments)
   // Resolve the links first, so a bad one fails the request before anything is written.
   const targets: LinkTarget[] = []
   for (const id of readIdList(raw.feedbackPostIds, 'feedbackPostIds')) targets.push(await resolveLinkTarget(project, 'feedback', id))
@@ -243,6 +245,7 @@ export async function updateBoardItem(project: ParseObject, agent: ParseObject, 
   const board = getBoardConfig(project)
   const { values, errors } = readBoardItemInput(payload, board, { create: false })
   if (errors.length) badRequest(errors)
+  assertOwnAttachments(project, values.attachments)
   const from = String(row.get('status') || '')
   applyValues(row, values)
   if (values.assigneeId !== undefined) await setAssignee(row, values.assigneeId)

@@ -577,7 +577,7 @@
       "id": "feedback-board",
       "name": "Public feedback",
       "category": "product",
-      "summary": "A public feedback page per project: posts, votes, comments, reactions, mentions, moderation, followers, import. The page, roadmap and changelog views wear the project's style in light and dark, or the board's own over it.",
+      "summary": "A public feedback page per project: posts with images and files, votes, comments, reactions, mentions, moderation, followers, import. The page, roadmap and changelog views wear the project's style in light and dark, or the board's own over it.",
       "editions": [
         "community",
         "cloud"
@@ -629,7 +629,7 @@
       "id": "project-board",
       "name": "Planning and public roadmap",
       "category": "product",
-      "summary": "Planning: a private Linear-style kanban per project linked to feedback posts and conversations; the items you publish form the public roadmap. Items can be filed from errors and list the GitHub commits and pull requests that mention them.",
+      "summary": "Planning: a private Linear-style kanban per project linked to feedback posts and conversations; the items you publish form the public roadmap. Items take images and files and can be filed from errors and list the GitHub commits and pull requests that mention them.",
       "editions": [
         "community",
         "cloud"

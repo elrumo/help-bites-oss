@@ -926,6 +926,8 @@ const SCHEMAS = {
       icon: { type: 'String' },
       metadata: { type: 'Object' },
       adminNote: { type: 'String' },
+      // Images and files: [{ url, name, mime, size }], see shared/itemAttachments.ts.
+      attachments: { type: 'Array' },
       pinnedCommentId: { type: 'String' },
       duplicateOf: { type: 'Pointer', targetClass: 'FeedbackPost' },
       // `#N` numbers the body mentions — what backlinks are found by.
@@ -1030,6 +1032,8 @@ const SCHEMAS = {
       // "provider:issueId" strings, which is what filing again looks up (Parse cannot query inside the objects).
       errorRefs: { type: 'Array' },
       errorKeys: { type: 'Array' },
+      // Images and files: [{ url, name, mime, size }], see shared/itemAttachments.ts.
+      attachments: { type: 'Array' },
       completedAt: { type: 'Date' }
     },
     indexes: {

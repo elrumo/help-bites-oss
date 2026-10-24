@@ -101,6 +101,7 @@ a key's project limit apply exactly as they do in the panel and the native app.
 | `comment_on_feedback_post` | Comment as the team, or leave an internal note. |
 | `list_board_items` | The work board behind the roadmap. |
 | `create_board_item` | Add an item. |
+| `create_board_item_from_feedback` | Plan a feedback post: the AI writes the item, the post is linked. |
 | `update_board_item` | Edit or move an item. |
 | `list_changelog_entries` | Changelog entries, drafts included. |
 | `create_changelog_entry` | Write an entry: a draft unless told to publish. |

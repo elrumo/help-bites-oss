@@ -2137,6 +2137,13 @@
       "missingKey": "Falta la clave del proyecto. Revisa el atributo data-project del script de novedades."
     }
   },
+  "attachments": {
+    "title": "Imágenes y archivos",
+    "add": "Añadir archivos",
+    "remove": "Quitar {name}",
+    "tooLarge": "{name} supera los 25 MB.",
+    "uploadError": "No se pudo subir ese archivo."
+  },
   "aiCards": {
     "button": "Tarjetas con IA",
     "titleFeedback": "Crear feedback con IA",

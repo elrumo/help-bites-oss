@@ -5,6 +5,7 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Images and files on feedback posts and board items** (web, native and the public API): up to 10 per post or item, uploaded with new `POST /v1/feedback/attachments` and sent as `attachments` (`docs/FEEDBACK.md`). New `attachments` field on `FeedbackPost` and `BoardItem` (`ensure-schema` adds it); images need no change, files need your S3 bucket as before (`S3_*`). Run `bun scripts/ensure-schema.mjs` on upgrade.
 - **AI cards on Feedback and Planning** (web and native): an AI chat that turns pasted text into separate feedback posts or board items. New route `POST /v1/admin/projects/:id/ai-cards` (`docs/FEEDBACK.md`). Uses the workspace AI provider or `LITELLM_API_BASE_URL`; no schema or env change.
 - **Email-only users get your replies by email.** The address they typed shows on their contact (marked unverified until they enter the code,
   `pendingEmail` on `GET /v1/contacts`) and in the inbox, and replies from the team are mailed to it. Before, the reply failed with "User has

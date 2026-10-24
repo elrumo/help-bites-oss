@@ -89,6 +89,8 @@ export const LIMITS = {
   legalAiPerAgent: { limit: 10, window: 60 },
   // The AI chat that files feedback posts and board items.
   aiCardsPerAgent: { limit: 10, window: 60 },
+  // One AI call per planning item filed from a feedback post.
+  boardDraftPerAgent: { limit: 20, window: 60 },
   // Auto-translation: each request is a few model calls per language.
   translatePerAgent: { limit: 10, window: 60 },
   // Each scan reads up to ten repos from GitHub.

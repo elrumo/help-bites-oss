@@ -110,6 +110,7 @@
 		741F75DC9DBF70BDBABAB4F0 /* TeamInvite.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF18B11604FF36C21831DAA9 /* TeamInvite.swift */; };
 		74724E033ADD9D381CDE0F0E /* FlagsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A8133AAF31EE866C4EB75F /* FlagsScreen.swift */; };
 		77CB6E656CB914AFBA28B1D7 /* ProfileScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = AED7F95DF7B6F63DFCF49FBD /* ProfileScreen.swift */; };
+		7AFD1495023A13AED49E0F24 /* AttachmentsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C754D3FB3FC3D6CE76452776 /* AttachmentsSection.swift */; };
 		7C500E2A939AF1DB371227E3 /* AssistantKnowledge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1AABE2CB4992F68B540934 /* AssistantKnowledge.swift */; };
 		7CC0D56773B787DC31A2F959 /* ContactsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F13F42091095DA123C48694 /* ContactsScreen.swift */; };
 		7F6575872739CEB5ADEAF5C8 /* BrandScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 980AEAD67513ABFE8F185C27 /* BrandScreen.swift */; };
@@ -348,6 +349,7 @@
 		C19383AF4F691F8638A3409D /* ConnectionsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionsScreen.swift; sourceTree = "<group>"; };
 		C27728425445C8CB7F0CFE3F /* CampaignsSequences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampaignsSequences.swift; sourceTree = "<group>"; };
 		C54EEEA57049744249352AB9 /* KnowledgeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeScreen.swift; sourceTree = "<group>"; };
+		C754D3FB3FC3D6CE76452776 /* AttachmentsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentsSection.swift; sourceTree = "<group>"; };
 		C9C046F32D80D62F9701168D /* KnowledgeModelScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeModelScreen.swift; sourceTree = "<group>"; };
 		CA3EE44191096B0DA543A539 /* RevenueConnect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueConnect.swift; sourceTree = "<group>"; };
 		CB34A5FCAC463A62FA1A2C45 /* PageFieldInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageFieldInput.swift; sourceTree = "<group>"; };
@@ -724,6 +726,7 @@
 			isa = PBXGroup;
 			children = (
 				8F252753D1DECB1CC6BF7A86 /* AiCardsSheet.swift */,
+				C754D3FB3FC3D6CE76452776 /* AttachmentsSection.swift */,
 				88D56F686CAAD419199DB268 /* FeedbackBoardSettings.swift */,
 				CED2FB233E74DBD705178743 /* FeedbackChangelogLinks.swift */,
 				F685F682E640A82AD6F5CF0D /* FeedbackModels.swift */,
@@ -927,6 +930,7 @@
 				7C500E2A939AF1DB371227E3 /* AssistantKnowledge.swift in Sources */,
 				B9D55CD86EE83CAC23EAA59D /* AssistantModels.swift in Sources */,
 				2827718F6057616D2ABEDF5B /* AssistantsScreen.swift in Sources */,
+				7AFD1495023A13AED49E0F24 /* AttachmentsSection.swift in Sources */,
 				119B51204F3B252E01242478 /* AuthView.swift in Sources */,
 				AECE69B191CF9764CD335FE8 /* BillingSection.swift in Sources */,
 				2D5ED03AA24BD179C4BC7765 /* BlogAi.swift in Sources */,

@@ -26,6 +26,7 @@ const item = (fields: Partial<BoardItem> = {}): BoardItem => ({
   priority: 'high',
   assigneeId: 'agent1',
   labels: ['editor'],
+  attachments: [],
   targetDate: '2026-08-15T00:00:00.000Z',
   public: true,
   feedbackPostIds: ['post1', 'post2'],

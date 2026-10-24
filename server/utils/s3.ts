@@ -3,6 +3,7 @@ import { Client } from 'minio'
 import { ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_TYPES, type Attachment } from '#shared/support'
 import { compressImage, imageVariants, type ImageVariant, type ModernFormat } from './imageCompress'
 import { KNOWLEDGE_DOC_MAX_BYTES, KNOWLEDGE_DOC_EXTENSIONS } from '#shared/knowledge'
+import { ITEM_FILE_MAX_BYTES, ITEM_FILE_TYPES, type ItemAttachment } from '#shared/itemAttachments'
 
 // Attachments go straight to any S3-compatible bucket; Parse never sees them.
 // Keys are unguessable and prefixed by project, so the message POST can check
@@ -111,6 +112,34 @@ export async function storeAttachment(data: Buffer, projectId: string, ownerId: 
     result.picture = pictureHtml(result.variants, '')
   }
   return result
+}
+
+/**
+ * Store an image or file for a feedback post or board item. Images go through storeAttachment; a file is
+ * kept only if its extension is on the list (shared/itemAttachments.ts) and is served as the type that
+ * list says, as a download, whatever the upload claimed to be. Counts against the workspace's storage.
+ */
+export async function storeItemFile(file: { filename: string, data: Buffer }, projectId: string, ownerId: string): Promise<ItemAttachment> {
+  const name = normalizeFilename(file.filename)
+  if (detectImageMime(file.data)) {
+    const stored = await storeAttachment(file.data, projectId, ownerId)
+    return { url: stored.url, name, mime: stored.mime, size: stored.size }
+  }
+  const ext = (name.split('.').pop() || '').toLowerCase()
+  const mime = ITEM_FILE_TYPES[ext]
+  if (!mime) throw createError({ statusCode: 415, statusMessage: `Only images and ${Object.keys(ITEM_FILE_TYPES).join(', ')} files are accepted` })
+  if (file.data.length > ITEM_FILE_MAX_BYTES) throw createError({ statusCode: 413, statusMessage: `File is larger than ${ITEM_FILE_MAX_BYTES / 1024 / 1024} MB` })
+  const workspace = await workspaceIdOfProject(projectId)
+  await reserveUsage(workspace, 'storageBytes', file.data.length)
+  const key = `${projectId}/${ownerId}/${randomUUID()}.${ext}`
+  try {
+    await ensureBucket()
+    await useS3().putObject(bucket(), key, file.data, file.data.length, { 'Content-Type': mime, 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(name)}`, 'Cache-Control': 'public, max-age=31536000, immutable' })
+  } catch (error) {
+    await chargeUsage(workspace, 'storageBytes', -file.data.length)
+    throw error
+  }
+  return { url: `${String(process.env.S3_PUBLIC_URL || '').replace(/\/+$/, '')}/${key}`, name, mime, size: file.data.length }
 }
 
 /** A <picture> of stored variants (modern first, the fallback last as the <img>), for a post's HTML or a page. */

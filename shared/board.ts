@@ -5,6 +5,7 @@
 // same everywhere.
 
 import { CONVERSATION_PRIORITIES, type ConversationPriority } from './support'
+import { readItemAttachments, type ItemAttachment } from './itemAttachments'
 import {
   DEFAULT_FEEDBACK_CONFIG,
   FEEDBACK_BODY_MAX_LENGTH,
@@ -106,6 +107,7 @@ export type BoardItem = {
   priority: BoardItemPriority
   assigneeId: string
   labels: string[]
+  attachments: ItemAttachment[]
   targetDate: string | null
   public: boolean
   feedbackPostIds: string[]
@@ -210,6 +212,7 @@ export type BoardItemValues = Partial<{
   /** '' clears the assignee. Checked against the agents by the server. */
   assigneeId: string
   labels: string[]
+  attachments: ItemAttachment[]
   targetDate: Date | null
   public: boolean
 }>
@@ -272,6 +275,10 @@ export function readBoardItemInput(payload: unknown, config: Pick<BoardConfig, '
   if (has('assigneeId')) {
     if (raw.assigneeId !== null && typeof raw.assigneeId !== 'string') errors.push('assigneeId must be a string')
     else values.assigneeId = String(raw.assigneeId || '').trim().slice(0, 40)
+  }
+  if (has('attachments')) {
+    const attachments = readItemAttachments(raw.attachments, errors)
+    if (attachments) values.attachments = attachments
   }
   return { values, errors }
 }

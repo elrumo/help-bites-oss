@@ -131,6 +131,8 @@ struct FeedbackPostEditor: View {
       }
     }
 
+    AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId)
+
     LabeledField(label: "Team note", hint: "Private to admins") { LinearTextEditor(text: $draft.adminNote, minHeight: 64) }
 
     if let current, !(current.externalId ?? "").isEmpty || !(current.metadata ?? [:]).isEmpty {
@@ -489,6 +491,7 @@ struct FeedbackPostEditor: View {
 private struct FeedbackPostDraft: Equatable {
   var title = "", body = "", status = "", type = "", platform = ""
   var tags: [String] = []
+  var attachments: [ItemAttachment] = []
   var featured = false, showOnChangelog = false, hidden = false, locked = false
   var shippedIn = "", adminNote = "", changelogTitle = "", changelogBody = "", icon = ""
   /// "2026-10-02", like the web's date input; '' for none.
@@ -505,6 +508,7 @@ private struct FeedbackPostDraft: Equatable {
     type = post.type
     platform = post.platform
     tags = post.tags
+    attachments = post.attachments ?? []
     featured = post.featured
     showOnChangelog = post.showOnChangelog
     hidden = post.hidden
@@ -522,6 +526,7 @@ private struct FeedbackPostDraft: Equatable {
     FeedbackPostInput(
       title: title, body: body, status: status, type: type, platform: platform,
       tags: sendTags ? tags : nil,
+      attachments: attachments,
       featured: featured, showOnChangelog: showOnChangelog, hidden: hidden, locked: locked,
       shippedIn: shippedIn, adminNote: adminNote, changelogTitle: changelogTitle, changelogBody: changelogBody, icon: icon,
       completedAt: shippedOn.isEmpty ? (editing ? "" : nil) : "\(shippedOn)T12:00:00.000Z"

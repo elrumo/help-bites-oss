@@ -152,6 +152,11 @@
             </template>
           </section>
 
+          <section class="space-y-2">
+            <h3 class="text-sm font-semibold">{{ $t('attachments.title') }}</h3>
+            <AttachmentsField v-model="draft.attachments" :project-id="id" @update:model-value="current && patch({ attachments: draft.attachments })" />
+          </section>
+
           <template v-if="current">
             <section class="space-y-2">
               <h3 class="flex items-center gap-2 text-sm font-semibold">{{ $t('board.feedback') }} <span class="font-normal text-muted">{{ current.posts.length }}</span><span v-if="current.posts.length" class="ml-auto inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-muted"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ $t('board.votes', current.voteCount) }}</span></h3>
@@ -254,6 +259,7 @@
 <script setup lang="ts">
 import Fuse from 'fuse.js'
 import { DEFAULT_FEEDBACK_CONFIG, defaultFeedbackStatus, feedbackStatusCategory, type FeedbackBoardConfig, type FeedbackColor } from '#shared/feedback'
+import type { ItemAttachment } from '#shared/itemAttachments'
 import { BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, rankBetween, type BoardConfig, type BoardItem, type BoardItemPriority, type BoardRoadmapLayout } from '#shared/board'
 import type { ConversationPriority } from '#shared/support'
 import type { AdminProject } from '~~/server/utils/projects'
@@ -444,7 +450,7 @@ async function dropOn(status: string) {
 const editorOpen = ref(false)
 const editingId = ref('')
 const current = computed(() => (editingId.value ? items.value.find(i => i.id === editingId.value) || null : null))
-const draft = reactive({ title: '', description: '', publicDescription: '', status: '', priority: 'none' as BoardItemPriority | 'none', assigneeId: 'unassigned', labels: [] as string[], targetDate: '', public: false })
+const draft = reactive({ title: '', description: '', publicDescription: '', status: '', priority: 'none' as BoardItemPriority | 'none', assigneeId: 'unassigned', labels: [] as string[], attachments: [] as ItemAttachment[], targetDate: '', public: false })
 const draftAssignee = computed(() => agents.value.find(agent => agent.id === draft.assigneeId) || null)
 const roadmapStatus = computed(() => ROADMAP_CATEGORIES.includes(statusOf(draft.status)?.category || 'open'))
 const editorError = ref('')
@@ -462,6 +468,7 @@ function fill(item: BoardItem | null) {
     priority: item?.priority || 'none',
     assigneeId: item?.assigneeId || 'unassigned',
     labels: [...(item?.labels || [])],
+    attachments: [...(item?.attachments || [])],
     targetDate: item?.targetDate ? item.targetDate.slice(0, 10) : '',
     public: item?.public || false
   })
@@ -538,6 +545,7 @@ async function createItem() {
         priority: draft.priority === 'none' ? '' : draft.priority,
         assigneeId: draft.assigneeId === 'unassigned' ? '' : draft.assigneeId,
         labels: draft.labels,
+        attachments: draft.attachments,
         targetDate: draft.targetDate || null,
         public: draft.public
       }
