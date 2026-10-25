@@ -5,6 +5,7 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Paste and drop images into feedback and planning items** (web): paste an image while the item editor is open, or drop files on its *Images and files* box, to attach them. Native: a *Paste* button.
 - **Image width on the changelog** (web and native settings): `full`, `medium` or `small` for the images under entries, on the public changelog and the plug-and-play embed. Project setting `changelog.imageWidth` (default `full`); no schema change.
 - **Drag entries between releases** (web): in the changelog panel, drop an entry on a release (or on *No release*) to move it. The native app moves it with the entry's Release field.
 - **Images on changelog entries** (web, native, the public API and the plug-and-play embed): up to 10 per entry, uploaded with `POST /v1/feedback/attachments` and sent as `images` on `POST`/`PATCH /v1/admin/changelog/entries` (`docs/FEEDBACK.md`, Changelog → Images). Shown under the text in `changelog.js`, the board embed and the server-rendered snapshot. New `images` field on `ChangelogEntry` (`scripts/ensure-schema.mjs`; no migration: entries that kept an external `imageUrl` still show it). **Breaking for `imageUrl`**: it is still returned (the first image's url) but sending it is now `400`; send `images` instead.

@@ -1,5 +1,6 @@
 import PhotosUI
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 /// An image or file on a post or board item (shared/itemAttachments.ts).
@@ -57,6 +58,7 @@ struct AttachmentsSection: View {
             Label("Photos", systemImage: "photo")
           }
           if !imagesOnly { Button { importing = true } label: { Label("Files", systemImage: "paperclip") } }
+          Button { Task { await pasteImage() } } label: { Label("Paste", systemImage: "doc.on.clipboard") }
           if uploading > 0 { ProgressView().controlSize(.small) }
         }
         .buttonStyle(.lnSecondaryCompact)
@@ -87,6 +89,12 @@ struct AttachmentsSection: View {
         Task { for (data, name) in files { await upload(data, filename: name) } }
       }
     }
+  }
+
+  /// The image on the clipboard, as a PNG attachment (the Paste button; iOS asks first when another app copied it).
+  private func pasteImage() async {
+    guard let image = UIPasteboard.general.image, let data = image.pngData() else { error = String(localized: "There is no image on the clipboard."); return }
+    await upload(data, filename: "Pasted image.png")
   }
 
   private func upload(_ data: Data, filename: String) async {

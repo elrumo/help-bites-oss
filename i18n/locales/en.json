@@ -364,6 +364,13 @@
     "itemCount": "{count} item | {count} items",
     "onRoadmap": "{count} on the roadmap",
     "boardOff": "Planning is off",
+    "addColumn": "Add column",
+    "newColumn": "New column",
+    "newColumnHelp": "A column is a status. Public items in a planned, active or done column show on the roadmap.",
+    "columnName": "Column name",
+    "columnNamePlaceholder": "For example: To test",
+    "columnCategoryHelp": "What the column means. Open items stay private.",
+    "columnExists": "A column with this name already exists.",
     "publicRoadmap": "Public roadmap",
     "openRoadmap": "Open the public roadmap",
     "newItem": "New item",
@@ -2297,6 +2304,7 @@
     "add": "Add files",
     "remove": "Remove {name}",
     "tooLarge": "{name} is larger than 25 MB.",
+    "dropHint": "Drop or paste images and files here.",
     "uploadError": "Could not upload that file."
   },
   "aiCards": {
@@ -2461,6 +2469,7 @@
     "statusKey": "Status key",
     "category": "Category",
     "categories": {
+      "open": "Open",
       "planned": "Planned",
       "active": "Active",
       "done": "Done",

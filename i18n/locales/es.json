@@ -307,6 +307,13 @@
     "itemCount": "{count} elemento | {count} elementos",
     "onRoadmap": "{count} en la hoja de ruta",
     "boardOff": "La planificación está desactivada",
+    "addColumn": "Añadir columna",
+    "newColumn": "Nueva columna",
+    "newColumnHelp": "Una columna es un estado. Los elementos públicos de una columna planificada, activa o terminada se muestran en la hoja de ruta.",
+    "columnName": "Nombre de la columna",
+    "columnNamePlaceholder": "Por ejemplo: Para probar",
+    "columnCategoryHelp": "Lo que significa la columna. Los elementos abiertos siguen privados.",
+    "columnExists": "Ya existe una columna con este nombre.",
     "publicRoadmap": "Hoja de ruta pública",
     "openRoadmap": "Abrir la hoja de ruta pública",
     "newItem": "Nuevo elemento",
@@ -2156,6 +2163,7 @@
     "add": "Añadir archivos",
     "remove": "Quitar {name}",
     "tooLarge": "{name} supera los 25 MB.",
+    "dropHint": "Arrastra o pega aquí imágenes y archivos.",
     "uploadError": "No se pudo subir ese archivo."
   },
   "aiCards": {

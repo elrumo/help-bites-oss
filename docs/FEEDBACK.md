@@ -203,6 +203,7 @@ Posts and Planning items can carry up to 10 images and files. Upload each with `
 - **Types and sizes.** Images (PNG, JPEG, GIF, WebP) up to 8 MB; PDF, TXT, MD, CSV, LOG, JSON, ZIP, DOC(X), XLS(X), PPT(X), MP4 and MOV up to 25 MB. Files are stored and served as downloads under the type their extension implies, never as HTML. Uploads count against the workspace's storage (`402` when it is full).
 - **Who.** Operators (session or `ak_` key, with `?project=<id>`) upload for posts and board items. End users upload with their identity token once their address is verified, and only where the project allows attachments (`403` otherwise); they can attach to their own posts. Each attachment must be one of the project's own uploads (`400` otherwise).
 - **Where they show.** In the panel and native editors, and on the post in the public board. Board item attachments are private: the roadmap shows only the public description.
+- **Paste and drop.** In the panel, paste an image anywhere while the editor is open, or drop files on the *Images and files* box, and they upload and attach. Changelog entries take images only. Native: the *Paste* button attaches the image on the clipboard.
 - **Your own UI.** `attachments` is `[{ url, name, mime, size }]` on every post and item; `PATCH` with the list you want to keep removes the rest.
 
 ```bash
