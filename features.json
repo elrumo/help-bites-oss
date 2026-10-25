@@ -629,7 +629,7 @@
       "id": "project-board",
       "name": "Planning and public roadmap",
       "category": "product",
-      "summary": "Planning: a private Linear-style kanban per project linked to feedback posts and conversations; the items you publish form the public roadmap. Items take images and files and can be filed from errors and list the GitHub commits and pull requests that mention them. A feedback post becomes one or several items from its right-click menu or Planning button, written by the AI (which also sets the urgency) when one is configured, and feedback is attached to items by search. A column (a status with a name and a category) is added from the tile after the last one, on web and native. Admins reorder columns by dragging a column's header onto another.",
+      "summary": "Planning: a private Linear-style kanban per project linked to feedback posts, conversations and other items (related both ways); the items you publish form the public roadmap. Items take images and files and can be filed from errors and list the GitHub commits and pull requests that mention them. A feedback post becomes one or several items from its right-click menu or Planning button, written by the AI (which also sets the urgency) when one is configured, and feedback is attached to items by search. A column (a status with a name and a category) is added from the tile after the last one, on web and native. Admins reorder columns by dragging a column's header onto another.",
       "editions": [
         "community",
         "cloud"
@@ -1159,7 +1159,7 @@
       "id": "ai-cards",
       "name": "AI cards",
       "category": "product",
-      "summary": "An AI chat on the Feedback and Planning pages: paste or type text and the AI splits it into separate feedback posts or board items, using only the types, tags and labels the project defines, and files them like hand-made ones.",
+      "summary": "An AI chat on the Feedback and Planning pages: paste or type text and the AI splits it into separate feedback posts or board items, using only the types, tags and labels the project defines, and files them like hand-made ones. On Planning it can also change existing items (status, priority, labels, title, description, target date, public) and relate them to each other.",
       "editions": [
         "community",
         "cloud"

@@ -12,6 +12,7 @@ import {
   type BoardItemValues,
   type BoardLinkedConversation,
   type BoardLinkedPost,
+  type BoardRelatedItem,
   type RoadmapResponse
 } from '#shared/board'
 import { defaultFeedbackStatus, feedbackStatusCategory, parsePostRef, type FeedbackStatusCategory } from '#shared/feedback'
@@ -24,7 +25,11 @@ import { emitDomainEventLater } from './domainEvents'
 // reads through the feedback board's own context (`?pk=`, a token or an
 // operator) and sends an allow-list of public items.
 
-export type BoardLinkKind = 'feedback' | 'conversation'
+export type BoardLinkKind = 'feedback' | 'conversation' | 'item'
+
+/** The id field each link kind lives in on the item. */
+const LINK_FIELD: Record<BoardLinkKind, string> = { feedback: 'feedbackPostIds', conversation: 'conversationIds', item: 'relatedItemIds' }
+const LINK_NOUN: Record<BoardLinkKind, string> = { feedback: 'posts', conversation: 'conversations', item: 'items' }
 
 export function getBoardConfig(project: ParseObject): BoardConfig {
   return normalizeBoardConfig(project.get('board'))
@@ -80,12 +85,15 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
   const feedback = getFeedbackConfig(project)
   const postIds = unique(rows.flatMap(row => stringList(row.get('feedbackPostIds'))))
   const conversationIds = options.conversations === false ? [] : unique(rows.flatMap(row => stringList(row.get('conversationIds'))))
+  const relatedIds = unique(rows.flatMap(row => stringList(row.get('relatedItemIds'))))
 
   // A whole board links more posts than one read returns: in batches, never more than were asked for.
-  const [postRows, conversationRows] = await Promise.all([
+  const [postRows, conversationRows, relatedRows] = await Promise.all([
     postIds.length ? collectAll(() => new Parse.Query('FeedbackPost').equalTo('project', project).containedIn('objectId', postIds), { max: postIds.length, keys: ['title', 'status', 'number', 'voteCount', 'hidden'] }) : [],
-    conversationIds.length ? collectAll(() => new Parse.Query('Conversation').equalTo('project', project).containedIn('objectId', conversationIds).include('endUser'), { max: conversationIds.length }) : []
+    conversationIds.length ? collectAll(() => new Parse.Query('Conversation').equalTo('project', project).containedIn('objectId', conversationIds).include('endUser'), { max: conversationIds.length }) : [],
+    relatedIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn('objectId', relatedIds), { max: relatedIds.length, keys: ['number', 'title', 'status'] }) : []
   ])
+  const related = new Map<string, BoardRelatedItem>(relatedRows.map(row => [row.id || '', { id: row.id || '', number: typeof row.get('number') === 'number' ? row.get('number') : null, title: String(row.get('title') || ''), status: String(row.get('status') || '') }]))
   const posts = new Map<string, BoardLinkedPost>(postRows.map(row => [row.id || '', { ...feedbackPostRef(row, feedback), voteCount: Number(row.get('voteCount') || 0), hidden: row.get('hidden') === true }]))
   const conversations = new Map<string, BoardLinkedConversation>(conversationRows.map((row) => {
     const endUser = row.get('endUser') as ParseObject | undefined
@@ -115,6 +123,8 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
       public: row.get('public') === true,
       feedbackPostIds: stringList(row.get('feedbackPostIds')),
       conversationIds: stringList(row.get('conversationIds')),
+      relatedItemIds: stringList(row.get('relatedItemIds')),
+      related: stringList(row.get('relatedItemIds')).map(id => related.get(id)).filter((item): item is BoardRelatedItem => Boolean(item)),
       errorRefs: readErrorRefs(row.get('errorRefs')),
       voteCount: linkedPosts.filter(post => !post.hidden).reduce((sum, post) => sum + post.voteCount, 0),
       posts: linkedPosts,
@@ -159,11 +169,26 @@ function applyValues(row: ParseObject, values: BoardItemValues): void {
   else if (values.targetDate) row.set('targetDate', values.targetDate)
 }
 
-type LinkTarget = { kind: 'feedback', id: string, row: ParseObject } | { kind: 'conversation', id: string, row: ParseObject }
+type LinkTarget = { kind: 'feedback', id: string, row: ParseObject } | { kind: 'conversation', id: string, row: ParseObject } | { kind: 'item', id: string, row: ParseObject }
 
-/** A post (by id or `#N`) or a conversation in this project; 404 for anything else. */
+/** An item of this project by its object id or `#N`; undefined for anything else. */
+export async function findBoardItem(project: ParseObject, ref: string): Promise<ParseObject | undefined> {
+  if (!ref) return undefined
+  const Parse = useParse()
+  const byId = await new Parse.Query('BoardItem').equalTo('project', project).equalTo('objectId', ref).first(MASTER)
+  if (byId) return byId
+  const number = parsePostRef(ref.replace(/^#/, ''))
+  return number ? await new Parse.Query('BoardItem').equalTo('project', project).equalTo('number', number).first(MASTER) : undefined
+}
+
+/** A post (by id or `#N`), a conversation or another item in this project; 404 for anything else. */
 async function resolveLinkTarget(project: ParseObject, kind: BoardLinkKind, rawId: string): Promise<LinkTarget> {
   const id = String(rawId || '').trim()
+  if (kind === 'item') {
+    const item = await findBoardItem(project, id)
+    if (!item) throw createError({ statusCode: 404, statusMessage: 'Item not found' })
+    return { kind, id: item.id || '', row: item }
+  }
   if (kind === 'feedback') {
     const post = id ? await findFeedbackPost(project, id.replace(/^#/, '')) : undefined
     if (!post) throw createError({ statusCode: 404, statusMessage: 'Post not found' })
@@ -175,8 +200,8 @@ async function resolveLinkTarget(project: ParseObject, kind: BoardLinkKind, rawI
 }
 
 function readLinkKind(value: unknown): BoardLinkKind {
-  if (value === 'feedback' || value === 'conversation') return value
-  badRequest(['kind must be feedback or conversation'])
+  if (value === 'feedback' || value === 'conversation' || value === 'item') return value
+  badRequest(['kind must be feedback, conversation or item'])
 }
 
 function readIdList(value: unknown, label: string): string[] {
@@ -187,15 +212,22 @@ function readIdList(value: unknown, label: string): string[] {
   return ids
 }
 
-/** Add or remove one link with $addToSet / $pull, so two operators linking at once both land. */
+/** Add or remove one link with $addToSet / $pull, so two operators linking at once both land. A related item is linked on both sides. */
 async function applyLink(row: ParseObject, target: LinkTarget, linked: boolean, agent: ParseObject): Promise<void> {
-  const field = target.kind === 'feedback' ? 'feedbackPostIds' : 'conversationIds'
+  const field = LINK_FIELD[target.kind]
   const ids = stringList(row.get(field))
+  if (target.kind === 'item' && target.id === row.id) badRequest(['An item cannot be related to itself'])
   if (linked === ids.includes(target.id)) return
-  if (linked && ids.length >= BOARD_LINKS_MAX) badRequest([`An item links at most ${BOARD_LINKS_MAX} ${target.kind === 'feedback' ? 'posts' : 'conversations'}`])
+  const full = ids.length >= BOARD_LINKS_MAX || (target.kind === 'item' && stringList(target.row.get(field)).length >= BOARD_LINKS_MAX)
+  if (linked && full) badRequest([`An item links at most ${BOARD_LINKS_MAX} ${LINK_NOUN[target.kind]}`])
   if (linked) row.addUnique(field, target.id)
   else row.remove(field, target.id)
   await row.save(null, MASTER)
+  if (target.kind === 'item') {
+    if (linked) target.row.addUnique(field, row.id)
+    else target.row.remove(field, row.id)
+    await target.row.save(null, MASTER)
+  }
   if (target.kind === 'conversation') {
     await appendEvent(target.row, { type: linked ? 'board.linked' : 'board.unlinked', itemId: row.id || '', number: row.get('number') ?? null, title: String(row.get('title') || '') }, agent)
   }
@@ -224,6 +256,7 @@ export async function createBoardItem(project: ParseObject, agent: ParseObject, 
   row.set('labels', [])
   row.set('feedbackPostIds', [])
   row.set('conversationIds', [])
+  row.set('relatedItemIds', [])
   applyValues(row, values)
   if (values.assigneeId) await setAssignee(row, values.assigneeId)
   const { completedAt } = statusTransition(board, '', String(row.get('status')), undefined, new Date())
@@ -289,7 +322,7 @@ export async function linkBoardItem(project: ParseObject, agent: ParseObject, ro
     target = await resolveLinkTarget(project, kind, id)
   } catch (error) {
     // Unlinking something deleted since: drop the stale id as stored.
-    const field = kind === 'feedback' ? 'feedbackPostIds' : 'conversationIds'
+    const field = LINK_FIELD[kind]
     if (linked || !stringList(row.get(field)).includes(id)) throw error
     row.remove(field, id)
     await row.save(null, MASTER)

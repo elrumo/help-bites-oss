@@ -58,6 +58,14 @@ struct BoardErrorRef: Codable, Equatable, Sendable, Identifiable {
   var providerName: String { provider == "bugsink" ? "Bugsink" : provider == "glitchtip" ? "GlitchTip" : provider }
 }
 
+/// Another item of the same board that this one is related to.
+struct BoardRelatedItem: Codable, Equatable, Sendable, Identifiable {
+  let id: String
+  let number: Int?
+  let title: String
+  let status: String
+}
+
 struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   let id: String
   let projectId: String
@@ -83,6 +91,9 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   var isPublic: Bool
   var feedbackPostIds: [String]
   var conversationIds: [String]
+  /// Related items, linked both ways; absent from a server that predates them.
+  var relatedItemIds: [String]?
+  var related: [BoardRelatedItem]?
   /// The errors it was filed from; absent from a server that predates filing them.
   var errorRefs: [BoardErrorRef]?
   /// Σ of the linked, non-hidden posts' votes.
@@ -96,7 +107,7 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   enum CodingKeys: String, CodingKey {
     case id, projectId, number, title, description, publicDescription, status, statusCategory, rank, priority, assigneeId, labels, attachments, targetDate
     case isPublic = "public"
-    case feedbackPostIds, conversationIds, errorRefs, voteCount, posts, conversations, completedAt, createdAt, updatedAt
+    case feedbackPostIds, conversationIds, relatedItemIds, related, errorRefs, voteCount, posts, conversations, completedAt, createdAt, updatedAt
   }
 
   /// "2026-11-15" from the stored date, as a date input holds it; '' for none.

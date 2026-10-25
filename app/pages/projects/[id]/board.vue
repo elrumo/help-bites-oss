@@ -212,6 +212,18 @@
             </section>
 
             <section class="space-y-2">
+              <h3 class="text-sm font-semibold">{{ $t('board.related') }} <span class="font-normal text-muted">{{ current.related.length }}</span></h3>
+              <ul v-if="current.related.length" class="divide-y divide-default rounded-lg border border-default">
+                <li v-for="item in current.related" :key="item.id" class="group flex items-center gap-2.5 px-2.5 py-2 text-[13px]">
+                  <span class="min-w-0 flex-1 truncate"><span v-if="item.number" class="mr-1 tabular-nums text-muted">#{{ item.number }}</span>{{ item.title }}</span>
+                  <FeedbackStatusBadge v-if="statusOf(item.status)" :status="statusOf(item.status)!" />
+                  <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" :aria-label="$t('board.unrelate', { number: item.number ?? '' })" @click="setLink('item', item.id, false)" />
+                </li>
+              </ul>
+              <USelectMenu v-if="relatable.length" :items="relatable" value-key="value" class="w-full" :model-value="null" :placeholder="$t('board.relateItem')" :aria-label="$t('board.relateItem')" :disabled="linking" @update:model-value="id => id && setLink('item', String(id), true)" />
+            </section>
+
+            <section class="space-y-2">
               <h3 class="text-sm font-semibold">{{ $t('board.conversations') }} <span class="font-normal text-muted">{{ current.conversations.length }}</span></h3>
               <ul v-if="current.conversations.length" class="divide-y divide-default rounded-lg border border-default">
                 <li v-for="conversation in current.conversations" :key="conversation.id" class="group flex items-center gap-2 px-2.5 text-[13px]">
@@ -345,6 +357,10 @@ const LAYOUT_KEYS: Record<BoardRoadmapLayout, string> = { columns: 'board.layout
 const layoutItems = computed(() => BOARD_ROADMAP_LAYOUTS.map(value => ({ label: t(LAYOUT_KEYS[value]), value })))
 const statusItems = computed(() => (board.value?.statuses || []).map(s => ({ label: s.label, value: s.key })))
 const labelItems = computed(() => (board.value?.labels || []).map(l => ({ label: l.label, value: l.key })))
+// Other items that the open one is not related to yet.
+const relatable = computed(() => items.value
+  .filter(item => item.id !== current.value?.id && !current.value?.relatedItemIds.includes(item.id))
+  .map(item => ({ label: `${item.number ? `#${item.number} ` : ''}${item.title}`, value: item.id })))
 const assigneeItems = computed(() => [{ label: t('board.unassigned'), value: 'unassigned' }, ...agents.value.map(agent => ({ label: agent.name || agent.username, value: agent.id }))])
 const assigneeFilterItems = computed(() => [{ label: t('board.anyone'), value: '__all__' }, ...assigneeItems.value])
 const priorityFilterItems = computed(() => [{ label: t('board.anyPriority'), value: '__all__' }, ...priorityItems.value])
@@ -644,12 +660,14 @@ async function deleteItem() {
   }
 }
 
-async function setLink(kind: 'feedback' | 'conversation', targetId: string, linked: boolean) {
+async function setLink(kind: 'feedback' | 'conversation' | 'item', targetId: string, linked: boolean) {
   if (!current.value) return
   linking.value = true
   editorError.value = ''
   try {
     replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${current.value.id}/links`, { method: 'POST', body: { kind, id: targetId, linked } })).item)
+    // A related item is linked on the other side too, so the list is read again.
+    if (kind === 'item') await loadItems()
     return true
   } catch (e: any) {
     editorError.value = e?.message || t('board.linkError')

@@ -183,7 +183,10 @@ Things to know:
 The **AI cards** button on a project's Feedback and Planning pages (web and native) opens a chat. Paste or type text (customer emails, reviews, meeting notes, a list) and the AI splits it into separate cards: feedback posts on Feedback, board items on Planning. Each card is filed the way a hand-made one is, so numbers, events and webhooks are the usual ones; posts are authored by the team. You can keep talking to refine or add more.
 
 - It only uses the post types, tags and labels the project defines (and a priority on board items); anything else is dropped, not guessed. It files at most 20 cards per message and treats pasted text as data, never as instructions.
-- Cards that fail to create are listed in `failed`; the rest are kept. A message with nothing to file creates none.
+- On Planning it can also **change existing items**: status, priority, labels, title, description, target date and the public flag. It does not touch the assignee, the order or the attachments. It is shown the board's 300 most recently changed items and only changes the ones it names by `#number`, or a card it creates in the same answer by that card's `ref`. A change goes through the same rules as `PATCH /v1/admin/board-items/:id`: a status change still moves linked posts when *Sync linked feedback* is on, and moving an item to done may draft a changelog entry. Values the board does not allow are dropped.
+- On Planning it can also **relate items** to each other (`links`), the same as *Relate to another item* in the panel. Related items link both ways.
+- Cards and changes that fail are listed in `failed`; the rest are kept, and the chat shows what changed under *Changed*. A message with nothing to file or change creates and changes none.
+- **Attachments.** The chat takes images and files too: paste an image, drop files on the attachments field under the chat, or pick them (native: the Photos and Files buttons). They upload through `POST /v1/feedback/attachments`, and send as `attachments` with the message. Every card that message creates gets them (posts and items alike), so they travel with the work. The AI reads the text only, so say in the text what a file is for. A message needs text, and at most 10 files.
 - It runs on the workspace's AI provider, or on the server's gateway where it spends AI credits. `501` when no AI is configured, `429` past 10 requests a minute per operator.
 - It is an operator tool, so it has no embed. Build your own flow on the API, which needs an operator session or an `ak_` admin key:
 
@@ -191,7 +194,16 @@ The **AI cards** button on a project's Feedback and Planning pages (web and nati
 curl -X POST https://helpbites.example/v1/admin/projects/$PROJECT_ID/ai-cards \
   -H "Authorization: Bearer $ADMIN_KEY" -H "Content-Type: application/json" \
   -d '{"kind":"feedback","messages":[{"role":"user","content":"Customers want CSV export. iOS crashes when I open settings."}]}'
-# {"reply":"Filed 2 posts.","created":[{"id":"…","number":41,"title":"Export as CSV"},…],"failed":[]}
+# {"reply":"Filed 2 posts.","created":[{"id":"…","number":41,"title":"Export as CSV"},…],"updated":[],"failed":[]}
+```
+
+On Planning, the same call can change and relate items:
+
+```bash
+curl -X POST https://helpbites.example/v1/admin/projects/$PROJECT_ID/ai-cards \
+  -H "Authorization: Bearer $ADMIN_KEY" -H "Content-Type: application/json" \
+  -d '{"kind":"board","messages":[{"role":"user","content":"Mark #12 done and relate it to #14."}]}'
+# {"reply":"Marked #12 done and related it to #14.","created":[],"updated":[{"id":"…","number":12,"title":"Export CSV","changes":["status: done","related to #14"]},{"id":"…","number":14,"title":"Export as CSV","changes":["related to #12"]}],"failed":[]}
 ```
 
 `kind` is `feedback` or `board`; `messages` is the conversation so far (`user` and `assistant` turns, the last 12 are read, the last must be the user's).
@@ -259,7 +271,7 @@ Project → **Planning** → *Turn on planning*.
   with the board's statuses (the same list as Settings). Admins drag a column's
   header onto another to reorder them. `?item=<id>` opens an
   item, so links to it can be shared.
-- **Links.** An item links up to 50 feedback posts and 50 conversations. In the
+- **Links.** An item links up to 50 feedback posts, 50 conversations and 50 other items. In the
   item, *Link post* takes a post's `#N`. In the inbox, a conversation's
   **Planning** section files a new item from it (prefilled with its subject and
   the customer's last message) or adds it to an existing one; the link shows on
@@ -273,6 +285,7 @@ Project → **Planning** → *Turn on planning*.
   from the board's own; every item is linked to the post. A toast, or the button's spinner, shows
   while the AI works. With no AI, or if its answer is unusable, you get one item copied from the
   post. A post can feed several items and an item can hold several posts.
+- **Related items.** *Relate to another item* in an item's Related items section links it to another item of the board. The link is two-way: both items list each other, and an item cannot relate to itself. It is internal; the public roadmap does not show it. The API takes it as `kind: "item"` on `POST /v1/admin/board-items/:id/links`, and items carry `relatedItemIds` and the resolved `related` list.
 - **Attach feedback by search.** In an item, *Search feedback to attach* finds posts by title,
   text, author or `#N` and links them; the *New item* form takes posts the same way and links them
   on creation.

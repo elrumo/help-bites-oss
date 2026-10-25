@@ -20,7 +20,7 @@ import {
   type FeedbackTagDefinition
 } from './feedback'
 
-/** Posts, and conversations, one item may link to. */
+/** Posts, conversations and other items, one item may link to. */
 export const BOARD_LINKS_MAX = 50
 
 export const BOARD_ROADMAP_LAYOUTS = ['columns', 'timeline', 'list'] as const
@@ -90,6 +90,8 @@ export function readErrorRefs(value: unknown): BoardErrorRef[] {
 
 export type BoardLinkedPost = FeedbackPostRef & { voteCount: number, hidden: boolean }
 export type BoardLinkedConversation = { id: string, subject: string, status: string, endUserName: string }
+/** Another item of the same board that this one is related to. */
+export type BoardRelatedItem = { id: string, number: number | null, title: string, status: string }
 
 /** An item as the panel (and admin keys) see it. */
 export type BoardItem = {
@@ -112,6 +114,9 @@ export type BoardItem = {
   public: boolean
   feedbackPostIds: string[]
   conversationIds: string[]
+  /** Related items, symmetric: linking A to B also links B to A. */
+  relatedItemIds: string[]
+  related: BoardRelatedItem[]
   /** Errors from the tracker this item was filed from; empty for an ordinary item. */
   errorRefs: BoardErrorRef[]
   /** Σ of the linked, non-hidden posts' votes. */

@@ -289,7 +289,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Images and files.** Posts and Planning items take up to 10 attachments (images up to 8 MB, files up to 25 MB), through the panel, the app, the public board and the API. [FEEDBACK.md](FEEDBACK.md#images-and-files)
 - **AI cards.** On Feedback and Planning, an AI chat turns pasted text into
   separate posts or board items, using only the types, tags and labels you
-  defined. [FEEDBACK.md](FEEDBACK.md#file-cards-with-ai)
+  defined. On Planning it can also change existing items and relate them to each
+  other. [FEEDBACK.md](FEEDBACK.md#file-cards-with-ai)
 
 **Planning and the public roadmap** [FEEDBACK.md](FEEDBACK.md#planning--roadmap)
 
@@ -298,8 +299,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   reorder. Add a column from the tile after the last one: a name and a category,
   which decides whether its items show on the roadmap. Admins reorder columns by
   dragging a column's header onto another.
-- **Links.** Connect an item to up to 50 feedback posts and 50 conversations.
-  Votes add up across the linked posts. Search feedback to attach it to an item
+- **Links.** Connect an item to up to 50 feedback posts, 50 conversations and 50 other items
+  (related items link both ways). Votes add up across the linked posts. Search feedback to attach it to an item
   (or while creating one); right-click a post, or use its Planning button, to
   file it as new items written by the AI (it decides whether the post needs one
   item or several, and sets the urgency) or add it to an existing item.

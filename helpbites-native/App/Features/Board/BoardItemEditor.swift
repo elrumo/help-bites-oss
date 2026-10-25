@@ -9,6 +9,7 @@ struct BoardItemEditor: View {
   @State private var itemId: String?
   @State private var draft: BoardItemDraft
   @State private var pickingPost = false
+  @State private var pickingItem = false
   /// Feedback chosen for an item that does not exist yet; linked when it is created.
   @State private var newPosts: [FeedbackPost] = []
   @State private var saving = false
@@ -70,6 +71,11 @@ struct BoardItemEditor: View {
       .sheet(isPresented: $pickingPost) {
         FeedbackAttachSheet(session: store.session, projectId: store.projectId, exclude: Set((current?.feedbackPostIds ?? []) + newPosts.map(\.id))) { post in
           if itemId == nil { newPosts.append(post) } else { Task { await setLink("feedback", post.id, true) } }
+        }
+      }
+      .sheet(isPresented: $pickingItem) {
+        BoardItemPicker(store: store, exclude: Set((itemId.map { [$0] } ?? []) + (current?.relatedItemIds ?? []))) { other in
+          Task { await setLink("item", other.id, true) }
         }
       }
     }
@@ -252,6 +258,23 @@ struct BoardItemEditor: View {
 
       VStack(alignment: .leading, spacing: 8) {
         HStack(spacing: 6) {
+          Text("Related items").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+          Text("\(item.related?.count ?? 0)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
+        }
+        if let related = item.related, !related.isEmpty {
+          Card {
+            ForEach(related) { other in
+              CardRow(divider: other.id != related.last?.id) { relatedRow(other) }
+            }
+          }
+        }
+        Button { pickingItem = true } label: { Label("Relate to another item", systemImage: "rectangle.split.3x1") }
+          .buttonStyle(.lnSecondaryCompact)
+          .disabled(linking)
+      }
+
+      VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 6) {
           Text("Conversations").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
           Text("\(item.conversations.count)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
         }
@@ -342,6 +365,22 @@ struct BoardItemEditor: View {
       ?? FeedbackStatusDefinition(key: post.status, label: post.status.isEmpty ? String(localized: "Open") : post.status, category: post.statusCategory, color: "neutral")
   }
 
+  private func relatedRow(_ other: BoardRelatedItem) -> some View {
+    HStack(spacing: 8) {
+      Text(other.number.map { "#\($0) \(other.title)" } ?? other.title).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
+      Spacer(minLength: 0)
+      if let status = store.config?.status(other.status) {
+        Text(status.label).font(.lnCaption).foregroundStyle(Theme.textToned)
+      }
+      Button { Task { await setLink("item", other.id, false) } } label: {
+        Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .disabled(linking)
+      .accessibilityLabel("Unrelate \(other.title)")
+    }
+  }
+
   private func conversationRow(_ conversation: BoardLinkedConversation) -> some View {
     HStack(spacing: 8) {
       Button { openConversation(conversation.id) } label: {
@@ -421,6 +460,8 @@ struct BoardItemEditor: View {
     defer { linking = false }
     do {
       _ = try await store.link(itemId, kind: kind, target: target, linked: linked)
+      // A related item is linked on the other side too, so the board is read again.
+      if kind == "item" { await store.load() }
       return true
     } catch {
       self.error = error.localizedDescription

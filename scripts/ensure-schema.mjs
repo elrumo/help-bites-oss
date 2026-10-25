@@ -1028,6 +1028,8 @@ const SCHEMAS = {
       public: { type: 'Boolean' },
       feedbackPostIds: { type: 'Array' },
       conversationIds: { type: 'Array' },
+      // Other items of the board, linked both ways.
+      relatedItemIds: { type: 'Array' },
       // Errors this item was filed from: [{ provider, issueId, linkId, title, url }], and the same issues as
       // "provider:issueId" strings, which is what filing again looks up (Parse cannot query inside the objects).
       errorRefs: { type: 'Array' },
