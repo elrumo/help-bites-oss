@@ -304,6 +304,10 @@
     "viaEmail": "Va començar com un correu"
   },
   "board": {
+    "order": "Ordre",
+    "orderManual": "Manual",
+    "orderNewest": "Més recents primer",
+    "orderOldest": "Més antics primer",
     "itemCount": "{count} element | {count} elements",
     "onRoadmap": "{count} al full de ruta",
     "boardOff": "La planificació està desactivada",

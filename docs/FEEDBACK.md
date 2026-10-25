@@ -258,6 +258,7 @@ Project → **Planning** → *Turn on planning*.
   is kept. The tile after the last column adds one: a name and a category, saved
   with the board's statuses (the same list as Settings). `?item=<id>` opens an
   item, so links to it can be shared.
+- **Order.** The toolbar's *Order* menu shows each column as *Manual* (the order you drag cards into), *Newest first* or *Oldest first* (by when each item was made). Dragging a card to another column works in any order; reordering within a column needs *Manual*. Native: the *Order* menu in the filter bar.
 - **Links.** An item links up to 50 feedback posts and 50 conversations. In the
   item, *Link post* takes a post's `#N`. In the inbox, a conversation's
   **Planning** section files a new item from it (prefilled with its subject and

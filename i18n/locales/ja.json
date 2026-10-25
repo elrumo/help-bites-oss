@@ -304,6 +304,10 @@
     "viaEmail": "メールで始まりました"
   },
   "board": {
+    "order": "並び順",
+    "orderManual": "手動",
+    "orderNewest": "新しい順",
+    "orderOldest": "古い順",
     "itemCount": "{count} 件",
     "onRoadmap": "ロードマップに{count}件",
     "boardOff": "プランニングはオフです",

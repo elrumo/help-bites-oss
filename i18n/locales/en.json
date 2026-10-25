@@ -361,6 +361,10 @@
     "viaEmail": "Started as an email"
   },
   "board": {
+    "order": "Order",
+    "orderManual": "Manual",
+    "orderNewest": "Newest first",
+    "orderOldest": "Oldest first",
     "itemCount": "{count} item | {count} items",
     "onRoadmap": "{count} on the roadmap",
     "boardOff": "Planning is off",
