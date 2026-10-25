@@ -1,7 +1,7 @@
 import SwiftUI
 
 // File scope: a generic type cannot hold static stored properties.
-private let feedbackCategoryOptions = [("open", String(localized: "Open")), ("planned", String(localized: "Planned")), ("active", String(localized: "Active")), ("done", String(localized: "Done")), ("closed", String(localized: "Closed"))].map { FeedbackOption(value: $0.0, label: $0.1) }
+let feedbackCategoryOptions = [("open", String(localized: "Open")), ("planned", String(localized: "Planned")), ("active", String(localized: "Active")), ("done", String(localized: "Done")), ("closed", String(localized: "Closed"))].map { FeedbackOption(value: $0.0, label: $0.1) }
 private let feedbackColorOptions = [("neutral", String(localized: "Neutral")), ("primary", String(localized: "Primary")), ("info", String(localized: "Info")), ("success", String(localized: "Success")), ("warning", String(localized: "Warning")), ("error", String(localized: "Error"))].map { FeedbackOption(value: $0.0, label: $0.1, color: $0.0) }
 
 /// Feedback settings (FeedbackBoardSettings.vue): the feedback page's switch and copy, its options,

@@ -102,12 +102,34 @@
               </div>
             </div>
           </section>
+          <button v-if="listsConfig" type="button" class="flex h-16 w-72 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-dashed border-default text-[13px] text-muted transition-colors hover:text-default" @click="openAddColumn">
+            <UIcon name="i-lucide-plus" class="size-4" />{{ $t('board.addColumn') }}
+          </button>
         </div>
       </div>
     </template>
 
     <div v-else-if="error" class="p-8 text-sm text-error">{{ error }}</div>
     <div v-else class="p-8 text-sm text-muted">{{ $t('board.loading') }}</div>
+
+    <!-- New column: a status, saved with the board's statuses -->
+    <UModal v-model:open="columnOpen" :title="$t('board.newColumn')" :description="$t('board.newColumnHelp')">
+      <template #body>
+        <form class="space-y-4" @submit.prevent="addColumn">
+          <UFormField :label="$t('board.columnName')">
+            <UInput v-model="columnDraft.label" :placeholder="$t('board.columnNamePlaceholder')" :maxlength="60" autofocus class="w-full" />
+          </UFormField>
+          <UFormField :label="$t('feedback.category')" :help="$t('board.columnCategoryHelp')">
+            <USelect v-model="columnDraft.category" :items="categoryItems" class="w-full" />
+          </UFormField>
+          <p v-if="columnError" class="text-[13px] text-error">{{ columnError }}</p>
+          <div class="flex justify-end gap-2 pt-2">
+            <UButton :label="$t('common.cancel')" color="neutral" variant="ghost" @click="columnOpen = false" />
+            <UButton type="submit" :label="$t('board.addColumn')" :loading="savingLists" :disabled="!columnKey" />
+          </div>
+        </form>
+      </template>
+    </UModal>
 
     <!-- Item editor -->
     <USlideover v-model:open="editorOpen" :title="current ? (current.number ? $t('board.itemNumber', { number: current.number }) : $t('board.item')) : $t('board.newItem')" :description="current ? $t('board.created', { time: timeAgo(current.createdAt) }) : $t('board.privateUntilRoadmap')" :ui="{ content: 'sm:max-w-2xl' }">
@@ -268,7 +290,7 @@
 
 <script setup lang="ts">
 import Fuse from 'fuse.js'
-import { DEFAULT_FEEDBACK_CONFIG, defaultFeedbackStatus, feedbackStatusCategory, type FeedbackBoardConfig, type FeedbackColor } from '#shared/feedback'
+import { DEFAULT_FEEDBACK_CONFIG, FEEDBACK_STATUS_CATEGORIES, defaultFeedbackStatus, feedbackStatusCategory, normalizeFeedbackKey, type FeedbackBoardConfig, type FeedbackColor, type FeedbackStatusCategory } from '#shared/feedback'
 import type { ItemAttachment } from '#shared/itemAttachments'
 import { BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, rankBetween, type BoardConfig, type BoardItem, type BoardItemPriority, type BoardRoadmapLayout } from '#shared/board'
 import type { ConversationPriority } from '#shared/support'
@@ -649,6 +671,34 @@ async function saveLists(config: FeedbackBoardConfig) {
   } finally {
     savingLists.value = false
   }
+}
+
+// ---- new column ----
+// A column is a status: it joins the board's statuses through the same save as the settings form.
+// Open is the default category: its items stay private, where a planned, active or done one would show on the roadmap.
+const columnOpen = ref(false)
+const columnDraft = reactive({ label: '', category: 'open' as FeedbackStatusCategory })
+const columnKey = computed(() => normalizeFeedbackKey(columnDraft.label))
+const columnError = ref('')
+const categoryItems = computed(() => FEEDBACK_STATUS_CATEGORIES.map(value => ({ label: t(`feedback.categories.${value}`), value })))
+
+function openAddColumn() {
+  columnDraft.label = ''
+  columnDraft.category = 'open'
+  columnError.value = ''
+  columnOpen.value = true
+}
+
+async function addColumn() {
+  if (!columnKey.value || !listsConfig.value) return
+  if (board.value?.statuses.some(status => status.key === columnKey.value)) {
+    columnError.value = t('board.columnExists')
+    return
+  }
+  columnError.value = ''
+  await saveLists({ ...listsConfig.value, statuses: [...listsConfig.value.statuses, { key: columnKey.value, label: columnDraft.label.trim(), category: columnDraft.category, color: 'neutral', isDefault: false, notify: false }] })
+  if (listsError.value) columnError.value = listsError.value
+  else columnOpen.value = false
 }
 
 // ---- load ----

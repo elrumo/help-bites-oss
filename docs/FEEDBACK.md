@@ -255,7 +255,9 @@ Project → **Planning** → *Turn on planning*.
 - **Items** have a title, an internal Markdown description, a status, a
   priority, an assignee, labels, a target date and a `#number`. Drag a card
   across columns to change its status, or within one to reorder it; the order
-  is kept. `?item=<id>` opens an item, so links to it can be shared.
+  is kept. The tile after the last column adds one: a name and a category, saved
+  with the board's statuses (the same list as Settings). `?item=<id>` opens an
+  item, so links to it can be shared.
 - **Links.** An item links up to 50 feedback posts and 50 conversations. In the
   item, *Link post* takes a post's `#N`. In the inbox, a conversation's
   **Planning** section files a new item from it (prefilled with its subject and

@@ -160,6 +160,14 @@ struct BoardScreen: View {
     return board.settingsForm
   }
 
+  /// A new column: a status added to the end of the board's statuses, saved like the settings form.
+  func addColumn(_ label: String, category: String) async throws {
+    guard let config else { return }
+    var lists = config.settingsForm
+    lists.statuses.append(FeedbackStatusDefinition(key: FeedbackFormat.normalizeKey(label), label: label, category: category, color: "neutral", isDefault: false, notify: false))
+    _ = try await saveLists(lists)
+  }
+
   // MARK: Items
 
   func create(_ fields: [String: JSONValue]) async throws -> BoardItem {
@@ -275,6 +283,7 @@ private struct BoardEditorRoute: Identifiable {
 private struct BoardView: View {
   @State var store: BoardStore
   @State private var showSettings = false
+  @State private var addingColumn = false
   @State private var showAi = false
   @State private var editor: BoardEditorRoute?
   @State private var roadmapHelp = false
@@ -287,6 +296,7 @@ private struct BoardView: View {
       .sheet(item: $editor) { route in BoardItemEditor(store: store, itemId: route.itemId) }
       .sheet(isPresented: $showAi) { AiCardsSheet(session: store.session, projectId: store.projectId, kind: .board) { try? await store.loadItems() } }
       .sheet(isPresented: $showSettings) { BoardSettingsSheet(store: store) }
+      .sheet(isPresented: $addingColumn) { AddColumnSheet(store: store) }
       .feedbackErrorAlert($store.alert)
       .alert("Turn on feedback first", isPresented: $roadmapHelp) {
         Button("OK", role: .cancel) {}
@@ -468,8 +478,72 @@ private struct BoardView: View {
             editor = BoardEditorRoute(itemId: item.id)
           }
         }
+        Button { addingColumn = true } label: {
+          Label("Add column", systemImage: "plus")
+            .font(.lnMetaMedium)
+            .foregroundStyle(Theme.textMuted)
+            .frame(width: 280, height: 64)
+            .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+        }
+        .buttonStyle(.plain)
       }
       .padding(Metrics.gutter)
+    }
+  }
+}
+
+// MARK: - Add column
+
+/// A column is a status. Its category decides what its items mean: planned, active and done
+/// items show on the roadmap; open ones stay private.
+private struct AddColumnSheet: View {
+  let store: BoardStore
+  @Environment(\.dismiss) private var dismiss
+  @State private var name = ""
+  @State private var category = "open"
+  @State private var saving = false
+  @State private var message = ""
+
+  private var key: String { FeedbackFormat.normalizeKey(name) }
+
+  var body: some View {
+    NavigationStack {
+      Form {
+        Section {
+          TextField("For example: To test", text: $name)
+          Picker("Category", selection: $category) {
+            ForEach(feedbackCategoryOptions, id: \.value) { option in Text(option.label).tag(option.value) }
+          }
+        } footer: {
+          Text("A column is a status. Open items stay private; planned, active and done items show on the roadmap.")
+        }
+        if !message.isEmpty {
+          Section { Label(message, systemImage: "exclamationmark.circle").foregroundStyle(Theme.error) }
+        }
+      }
+      .navigationTitle("New column")
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+        ToolbarItem(placement: .confirmationAction) {
+          Button("Add column") { Task { await add() } }.disabled(key.isEmpty || saving)
+        }
+      }
+    }
+  }
+
+  private func add() async {
+    guard !key.isEmpty else { return }
+    if store.config?.statuses.contains(where: { $0.key == key }) == true {
+      message = String(localized: "A column with this name already exists.")
+      return
+    }
+    saving = true
+    defer { saving = false }
+    do {
+      try await store.addColumn(name.trimmingCharacters(in: .whitespacesAndNewlines), category: category)
+      dismiss()
+    } catch let failure {
+      message = failure.localizedDescription
     }
   }
 }

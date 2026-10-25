@@ -5,6 +5,7 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **New columns on Planning** (web and native): add a status from the tile after the last column, with a name and a category (what the category means for the roadmap). It is saved with the board's statuses through `PATCH /v1/admin/projects/:id`, the call Settings → Statuses already uses; no schema or env change.
 - **Paste and drop images into feedback and planning items** (web): paste an image while the item editor is open, or drop files on its *Images and files* box, to attach them. Native: a *Paste* button.
 - **Image width on the changelog** (web and native settings): `full`, `medium` or `small` for the images under entries, on the public changelog and the plug-and-play embed. Project setting `changelog.imageWidth` (default `full`); no schema change.
 - **Drag entries between releases** (web): in the changelog panel, drop an entry on a release (or on *No release*) to move it. The native app moves it with the entry's Release field.
