@@ -10,7 +10,7 @@ defineRouteMeta({
       tag: { type: 'string', enum: ['new', 'improved', 'fix', 'removed', 'breaking'] }, area: { type: 'string' },
       status: { type: 'string', enum: ['draft', 'published', 'archived'] }, publishedAt: { type: 'string', format: 'date-time', nullable: true },
       releaseVersion: { type: 'string' }, commitShas: { type: 'array', items: { type: 'string' } },
-      pinned: { type: 'boolean' }, iconGlyph: { type: 'string' }, accentColor: { type: 'string', example: '#3366ff' }, imageUrl: { type: 'string' }, links: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, url: { type: 'string' } } } },
+      pinned: { type: 'boolean' }, iconGlyph: { type: 'string' }, accentColor: { type: 'string', example: '#3366ff' }, images: { type: 'array', items: { type: 'object', properties: { url: { type: 'string' }, name: { type: 'string' }, mime: { type: 'string' }, size: { type: 'integer' } } }, description: 'Uploads from POST /v1/feedback/attachments' }, links: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, url: { type: 'string' } } } },
       reviewStatus: { type: 'string', enum: ['pending', 'approved', 'rejected'], nullable: true }, reviewedBy: { type: 'string', nullable: true }, reviewedAt: { type: 'string', format: 'date-time', nullable: true }, reviewNotes: { type: 'string', nullable: true },
       authorName: { type: 'string' }, source: { type: 'string', enum: ['admin', 'internal'] }
     } } } } } } } },

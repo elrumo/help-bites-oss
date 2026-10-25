@@ -3,6 +3,7 @@ import SwiftUI
 /// The fields of the entry editor. `patch(against:)` is what changed, as the API's PATCH takes it.
 struct ChangelogEntryDraft: Equatable {
   var title = "", summary = "", slug = "", area = "", body = ""
+  var images: [ItemAttachment] = []
   var tag: ChangelogTag = .improved
   /// A release id; "" is none.
   var releaseId = ""
@@ -19,6 +20,7 @@ struct ChangelogEntryDraft: Equatable {
     slug = entry.slug
     area = entry.area
     body = entry.body
+    images = entry.images
     tag = entry.tag
     releaseId = entry.releaseId
     status = entry.status.rawValue
@@ -33,6 +35,7 @@ struct ChangelogEntryDraft: Equatable {
     if !slug.trimmingCharacters(in: .whitespaces).isEmpty { text("slug", slug, entry.slug) }
     text("area", area.lowercased(), entry.area)
     text("body", body, entry.body)
+    if images != entry.images { out["images"] = .array(images.map(\.asJSON)) }
     if tag != entry.tag { out["tag"] = .string(tag.rawValue) }
     if releaseId != entry.releaseId { out["releaseId"] = releaseId.isEmpty ? .null : .string(releaseId) }
     if status != entry.status.rawValue { out["status"] = .string(status) }
@@ -157,6 +160,9 @@ struct ChangelogEntryEditor: View {
     }
     LabeledField(label: "Text", hint: current?.bodyFormat == "html" ? "Written as HTML. This text is public once published." : "Say it the way your users would. Markdown. This text is public once published.") {
       LinearTextEditor(text: $draft.body, placeholder: "What users will read", minHeight: 140)
+    }
+    if current != nil {
+      AttachmentsSection(attachments: $draft.images, session: workspace.session, projectId: store.projectId, imagesOnly: true)
     }
     LabeledField(label: "Summary", hint: "One line for list cards") {
       TextField("", text: $draft.summary).textFieldStyle(.linear)

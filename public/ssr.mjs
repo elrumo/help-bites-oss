@@ -85,7 +85,8 @@ const day = iso => (iso ? `<time datetime="${esc(iso)}">${esc(String(iso).slice(
 
 /** GET /v1/changelog as HTML: releases and loose entries, newest first. */
 export function renderChangelog(data) {
-  const entry = e => `<article><h4>${esc(e.title)}</h4>${day(e.publishedAt)}<span class="hb-tag">${esc(e.tag)}</span><div class="hb-body">${typeof e.bodyHtml === 'string' ? e.bodyHtml : `<p>${esc(e.summary || e.excerpt)}</p>`}</div></article>`
+  const images = e => (e.images || []).map(i => `<img src="${esc(i.url)}" alt="${esc(i.name || '')}" loading="lazy" style="display:block;width:100%;height:auto;margin-top:12px;border-radius:10px">`).join('')
+  const entry = e => `<article><h4>${esc(e.title)}</h4>${day(e.publishedAt)}<span class="hb-tag">${esc(e.tag)}</span><div class="hb-body">${typeof e.bodyHtml === 'string' ? e.bodyHtml : `<p>${esc(e.summary || e.excerpt)}</p>`}</div>${images(e)}</article>`
   const items = [
     ...(data.releases || []).map(r => ({ at: r.publishedAt, html: `<section class="hb-release"><h3>${esc(r.version)}${r.title ? ` · ${esc(r.title)}` : ''}</h3>${day(r.publishedAt)}${r.summary ? `<p>${esc(r.summary)}</p>` : ''}${(r.entries || []).map(entry).join('')}</section>` })),
     ...(data.entries || []).map(e => ({ at: e.publishedAt, html: entry(e) }))

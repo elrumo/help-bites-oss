@@ -1091,6 +1091,8 @@ const SCHEMAS = {
       iconGlyph: { type: 'String' },
       accentColor: { type: 'String' },
       imageUrl: { type: 'String' },
+      // [{ url, name, mime, size }] uploads shown with the text, in order (an entry saved before this kept its one url in imageUrl).
+      images: { type: 'Array' },
       // [{ label, url }] shown to readers (not the sources the entry was made from).
       links: { type: 'Array' },
       feedbackPostIds: { type: 'Array' },

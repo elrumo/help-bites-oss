@@ -32,8 +32,10 @@ import {
   type PublicChangelogPage
 } from '#shared/changelog'
 import { feedbackStatusCategory, parsePostRef } from '#shared/feedback'
+import type { ItemAttachment } from '#shared/itemAttachments'
 import { deriveChangelogExcerpt, nextChangelogSlug, renderChangelogBody } from './changelogRender'
 import { emitDomainEventLater } from './domainEvents'
+import { assertOwnAttachments, itemAttachments } from './itemAttachments'
 import { styleOf } from './projects'
 
 // The changelog: entries (what shipped, in the project's own words) grouped
@@ -260,6 +262,13 @@ function entryStatus(row: ParseObject): ChangelogEntryStatus {
   return status === 'published' || status === 'archived' ? status : 'draft'
 }
 
+/** An entry's images: its uploads, or the one hosted url an entry saved before `images` existed. */
+function entryImages(row: ParseObject): ItemAttachment[] {
+  const images = itemAttachments(row.get('images'))
+  const legacy = String(row.get('imageUrl') || '')
+  return images.length || !legacy ? images : [{ url: legacy, name: '', mime: '', size: 0 }]
+}
+
 /** The fields of an entry that are its own, without its sources and its release's version. */
 function entryFields(row: ParseObject): EntryFields {
   const tag = String(row.get('tag') || '')
@@ -268,6 +277,7 @@ function entryFields(row: ParseObject): EntryFields {
   const bodyFormat: ChangelogBodyFormat = row.get('bodyFormat') === 'html' ? 'html' : 'markdown'
   const source = row.get('source')
   const reviewStatus = row.get('reviewStatus')
+  const images = entryImages(row)
   return {
     id: row.id || '',
     projectId: pointerId(row.get('project')),
@@ -289,7 +299,8 @@ function entryFields(row: ParseObject): EntryFields {
     pinned: row.get('pinned') === true,
     iconGlyph: String(row.get('iconGlyph') || ''),
     accentColor: String(row.get('accentColor') || ''),
-    imageUrl: String(row.get('imageUrl') || ''),
+    images,
+    imageUrl: images[0]?.url || '',
     links: (Array.isArray(row.get('links')) ? row.get('links') : []) as ChangelogExternalLink[],
     feedbackPostIds: stringList(row.get('feedbackPostIds')),
     boardItemIds: stringList(row.get('boardItemIds')),
@@ -602,8 +613,13 @@ async function announcePublished(project: ParseObject, rows: ParseObject[]): Pro
 async function applyEntryValues(project: ParseObject, row: ParseObject, values: ChangelogEntryValues, config: ChangelogConfig, options: { notify?: boolean } = {}): Promise<void> {
   const wasPublished = entryStatus(row) === 'published'
   checkArea(config, values.area)
-  for (const key of ['title', 'summary', 'tag', 'area', 'pinned', 'iconGlyph', 'accentColor', 'imageUrl', 'links', 'commitShas'] as const) {
+  for (const key of ['title', 'summary', 'tag', 'area', 'pinned', 'iconGlyph', 'accentColor', 'links', 'commitShas'] as const) {
     if (values[key] !== undefined) row.set(key, values[key])
+  }
+  if (values.images !== undefined) {
+    assertOwnAttachments(project, values.images)
+    row.set('images', values.images)
+    row.unset('imageUrl')
   }
 
   if (values.slug !== undefined || !row.get('slug')) {

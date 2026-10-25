@@ -331,6 +331,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   sent as the team to the conversations the entry answers, only when you press send.
 - **Public changelog.** A page at `/changelog/pk_…`, plus JSON, a filtered flat
   list, and RSS.
+- **Images on entries.** Up to 10 pictures under an entry's text, uploaded in the
+  panel or native app, shown on the page, in `changelog.js` and in the API. [FEEDBACK.md](FEEDBACK.md#images)
 - **Reader comments.** Opt-in. Only signed-in users can comment. Comments are
   Markdown and moderated.
 - **Digest emails.** Readers subscribe to instant or weekly digests. Sign-up uses

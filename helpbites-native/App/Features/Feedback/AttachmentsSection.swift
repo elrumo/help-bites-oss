@@ -24,16 +24,18 @@ struct AttachmentsSection: View {
   @Binding var attachments: [ItemAttachment]
   let session: SessionStore
   let projectId: String
+  /// Only images (a changelog entry's); no files, and the picker takes images alone.
+  var imagesOnly = false
 
   @State private var photos: [PhotosPickerItem] = []
   @State private var importing = false
   @State private var uploading = 0
   @State private var error = ""
 
-  private var fileTypes: [UTType] { [.image] + ItemAttachment.fileExtensions.compactMap { UTType(filenameExtension: $0) } }
+  private var fileTypes: [UTType] { imagesOnly ? [.image] : [.image] + ItemAttachment.fileExtensions.compactMap { UTType(filenameExtension: $0) } }
 
   var body: some View {
-    LabeledField(label: "Images and files") {
+    LabeledField(label: imagesOnly ? "Images" : "Images and files") {
       VStack(alignment: .leading, spacing: 8) {
         ForEach(attachments, id: \.url) { file in
           HStack(spacing: 8) {
@@ -54,7 +56,7 @@ struct AttachmentsSection: View {
           PhotosPicker(selection: $photos, maxSelectionCount: max(1, ItemAttachment.maxCount - attachments.count), matching: .images, preferredItemEncoding: .compatible) {
             Label("Photos", systemImage: "photo")
           }
-          Button { importing = true } label: { Label("Files", systemImage: "paperclip") }
+          if !imagesOnly { Button { importing = true } label: { Label("Files", systemImage: "paperclip") } }
           if uploading > 0 { ProgressView().controlSize(.small) }
         }
         .buttonStyle(.lnSecondaryCompact)

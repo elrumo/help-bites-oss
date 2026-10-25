@@ -50,6 +50,8 @@ struct ChangelogEntry: Decodable, Equatable, Identifiable, Sendable {
   let status: ChangelogEntryStatus
   let publishedAt: String?
   let commitShas: [String]
+  /// Images shown with the text, in order (uploads; `imageUrl` is the first one's url).
+  let images: [ItemAttachment]
   let reviewStatus: ChangelogReviewStatus?
   let reviewedBy, reviewNotes: String?
   let authorName: String

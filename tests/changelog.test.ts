@@ -51,6 +51,7 @@ const entry = (fields: Partial<ChangelogEntry> = {}): ChangelogEntry => ({
   pinned: false,
   iconGlyph: '',
   accentColor: '',
+  images: [],
   imageUrl: '',
   links: [],
   feedbackPostIds: ['post-secret'],
@@ -237,23 +238,32 @@ describe('entry input', () => {
     expect(values).toEqual({ title: 'CSV export', tag: 'improved', status: 'draft' })
   })
 
-  test('the look of an entry: summary, area, format, pinning, glyph, colour, image and links', () => {
+  test('the look of an entry: summary, area, format, pinning, glyph, colour, images and links', () => {
+    const image = { url: 'https://cdn.example.com/a.png', name: 'a.png', mime: 'image/png', size: 2048 }
     const { values, errors } = readChangelogEntryInput({
       slug: ' CSV Export ', summary: ' Your library, as CSV. ', area: 'Editor', bodyFormat: 'html', pinned: true, iconGlyph: '✨',
-      accentColor: '#3366ff', imageUrl: 'https://example.com/a.png', links: [{ label: 'Docs', url: 'https://example.com/docs' }], releaseVersion: ' 2026.10 '
+      accentColor: '#3366ff', images: [image], links: [{ label: 'Docs', url: 'https://example.com/docs' }], releaseVersion: ' 2026.10 '
     }, { create: false })
     expect(errors).toEqual([])
     expect(values).toEqual({
       slug: 'CSV Export', summary: 'Your library, as CSV.', area: 'editor', bodyFormat: 'html', pinned: true, iconGlyph: '✨',
-      accentColor: '#3366ff', imageUrl: 'https://example.com/a.png', links: [{ label: 'Docs', url: 'https://example.com/docs' }], releaseVersion: '2026.10'
+      accentColor: '#3366ff', images: [image], links: [{ label: 'Docs', url: 'https://example.com/docs' }], releaseVersion: '2026.10'
     })
   })
 
+  test('images are uploaded images, at most ten; null clears them', () => {
+    expect(readChangelogEntryInput({ images: null }, { create: false }).values).toEqual({ images: [] })
+    expect(readChangelogEntryInput({ imageUrl: 'https://example.com/a.png' }, { create: false }).errors[0]).toContain('replaced by images')
+    expect(readChangelogEntryInput({ images: [{ url: 'https://cdn.example.com/a.pdf', name: 'a.pdf', mime: 'application/pdf', size: 9 }] }, { create: false }).errors).toHaveLength(1)
+    expect(readChangelogEntryInput({ images: Array.from({ length: 11 }, () => ({ url: 'https://cdn.example.com/a.png', name: 'a.png', mime: 'image/png', size: 1 })) }, { create: false }).errors).toHaveLength(1)
+    expect(readChangelogEntryInput({ images: [{ url: 'javascript:alert(1)', mime: 'image/png' }] }, { create: false }).errors).toHaveLength(1)
+  })
+
   test('null clears the look; anything malformed is reported', () => {
-    expect(readChangelogEntryInput({ iconGlyph: null, accentColor: null, imageUrl: null, links: null, area: null }, { create: false }).values)
-      .toEqual({ iconGlyph: '', accentColor: '', imageUrl: '', links: [], area: '' })
+    expect(readChangelogEntryInput({ iconGlyph: null, accentColor: null, images: null, links: null, area: null }, { create: false }).values)
+      .toEqual({ iconGlyph: '', accentColor: '', images: [], links: [], area: '' })
     const bad = readChangelogEntryInput({
-      summary: 'x'.repeat(301), area: 'Not OK', bodyFormat: 'rtf', pinned: 'yes', accentColor: 'red', imageUrl: 'javascript:alert(1)',
+      summary: 'x'.repeat(301), area: 'Not OK', bodyFormat: 'rtf', pinned: 'yes', accentColor: 'red', images: [{ url: 'javascript:alert(1)' }],
       links: [{ label: 'x', url: 'ftp://nope' }], releaseVersion: 'v'.repeat(61), status: 'live'
     }, { create: false })
     expect(bad.errors).toHaveLength(9)
@@ -310,7 +320,7 @@ describe('what goes public', () => {
   test('a public entry carries only its allow-listed fields', () => {
     const out = toPublicEntry(entry(), '2.4')
     expect(Object.keys(out).sort()).toEqual([
-      'accentColor', 'area', 'authorName', 'body', 'bodyFormat', 'bodyHtml', 'commentCount', 'excerpt', 'iconGlyph', 'id', 'imageUrl', 'links',
+      'accentColor', 'area', 'authorName', 'body', 'bodyFormat', 'bodyHtml', 'commentCount', 'excerpt', 'iconGlyph', 'id', 'imageUrl', 'images', 'links',
       'number', 'pinned', 'publishedAt', 'slug', 'summary', 'tag', 'title', 'updatedAt', 'version'
     ])
     expect(out.version).toBe('2.4')

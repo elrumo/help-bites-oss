@@ -198,7 +198,7 @@ curl -X POST https://helpbites.example/v1/admin/projects/$PROJECT_ID/ai-cards \
 
 ## Images and files
 
-Posts and Planning items can carry up to 10 images and files. Upload each with `POST /v1/feedback/attachments` (multipart field `file`), then pass what it returns as `attachments` when you create or edit the post (`POST`/`PATCH /v1/feedback`) or the board item (`POST`/`PATCH /v1/admin/board-items`).
+Posts and Planning items can carry up to 10 images and files. Upload each with `POST /v1/feedback/attachments` (multipart field `file`), then pass what it returns as `attachments` when you create or edit the post (`POST`/`PATCH /v1/feedback`) or the board item (`POST`/`PATCH /v1/admin/board-items`). Changelog entries take up to 10 images the same way, as `images` ([Images](#images) under Changelog).
 
 - **Types and sizes.** Images (PNG, JPEG, GIF, WebP) up to 8 MB; PDF, TXT, MD, CSV, LOG, JSON, ZIP, DOC(X), XLS(X), PPT(X), MP4 and MOV up to 25 MB. Files are stored and served as downloads under the type their extension implies, never as HTML. Uploads count against the workspace's storage (`402` when it is full).
 - **Who.** Operators (session or `ak_` key, with `?project=<id>`) upload for posts and board items. End users upload with their identity token once their address is verified, and only where the project allows attachments (`403` otherwise); they can attach to their own posts. Each attachment must be one of the project's own uploads (`400` otherwise).
@@ -421,6 +421,23 @@ publish what they write with no human looking. That second one is off by default
 applies to pushes; the button never publishes. A project's pushes run at most 20 times an hour.
 Uses the workspace's AI like every other AI feature (and counts toward its credits).
 
+### Images
+
+An entry can show up to 10 pictures, under its text in the order they are listed. Upload each with the same route as post and board item attachments, `POST /v1/feedback/attachments` (multipart field `file`: PNG, JPEG, GIF or WebP, up to 8 MB), then send what it returns as `images` when you create or edit the entry (`POST /v1/admin/changelog/entries`, `PATCH /v1/admin/changelog/entries/:id`, or an item of `POST …/entries/import`). The list you send replaces the one there; `[]` or `null` removes them all.
+
+- **Where they show.** Under the text on the public changelog page, in `changelog.js` (the plug-and-play embed, and its server-rendered snapshot), in the board embed's changelog tab, and in the panel and native editors. The public API has them as `images` on `GET /v1/changelog` and `GET /v1/changelog/:ref`.
+- **Who.** Operators upload them (session or `ak_` key, with `?project=<id>`), as for board items. Only images are accepted: a file (PDF, video…) is `400`, and so is any image that is not one of the project's own uploads. Uploads count against the workspace's storage (`402` when it is full).
+- **Your own UI.** `images` is `[{ url, name, mime, size }]`, in order. `imageUrl` is still returned: the first image's url, or `''`. Sending `imageUrl` is `400` and says to upload the picture and send it as `images`. An entry saved before `images` existed, with one external `imageUrl`, shows that picture as its only image.
+
+```bash
+curl -X POST "https://helpbites.example/v1/feedback/attachments?project=$PROJECT_ID" \
+  -H "Authorization: Bearer $ADMIN_KEY" -F file=@csv-export.png
+# {"url":"https://cdn.example/…/csv-export.png","name":"csv-export.png","mime":"image/png","size":48213}
+curl -X PATCH "https://helpbites.example/v1/admin/changelog/entries/7?project=$PROJECT_ID" \
+  -H "Authorization: Bearer $ADMIN_KEY" -H "Content-Type: application/json" \
+  -d '{"images":[{"url":"https://cdn.example/…/csv-export.png","name":"csv-export.png","mime":"image/png","size":48213}]}'
+```
+
 ### Telling the people it answers
 
 Two things happen when an entry goes public, and a third is yours to press.
@@ -483,7 +500,7 @@ the board, and only when this is on. (Projects that were public through the
 board were switched on by `scripts/migrate-changelog-public.mjs`.) A public entry carries `slug`, `summary`,
 `bodyHtml` (the text rendered and **sanitised once, when it was saved**: put it
 in your page as it is), `excerpt`, `area`, `pinned`, `iconGlyph`, `accentColor`,
-`imageUrl`, `links` and `commentCount` besides its title and tag; never what it
+`images`, `imageUrl`, `links` and `commentCount` besides its title and tag (`images` are its pictures, in order; `imageUrl` is the first one's url); never what it
 was made from, its commits or its review. `body` is still the source (Markdown, or
 HTML when `bodyFormat` is `html`). Anonymous responses may be cached for a minute;
 anything sent with a token is `no-store`.
@@ -500,7 +517,7 @@ Every route is in the OpenAPI spec, tag *Changelog*.
 
 | | |
 |---|---|
-| `GET`/`POST /v1/admin/changelog/entries` | List (filters: `status` — `draft`, `published` or `archived`; none lists all but the archived — `release` — an id or `none`, `feedbackPost`, `boardItem`, `conversation`) or create `{ title, summary, body, bodyFormat, tag, area, slug, status, releaseId \| releaseVersion, publishedAt, pinned, iconGlyph, accentColor, imageUrl, links, commitShas, feedbackPostIds, boardItemIds, conversationIds }` |
+| `GET`/`POST /v1/admin/changelog/entries` | List (filters: `status` — `draft`, `published` or `archived`; none lists all but the archived — `release` — an id or `none`, `feedbackPost`, `boardItem`, `conversation`) or create `{ title, summary, body, bodyFormat, tag, area, slug, status, releaseId \| releaseVersion, publishedAt, pinned, iconGlyph, accentColor, images, links, commitShas, feedbackPostIds, boardItemIds, conversationIds }` (`images`: [Images](#images)) |
 | `PATCH`/`DELETE /v1/admin/changelog/entries/:id` | Edit (the id, the slug, or the `#N` number) or delete. Set `status: "archived"` to retire an entry instead: never public, but it keeps its slug and its commits |
 | `POST /v1/admin/changelog/entries/:id/review` | `{ action: "approve" \| "reject", notes }` on a draft: approve publishes it, reject keeps it a draft marked `rejected`. Records who and when |
 | `POST /v1/admin/changelog/entries/batch` | Up to 50 entries; one that cites a commit an entry (an archived one too) already cites is **skipped** |

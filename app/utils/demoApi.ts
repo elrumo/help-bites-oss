@@ -538,7 +538,7 @@ function changelogEntry(number: number, title: string, summary: string, tag: Cha
   const published = status === 'published'
   changelogEntries.push({
     id: `entry_demo${number}`, projectId: 'acme', number, slug: slug(title), title, summary, body: summary, bodyFormat: 'markdown', bodyHtml: `<p>${summary}</p>`, excerpt: summary,
-    tag, area: '', releaseId: version ? 'rel_demo1' : '', version, status, publishedAt: published ? ago(minutesAgo) : null, pinned: false, iconGlyph: '', accentColor: '', imageUrl: '',
+    tag, area: '', releaseId: version ? 'rel_demo1' : '', version, status, publishedAt: published ? ago(minutesAgo) : null, pinned: false, iconGlyph: '', accentColor: '', images: [], imageUrl: '',
     links: [], feedbackPostIds: [], boardItemIds: [], conversationIds: [], commitShas: [], externalId: '',
     reviewStatus: status === 'draft' ? 'pending' : ai ? 'approved' : null, reviewedBy: null, reviewedAt: null, reviewNotes: null,
     authorName: ai ? 'AI draft' : 'You', source: ai ? 'internal' : 'admin', aiGenerated: ai, commentCount: 0, sources: [], createdAt: ago(minutesAgo + 60), updatedAt: ago(minutesAgo)

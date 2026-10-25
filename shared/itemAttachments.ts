@@ -25,8 +25,9 @@ export const ITEM_FILE_TYPES: Record<string, string> = {
   mov: 'video/quicktime'
 }
 
-/** For a file picker's `accept`. */
-export const ITEM_ATTACHMENT_ACCEPT = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', ...Object.keys(ITEM_FILE_TYPES).map(ext => `.${ext}`)].join(',')
+/** For a file picker's `accept`: images only, or images and files. */
+export const ITEM_IMAGE_ACCEPT = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'].join(',')
+export const ITEM_ATTACHMENT_ACCEPT = [ITEM_IMAGE_ACCEPT, ...Object.keys(ITEM_FILE_TYPES).map(ext => `.${ext}`)].join(',')
 
 export const isImageMime = (mime: string) => mime.startsWith('image/')
 

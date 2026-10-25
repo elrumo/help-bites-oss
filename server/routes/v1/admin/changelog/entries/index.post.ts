@@ -12,6 +12,7 @@ defineRouteMeta({
       publishedAt: { type: 'string', format: 'date-time', nullable: true, description: 'The date shown; defaults to now on publishing' },
       releaseId: { type: 'string', nullable: true },
       commitShas: { type: 'array', items: { type: 'string', pattern: '^[0-9a-f]{40}$' }, maxItems: 50, description: 'Full SHAs of the git commits it describes. Not checked for duplicates here; use `POST …/entries/batch` for that' },
+      images: { type: 'array', maxItems: 10, items: { type: 'object', properties: { url: { type: 'string' }, name: { type: 'string' }, mime: { type: 'string' }, size: { type: 'integer' } } }, description: 'Images shown with the text, in order. Upload each with POST /v1/feedback/attachments and pass what it returns' },
       feedbackPostIds: { type: 'array', items: { type: 'string' }, maxItems: 50 },
       boardItemIds: { type: 'array', items: { type: 'string' }, maxItems: 50 },
       conversationIds: { type: 'array', items: { type: 'string' }, maxItems: 50 }

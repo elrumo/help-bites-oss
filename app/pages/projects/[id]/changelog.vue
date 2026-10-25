@@ -81,6 +81,13 @@
             <UTextarea v-model="draft.body" :placeholder="$t('changelog.bodyPlaceholder')" variant="none" :rows="4" autoresize :maxrows="18" class="w-full" :ui="{ base: 'px-0' }" :aria-label="$t('changelog.text')" @blur="saveText('body')" />
           </div>
 
+          <section class="space-y-2">
+            <h3 class="text-sm font-semibold">{{ $t('changelog.images') }}</h3>
+            <AttachmentsField v-if="current" v-model="draft.images" images-only :project-id="id" :add-label="$t('changelog.addImage')" @update:model-value="patch({ images: $event })" />
+            <p v-else class="text-xs text-muted">{{ $t('changelog.imagesAfterCreate') }}</p>
+            <p class="text-xs text-muted">{{ $t('changelog.imagesHint') }}</p>
+          </section>
+
           <section class="grid gap-x-4 gap-y-2 sm:grid-cols-2">
             <UInput variant="subtle" v-model="draft.summary" :placeholder="$t('changelog.summaryPlaceholder')" size="sm" class="w-full sm:col-span-2" :maxlength="300" :aria-label="$t('changelog.summary')" @blur="saveField('summary')" />
             <UInput v-if="current" variant="subtle" v-model="draft.slug" :placeholder="$t('changelog.slug')" size="sm" class="w-full" :maxlength="120" :aria-label="$t('changelog.slug')" :ui="{ base: 'font-mono text-xs' }" @blur="saveField('slug')" />
@@ -253,6 +260,7 @@
 const { openProjectSettings } = useProjectSettings()
 import { CHANGELOG_TAGS, CHANGELOG_TAG_LABELS, isEntryPublic, type ChangelogEntry, type ChangelogLinkKind, type ChangelogRelease, type ChangelogSource, type ChangelogStatus, type ChangelogTag } from '#shared/changelog'
 import type { ChangelogLinkedConversations } from '#shared/changelogReply'
+import type { ItemAttachment } from '#shared/itemAttachments'
 import type { AdminProject } from '~~/server/utils/projects'
 
 // A project's changelog: entries (what shipped, in your own words) grouped into
@@ -360,7 +368,7 @@ onBeforeUnmount(() => window.removeEventListener('focus', onFocus))
 const entryOpen = ref(false)
 const editingId = ref('')
 const current = computed(() => entries.value.find(e => e.id === editingId.value) || null)
-const draft = reactive({ title: '', summary: '', slug: '', area: '', body: '', tag: 'improved' as ChangelogTag, releaseId: NO_RELEASE, status: 'draft' as ChangelogStatus, date: '' })
+const draft = reactive({ title: '', summary: '', slug: '', area: '', body: '', images: [] as ItemAttachment[], tag: 'improved' as ChangelogTag, releaseId: NO_RELEASE, status: 'draft' as ChangelogStatus, date: '' })
 const reviewNotes = ref('')
 const reviewing = ref<'' | 'approve' | 'reject'>('')
 const entryError = ref('')
@@ -377,6 +385,7 @@ function fill(entry: ChangelogEntry | null) {
     slug: entry?.slug || '',
     area: entry?.area || '',
     body: entry?.body || '',
+    images: [...(entry?.images || [])],
     tag: entry?.tag || 'improved',
     releaseId: entry?.releaseId || NO_RELEASE,
     status: entry?.status === 'published' ? 'published' : 'draft',

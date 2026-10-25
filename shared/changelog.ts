@@ -6,11 +6,14 @@
 import { FEEDBACK_BODY_MAX_LENGTH, FEEDBACK_TITLE_MAX_LENGTH, readDate } from './feedback'
 import { DEFAULT_STYLE_CHOICE, validateStyleChoice, type ResolvedStyle, type StyleChoice } from './projectStyle'
 import { safeHttpUrl } from './support'
+import { isImageMime, ITEM_ATTACHMENTS_MAX, readItemAttachments, type ItemAttachment } from './itemAttachments'
 
 /** Posts, board items and conversations one entry may link to, each. */
 export const CHANGELOG_LINKS_MAX = 50
 export const CHANGELOG_VERSION_MAX_LENGTH = 60
 export const CHANGELOG_SUMMARY_MAX_LENGTH = 2000
+/** Images one entry may show, in the order they were added. Each is an upload of the project (POST /v1/feedback/attachments). */
+export const CHANGELOG_IMAGES_MAX = ITEM_ATTACHMENTS_MAX
 /** Git commits one entry may cite (full 40-hex SHAs). The server skips an entry whose commit an entry already cites. */
 export const CHANGELOG_COMMIT_SHAS_MAX = 50
 const COMMIT_SHA = /^[0-9a-f]{40}$/
@@ -539,6 +542,9 @@ export type ChangelogEntry = {
   pinned: boolean
   iconGlyph: string
   accentColor: string
+  /** Images shown with the text, in order. */
+  images: ItemAttachment[]
+  /** The first image's url; '' when none. Kept for integrations that predate `images`. */
   imageUrl: string
   links: ChangelogExternalLink[]
   feedbackPostIds: string[]
@@ -595,6 +601,8 @@ export type PublicChangelogEntry = {
   pinned: boolean
   iconGlyph: string
   accentColor: string
+  images: ItemAttachment[]
+  /** The first image's url; '' when none. Kept for integrations that predate `images`. */
   imageUrl: string
   links: ChangelogExternalLink[]
   commentCount: number
@@ -675,7 +683,7 @@ export type ChangelogEntryValues = Partial<{
   pinned: boolean
   iconGlyph: string
   accentColor: string
-  imageUrl: string
+  images: ItemAttachment[]
   links: ChangelogExternalLink[]
 }>
 
@@ -762,10 +770,13 @@ export function readChangelogEntryInput(payload: unknown, options: { create: boo
     if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) errors.push('accentColor must be a #rrggbb colour')
     else values.accentColor = color
   }
-  if (has('imageUrl')) {
-    const url = raw.imageUrl === null || raw.imageUrl === '' ? '' : safeHttpUrl(raw.imageUrl)
-    if (raw.imageUrl && (!url || url.length > 500)) errors.push('imageUrl must be an http(s) url of up to 500 characters')
-    else values.imageUrl = url
+  // The one hosted url an entry had before `images`: an upload goes in `images` now.
+  if (has('imageUrl') && raw.imageUrl !== null && raw.imageUrl !== '') errors.push('imageUrl is replaced by images: upload the picture (POST /v1/feedback/attachments) and send it as images')
+  if (has('images')) {
+    const found: string[] = []
+    const images = raw.images === null ? [] : readItemAttachments(raw.images, found)
+    if (!images || images.some(image => !isImageMime(image.mime))) errors.push(found[0] || `images are PNG, JPEG, GIF or WebP files from the upload route, up to ${CHANGELOG_IMAGES_MAX}`)
+    else values.images = images
   }
   if (has('links')) {
     const links = raw.links === null ? [] : readLinks(raw.links, errors)
@@ -886,7 +897,7 @@ export function isEntryPublic(entry: { status: string }, release: { status: stri
 /** The fields an entry shows the public; a field added to ChangelogEntry never leaks by default. */
 export type PublicEntrySource = Pick<ChangelogEntry,
   'id' | 'number' | 'slug' | 'title' | 'summary' | 'body' | 'bodyFormat' | 'bodyHtml' | 'excerpt' | 'tag' | 'area' | 'pinned'
-  | 'iconGlyph' | 'accentColor' | 'imageUrl' | 'links' | 'commentCount' | 'authorName' | 'publishedAt' | 'updatedAt'>
+  | 'iconGlyph' | 'accentColor' | 'images' | 'links' | 'commentCount' | 'authorName' | 'publishedAt' | 'updatedAt'>
 
 /** The public shape of an entry: an allow-list. `version` is its release's, '' when it has none. */
 export function toPublicEntry(entry: PublicEntrySource, version = ''): PublicChangelogEntry {
@@ -906,7 +917,8 @@ export function toPublicEntry(entry: PublicEntrySource, version = ''): PublicCha
     pinned: entry.pinned,
     iconGlyph: entry.iconGlyph,
     accentColor: entry.accentColor,
-    imageUrl: entry.imageUrl,
+    images: entry.images,
+    imageUrl: entry.images[0]?.url || '',
     links: entry.links,
     commentCount: entry.commentCount,
     authorName: entry.authorName,
