@@ -32,6 +32,9 @@
         <USelectMenu v-if="board.labels.length" v-model="labelFilter" :items="labelItems" value-key="value" multiple size="sm" class="w-40" :placeholder="$t('board.labels')" :aria-label="$t('board.labels')" />
         <USelect v-model="assigneeFilter" :items="assigneeFilterItems" size="sm" class="w-36" :aria-label="$t('board.assignee')" />
         <USelect v-model="priorityFilter" :items="priorityFilterItems" size="sm" class="w-32" :aria-label="$t('board.priority')" />
+        <USelect v-model="order" :items="orderItems" size="sm" class="w-40" :aria-label="$t('board.order')">
+          <template #leading><UIcon name="i-lucide-arrow-up-down" class="size-3.5 text-dimmed" /></template>
+        </USelect>
         <UButton v-if="filtering" :label="$t('board.clear')" size="xs" color="neutral" variant="link" @click="clearFilters" />
         <div class="ml-auto">
           <UInput v-model="search" icon="i-lucide-search" :placeholder="$t('board.searchPlaceholder')" size="sm" class="w-44 sm:w-56" :aria-label="$t('board.searchItems')" />
@@ -390,6 +393,10 @@ const labelFilter = ref<string[]>([])
 const assigneeFilter = ref('__all__')
 const priorityFilter = ref('__all__')
 const roadmapOnly = ref(false)
+// Manual is the order the cards are dragged into; newest and oldest sort each column by when its item was made (drag still moves items between columns).
+type BoardOrder = 'manual' | 'newest' | 'oldest'
+const order = ref<BoardOrder>('manual')
+const orderItems = computed(() => [{ label: t('board.orderManual'), value: 'manual' }, { label: t('board.orderNewest'), value: 'newest' }, { label: t('board.orderOldest'), value: 'oldest' }])
 const filtering = computed(() => Boolean(search.value.trim() || labelFilter.value.length || assigneeFilter.value !== '__all__' || priorityFilter.value !== '__all__' || roadmapOnly.value))
 function clearFilters() {
   search.value = ''
@@ -404,13 +411,18 @@ const defaultStatus = computed(() => (board.value ? defaultFeedbackStatus(board.
 /** A status the board no longer knows sits in the default column. */
 const columnOf = (item: BoardItem) => (statusOf(item.status) ? item.status : defaultStatus.value)
 const sorted = computed(() => [...items.value].sort((a, b) => a.rank - b.rank || (a.number ?? 0) - (b.number ?? 0)))
+const ordered = computed(() => {
+  if (order.value === 'manual') return sorted.value
+  const direction = order.value === 'newest' ? -1 : 1
+  return [...sorted.value].sort((a, b) => direction * (Date.parse(a.createdAt) - Date.parse(b.createdAt)) || direction * ((a.number ?? 0) - (b.number ?? 0)))
+})
 
 function group(list: BoardItem[]): Record<string, BoardItem[]> {
   return list.reduce<Record<string, BoardItem[]>>((acc, item) => { (acc[columnOf(item)] ||= []).push(item); return acc }, {})
 }
 const columns = computed(() => group(sorted.value))
 const visibleByColumn = computed(() => {
-  let list = sorted.value.filter(item =>
+  let list = ordered.value.filter(item =>
     (!roadmapOnly.value || item.public)
     && (!labelFilter.value.length || item.labels.some(label => labelFilter.value.includes(label)))
     && (assigneeFilter.value === '__all__' || (assigneeFilter.value === 'unassigned' ? !item.assigneeId : item.assigneeId === assigneeFilter.value))
@@ -475,10 +487,12 @@ function enterColumn(key: string) {
 
 /** Over a card: its top half drops before it, its bottom half before the next one. */
 function overCard(event: DragEvent, key: string, index: number) {
+  dragOver.value = key
+  // Outside manual order a card has no fixed place to drop before: the drop goes to the end of the column.
+  if (order.value !== 'manual') { dropBefore.value = ''; return }
   const list = visibleByColumn.value[key] || []
   const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
   const after = event.clientY > rect.top + rect.height / 2
-  dragOver.value = key
   dropBefore.value = after ? (list[index + 1]?.id || '') : list[index]!.id
 }
 
@@ -505,6 +519,8 @@ async function dropOn(status: string) {
   const before = dropBefore.value
   endDrag()
   if (!item || !board.value) return
+  // Reordering within a column only means something in manual order.
+  if (order.value !== 'manual' && columnOf(item) === status) return
   // Neighbours come from the whole column, so a filtered view still lands exactly where it showed.
   const column = columns.value[status] || []
   const rest = column.filter(i => i.id !== item.id)

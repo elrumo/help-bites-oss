@@ -43,6 +43,8 @@ struct BoardScreen: View {
   /// '' is any; 'none', or a priority.
   var priorityFilter = ""
   var roadmapOnly = false
+  /// The order cards show in a column: 'manual' (the order they are dragged into), 'newest' or 'oldest' (by when made).
+  var order = "manual"
 
   init(projectId: String, workspace: Workspace) {
     self.projectId = projectId
@@ -79,8 +81,16 @@ struct BoardScreen: View {
     return items.filter { config.column(of: $0) == status }.sorted(by: boardOrder)
   }
 
-  /// The column as the filters show it.
-  func visible(_ status: String) -> [BoardItem] { column(status).filter { matches($0) } }
+  /// The column as the filters and the order show it.
+  func visible(_ status: String) -> [BoardItem] {
+    let shown = column(status).filter { matches($0) }
+    guard order != "manual" else { return shown }
+    // Newest first or oldest first by creation; the number breaks ties.
+    return shown.sorted { lhs, rhs in
+      let (a, b) = order == "newest" ? (rhs, lhs) : (lhs, rhs)
+      return (a.createdAt, a.number ?? 0) < (b.createdAt, b.number ?? 0)
+    }
+  }
 
   private func matches(_ item: BoardItem) -> Bool {
     if roadmapOnly && !item.isPublic { return false }
@@ -219,6 +229,8 @@ struct BoardScreen: View {
   /// once and put back if the server says no.
   func move(_ itemId: String, to status: String, before anchor: String?) async {
     guard let config, let previous = item(itemId) else { return }
+    // Reordering inside a column only means something in manual order.
+    if order != "manual", config.column(of: previous) == status { return }
     guard let rank = boardDropRank(moving: itemId, column: column(status), before: anchor) else { return }
     var moved = previous
     moved.status = status
@@ -419,6 +431,13 @@ private struct BoardView: View {
               ForEach(store.agents) { agent in Text(agent.inboxName).tag(agent.id) }
             }
           }
+          filterMenu("Order", value: orderTitle, active: store.order != "manual") {
+            Picker("Order", selection: $store.order) {
+              Text("Manual").tag("manual")
+              Text("Newest first").tag("newest")
+              Text("Oldest first").tag("oldest")
+            }
+          }
           filterMenu("Priority", value: priorityTitle, active: !store.priorityFilter.isEmpty) {
             Picker("Priority", selection: $store.priorityFilter) {
               Text("Any priority").tag("")
@@ -456,6 +475,14 @@ private struct BoardView: View {
     case "": String(localized: "Anyone")
     case "unassigned": String(localized: "Unassigned")
     default: store.agent(store.assigneeFilter)?.inboxName ?? String(localized: "Assignee")
+    }
+  }
+
+  private var orderTitle: String {
+    switch store.order {
+    case "newest": String(localized: "Newest first")
+    case "oldest": String(localized: "Oldest first")
+    default: String(localized: "Manual")
     }
   }
 

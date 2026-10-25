@@ -304,6 +304,10 @@
     "viaEmail": "이메일로 시작됨"
   },
   "board": {
+    "order": "정렬",
+    "orderManual": "직접 정렬",
+    "orderNewest": "최신순",
+    "orderOldest": "오래된순",
     "itemCount": "{count}개 항목",
     "onRoadmap": "로드맵에 {count}개",
     "boardOff": "계획이 꺼져 있습니다",

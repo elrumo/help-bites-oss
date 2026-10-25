@@ -304,6 +304,10 @@
     "viaEmail": "Empezó como un correo"
   },
   "board": {
+    "order": "Orden",
+    "orderManual": "Manual",
+    "orderNewest": "Más recientes primero",
+    "orderOldest": "Más antiguos primero",
     "itemCount": "{count} elemento | {count} elementos",
     "onRoadmap": "{count} en la hoja de ruta",
     "boardOff": "La planificación está desactivada",
