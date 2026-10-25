@@ -119,11 +119,13 @@ struct ChangelogSettings: Decodable, Equatable, Sendable {
   var onPush = false, autoPublish = false
   var timezone = "UTC"
   var weeklyHour = 8, quietMinutes = 30, maxWaitMinutes = 60
+  /// How wide an entry's images show on the public changelog: full, medium or small.
+  var imageWidth = "full"
   /// The page's own style over the project's (`changelog.style`).
   var style = ChangelogStyle()
 
   init() {}
-  private enum Keys: String, CodingKey { case autoDraft, enabled, comments, notify, areas, commentNotify, siteName, entryUrl, pageUrl, commitAi, digest, style }
+  private enum Keys: String, CodingKey { case autoDraft, enabled, comments, notify, areas, commentNotify, siteName, entryUrl, pageUrl, imageWidth, commitAi, digest, style }
   private enum StyleKeys: String, CodingKey { case source, custom }
   private enum AiKeys: String, CodingKey { case onPush, autoPublish }
   private enum DigestKeys: String, CodingKey { case timezone, weeklyHour, quietMinutes, maxWaitMinutes }
@@ -138,6 +140,7 @@ struct ChangelogSettings: Decodable, Equatable, Sendable {
     siteName = try c.decodeIfPresent(String.self, forKey: .siteName) ?? ""
     entryUrl = try c.decodeIfPresent(String.self, forKey: .entryUrl) ?? ""
     pageUrl = try c.decodeIfPresent(String.self, forKey: .pageUrl) ?? ""
+    imageWidth = try c.decodeIfPresent(String.self, forKey: .imageWidth) ?? "full"
     if let own = try? c.nestedContainer(keyedBy: StyleKeys.self, forKey: .style) {
       style.source = try own.decodeIfPresent(String.self, forKey: .source) ?? "project"
       style.custom = try own.decodeIfPresent(ProjectStyle.self, forKey: .custom) ?? ProjectStyle()

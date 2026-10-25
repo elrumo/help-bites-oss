@@ -420,7 +420,7 @@ export async function listPublicChangelog(project: ParseObject): Promise<PublicC
     new Parse.Query('ChangelogRelease').equalTo('project', project).equalTo('status', 'published').descending('publishedAt').limit(200).find(MASTER),
     new Parse.Query('ChangelogEntry').equalTo('project', project).equalTo('status', 'published').descending('publishedAt').addDescending('number').limit(1000).find(MASTER)
   ])
-  return { ...buildPublicChangelog(releaseRows.map(serializeChangelogRelease), entryRows.map(row => ({ ...entryFields(row) }))), style: changelogStyleOf(project) }
+  return { ...buildPublicChangelog(releaseRows.map(serializeChangelogRelease), entryRows.map(row => ({ ...entryFields(row) }))), style: changelogStyleOf(project), imageWidth: getChangelogConfig(project).imageWidth }
 }
 
 export type PublicEntryQuery = { limit: number, skip: number, tag?: ChangelogTag, area?: string, version?: string, since?: Date }

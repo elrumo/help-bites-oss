@@ -161,10 +161,10 @@
                   </div>
                   <MarkdownBlock v-if="item.release.summary" :text="item.release.summary" class="mt-1" />
                   <div class="mt-3 space-y-4">
-                    <FeedbackChangelogEntryItem v-for="entry in item.release.entries" :key="entry.id" :entry="entry" />
+                    <FeedbackChangelogEntryItem v-for="entry in item.release.entries" :key="entry.id" :entry="entry" :image-width="changelog.imageWidth" />
                   </div>
                 </template>
-                <FeedbackChangelogEntryItem v-else :entry="item.entry" show-date />
+                <FeedbackChangelogEntryItem v-else :entry="item.entry" show-date :image-width="changelog.imageWidth" />
               </li>
             </ol>
           </template>

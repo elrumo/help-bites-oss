@@ -83,9 +83,13 @@ export function skeleton(kind = 'changelog') {
 
 const day = iso => (iso ? `<time datetime="${esc(iso)}">${esc(String(iso).slice(0, 10))}</time>` : '')
 
+/** How much of the column an entry's images take, by the project's `imageWidth`. The same numbers as CHANGELOG_IMAGE_WIDTH_PERCENT in shared/changelog.ts (tests/changelogImageWidth.test.ts keeps them equal). */
+export const IMAGE_WIDTH_PERCENT = { full: 100, medium: 60, small: 35 }
+
 /** GET /v1/changelog as HTML: releases and loose entries, newest first. */
 export function renderChangelog(data) {
-  const images = e => (e.images || []).map(i => `<img src="${esc(i.url)}" alt="${esc(i.name || '')}" loading="lazy" style="display:block;width:100%;height:auto;margin-top:12px;border-radius:10px">`).join('')
+  const width = IMAGE_WIDTH_PERCENT[data.imageWidth] ?? 100
+  const images = e => (e.images || []).length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">${(e.images || []).map(i => `<img src="${esc(i.url)}" alt="${esc(i.name || '')}" loading="lazy" style="display:block;width:${width}%;height:auto;border-radius:10px">`).join('')}</div>` : ''
   const entry = e => `<article><h4>${esc(e.title)}</h4>${day(e.publishedAt)}<span class="hb-tag">${esc(e.tag)}</span><div class="hb-body">${typeof e.bodyHtml === 'string' ? e.bodyHtml : `<p>${esc(e.summary || e.excerpt)}</p>`}</div>${images(e)}</article>`
   const items = [
     ...(data.releases || []).map(r => ({ at: r.publishedAt, html: `<section class="hb-release"><h3>${esc(r.version)}${r.title ? ` · ${esc(r.title)}` : ''}</h3>${day(r.publishedAt)}${r.summary ? `<p>${esc(r.summary)}</p>` : ''}${(r.entries || []).map(entry).join('')}</section>` })),

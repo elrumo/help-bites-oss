@@ -141,6 +141,17 @@ struct ChangelogSettingsSheet: View {
         CardRow { toggle("Email subscribers", "Readers can ask for an email when something ships (as it happens, or weekly on Monday). Needs CHANGELOG_LINK_SECRET or HELPBITES_SECRET (either 32+ characters) on the server, and ENABLE_CHANGELOG_NOTIFY=true for the scheduler to send.", \.notify) { ["notify": .bool($0)] } }
         CardRow(divider: false) { toggle("Public changelog", "Serve the changelog page, embed, JSON and RSS to everyone. Independent of Feedback, whose Changelog tab also needs this on.", \.enabled) { ["enabled": .bool($0)] } }
       }
+      LabeledField(label: "Image width", hint: "How wide images show under their entries, on the public changelog and the plug-and-play embed.") {
+        Picker("Image width", selection: Binding(get: { settings.imageWidth }, set: { width in
+          settings.imageWidth = width
+          Task { await save(["imageWidth": .string(width)]) }
+        })) {
+          Text("Full").tag("full")
+          Text("Medium").tag("medium")
+          Text("Small").tag("small")
+        }
+        .pickerStyle(.segmented).labelsHidden()
+      }
       HStack {
         if saving { ProgressView().controlSize(.small) }
         Text(saving ? "Saving…" : saved ? "Saved" : "Saves as you change it").font(.lnCaption).foregroundStyle(Theme.textMuted)

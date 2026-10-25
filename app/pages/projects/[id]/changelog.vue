@@ -184,6 +184,11 @@
           <USwitch :model-value="project?.changelog.comments || false" :label="$t('changelog.comments')" :description="$t('changelog.commentsDescription')" @update:model-value="saveSettings({ comments: $event })" />
           <USwitch :model-value="project?.changelog.notify || false" :label="$t('changelog.emailSubscribers')" :description="$t('changelog.emailSubscribersDescription')" @update:model-value="saveSettings({ notify: $event })" />
           <USwitch :model-value="project?.changelog.enabled || false" :label="$t('changelog.publicChangelog')" :description="$t('changelog.publicChangelogDescription')" @update:model-value="saveSettings({ enabled: $event })" />
+          <div class="space-y-2">
+            <p class="text-sm font-medium">{{ $t('changelog.imageWidth') }}</p>
+            <p class="text-xs text-muted">{{ $t('changelog.imageWidthDescription') }}</p>
+            <URadioGroup :model-value="project?.changelog.imageWidth || 'full'" :items="imageWidthItems" orientation="horizontal" @update:model-value="saveSettings({ imageWidth: $event })" />
+          </div>
           <p class="text-xs text-muted">{{ savingSettings ? $t('changelog.saving') : settingsSaved ? $t('common.saved') : $t('changelog.savesAsChange') }}</p>
           <p v-if="settingsError" class="text-sm text-error">{{ settingsError }}</p>
           <p class="text-xs text-muted">{{ $t('changelog.followsFeedback') }} <NuxtLink :to="`/projects/${id}/feedback`" class="underline underline-offset-2">{{ $t('changelog.changelogOption') }}</NuxtLink>{{ $t('changelog.followsFeedbackEnd') }}</p>
@@ -258,7 +263,7 @@
 
 <script setup lang="ts">
 const { openProjectSettings } = useProjectSettings()
-import { CHANGELOG_TAGS, CHANGELOG_TAG_LABELS, isEntryPublic, type ChangelogEntry, type ChangelogLinkKind, type ChangelogRelease, type ChangelogSource, type ChangelogStatus, type ChangelogTag } from '#shared/changelog'
+import { CHANGELOG_IMAGE_WIDTHS, CHANGELOG_TAGS, CHANGELOG_TAG_LABELS, isEntryPublic, type ChangelogEntry, type ChangelogImageWidth, type ChangelogLinkKind, type ChangelogRelease, type ChangelogSource, type ChangelogStatus, type ChangelogTag } from '#shared/changelog'
 import type { ChangelogLinkedConversations } from '#shared/changelogReply'
 import type { ItemAttachment } from '#shared/itemAttachments'
 import type { AdminProject } from '~~/server/utils/projects'
@@ -292,6 +297,7 @@ const STATE_CLASS = { public: 'bg-success/10 text-success', waiting: 'bg-warning
 const property = { base: 'h-8 w-full rounded-md ps-8 text-[13px] text-default', trailing: 'opacity-0 transition-opacity group-hover:opacity-100' }
 const tagItems = computed(() => CHANGELOG_TAGS.map(value => ({ label: t(TAG_KEYS[value]), value })))
 const statusItems = computed(() => [{ label: t('changelog.draft'), value: 'draft' }, { label: t('changelog.published'), value: 'published' }])
+const imageWidthItems = computed(() => CHANGELOG_IMAGE_WIDTHS.map(value => ({ label: t(`changelog.imageWidth_${value}`), value })))
 const sourceKindItems = computed(() => [{ label: t('changelog.feedbackPost'), value: 'feedback' }, { label: t('changelog.boardItem'), value: 'board' }])
 
 const releaseOf = (releaseId: string) => releases.value.find(r => r.id === releaseId) || null
@@ -730,7 +736,7 @@ const savingSettings = ref(false)
 const settingsSaved = ref(false)
 const settingsError = ref('')
 
-async function saveSettings(next: { autoDraft?: boolean, enabled?: boolean, comments?: boolean, notify?: boolean, commitAi?: { onPush?: boolean, autoPublish?: boolean } }) {
+async function saveSettings(next: { autoDraft?: boolean, enabled?: boolean, comments?: boolean, notify?: boolean, imageWidth?: ChangelogImageWidth, commitAi?: { onPush?: boolean, autoPublish?: boolean } }) {
   savingSettings.value = true
   settingsSaved.value = false
   settingsError.value = ''

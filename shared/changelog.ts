@@ -34,6 +34,12 @@ export type ChangelogStatus = typeof CHANGELOG_STATUSES[number]
 export const CHANGELOG_ENTRY_STATUSES = ['draft', 'published', 'archived'] as const
 export type ChangelogEntryStatus = typeof CHANGELOG_ENTRY_STATUSES[number]
 
+/** How wide an entry's images show on the public changelog: the whole column, or a share of it. */
+export const CHANGELOG_IMAGE_WIDTHS = ['full', 'medium', 'small'] as const
+export type ChangelogImageWidth = typeof CHANGELOG_IMAGE_WIDTHS[number]
+/** The share of the column each width takes (the public page and the plug-and-play embed; ssr.mjs repeats it, see the parity test). */
+export const CHANGELOG_IMAGE_WIDTH_PERCENT: Record<ChangelogImageWidth, number> = { full: 100, medium: 60, small: 35 }
+
 export const CHANGELOG_BODY_FORMATS = ['markdown', 'html'] as const
 export type ChangelogBodyFormat = typeof CHANGELOG_BODY_FORMATS[number]
 
@@ -97,6 +103,8 @@ export type ChangelogConfig = {
   commitAi: ChangelogCommitAiConfig
   /** How the public changelog page and embed look. */
   style: ChangelogStyle
+  /** How wide an entry's images show. */
+  imageWidth: ChangelogImageWidth
   /** Overrides of the words in the emails; see `DEFAULT_CHANGELOG_COPY` for the keys and what `{site}`, `{count}` and `{window}` become. */
   copy: Record<string, string>
 }
@@ -177,6 +185,7 @@ export const DEFAULT_CHANGELOG_CONFIG: ChangelogConfig = {
   digest: DEFAULT_CHANGELOG_DIGEST,
   commitAi: { onPush: false, autoPublish: false },
   style: DEFAULT_STYLE_CHOICE,
+  imageWidth: 'full',
   copy: {}
 }
 
@@ -226,6 +235,10 @@ export function validateChangelogConfig(value: unknown, base: ChangelogConfig = 
     const style = validateStyleChoice(raw.style, config.style)
     errors.push(...style.errors)
     config.style = style.choice
+  }
+  if (raw.imageWidth !== undefined) {
+    if ((CHANGELOG_IMAGE_WIDTHS as readonly string[]).includes(String(raw.imageWidth))) config.imageWidth = raw.imageWidth as ChangelogImageWidth
+    else errors.push(`imageWidth must be one of ${CHANGELOG_IMAGE_WIDTHS.join(', ')}`)
   }
   if (raw.siteName !== undefined) {
     if (typeof raw.siteName !== 'string' || raw.siteName.trim().length > 80) errors.push('siteName is up to 80 characters')
@@ -627,6 +640,8 @@ export type PublicChangelog = {
   entries: PublicChangelogEntry[]
   /** How the page wears the project: its style with the changelog's own laid over it. Set by the public routes. */
   style?: ResolvedStyle
+  /** How wide the entries' images show. Set by the public routes. */
+  imageWidth?: ChangelogImageWidth
 }
 
 /** A page of published entries, newest first, each carrying its release's version. */

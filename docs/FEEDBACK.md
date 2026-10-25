@@ -427,6 +427,7 @@ An entry can show up to 10 pictures, under its text in the order they are listed
 
 - **Where they show.** Under the text on the public changelog page, in `changelog.js` (the plug-and-play embed, and its server-rendered snapshot), in the board embed's changelog tab, and in the panel and native editors. The public API has them as `images` on `GET /v1/changelog` and `GET /v1/changelog/:ref`.
 - **Who.** Operators upload them (session or `ak_` key, with `?project=<id>`), as for board items. Only images are accepted: a file (PDF, video…) is `400`, and so is any image that is not one of the project's own uploads. Uploads count against the workspace's storage (`402` when it is full).
+- **Width.** Project → Changelog → Settings → *Image width* (or `PATCH /v1/admin/projects/:id {"changelog":{"imageWidth":"medium"}}`): `full` (the whole column, the default), `medium` (60%) or `small` (35%). It applies on the public changelog page, in `changelog.js` (and its snapshot) and in the board embed. `GET /v1/changelog` returns it as `imageWidth`.
 - **Your own UI.** `images` is `[{ url, name, mime, size }]`, in order. `imageUrl` is still returned: the first image's url, or `''`. Sending `imageUrl` is `400` and says to upload the picture and send it as `images`. An entry saved before `images` existed, with one external `imageUrl`, shows that picture as its only image.
 
 ```bash
@@ -500,7 +501,7 @@ the board, and only when this is on. (Projects that were public through the
 board were switched on by `scripts/migrate-changelog-public.mjs`.) A public entry carries `slug`, `summary`,
 `bodyHtml` (the text rendered and **sanitised once, when it was saved**: put it
 in your page as it is), `excerpt`, `area`, `pinned`, `iconGlyph`, `accentColor`,
-`images`, `imageUrl`, `links` and `commentCount` besides its title and tag (`images` are its pictures, in order; `imageUrl` is the first one's url); never what it
+`images`, `imageUrl`, `links` and `commentCount` besides its title and tag (`images` are its pictures, in order; `imageUrl` is the first one's url; the response's `imageWidth` is the project's image width); never what it
 was made from, its commits or its review. `body` is still the source (Markdown, or
 HTML when `bodyFormat` is `html`). Anonymous responses may be cached for a minute;
 anything sent with a token is `no-store`.
