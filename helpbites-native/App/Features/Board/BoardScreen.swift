@@ -178,6 +178,16 @@ struct BoardScreen: View {
     _ = try await saveLists(lists)
   }
 
+  /// A new label, typed in an item's picker: a tag added to the board's labels, saved like the settings form.
+  func addLabel(_ label: String) async throws {
+    guard let config else { return }
+    let key = FeedbackFormat.normalizeKey(label)
+    guard !key.isEmpty, !config.labels.contains(where: { $0.key == key }) else { return }
+    var lists = config.settingsForm
+    lists.tags.append(FeedbackTagDefinition(key: key, label: label, color: "neutral"))
+    _ = try await saveLists(lists)
+  }
+
   /// A column dragged by its header carries this prefix in its drag String, so a drop can tell it from a card id.
   static let columnDragPrefix = "column:"
 
