@@ -41,7 +41,7 @@
           <p v-if="bulkError" class="w-full text-sm text-error">{{ bulkError }}</p>
         </div>
 
-        <section v-for="group in groups" :key="group.key" class="space-y-2">
+        <section v-for="group in groups" :key="group.key" class="space-y-2 rounded-xl transition-shadow" :class="dropKey === group.key ? 'ring-2 ring-primary/60 bg-primary/5' : ''" @dragover="dragOver(group, $event)" @drop.prevent="dropOn(group)">
           <header class="flex flex-wrap items-center gap-2">
             <template v-if="group.release">
               <h2 class="text-sm font-semibold">{{ group.release.version }}<span v-if="group.release.title" class="font-normal text-muted"> · {{ group.release.title }}</span></h2>
@@ -55,7 +55,7 @@
             <h2 v-else class="text-sm font-semibold">{{ $t('changelog.noRelease') }}</h2>
           </header>
           <ul class="divide-y divide-default rounded-lg border border-default">
-            <li v-for="entry in group.entries" :key="entry.id" class="flex items-center transition-colors hover:bg-elevated">
+            <li v-for="entry in group.entries" :key="entry.id" draggable="true" :title="$t('changelog.dragToMove')" class="flex items-center transition-colors hover:bg-elevated cursor-grab active:cursor-grabbing" :class="moving === entry.id ? 'opacity-50' : ''" @dragstart="startDrag(entry, $event)" @dragend="endDrag">
               <UCheckbox :model-value="selected.has(entry.id)" class="pl-3" :aria-label="$t('changelog.selectEntry', { title: entry.title })" @update:model-value="toggleSelected(entry.id)" />
               <button type="button" class="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left text-[13px]" @click="openEntry(entry.id)">
                 <span class="w-16 shrink-0 rounded-full px-1.5 text-center text-[11px] font-semibold" :class="CHANGELOG_TAG_CLASS[entry.tag]">{{ $t(TAG_KEYS[entry.tag]) }}</span>
@@ -311,7 +311,8 @@ const draftCount = computed(() => entries.value.filter(e => stateOf(e).key !== '
 const groups = computed(() => {
   const loose = entries.value.filter(e => !e.releaseId || !releaseOf(e.releaseId))
   const out: { key: string, release: ChangelogRelease | null, entries: ChangelogEntry[] }[] = []
-  if (loose.length) out.push({ key: 'none', release: null, entries: loose })
+  // While an entry is dragged, "No release" is always there to drop it on, even when empty.
+  if (loose.length || dragId.value) out.push({ key: 'none', release: null, entries: loose })
   const ordered = [...releases.value].sort((a, b) => Number(b.status === 'draft') - Number(a.status === 'draft') || String(b.publishedAt || b.createdAt).localeCompare(String(a.publishedAt || a.createdAt)))
   for (const release of ordered) out.push({ key: release.id, release, entries: entries.value.filter(e => e.releaseId === release.id) })
   return out
@@ -452,6 +453,50 @@ watch(entryOpen, (open) => {
   replyOpen.value = false
   if (route.query.entry) void router.replace({ query: { ...route.query, entry: undefined } })
 })
+
+// ---- moving an entry to another release: drag it onto a release, or onto "No release" ----
+const dragId = ref('')
+const dropKey = ref('')
+const moving = ref('')
+type ChangelogGroup = (typeof groups.value)[number]
+
+const groupKeyOf = (entry: ChangelogEntry) => (entry.releaseId && releaseOf(entry.releaseId) ? entry.releaseId : 'none')
+
+function startDrag(entry: ChangelogEntry, event: DragEvent) {
+  dragId.value = entry.id
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', entry.id)
+  }
+}
+
+function endDrag() {
+  dragId.value = ''
+  dropKey.value = ''
+}
+
+/** Allowed only onto a different group; the drop is taken (and the group lit) only then. */
+function dragOver(group: ChangelogGroup, event: DragEvent) {
+  const entry = entries.value.find(e => e.id === dragId.value)
+  if (!entry || groupKeyOf(entry) === group.key) return
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+  dropKey.value = group.key
+}
+
+async function dropOn(group: ChangelogGroup) {
+  const entry = entries.value.find(e => e.id === dragId.value)
+  endDrag()
+  if (!entry || groupKeyOf(entry) === group.key) return
+  moving.value = entry.id
+  try {
+    replaceEntry((await api<{ entry: ChangelogEntry }>(`/admin/changelog/entries/${entry.id}`, { method: 'PATCH', body: { releaseId: group.release?.id ?? null } })).entry)
+  } catch (e: any) {
+    toast.add({ title: e?.message || t('changelog.moveError'), icon: 'i-lucide-alert-circle', color: 'error' })
+  } finally {
+    moving.value = ''
+  }
+}
 
 async function patch(body: Record<string, unknown>) {
   if (!current.value) return

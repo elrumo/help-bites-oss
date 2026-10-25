@@ -646,6 +646,8 @@
     "imagesHint": "Shown under the text, in this order. PNG, JPEG, GIF or WebP, up to 8 MB each.",
     "addImage": "Add images",
     "imagesAfterCreate": "Save the entry, then add its images.",
+    "moveError": "Couldn't move that entry.",
+    "dragToMove": "Drag onto a release to move it.",
     "save": "Save",
     "createRelease": "Create release",
     "turnOnFirst": "Turn on the public changelog first",

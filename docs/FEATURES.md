@@ -322,6 +322,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   Breaking, and group into versioned releases.
 - **Review before publishing.** Approve or reject a draft. Nothing is public until
   it is published. Archive or merge entries.
+- **Move between releases.** In the panel, drag an entry onto a release (or onto
+  *No release*). The native app moves it with the entry's Release field.
 - **Drafts from shipped work.** With auto-draft on, a done post or planning item
   drafts an entry for you. Entries keep links to their sources in the panel, and
   the public changelog never shows those links.

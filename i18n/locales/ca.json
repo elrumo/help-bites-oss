@@ -585,6 +585,8 @@
     "imagesHint": "Es mostren sota el text, en aquest ordre. PNG, JPEG, GIF o WebP, fins a 8 MB cada una.",
     "addImage": "Afegeix imatges",
     "imagesAfterCreate": "Desa l'entrada i després afegeix-hi les imatges.",
+    "moveError": "No s'ha pogut moure aquesta entrada.",
+    "dragToMove": "Arrossega-la a una versió per moure-la.",
     "save": "Desa",
     "createRelease": "Crea llançament",
     "turnOnFirst": "Activa primer les novetats públiques",
