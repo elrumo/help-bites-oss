@@ -165,7 +165,7 @@
               <UIcon name="i-lucide-calendar" class="absolute left-2.5 size-3.5 text-dimmed" />
               <input v-model="draft.targetDate" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.targetDate ? '' : 'text-dimmed'" :aria-label="$t('board.targetDate')" @change="patch({ targetDate: draft.targetDate || null })">
             </label>
-            <USelectMenu v-if="board.labels.length" v-model="draft.labels" :items="labelItems" value-key="value" multiple variant="ghost" size="sm" class="w-full sm:col-span-2" :ui="property" :placeholder="$t('board.addLabels')" :aria-label="$t('board.labels')" @update:model-value="patch({ labels: draft.labels })">
+            <USelectMenu v-model="draft.labels" :items="labelItems" value-key="value" multiple create-item="always" variant="ghost" size="sm" class="w-full sm:col-span-2" :ui="property" :placeholder="$t('board.addLabels')" :aria-label="$t('board.labels')" @create="createLabel" @update:model-value="patch({ labels: draft.labels })">
               <template #leading><UIcon name="i-lucide-tag" class="size-3.5 text-dimmed" /></template>
             </USelectMenu>
           </section>
@@ -625,6 +625,23 @@ function saveText(key: 'title' | 'description' | 'publicDescription') {
   const value = draft[key].trim()
   if (key === 'title' && !value) { draft.title = current.value.title; return }
   if (value !== current.value[key]) void patch({ [key]: value })
+}
+
+/** A label typed into the picker joins the board's labels, then the item takes it (saved with the item, or now if it exists). */
+async function createLabel(name: string) {
+  const label = name.trim().slice(0, 60)
+  const key = normalizeFeedbackKey(label)
+  if (!key || !board.value) return
+  if (!board.value.labels.some(l => l.key === key)) {
+    try {
+      storeProject((await api<{ project: AdminProject }>(`/admin/projects/${id}`, { method: 'PATCH', body: { board: { labels: [...board.value.labels, { key, label, color: 'neutral' }] } } })).project)
+    } catch (e: any) {
+      editorError.value = e?.message || t('board.saveError')
+      return
+    }
+  }
+  if (!draft.labels.includes(key)) draft.labels.push(key)
+  if (current.value) await patch({ labels: draft.labels })
 }
 
 async function createItem() {

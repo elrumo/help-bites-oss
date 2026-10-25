@@ -10,6 +10,8 @@ struct BoardItemEditor: View {
   @State private var draft: BoardItemDraft
   @State private var pickingPost = false
   @State private var pickingItem = false
+  @State private var newLabel = ""
+  @State private var addingLabel = false
   /// Feedback chosen for an item that does not exist yet; linked when it is created.
   @State private var newPosts: [FeedbackPost] = []
   @State private var saving = false
@@ -100,7 +102,7 @@ struct BoardItemEditor: View {
       pickers(config)
     }
     LabeledField(label: "Target date") { targetDate }
-    if !config.labels.isEmpty { labelPicker(config) }
+    labelPicker(config)
     AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId)
     roadmap(config)
   }
@@ -151,14 +153,41 @@ struct BoardItemEditor: View {
     // A label the board no longer defines still shows while the item carries it, so it can be taken off.
     let labels = config.labels + draft.labels.filter { key in !config.labels.contains { $0.key == key } }.map { config.label($0) }
     return LabeledField(label: "Labels") {
-      FlowLayout(spacing: 6) {
-        ForEach(labels) { label in
-          let on = draft.labels.contains(label.key)
-          Pill(label: label.label, systemImage: on ? "checkmark" : nil, isActive: on) {
-            if on { draft.labels.removeAll { $0 == label.key } } else { draft.labels.append(label.key) }
+      VStack(alignment: .leading, spacing: 8) {
+        FlowLayout(spacing: 6) {
+          ForEach(labels) { label in
+            let on = draft.labels.contains(label.key)
+            Pill(label: label.label, systemImage: on ? "checkmark" : nil, isActive: on) {
+              if on { draft.labels.removeAll { $0 == label.key } } else { draft.labels.append(label.key) }
+            }
           }
         }
+        HStack(spacing: 8) {
+          TextField("New label", text: $newLabel)
+            .textFieldStyle(.linear)
+            .submitLabel(.done)
+            .onSubmit { Task { await addLabel() } }
+          Button("Add label") { Task { await addLabel() } }
+            .buttonStyle(GhostButtonStyle(tint: Theme.accentText))
+            .disabled(newLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || addingLabel)
+        }
       }
+    }
+  }
+
+  /// A label typed here joins the board's labels and this item takes it; the item's own Save keeps it.
+  private func addLabel() async {
+    let label = String(newLabel.trimmingCharacters(in: .whitespacesAndNewlines).prefix(60))
+    guard !label.isEmpty else { return }
+    addingLabel = true
+    defer { addingLabel = false }
+    do {
+      try await store.addLabel(label)
+      let key = FeedbackFormat.normalizeKey(label)
+      if !draft.labels.contains(key) { draft.labels.append(key) }
+      newLabel = ""
+    } catch let failure {
+      error = failure.localizedDescription
     }
   }
 
