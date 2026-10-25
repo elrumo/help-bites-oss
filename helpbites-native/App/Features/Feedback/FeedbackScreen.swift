@@ -328,10 +328,23 @@ private struct FeedbackBoardView: View {
   @State private var showSettings = false
   @State private var showAi = false
   @State private var editor: FeedbackEditorRoute?
+  /// The post being added to planning, and the AI's progress and result for the banner.
+  @State private var planning: FeedbackPost?
+  @State private var working = ""
+  @State private var notice = ""
   @Environment(Workspace.self) private var workspace
+
+  private var planningOn: Bool { workspace.project(store.projectId)?.board?.enabled == true }
 
   var body: some View {
     content
+      .overlay(alignment: .bottom) {
+        if !working.isEmpty { WorkingBanner(message: working) }
+        else if !notice.isEmpty { Text(notice).font(.lnMeta).padding(.horizontal, 14).padding(.vertical, 10).background(.regularMaterial, in: Capsule()).padding(.bottom, 16).transition(.opacity) }
+      }
+      .sheet(item: $planning) { post in
+        PlanningAddSheet(projectId: store.projectId, post: post) { notify($0) }
+      }
       .panelScreen("Feedback")
       .toolbar { toolbar }
       .sheet(item: $editor) { route in FeedbackPostEditor(store: store, postId: route.postId) }
@@ -544,6 +557,32 @@ private struct FeedbackBoardView: View {
       }
     } label: {
       Label("Move to", systemImage: "arrow.right.circle")
+    }
+    if planningOn {
+      Divider()
+      Button { Task { await createPlanning(post) } } label: { Label("Create planning item", systemImage: "sparkles") }
+        .disabled(!working.isEmpty)
+      Button { planning = post } label: { Label("Add to planning item…", systemImage: "rectangle.split.3x1") }
+    }
+  }
+
+  /// One tap: the AI writes the item (or items) from the post, which is linked to each.
+  private func createPlanning(_ post: FeedbackPost) async {
+    guard working.isEmpty else { return }
+    working = FeedbackPlanning.workingMessage
+    defer { working = "" }
+    do {
+      notify(FeedbackPlanning.summary(try await FeedbackPlanning.create(session: store.session, projectId: store.projectId, postId: post.id)))
+    } catch {
+      store.alert = error.localizedDescription
+    }
+  }
+
+  private func notify(_ message: String) {
+    withAnimation { notice = message }
+    Task {
+      try? await Task.sleep(for: .seconds(4))
+      withAnimation { if notice == message { notice = "" } }
     }
   }
 }

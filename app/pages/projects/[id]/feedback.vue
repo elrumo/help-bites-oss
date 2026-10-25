@@ -345,7 +345,7 @@ function planPost(post: FeedbackPost) {
 }
 
 async function createPlanningItem(post: FeedbackPost) {
-  if (await planning.createFor(post)) planningKey.value++
+  if ((await planning.createFor(post)).length) planningKey.value++
 }
 
 function postMenu(post: FeedbackPost) {

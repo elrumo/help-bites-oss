@@ -48,7 +48,7 @@ struct BoardLinksSection: View {
         }
         ForEach(linked) { item in row(item) }
         HStack(spacing: 6) {
-          Button { Task { await create() } } label: { Label("New item", systemImage: "plus") }
+          Button { Task { await create() } } label: { Label(creating && kind == "feedback" ? "Writing…" : "New item", systemImage: kind == "feedback" ? "sparkles" : "plus") }
             .buttonStyle(.lnSecondaryCompact)
             .disabled(creating)
           Button {
@@ -59,6 +59,14 @@ struct BoardLinksSection: View {
         }
         .padding(.horizontal, 8)
         .padding(.top, 4)
+        if creating && kind == "feedback" {
+          HStack(spacing: 8) {
+            ProgressView().controlSize(.small)
+            Text(FeedbackPlanning.workingMessage).font(.lnMeta).foregroundStyle(Theme.accent).fixedSize(horizontal: false, vertical: true)
+          }
+          .padding(.horizontal, 8)
+          .padding(.top, 4)
+        }
         ErrorText(message: error).padding(.horizontal, 8)
       }
     }
@@ -141,6 +149,17 @@ struct BoardLinksSection: View {
     creating = true
     defer { creating = false }
     error = ""
+    if kind == "feedback" {
+      // A post gets items written from it (by the AI, when there is one: one or several) rather than an empty one.
+      do {
+        let created = try await FeedbackPlanning.create(session: workspace.session, projectId: projectId, postId: targetId)
+        for item in created.items where !linked.contains(where: { $0.id == item.id }) { linked.append(item) }
+        for item in created.items { board?.upsert(item) }
+      } catch {
+        self.error = error.localizedDescription
+      }
+      return
+    }
     let text = description.trimmingCharacters(in: .whitespacesAndNewlines)
     var name = title.trimmingCharacters(in: .whitespacesAndNewlines)
     if name.isEmpty { name = FeedbackFormat.plainText(text, limit: 80).components(separatedBy: "\n").first ?? "" }

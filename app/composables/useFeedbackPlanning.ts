@@ -13,21 +13,29 @@ export function useFeedbackPlanning(projectId: string) {
   const itemLink = (item: BoardItem) => `/projects/${projectId}/board?item=${item.id}`
   const itemName = (item: BoardItem) => `${item.number ? `#${item.number} ` : ''}${item.title}`
 
-  /** A new item for the post, linked to it. Resolves to null (after a toast) when it could not be made. */
-  async function createFor(post: PostRef): Promise<BoardItem | null> {
+  /**
+   * New items for the post, each linked to it: the AI decides whether it is one piece of work or
+   * several. A toast stays up while it works (it can take several seconds). Resolves to the items,
+   * or to none after an error toast.
+   */
+  async function createFor(post: PostRef): Promise<BoardItem[]> {
+    const workingId = `planning-working-${post.id}`
+    toast.add({ id: workingId, title: t('feedbackPlan.working'), description: t('feedbackPlan.workingHint'), icon: 'i-lucide-loader-circle', ui: { icon: 'animate-spin' }, duration: 0, close: false })
     try {
-      const { item, ai } = await api<{ item: BoardItem, ai: boolean }>('/admin/board-items/from-feedback', { method: 'POST', query: { project: projectId }, body: { postId: post.id } })
+      const { items, ai } = await api<{ items: BoardItem[], ai: boolean }>('/admin/board-items/from-feedback', { method: 'POST', query: { project: projectId }, body: { postId: post.id } })
       toast.add({
-        title: t('feedbackPlan.created', { name: itemName(item) }),
-        description: ai ? t('feedbackPlan.createdAi') : t('feedbackPlan.createdPlain'),
+        title: items.length === 1 ? t('feedbackPlan.created', { name: itemName(items[0]!) }) : t('feedbackPlan.createdMany', { count: items.length }),
+        description: items.length === 1 ? (ai ? t('feedbackPlan.createdAi') : t('feedbackPlan.createdPlain')) : items.map(itemName).join(' · '),
         icon: ai ? 'i-lucide-sparkles' : 'i-lucide-square-kanban',
         color: 'success',
-        actions: [{ label: t('feedbackPlan.open'), onClick: () => { void navigateTo(itemLink(item)) } }]
+        actions: [{ label: t('feedbackPlan.open'), onClick: () => { void navigateTo(itemLink(items[0]!)) } }]
       })
-      return item
+      return items
     } catch (e: any) {
       toast.add({ title: t('feedbackPlan.createFailed'), description: e?.message, icon: 'i-lucide-circle-alert', color: 'error' })
-      return null
+      return []
+    } finally {
+      toast.remove(workingId)
     }
   }
 

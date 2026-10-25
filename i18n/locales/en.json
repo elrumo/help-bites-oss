@@ -2309,7 +2309,7 @@
     "modalTitle": "Add to planning",
     "modalDescription": "File this post as a new planning item, or attach it to one that exists. A post can feed several items, and an item can hold several posts.",
     "newItemTitle": "New planning item",
-    "newItemHint": "The AI writes the title, text and urgency from the post. Without an AI provider it copies the post. You can edit it after.",
+    "newItemHint": "The AI reads the post and decides whether it needs one planning item or several, writing the title, text and urgency of each. Without an AI provider it copies the post. You can edit them after.",
     "searchItems": "Search planning items…",
     "noItems": "No planning items match.",
     "linked": "Linked",
@@ -2319,7 +2319,10 @@
     "attached": "Added to {name}",
     "open": "Open",
     "createFailed": "Could not create the planning item",
-    "attachFailed": "Could not add the post to the item"
+    "attachFailed": "Could not add the post to the item",
+    "working": "Creating planning item…",
+    "workingHint": "The AI is reading the post and deciding how to plan it. This can take a few seconds.",
+    "createdMany": "Created {count} planning items"
   },
   "feedback": {
     "styleTitle": "Board style",
@@ -2984,7 +2987,7 @@
         },
         "roadmap": {
           "term": "A roadmap from your own planning",
-          "desc": "Plan internal work on a kanban, link it to posts and conversations, and publish only the items you pick. File an error on it in one click, and see the GitHub commits and pull requests that finished each item."
+          "desc": "Plan internal work on a kanban, link it to posts and conversations, and publish only the items you pick. Turn a post into planning items in one click, with the AI writing them and setting the urgency. File an error on it in one click, and see the GitHub commits and pull requests that finished each item."
         },
         "changelog": {
           "term": "A changelog from what shipped",

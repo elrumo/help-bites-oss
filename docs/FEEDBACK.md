@@ -261,6 +261,17 @@ Project → **Planning** → *Turn on planning*.
   the customer's last message) or adds it to an existing one; the link shows on
   the conversation's timeline as an internal event the customer never sees.
   The feedback post editor has the same **Planning** section.
+- **From feedback.** Right-click a post on the Feedback page (list or kanban; long-press in the app)
+  for **Create planning item** or **Add to planning item…**, or use the **Planning** button in the
+  post's editor. *Create planning item* asks the AI (when the workspace has a provider) to decide
+  whether the post is one piece of work or several (at most 5, nearly always one) and to write each
+  item's title, Markdown description, **priority** (from the content, votes and comments) and labels
+  from the board's own; every item is linked to the post. A toast, or the button's spinner, shows
+  while the AI works. With no AI, or if its answer is unusable, you get one item copied from the
+  post. A post can feed several items and an item can hold several posts.
+- **Attach feedback by search.** In an item, *Search feedback to attach* finds posts by title,
+  text, author or `#N` and links them; the *New item* form takes posts the same way and links them
+  on creation.
 - **Filed from an error.** The Errors page's **File on board** button makes an item from a
   tracker issue (see [ERRORS.md](ERRORS.md)); its drawer lists the errors it came from, each with
   its link back to the tracker.
@@ -329,12 +340,24 @@ done status. From then on Planning's public items are the roadmap.
   in a roadmap status).
 - `GET|POST /v1/admin/board-items?project=<id>` (list, or create with optional
   `feedbackPostIds` / `conversationIds`), `PATCH|DELETE
-  /v1/admin/board-items/:id`, and `POST /v1/admin/board-items/:id/links` with
+  /v1/admin/board-items/:id`, `POST /v1/admin/board-items/from-feedback`
+  (below), and `POST /v1/admin/board-items/:id/links` with
   `{ kind: "feedback" | "conversation", id, linked }`. These take an operator
   session or an `ak_…` admin key, so release scripts and other tools can file
   and move items. The list filters by `&conversation=` or `&feedbackPost=`.
   Moving a card is a `PATCH` with `status` and a `rank` between its new
   neighbours (lower ranks come first).
+
+`POST /v1/admin/board-items/from-feedback?project=<id>` with `{ "postId": "#12", "ai": true }` files items
+for a post and links it to each: `{ item, items, ai }` (`item` is the first; `ai` says whether the AI wrote
+them; `"ai": false` copies the post without calling it). It can take several seconds with AI on, is
+limited to 20 AI drafts a minute per agent, and the post's text is treated as data, never as instructions.
+
+```sh
+curl -X POST -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{"postId":"#12"}' \
+  "https://YOUR-SUPPORT-HOST/v1/admin/board-items/from-feedback?project=PROJECT_ID"
+```
 
 An item filed from an error carries `errorRefs: [{ provider, issueId, linkId, title, url }]`
 (empty otherwise). `GET /v1/admin/github-refs?project=<id>&kind=board|feedback&id=<item or post>`

@@ -109,6 +109,7 @@
 		73C91F75051DF76707AF73AD /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4EB03A1DB8F2EDA54E2748B /* APIClient.swift */; };
 		741F75DC9DBF70BDBABAB4F0 /* TeamInvite.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF18B11604FF36C21831DAA9 /* TeamInvite.swift */; };
 		74724E033ADD9D381CDE0F0E /* FlagsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A8133AAF31EE866C4EB75F /* FlagsScreen.swift */; };
+		76A77E5BD0492D5EF52A6FF1 /* FeedbackPlanning.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44819875E01162D97115D909 /* FeedbackPlanning.swift */; };
 		77CB6E656CB914AFBA28B1D7 /* ProfileScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = AED7F95DF7B6F63DFCF49FBD /* ProfileScreen.swift */; };
 		7AFD1495023A13AED49E0F24 /* AttachmentsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C754D3FB3FC3D6CE76452776 /* AttachmentsSection.swift */; };
 		7C500E2A939AF1DB371227E3 /* AssistantKnowledge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1AABE2CB4992F68B540934 /* AssistantKnowledge.swift */; };
@@ -137,6 +138,7 @@
 		A5D4746B96B316F7E652A049 /* RevenueConnect.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA3EE44191096B0DA543A539 /* RevenueConnect.swift */; };
 		A6D0F2229F69A2C433DC94FD /* GlobalSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = E837EAA1BBD4EDFCDE7C0912 /* GlobalSearch.swift */; };
 		A79728F75CBFF3BE99BFAFAD /* LeadFormsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B37664C67864B24DD145CE81 /* LeadFormsModels.swift */; };
+		A8A7B8E9A78E979AB84C32FA /* FeedbackAttachSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F7CA79F1EA69E9D712FA881 /* FeedbackAttachSheet.swift */; };
 		ABFE68B3B956B14739DE4FCD /* InboxProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEBA8FF7B22AD20166F9C27 /* InboxProperties.swift */; };
 		AD397FB2CB9827CA65B1F978 /* FeedbackBoardSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88D56F686CAAD419199DB268 /* FeedbackBoardSettings.swift */; };
 		AD7F14F58FAAAF483DC484EC /* ContactsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12EE9E81B2946D756D59777 /* ContactsModels.swift */; };
@@ -229,6 +231,7 @@
 		2D316A690FFBA08DB0574721 /* EmailDesignStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailDesignStyle.swift; sourceTree = "<group>"; };
 		2E68E181C52F67F219EECDEB /* ChangelogEntryEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogEntryEditor.swift; sourceTree = "<group>"; };
 		2EE99513DAEB864AE0B41520 /* FeedbackLinksSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackLinksSection.swift; sourceTree = "<group>"; };
+		2F7CA79F1EA69E9D712FA881 /* FeedbackAttachSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackAttachSheet.swift; sourceTree = "<group>"; };
 		2FB2B0E6FF0E0040293D49B9 /* BoardItemEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardItemEditor.swift; sourceTree = "<group>"; };
 		306B85E2B452BB9FD20C380F /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
 		30A1D376ADD0DEBA16A2A080 /* EmailEditorStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailEditorStore.swift; sourceTree = "<group>"; };
@@ -243,6 +246,7 @@
 		3D00C4CB1FC0123527793FBE /* OnboardingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingModels.swift; sourceTree = "<group>"; };
 		3F0AB26746629F28ED2EB217 /* HelpBitesNative.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HelpBitesNative.entitlements; sourceTree = "<group>"; };
 		4399D8D3565E838D22F753CC /* AssistantsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantsScreen.swift; sourceTree = "<group>"; };
+		44819875E01162D97115D909 /* FeedbackPlanning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackPlanning.swift; sourceTree = "<group>"; };
 		4587E4E535D670DBA6FA42D0 /* ErrorsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorsScreen.swift; sourceTree = "<group>"; };
 		4711D007B64E1D08792D8CF0 /* EmailSuppressionsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSuppressionsScreen.swift; sourceTree = "<group>"; };
 		484BE6DDC11D882CA0DFDC64 /* PageEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEntryScreen.swift; sourceTree = "<group>"; };
@@ -444,6 +448,7 @@
 				BC639C90F634EC463322EEBD /* BoardLinksSection.swift */,
 				9DFEDA5B1D5025082C3FD506 /* BoardModels.swift */,
 				4B85F42F2E42F0B1AE27454E /* BoardScreen.swift */,
+				2F7CA79F1EA69E9D712FA881 /* FeedbackAttachSheet.swift */,
 				27A08E70683EC778C2D1CC5E /* GithubRefsSection.swift */,
 			);
 			path = Board;
@@ -730,6 +735,7 @@
 				88D56F686CAAD419199DB268 /* FeedbackBoardSettings.swift */,
 				CED2FB233E74DBD705178743 /* FeedbackChangelogLinks.swift */,
 				F685F682E640A82AD6F5CF0D /* FeedbackModels.swift */,
+				44819875E01162D97115D909 /* FeedbackPlanning.swift */,
 				3A4E63426E9489CB63264A1C /* FeedbackPostEditor.swift */,
 				509B37285E617B5D206116E9 /* FeedbackScreen.swift */,
 			);
@@ -1002,10 +1008,12 @@
 				3AF7B3A88A3ED906C8A2F103 /* ErrorReportsSheet.swift in Sources */,
 				60421F967C5A1257FA7A5C67 /* ErrorsModels.swift in Sources */,
 				9EBB69A2DCC7EC31A64314C2 /* ErrorsScreen.swift in Sources */,
+				A8A7B8E9A78E979AB84C32FA /* FeedbackAttachSheet.swift in Sources */,
 				AD397FB2CB9827CA65B1F978 /* FeedbackBoardSettings.swift in Sources */,
 				20FD60FECAF3B7870A23CDC5 /* FeedbackChangelogLinks.swift in Sources */,
 				F33A1DBFF9C97A31234C3045 /* FeedbackLinksSection.swift in Sources */,
 				DD90306D989E9CF6954EBC66 /* FeedbackModels.swift in Sources */,
+				76A77E5BD0492D5EF52A6FF1 /* FeedbackPlanning.swift in Sources */,
 				256E4BB57B4000B3CD393E7D /* FeedbackPostEditor.swift in Sources */,
 				B01431592AC6B0EDC97BD843 /* FeedbackScreen.swift in Sources */,
 				74724E033ADD9D381CDE0F0E /* FlagsScreen.swift in Sources */,

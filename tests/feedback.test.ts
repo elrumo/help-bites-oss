@@ -36,11 +36,12 @@ import {
   type FeedbackActor,
   type FeedbackContext
 } from '../server/utils/feedback'
+import { itemAttachments } from '../server/utils/itemAttachments'
 import { iso, pointerId } from '../server/utils/parse'
 
 const config: FeedbackBoardConfig = { ...DEFAULT_FEEDBACK_CONFIG, enabled: true, platforms: [{ key: 'web', label: 'Web' }], tags: [{ key: 'editor', label: 'Editor', color: 'info' }, { key: 'api', label: 'API', color: 'neutral' }] }
-// The serializers lean on two of nitro's auto-imports.
-Object.assign(globalThis, { pointerId, iso })
+// The serializers lean on three of nitro's auto-imports.
+Object.assign(globalThis, { pointerId, iso, itemAttachments })
 
 // Just enough of a Parse row for the serializers.
 const fakeRow = (fields: Record<string, unknown>, id = 'row1') => ({ id, get: (key: string) => fields[key], createdAt: undefined, updatedAt: undefined }) as never

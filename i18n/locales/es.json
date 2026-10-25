@@ -2168,7 +2168,7 @@
     "modalTitle": "Añadir a planificación",
     "modalDescription": "Crea un elemento de planificación a partir de esta publicación o adjúntala a uno existente. Una publicación puede alimentar varios elementos, y un elemento puede reunir varias publicaciones.",
     "newItemTitle": "Nuevo elemento de planificación",
-    "newItemHint": "La IA redacta el título, el texto y la urgencia a partir de la publicación. Sin proveedor de IA, la copia tal cual. Puedes editarlo después.",
+    "newItemHint": "La IA lee la publicación y decide si necesita uno o varios elementos, y redacta el título, el texto y la urgencia de cada uno. Sin proveedor de IA, la copia tal cual. Puedes editarlos después.",
     "searchItems": "Buscar elementos de planificación…",
     "noItems": "Ningún elemento coincide.",
     "linked": "Vinculado",
@@ -2178,7 +2178,10 @@
     "attached": "Añadido a {name}",
     "open": "Abrir",
     "createFailed": "No se pudo crear el elemento de planificación",
-    "attachFailed": "No se pudo añadir la publicación al elemento"
+    "attachFailed": "No se pudo añadir la publicación al elemento",
+    "working": "Creando elemento de planificación…",
+    "workingHint": "La IA está leyendo la publicación y decidiendo cómo planificarla. Puede tardar unos segundos.",
+    "createdMany": "Creados {count} elementos de planificación"
   },
   "feedback": {
     "styleTitle": "Estilo del tablero",

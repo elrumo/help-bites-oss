@@ -629,7 +629,7 @@
       "id": "project-board",
       "name": "Planning and public roadmap",
       "category": "product",
-      "summary": "Planning: a private Linear-style kanban per project linked to feedback posts and conversations; the items you publish form the public roadmap. Items take images and files and can be filed from errors and list the GitHub commits and pull requests that mention them.",
+      "summary": "Planning: a private Linear-style kanban per project linked to feedback posts and conversations; the items you publish form the public roadmap. Items take images and files and can be filed from errors and list the GitHub commits and pull requests that mention them. A feedback post becomes one or several items from its right-click menu or Planning button, written by the AI (which also sets the urgency) when one is configured, and feedback is attached to items by search.",
       "editions": [
         "community",
         "cloud"
@@ -639,7 +639,9 @@
       "web": {
         "panel": [
           "app/pages/projects/[id]/board.vue",
-          "app/components/GithubRefs.vue"
+          "app/components/GithubRefs.vue",
+          "app/components/PlanningPickerModal.vue",
+          "app/components/FeedbackSearchPicker.vue"
         ],
         "public": [
           "/roadmap/:pk"

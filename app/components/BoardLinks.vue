@@ -48,6 +48,7 @@ const props = defineProps<{ projectId: string, kind: 'feedback' | 'conversation'
 
 const { api, projects } = useAgent()
 const { t } = useI18n()
+const planning = useFeedbackPlanning(props.projectId)
 const board = computed(() => projects.value.find(p => p.id === props.projectId)?.board || null)
 
 const linked = ref<BoardItem[]>([])
@@ -133,9 +134,9 @@ async function createItem() {
   const title = props.title.trim() || feedbackPlainText(text, 80).split('\n')[0] || t('board.untitled')
   try {
     if (props.kind === 'feedback') {
-      // A post gets an item written from it (by the AI, when there is one) rather than an empty one.
-      const { item } = await api<{ item: BoardItem }>('/admin/board-items/from-feedback', { method: 'POST', query: { project: props.projectId }, body: { postId: props.targetId } })
-      linked.value = [...linked.value, item]
+      // A post gets items written from it (by the AI, when there is one: one or several) rather than an empty one.
+      const created = await planning.createFor({ id: props.targetId, title: props.title })
+      linked.value = [...linked.value, ...created]
       all.value = []
       return
     }

@@ -250,6 +250,7 @@ await attempt('delete A\'s assistant', `/v1/admin/support-agents/${assistant.id}
 await attempt('edit A\'s board item', `/v1/admin/board-items/${item.id}`, { method: 'PATCH', body: { title: 'pwned' } })
 await attempt('list A\'s board', `/v1/admin/board-items?project=${project.id}`)
 await attempt('delete A\'s board item', `/v1/admin/board-items/${item.id}`, { method: 'DELETE' })
+await attempt('plan A\'s feedback post', `/v1/admin/board-items/from-feedback?project=${project.id}`, { method: 'POST', body: { postId: post.id, ai: false } })
 await attempt('list A\'s changelog', `/v1/admin/changelog/entries?project=${project.id}`)
 await attempt('edit A\'s changelog entry', `/v1/admin/changelog/entries/${entry.id}`, { method: 'PATCH', body: { title: 'pwned' } })
 await attempt('publish A\'s release', `/v1/admin/changelog/releases/${release.id}/publish`, { method: 'POST' })

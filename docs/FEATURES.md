@@ -297,7 +297,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   status, priority, assignee, labels, target date and `#number`. Drag to move or
   reorder.
 - **Links.** Connect an item to up to 50 feedback posts and 50 conversations.
-  Votes add up across the linked posts.
+  Votes add up across the linked posts. Search feedback to attach it to an item
+  (or while creating one); right-click a post, or use its Planning button, to
+  file it as new items written by the AI (it decides whether the post needs one
+  item or several, and sets the urgency) or add it to an existing item.
 - **Sync to feedback.** Optionally, moving an item into a status category moves
   its linked posts to the matching feedback status.
 - **Filed from an error.** An error on the Errors page can be filed as an item in

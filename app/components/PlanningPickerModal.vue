@@ -5,9 +5,9 @@
         <div class="flex items-center gap-3 rounded-lg border border-default p-3">
           <div class="min-w-0 flex-1">
             <p class="text-sm font-medium">{{ $t('feedbackPlan.newItemTitle') }}</p>
-            <p class="text-xs text-muted">{{ $t('feedbackPlan.newItemHint') }}</p>
+            <p class="text-xs" :class="busy === '__new__' ? 'text-primary' : 'text-muted'">{{ busy === '__new__' ? $t('feedbackPlan.workingHint') : $t('feedbackPlan.newItemHint') }}</p>
           </div>
-          <UButton icon="i-lucide-sparkles" :label="$t('feedbackPlan.createItem')" :loading="busy === '__new__'" :disabled="!!busy" @click="create" />
+          <UButton icon="i-lucide-sparkles" :label="busy === '__new__' ? $t('feedbackPlan.working') : $t('feedbackPlan.createItem')" :loading="busy === '__new__'" :disabled="!!busy" @click="create" />
         </div>
 
         <div class="space-y-2">
@@ -39,7 +39,7 @@ import type { BoardItem } from '#shared/board'
 // provider) or search the board's items and attach the post to one. A post can feed several items.
 
 const props = defineProps<{ projectId: string, post: { id: string, number?: number | null, title: string } | null }>()
-const emit = defineEmits<{ changed: [item: BoardItem] }>()
+const emit = defineEmits<{ changed: [] }>()
 const open = defineModel<boolean>('open', { default: false })
 
 const { api, projects } = useAgent()
@@ -79,9 +79,9 @@ async function load() {
 async function create() {
   if (!props.post) return
   busy.value = '__new__'
-  const item = await planning.createFor(props.post)
+  const created = await planning.createFor(props.post)
   busy.value = ''
-  if (item) { emit('changed', item); open.value = false }
+  if (created.length) { emit('changed'); open.value = false }
 }
 
 async function attach(item: BoardItem) {
@@ -89,7 +89,7 @@ async function attach(item: BoardItem) {
   busy.value = item.id
   const next = await planning.attachTo(item.id, props.post)
   busy.value = ''
-  if (next) { emit('changed', next); open.value = false }
+  if (next) { emit('changed'); open.value = false }
 }
 
 watch(open, (now) => {

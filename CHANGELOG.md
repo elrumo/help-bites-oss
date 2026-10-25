@@ -5,6 +5,7 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Plan a feedback post** (web and native): right-click a post (or use its **Planning** button) to create planning items from it, written by the AI, which decides whether the post is one piece of work or several and sets the urgency, or to add it to an existing item; items attach feedback by search. New route `POST /v1/admin/board-items/from-feedback` (`docs/FEEDBACK.md`), MCP tool `create_board_item_from_feedback`. Uses the workspace AI provider or `LITELLM_API_BASE_URL`, and copies the post when there is none; no schema or env change.
 - **Images and files on feedback posts and board items** (web, native and the public API): up to 10 per post or item, uploaded with new `POST /v1/feedback/attachments` and sent as `attachments` (`docs/FEEDBACK.md`). New `attachments` field on `FeedbackPost` and `BoardItem` (`ensure-schema` adds it); images need no change, files need your S3 bucket as before (`S3_*`). Run `bun scripts/ensure-schema.mjs` on upgrade.
 - **AI cards on Feedback and Planning** (web and native): an AI chat that turns pasted text into separate feedback posts or board items. New route `POST /v1/admin/projects/:id/ai-cards` (`docs/FEEDBACK.md`). Uses the workspace AI provider or `LITELLM_API_BASE_URL`; no schema or env change.
 - **Email-only users get your replies by email.** The address they typed shows on their contact (marked unverified until they enter the code,

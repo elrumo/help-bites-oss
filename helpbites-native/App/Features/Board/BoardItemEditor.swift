@@ -8,7 +8,9 @@ struct BoardItemEditor: View {
   let store: BoardStore
   @State private var itemId: String?
   @State private var draft: BoardItemDraft
-  @State private var postRef = ""
+  @State private var pickingPost = false
+  /// Feedback chosen for an item that does not exist yet; linked when it is created.
+  @State private var newPosts: [FeedbackPost] = []
   @State private var saving = false
   @State private var justSaved = false
   @State private var linking = false
@@ -38,7 +40,7 @@ struct BoardItemEditor: View {
         if let config = store.config {
           VStack(alignment: .leading, spacing: 20) {
             form(config)
-            if let current { links(current) }
+            if let current { links(current) } else { newItemFeedback }
           }
           .frame(maxWidth: 640, alignment: .leading)
           .padding(20)
@@ -65,6 +67,11 @@ struct BoardItemEditor: View {
         Text("Its links go with it; the posts and conversations stay.")
       }
       .task { await load() }
+      .sheet(isPresented: $pickingPost) {
+        FeedbackAttachSheet(session: store.session, projectId: store.projectId, exclude: Set((current?.feedbackPostIds ?? []) + newPosts.map(\.id))) { post in
+          if itemId == nil { newPosts.append(post) } else { Task { await setLink("feedback", post.id, true) } }
+        }
+      }
     }
     .presentationDetents([.large])
   }
@@ -191,6 +198,35 @@ struct BoardItemEditor: View {
 
   // MARK: Links
 
+  /// A new item can already take feedback: it is linked once the item exists.
+  private var newItemFeedback: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 6) {
+        Text("Feedback").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+        Text("\(newPosts.count)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
+      }
+      if !newPosts.isEmpty {
+        Card {
+          ForEach(newPosts) { post in
+            CardRow(divider: post.id != newPosts.last?.id) {
+              HStack(spacing: 10) {
+                Text(post.number.map { "#\($0) \(post.title)" } ?? post.title).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
+                Spacer(minLength: 0)
+                Button { newPosts.removeAll { $0.id == post.id } } label: {
+                  Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Remove \(post.title)")
+              }
+            }
+          }
+        }
+      }
+      Button { pickingPost = true } label: { Label("Search feedback to attach", systemImage: "magnifyingglass") }
+        .buttonStyle(.lnSecondaryCompact)
+    }
+  }
+
   private func links(_ item: BoardItem) -> some View {
     VStack(alignment: .leading, spacing: 20) {
       Rectangle().fill(Theme.borderMuted).frame(height: 1).padding(.top, 12)
@@ -209,17 +245,9 @@ struct BoardItemEditor: View {
             }
           }
         }
-        HStack(spacing: 8) {
-          TextField("#12", text: $postRef)
-            .textFieldStyle(.linear)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-            .frame(maxWidth: 160)
-            .onSubmit { Task { await addPost() } }
-          Button("Link post") { Task { await addPost() } }
-            .buttonStyle(.lnSecondaryCompact)
-            .disabled(postRef.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || linking)
-        }
+        Button { pickingPost = true } label: { Label("Search feedback to attach", systemImage: "magnifyingglass") }
+          .buttonStyle(.lnSecondaryCompact)
+          .disabled(linking)
       }
 
       VStack(alignment: .leading, spacing: 8) {
@@ -359,7 +387,10 @@ struct BoardItemEditor: View {
         let patch = draft.patch(against: current)
         if patch.isEmpty { item = current } else { item = try await store.update(itemId, patch) }
       } else {
-        item = try await store.create(draft.fields)
+        var fields = draft.fields
+        if !newPosts.isEmpty { fields["feedbackPostIds"] = .array(newPosts.map { .string($0.id) }) }
+        item = try await store.create(fields)
+        newPosts = []
       }
       saving = false
       draft = BoardItemDraft(item: item, defaultStatus: config.defaultStatusKey)
@@ -381,13 +412,6 @@ struct BoardItemEditor: View {
     } catch {
       self.error = error.localizedDescription
     }
-  }
-
-  private func addPost() async {
-    var target = postRef.trimmingCharacters(in: .whitespacesAndNewlines)
-    if target.hasPrefix("#") { target.removeFirst() }
-    guard !target.isEmpty else { return }
-    if await setLink("feedback", target, true) { postRef = "" }
   }
 
   @discardableResult
