@@ -52,12 +52,16 @@
             v-for="status in board.statuses"
             :key="status.key"
             class="flex w-72 shrink-0 flex-col rounded-xl bg-elevated/60 transition-shadow"
-            :class="dragging && dragOver === status.key ? 'ring-2 ring-primary/60' : ''"
+            :class="[(dragging || draggingColumn) && dragOver === status.key ? 'ring-2 ring-primary/60' : '', draggingColumn === status.key ? 'opacity-50' : '']"
             @dragover.prevent="enterColumn(status.key)"
             @drop.prevent="dropOn(status.key)"
           >
-            <header class="flex items-center justify-between px-3 pt-3 pb-2">
-              <FeedbackStatusBadge :status="status" />
+            <!-- Admins drag the header to move the column -->
+            <header class="flex items-center justify-between px-3 pt-3 pb-2" :class="canManage ? 'cursor-grab' : ''" :draggable="canManage" :title="canManage ? $t('board.dragColumn') : undefined" @dragstart="startColumnDrag($event, status.key)" @dragend="endDrag">
+              <div class="flex min-w-0 items-center gap-1.5">
+                <UIcon v-if="canManage" name="i-lucide-grip-vertical" class="size-3.5 shrink-0 text-dimmed" />
+                <FeedbackStatusBadge :status="status" />
+              </div>
               <span class="text-xs tabular-nums text-muted">{{ (visibleByColumn[status.key] || []).length }}</span>
             </header>
             <div class="flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto px-2 pb-2">
@@ -292,6 +296,7 @@
 import Fuse from 'fuse.js'
 import { DEFAULT_FEEDBACK_CONFIG, FEEDBACK_STATUS_CATEGORIES, defaultFeedbackStatus, feedbackStatusCategory, normalizeFeedbackKey, type FeedbackBoardConfig, type FeedbackColor, type FeedbackStatusCategory } from '#shared/feedback'
 import type { ItemAttachment } from '#shared/itemAttachments'
+import { can } from '#shared/roles'
 import { BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, rankBetween, type BoardConfig, type BoardItem, type BoardItemPriority, type BoardRoadmapLayout } from '#shared/board'
 import type { ConversationPriority } from '#shared/support'
 import type { AdminProject } from '~~/server/utils/projects'
@@ -308,7 +313,7 @@ type HumanAgent = { id: string, username: string, email: string, name: string }
 const route = useRoute()
 const router = useRouter()
 const id = String(route.params.id)
-const { api, projects, loadProjects } = useAgent()
+const { api, projects, loadProjects, context } = useAgent()
 const toast = useToast()
 const { t } = useI18n()
 const appUrl = useAppUrl()
@@ -416,6 +421,9 @@ async function loadItems() {
 
 // ---- drag and drop ----
 const dragging = ref('')
+/** A column dragged by its header (admins only): its status key. */
+const draggingColumn = ref('')
+const canManage = computed(() => can(context.value?.role, 'projects.manage'))
 const dragOver = ref('')
 /** The card the drop lands before; '' is the end of the column. */
 const dropBefore = ref('')
@@ -430,8 +438,17 @@ function startDrag(event: DragEvent, item: BoardItem) {
 
 function endDrag() {
   dragging.value = ''
+  draggingColumn.value = ''
   dragOver.value = ''
   dropBefore.value = ''
+}
+
+function startColumnDrag(event: DragEvent, key: string) {
+  draggingColumn.value = key
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', key)
+  }
 }
 
 function enterColumn(key: string) {
@@ -449,7 +466,25 @@ function overCard(event: DragEvent, key: string, index: number) {
   dropBefore.value = after ? (list[index + 1]?.id || '') : list[index]!.id
 }
 
+/** A column dropped on another takes its place: the statuses are saved in that order, and a failed save puts the old order back. */
+async function moveColumn(from: string, to: string) {
+  endDrag()
+  const current = project.value
+  if (!current?.board || !listsConfig.value || from === to) return
+  const statuses = current.board.statuses
+  const next = [...statuses]
+  const [moved] = next.splice(statuses.findIndex(s => s.key === from), 1)
+  next.splice(statuses.findIndex(s => s.key === to), 0, moved!)
+  storeProject({ ...current, board: { ...current.board, statuses: next } })
+  await saveLists({ ...listsConfig.value, statuses: next })
+  if (listsError.value) {
+    storeProject(current)
+    actionError.value = listsError.value
+  }
+}
+
 async function dropOn(status: string) {
+  if (draggingColumn.value) return moveColumn(draggingColumn.value, status)
   const item = items.value.find(i => i.id === dragging.value)
   const before = dropBefore.value
   endDrag()

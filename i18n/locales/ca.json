@@ -314,6 +314,7 @@
     "columnNamePlaceholder": "Per exemple: Per provar",
     "columnCategoryHelp": "El que significa la columna. Els elements oberts es mantenen privats.",
     "columnExists": "Ja existeix una columna amb aquest nom.",
+    "dragColumn": "Arrossega per reordenar la columna",
     "publicRoadmap": "Full de ruta públic",
     "openRoadmap": "Obre el full de ruta públic",
     "newItem": "Nou element",

@@ -314,6 +314,7 @@
     "columnNamePlaceholder": "Por ejemplo: Para probar",
     "columnCategoryHelp": "Lo que significa la columna. Los elementos abiertos siguen privados.",
     "columnExists": "Ya existe una columna con este nombre.",
+    "dragColumn": "Arrastra para reordenar la columna",
     "publicRoadmap": "Hoja de ruta pública",
     "openRoadmap": "Abrir la hoja de ruta pública",
     "newItem": "Nuevo elemento",

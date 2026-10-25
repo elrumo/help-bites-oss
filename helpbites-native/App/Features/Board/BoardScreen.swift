@@ -168,6 +168,25 @@ struct BoardScreen: View {
     _ = try await saveLists(lists)
   }
 
+  /// A column dragged by its header carries this prefix in its drag String, so a drop can tell it from a card id.
+  static let columnDragPrefix = "column:"
+
+  /// Admins drag a column onto another: the statuses are saved in that order, and a failed save puts the old order back.
+  func moveColumn(_ from: String, before target: String) async {
+    guard session.canManage, let current = config, from != target else { return }
+    guard let at = current.statuses.firstIndex(where: { $0.key == from }), let to = current.statuses.firstIndex(where: { $0.key == target }) else { return }
+    var next = current
+    let moved = next.statuses.remove(at: at)
+    next.statuses.insert(moved, at: to)
+    config = next
+    do {
+      _ = try await saveLists(next.settingsForm)
+    } catch {
+      config = current
+      alert = error.localizedDescription
+    }
+  }
+
   // MARK: Items
 
   func create(_ fields: [String: JSONValue]) async throws -> BoardItem {
@@ -563,14 +582,7 @@ private struct BoardColumn: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      HStack {
-        FeedbackStatusBadge(status: status)
-        Spacer()
-        Text("\(items.count)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
-      }
-      .padding(.horizontal, 12)
-      .padding(.top, 12)
-      .padding(.bottom, 8)
+      header
 
       ScrollView {
         LazyVStack(spacing: 8) {
@@ -593,9 +605,35 @@ private struct BoardColumn: View {
     .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(targeted && targetedCard == nil ? Theme.accent : Color.clear, lineWidth: 2))
     .dropDestination(for: String.self) { ids, _ in
       guard let id = ids.first else { return false }
+      if let from = columnKey(id) {
+        Task { await store.moveColumn(from, before: status.key) }
+        return true
+      }
       Task { await store.move(id, to: status.key, before: nil) }
       return true
     } isTargeted: { targeted = $0 }
+  }
+
+  /// The title row. Admins drag it to move the column; everyone else sees the same row.
+  @ViewBuilder private var header: some View {
+    let row = HStack {
+      FeedbackStatusBadge(status: status)
+      Spacer()
+      Text("\(items.count)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
+    }
+    .padding(.horizontal, 12)
+    .padding(.top, 12)
+    .padding(.bottom, 8)
+    if store.session.canManage {
+      row.draggable(BoardStore.columnDragPrefix + status.key)
+    } else {
+      row
+    }
+  }
+
+  /// The status key of a column dragged by its header; nil for a card id.
+  private func columnKey(_ id: String) -> String? {
+    id.hasPrefix(BoardStore.columnDragPrefix) ? String(id.dropFirst(BoardStore.columnDragPrefix.count)) : nil
   }
 
   private func card(_ item: BoardItem) -> some View {
@@ -609,6 +647,10 @@ private struct BoardColumn: View {
       }
       .dropDestination(for: String.self) { ids, _ in
         guard let id = ids.first, id != item.id else { return false }
+        if let from = columnKey(id) {
+          Task { await store.moveColumn(from, before: status.key) }
+          return true
+        }
         Task { await store.move(id, to: status.key, before: item.id) }
         return true
       } isTargeted: { on in

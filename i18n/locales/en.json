@@ -371,6 +371,7 @@
     "columnNamePlaceholder": "For example: To test",
     "columnCategoryHelp": "What the column means. Open items stay private.",
     "columnExists": "A column with this name already exists.",
+    "dragColumn": "Drag to reorder the column",
     "publicRoadmap": "Public roadmap",
     "openRoadmap": "Open the public roadmap",
     "newItem": "New item",

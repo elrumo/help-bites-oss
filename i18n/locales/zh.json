@@ -314,6 +314,7 @@
     "columnNamePlaceholder": "例如：待测试",
     "columnCategoryHelp": "列的含义。「待开始」的事项保持私密。",
     "columnExists": "已存在同名的列。",
+    "dragColumn": "拖动以调整列的顺序",
     "publicRoadmap": "公开路线图",
     "openRoadmap": "打开公开路线图",
     "newItem": "新建条目",

@@ -296,7 +296,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Planning.** Linear-style items on a kanban: title, Markdown description,
   status, priority, assignee, labels, target date and `#number`. Drag to move or
   reorder. Add a column from the tile after the last one: a name and a category,
-  which decides whether its items show on the roadmap.
+  which decides whether its items show on the roadmap. Admins reorder columns by
+  dragging a column's header onto another.
 - **Links.** Connect an item to up to 50 feedback posts and 50 conversations.
   Votes add up across the linked posts. Search feedback to attach it to an item
   (or while creating one); right-click a post, or use its Planning button, to

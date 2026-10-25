@@ -256,7 +256,8 @@ Project → **Planning** → *Turn on planning*.
   priority, an assignee, labels, a target date and a `#number`. Drag a card
   across columns to change its status, or within one to reorder it; the order
   is kept. The tile after the last column adds one: a name and a category, saved
-  with the board's statuses (the same list as Settings). `?item=<id>` opens an
+  with the board's statuses (the same list as Settings). Admins drag a column's
+  header onto another to reorder them. `?item=<id>` opens an
   item, so links to it can be shared.
 - **Links.** An item links up to 50 feedback posts and 50 conversations. In the
   item, *Link post* takes a post's `#N`. In the inbox, a conversation's
