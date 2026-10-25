@@ -122910,6 +122910,40 @@
         }
       }
     },
+    "Write title and summary with AI" : {
+      "localizations" : {
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escriu el títol i el resum amb IA"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escribir título y resumen con IA"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI でタイトルと概要を書く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI로 제목과 요약 작성"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用 AI 撰写标题和摘要"
+          }
+        }
+      }
+    },
     "Writing…" : {
       "localizations" : {
         "ca" : {

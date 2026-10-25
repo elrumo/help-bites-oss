@@ -5,6 +5,7 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **AI title and summary for a release** (web and native): the release editor has a *Write title and summary with AI* button that reads the release's entries and fills the form; nothing is saved until you press Save. New `POST /v1/admin/changelog/releases/:id/suggest` returns `{ title, summary }` (`docs/FEEDBACK.md`). Needs an AI provider; no schema or env change.
 - **Reorder columns on Planning** (web and native, admins): drag a column's header onto another to move it. The new order is saved with the board's statuses through the same `PATCH /v1/admin/projects/:id`; no schema or env change.
 - **Attachments in the AI chat** (web and native): paste, drop or pick images and files in the chat; every card the message creates gets them. `POST /v1/admin/projects/:id/ai-cards` takes `attachments` (from `POST /v1/feedback/attachments`). No schema or env change.
 - **The AI chat on Planning changes items too** (web and native): it can change existing items (status, priority, labels, title, description, target date, public flag), and relate items to each other, in the same message that files new ones. Related items are a new two-way link between board items: *Related items* in the item editor (web and native), `kind: "item"` on `POST /v1/admin/board-items/:id/links`, and `relatedItemIds` on `BoardItem`. `POST /v1/admin/projects/:id/ai-cards` returns `updated`. Run `bun scripts/ensure-schema.mjs` on upgrade (new `relatedItemIds` field). No env change.

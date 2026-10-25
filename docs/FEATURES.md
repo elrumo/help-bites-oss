@@ -325,6 +325,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   Breaking, and group into versioned releases.
 - **Review before publishing.** Approve or reject a draft. Nothing is public until
   it is published. Archive or merge entries.
+- **AI release copy.** A release's editor (panel and native app) has an AI button
+  that reads the release's entries and fills in its title and summary. Nothing is
+  saved until you press Save.
 - **Move between releases.** In the panel, drag an entry onto a release (or onto
   *No release*). The native app moves it with the entry's Release field.
 - **Drafts from shipped work.** With auto-draft on, a done post or planning item

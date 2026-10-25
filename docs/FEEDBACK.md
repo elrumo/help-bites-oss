@@ -547,6 +547,7 @@ Every route is in the OpenAPI spec, tag *Changelog*.
 | `GET`/`POST /v1/admin/changelog/releases` | List or create `{ version, title, summary }` |
 | `PATCH`/`DELETE /v1/admin/changelog/releases/:id` | Edit, or delete (its entries stay, with no release) |
 | `POST /v1/admin/changelog/releases/:id/publish` | Publish the release and its draft entries |
+| `POST /v1/admin/changelog/releases/:id/suggest` | Operator, `ak_` key or secret. The AI reads the release's entries (drafts and published, up to 150) and returns `{ title, summary }`. Nothing is saved: keep it with `PATCH` on the release. `400` when the release has no entries, `501` without an AI provider, `502` when the model's answer is unusable; 20 a minute per project. The release editor's AI button in the panel and the app calls it |
 
 A release script is two calls: create the release, then post each entry with
 `releaseId`, then publish the release. If you think in versions rather than release

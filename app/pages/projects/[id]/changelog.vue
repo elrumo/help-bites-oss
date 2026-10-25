@@ -247,6 +247,7 @@
           <UFormField :label="$t('changelog.summary')" :hint="$t('changelog.summaryHint')">
             <UTextarea variant="subtle" v-model="releaseDraft.summary" :rows="3" autoresize :maxrows="12" class="w-full" :maxlength="2000" />
           </UFormField>
+          <UButton v-if="releaseDraft.id" :label="$t('changelog.releaseWriteAi')" icon="i-lucide-sparkles" color="primary" variant="soft" size="sm" :loading="writingRelease" @click="writeRelease" />
           <p v-if="releaseError" class="text-sm text-error">{{ releaseError }}</p>
         </form>
       </template>
@@ -760,6 +761,7 @@ const releaseDraft = reactive({ id: '', version: '', title: '', summary: '' })
 const releaseError = ref('')
 const savingRelease = ref(false)
 const confirmDeleteRelease = ref(false)
+const writingRelease = ref(false)
 const publishing = ref('')
 
 function openNewRelease() {
@@ -791,6 +793,21 @@ async function saveRelease() {
     releaseError.value = e?.message || t('changelog.releaseSaveError')
   } finally {
     savingRelease.value = false
+  }
+}
+
+/** The AI reads the release's entries and fills the form; nothing is saved until Save. */
+async function writeRelease() {
+  writingRelease.value = true
+  releaseError.value = ''
+  try {
+    const copy = await api<{ title: string, summary: string }>(`/admin/changelog/releases/${releaseDraft.id}/suggest`, { method: 'POST' })
+    if (copy.title) releaseDraft.title = copy.title
+    if (copy.summary) releaseDraft.summary = copy.summary
+  } catch (e: any) {
+    releaseError.value = e?.message || t('changelog.releaseWriteAiError')
+  } finally {
+    writingRelease.value = false
   }
 }
 

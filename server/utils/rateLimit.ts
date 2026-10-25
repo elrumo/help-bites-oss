@@ -60,6 +60,8 @@ export const LIMITS = {
   // AI changelog runs cost credits: by hand, and from GitHub pushes.
   changelogGeneratePerProject: { limit: 10, window: 3600 },
   changelogPushPerProject: { limit: 20, window: 3600 },
+  // One AI call per press of a release's AI button.
+  changelogReleaseAiPerProject: { limit: 20, window: 60 },
   emailSharePerIp: { limit: 300, window: 60 },
   emailSendsPerProject: { limit: 120, window: 60 },
   emailRendersPerProject: { limit: 300, window: 60 },

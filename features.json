@@ -676,7 +676,7 @@
       "id": "changelog",
       "name": "Changelog",
       "category": "product",
-      "summary": "Entries grouped into releases, with up to 10 images each, drafted from shipped work, public page, JSON, RSS, digest emails, reader comments, git CLI. When an entry ships, the followers of the posts it answers are emailed once, and the editor offers a reply to the conversations it answers. The public page and embed wear the project's style in light and dark, or the changelog's own over it.",
+      "summary": "Entries grouped into releases, with up to 10 images each, drafted from shipped work, public page, JSON, RSS, digest emails, reader comments, git CLI. When an entry ships, the followers of the posts it answers are emailed once, and the editor offers a reply to the conversations it answers. A release's editor has an AI button that reads its entries and writes the title and summary. The public page and embed wear the project's style in light and dark, or the changelog's own over it.",
       "editions": [
         "community",
         "cloud"

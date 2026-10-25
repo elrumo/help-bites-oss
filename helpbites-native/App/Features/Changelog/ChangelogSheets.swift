@@ -48,6 +48,7 @@ struct ChangelogReleaseSheet: View {
   @State private var title: String
   @State private var summary: String
   @State private var saving = false
+  @State private var writing = false
   @State private var confirmDelete = false
   @State private var error = ""
   @Environment(\.dismiss) private var dismiss
@@ -72,6 +73,10 @@ struct ChangelogReleaseSheet: View {
       }
       LabeledField(label: "Title", hint: "Optional headline") { TextField("The autumn release", text: $title).textFieldStyle(.linear) }
       LabeledField(label: "Summary", hint: "Optional intro, Markdown") { LinearTextEditor(text: $summary, minHeight: 90) }
+      if release != nil {
+        Button { Task { await write() } } label: { Label(writing ? "Writing…" : "Write title and summary with AI", systemImage: "sparkles") }
+          .buttonStyle(.lnSecondaryCompact).disabled(writing)
+      }
       ErrorText(message: error)
       if release != nil {
         Button(role: .destructive) { confirmDelete = true } label: { Label("Delete release", systemImage: "trash") }.buttonStyle(.lnGhost).tint(Theme.error)
@@ -94,6 +99,21 @@ struct ChangelogReleaseSheet: View {
     do {
       try await store.saveRelease(id: releaseId, version: version.trimmingCharacters(in: .whitespacesAndNewlines), title: title, summary: summary)
       dismiss()
+    } catch {
+      self.error = error.localizedDescription
+    }
+  }
+
+  /// The AI reads the release's entries and fills the form; nothing is saved until Save.
+  private func write() async {
+    guard let releaseId else { return }
+    writing = true
+    defer { writing = false }
+    error = ""
+    do {
+      let copy = try await store.suggestRelease(releaseId)
+      if !copy.title.isEmpty { title = copy.title }
+      if !copy.summary.isEmpty { summary = copy.summary }
     } catch {
       self.error = error.localizedDescription
     }

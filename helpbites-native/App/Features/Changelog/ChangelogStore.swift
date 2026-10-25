@@ -320,6 +320,13 @@ enum ChangelogFilter: String, CaseIterable, Identifiable {
     if let index = releases.firstIndex(where: { $0.id == result.release.id }) { releases[index] = result.release } else { releases.insert(result.release, at: 0) }
   }
 
+  struct ReleaseCopy: Decodable, Sendable { let title: String; let summary: String }
+
+  /// The AI's headline and intro for the release, from its entries. Nothing is saved.
+  func suggestRelease(_ id: String) async throws -> ReleaseCopy {
+    try await session.send("/v1/admin/changelog/releases/\(id)/suggest")
+  }
+
   /// Publishes the release and its draft entries, which go out with it.
   func publishRelease(_ release: ChangelogRelease) async {
     bulkBusy = release.id

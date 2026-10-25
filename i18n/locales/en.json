@@ -656,6 +656,8 @@
     "versionHint": "Free text: 2.4, 2026.10…",
     "optionalHeadline": "Optional headline",
     "releasePlaceholder": "The autumn release",
+    "releaseWriteAi": "Write title and summary with AI",
+    "releaseWriteAiError": "The AI could not write this release.",
     "summaryHint": "Optional intro, Markdown",
     "images": "Images",
     "imagesHint": "Shown under the text, in this order. PNG, JPEG, GIF or WebP, up to 8 MB each.",
