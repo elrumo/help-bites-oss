@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROADMAP_CATEGORIES } from '../shared/board'
+import { BOARD_TITLE_DEBOUNCE_MS, BOARD_TITLE_MAX, fallbackBoardTitle } from '../shared/boardTitle'
 import { ITEM_ATTACHMENTS_MAX } from '../shared/itemAttachments'
 import { ATTACHMENT_MAX_BYTES, CONVERSATION_PRIORITIES } from '../shared/support'
 
@@ -41,4 +42,17 @@ test('the extension is in the Xcode project, with every source file, and activat
   expect(project).toContain('SharedCredentials.swift in Sources')
   // A bare TRUEPREDICATE rule is rejected by App Review.
   expect(read('HelpBitesShare/Info.plist')).not.toContain('TRUEPREDICATE')
+})
+
+test('the native title helpers match shared/boardTitle.ts', () => {
+  const swift = read('App/Core/BoardTitle.swift')
+  expect(swift).toContain(`static let maxLength = ${BOARD_TITLE_MAX}`)
+  expect(swift).toContain(`static let debounce = ${BOARD_TITLE_DEBOUNCE_MS / 1000}`)
+  // The fallback cuts at 80 characters, not before the 40th, and ends with an ellipsis: the same as the TypeScript one.
+  expect(swift).toContain('line.count <= 80')
+  expect(swift).toContain('max(space, 40)')
+  expect(fallbackBoardTitle('word '.repeat(40)).endsWith('…')).toBe(true)
+  const project = read('HelpBitesNative.xcodeproj/project.pbxproj')
+  expect(project.match(/BoardTitle\.swift in Sources/g)?.length).toBe(4) // the app and the extension, each a build file and a phase entry
+  expect(read('project.yml')).toContain('App/Core/BoardTitle.swift')
 })

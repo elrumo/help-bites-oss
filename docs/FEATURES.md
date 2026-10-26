@@ -299,6 +299,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   reorder. Type a new name in an item's label picker to create the label. Add a column from the tile after the last one: a name and a category,
   which decides whether its items show on the roadmap. Admins reorder columns by
   dragging a column's header onto another.
+- **AI titles.** A new item with no title gets one written by the AI from its description: a second after you stop
+  typing, or when you press Create. A sparkles button in the title field writes (or rewrites) it on demand, with a spinner
+  in the field while it works. Panel, native app and the iOS share sheet.
+  [FEEDBACK.md](FEEDBACK.md#the-api)
 - **Add to Planning from the share sheet** (iPhone and iPad). Share a screenshot, photo, link or text from any
   app and file it as an item: a sheet with every field of *New item*, the shared image attached and uploaded, more
   images on request. [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)

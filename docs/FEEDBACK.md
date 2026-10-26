@@ -383,6 +383,13 @@ done status. From then on Planning's public items are the roadmap.
   Moving a card is a `PATCH` with `status` and a `rank` between its new
   neighbours (lower ranks come first).
 
+`POST /v1/admin/board-items/suggest-title?project=<id>` with `{ "description": "…" }` has the AI propose a short title
+(in the description's language) and returns `{ title }`; nothing is saved, so you send it as `title` to
+`POST /v1/admin/board-items`. It is what the panel, the app and the iOS share sheet use when you create an item with no
+title (the first line of the description stands in when no AI is configured, so creating never stalls), a second after you
+stop typing the description of a new item, and from the sparkles button in the title field (which also replaces a title). `501` with no AI
+provider, `502` when the AI gives no usable answer, `429` past 30 a minute per project. Metered like every AI call.
+
 `POST /v1/admin/board-items/from-feedback?project=<id>` with `{ "postId": "#12", "ai": true }` files items
 for a post and links it to each: `{ item, items, ai }` (`item` is the first; `ai` says whether the AI wrote
 them; `"ai": false` copies the post without calling it). It can take several seconds with AI on, is

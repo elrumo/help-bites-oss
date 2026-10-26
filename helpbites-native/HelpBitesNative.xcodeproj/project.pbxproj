@@ -210,6 +210,8 @@
 		CDECBE97045CC1301FFAF4AA /* ShareClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46FF81A049E3F14A903CD5E9 /* ShareClient.swift */; };
 		1C94E4770FE83C706E00E2C9 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0A9CB75A6EE92A1A726CAE7F /* Localizable.xcstrings */; };
 		4EB3B6D6BDEDF3F3257DEC49 /* HelpBitesShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5FD4CBC70073D1DE8DD5D103 /* HelpBitesShare.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		90D5641DB62A7D0E0F98CAA5 /* BoardTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63F8923A21E11FF44DD04268 /* BoardTitle.swift */; };
+		860F8411FFB033B92176764E /* BoardTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63F8923A21E11FF44DD04268 /* BoardTitle.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -446,6 +448,7 @@
 		0A9CB75A6EE92A1A726CAE7F /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		5FD4CBC70073D1DE8DD5D103 /* HelpBitesShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HelpBitesShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		4BC3FBF3ABF98753D3942FC4 /* SharedCredentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedCredentials.swift; sourceTree = "<group>"; };
+		63F8923A21E11FF44DD04268 /* BoardTitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardTitle.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -625,6 +628,7 @@
 				68DBB4A69ADAEAC123BC84F3 /* Push.swift */,
 				0B7BEE5E7F23E7B55139DD5A /* SessionStore.swift */,
 				3BDF78242011AA6890A8C4B1 /* SnapshotCache.swift */,
+				63F8923A21E11FF44DD04268 /* BoardTitle.swift */,
 				4BC3FBF3ABF98753D3942FC4 /* SharedCredentials.swift */,
 			);
 			path = Core;
@@ -1194,6 +1198,7 @@
 				D9058861ACE2717C769DDE31 /* SettingsKit.swift in Sources */,
 				BE571F9F938FAF87BB1A9ED0 /* SettingsScreen.swift in Sources */,
 				4F008105786F4BB1CD645E69 /* SnapshotCache.swift in Sources */,
+				90D5641DB62A7D0E0F98CAA5 /* BoardTitle.swift in Sources */,
 				F9B147A411ACDBF83206F968 /* SharedCredentials.swift in Sources */,
 				741F75DC9DBF70BDBABAB4F0 /* TeamInvite.swift in Sources */,
 				01C093A3256DD469F2321DCD /* TeamScreen.swift in Sources */,
@@ -1214,6 +1219,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C8F589F30527859F46CA5245 /* SharedCredentials.swift in Sources */,
+				860F8411FFB033B92176764E /* BoardTitle.swift in Sources */,
 				CDECBE97045CC1301FFAF4AA /* ShareClient.swift in Sources */,
 				24D6733B4384E71968658BC8 /* ShareModel.swift in Sources */,
 				FDC3866F9912AF2100B7360D /* ShareView.swift in Sources */,

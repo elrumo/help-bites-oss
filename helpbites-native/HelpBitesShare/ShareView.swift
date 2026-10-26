@@ -26,6 +26,8 @@ struct ShareView: View {
     }
     .background(Color(.systemGroupedBackground))
     .tint(Self.accent)
+    // A new item with no title gets one a second after the description stops changing (or once the form is ready).
+    .task(id: "\(model.phase == .ready)|\(model.details)") { await model.writeTitleAfterPause() }
     .sheet(isPresented: $pickingPost) {
       SharePostPicker(model: model) { model.posts.append($0) }
     }
@@ -106,11 +108,14 @@ struct ShareView: View {
       .shareCard()
     }
 
-    TextField("Title", text: $model.title)
-      .font(.title3)
-      .submitLabel(.next)
-      .onChange(of: model.title) { _, value in if value.count > 200 { model.title = String(value.prefix(200)) } }
-      .shareCard()
+    HStack(spacing: 8) {
+      TextField("Title", text: $model.title)
+        .font(.title3)
+        .submitLabel(.next)
+        .onChange(of: model.title) { _, value in if value.count > BoardTitle.maxLength { model.title = String(value.prefix(BoardTitle.maxLength)) } }
+      titleAccessory
+    }
+    .shareCard()
 
     ZStack(alignment: .topLeading) {
       if model.details.isEmpty {
@@ -137,6 +142,21 @@ struct ShareView: View {
       labels(board)
       feedback
       roadmap(board)
+    }
+  }
+
+  /// While the AI writes the title, a spinner; otherwise the button that writes it from the description.
+  @ViewBuilder private var titleAccessory: some View {
+    if !model.details.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      if model.writingTitle {
+        ProgressView().accessibilityLabel("Writing the title…")
+      } else {
+        Button { Task { await model.writeTitle(manual: true) } } label: {
+          Image(systemName: "sparkles").font(.title3).foregroundStyle(Self.accent).frame(width: 32, height: 32).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Write the title with AI")
+      }
     }
   }
 

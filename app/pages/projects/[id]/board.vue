@@ -143,7 +143,14 @@
       <template #body>
         <div v-if="board" class="space-y-6">
           <div class="space-y-2">
-            <UInput v-model="draft.title" :placeholder="$t('board.title')" variant="none" size="xl" class="w-full" :ui="{ base: 'px-0 text-lg font-semibold' }" :maxlength="200" :aria-label="$t('board.title')" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')" />
+            <UInput v-model="draft.title" :placeholder="$t('board.title')" variant="none" size="xl" class="w-full" :ui="{ base: 'px-0 text-lg font-semibold' }" :maxlength="200" :aria-label="$t('board.title')" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')">
+              <template v-if="draft.description.trim()" #trailing>
+                <UIcon v-if="writingTitle" name="i-lucide-loader-circle" class="size-4 animate-spin text-muted" :aria-label="$t('board.titleWriting')" />
+                <UTooltip v-else :text="$t('board.titleWriteAi')">
+                  <UButton icon="i-lucide-sparkles" color="neutral" variant="ghost" size="xs" :aria-label="$t('board.titleWriteAi')" @click="writeTitle({ manual: true })" />
+                </UTooltip>
+              </template>
+            </UInput>
             <UTextarea v-model="draft.description" :placeholder="$t('board.descriptionPlaceholder')" variant="none" :rows="3" autoresize :maxrows="18" class="w-full" :ui="{ base: 'px-0' }" :aria-label="$t('board.description')" @blur="saveText('description')" />
           </div>
 
@@ -270,7 +277,7 @@
           <span v-if="current" class="ml-auto text-xs text-muted">{{ savingItem ? $t('board.saving') : $t('board.changesSave') }}</span>
           <template v-else>
             <UButton class="ml-auto" :label="$t('common.cancel')" color="neutral" variant="ghost" @click="editorOpen = false" />
-            <UButton :label="$t('board.createItem')" color="primary" :loading="savingItem" :disabled="!draft.title.trim()" @click="createItem" />
+            <UButton :label="$t('board.createItem')" color="primary" :loading="savingItem" :disabled="!draft.title.trim() && !draft.description.trim()" @click="createItem" />
           </template>
         </div>
       </template>
@@ -309,9 +316,11 @@
 
 <script setup lang="ts">
 import Fuse from 'fuse.js'
+import { watchDebounced } from '@vueuse/core'
 import { DEFAULT_FEEDBACK_CONFIG, FEEDBACK_STATUS_CATEGORIES, defaultFeedbackStatus, feedbackStatusCategory, normalizeFeedbackKey, type FeedbackBoardConfig, type FeedbackColor, type FeedbackStatusCategory } from '#shared/feedback'
 import type { ItemAttachment } from '#shared/itemAttachments'
 import { can } from '#shared/roles'
+import { BOARD_TITLE_DEBOUNCE_MS, fallbackBoardTitle } from '#shared/boardTitle'
 import { BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, rankBetween, type BoardConfig, type BoardItem, type BoardItemPriority, type BoardRoadmapLayout } from '#shared/board'
 import type { ConversationPriority } from '#shared/support'
 import type { AdminProject } from '~~/server/utils/projects'
@@ -554,6 +563,9 @@ const draftAssignee = computed(() => agents.value.find(agent => agent.id === dra
 const roadmapStatus = computed(() => ROADMAP_CATEGORIES.includes(statusOf(draft.status)?.category || 'open'))
 const editorError = ref('')
 const savingItem = ref(false)
+const writingTitle = ref(false)
+/** Which title request counts: a newer one, or closing the editor, makes an older answer stale. */
+let titleRun = 0
 const confirmDelete = ref(false)
 const linking = ref(false)
 
@@ -580,6 +592,8 @@ function openItem(itemId: string) {
 }
 
 function openNew() {
+  titleRun++
+  writingTitle.value = false
   editingId.value = ''
   fill(null)
   editorOpen.value = true
@@ -602,6 +616,8 @@ watch(() => [route.query.item, loading.value, items.value.length] as const, ([wa
 
 watch(editorOpen, (open) => {
   if (open) return
+  titleRun++
+  writingTitle.value = false
   editingId.value = ''
   if (route.query.item) void router.replace({ query: { ...route.query, item: undefined } })
 })
@@ -644,11 +660,44 @@ async function createLabel(name: string) {
   if (current.value) await patch({ labels: draft.labels })
 }
 
+/**
+ * The AI reads the description and writes the title (shown in the field while it works).
+ * `manual` is the AI button: it replaces a title and says why when it fails. Otherwise a title typed in the meantime stays.
+ */
+async function writeTitle({ manual = false } = {}) {
+  const description = draft.description.trim()
+  if (!description) return
+  const run = ++titleRun
+  writingTitle.value = true
+  if (manual) editorError.value = ''
+  try {
+    const { title } = await api<{ title: string }>('/admin/board-items/suggest-title', { method: 'POST', query: { project: id }, body: { description } })
+    if (run !== titleRun || (!manual && draft.title.trim())) return
+    draft.title = title
+    if (current.value) saveText('title')
+  } catch (e: any) {
+    if (manual && run === titleRun) editorError.value = e?.message || t('board.titleWriteError')
+  } finally {
+    if (run === titleRun) writingTitle.value = false
+  }
+}
+
+// A new item with no title gets one a second after the description stops changing.
+watchDebounced(() => draft.description, () => {
+  if (current.value || !editorOpen.value || draft.title.trim() || !draft.description.trim()) return
+  void writeTitle()
+}, { debounce: BOARD_TITLE_DEBOUNCE_MS })
+
 async function createItem() {
-  if (!draft.title.trim()) return
+  if (!draft.title.trim() && !draft.description.trim()) return
   savingItem.value = true
   editorError.value = ''
   try {
+    // Create with no title: the AI writes it now; with no AI, the description's first line stands in.
+    if (!draft.title.trim()) {
+      await writeTitle()
+      if (!draft.title.trim()) draft.title = fallbackBoardTitle(draft.description)
+    }
     const { item } = await api<{ item: BoardItem }>('/admin/board-items', {
       method: 'POST',
       query: { project: id },
