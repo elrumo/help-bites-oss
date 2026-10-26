@@ -181,6 +181,7 @@
 		D9058861ACE2717C769DDE31 /* SettingsKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8771AC82148E4150786C57 /* SettingsKit.swift */; };
 		D9CEC0DF51ED70F55EC47C24 /* EmailSuppressionsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4711D007B64E1D08792D8CF0 /* EmailSuppressionsScreen.swift */; };
 		DAF41F9DA581B41B066F0643 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = F566C847DA17376021C6A1F5 /* Components.swift */; };
+		F2182846542EF03C5AECA745 /* PasteTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5820CC493D5E44627FF2DDE6 /* PasteTextView.swift */; };
 		DCF72483AEF92CD1A9C4C911 /* InboxScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05751387C8F6444ACF3826AB /* InboxScreen.swift */; };
 		DD90306D989E9CF6954EBC66 /* FeedbackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F685F682E640A82AD6F5CF0D /* FeedbackModels.swift */; };
 		DE0B62D726A764904B58D84C /* NewWorkspaceSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19D1594D7BD0E5AB18C737A2 /* NewWorkspaceSheet.swift */; };
@@ -394,6 +395,7 @@
 		F2E26C1688D2BB2346355549 /* PricingPlanEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingPlanEditor.swift; sourceTree = "<group>"; };
 		F3A8133AAF31EE866C4EB75F /* FlagsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlagsScreen.swift; sourceTree = "<group>"; };
 		F566C847DA17376021C6A1F5 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		5820CC493D5E44627FF2DDE6 /* PasteTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteTextView.swift; sourceTree = "<group>"; };
 		F685F682E640A82AD6F5CF0D /* FeedbackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackModels.swift; sourceTree = "<group>"; };
 		F7FFC773425AFD980758F3B2 /* HelpBitesNative.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelpBitesNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F913050CBAD078D07EAAD064 /* TestflightSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestflightSection.swift; sourceTree = "<group>"; };
@@ -419,6 +421,7 @@
 			isa = PBXGroup;
 			children = (
 				F566C847DA17376021C6A1F5 /* Components.swift */,
+				5820CC493D5E44627FF2DDE6 /* PasteTextView.swift */,
 				AF53C87F2C1B484C2AE8F9B9 /* Glyphs.swift */,
 				EADCA1EE05A71ED71E674DB5 /* LanguageControls.swift */,
 				5D85E56A5924EFCF147316F6 /* ProjectChrome.swift */,
@@ -961,6 +964,7 @@
 				59574AA5C6720ABD7EFD4D78 /* ChangelogStore.swift in Sources */,
 				9D504AE11A190B6A1B070F92 /* ChangelogStyleSheet.swift in Sources */,
 				DAF41F9DA581B41B066F0643 /* Components.swift in Sources */,
+				F2182846542EF03C5AECA745 /* PasteTextView.swift in Sources */,
 				BCAF3040D52B6572E6910794 /* ConnectErrorTrackingSheet.swift in Sources */,
 				36C3A0892A450753190941C0 /* ConnectionsErrors.swift in Sources */,
 				ECF6762EF7BE346E6F5B061E /* ConnectionsGithub.swift in Sources */,

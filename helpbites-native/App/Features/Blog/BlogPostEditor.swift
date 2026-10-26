@@ -270,9 +270,9 @@ struct BlogPostEditor: View {
             .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
         }
       } else if isHTML {
-        LinearTextEditor(text: $draft.body, placeholder: "<p>HTML</p>", minHeight: 280, monospaced: true)
+        LinearTextEditor(text: $draft.body, placeholder: "<p>HTML</p>", minHeight: 280, monospaced: true, onPasteImage: { data in Task { await paste(data) } })
       } else {
-        LinearTextEditor(text: $draft.body, placeholder: String(localized: "Write in Markdown: ## for a heading, **bold**, - for a list"), minHeight: 280)
+        LinearTextEditor(text: $draft.body, placeholder: String(localized: "Write in Markdown: ## for a heading, **bold**, - for a list"), minHeight: 280, onPasteImage: { data in Task { await paste(data) } })
       }
       Text(isHTML
         ? "HTML, as it came in from Ghost: it stays HTML (the web's editor edits it visually). An image goes in where the text ends."
@@ -561,15 +561,30 @@ struct BlogPostEditor: View {
     }
     do {
       guard let data = try await item.loadTransferable(type: Data.self) else { throw APIError.server(String(localized: "Could not read that photo.")) }
-      let url = try await store.uploadImage(data)
-      if field == \BlogPostDraft.body {
-        let gap = draft.body.isEmpty || draft.body.hasSuffix("\n\n") ? "" : draft.body.hasSuffix("\n") ? "\n" : "\n\n"
-        draft.body += isHTML ? "\(gap)<p><img src=\"\(url)\" alt=\"\"></p>\n" : "\(gap)![](\(url))\n"
-      } else {
-        draft.coverImageUrl = url
-      }
+      try await place(data, into: field)
     } catch {
       self.error = error.localizedDescription
+    }
+  }
+
+  /// An image pasted into the body goes to the project's storage and to the end of the text, as a picked photo does.
+  private func paste(_ data: Data) async {
+    uploading = "body"
+    defer { uploading = "" }
+    do {
+      try await place(data, into: \BlogPostDraft.body)
+    } catch {
+      self.error = error.localizedDescription
+    }
+  }
+
+  private func place(_ data: Data, into field: WritableKeyPath<BlogPostDraft, String>) async throws {
+    let url = try await store.uploadImage(data)
+    if field == \BlogPostDraft.body {
+      let gap = draft.body.isEmpty || draft.body.hasSuffix("\n\n") ? "" : draft.body.hasSuffix("\n") ? "\n" : "\n\n"
+      draft.body += isHTML ? "\(gap)<p><img src=\"\(url)\" alt=\"\"></p>\n" : "\(gap)![](\(url))\n"
+    } else {
+      draft.coverImageUrl = url
     }
   }
 }

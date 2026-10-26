@@ -191,15 +191,21 @@ struct LinearTextEditor: View {
   var placeholder = ""
   var minHeight: CGFloat = 96
   var monospaced = false
+  /// With this, an image on the clipboard is passed here (as PNG) instead of pasted as text.
+  var onPasteImage: ((Data) -> Void)?
   var body: some View {
     ZStack(alignment: .topLeading) {
       if text.isEmpty {
         Text(placeholder).font(monospaced ? .lnMono : .lnBody).foregroundStyle(Theme.textDimmed).padding(.horizontal, 12).padding(.vertical, 10)
       }
-      TextEditor(text: $text)
-        .font(monospaced ? .lnMono : .lnBody)
-        .scrollContentBackground(.hidden)
-        .padding(.horizontal, 7).padding(.vertical, 2)
+      if let onPasteImage {
+        PasteTextView(text: $text, monospaced: monospaced, onPasteImage: onPasteImage)
+      } else {
+        TextEditor(text: $text)
+          .font(monospaced ? .lnMono : .lnBody)
+          .scrollContentBackground(.hidden)
+          .padding(.horizontal, 7).padding(.vertical, 2)
+      }
     }
     .frame(minHeight: minHeight)
     .background(Theme.field, in: RoundedRectangle(cornerRadius: Metrics.radius))

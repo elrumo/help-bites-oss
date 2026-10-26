@@ -844,8 +844,8 @@ repository. See [EDITIONS.md](EDITIONS.md).
   yours). Purchases are counted from Stripe, not the App Store, and the Swift
   snippet draws the cards template only. [PRICING.md](PRICING.md)
 - **Blog.** The native app edits a post's Markdown (or an imported post's HTML)
-  as text, with a preview: the rich editor is web-only, and images come from the
-  photo picker, not from a paste. No translations of posts
+  as text, with a preview: the rich editor is web-only. A pasted or picked image
+  goes where the text ends, not at the cursor. No translations of posts
   or the embed, no paid tiers for
   members-only posts (a member is a signed-in reader), images from a Ghost import
   stay on the old site, and no MCP tools for it yet. [BLOG.md](BLOG.md)
