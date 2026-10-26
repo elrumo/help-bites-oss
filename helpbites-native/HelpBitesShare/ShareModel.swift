@@ -41,6 +41,7 @@ struct SharedImage: Identifiable {
   var publicDescription = ""
   var sending = false
   var sent = false
+  var writingTitle = false
 
   static let priorities = ["urgent", "high", "normal", "low"]
   static let maxImages = 10
@@ -48,12 +49,14 @@ struct SharedImage: Identifiable {
   private static let maxImageBytes = 8 * 1024 * 1024
 
   private var client: ShareClient?
+  /// Which title request counts: a newer one makes an older answer stale.
+  private var titleRun = 0
   /// Uploads that went through, so a retry after a failed save does not send them twice.
   private var uploaded: [UUID: ShareAttachment] = [:]
 
   var project: ShareProject? { projects.first { $0.id == projectId } }
   var board: ShareBoard? { project?.board }
-  var canSend: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && project != nil && !sending && !sent }
+  var canSend: Bool { !(title.trimmed.isEmpty && details.trimmed.isEmpty) && project != nil && !sending && !sent }
 
   // MARK: Loading
 
@@ -261,6 +264,36 @@ struct SharedImage: Identifiable {
     return response.posts
   }
 
+  // MARK: Title
+
+  /// The AI reads the description and writes the title (a spinner shows in the field meanwhile). `manual` is the AI
+  /// button: it replaces a title and says why when it fails. Otherwise a title typed in the meantime stays.
+  func writeTitle(manual: Bool = false) async {
+    let description = details.trimmed
+    guard !description.isEmpty, let client, !projectId.isEmpty else { return }
+    struct Body: Encodable { let description: String }
+    struct Reply: Decodable { let title: String }
+    titleRun += 1
+    let run = titleRun
+    writingTitle = true
+    defer { if run == titleRun { writingTitle = false } }
+    do {
+      let reply: Reply = try await client.send("/v1/admin/board-items/suggest-title", query: ["project": projectId], body: Body(description: description))
+      guard run == titleRun, manual || title.trimmed.isEmpty else { return }
+      title = String(reply.title.prefix(BoardTitle.maxLength))
+    } catch {
+      if manual, run == titleRun { self.error = error.localizedDescription }
+    }
+  }
+
+  /// A new item with no title gets one a second after the description stops changing.
+  func writeTitleAfterPause() async {
+    guard phase == .ready, title.trimmed.isEmpty, !details.trimmed.isEmpty else { return }
+    try? await Task.sleep(for: .seconds(BoardTitle.debounce))
+    guard !Task.isCancelled else { return }
+    await writeTitle()
+  }
+
   // MARK: Send
 
   private struct NewItem: Encodable {
@@ -282,12 +315,17 @@ struct SharedImage: Identifiable {
     sending = true
     error = ""
     defer { sending = false }
+    // Send with no title: the AI writes it now; with no AI, the description's first line stands in.
+    if title.trimmed.isEmpty {
+      await writeTitle()
+      if title.trimmed.isEmpty { title = BoardTitle.fallback(details) }
+    }
     do {
       for image in images where uploaded[image.id] == nil {
         uploaded[image.id] = try await client.upload("/v1/feedback/attachments", query: ["project": project.id], file: image.data, filename: image.filename, mimeType: image.mime)
       }
       let item = NewItem(
-        title: String(title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200)),
+        title: String(title.trimmed.prefix(BoardTitle.maxLength)),
         description: details,
         publicDescription: publicDescription,
         labels: labels,
@@ -317,4 +355,8 @@ struct SharedImage: Identifiable {
     let parts = Calendar.current.dateComponents([.year, .month, .day], from: date)
     return String(format: "%04d-%02d-%02d", parts.year ?? 1970, parts.month ?? 1, parts.day ?? 1)
   }
+}
+
+private extension String {
+  var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
 }

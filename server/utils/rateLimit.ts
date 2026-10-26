@@ -62,6 +62,8 @@ export const LIMITS = {
   changelogPushPerProject: { limit: 20, window: 3600 },
   // One AI call per press of a release's AI button.
   changelogReleaseAiPerProject: { limit: 20, window: 60 },
+  // One AI call per title written for a planning item (a pause in typing, Create with no title, or the AI button).
+  boardTitleAiPerProject: { limit: 30, window: 60 },
   emailSharePerIp: { limit: 300, window: 60 },
   emailSendsPerProject: { limit: 120, window: 60 },
   emailRendersPerProject: { limit: 300, window: 60 },

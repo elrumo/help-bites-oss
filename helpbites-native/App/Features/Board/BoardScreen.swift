@@ -215,6 +215,14 @@ struct BoardScreen: View {
     return result.item
   }
 
+  /// The AI reads a description and proposes a title; nothing is saved.
+  func suggestTitle(_ description: String) async throws -> String {
+    struct Body: Encodable, Sendable { let description: String }
+    struct Reply: Decodable, Sendable { let title: String }
+    let reply: Reply = try await session.send("/v1/admin/board-items/suggest-title?project=\(projectId)", body: Body(description: description))
+    return reply.title
+  }
+
   /// Send only what changed; `.null` clears a value.
   func update(_ itemId: String, _ fields: [String: JSONValue]) async throws -> BoardItem {
     let result: ItemResponse = try await session.send("/v1/admin/board-items/\(itemId)", method: "PATCH", body: fields)

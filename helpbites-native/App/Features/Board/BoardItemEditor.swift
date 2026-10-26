@@ -16,6 +16,9 @@ struct BoardItemEditor: View {
   @State private var newPosts: [FeedbackPost] = []
   @State private var saving = false
   @State private var justSaved = false
+  @State private var writingTitle = false
+  /// Which title request counts: a newer one makes an older answer stale.
+  @State private var titleRun = 0
   @State private var linking = false
   @State private var confirmDelete = false
   @State private var error = ""
@@ -60,7 +63,7 @@ struct BoardItemEditor: View {
         ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
         ToolbarItem(placement: .confirmationAction) {
           Button(justSaved ? "Saved" : itemId == nil ? "Create" : "Save") { Task { await save() } }
-            .disabled(draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || saving || store.config == nil)
+            .disabled((draft.title.trimmed.isEmpty && (itemId != nil || draft.description.trimmed.isEmpty)) || saving || store.config == nil)
         }
       }
       .feedbackErrorAlert($error)
@@ -70,6 +73,13 @@ struct BoardItemEditor: View {
         Text("Its links go with it; the posts and conversations stay.")
       }
       .task { await load() }
+      // A new item with no title gets one a second after the description stops changing.
+      .task(id: draft.description) {
+        guard itemId == nil, draft.title.trimmed.isEmpty, !draft.description.trimmed.isEmpty else { return }
+        try? await Task.sleep(for: .seconds(BoardTitle.debounce))
+        guard !Task.isCancelled else { return }
+        await writeTitle()
+      }
       .sheet(isPresented: $pickingPost) {
         FeedbackAttachSheet(session: store.session, projectId: store.projectId, exclude: Set((current?.feedbackPostIds ?? []) + newPosts.map(\.id))) { post in
           if itemId == nil { newPosts.append(post) } else { Task { await setLink("feedback", post.id, true) } }
@@ -92,7 +102,9 @@ struct BoardItemEditor: View {
     LabeledField(label: "Title") {
       TextField("", text: $draft.title)
         .textFieldStyle(.linear)
-        .onChange(of: draft.title) { _, value in if value.count > 200 { draft.title = String(value.prefix(200)) } }
+        .padding(.trailing, draft.description.trimmed.isEmpty ? 0 : 34)
+        .overlay(alignment: .trailing) { titleAccessory }
+        .onChange(of: draft.title) { _, value in if value.count > BoardTitle.maxLength { draft.title = String(value.prefix(BoardTitle.maxLength)) } }
     }
     LabeledField(label: "Description", hint: "Markdown. Internal: the roadmap never shows it.") { LinearTextEditor(text: $draft.description, minHeight: 120) }
 
@@ -105,6 +117,21 @@ struct BoardItemEditor: View {
     labelPicker(config)
     AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId)
     roadmap(config)
+  }
+
+  /// While the AI writes the title, a spinner; otherwise the button that writes it from the description.
+  @ViewBuilder private var titleAccessory: some View {
+    if !draft.description.trimmed.isEmpty {
+      if writingTitle {
+        ProgressView().controlSize(.small).frame(width: 32, height: 32).accessibilityLabel("Writing the title…")
+      } else {
+        Button { Task { await writeTitle(manual: true) } } label: {
+          Image(systemName: "sparkles").font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.accentText).frame(width: 32, height: 32).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Write the title with AI")
+      }
+    }
   }
 
   @ViewBuilder private func pickers(_ config: BoardConfig) -> some View {
@@ -445,9 +472,32 @@ struct BoardItemEditor: View {
     if itemId != nil, current == nil, store.error.isEmpty { error = String(localized: "That item no longer exists.") }
   }
 
+  /// The AI reads the description and writes the title. `manual` is the AI button: it replaces a title and says
+  /// why when it fails. Otherwise a title typed in the meantime stays.
+  private func writeTitle(manual: Bool = false) async {
+    let description = draft.description.trimmed
+    guard !description.isEmpty else { return }
+    titleRun += 1
+    let run = titleRun
+    writingTitle = true
+    defer { if run == titleRun { writingTitle = false } }
+    do {
+      let title = try await store.suggestTitle(description)
+      guard run == titleRun, manual || draft.title.trimmed.isEmpty else { return }
+      draft.title = String(title.prefix(BoardTitle.maxLength))
+    } catch {
+      if manual, run == titleRun { self.error = error.localizedDescription }
+    }
+  }
+
   private func save() async {
     guard let config = store.config else { return }
     saving = true
+    // Create with no title: the AI writes it now; with no AI, the description's first line stands in.
+    if itemId == nil, draft.title.trimmed.isEmpty {
+      await writeTitle()
+      if draft.title.trimmed.isEmpty { draft.title = BoardTitle.fallback(draft.description) }
+    }
     do {
       let item: BoardItem
       if let itemId {
@@ -625,4 +675,8 @@ struct BoardItemPicker: View {
     }
     .presentationDetents([.medium, .large])
   }
+}
+
+private extension String {
+  var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
 }
