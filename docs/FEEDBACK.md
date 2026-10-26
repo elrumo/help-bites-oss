@@ -307,6 +307,24 @@ Project → **Planning** → *Turn on planning*.
 The settings are the `board` object on `PATCH /v1/admin/projects/:id` (partial:
 `roadmap` merges key by key; `statuses` and `labels` replace their lists).
 
+### From the iOS share sheet
+
+On iPhone and iPad, the app adds **Add to Planning** to the system share sheet. Share a screenshot or photo
+(from Photos, the screenshot editor, Files or any app), a web page or some text, and a sheet opens with the
+same fields as *New item*: project, title, internal description, status, priority, assignee, target date,
+labels (type a new one to create it), images, feedback to attach, and whether it goes on the public roadmap
+with its public description. The image you shared is attached and uploaded for you, and *Add images* picks more
+(up to 10). A shared link or text is put in the description, and a page's title in the title. The sheet starts on the
+project you used last. Only projects with Planning on are offered.
+
+It is a native entry point to the same API, with nothing of its own to call: `GET /v1/admin/projects` (each
+project's board, statuses and labels), `GET /v1/admin/agents`, `GET /v1/feedback`, `POST /v1/feedback/attachments`
+(one call per image; HEIC and anything over 8 MB is sent as a JPEG that fits), `PATCH /v1/admin/projects/:id` (a new
+label) and `POST /v1/admin/board-items`. It signs in with the app's session, which the app shares with the sheet through
+an App Group (`group.com.helpbites.operator`): sign in to the app once, and enable the **App Groups** capability on both
+targets when you build it yourself. The web panel has no equivalent, since a browser has no share sheet; the panel's
+*New item* and the API cover the same ground.
+
 ### What goes public
 
 The roadmap is published through the feedback page's public pages and API, so

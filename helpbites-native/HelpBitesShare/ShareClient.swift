@@ -1,0 +1,141 @@
+import Foundation
+
+// The few calls the share sheet makes, against the same /v1/admin/* API as the panel and the app:
+//   GET   /v1/admin/projects          every project with its Planning board (statuses, labels)
+//   GET   /v1/admin/agents            who an item can be assigned to
+//   GET   /v1/feedback                the posts an item can answer
+//   POST  /v1/feedback/attachments    one image
+//   POST  /v1/admin/board-items       the item
+//   PATCH /v1/admin/projects/:id      a new label (the board's lists, saved whole as in BoardStore.saveLists)
+
+enum ShareError: LocalizedError {
+  case signedOut, server(String), unreadable
+
+  var errorDescription: String? {
+    switch self {
+    case .signedOut: String(localized: "Open HelpBites and sign in, then share again.")
+    case .server(let message): message
+    case .unreadable: String(localized: "Could not read that image.")
+    }
+  }
+}
+
+/// The project row, cut down to what an item needs.
+struct ShareProject: Decodable, Identifiable {
+  let id, name: String
+  let board: ShareBoard?
+  let feedback: Feedback?
+  struct Feedback: Decodable { let enabled: Bool?; let roadmap: Bool? }
+
+  /// The public roadmap is published through public feedback: on, with its Roadmap view.
+  var roadmapReady: Bool { feedback?.enabled == true && feedback?.roadmap == true && board?.enabled == true }
+}
+
+struct ShareBoard: Codable {
+  var enabled: Bool
+  var statuses: [ShareStatus]
+  var labels: [ShareLabel]
+
+  static let roadmapCategories = ["planned", "active", "done"]
+  var defaultStatusKey: String { (statuses.first { $0.isDefault == true } ?? statuses.first)?.key ?? "" }
+  func status(_ key: String) -> ShareStatus? { statuses.first { $0.key == key } }
+  func isOnRoadmap(_ key: String) -> Bool { Self.roadmapCategories.contains(status(key)?.category ?? "open") }
+}
+
+/// Every field the server stores, so saving the lists again drops nothing.
+struct ShareStatus: Codable, Identifiable {
+  var key, label, category, color: String
+  var isDefault, notify: Bool?
+  var id: String { key }
+}
+
+struct ShareLabel: Codable, Identifiable {
+  var key, label, color: String
+  var id: String { key }
+}
+
+struct ShareAgent: Decodable, Identifiable {
+  let id, username: String
+  let name: String?
+  var displayName: String { (name ?? "").isEmpty ? username : name ?? username }
+}
+
+struct SharePost: Decodable, Identifiable {
+  let id, title: String
+  let number: Int?
+  let voteCount: Int?
+}
+
+/// An upload's answer, and what an item stores (shared/itemAttachments.ts).
+struct ShareAttachment: Codable {
+  let url, name, mime: String
+  let size: Int
+}
+
+struct ShareClient {
+  let baseURL: URL
+  let token: String
+  let workspaceId: String
+
+  /// The session and server the app published, or nil while nobody is signed in.
+  static func current() -> ShareClient? {
+    guard let token = KeychainStore.loadShared(), !token.isEmpty,
+          let base = URL(string: SharedStore.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/"))), base.host != nil else { return nil }
+    return ShareClient(baseURL: base, token: token, workspaceId: SharedStore.workspaceId)
+  }
+
+  private static let session: URLSession = {
+    let configuration = URLSessionConfiguration.default
+    configuration.timeoutIntervalForRequest = 120
+    return URLSession(configuration: configuration)
+  }()
+
+  func get<Value: Decodable>(_ path: String, query: [String: String] = [:]) async throws -> Value {
+    try await run(try makeRequest(path, method: "GET", query: query))
+  }
+
+  func send<Value: Decodable, Body: Encodable>(_ path: String, method: String = "POST", query: [String: String] = [:], body: Body) async throws -> Value {
+    var request = try makeRequest(path, method: method, query: query)
+    request.httpBody = try JSONEncoder().encode(body)
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    return try await run(request)
+  }
+
+  /// A multipart POST with the one `file` part, as `APIClient.upload` sends it.
+  func upload(_ path: String, query: [String: String], file: Data, filename: String, mimeType: String) async throws -> ShareAttachment {
+    let boundary = "HelpBites-\(UUID().uuidString)"
+    var body = Data()
+    body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\nContent-Type: \(mimeType)\r\n\r\n".utf8))
+    body.append(file)
+    body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+    var request = try makeRequest(path, method: "POST", query: query)
+    request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+    request.httpBody = body
+    return try await run(request)
+  }
+
+  private func makeRequest(_ path: String, method: String, query: [String: String]) throws -> URLRequest {
+    guard var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false) else { throw ShareError.server(String(localized: "The API URL is invalid.")) }
+    components.queryItems = query.isEmpty ? nil : query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) }
+    guard let url = components.url else { throw ShareError.server(String(localized: "The API URL is invalid.")) }
+    var request = URLRequest(url: url)
+    request.httpMethod = method
+    request.setValue("application/json", forHTTPHeaderField: "Accept")
+    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+    if !workspaceId.isEmpty { request.setValue(workspaceId, forHTTPHeaderField: "X-Workspace") }
+    return request
+  }
+
+  private struct ErrorBody: Decodable { let statusMessage, message, error: String? }
+
+  private func run<Value: Decodable>(_ request: URLRequest) async throws -> Value {
+    let (data, response) = try await Self.session.data(for: request)
+    guard let http = response as? HTTPURLResponse else { throw ShareError.server(String(localized: "Invalid server response.")) }
+    guard (200..<300).contains(http.statusCode) else {
+      if http.statusCode == 401 { throw ShareError.signedOut }
+      let body = try? JSONDecoder().decode(ErrorBody.self, from: data)
+      throw ShareError.server(body?.statusMessage ?? body?.message ?? body?.error ?? String(localized: "Request failed (\(http.statusCode))."))
+    }
+    return try JSONDecoder().decode(Value.self, from: data)
+  }
+}
