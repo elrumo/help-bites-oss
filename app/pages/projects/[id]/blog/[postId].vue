@@ -51,6 +51,7 @@
             :content-type="draft.bodyFormat === 'html' ? 'html' : 'markdown'"
             :placeholder="$t('blog.bodyPlaceholder')"
             :handlers="handlers"
+            :editor-props="editorProps"
             :mention="false"
             class="mt-4 min-h-[50vh]"
             :ui="{ base: 'text-base' }"
@@ -378,20 +379,37 @@ const handlers: EditorCustomHandlers = {
 
 const compression = useUploadCompression()
 
+// An image pasted into the body is uploaded and put at the cursor; text pastes go on as usual.
+const editorProps = {
+  handlePaste(_view: unknown, event: ClipboardEvent) {
+    const files = Array.from(event.clipboardData?.files || []).filter(f => f.type.startsWith('image/'))
+    const editor = editorRef.value?.editor
+    if (!files.length || !editor) return false
+    event.preventDefault()
+    void uploadImages(files, editor)
+    return true
+  }
+}
+
 async function insertImage(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
   const editor = imageTarget || editorRef.value?.editor
-  if (!file || !editor) return
+  if (file && editor) await uploadImages([file], editor)
+}
+
+async function uploadImages(files: File[], editor: Editor) {
   uploadingImage.value = true
   try {
-    const form = new FormData()
-    form.append('project', id)
-    form.append('file', file)
-    compression.apply(form)
-    const { url } = await api<{ url: string }>('/admin/blog/images', { method: 'POST', body: form })
-    editor.chain().focus().setImage({ src: url, alt: file.name.replace(/\.[a-z0-9]+$/i, '') }).run()
+    for (const file of files) {
+      const form = new FormData()
+      form.append('project', id)
+      form.append('file', file)
+      compression.apply(form)
+      const { url } = await api<{ url: string }>('/admin/blog/images', { method: 'POST', body: form })
+      editor.chain().focus().setImage({ src: url, alt: file.name.replace(/\.[a-z0-9]+$/i, '') }).run()
+    }
   } catch (e: any) {
     toast.add({ title: t('blog.uploadError'), description: e?.message, color: 'error', icon: 'i-lucide-circle-alert' })
   } finally {

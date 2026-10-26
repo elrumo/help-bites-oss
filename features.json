@@ -1993,7 +1993,7 @@
   "notBuilt": [
     "The pricing table's preview can be edited in place on the web (click a title, plan name, description, badge, button, feature or footnote and type); the native preview is read-only.",
     "The native app edits the project style and the changelog's style but not any other feature's (web panel and API only), and its Swift snippets do not read the finished `look` / `style` the public payloads carry. Other embeds (the CMS pages) and the brand kit's typefaces do not wear the full style yet: kit fonts are not loaded on blog, legal, form, onboarding or pricing pages.",
-    "The native blog editor has no Preview or Live preview yet (the web panel renders the draft with POST /v1/admin/blog/preview, shown in a frame; native opens the hosted post after publishing).",
+    "The native blog editor has no Preview or Live preview yet (the web panel renders the draft with POST /v1/admin/blog/preview, shown in a frame; native opens the hosted post after publishing). It takes images from the photo picker only, not from a paste (the web editor uploads a pasted image at the cursor).",
     "Contact sync does not notice rows deleted upstream.",
     "The MCP server offers tools only (no prompts, resources or live notifications), has no tools yet for creating legal documents, importing knowledge documents, the email designer, forms, onboarding or the blog, and issues no refresh tokens: an OAuth-connected assistant signs in again after a year.",
     "No Swift package. Onboarding, pricing tables and the brand kit have copy-paste Swift snippets; the chat, feedback and changelog embeds are web-only (widget.js, feedback.js, changelog.js).",

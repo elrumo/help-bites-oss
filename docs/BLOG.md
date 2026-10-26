@@ -34,8 +34,9 @@ The editor is Nuxt UI's (TipTap): headings, bold, italic, strikethrough, code,
 lists, quotes, code blocks, dividers, links and images. Type `/` for blocks;
 select text for the formatting bubble. Images are uploaded to the project's
 storage (8 MB each, PNG, JPEG, GIF or WebP); they count against the workspace's
-storage. See [Smaller images](#smaller-images-and-modern-formats) to send them
-smaller.
+storage. Paste an image from the clipboard and it is uploaded and placed at the
+cursor, one after another. See [Smaller images](#smaller-images-and-modern-formats)
+to send them smaller.
 
 - **Saved as Markdown.** That is what the API takes and returns as `body`. It is
   rendered once on save into `bodyHtml`, through an allowlist: no scripts,

@@ -5,6 +5,7 @@ All notable changes to the community edition. Versions are Docker image tags
 
 ## Unreleased
 
+- **Paste images into the blog editor** (web): an image on the clipboard is uploaded to the project's storage and put at the cursor, the same as *Image* from the toolbar. Uses the existing `POST /v1/admin/blog/images`; no schema or env change.
 - **AI title and summary for a release** (web and native): the release editor has a *Write title and summary with AI* button that reads the release's entries and fills the form; nothing is saved until you press Save. New `POST /v1/admin/changelog/releases/:id/suggest` returns `{ title, summary }` (`docs/FEEDBACK.md`). Needs an AI provider; no schema or env change.
 - **Reorder columns on Planning** (web and native, admins): drag a column's header onto another to move it. The new order is saved with the board's statuses through the same `PATCH /v1/admin/projects/:id`; no schema or env change.
 - **Attachments in the AI chat** (web and native): paste, drop or pick images and files in the chat; every card the message creates gets them. `POST /v1/admin/projects/:id/ai-cards` takes `attachments` (from `POST /v1/feedback/attachments`). No schema or env change.
