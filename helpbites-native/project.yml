@@ -59,6 +59,40 @@ targets:
       path: App/HelpBitesNative.entitlements
       properties:
         aps-environment: development
+        # Shared with the share extension: the session token (as a keychain access group), the server and the workspace.
+        com.apple.security.application-groups: [group.com.helpbites.operator]
+    dependencies:
+      # The "Add to Planning" share sheet, iPhone and iPad only.
+      - target: HelpBitesShare
+        embed: true
+        platformFilter: iOS
+
+  HelpBitesShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - HelpBitesShare
+      # The session and shared-defaults plumbing the app also compiles.
+      - App/Core/SharedCredentials.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.helpbites.operator.share
+        DEVELOPMENT_TEAM: ""  # the same team ID as the app
+        TARGETED_DEVICE_FAMILY: '1,2'
+        SUPPORTS_MACCATALYST: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: HelpBitesShare/Info.plist
+        CODE_SIGN_ENTITLEMENTS: HelpBitesShare/HelpBitesShare.entitlements
+        # NSItemProvider is not Sendable, so the sheet that reads what was shared stays in Swift 5 mode.
+        SWIFT_VERSION: '5.0'
+        SWIFT_STRICT_CONCURRENCY: minimal
+        LD_RUNPATH_SEARCH_PATHS: ["$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks"]
+    entitlements:
+      path: HelpBitesShare/HelpBitesShare.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.helpbites.operator]
 
 # Declared here so `xcodegen generate` regenerates the shared scheme instead of
 # deleting it. Run is Release with no debugger, as in the hand-made scheme.

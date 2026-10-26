@@ -299,6 +299,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   reorder. Type a new name in an item's label picker to create the label. Add a column from the tile after the last one: a name and a category,
   which decides whether its items show on the roadmap. Admins reorder columns by
   dragging a column's header onto another.
+- **Add to Planning from the share sheet** (iPhone and iPad). Share a screenshot, photo, link or text from any
+  app and file it as an item: a sheet with every field of *New item*, the shared image attached and uploaded, more
+  images on request. [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)
 - **Links.** Connect an item to up to 50 feedback posts, 50 conversations and 50 other items
   (related items link both ways). Votes add up across the linked posts. Search feedback to attach it to an item
   (or while creating one); right-click a post, or use its Planning button, to
@@ -662,6 +665,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   onboarding (with a live preview), pricing tables (with a live preview, results,
   A/B tests and AI suggestions), the brand kit, the email editor with its AI
   designer, email log and suppressions, campaigns, flags, and errors.
+- **Share sheet.** *Add to Planning* in the system share sheet (iPhone and iPad): a screenshot, photo, link or text
+  becomes a planning item without opening the app.
 - **Push notifications.** A new customer message can notify the device. This needs
   Apple push (APNs) credentials on the server.
 - **Keyboard shortcuts** on iPad and Mac, and a ⌘K palette that also searches
@@ -754,6 +759,9 @@ repository. See [EDITIONS.md](EDITIONS.md).
 
 ## 14. Not built yet, and known limits
 
+- **Share sheet.** *Add to Planning* is an iPhone and iPad share extension only: the Mac app has none, and the web
+  panel has no equivalent (a browser has no share sheet; use *New item* or the API).
+  [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)
 - **Pricing preview.** On the web the preview can be edited in place (click a title,
   plan name, description, badge, button, feature or footnote and type); the native
   preview is read-only. [PRICING.md](PRICING.md)

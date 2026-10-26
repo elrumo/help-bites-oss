@@ -38,6 +38,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
     api = APIClient(baseURL: saved)
     // Paint the signed-in shell straight away from what we knew last time; bootstrap() revalidates.
     token = KeychainStore.load() ?? ""
+    SharedStore.publish(endpoint: saved, workspaceId: workspaceId)
     if !token.isEmpty, let cached = SnapshotCache.load(MeResponse.self, "me") {
       agent = cached.agent
       context = cached
@@ -68,6 +69,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
     if let id = me.workspace?.id, id != workspaceId {
       workspaceId = id
       UserDefaults.standard.set(id, forKey: "helpbites.workspace")
+      SharedStore.publish(endpoint: endpoint, workspaceId: id)
       Task { await api.setWorkspace(id) }
     }
   }
@@ -89,6 +91,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
     guard !id.isEmpty, id != workspaceId else { return }
     workspaceId = id
     UserDefaults.standard.set(id, forKey: "helpbites.workspace")
+    SharedStore.publish(endpoint: endpoint, workspaceId: id)
     await api.setWorkspace(id)
     SnapshotCache.clear()
     struct Input: Encodable, Sendable { let defaultWorkspaceId: String }
@@ -140,6 +143,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
     api = APIClient(baseURL: normalized)
     workspaceId = ""
     UserDefaults.standard.removeObject(forKey: "helpbites.workspace")
+    SharedStore.publish(endpoint: normalized, workspaceId: "")
     clear()
     await checkSetup()
   }
@@ -213,26 +217,3 @@ private struct Credentials: Codable, Sendable { let username, password: String }
 private struct SetupInput: Codable, Sendable { let username, password, name, email: String }
 struct EmptyBody: Codable, Sendable {}
 private struct DeviceInput: Codable, Sendable { let token, platform, env: String }
-
-enum KeychainStore {
-  private static let service = "com.helpbites.operator"
-  private static let account = "session"
-  static func load() -> String? {
-    let query: [CFString: Any] = [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: account, kSecReturnData: true]
-    var value: CFTypeRef?; guard SecItemCopyMatching(query as CFDictionary, &value) == errSecSuccess, let data = value as? Data else { return nil }
-    return String(data: data, encoding: .utf8)
-  }
-  static func save(_ token: String) {
-    remove()
-    var query: [CFString: Any] = [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: account, kSecValueData: Data(token.utf8)]
-    // iOS keeps it off backups and available once unlocked; the Mac's file keychain has no such attribute without a signed team.
-    #if os(iOS)
-    query[kSecAttrAccessible] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-    #endif
-    SecItemAdd(query as CFDictionary, nil)
-  }
-  static func remove() {
-    let query: [CFString: Any] = [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: account]
-    SecItemDelete(query as CFDictionary)
-  }
-}
