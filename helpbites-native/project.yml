@@ -77,6 +77,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.helpbites.operator.share
+        CURRENT_PROJECT_VERSION: '1'
         DEVELOPMENT_TEAM: ""  # the same team ID as the app
         TARGETED_DEVICE_FAMILY: '1,2'
         SUPPORTS_MACCATALYST: NO
