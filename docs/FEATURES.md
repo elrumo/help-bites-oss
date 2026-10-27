@@ -706,16 +706,21 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   onboarding, thank-you for feedback, check-in after support) install as drafts.
   [EVENTS.md](EVENTS.md)
 - **AI assistants (MCP).** An MCP server at `/mcp` lets Claude, ChatGPT, Cursor or
-  any MCP client work in a workspace as the operator who connected it: read and reply
-  in the inbox, add notes, triage feedback, move planning items, write and
-  publish changelog entries, browse errors, edit, publish, A/B test and get AI
-  suggestions for pricing tables, and manage feature flags, knowledge base answers, email
-  templates and logs, campaigns and legal documents. Sign in with the browser (OAuth with
-  PKCE and dynamic registration, for claude.ai and ChatGPT) or paste an admin API
-  key. Each tool is a `/v1` call, so the operator's role, the workspace and a key's
-  project limit apply; connections are API keys you can revoke in **Settings → API
-  keys** and from the address and a ready-made `claude mcp add` command on the
-  workspace's **Developer & MCP** page (the old Developer page), in the panel and the native app.
+  any MCP client work in a workspace as the operator who connected it, with a tool for
+  what the panel does: the inbox and the AI assistants, feedback, planning items (labels,
+  assignees, links, history, comments with images and files), the changelog and its
+  releases, the knowledge base, contacts, segments, sequences and campaigns, lead forms
+  and onboarding, email templates and sending, pricing tables (edit, publish, A/B test,
+  AI suggestions), legal documents, errors, Pages, the blog, the brand kit, webhooks,
+  domains and the project's settings. Keys, teammates, project secrets and connecting
+  services, file uploads, streams and the public customer surface are left out on
+  purpose. Sign in with the browser (OAuth with PKCE and dynamic registration, for
+  claude.ai and ChatGPT) or paste an admin API key. Each tool is a `/v1` call, so the
+  operator's role, the workspace and a key's project limit apply; connections are API
+  keys you can revoke in **Settings → API keys** and from the address and a ready-made
+  `claude mcp add` command on the workspace's **Developer & MCP** page (the old
+  Developer page), in the panel and the native app. A test fails when a `/v1` route has
+  neither a tool nor a reasoned exclusion.
   [MCP.md](MCP.md)
 - **Realtime streams.** Server-sent events for end users, operators, the feedback
   page, and shared email previews.
@@ -873,10 +878,12 @@ repository. See [EDITIONS.md](EDITIONS.md).
   goes where the text ends, not at the cursor. No translations of posts
   or the embed, no paid tiers for
   members-only posts (a member is a signed-in reader), images from a Ghost import
-  stay on the old site, and no MCP tools for it yet. [BLOG.md](BLOG.md)
-- **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
-  creating legal documents, importing knowledge documents, the email designer, forms, onboarding or the
-  blog. OAuth connections use rotating refresh tokens. [MCP.md](MCP.md)
+  stay on the old site. [BLOG.md](BLOG.md)
+- **MCP.** The server offers tools only: no prompts, resources or live notifications.
+  A connection has the operator's whole role: there is no read-only option or lower
+  role yet, only a project limit and an expiry. It cannot upload files, so knowledge
+  document uploads, images and brand files stay in the panel. OAuth connections use
+  rotating refresh tokens. [MCP.md](MCP.md)
 - **Native translations.** The legal screen cannot yet link an existing document as
   a translation of another (the API and web can); the email editor shows translation
   edits made elsewhere after a reload; the onboarding offline copy holds only the
