@@ -118,8 +118,8 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 |---|---|
 | `list_conversations` | The inbox: filter by project, status, unread, assignee, priority, tag or customer. |
 | `get_conversation` | One conversation with its customer and project. |
-| `get_conversation_messages` | Its messages, including internal notes. |
-| `reply_to_conversation` | Send a reply to the customer (and email them). |
+| `get_conversation_messages` | Its messages, internal notes and timeline events. |
+| `reply_to_conversation` | Send a reply to the customer, and email them whenever they have an address: asks first. |
 | `add_internal_note` | A note only the team sees. |
 | `update_conversation` | Status, priority, tags, assignee. |
 | `archive_conversation` | Archive or restore. |
@@ -287,7 +287,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `list_faqs` | Knowledge base answers: filter or search. |
 | `get_faq` | One answer. |
 | `create_faq` | Add a question and answer. |
-| `update_faq` | Edit an answer, its tags or status. |
+| `update_faq` | Edit an answer, its tags, keywords, folder or status (draft, active, disabled, archived, outdated). |
 | `delete_faq` | Remove one: asks first. |
 | `list_knowledge_documents` | Documents uploaded as knowledge sources. |
 
@@ -330,7 +330,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `list_contacts` | A project's people: filter by segment, tag, subscription, billing or search. |
 | `get_contact` | One person, with their plan, MRR, language and tags. |
 | `get_contact_activity` | Everything one person has done in one list: conversations, posts, votes, emails, payments, onboarding. |
-| `update_contact` | Name, language, tags and attributes. |
+| `update_contact` | Name, language, tags, email, user id and attributes. Never marketing consent. |
 | `list_segments` | Saved segments. |
 | `upsert_contacts` | Create a person or update the one who matches (by user id, then email), one at a time or up to 1000. Never subscribes anyone to marketing. |
 | `erase_contact` | Erase a person and everything they left in the project: asks first. |
@@ -558,7 +558,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `update_board_settings` | The Planning board: turn it on, its statuses and labels (replaced whole), the public roadmap's layout and whether linked feedback follows item status. Asks first. |
 | `update_project_flags` | Replace a project's feature flags (send them all; one left out is deleted). |
 | `list_webhook_endpoints` | A project's webhook endpoints. |
-| `create_webhook_endpoint` | Add one, choosing the events. |
+| `create_webhook_endpoint` | Add one, choosing the events: asks first, since the events carry customer data. |
 
 ### Project setup and infrastructure
 

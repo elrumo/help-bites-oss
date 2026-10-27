@@ -65,18 +65,22 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'list_conversations', title: 'List conversations', readOnly: true, method: 'GET', path: '/v1/admin/conversations',
-    description: 'The support inbox, newest activity first, across every project or one. Returns the conversations, their end users, unread totals and counts by status. Page with `before` set to the last row\'s lastMessageAt.',
+    description: 'The support inbox, newest activity first, across every project or one. Returns `conversations`, their `endUsers`, `hasMore`, unread totals, `counts` by status, type and assignee, and `viewCounts` (how many rows each `view` lists under the same filters). Page with `before` set to the last row\'s lastMessageAt. Archived conversations are left out unless you ask for them.',
     params: {
       project: { type: 'string', description: 'Project id. Leave out for every project.' },
-      status: { type: 'string', description: 'Status key, e.g. open, pending, done.' },
+      status: { type: 'string', description: 'Status key, e.g. open, pending, done. The keys depend on the conversation type (list_conversation_types).' },
+      type: { type: 'string', description: 'A conversation type key: support, error or a custom type of the project (list_conversation_types).' },
+      channel: { type: 'string', enum: ['widget', 'email'], description: 'Where the conversation started: `email` is mail to an inbound address, `widget` is everything else.' },
+      view: { type: 'string', enum: ['all', 'unassigned', 'mine', 'open', 'unread', 'archived'], description: 'A queue view: `mine` is the connected operator\'s own, `open` the open status category, `unread` those with unread customer messages, `archived` the same as archived `true`. Default all.' },
       unread: { type: 'boolean', description: 'Only conversations with unread user messages.' },
-      assignee: { type: 'string', description: 'Agent id.' },
+      assignee: { type: 'string', description: 'Agent id, from list_team_members.' },
       priority: { type: 'string', enum: ['low', 'normal', 'high', 'urgent'], description: 'Priority.' },
       tag: { type: 'string', description: 'A tag.' },
       archived: { type: 'string', enum: ['true', 'any'], description: 'Archived ones only (`true`) or both (`any`). Left out, archived are hidden.' },
       q: { type: 'string', description: 'Matches the end user\'s name, email or external id.' },
+      endUser: { type: 'string', description: 'Only this customer\'s conversations: an end user id, from search_end_users.' },
       before: { type: 'string', description: 'ISO lastMessageAt of the last row of the previous page.' },
-      limit: limit(200)
+      limit: { ...limit(200), description: 'How many to return (up to 200). Default 50.' }
     }
   },
   {
@@ -86,16 +90,23 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'get_conversation_messages', title: 'Read a conversation\'s messages', readOnly: true, method: 'GET', path: '/v1/admin/conversations/{id}/messages',
-    description: 'The messages of a conversation, newest page first, including team replies and internal notes. Page back with `before`.',
-    params: { id: id('conversation'), before: { type: 'string', description: 'ISO createdAt of the oldest message you already have.' }, limit: limit(100) }
-  },
-  {
-    name: 'reply_to_conversation', title: 'Reply to a customer', method: 'POST', path: '/v1/admin/conversations/{id}/messages',
-    description: 'Sends a reply to the customer, signed with the operator\'s name, and emails them when they are not in the app. This is visible to the customer and cannot be unsent by email: confirm the wording with the user first.',
+    description: 'The messages of a conversation, including team replies, internal notes and timeline events (status changes, assignments), in time order. The first call returns the latest ones (50 by default); the reply is `{ messages, hasMore }`, and you page back with `before` set to the first message\'s createdAt.',
     params: {
       id: id('conversation'),
-      body: { type: 'string', required: true, description: 'The reply, as plain text or Markdown.' },
-      notifyByEmail: { type: 'boolean', description: 'Set false to skip the email notification.' }
+      before: { type: 'string', description: 'ISO createdAt of the oldest message you already have.' },
+      limit: { ...limit(200), description: 'How many to return (up to 200). Default 50.' }
+    }
+  },
+  {
+    name: 'reply_to_conversation', title: 'Reply to a customer', destructive: true, method: 'POST', path: '/v1/admin/conversations/{id}/messages',
+    description: 'Sends a reply to the customer, signed with the project\'s sender name (else the operator\'s name). It also EMAILS the customer whenever they have an address (an unconfirmed one they typed counts), whether or not they are in the app, unless `notifyByEmail` is false or a chat conversation was already emailed in the last five minutes; a conversation that came in by email is always mailed back. The email stays in their inbox even if the message is unsent later. Returns `message`, `conversation`, `created`, `emailSent` and `emailError`. Confirm the wording with the user first.',
+    params: {
+      id: id('conversation'),
+      body: { type: 'string', required: true, description: 'The reply, as plain text or Markdown, up to 8,000 characters.' },
+      notifyByEmail: { type: 'boolean', description: 'Set false to skip the email notification. Default true.' },
+      replyToId: { type: 'string', description: 'The id of the message this answers, from get_conversation_messages.' },
+      clientId: { type: 'string', description: 'A key you choose, up to 80 characters, that makes a retry safe: sending the same one again returns the existing message (`created` false) and emails nobody.' },
+      attachments: { type: 'array', items: { type: 'object' }, description: 'Up to 4 images shown with the reply: the { url, mime, size } objects upload_board_comment_attachment returned when uploaded for this conversation\'s project (PNG, JPEG, GIF or WebP). Anything else is dropped without an error.' }
     }
   },
   {
@@ -105,13 +116,14 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'update_conversation', title: 'Update a conversation', method: 'PATCH', path: '/v1/admin/conversations/{id}',
-    description: 'Changes a conversation\'s status, priority, tags or assignee. Only the fields you pass change.',
+    description: 'Changes a conversation\'s status, priority, tags, assignee or type-specific fields. Only the fields you pass change, and the change is recorded as a team-only timeline event. A status change also reaches the customer\'s chat. A bad status, assignee or field value fails and nothing is saved. Returns the updated conversation.',
     params: {
       id: id('conversation'),
-      status: { type: 'string', description: 'A status key of its ticket type, e.g. open, pending, done.' },
+      status: { type: 'string', description: 'A status key of its conversation type, e.g. open, pending, done (list_conversation_types).' },
       priority: { type: 'string', enum: ['low', 'normal', 'high', 'urgent'], description: 'Priority.' },
-      tags: { type: 'array', items: { type: 'string' }, description: 'Replaces all tags.' },
-      assigneeId: { type: 'string', description: 'Agent id to assign, or an empty string for nobody.' }
+      tags: { type: 'array', items: { type: 'string' }, description: 'REPLACES all tags (lowercased, up to 20, each up to 40 characters); an empty list clears them.' },
+      assigneeId: { type: 'string', description: 'Agent id to assign, from list_team_members, or an empty string for nobody.' },
+      fields: { type: 'object', description: 'Values for the intake and triage fields its conversation type defines (list_conversation_types), by field key. They are merged into the existing values (a key you leave out keeps its value) and checked against the type.' }
     }
   },
   {
@@ -121,51 +133,71 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'search_end_users', title: 'Search customers', readOnly: true, method: 'GET', path: '/v1/admin/end-users',
-    description: 'The people who have used the chat or the feedback board: matches name, email and external id. Use an id with list_conversations\' `q`.',
+    description: 'The people who have used the chat or the feedback board: matches name, email and external id, up to 50 per call with no paging. Returns `endUsers`, each with its `id` and `projectId`. Use an id as list_conversations\' `endUser`.',
     params: { q: { type: 'string', description: 'Name, email or external id. Left out, the most recently seen.' }, project: { type: 'string', description: 'Limit to one project.' } }
   },
+  // ---- feedback --------------------------------------------------------------------------------------,
   {
     name: 'list_feedback', title: 'List feedback posts', readOnly: true, method: 'GET', path: '/v1/feedback',
-    description: 'A project\'s feedback board: feature requests and bug reports with votes and status.',
+    description: 'A project\'s feedback board: feature requests and bug reports with votes and status. Returns `posts` and `total` (everything that matches, for paging with `offset`). Hidden posts are left out unless `includeHidden`. The status, type, platform and tag keys a board accepts come from get_feedback_config.',
     params: {
       project: projectId,
+      view: { type: 'string', enum: ['board', 'roadmap', 'changelog'], description: 'board (default) lists everything; roadmap keeps planned, active and done posts; changelog keeps done posts marked showOnChangelog, newest completion first (legacy: the public changelog is made of changelog entries now, see list_changelog_entries).' },
       status: { type: 'string', description: 'Comma-separated status keys.' },
       category: { type: 'string', description: 'Comma-separated: open, planned, active, done, closed.' },
+      type: { type: 'string', description: 'Comma-separated post type keys, e.g. bug,feature.' },
+      platform: { type: 'string', description: 'Comma-separated platform keys.' },
+      tag: { type: 'string', description: 'Comma-separated tag keys; a post matches when it has any of them.' },
+      featured: { type: 'boolean', description: 'true keeps only featured posts, false only the ones that are not.' },
       q: { type: 'string', description: 'Matches title and text.' },
-      sort: { type: 'string', enum: ['top', 'new', 'activity', 'completed'], description: 'Order. Default top.' },
-      includeHidden: { type: 'boolean', description: 'Include moderated posts.' },
-      limit: limit(500),
+      sort: { type: 'string', enum: ['top', 'new', 'activity', 'completed'], description: 'Order. Default top (changelog view: completed).' },
+      includeHidden: { type: 'boolean', description: 'Include hidden (moderated) posts.' },
+      limit: { ...limit(500), description: 'How many to return (up to 500). Default 100.' },
       offset: { type: 'integer', description: 'Posts to skip.' }
     }
   },
   {
     name: 'get_feedback_post', title: 'Get a feedback post', readOnly: true, method: 'GET', path: '/v1/feedback/{id}',
-    description: 'One post with its comments. The id may be the post number (`12`).',
+    description: 'One post with its comments, oldest first, team notes and hidden comments included. The id may be the post number (`12` or `12-slug`) or the id it was imported with. Returns `{ post, comments, viewer, linked, backrefs }`: `linked` resolves the `#N` references in the post and its comments, `backrefs` lists the posts that mention this one.',
     params: { id: id('post'), project: projectId }
   },
   {
     name: 'update_feedback_post', title: 'Update a feedback post', method: 'PATCH', path: '/v1/feedback/{id}',
-    description: 'Moves a post along (status), pins, hides or locks it, or edits it. Changing the status notifies the people following the post.',
+    description: 'Moves a post along (status), pins, hides or locks it, edits its words and filing (type, platform, tags, attachments), sets what its changelog draft says, or pins one comment. Only the keys you send change. Moving a post into a status marked to notify emails the people following it, and the first move into a done status stamps `completedAt`. The status, type, platform and tag keys a board accepts come from get_feedback_config. Returns the updated post.',
     params: {
       id: id('post'), project: { ...projectId, in: 'query' },
-      status: { type: 'string', description: 'A status key of the board, e.g. planned, in-progress, done.' },
-      title: { type: 'string', description: 'New title.' },
-      body: { type: 'string', description: 'New text.' },
+      status: { type: 'string', description: 'A status key of the board (get_feedback_config), e.g. planned, in-progress, done.' },
+      title: { type: 'string', description: 'New title, up to 200 characters.' },
+      body: { type: 'string', description: 'New text, up to 20,000 characters.' },
+      type: { type: 'string', description: 'A post type key of the board (get_feedback_config); an empty string clears it.' },
+      platform: { type: 'string', description: 'A platform key of the board (get_feedback_config); an empty string clears it.' },
+      tags: { type: 'array', items: { type: 'string' }, description: 'REPLACES the post\'s tags with these tag keys of the board (get_feedback_config), at most 4; an empty list clears them.' },
       hidden: { type: 'boolean', description: 'Hide it from the public board.' },
       featured: { type: 'boolean', description: 'Feature it.' },
-      locked: { type: 'boolean', description: 'Stop new comments.' },
-      adminNote: { type: 'string', description: 'A note only the team sees.' }
+      locked: { type: 'boolean', description: 'Stop new comments from everyone but the team.' },
+      adminNote: { type: 'string', description: 'A note only the team sees, up to 4,000 characters; an empty string clears it.' },
+      showOnChangelog: { type: 'boolean', description: 'Put a done post on the legacy per-post changelog view (the public changelog is made of changelog entries now, see create_changelog_entry).' },
+      changelogTitle: { type: 'string', description: 'The title the post\'s changelog draft starts from, up to 200 characters; an empty string clears it.' },
+      changelogBody: { type: 'string', description: 'The text the post\'s changelog draft starts from, up to 20,000 characters; an empty string clears it.' },
+      shippedIn: { type: 'string', description: 'The version that shipped it, up to 200 characters (publishing a changelog release sets it for the posts its entries link); an empty string clears it.' },
+      icon: { type: 'string', description: 'An Iconify name such as lucide:bug, or an emoji, up to 60 characters; an empty string clears it.' },
+      completedAt: { type: 'string', description: 'When it was finished, as an ISO date-time; an empty string clears it. The first move into a done status sets it to now.' },
+      attachments: { type: 'array', items: { type: 'object' }, description: 'REPLACES the post\'s attachments: up to 10 objects { url, name, mime, size } returned by upload_board_comment_attachment for this project; an empty list removes them all.' },
+      pinnedCommentId: { type: 'string', description: 'The id of a public, top-level comment to pin to the post (from get_feedback_post); an empty string unpins.' }
     }
   },
   {
     name: 'comment_on_feedback_post', title: 'Comment on a feedback post', method: 'POST', path: '/v1/feedback/{id}/comments',
-    description: 'Comments as the team. Public comments email everyone following the post; use visibility `internal` for a team-only note.',
+    description: 'Comments as the team. Public comments email everyone following the post and anyone @mentioned; use visibility `internal` for a team-only note that notifies nobody. A reply to a reply is filed under its parent comment (threads stay one level deep). Locked posts still take team comments. Returns `{ comment, post }`.',
     params: {
       id: id('post'), project: { ...projectId, in: 'query' },
-      body: { type: 'string', required: true, description: 'The comment.' },
-      visibility: { type: 'string', enum: ['public', 'internal'], description: 'Default public.' }
+      body: { type: 'string', required: true, description: 'The comment, Markdown or HTML, up to 8,000 characters.' },
+      visibility: { type: 'string', enum: ['public', 'internal'], description: 'Default public.' },
+      parentId: { type: 'string', description: 'The id of the top-level comment to reply under, from get_feedback_post. It must be a comment on this post.' },
+      replyToId: { type: 'string', description: 'The id of the comment you are answering, from get_feedback_post. It must be a comment on this post; used alone it also sets the thread.' }
     }
   },
+  // ---- planning board --------------------------------------------------------------------------------,
   {
     name: 'list_board_items', title: 'List board items', readOnly: true, method: 'GET', path: '/v1/admin/board-items',
     description: 'A project\'s internal work board (the roadmap\'s source): items with status, priority, assignee and linked feedback, in rank order. Returns 50 at a time; the reply has `total`, so page with `offset` or narrow with `status`.',
@@ -270,9 +302,15 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'list_board_item_comments', title: 'Read planning comments', readOnly: true, method: 'GET', path: '/v1/admin/board-items/{id}/comments',
-    description: 'Reads an item’s internal comments and threaded replies, oldest first. Page with offset and limit.',
-    params: { id: id('item'), project: { ...projectId, in: 'query' }, offset: { type: 'integer', description: 'Comments to skip.' }, limit: limit(100) }
+    description: 'Reads an item\'s internal comments and threaded replies, oldest first (50 per call by default). The reply is `{ comments, hasMore, nextOffset }`: pass `nextOffset` as `offset` for the next page.',
+    params: {
+      id: id('item'),
+      project: { type: 'string', description: 'Project id, needed when `id` is an item number.' },
+      offset: { type: 'integer', description: 'Comments to skip.' },
+      limit: limit(100)
+    }
   },
+  // ---- changelog -------------------------------------------------------------------------------------,
   {
     name: 'comment_on_board_item', title: 'Comment on a planning item', method: 'POST', path: '/v1/admin/board-items/{id}/comments',
     description: 'Adds an internal comment or threaded reply. The author is shown as this assistant, while the authorizing operator remains recorded.',
@@ -286,53 +324,95 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'list_changelog_entries', title: 'List changelog entries', readOnly: true, method: 'GET', path: '/v1/admin/changelog/entries',
-    description: 'A project\'s changelog entries, drafts included.',
-    params: { project: projectId, status: { type: 'string', enum: ['draft', 'published', 'archived'], description: 'Only entries in this state.' } }
+    description: 'A project\'s changelog entries (up to 1,000), newest published first and drafts last, each with the sources it links to. Archived entries are left out unless `status` is archived. Narrow by release, or by the post, board item or conversation an entry links. The reply is `{ entries }`.',
+    params: {
+      project: projectId,
+      status: { type: 'string', enum: ['draft', 'published', 'archived'], description: 'Only entries in this state. Left out, every entry but the archived ones.' },
+      release: { type: 'string', description: 'A release id (from list_changelog_releases), or `none` for the entries that belong to no release.' },
+      feedbackPost: { type: 'string', description: 'Only entries that link this feedback post (its id or number).' },
+      boardItem: { type: 'string', description: 'Only entries that link this board item (its id).' },
+      conversation: { type: 'string', description: 'Only entries that link this conversation (its id).' }
+    }
   },
   {
     name: 'create_changelog_entry', title: 'Write a changelog entry', method: 'POST', path: '/v1/admin/changelog/entries',
-    description: 'Creates a changelog entry: a draft by default, or published straight away with status `published` (which the project\'s public changelog shows and subscribers are emailed about). Prefer a draft unless the user said to publish.',
+    description: 'Creates a changelog entry: a draft by default, or published straight away with status `published` (which the project\'s public changelog shows, once its release is published too, and which emails the people following the posts it ships and the changelog\'s subscribers). Prefer a draft unless the user said to publish. `releaseId` files it under an existing release; `releaseVersion` finds the release with that version or CREATES it already published, so use it only when that is wanted. The sources you link must belong to the project, and a bad one fails the request before anything is written. Returns `{ entry }` with its id and number.',
     params: {
       project: { ...projectId, in: 'query' },
       title: { type: 'string', required: true, description: 'Up to 200 characters.' },
-      body: { type: 'string', description: 'Markdown, written for the public.' },
+      summary: { type: 'string', description: 'A short summary shown in lists and feeds, up to 300 characters.' },
+      body: { type: 'string', description: 'Markdown, written for the public, up to 20,000 characters.' },
+      bodyFormat: { type: 'string', enum: ['markdown', 'html'], description: 'How `body` is written. Default markdown; HTML is cleaned when saved.' },
       tag: { type: 'string', enum: ['new', 'improved', 'fix', 'removed', 'breaking'], description: 'Default improved.' },
+      area: { type: 'string', description: 'A lowercase label for the part of the product, such as web or api: letters, digits and hyphens, up to 40. When the project lists its areas (`changelog.areas` in list_projects) it must be one of them.' },
+      slug: { type: 'string', description: 'The URL slug, up to 120 characters. It is made unique for you. Default: made from the title.' },
       status: { type: 'string', enum: ['draft', 'published'], description: 'Default draft.' },
-      feedbackPostIds: { type: 'array', items: { type: 'string' }, description: 'Feedback posts it ships (ids or `#12`).' },
-      boardItemIds: { type: 'array', items: { type: 'string' }, description: 'Board items it ships.' }
+      publishedAt: { type: 'string', description: 'The date shown, as an ISO date-time. Default: now, when it is published.' },
+      releaseId: { type: 'string', description: 'File it under this release, from list_changelog_releases. It wins over `releaseVersion`.' },
+      releaseVersion: { type: 'string', description: 'File it under the release with this version (up to 60 characters). A release that does not exist is created already published.' },
+      pinned: { type: 'boolean', description: 'Keep it at the top of the changelog.' },
+      iconGlyph: { type: 'string', description: 'A glyph shown beside the entry, such as an emoji, up to 80 characters.' },
+      accentColor: { type: 'string', description: 'A #rrggbb colour that accents the entry.' },
+      images: { type: 'array', items: { type: 'object' }, description: 'Up to 10 pictures (PNG, JPEG, GIF or WebP) shown with the text, in order: the { url, name, mime, size } objects upload_board_comment_attachment returns for this project.' },
+      links: { type: 'array', items: { type: 'object' }, description: 'Up to 6 links shown with the entry, each { label, url }: a label up to 80 characters and an http(s) url up to 500.' },
+      commitShas: { type: 'array', items: { type: 'string' }, description: 'The full 40-character git commit SHAs it describes, up to 50.' },
+      feedbackPostIds: { type: 'array', items: { type: 'string' }, description: 'Feedback posts it ships (ids or `#12`), up to 50.' },
+      boardItemIds: { type: 'array', items: { type: 'string' }, description: 'Board items it ships, up to 50.' },
+      conversationIds: { type: 'array', items: { type: 'string' }, description: 'Conversations it answers (their ids), up to 50: the people to tell when it ships.' }
     }
   },
   {
     name: 'update_changelog_entry', title: 'Update a changelog entry', method: 'PATCH', path: '/v1/admin/changelog/entries/{id}',
-    description: 'Edits an entry or publishes a draft (status `published`). Only the fields you pass change.',
+    description: 'Edits an entry or publishes a draft (status `published`). Only the fields you pass change, and a list you pass (`images`, `links`, `commitShas`) replaces the old one. The first time an entry becomes public it gets its date and the people following the posts it ships, and the changelog\'s subscribers, are emailed (an entry in a draft release waits until that release is published); unpublishing keeps the date. `releaseVersion` finds the release with that version or CREATES it already published. Link posts, board items and conversations with link_changelog_entry. Returns `{ entry }`. Publishing reaches real people: confirm with the user first.',
     params: {
-      id: id('entry'), project: { ...projectId, in: 'query' },
-      title: { type: 'string', description: 'New title.' },
-      body: { type: 'string', description: 'Markdown.' },
+      id: { type: 'string', required: true, description: 'The entry\'s id, or its number (`12`) together with `project`.' },
+      project: { type: 'string', in: 'query', description: 'Project id, needed when `id` is an entry number.' },
+      title: { type: 'string', description: 'New title, up to 200 characters.' },
+      summary: { type: 'string', description: 'A short summary shown in lists and feeds, up to 300 characters; an empty string clears it.' },
+      body: { type: 'string', description: 'Markdown, up to 20,000 characters; an empty string clears it.' },
+      bodyFormat: { type: 'string', enum: ['markdown', 'html'], description: 'How `body` is written; HTML is cleaned when saved.' },
       tag: { type: 'string', enum: ['new', 'improved', 'fix', 'removed', 'breaking'], description: 'Tag.' },
-      status: { type: 'string', enum: ['draft', 'published', 'archived'], description: 'State.' }
+      area: { type: 'string', description: 'A lowercase label such as web or api: letters, digits and hyphens, up to 40; an empty string clears it. When the project lists its areas (`changelog.areas` in list_projects) it must be one of them.' },
+      slug: { type: 'string', description: 'A new URL slug, up to 120 characters. It is made unique for you; an empty string leaves it unchanged.' },
+      status: { type: 'string', enum: ['draft', 'published', 'archived'], description: 'State.' },
+      publishedAt: { type: 'string', description: 'The date shown, as an ISO date-time; an empty string clears it.' },
+      releaseId: { type: 'string', description: 'Move it into this release (from list_changelog_releases); an empty string takes it out of its release. It wins over `releaseVersion`.' },
+      releaseVersion: { type: 'string', description: 'Move it into the release with this version (up to 60 characters). A release that does not exist is created already published.' },
+      pinned: { type: 'boolean', description: 'Keep it at the top of the changelog.' },
+      iconGlyph: { type: 'string', description: 'A glyph shown beside the entry, such as an emoji, up to 80 characters; an empty string clears it.' },
+      accentColor: { type: 'string', description: 'A #rrggbb colour that accents the entry; an empty string clears it.' },
+      images: { type: 'array', items: { type: 'object' }, description: 'REPLACES the entry\'s pictures: up to 10 (PNG, JPEG, GIF or WebP), the { url, name, mime, size } objects upload_board_comment_attachment returns for this project; an empty list removes them all.' },
+      links: { type: 'array', items: { type: 'object' }, description: 'REPLACES the entry\'s links: up to 6, each { label, url } (a label up to 80 characters, an http(s) url up to 500); an empty list removes them all.' },
+      commitShas: { type: 'array', items: { type: 'string' }, description: 'REPLACES the git commits it describes: full 40-character SHAs, up to 50; an empty list removes them all.' }
     }
   },
+  // ---- errors ----------------------------------------------------------------------------------------,
   {
     name: 'list_errors', title: 'List errors', readOnly: true, method: 'GET', path: '/v1/admin/errors',
-    description: 'Issues from the project\'s connected error tracker (GlitchTip, Bugsink, Sentry), newest first.',
+    description: 'Issues from the project\'s connected error tracker (GlitchTip, Bugsink, Sentry), newest first. Returns `issues` and `next`: pass `next` as `cursor` for the following page (an empty `next` is the last page; it is also empty when several tracker projects are merged, so name one with `link` to page).',
     params: {
       project: projectId,
       status: { type: 'string', description: 'The tracker\'s own status, e.g. unresolved.' },
       q: { type: 'string', description: 'Search text.' },
-      user: { type: 'string', description: 'An end user\'s external id: only the errors they hit.' },
-      limit: limit(100)
+      user: { type: 'string', description: 'An end user\'s external id: only the errors they hit. Bugsink cannot filter by user and returns none.' },
+      link: { type: 'string', description: 'Only this tracker project (its link id, from `errorLinks` of the project in list_projects; `main` is the first). Left out, every tracker project\'s issues are merged, newest first.' },
+      cursor: { type: 'string', description: 'The `next` of the previous page.' },
+      limit: { ...limit(100), description: 'How many to return (up to 100). Default 50; Bugsink pages are a fixed size.' }
     }
   },
   {
     name: 'get_error', title: 'Get an error', readOnly: true, method: 'GET', path: '/v1/admin/errors/{id}',
     description: 'One error issue with its latest event: message, stack trace and context.',
-    params: { id: id('issue'), project: projectId }
+    params: {
+      id: id('issue'), project: projectId,
+      link: { type: 'string', description: 'The tracker project (link) id when the project reports to several; default the first.' }
+    }
   },
+  // ---- pricing, webhooks -----------------------------------------------------------------------------,
   // ---- people, the conversation as a hub, shipping, automations, events ----------------
   {
     name: 'list_contacts', title: 'List contacts', readOnly: true, method: 'GET', path: '/v1/contacts',
-    description: 'A project\'s people, newest first. Filter by segment, tag, subscription, billing or search text; page with `cursor` (the `nextCursor` of the previous page).',
+    description: 'A project\'s people, newest first. Filter by segment, tag, subscription, origin, lead form, billing, spend, last change or search text; page with `cursor` (the `nextCursor` of the previous page). `q` returns one page of best matches with no cursor. `email` or `externalId` looks one person up and ignores every other filter. The reply is `{ contacts, nextCursor }`.',
     params: {
       project: projectId,
       q: { type: 'string', description: 'Search name, email and user id.' },
@@ -340,8 +420,14 @@ export const MCP_TOOLS: readonly McpTool[] = [
       tag: { type: 'string', description: 'Only people with this tag.' },
       subscription: { type: 'string', enum: ['none', 'pending', 'subscribed', 'unsubscribed'], description: 'Marketing consent.' },
       billing: { type: 'string', enum: ['paying', 'never', 'active', 'trialing', 'past_due', 'canceled'], description: 'Stripe status, once Stripe is connected.' },
+      minRevenue: { type: 'number', description: 'Only people who have paid more than this in total (Stripe, in the account\'s main currency).' },
+      origin: { type: 'string', enum: ['app', 'lead_form', 'signup', 'import', 'sync', 'stripe', 'api', 'panel', 'feedback'], description: 'How they were added.' },
+      leadForm: { type: 'string', description: 'Only people who came in through this lead form (its id, from list_lead_forms).' },
+      updatedSince: { type: 'string', description: 'ISO date-time: only people changed at or after it.' },
+      externalId: { type: 'string', description: 'Look up one person by their id in the host app. Returns at most one contact.' },
+      email: { type: 'string', description: 'Look up one person by email address. Returns at most one contact.' },
       cursor: { type: 'string', description: 'The nextCursor of the previous page.' },
-      limit: limit(200)
+      limit: { ...limit(200), description: 'How many to return (up to 200). Default 50.' }
     }
   },
   {
@@ -362,17 +448,21 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'update_contact', title: 'Update a contact', method: 'PATCH', path: '/v1/contacts/{id}',
-    description: 'Change a person\'s name, language (a tag such as es or pt-BR), tags or attributes. Never subscribe someone to marketing mail on your own: that needs their consent.',
+    description: 'Change a person\'s name, email, language (a tag such as es or pt-BR), tags or attributes. `tags` REPLACES the whole tag list; `addTags` and `removeTags` change it instead. An `externalId` can only be set on a person who has none. Never subscribe someone to marketing mail on your own: that needs their consent. Returns `{ contact }`.',
     params: {
       id: id('contact'),
       project: { ...projectId, in: 'query' },
-      name: { type: 'string', description: 'Their name.' },
+      name: { type: 'string', description: 'Their name, up to 120 characters.' },
+      email: { type: 'string', description: 'Their email address; it replaces the current one.' },
+      externalId: { type: 'string', description: 'Their id in the host app, up to 200 characters. It only takes effect on a person who has none yet.' },
       language: { type: 'string', description: 'A language tag such as es or pt-BR; empty clears it.' },
+      tags: { type: 'array', items: { type: 'string' }, description: 'REPLACES all of their tags (up to 50, each up to 40 characters); an empty list clears them. Applied before `addTags` and `removeTags`.' },
       addTags: { type: 'array', items: { type: 'string' }, description: 'Tags to add.' },
       removeTags: { type: 'array', items: { type: 'string' }, description: 'Tags to remove.' },
       attributes: { type: 'object', description: 'Attributes to set; a null value removes one.' }
     }
   },
+  // ---- knowledge base --------------------------------------------------------------------------------,
   {
     name: 'list_segments', title: 'List segments', readOnly: true, method: 'GET', path: '/v1/segments',
     description: 'A project\'s saved segments. Rules can use the plan, language, an open conversation, a vote, errors or finished onboarding.',
@@ -484,15 +574,17 @@ export const MCP_TOOLS: readonly McpTool[] = [
     params: { id: id('project') }
   },
   {
-    name: 'create_webhook_endpoint', title: 'Add a webhook endpoint', method: 'POST', path: '/v1/admin/projects/{id}/webhooks',
-    description: 'Post the chosen events to a URL, signed with a secret that is returned once. `events` are filters: * (everything), a group such as feedback.*, or an exact type such as changelog.entry.published.',
+    name: 'create_webhook_endpoint', title: 'Add a webhook endpoint', destructive: true, method: 'POST', path: '/v1/admin/projects/{id}/webhooks',
+    description: 'Post the chosen events to a URL, signed with a secret that is returned once. The events carry customer data (people, conversations, feedback), and from now on they are sent to that URL, so confirm the address with the user first. `events` are filters: * (everything), a group such as feedback.*, or an exact type such as changelog.entry.published. A project has at most 10 endpoints and the plan must include event webhooks. Returns `{ endpoint }` with the signing secret: do not repeat it.',
     params: {
       id: id('project'),
-      url: { type: 'string', required: true, description: 'The https address to post to.' },
-      events: { type: 'array', items: { type: 'string' }, description: 'Event filters. Default everything.' },
-      description: { type: 'string', description: 'What it is for.' }
+      url: { type: 'string', required: true, description: 'The http(s) address to post to; use https.' },
+      events: { type: 'array', items: { type: 'string' }, description: 'Event filters, at most 30. Default everything.' },
+      description: { type: 'string', description: 'What it is for, up to 120 characters.' },
+      enabled: { type: 'boolean', description: 'false creates it switched off. Default true.' }
     }
   },
+  // ---- email -----------------------------------------------------------------------------------------,
   {
     name: 'list_pricing_tables', title: 'List pricing tables', readOnly: true, method: 'GET', path: '/v1/admin/pricing-tables',
     description: 'A project\'s pricing tables (plan cards, paywalls, comparison tables) with their plans, status and anything to check before publishing, and whether Stripe is connected.',
@@ -521,6 +613,7 @@ export const MCP_TOOLS: readonly McpTool[] = [
       name: { type: 'string', description: 'Up to 80 characters.' },
       key: { type: 'string', description: 'Lowercase letters, digits and dashes.' },
       template: { type: 'string', enum: ['tiers', 'rows', 'paywall', 'matrix', 'spotlight'], description: 'The layout.' },
+      locale: { type: 'string', description: 'The language tag the table\'s own words are written in, such as en or pt-BR (default en). `translations` hold the other languages; one for this language is dropped.' },
       plans: { type: 'array', items: { type: 'object' }, description: 'Up to 6 plans: id, key, name, description, badge, highlighted, stripeProduct, prices ({ week, month, year, once }: stripePrice, amount, amounts by currency, appStoreProduct), customPrice, priceNote, trialDays, action ({ type: checkout, payment_link, url or none, label, url }) and features (row id to true, false or a value such as "10").' },
       features: { type: 'array', items: { type: 'object' }, description: 'Up to 40 rows: id, kind (feature or heading), text, hint.' },
       content: { type: 'object', description: 'title, subtitle, footnote, weeklyLabel, monthlyLabel, yearlyLabel, savingsLabel, termsUrl, privacyUrl.' },
@@ -587,13 +680,16 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'list_faqs', title: 'List knowledge base answers', readOnly: true, method: 'GET', path: '/v1/admin/knowledge/faqs',
-    description: 'FAQs (question, answer, tags), filtered or searched. Offset paging with `limit` and `skip`; the reply says whether there are more.',
+    description: 'FAQs (question, answer, tags, status), filtered or searched; each also lists the assistants that can reach it. Offset paging with `limit` and `skip`; the reply is `{ faqs, total, hasMore }`. Only `active` answers are used by the assistants. Without `modelId` it covers every knowledge model of the workspace.',
     params: {
       modelId: { type: 'string', description: 'A knowledge model id, from list_knowledge_models.' },
-      q: { type: 'string', description: 'Full-text search.' },
-      status: { type: 'string', description: 'Status, e.g. published or draft.' },
+      nodeId: { type: 'string', description: 'Only answers in this folder (list_knowledge_nodes).' },
+      q: { type: 'string', description: 'Search text. With a `modelId` and a search engine set up it is a typo-tolerant search of question, answer, aliases and tags (and `origin` and `sourceDocumentId` are then not applied); otherwise it matches the question text only.' },
+      status: { type: 'string', enum: ['draft', 'active', 'disabled', 'archived', 'outdated'], description: 'Status: active answers are live; outdated ones came from a document that no longer contains them.' },
+      origin: { type: 'string', enum: ['manual', 'imported', 'ai-generated', 'api', 'conversation'], description: 'How the answer was made.' },
+      sourceDocumentId: { type: 'string', description: 'Only answers imported from this document (list_knowledge_documents).' },
       language: { type: 'string', description: 'Language code.' },
-      limit: limit(100),
+      limit: { ...limit(200), description: 'How many to return (up to 200). Default 50.' },
       skip: { type: 'integer', description: 'How many to skip.' }
     }
   },
@@ -604,28 +700,32 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'create_faq', title: 'Add an FAQ', method: 'POST', path: '/v1/admin/knowledge/faqs',
-    description: 'Add a question and answer to a knowledge model. Published answers are what the project\'s assistants and the public help center use.',
+    description: 'Add a question and answer to a knowledge model. It is `active` unless `status` says otherwise, and active answers are what the project\'s assistants and the public help center use. Fails with 402 when the plan\'s FAQ limit is reached. Returns `{ faq }`.',
     params: {
       modelId: { type: 'string', required: true, description: 'The knowledge model id, from list_knowledge_models.' },
-      question: { type: 'string', required: true, description: 'The question.' },
-      answer: { type: 'string', description: 'The answer (Markdown).' },
-      aliases: { type: 'array', description: 'Other ways to ask it.' },
-      tags: { type: 'array', description: 'Tags.' },
-      status: { type: 'string', description: 'Status, e.g. published or draft.' },
-      language: { type: 'string', description: 'Language code.' }
+      nodeId: { type: 'string', description: 'The folder to file it in (list_knowledge_nodes), which must belong to the same model. Default: the model\'s root.' },
+      question: { type: 'string', required: true, description: 'The question, up to 500 characters.' },
+      answer: { type: 'string', description: 'The answer (Markdown), up to 20,000 characters.' },
+      aliases: { type: 'array', items: { type: 'string' }, description: 'Other ways to ask it (up to 20, each up to 500 characters).' },
+      tags: { type: 'array', items: { type: 'string' }, description: 'Tags (up to 40, each up to 120 characters).' },
+      keywords: { type: 'array', items: { type: 'string' }, description: 'Extra search terms that help find it (up to 40, each up to 120 characters).' },
+      status: { type: 'string', enum: ['draft', 'active', 'disabled', 'archived', 'outdated'], description: 'Default active. Only active answers are used by the assistants; there is no `published` status.' },
+      language: { type: 'string', description: 'Language code, up to 12 characters. Default en.' }
     }
   },
   {
     name: 'update_faq', title: 'Edit an FAQ', method: 'PATCH', path: '/v1/admin/knowledge/faqs/{id}',
-    description: 'Change a question, answer, aliases, tags, status or language. Only the keys you send change. Editing an imported answer stops a later re-import overwriting it.',
+    description: 'Change a question, answer, aliases, tags, keywords, folder, status or language. Only the keys you send change, and a list you send (`aliases`, `tags`, `keywords`) replaces the old one. Editing an imported answer\'s text stops a later re-import overwriting it. Returns `{ faq }`.',
     params: {
       id: id('FAQ'),
-      question: { type: 'string', description: 'The question.' },
-      answer: { type: 'string', description: 'The answer (Markdown).' },
-      aliases: { type: 'array', description: 'Other ways to ask it.' },
-      tags: { type: 'array', description: 'Tags.' },
-      status: { type: 'string', description: 'Status, e.g. published or draft.' },
-      language: { type: 'string', description: 'Language code.' }
+      question: { type: 'string', description: 'The question, up to 500 characters.' },
+      answer: { type: 'string', description: 'The answer (Markdown), up to 20,000 characters.' },
+      aliases: { type: 'array', items: { type: 'string' }, description: 'REPLACES the other ways to ask it (up to 20, each up to 500 characters); an empty list clears them.' },
+      tags: { type: 'array', items: { type: 'string' }, description: 'REPLACES the tags (up to 40, each up to 120 characters); an empty list clears them.' },
+      keywords: { type: 'array', items: { type: 'string' }, description: 'REPLACES the extra search terms (up to 40, each up to 120 characters); an empty list clears them.' },
+      nodeId: { type: 'string', description: 'Move it to this folder (list_knowledge_nodes), which must belong to the same model; an empty string moves it to the model\'s root.' },
+      status: { type: 'string', enum: ['draft', 'active', 'disabled', 'archived', 'outdated'], description: 'Only active answers are used by the assistants; there is no `published` status.' },
+      language: { type: 'string', description: 'Language code, up to 12 characters; empty resets it to en.' }
     }
   },
   {
@@ -635,8 +735,11 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'list_knowledge_documents', title: 'List knowledge documents', readOnly: true, method: 'GET', path: '/v1/admin/knowledge/documents',
-    description: 'Documents uploaded as sources for a knowledge model.',
-    params: { modelId: { type: 'string', description: 'A knowledge model id.' } }
+    description: 'Documents uploaded as sources for a knowledge model (up to 500, newest first), each with how many FAQs came from it, as `{ documents }`. Only the current version of each is listed unless `all` is 1.',
+    params: {
+      modelId: { type: 'string', description: 'A knowledge model id (from list_knowledge_models). Left out, every model of the workspace.' },
+      all: { type: 'string', enum: ['1'], description: 'Also list the versions a newer upload replaced.' }
+    }
   },
   {
     name: 'list_email_templates', title: 'List email templates', readOnly: true, method: 'GET', path: '/v1/admin/emails',
@@ -660,26 +763,32 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'list_email_logs', title: 'Email log', readOnly: true, method: 'GET', path: '/v1/admin/email-logs',
-    description: 'Every message HelpBites sent or tried to send, newest first. Page with `before` set to the previous reply\'s nextBefore.',
+    description: 'Every message HelpBites sent or tried to send, newest first. The reply is `{ logs, nextBefore }`: page with `before` set to the previous reply\'s nextBefore.',
     params: {
       project: { type: 'string', description: 'Project id. Leave out for the whole workspace.' },
-      to: { type: 'string', description: 'An address, or the start of one.' },
+      to: { type: 'string', description: 'An exact address (with an @), or the start of one.' },
+      q: { type: 'string', description: 'The same as `to`; `to` wins when both are sent.' },
       template: { type: 'string', description: 'A template send key.' },
-      status: { type: 'string', description: 'Delivery status.' },
-      source: { type: 'string', description: 'Where it came from, e.g. api, test, campaign.' },
+      status: { type: 'string', enum: ['scheduled', 'sent', 'delivered', 'opened', 'clicked', 'unsubscribed', 'bounced', 'complained', 'failed', 'suppressed'], description: 'Delivery status.' },
+      source: { type: 'string', description: 'Where it came from: api, admin, test, notification, feedback, system, campaign, sequence or form.' },
+      kind: { type: 'string', description: 'What was sent: template, html, document or message.' },
       batch: { type: 'string', description: 'A batch id, e.g. cm_<campaign id> for one campaign\'s recipients.' },
       since: { type: 'string', description: 'ISO date-time.' },
       until: { type: 'string', description: 'ISO date-time.' },
       before: { type: 'string', description: 'The previous reply\'s nextBefore.' },
-      limit: limit(200)
+      limit: { ...limit(200), description: 'How many to return (up to 200). Default 50.' }
     }
   },
+  // ---- contacts --------------------------------------------------------------------------------------,
   {
     name: 'list_email_suppressions', title: 'Suppressed addresses', readOnly: true, method: 'GET', path: '/v1/admin/email-suppressions',
-    description: 'Addresses a project no longer mails (bounces, complaints, unsubscribes).',
+    description: 'Addresses a project no longer mails (bounces, complaints, unsubscribes, ones added by hand), newest first. The reply is `{ suppressions, nextBefore }`: pass `nextBefore` as `before` for the next page (null on the last).',
     params: {
       project: { type: 'string', description: 'Project id. Leave out for the whole workspace.' },
-      q: { type: 'string', description: 'The start of an address.' }
+      q: { type: 'string', description: 'The start of an address.' },
+      reason: { type: 'string', enum: ['bounce', 'complaint', 'unsubscribe', 'manual'], description: 'Only addresses suppressed for this reason.' },
+      before: { type: 'string', description: 'ISO date-time: the previous reply\'s `nextBefore`.' },
+      limit: { ...limit(500), description: 'How many to return (up to 500). Default 100.' }
     }
   },
   {
