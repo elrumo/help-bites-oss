@@ -435,7 +435,9 @@ function cardPills(item: BoardItem) {
   return [
     ...(item.description.trim() ? [{ key: 'description', icon: 'i-lucide-text', count: 0, title: t('board.pillDescription') }] : []),
     ...(images ? [{ key: 'images', icon: 'i-lucide-image', count: images, title: t('board.pillImages', images) }] : []),
-    ...(files ? [{ key: 'files', icon: 'i-lucide-paperclip', count: files, title: t('board.pillFiles', files) }] : [])
+    ...(files ? [{ key: 'files', icon: 'i-lucide-paperclip', count: files, title: t('board.pillFiles', files) }] : []),
+    ...(item.related.length ? [{ key: 'related', icon: 'i-lucide-link-2', count: item.related.length, title: t('board.pillRelated', item.related.length) }] : []),
+    ...(item.errorRefs.length ? [{ key: 'error', icon: 'i-lucide-bug', count: 0, title: t('board.pillError') }] : [])
   ]
 }
 /** Target dates are calendar days at UTC midnight. */

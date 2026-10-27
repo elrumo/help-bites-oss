@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-2">
-    <div class="flex flex-col gap-2 items-center">
+    <div class="flex flex-row gap-2 items-center">
       <h3 class="text-sm font-semibold">
         {{ $t('attachments.title') }}
       </h3>

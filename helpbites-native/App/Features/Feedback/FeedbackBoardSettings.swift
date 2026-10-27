@@ -110,6 +110,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
         let id = row.id
         rowCard {
           HStack(spacing: 8) {
+            grip(id)
             TextField("Label", text: $row.value.label).textFieldStyle(.linear).accessibilityLabel("Status label")
             keyField($row.value.key, label: row.value.label, name: "Status key")
             rowButton("arrow.up", "Move up", enabled: draft.statuses.first?.id != id) { moveUp(&draft.statuses, id) }
@@ -126,6 +127,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
             }
           }
         }
+        .dropDestination(for: String.self) { dropped, _ in move(&draft.statuses, dropped: dropped, onto: id) }
       }
       addButton("Add status") {
         draft.statuses.append(FeedbackDraftRow(value: FeedbackStatusDefinition(key: "", label: "", category: "open", color: "neutral", isDefault: false, notify: false)))
@@ -140,6 +142,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
         let id = row.id
         rowCard {
           HStack(spacing: 8) {
+            grip(id)
             FeedbackTypeIcon(icon: row.value.icon, size: 15)
               .foregroundStyle(Theme.textToned)
               .frame(width: 36, height: 36)
@@ -155,6 +158,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
             .autocorrectionDisabled()
             .accessibilityLabel("Icon")
         }
+        .dropDestination(for: String.self) { dropped, _ in move(&draft.types, dropped: dropped, onto: id) }
       }
       addButton("Add type") { draft.types.append(FeedbackDraftRow(value: FeedbackTypeDefinition(key: "", label: "", icon: ""))) }
     }
@@ -186,6 +190,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
         let id = row.id
         rowCard {
           HStack(spacing: 8) {
+            grip(id)
             TextField("Label", text: $row.value.label).textFieldStyle(.linear).accessibilityLabel(boardOnly ? "Label name" : "Tag label")
             keyField($row.value.key, label: row.value.label, name: boardOnly ? "Label key" : "Tag key")
             rowButton("arrow.up", "Move up", enabled: draft.tags.first?.id != id) { moveUp(&draft.tags, id) }
@@ -193,6 +198,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
           }
           FeedbackSelect(options: feedbackColorOptions, selection: $row.value.color, compact: true).accessibilityLabel("Colour")
         }
+        .dropDestination(for: String.self) { dropped, _ in move(&draft.tags, dropped: dropped, onto: id) }
       }
       addButton(boardOnly ? "Add label" : "Add tag") { draft.tags.append(FeedbackDraftRow(value: FeedbackTagDefinition(key: "", label: "", color: "neutral"))) }
     }
@@ -240,6 +246,24 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
 
   private func addButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
     Button(action: action) { Label(title, systemImage: "plus") }.buttonStyle(.lnSecondaryCompact)
+  }
+
+  /// A row's grip: drag it onto another row of the same list to take that row's place.
+  private func grip(_ id: UUID) -> some View {
+    Image(systemName: "line.3.horizontal")
+      .font(.system(size: 13, weight: .medium))
+      .foregroundStyle(Theme.textDimmed)
+      .frame(width: 22, height: 36)
+      .contentShape(Rectangle())
+      .draggable(id.uuidString)
+      .accessibilityLabel("Drag to reorder")
+  }
+
+  private func move<Value>(_ list: inout [FeedbackDraftRow<Value>], dropped: [String], onto target: UUID) -> Bool {
+    guard let raw = dropped.first, let from = UUID(uuidString: raw), from != target,
+          let at = list.firstIndex(where: { $0.id == from }), let to = list.firstIndex(where: { $0.id == target }) else { return false }
+    list.move(fromOffsets: IndexSet(integer: at), toOffset: to > at ? to + 1 : to)
+    return true
   }
 
   private func moveUp<Value>(_ list: inout [FeedbackDraftRow<Value>], _ id: UUID) {
