@@ -23,6 +23,10 @@ import {
 /** Posts, conversations and other items, one item may link to. */
 export const BOARD_LINKS_MAX = 50
 
+/** What an item is: a card, an epic that groups cards, or a release that ships them. */
+export const BOARD_ITEM_KINDS = ['task', 'epic', 'release'] as const
+export type BoardItemKind = typeof BOARD_ITEM_KINDS[number]
+
 export const BOARD_ROADMAP_LAYOUTS = ['columns', 'timeline', 'list'] as const
 export type BoardRoadmapLayout = typeof BOARD_ROADMAP_LAYOUTS[number]
 
@@ -92,6 +96,8 @@ export type BoardLinkedPost = FeedbackPostRef & { voteCount: number, hidden: boo
 export type BoardLinkedConversation = { id: string, subject: string, status: string, endUserName: string }
 /** Another item of the same board that this one is related to. */
 export type BoardRelatedItem = { id: string, number: number | null, title: string, status: string }
+/** How far an epic or release is: its cards, and those in a done status. */
+export type BoardProgress = { total: number, done: number }
 export type BoardItemHistoryChange = { field: string, from: unknown, to: unknown }
 export type BoardItemHistory = {
   id: string
@@ -127,6 +133,7 @@ export type BoardItem = {
   projectId: string
   number: number | null
   title: string
+  kind: BoardItemKind
   /** Internal Markdown. Never public. */
   description: string
   /** The only text the roadmap shows. */
@@ -145,6 +152,13 @@ export type BoardItem = {
   /** Related items, symmetric: linking A to B also links B to A. */
   relatedItemIds: string[]
   related: BoardRelatedItem[]
+  /** The epic and the release a card (or an epic, for its release) belongs to; '' for none. */
+  epicId: string
+  releaseId: string
+  epic: BoardRelatedItem | null
+  release: BoardRelatedItem | null
+  /** Set on an epic or a release: its cards. Null on a plain card. */
+  progress: BoardProgress | null
   /** Errors from the tracker this item was filed from; empty for an ordinary item. */
   errorRefs: BoardErrorRef[]
   /** Σ of the linked, non-hidden posts' votes. */
@@ -239,6 +253,11 @@ export function normalizeBoardConfig(value: unknown): BoardConfig {
 
 export type BoardItemValues = Partial<{
   title: string
+  kind: BoardItemKind
+  /** An epic's id or `#N`; '' clears it. Checked against the board's epics by the server. */
+  epicId: string
+  /** A release's id or `#N`; '' clears it. */
+  releaseId: string
   description: string
   publicDescription: string
   status: string
@@ -271,6 +290,15 @@ export function readBoardItemInput(payload: unknown, config: Pick<BoardConfig, '
     if (!title) errors.push('A title is required')
     else if (title.length > FEEDBACK_TITLE_MAX_LENGTH) errors.push(`The title is longer than ${FEEDBACK_TITLE_MAX_LENGTH} characters`)
     else values.title = title
+  }
+  if (has('kind')) {
+    if ((BOARD_ITEM_KINDS as readonly unknown[]).includes(raw.kind)) values.kind = raw.kind as BoardItemKind
+    else errors.push(`kind must be one of ${BOARD_ITEM_KINDS.join(', ')}`)
+  }
+  for (const key of ['epicId', 'releaseId'] as const) {
+    if (!has(key)) continue
+    if (raw[key] !== null && typeof raw[key] !== 'string') errors.push(`${key} must be a string`)
+    else values[key] = String(raw[key] || '').trim().slice(0, 40)
   }
   for (const key of ['description', 'publicDescription'] as const) {
     if (!has(key)) continue
@@ -411,4 +439,11 @@ export function roadmapGroups<T extends { status: string, targetDate?: string | 
   const out = [...groups.values()].sort((a, b) => a.key.localeCompare(b.key))
   if (undated.length) out.push({ key: 'none', label: 'No date', items: undated })
   return out
+}
+
+// ---- epics and releases -----------------------------------------------------
+
+/** An epic holds cards; a release holds cards and epics; a release is held by nothing. */
+export function kindCanHave(kind: BoardItemKind, parent: 'epic' | 'release'): boolean {
+  return parent === 'epic' ? kind === 'task' : kind !== 'release'
 }

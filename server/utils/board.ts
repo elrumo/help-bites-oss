@@ -2,6 +2,7 @@ import { createError } from 'h3'
 import {
   BOARD_LINKS_MAX,
   ROADMAP_CATEGORIES,
+  kindCanHave,
   normalizeBoardConfig,
   readBoardItemInput,
   readErrorRefs,
@@ -9,10 +10,12 @@ import {
   type BoardConfig,
   type BoardItem,
   type BoardItemHistoryChange,
+  type BoardItemKind,
   type BoardItemPriority,
   type BoardItemValues,
   type BoardLinkedConversation,
   type BoardLinkedPost,
+  type BoardProgress,
   type BoardRelatedItem,
   type RoadmapResponse
 } from '#shared/board'
@@ -47,7 +50,7 @@ function stringList(value: unknown): string[] {
 }
 
 const HISTORY_FIELDS = [
-  'title', 'description', 'publicDescription', 'status', 'rank', 'priority', 'assignee', 'labels', 'attachments',
+  'title', 'kind', 'epicId', 'releaseId', 'description', 'publicDescription', 'status', 'rank', 'priority', 'assignee', 'labels', 'attachments',
   'targetDate', 'public', 'feedbackPostIds', 'conversationIds', 'relatedItemIds', 'completedAt', 'errorRefs', 'errorKeys'
 ] as const
 
@@ -110,6 +113,12 @@ function byRank(a: ParseObject, b: ParseObject): number {
   return compare('rank') || compare('number')
 }
 
+/** Rows saved before epics and releases are cards. */
+function kindOf(row: ParseObject): BoardItemKind {
+  const kind = row.get('kind')
+  return kind === 'epic' || kind === 'release' ? kind : 'task'
+}
+
 /** An item by object id, or by its number when the operator names the project. */
 export async function loadBoardItem(id: string, projectId?: string): Promise<{ project: ParseObject, row: ParseObject }> {
   const Parse = useParse()
@@ -134,14 +143,32 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
   const postIds = unique(rows.flatMap(row => stringList(row.get('feedbackPostIds'))))
   const conversationIds = options.conversations === false ? [] : unique(rows.flatMap(row => stringList(row.get('conversationIds'))))
   const relatedIds = unique(rows.flatMap(row => stringList(row.get('relatedItemIds'))))
+  const parentIds = unique(rows.flatMap(row => [String(row.get('epicId') || ''), String(row.get('releaseId') || '')]))
+  const groupIds = rows.filter(row => kindOf(row) !== 'task').map(row => row.id || '')
 
   // A whole board links more posts than one read returns: in batches, never more than were asked for.
-  const [postRows, conversationRows, relatedRows] = await Promise.all([
+  const [postRows, conversationRows, relatedRows, parentRows, ...childPages] = await Promise.all([
     postIds.length ? collectAll(() => new Parse.Query('FeedbackPost').equalTo('project', project).containedIn('objectId', postIds), { max: postIds.length, keys: ['title', 'status', 'number', 'voteCount', 'hidden'] }) : [],
     conversationIds.length ? collectAll(() => new Parse.Query('Conversation').equalTo('project', project).containedIn('objectId', conversationIds).include('endUser'), { max: conversationIds.length }) : [],
-    relatedIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn('objectId', relatedIds), { max: relatedIds.length, keys: ['number', 'title', 'status'] }) : []
+    relatedIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn('objectId', relatedIds), { max: relatedIds.length, keys: ['number', 'title', 'status'] }) : [],
+    parentIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn('objectId', parentIds), { max: parentIds.length, keys: ['number', 'title', 'status'] }) : [],
+    ...(['epicId', 'releaseId'] as const).map(field => groupIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn(field, groupIds), { max: BOARD_ITEMS_MAX, keys: ['status', 'epicId', 'releaseId'] }) : [])
   ])
-  const related = new Map<string, BoardRelatedItem>(relatedRows.map(row => [row.id || '', { id: row.id || '', number: typeof row.get('number') === 'number' ? row.get('number') : null, title: String(row.get('title') || ''), status: String(row.get('status') || '') }]))
+  const ref = (row: ParseObject): [string, BoardRelatedItem] => [row.id || '', { id: row.id || '', number: typeof row.get('number') === 'number' ? row.get('number') : null, title: String(row.get('title') || ''), status: String(row.get('status') || '') }]
+  const related = new Map<string, BoardRelatedItem>(relatedRows.map(ref))
+  const parents = new Map<string, BoardRelatedItem>(parentRows.map(ref))
+  const progress = new Map<string, BoardProgress>()
+  // A card under both an epic and a release turns up in both reads: once per card.
+  for (const child of new Map(childPages.flat().map(card => [card.id, card])).values()) {
+    const done = feedbackStatusCategory(board, String(child.get('status') || '')) === 'done'
+    // A card under an epic and a release counts for both; a card is never counted twice for the same parent.
+    for (const parent of unique([String(child.get('epicId') || ''), String(child.get('releaseId') || '')])) {
+      const entry = progress.get(parent) || { total: 0, done: 0 }
+      entry.total++
+      if (done) entry.done++
+      progress.set(parent, entry)
+    }
+  }
   const posts = new Map<string, BoardLinkedPost>(postRows.map(row => [row.id || '', { ...feedbackPostRef(row, feedback), voteCount: Number(row.get('voteCount') || 0), hidden: row.get('hidden') === true }]))
   const conversations = new Map<string, BoardLinkedConversation>(conversationRows.map((row) => {
     const endUser = row.get('endUser') as ParseObject | undefined
@@ -158,6 +185,7 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
       projectId: pointerId(row.get('project')),
       number: typeof row.get('number') === 'number' ? row.get('number') : null,
       title: String(row.get('title') || ''),
+      kind: kindOf(row),
       description: String(row.get('description') || ''),
       publicDescription: String(row.get('publicDescription') || ''),
       status,
@@ -173,6 +201,11 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
       conversationIds: stringList(row.get('conversationIds')),
       relatedItemIds: stringList(row.get('relatedItemIds')),
       related: stringList(row.get('relatedItemIds')).map(id => related.get(id)).filter((item): item is BoardRelatedItem => Boolean(item)),
+      epicId: String(row.get('epicId') || ''),
+      releaseId: String(row.get('releaseId') || ''),
+      epic: parents.get(String(row.get('epicId') || '')) || null,
+      release: parents.get(String(row.get('releaseId') || '')) || null,
+      progress: kindOf(row) === 'task' ? null : progress.get(row.id || '') || { total: 0, done: 0 },
       errorRefs: readErrorRefs(row.get('errorRefs')),
       voteCount: linkedPosts.filter(post => !post.hidden).reduce((sum, post) => sum + post.voteCount, 0),
       lastModifiedBy: String(row.get('lastModifiedBy') || ''),
@@ -191,11 +224,16 @@ export async function serializeBoardItem(project: ParseObject, row: ParseObject)
 }
 
 /** Every item on the board (or those linked to one post or conversation), in rank order. */
-export async function listBoardItems(project: ParseObject, filter: { conversation?: string, feedbackPost?: string } = {}): Promise<BoardItem[]> {
+export async function listBoardItems(project: ParseObject, filter: { conversation?: string, feedbackPost?: string, kind?: BoardItemKind, epicId?: string, releaseId?: string } = {}): Promise<BoardItem[]> {
   const rows = await collectAll(() => {
     const query = new (useParse()).Query('BoardItem').equalTo('project', project)
     if (filter.conversation) query.equalTo('conversationIds', filter.conversation)
     if (filter.feedbackPost) query.equalTo('feedbackPostIds', filter.feedbackPost)
+    // Rows from before epics and releases have no kind: they are cards.
+    if (filter.kind === 'task') query.notContainedIn('kind', ['epic', 'release'])
+    else if (filter.kind) query.equalTo('kind', filter.kind)
+    if (filter.epicId) query.equalTo('epicId', filter.epicId)
+    if (filter.releaseId) query.equalTo('releaseId', filter.releaseId)
     return query
   }, { max: BOARD_ITEMS_MAX })
   return serializeBoardItems(project, rows.sort(byRank))
@@ -212,11 +250,36 @@ async function setAssignee(row: ParseObject, assigneeId: string): Promise<void> 
 }
 
 function applyValues(row: ParseObject, values: BoardItemValues): void {
-  for (const key of ['title', 'description', 'publicDescription', 'status', 'rank', 'priority', 'labels', 'attachments', 'public'] as const) {
+  for (const key of ['title', 'kind', 'description', 'publicDescription', 'status', 'rank', 'priority', 'labels', 'attachments', 'public'] as const) {
     if (values[key] !== undefined) row.set(key, values[key])
   }
   if (values.targetDate === null) row.unset('targetDate')
   else if (values.targetDate) row.set('targetDate', values.targetDate)
+}
+
+/**
+ * Point a card at its epic and release (by id or `#N`; '' clears), and keep the
+ * kinds consistent: only a card has an epic, a release has no parent, and an
+ * epic or release that still has cards cannot become anything else.
+ */
+async function setParents(project: ParseObject, row: ParseObject, values: BoardItemValues, before: BoardItemKind): Promise<void> {
+  const kind = kindOf(row)
+  if (values.kind !== undefined && values.kind !== before && before !== 'task' && row.id) {
+    const Parse = useParse()
+    const field = before === 'epic' ? 'epicId' : 'releaseId'
+    if (await new Parse.Query('BoardItem').equalTo('project', project).equalTo(field, row.id).first(MASTER)) badRequest([`Move the cards out of this ${before} before changing its kind`])
+  }
+  for (const [field, parent] of [['epicId', 'epic'], ['releaseId', 'release']] as const) {
+    const wanted = values[field]
+    if (wanted) {
+      if (!kindCanHave(kind, parent)) badRequest([`A ${kind} cannot belong to a ${parent}`])
+      const target = await findBoardItem(project, wanted)
+      if (!target || kindOf(target) !== parent) throw createError({ statusCode: 404, statusMessage: `${parent === 'epic' ? 'Epic' : 'Release'} not found` })
+      row.set(field, target.id)
+    } else if (wanted === '' || (values.kind !== undefined && !kindCanHave(kind, parent))) {
+      row.unset(field)
+    }
+  }
 }
 
 type LinkTarget = { kind: 'feedback', id: string, row: ParseObject } | { kind: 'conversation', id: string, row: ParseObject } | { kind: 'item', id: string, row: ParseObject }
@@ -313,7 +376,9 @@ export async function createBoardItem(project: ParseObject, agent: ParseObject, 
   row.set('feedbackPostIds', [])
   row.set('conversationIds', [])
   row.set('relatedItemIds', [])
+  row.set('kind', 'task')
   applyValues(row, values)
+  await setParents(project, row, values, 'task')
   if (values.assigneeId) await setAssignee(row, values.assigneeId)
   const { completedAt } = statusTransition(board, '', String(row.get('status')), undefined, new Date())
   if (completedAt) row.set('completedAt', completedAt)
@@ -340,7 +405,9 @@ export async function updateBoardItem(project: ParseObject, agent: ParseObject, 
   assertOwnAttachments(project, values.attachments)
   const before = historySnapshot(row)
   const from = String(row.get('status') || '')
+  const kindBefore = kindOf(row)
   applyValues(row, values)
+  await setParents(project, row, values, kindBefore)
   if (values.assigneeId !== undefined) await setAssignee(row, values.assigneeId)
   const to = String(row.get('status') || '')
   const transition = statusTransition(board, from, to, row.get('completedAt') as Date | undefined, new Date())
@@ -413,6 +480,13 @@ export function readLinkInput(payload: unknown): { kind: BoardLinkKind, id: stri
 export async function deleteBoardItem(row: ParseObject): Promise<void> {
   const Parse = useParse()
   await eachBatch(() => new Parse.Query('BoardItemComment').equalTo('item', row), comments => Parse.Object.destroyAll(comments, MASTER), { keys: ['objectId'] })
+  // Deleting an epic or release frees its cards; it never deletes them.
+  for (const field of ['epicId', 'releaseId'] as const) {
+    await eachBatch(() => new Parse.Query('BoardItem').equalTo(field, row.id || ''), (cards) => {
+      for (const card of cards) card.unset(field)
+      return Parse.Object.saveAll(cards, MASTER)
+    }, { keys: [field] })
+  }
   await row.destroy(MASTER)
 }
 
