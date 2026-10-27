@@ -58,7 +58,13 @@ Anything an indie dev would want to automate or embed gets all of these:
    - Swift snippet: colours, fonts and corner radius as parameters or an environment value;
    - the API for people who want to build their own UI. Say so in the doc.
    "Reasonable extent" means colours, type, spacing, which parts show, and copy. Layout is ours.
-6. If it truly needs none of these (a purely internal operator tool), say why in the PR or commit message and set
+6. **MCP tool.** A route the panel or the native app calls as an operator gets a tool in `server/utils/mcp/tools.ts`
+   and a row in `docs/MCP.md`, so an assistant can do what the panel can. One tool per route, with the route's own
+   parameters read from its handler (where it reads each one, path, query or body, decides `in:`); `readOnly` on GETs;
+   `destructive` plus "Confirm with the user first." where it reaches real people or can't be taken back. Credentials,
+   file uploads, streams and the public end-user surface stay out: list such a route in `EXCLUDED` in
+   `tests/mcpCoverage.test.ts` with the reason (the test fails on a `/v1` route with neither a tool nor an entry).
+7. If it truly needs none of these (a purely internal operator tool), say why in the PR or commit message and set
    `embed: null` and a short `api.docs: null` reason in `features.json`.
 
 ## 4. features.json, FEATURES.md and the landing page
@@ -87,5 +93,7 @@ Every new feature, removal, rename, edition change, or a change to what a featur
 - `bun test` passes (it includes the features test, the tenancy guard and the edition boundary tests).
 - Schema changes are in `scripts/ensure-schema.mjs` (idempotent); search changes in `scripts/ensure-search.mjs`.
 - New admin routes pass `bun run smoke:isolation` (one workspace can never reach another's data).
+- A new or changed operator route keeps its MCP tool current (section 3.6). `tests/mcpCoverage.test.ts` catches a route
+  with no tool; a parameter you add to an existing route is yours to add to its tool.
 - Both clients were opened and the feature works in each; say so, or say which you could not check.
 - Match the surrounding code: comment density, naming, idiom. No new dependency for something a few lines can do.

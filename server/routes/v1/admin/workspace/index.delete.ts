@@ -10,6 +10,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'workspace.delete' })
+  assertSession(ctx)
   const body = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   if (!confirmsDeletion(ctx.workspace, body?.confirm)) throw createError({ statusCode: 400, statusMessage: 'Type the workspace\'s name exactly to delete it' })
   await deleteWorkspace(ctx, clientIp(event))

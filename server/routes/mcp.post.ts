@@ -14,8 +14,13 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
+  let readOnly = false
   try {
-    await requireAgentIdentity(event)
+    const identity = await requireAgentIdentity(event)
+    // A panel session reaches every route as itself, past the guards that only a signed-in person may pass for a key: the MCP
+    // is for keys and OAuth sign-ins, which are what those guards recognise.
+    if (!identity.apiKeyId) throw createError({ statusCode: 401, statusMessage: 'The MCP server takes an API key or an OAuth sign-in, not a panel session' })
+    readOnly = identity.apiKeyReadOnly === true
   } catch (error) {
     if ((error as { statusCode?: number }).statusCode !== 401) throw error
     setResponseStatus(event, 401)
@@ -24,6 +29,11 @@ export default defineEventHandler(async (event) => {
     return { jsonrpc: '2.0', id: null, error: { code: -32001, message: (error as { statusMessage?: string }).statusMessage || 'Authentication required' } }
   }
 
+  // The biggest honest call is an email's HTML (2 MB) in JSON; anything past this is not an assistant's request.
+  if (Number(getHeader(event, 'content-length') || 0) > 4_000_000) {
+    setResponseStatus(event, 413)
+    return { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'The request is too large' } }
+  }
   const body = await readBody(event).catch(() => undefined)
   if (body === undefined) {
     setResponseStatus(event, 400)
@@ -44,7 +54,7 @@ export default defineEventHandler(async (event) => {
     return { status: response.status, data }
   }
 
-  const answer = await handleMcpBody(body, call)
+  const answer = await handleMcpBody(body, call, { readOnly })
   if (answer === null) {
     setResponseStatus(event, 202)
     return ''

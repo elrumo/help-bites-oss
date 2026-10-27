@@ -12,7 +12,7 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
   const body = await readObjectBody(event)
-  const project = await callerProject(event, caller, body.project)
+  const project = await callerProject(event, caller, body.project, { can: 'marketing' })
   const sequence = await getProjectSequence(project, getRouterParam(event, 'id') || '')
   if (sequence.get('status') !== 'active') throw createError({ statusCode: 409, statusMessage: 'Activate the sequence first' })
   const segment = typeof body.segment === 'string' ? body.segment.trim() : ''

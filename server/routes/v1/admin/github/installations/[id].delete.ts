@@ -2,6 +2,7 @@ defineRouteMeta({ openAPI: { tags: ['GitHub'], summary: 'Disconnect a GitHub acc
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'projects.manage' })
+  assertSession(ctx)
   assertWorkspaceWide(ctx)
   await removeInstallation(ctx.workspace, getRouterParam(event, 'id') || '')
   return { installations: listInstallations(ctx.workspace) }

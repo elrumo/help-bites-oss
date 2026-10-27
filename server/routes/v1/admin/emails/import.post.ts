@@ -33,6 +33,7 @@ export default defineEventHandler(async (event) => {
   const mode = body.mode === 'upsert' ? 'upsert' : 'create'
   const dryRun = body.dryRun === true
   const project = body.project ? await requireProject(ctx, String(body.project)) : null
+  if (!project) assertWorkspaceWide(ctx)
   const results = await importEmailTemplates(project, ctx.workspace, items, { mode, dryRun })
   const count = (action: EmailImportAction) => results.filter(r => r.action === action).length
   return { dryRun, mode, created: count('created'), updated: count('updated'), unchanged: count('unchanged'), skipped: count('skipped'), failed: count('failed'), results }

@@ -83,7 +83,7 @@ function inlineStyle(attrs: string): string {
 
 export function sanitizeInline(html: string): string {
   if (!html) return ''
-  return String(html).replace(/<\/?([a-zA-Z0-9]+)([^>]*)>/g, (full, rawName: string, attrs: string) => {
+  return String(html).replace(/<\/?([a-zA-Z0-9]+)([^<>]*)>/g, (full, rawName: string, attrs: string) => {
     const name = rawName.toLowerCase()
     if (!INLINE_ALLOWED.has(name)) return '' // drop disallowed tags, keep inner text
     const closing = full.startsWith('</')

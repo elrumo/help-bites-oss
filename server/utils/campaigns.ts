@@ -9,7 +9,7 @@ import type { EmailStrings } from '#shared/email/translate'
 import { companyOf } from './company'
 import { contactQuery, getProjectSegment, serializeSegment } from './contacts'
 import { resolveSegmentWhere } from './segmentRelations'
-import { deliverEmails, projectEmailSender, type DeliveryResult, type EmailActor, type EmailSender, type OutgoingEmail } from './emailDelivery'
+import { baseEmailSender, deliverEmails, withEditionRewrite, type DeliveryResult, type EmailActor, type EmailSender, type OutgoingEmail } from './emailDelivery'
 import { emailSendingPaused } from './emailReputation'
 import { isMailerConfigured } from './mailer'
 import { buildOutgoingEmails, type EmailSendRequest } from './emailSend'
@@ -212,9 +212,10 @@ export function campaignMailerReady(project: ParseObject): boolean {
 
 export function marketingSender(project: ParseObject): EmailSender {
   const marketing = normalizeMarketingConfig(project.get('marketing'))
-  const sender = projectEmailSender(project)
-  if (marketing.fromEmail && marketing.mailDomain) return { ...sender, fromEmail: marketing.fromEmail, domain: marketing.mailDomain, fromName: marketing.fromName || sender.fromName }
-  return marketing.fromName ? { ...sender, fromName: marketing.fromName } : sender
+  const sender = baseEmailSender(project)
+  // The edition rewrites last: a marketing address and domain picked here must not slip past what it does to every other sender.
+  if (marketing.fromEmail && marketing.mailDomain) return withEditionRewrite({ ...sender, fromEmail: marketing.fromEmail, domain: marketing.mailDomain, fromName: marketing.fromName || sender.fromName }, project)
+  return withEditionRewrite(marketing.fromName ? { ...sender, fromName: marketing.fromName } : sender, project)
 }
 
 /** What a contact fills in: `{{contact.*}}`, their attributes by name, and `{{firstName}}`. */

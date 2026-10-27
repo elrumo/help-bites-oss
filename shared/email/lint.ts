@@ -39,7 +39,7 @@ export function contrastRatio(a: string | undefined, b: string | undefined): num
 
 function label(b: EmailBlock): string {
   if (b.type === 'heading') return `heading “${b.text.slice(0, 30)}”`
-  if (b.type === 'text') return `text “${b.html.replace(/<[^>]+>/g, '').slice(0, 30)}”`
+  if (b.type === 'text') return `text “${b.html.replace(/<[^<>]+>/g, '').slice(0, 30)}”`
   if (b.type === 'button') return `button “${b.label}”`
   if (b.type === 'component') return `component “${b.name}”`
   return `${b.type} block`

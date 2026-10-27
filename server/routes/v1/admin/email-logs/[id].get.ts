@@ -1,3 +1,5 @@
+import { can } from '#shared/roles'
+
 defineRouteMeta({
   openAPI: {
     tags: ['Agent'], operationId: 'adminGetEmailLog', security: [{ AgentSession: [] }, { AdminApiKey: [] }],
@@ -11,7 +13,8 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event)
   const row = await scoped.emailLog(ctx, getRouterParam(event, 'id') || '')
-  const log = serializeEmailLog(row, { content: true })
+  // The copy of a sent email can hold a one-time sign-in code or a reset link: a signed-in admin reads it, no key and no agent does.
+  const log = serializeEmailLog(row, { content: !ctx.apiKeyId && can(ctx.role, 'projects.manage') })
   // No saved copy: show the template as it renders with the values that were logged.
   return { log, templatePreview: log.html || !log.template?.id ? null : await renderLoggedTemplate(ctx, log) }
 })

@@ -4,5 +4,7 @@ defineRouteMeta({ openAPI: { tags: ['MCP'], summary: 'OAuth protected resource m
 
 export default defineEventHandler((event) => {
   setHeader(event, 'Cache-Control', 'public, max-age=300')
+  // The addresses follow the host the request came in on when APP_URL is not set: a shared cache must not hand one host's answer to another.
+  setHeader(event, 'Vary', 'Host, X-Forwarded-Host, X-Forwarded-Proto')
   return protectedResource(event)
 })

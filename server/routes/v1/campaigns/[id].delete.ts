@@ -10,7 +10,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
-  const project = await callerProject(event, caller)
+  const project = await callerProject(event, caller, undefined, { can: 'marketing' })
   const row = await getProjectCampaign(project, getRouterParam(event, 'id') || '')
   if (row.get('status') === 'sending') throw createError({ statusCode: 409, statusMessage: 'Pause or cancel the campaign before deleting it' })
   await row.destroy(MASTER)

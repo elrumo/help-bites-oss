@@ -10,7 +10,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
-  const project = await callerProject(event, caller)
+  const project = await callerProject(event, caller, undefined, { can: 'marketing' })
   const row = await getProjectSegment(project, getRouterParam(event, 'id') || '')
   await row.destroy(MASTER)
   return { deleted: true }

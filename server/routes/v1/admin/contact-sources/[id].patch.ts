@@ -15,6 +15,7 @@ const WHERE_KEYS = ['serverUrl', 'appId', 'className', 'table', 'idField', 'coll
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'marketing' })
+  assertSession(ctx)
   const body = await readObjectBody(event)
   const project = await requireProject(ctx, String(body.project || ''))
   const row = await getProjectSource(project, getRouterParam(event, 'id') || '')
@@ -23,6 +24,7 @@ export default defineEventHandler(async (event) => {
   const before = row.get('config') as SourceConfig
   let config = body.config !== undefined ? readSourceConfig(kind, body.config, before) : before
   const moved = WHERE_KEYS.some(k => config[k] !== before[k])
+  assertSecretStaysHome(before, config, body.secret !== undefined)
 
   if (body.secret !== undefined) row.set('secretSealed', sealSourceSecret(kind, body.secret))
   if (moved || body.secret !== undefined) {

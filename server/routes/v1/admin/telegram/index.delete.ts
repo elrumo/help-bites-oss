@@ -10,6 +10,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'projects.manage' })
+  assertSession(ctx)
   await disconnectTelegram(await requireProject(ctx, String(getQuery(event).project || '')))
   return { disconnected: true }
 })

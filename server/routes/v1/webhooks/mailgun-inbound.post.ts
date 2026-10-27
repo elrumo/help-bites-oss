@@ -24,6 +24,8 @@ export default defineEventHandler(async (event) => {
   const key = process.env.MAILGUN_WEBHOOK_SIGNING_KEY || ''
   if (!key) throw createError({ statusCode: 503, statusMessage: 'MAILGUN_WEBHOOK_SIGNING_KEY is not set' })
   if (Number(getHeader(event, 'content-length') || 0) > MAX_BYTES) throw createError({ statusCode: 406, statusMessage: 'Too large' })
+  // Before the body is read: the signature is in it, so every post is parsed until it is checked.
+  await rateLimit(`sb:rl:mgin:${clientIp(event) || 'ip'}`, 600, 60)
 
   const fields: Record<string, unknown> = {}
   const files: { data: Buffer, filename: string }[] = []

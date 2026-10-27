@@ -1,9 +1,10 @@
 import { clampText } from '#shared/support'
+import { startConversationClaims } from '../../../../utils/startConversation'
 defineRouteMeta({
   openAPI: {
     tags: ['Agent'],
     summary: 'Start a conversation with an end user',
-    description: 'Works for users who never opened the widget: pass the host app\'s user id (`externalId`) and optionally their name/email, and the EndUser row is created.',
+    description: 'Works for users who never opened the widget: pass the host app\'s user id (`externalId`) and optionally their name/email, and the EndUser row is created. A user already on record keeps the name and email it has: these only fill what is empty.',
     requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['projectId', 'externalId', 'body'], properties: {
       projectId: { type: 'string' }, externalId: { type: 'string' }, name: { type: 'string' }, email: { type: 'string' },
       subject: { type: 'string' }, body: { type: 'string' }, type: { type: 'string' }, fields: { type: 'object' }, subjectRef: { type: 'object' }, priority: { type: 'string' }, attachments: { type: 'array', items: { type: 'object' } }, notifyByEmail: { type: 'boolean', default: true }
@@ -20,8 +21,8 @@ export default defineEventHandler(async (event) => {
   if (!externalId) throw createError({ statusCode: 400, statusMessage: 'externalId is required' })
 
   const project = await requireProject(ctx, String(payload.projectId || ''))
-  // The end user is found or created by externalId inside this project only.
-  const endUser = await ensureEndUser(project, { sub: externalId, name: String(payload.name || ''), email: String(payload.email || '') })
+  // The end user is found or created by externalId inside this project only. A customer already on record keeps their name and address.
+  const endUser = await ensureEndUser(project, startConversationClaims(await findEndUser(project, externalId), payload, externalId))
   const input = readMessageInput(payload, project.id || '')
 
   const conversation = await createConversation(project, endUser, readSubject(payload), input.context, payload, 'agent')

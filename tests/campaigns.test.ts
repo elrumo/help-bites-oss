@@ -2,7 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import Parse from 'parse/node'
 import { campaignStatsFrom, canMoveCampaign, validateMarketingConfig } from '../shared/marketing'
 import { EMAIL_TEMPLATES } from '../shared/email/templates'
-import { blankValues, campaignAudience, campaignMailerReady, complianceProblems, contactVariables, pickDueCampaigns, readUnsubscribePayload, unsubscribeLinks } from '../server/utils/campaigns'
+import { blankValues, campaignAudience, campaignMailerReady, complianceProblems, contactVariables, marketingSender, pickDueCampaigns, readUnsubscribePayload, unsubscribeLinks } from '../server/utils/campaigns'
+import { projectEmailSender } from '../server/utils/emailDelivery'
+import { registerEdition, resetEdition } from '../server/utils/edition'
 import { isMarketingSource } from '../server/utils/emailLogs'
 import { readLinkToken } from '../server/utils/secrets'
 import { renderPreferencesPage } from '../server/utils/preferences'
@@ -28,6 +30,17 @@ describe('campaign rules', () => {
     expect(complianceProblems(fake({}), newsletter)).toHaveLength(1)
     const bare = { ...newsletter, blocks: newsletter.blocks.filter(b => b.id !== 'digest_footer') }
     expect(complianceProblems(withAddress, bare).length).toBe(2)
+  })
+
+  test('the edition has the last word on who campaign mail comes from, as for every other mail', () => {
+    // The cloud edition sends from its shared domain: a project's marketing address and domain must not get round that.
+    registerEdition({ id: 'cloud', rewriteSender: sender => ({ ...sender, fromEmail: 'noreply@shared.test', domain: 'shared.test' }) })
+    try {
+      const project = fake({ name: 'Acme', marketing: { fromEmail: 'news@victim.test', mailDomain: 'victim.test', fromName: 'Billing' } })
+      expect(marketingSender(project)).toMatchObject({ fromEmail: 'noreply@shared.test', domain: 'shared.test', fromName: 'Billing' })
+      expect(marketingSender(fake({ name: 'Acme', marketing: { fromName: 'Hi' } }))).toMatchObject({ fromEmail: 'noreply@shared.test', domain: 'shared.test' })
+      expect(projectEmailSender(project)).toMatchObject({ domain: 'shared.test' })
+    } finally { resetEdition() }
   })
 
   test('no mailer, no campaign: there is nothing a retry could send through', () => {

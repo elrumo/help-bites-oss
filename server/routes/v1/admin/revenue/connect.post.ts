@@ -12,6 +12,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'projects.manage' })
+  assertSession(ctx)
   const body = await readObjectBody(event)
   const project = await requireProject(ctx, String(body.project || ''))
   const source = String(body.source || '')

@@ -67,3 +67,22 @@ describe('tenant isolation guards', () => {
     expect(offenders).toEqual([])
   })
 })
+
+describe('one caller cannot use up everyone\'s request budget', () => {
+  const read = (file: string) => readFileSync(join(ROOT, file), 'utf8')
+
+  test('an end user\'s own requests are counted before the project\'s', () => {
+    for (const file of ['server/utils/auth.ts', 'server/utils/endUserSessions.ts']) {
+      const source = read(file)
+      expect(source).toContain('LIMITS.requestsPerEndUser')
+      expect(source.indexOf('LIMITS.requestsPerEndUser')).toBeLessThan(source.indexOf('LIMITS.requestsPerProject.limit'))
+    }
+  })
+
+  test('the host\'s server (project secret) has a budget of its own', () => {
+    const source = read('server/utils/auth.ts')
+    const secret = source.slice(source.indexOf('export async function requireProjectSecret'), source.indexOf('export function serializeAgent'))
+    expect(secret).toContain('LIMITS.requestsPerProjectSecret')
+    expect(secret).not.toContain('LIMITS.requestsPerProject.limit')
+  })
+})

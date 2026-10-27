@@ -20,7 +20,10 @@ import { createError } from 'h3'
 export type AddressClass = 'public' | 'private' | 'blocked'
 
 type Resolver = (hostname: string) => Promise<string[]>
-type OutboundInit = RequestInit & { timeoutMs?: number }
+/** `maxBytes`: how much of the answer is read before the request is given up on (default 20 MB); a host an operator typed in is not trusted to stop. */
+type OutboundInit = RequestInit & { timeoutMs?: number, maxBytes?: number }
+
+const DEFAULT_MAX_BYTES = 20 * 1024 * 1024
 
 const systemResolver: Resolver = async hostname => (await lookup(hostname, { all: true }).catch(() => [])).map(a => a.address)
 let resolveHost = systemResolver
@@ -34,11 +37,8 @@ function v4(ip: string): number[] {
   return ip.split('.').map(Number)
 }
 
-/** The IPv4 address inside an IPv6 one, in either notation: mapped
- *  (::ffff:a.b.c.d), compatible (::a.b.c.d) or NAT64 (64:ff9b::a.b.c.d). The
- *  URL parser rewrites [::ffff:127.0.0.1] as [::ffff:7f00:1], so the dotted
- *  form alone is not enough. */
-function embeddedV4(ip: string): string | null {
+/** The eight 16-bit words of an IPv6 address, in either notation, or null when it is not one. */
+function v6Words(ip: string): number[] | null {
   let text = ip
   const dotted = text.match(/^(.*:)(\d+\.\d+\.\d+\.\d+)$/)
   if (dotted) {
@@ -48,14 +48,31 @@ function embeddedV4(ip: string): string | null {
   const [head = '', tail = ''] = text.split('::')
   const left = head ? head.split(':') : []
   const right = text.includes('::') && tail ? tail.split(':') : []
-  const words = (text.includes('::') ? [...left, ...Array(8 - left.length - right.length).fill('0'), ...right] : left).map(w => Number.parseInt(w, 16))
-  if (words.length !== 8) return null
+  const words = (text.includes('::') ? [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right] : left).map(w => Number.parseInt(w, 16))
+  return words.length === 8 && words.every(Number.isFinite) ? words : null
+}
+
+/** The IPv4 address inside an IPv6 one, in either notation: mapped
+ *  (::ffff:a.b.c.d), compatible (::a.b.c.d), SIIT (::ffff:0:a.b.c.d) or NAT64
+ *  (64:ff9b::a.b.c.d). The URL parser rewrites [::ffff:127.0.0.1] as
+ *  [::ffff:7f00:1], so the dotted form alone is not enough. */
+function embeddedV4(ip: string): string | null {
+  const words = v6Words(ip)
+  if (!words) return null
   const [w0, w1, w2, w3, w4, w5, hi = 0, lo = 0] = words
   const zero = (...list: (number | undefined)[]) => list.every(w => w === 0)
-  if ((zero(w0, w1, w2, w3, w4) && (w5 === 0 || w5 === 0xffff)) || (w0 === 0x64 && w1 === 0xff9b && zero(w2, w3, w4, w5))) {
+  if ((zero(w0, w1, w2, w3, w4) && (w5 === 0 || w5 === 0xffff)) || (zero(w0, w1, w2, w3) && w4 === 0xffff && w5 === 0) || (w0 === 0x64 && w1 === 0xff9b && zero(w2, w3, w4, w5))) {
     return `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`
   }
   return null
+}
+
+/** IPv6 ranges that carry or reach somewhere else: site-local (fec0::/10), 6to4 (2002::/16, an IPv4 address inside) and Teredo (2001::/32). */
+function tunnelledV6(ip: string): boolean {
+  const words = v6Words(ip)
+  if (!words) return false
+  const [w0 = 0, w1 = 0] = words
+  return (w0 & 0xffc0) === 0xfec0 || w0 === 0x2002 || (w0 === 0x2001 && w1 === 0)
 }
 
 export function classifyAddress(address: string): AddressClass {
@@ -63,12 +80,16 @@ export function classifyAddress(address: string): AddressClass {
   if (isIP(ip) === 6 && ip !== '::1') ip = embeddedV4(ip) || ip
   if (isIP(ip) === 4) {
     const [a = 0, b = 0] = v4(ip)
+    const [, , c = 0, d = 0] = v4(ip)
     if (a === 169 && b === 254) return 'blocked' // link-local, cloud metadata
+    if (a === 168 && b === 63 && c === 129 && d === 16) return 'blocked' // Azure's platform endpoint
+    if (a === 192 && b === 0 && c === 0) return 'blocked' // IETF protocol assignments, which hold Oracle Cloud's metadata service
     if (a === 0 || a >= 224) return 'blocked' // "this network", multicast, reserved, broadcast
     if (a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127)) return 'private'
     return 'public'
   }
   if (isIP(ip) === 6) {
+    if (tunnelledV6(ip)) return 'blocked'
     if (ip === '::' || ip.startsWith('fe8') || ip.startsWith('fe9') || ip.startsWith('fea') || ip.startsWith('feb') || ip.startsWith('ff') || ip.startsWith('fd00:ec2:')) return 'blocked'
     if (ip === '::1' || ip.startsWith('fc') || ip.startsWith('fd')) return 'private'
     return 'public'
@@ -90,19 +111,37 @@ export async function assertReachableHost(hostname: string): Promise<string[]> {
   return [...addresses].sort((a, b) => isIP(a) - isIP(b))
 }
 
+/** The same answer, which fails to read once it passes `maxBytes`; one that says up front it is bigger is refused at once. */
+function capped(response: Response, maxBytes: number): Response {
+  if (!response.body || !Number.isFinite(maxBytes)) return response
+  if (Number(response.headers.get('content-length') || 0) > maxBytes) {
+    void response.body.cancel().catch(() => {})
+    throw createError({ statusCode: 502, statusMessage: `The answer is larger than ${Math.round(maxBytes / 1024 / 1024)} MB` })
+  }
+  let seen = 0
+  const counter = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      seen += chunk.byteLength
+      if (seen > maxBytes) controller.error(new Error(`The answer is larger than ${Math.round(maxBytes / 1024 / 1024)} MB`))
+      else controller.enqueue(chunk)
+    }
+  })
+  return new Response(response.body.pipeThrough(counter), { status: response.status, statusText: response.statusText, headers: response.headers })
+}
+
 /** fetch() to the address the host was checked at, not to whatever its name resolves to next. No redirects, a timeout. */
 export async function pinnedFetch(url: string | URL, init: OutboundInit = {}): Promise<Response> {
   const target = new URL(url)
   const { host, hostname, protocol } = target
   const [address] = await assertReachableHost(hostname)
-  const { timeoutMs = 20_000, ...rest } = init
+  const { timeoutMs = 20_000, maxBytes = DEFAULT_MAX_BYTES, ...rest } = init
   const timeout = AbortSignal.timeout(timeoutMs)
   const options = { ...rest, redirect: 'manual' as const, signal: rest.signal ? AbortSignal.any([rest.signal, timeout]) : timeout }
-  if (isIP(hostname.replace(/^\[|\]$/g, ''))) return fetch(target, options)
+  if (isIP(hostname.replace(/^\[|\]$/g, ''))) return capped(await fetch(target, options), maxBytes)
   target.hostname = isIP(address!) === 6 ? `[${address}]` : address!
   const headers = new Headers(rest.headers)
   headers.set('host', host)
-  return fetch(target, { ...options, headers, ...(protocol === 'https:' ? { tls: { serverName: hostname } } : {}) })
+  return capped(await fetch(target, { ...options, headers, ...(protocol === 'https:' ? { tls: { serverName: hostname } } : {}) }), maxBytes)
 }
 
 /** fetch() to an operator-supplied URL: http(s) only, a reachable host, no redirects, a timeout. */

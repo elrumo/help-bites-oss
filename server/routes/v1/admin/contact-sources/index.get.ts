@@ -11,6 +11,7 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   // Contact sources read the developer's own database: running marketing data is an admin's job.
   const ctx = await requireMember(event, { can: 'marketing' })
+  assertSession(ctx)
   const project = await requireProject(ctx, String(getQuery(event).project || ''))
   const rows = await new (useParse()).Query('ContactSource').equalTo('project', project).descending('createdAt').limit(100).find(MASTER)
   return {

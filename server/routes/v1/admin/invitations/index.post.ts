@@ -12,8 +12,12 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'team.manage' })
+  assertSession(ctx)
   const body = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   const email = String(body.email || '').trim().toLowerCase()
   if (!isProbablyEmail(email)) throw createError({ statusCode: 400, statusMessage: 'Enter a valid email address' })
-  return createInvitation(ctx, { email, role: isRole(body.role) ? body.role : 'agent' })
+  const role = isRole(body.role) ? body.role : 'agent'
+  const invitation = await createInvitation(ctx, { email, role })
+  await auditAccess(ctx, event, 'invitation.create', email, { role })
+  return invitation
 })

@@ -13,6 +13,11 @@ const local = Bun.serve({
     const url = new URL(req.url)
     hits.push({ host: req.headers.get('host'), method: req.method, path: url.pathname + url.search, body: await req.text() })
     if (url.pathname === '/redirect') return new Response(null, { status: 302, headers: { location: 'http://127.0.0.1/elsewhere' } })
+    if (url.pathname === '/big') return new Response(new Uint8Array(3 * 1024 * 1024), { headers: { 'content-length': String(3 * 1024 * 1024) } })
+    if (url.pathname === '/big-stream') {
+      let sent = 0
+      return new Response(new ReadableStream({ pull(controller) { if (sent >= 3) return controller.close(); sent++; controller.enqueue(new Uint8Array(1024 * 1024)) } }))
+    }
     if (url.pathname === '/slow') return Bun.sleep(1000).then(() => new Response('late'))
     if (url.pathname === '/stream') {
       let i = 0
@@ -45,6 +50,18 @@ afterEach(() => {
   process.env = { ...env }
 })
 afterAll(() => local.stop(true))
+
+describe('how much of an answer is read', () => {
+  test('an answer that says it is too big is refused, one that streams too much stops being read', async () => {
+    process.env.ALLOW_PRIVATE_NETWORK = '1'
+    await expect(safeFetch(`http://127.0.0.1:${local.port}/big`, { maxBytes: 1024 * 1024 })).rejects.toMatchObject({ statusCode: 502 })
+    const streamed = await safeFetch(`http://127.0.0.1:${local.port}/big-stream`, { maxBytes: 1024 * 1024 })
+    await expect(streamed.text()).rejects.toThrow('larger than 1 MB')
+    // Under the cap it reads as ever, and the default is generous.
+    expect((await (await safeFetch(`http://127.0.0.1:${local.port}/big`, { maxBytes: 4 * 1024 * 1024 })).arrayBuffer()).byteLength).toBe(3 * 1024 * 1024)
+    expect((await (await safeFetch(`http://127.0.0.1:${local.port}/big`)).arrayBuffer()).byteLength).toBe(3 * 1024 * 1024)
+  })
+})
 
 describe('pinned outbound requests', () => {
   test('a name that answers a public address to the check and localhost afterwards never reaches localhost', async () => {

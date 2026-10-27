@@ -2,9 +2,11 @@ defineRouteMeta({ openAPI: { tags: ['Agent'], summary: 'Revoke a general admin A
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'apiKeys.manage' })
+  assertSession(ctx)
   const Parse = useParse()
   const row = await new Parse.Query('AdminApiKey').get(getRouterParam(event, 'id') || '', MASTER).catch(() => null)
   assertWorkspaceRow(ctx, row, 'API key not found')
+  await auditAccess(ctx, event, 'apikey.revoke', row.id, { name: String(row.get('name') || '') })
   await row.destroy(MASTER)
   return { deleted: true }
 })

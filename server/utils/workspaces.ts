@@ -157,6 +157,9 @@ export async function createInvitation(ctx: MemberContext, input: { email: strin
   await assertWorkspaceVerified(ctx.workspaceId)
   const Parse = useParse()
   if (!canGrant(ctx.role, input.role)) throw createError({ statusCode: 403, statusMessage: 'You cannot give that role', data: { code: 'forbidden_role' } })
+  // The mail carries the workspace's and the inviter's names to any address: a few a day to one inbox, and a bounded number from one workspace.
+  await rateLimit(`sb:rl:invite:${ctx.workspaceId}`, 20, 3600)
+  await rateLimit(`sb:rl:invite:to:${createHash('sha256').update(input.email.toLowerCase()).digest('hex')}`, 3, 86400)
   const existingUser = await findAgentByEmail(input.email)
   if (existingUser && await findMember(ctx.workspaceId, existingUser.id || '')) throw createError({ statusCode: 409, statusMessage: 'They are already in this workspace' })
 

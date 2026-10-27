@@ -110,7 +110,7 @@ Object.assign(g, {
 })
 
 const secrets = await import('../server/utils/secrets')
-Object.assign(globalThis, { signLinkToken: secrets.signLinkToken, readLinkToken: secrets.readLinkToken })
+Object.assign(globalThis, { signLinkToken: secrets.signLinkToken, readLinkToken: secrets.readLinkToken, sealSecret: secrets.sealSecret, openSealedSecret: secrets.openSealedSecret })
 process.env.HELPBITES_SECRET ||= 'x'.repeat(40)
 const data = await import('../server/utils/workspaceData')
 const { WORKSPACE_DATA, confirmsDeletion, exportHeader, exportKey, exportLine, purgeOrder, purgeWorkspace, workspaceRows } = data
@@ -410,9 +410,20 @@ describe('export download links', () => {
     expect(data.readExportDownload(tokenOf(url), now + 3601 * 1000)).toBeNull()
   })
 
+  test('the link does not show where the file is', () => {
+    const token = tokenOf(data.exportDownloadUrl(key, 3600))
+    for (const part of token.split('.')) expect(Buffer.from(part, 'base64url').toString('utf8')).not.toContain('exports/')
+    expect(token).not.toContain(key)
+    // A sealed credential of another kind is not a link.
+    expect(data.readExportDownload(secrets.sealSecret(JSON.stringify({ k: key, x: Date.now() + 1e6 })))).toBeNull()
+  })
+
   test('a forged or altered link opens nothing, nor a link to anything but an export', () => {
     const url = data.exportDownloadUrl(key, 3600)
-    expect(data.readExportDownload(`${tokenOf(url)}x`)).toBeNull()
+    // A changed byte of the sealed file name fails its authentication tag.
+    const parts = tokenOf(url).split('.')
+    parts[3] = `${parts[3]!.startsWith('A') ? 'B' : 'A'}${parts[3]!.slice(1)}`
+    expect(data.readExportDownload(parts.join('.'))).toBeNull()
     expect(data.readExportDownload('not-a-token')).toBeNull()
     expect(data.readExportDownload(tokenOf(data.exportDownloadUrl('knowledge/m1/doc.md', 3600)))).toBeNull()
     expect(data.readExportDownload(tokenOf(data.exportDownloadUrl('exports/../secret.jsonl.gz', 3600)))).toBeNull()

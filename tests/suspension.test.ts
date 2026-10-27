@@ -29,7 +29,7 @@ Object.assign(g, {
   pointerId,
   workspaceIsActive: async (id: string) => !closed.has(id),
   rateLimit: async (key: string) => { rateLimited.push(key) },
-  LIMITS: { requestsPerProject: { limit: 100, window: 60 } }
+  LIMITS: { requestsPerProject: { limit: 100, window: 60 }, requestsPerProjectSecret: { limit: 100, window: 60 }, requestsPerEndUser: { limit: 100, window: 60 } }
 })
 
 const { findProjectByPublicKey } = await import('../server/utils/projects')
@@ -59,6 +59,6 @@ describe('a suspended workspace', () => {
     expect(await statusOf(requireProjectSecret(withBearer('sk_susp_closed')))).toBe('401 Invalid project secret')
     expect(await statusOf(requireProjectSecret(withBearer('sk_nobody')))).toBe('401 Invalid project secret')
     expect((await requireProjectSecret(withBearer('sk_susp_live'))).id).toBe('p1')
-    expect(rateLimited).toEqual(['sb:rl:project:p2', 'sb:rl:project:p1'])
+    expect(rateLimited).toEqual(['sb:rl:projectsecret:p2', 'sb:rl:projectsecret:p1'])
   })
 })

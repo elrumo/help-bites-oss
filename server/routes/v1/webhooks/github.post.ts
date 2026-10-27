@@ -12,6 +12,8 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   if (!githubWebhookSecret()) throw createError({ statusCode: 503, statusMessage: 'GITHUB_APP_WEBHOOK_SECRET is not set' })
   await rateLimit(`sb:rl:ghwh:${clientIp(event) || 'ip'}`, 600, 60)
+  // GitHub's own cap on a delivery is 25 MB; the signature is checked after the body is read.
+  if (Number(getHeader(event, 'content-length') || 0) > 26 * 1024 * 1024) throw createError({ statusCode: 413, statusMessage: 'Too large' })
   const raw = (await readRawBody(event, 'utf8')) || ''
   if (!verifyGithubSignature(raw, getHeader(event, 'x-hub-signature-256') || '')) throw createError({ statusCode: 401, statusMessage: 'Invalid signature' })
   const kind = getHeader(event, 'x-github-event')

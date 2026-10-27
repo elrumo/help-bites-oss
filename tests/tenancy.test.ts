@@ -176,3 +176,21 @@ describe('scoped loaders', () => {
     await expect(scoped.knowledgeNode(ctx, 'N2')).rejects.toMatchObject({ statusCode: 404 })
   })
 })
+
+describe('assertSession', () => {
+  test('lets a panel session through and refuses an API key', () => {
+    expect(() => tenancy.assertSession({ apiKeyId: '' })).not.toThrow()
+    expect(() => tenancy.assertSession({})).not.toThrow()
+    try {
+      tenancy.assertSession({ apiKeyId: 'K1' })
+      throw new Error('an API key got through')
+    } catch (error) {
+      expect(error).toMatchObject({ statusCode: 403, data: { code: 'session_required' } })
+    }
+  })
+
+  test('says what to do instead, in the caller\'s words when given', () => {
+    expect(() => tenancy.assertSession({ apiKeyId: 'K1' })).toThrow(/signed in/)
+    expect(() => tenancy.assertSession({ apiKeyId: 'K1' }, 'Approve it in the panel')).toThrow(/Approve it in the panel/)
+  })
+})

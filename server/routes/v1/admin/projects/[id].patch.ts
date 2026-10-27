@@ -12,7 +12,9 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'projects.manage' })
   const project = await requireProject(ctx, getRouterParam(event, 'id') || '')
-  await applyProjectInput(project, (await readBody(event).catch(() => ({}))) as Record<string, unknown>)
+  const body = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
+  if (ctx.apiKeyId) refuseDestinationsToKeys(body)
+  await applyProjectInput(project, body)
   await project.save(null, MASTER)
   forgetProject(String(project.get('publicKey')))
   return { project: serializeAdminProject(project) }

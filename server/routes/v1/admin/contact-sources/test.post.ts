@@ -1,4 +1,4 @@
-import type { SourceKind } from '../../../../utils/contactSources'
+import type { SourceConfig, SourceKind } from '../../../../utils/contactSources'
 
 defineRouteMeta({
   openAPI: {
@@ -12,6 +12,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'marketing' })
+  assertSession(ctx)
   await assertFeature(ctx.workspace, 'contactSources')
   const body = await readObjectBody(event)
   const project = await requireProject(ctx, String(body.project || ''))
@@ -20,6 +21,7 @@ export default defineEventHandler(async (event) => {
   const driver = sourceDriver(kind)
   // Testing comes before mapping, so a missing mapping is fine here.
   const config = { ...readSourceConfig(kind, { ...(saved?.get('config') || {}), ...(body.config as object || {}), mapping: { email: 'email' } }) }
+  assertSecretStaysHome(saved?.get('config') as SourceConfig | undefined, config, body.secret !== undefined)
   const secret = driver.readSecret(body.secret !== undefined ? body.secret : saved ? sourceSecret(saved) : undefined)
   return driver.test(config, secret)
 })

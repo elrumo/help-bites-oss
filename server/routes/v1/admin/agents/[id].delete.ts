@@ -4,6 +4,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'team.manage' })
+  assertSession(ctx)
   const id = getRouterParam(event, 'id') || ''
   if (id === ctx.agentId) throw createError({ statusCode: 400, statusMessage: 'You cannot remove your own account' })
   const remaining = await removeMember(ctx, id)
@@ -18,5 +19,6 @@ export default defineEventHandler(async (event) => {
     // Still signed in elsewhere: just stop any cached session acting here.
     await invalidate('agent', id)
   }
+  await auditAccess(ctx, event, 'member.remove', id)
   return { deleted: true }
 })

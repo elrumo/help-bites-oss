@@ -10,6 +10,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'projects.manage' })
+  assertSession(ctx)
   const project = await requireProject(ctx, getRouterParam(event, 'id') || '')
   const row = await getProjectDomain(project, getRouterParam(event, 'domainId') || '')
   await setDomainTarget(row, (await readObjectBody(event)).target)

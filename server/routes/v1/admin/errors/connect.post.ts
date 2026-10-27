@@ -2,6 +2,7 @@ defineRouteMeta({ openAPI: { tags: ['Error tracking'], summary: 'Connect a proje
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'projects.manage' })
+  assertSession(ctx)
   const body = (await readBody(event).catch(() => ({}))) as { project?: string, server?: string, provider?: string, team?: string, name?: string }
   const project = await requireProject(ctx, String(body.project || ''))
   const provider = body.provider || 'glitchtip'

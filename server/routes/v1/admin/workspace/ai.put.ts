@@ -13,10 +13,12 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'workspace.settings' })
+  assertSession(ctx)
   const body = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   if (Array.isArray(body.providers) && body.providers.length) await assertFeature(ctx.workspace, 'byoLlm')
   applyWorkspaceAiInput(ctx.workspace, body)
   await ctx.workspace.save(null, MASTER)
   await invalidate('workspace', ctx.workspaceId)
+  await auditAccess(ctx, event, 'workspace.ai.update')
   return { ai: serializeWorkspaceAi(ctx.workspace) }
 })

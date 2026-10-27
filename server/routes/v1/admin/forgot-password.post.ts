@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 defineRouteMeta({
   openAPI: {
     tags: ['Agent'],
@@ -13,6 +15,8 @@ export default defineEventHandler(async (event) => {
   const { email } = (await readBody(event).catch(() => ({}))) as { email?: string }
   const address = String(email || '').trim()
 
+  // Per address as well as per caller: many callers cannot flood one operator's inbox. Any address counts the same, known or not.
+  if (address) await rateLimit(`sb:rl:forgot:${createHash('sha256').update(address.toLowerCase()).digest('hex')}`, 3, 86400)
   // Look up and send, but never let the outcome show in the response.
   if (address && isMailerConfigured()) {
     const agent = await findAgentByEmail(address)

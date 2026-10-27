@@ -20,6 +20,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'workspace.export' })
+  assertSession(ctx)
   const body = (await readBody(event).catch(() => ({}))) as { source?: Record<string, unknown>, projectId?: unknown }
   const row = await queuePull(ctx, readSource(body.source), String(body.projectId || ''), clientIp(event))
   setResponseStatus(event, 202)

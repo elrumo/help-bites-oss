@@ -15,7 +15,12 @@
 
       <form v-else @submit.prevent="approve">
         <h1 class="text-xl font-semibold tracking-tight text-highlighted">{{ $t('oauth.title', { client: preview.client.name }) }}</h1>
-        <p class="mb-6 mt-1 text-[15px] text-muted">{{ $t('oauth.description', { client: preview.client.name }) }}</p>
+        <p class="mt-1 text-[15px] text-muted">{{ $t('oauth.description', { client: preview.client.name }) }}</p>
+        <!-- The name is whatever the assistant called itself; the address it sends you back to is the part that can be checked. -->
+        <i18n-t keypath="oauth.redirectsTo" tag="p" class="mb-6 mt-3 text-[13px] text-muted">
+          <template #host><span class="font-medium text-highlighted">{{ preview.client.redirectHost }}</span></template>
+        </i18n-t>
+        <p v-if="!preview.client.verified" class="mb-6 rounded-lg bg-warning/10 px-3 py-2 text-[13px] text-highlighted" role="alert">{{ $t('oauth.unverified', { host: preview.client.redirectHost }) }}</p>
 
         <UFormField v-if="workspaces.length > 1" :label="$t('oauth.workspace')" class="mb-4" :ui="{ label: 'font-normal text-muted' }">
           <USelect v-model="chosenWorkspace" :items="workspaces.map(w => ({ label: w.name, value: w.id }))" class="w-full" :aria-label="$t('oauth.workspace')" @update:model-value="load" />
@@ -23,6 +28,14 @@
         <p v-else class="mb-4 text-[13px] text-muted">{{ $t('oauth.workspace') }}: <span class="font-medium text-highlighted">{{ preview.workspace.name }}</span></p>
 
         <template v-if="preview.canApprove">
+          <URadioGroup
+            v-model="access"
+            class="mb-3"
+            :items="[
+              { label: $t('oauth.accessWrite'), value: 'write', description: $t('oauth.accessWriteDescription') },
+              { label: $t('oauth.accessRead'), value: 'read', description: $t('oauth.accessReadDescription') }
+            ]"
+          />
           <URadioGroup
             v-model="scope"
             class="mb-3"
@@ -32,7 +45,6 @@
             ]"
           />
           <UCheckboxGroup v-if="scope === 'projects'" v-model="picked" class="mb-3" :items="preview.projects.map(project => ({ label: project.name, value: project.id }))" :aria-label="$t('oauth.projects')" />
-          <p class="mb-6 text-xs text-muted">{{ $t('oauth.redirectsTo', { host: preview.client.redirectHost }) }}</p>
         </template>
         <p v-else class="mb-6 text-[13px] text-error">{{ $t('oauth.notAllowed') }}</p>
 
@@ -53,7 +65,7 @@
 // the browser back to the assistant with a one-use code.
 definePageMeta({ layout: 'bare', middleware: 'agent' })
 
-type Preview = { client: { name: string, redirectHost: string }, workspace: { id: string, name: string }, projects: Array<{ id: string, name: string }>, canApprove: boolean }
+type Preview = { client: { name: string, redirectHost: string, verified: boolean }, workspace: { id: string, name: string }, projects: Array<{ id: string, name: string }>, canApprove: boolean }
 
 const route = useRoute()
 const { agentHeaders, context, workspaceId } = useAgent()
@@ -73,6 +85,7 @@ const loading = ref(true)
 const saving = ref(false)
 const redirecting = ref(false)
 const error = ref('')
+const access = ref<'write' | 'read'>('write')
 const scope = ref<'all' | 'projects'>('all')
 const picked = ref<string[]>([])
 
@@ -82,10 +95,13 @@ async function load() {
   loading.value = !preview.value
   error.value = ''
   picked.value = []
+  access.value = 'write'
   scope.value = 'all'
   if (!wellFormed) { loading.value = false; return }
   try {
     preview.value = await $fetch<Preview>('/v1/admin/oauth/authorize', { query: { client_id: clientId, redirect_uri: redirectUri }, headers: headers() })
+    // An address the panel cannot vouch for starts as the safer choice: it can read, not change.
+    if (!preview.value.client.verified) access.value = 'read'
   } catch (e: any) {
     preview.value = null
     error.value = e?.data?.statusMessage || ''
@@ -101,7 +117,7 @@ async function approve() {
     const { redirectTo } = await $fetch<{ redirectTo: string }>('/v1/admin/oauth/authorize', {
       method: 'POST',
       headers: headers(),
-      body: { clientId, redirectUri, codeChallenge: challenge, state, projectIds: scope.value === 'projects' ? picked.value : undefined }
+      body: { clientId, redirectUri, codeChallenge: challenge, state, readOnly: access.value === 'read' ? true : undefined, projectIds: scope.value === 'projects' ? picked.value : undefined }
     })
     redirecting.value = true
     window.location.href = redirectTo

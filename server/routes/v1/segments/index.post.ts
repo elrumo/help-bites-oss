@@ -13,7 +13,7 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
   const body = await readObjectBody(event)
-  const project = await callerProject(event, caller, body.project)
+  const project = await callerProject(event, caller, body.project, { can: 'marketing' })
   const name = String(body.name || '').trim().slice(0, 80)
   if (!name) throw createError({ statusCode: 400, statusMessage: 'A segment needs a name' })
   const row = new (useParse().Object.extend('ContactSegment'))()

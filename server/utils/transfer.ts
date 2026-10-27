@@ -259,6 +259,9 @@ async function afterImport(projectIds: string[], modelIds: string[], workspaceId
 
 // ---- reading a file --------------------------------------------------------------------
 
+/** The longest line of an export: its biggest rows are a template's HTML (2 MB) or a CMS page. A file with a line past this is a bomb, not an export. */
+export const MAX_LINE_CHARS = 16 * 1024 * 1024
+
 /** The lines of a gzipped JSON Lines stream. */
 export async function* linesOf(input: NodeJS.ReadableStream): AsyncGenerator<string> {
   const gunzip = createGunzip()
@@ -268,6 +271,7 @@ export async function* linesOf(input: NodeJS.ReadableStream): AsyncGenerator<str
   let rest = ''
   for await (const chunk of gunzip as AsyncIterable<string>) {
     rest += chunk
+    if (rest.length > MAX_LINE_CHARS && !rest.includes('\n')) throw createError({ statusCode: 400, statusMessage: 'The file has a line longer than 16 MB: it is not a HelpBites export' })
     for (let at = rest.indexOf('\n'); at >= 0; at = rest.indexOf('\n')) {
       yield rest.slice(0, at)
       rest = rest.slice(at + 1)
@@ -317,8 +321,11 @@ async function signIn(base: string, source: TransferSource): Promise<{ token: st
   return { token, signOut: async () => { await safeFetch(`${base}/v1/admin/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }).catch(() => {}) } }
 }
 
+// The workspace file itself is as big as the workspace (the upload route caps it at 2 GiB too); everything else the other instance says is small.
+const PULL_MAX_BYTES = 2 * 1024 * 1024 * 1024
+
 const sourceGet = (base: string, path: string, token: string, workspaceId = '', timeoutMs?: number) =>
-  safeFetch(`${base}${path}`, { headers: { Authorization: `Bearer ${token}`, ...(workspaceId ? { 'X-Workspace': workspaceId } : {}) }, ...(timeoutMs ? { timeoutMs } : {}) })
+  safeFetch(`${base}${path}`, { headers: { Authorization: `Bearer ${token}`, ...(workspaceId ? { 'X-Workspace': workspaceId } : {}) }, ...(timeoutMs ? { timeoutMs, maxBytes: PULL_MAX_BYTES } : {}) })
 
 /** What the other instance holds that can be moved: its workspaces and the projects of the one chosen. */
 export async function inspectSource(source: TransferSource) {
