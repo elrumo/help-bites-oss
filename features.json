@@ -1599,7 +1599,7 @@
       "id": "team-workspaces",
       "name": "Teams, roles, workspaces and API keys",
       "category": "platform",
-      "summary": "Agent, admin and owner roles, invitations, several workspaces, admin ak_ keys scoped to a workspace or projects, workspace export and deletion.",
+      "summary": "Agent, admin and owner roles, invitations, several workspaces, admin ak_ keys scoped to a workspace or projects and optionally read-only, workspace export and deletion. Keys, teammates, invitations, project secrets and AI providers are managed by a signed-in person, never by an API key.",
       "editions": [
         "community",
         "cloud"
@@ -1996,6 +1996,7 @@
     }
   ],
   "notBuilt": [
+    "The native app lists API keys with their read-only state but cannot create a read-only key or switch one (Settings, API keys, and the assistant approval page are web). The API takes `readOnly`.",
     "In the native Planning screens, statuses and labels are reordered with the arrow buttons, not by dragging; a new item's unsaved draft is not kept when its sheet closes (the web panel keeps it per project); and the editor saves with its Save button (Cmd and Return on a keyboard) rather than as you go.",
     "Add to Planning from the system share sheet is an iPhone and iPad extension: the Mac app has none, and the web panel has no equivalent (a browser has no share sheet; New item and the API cover it). It shares a session through the App Group group.com.helpbites.operator, which must be enabled on both targets in your Apple developer account.",
     "The pricing table's preview can be edited in place on the web (click a title, plan name, description, badge, button, feature or footnote and type); the native preview is read-only.",

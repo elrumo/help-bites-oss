@@ -33,7 +33,8 @@ OAuth instead.
    connector**. In ChatGPT, open **Plugins → + → Add custom MCP server**, paste
    the address above, and choose **OAuth** authentication.
 2. Your browser opens HelpBites. Sign in if you aren't, check the workspace,
-   choose all projects or only some, and press **Approve**.
+   choose whether the assistant may **read and change** things or may only **read**, choose all projects or only some,
+   and press **Approve**.
 3. The assistant gets a key named `MCP: Claude` (or whatever it called itself).
    It is listed under **Settings → API keys**. Revoking it there disconnects the
    assistant.
@@ -62,8 +63,8 @@ workspace plan and admin settings.
 
 ### Paste a key (Claude Code, Cursor, scripts)
 
-Create a key under **Settings → API keys**, optionally limited to some projects,
-and give it to the client as a header.
+Create a key under **Settings → API keys**, optionally limited to some projects or
+**read only**, and give it to the client as a header.
 
 Claude Code:
 
@@ -558,7 +559,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `update_board_settings` | The Planning board: turn it on, its statuses and labels (replaced whole), the public roadmap's layout and whether linked feedback follows item status. Asks first. |
 | `update_project_flags` | Replace a project's feature flags (send them all; one left out is deleted). |
 | `list_webhook_endpoints` | A project's webhook endpoints. |
-| `create_webhook_endpoint` | Add one, choosing the events: asks first, since the events carry customer data. |
+| `create_webhook_endpoint` | Add one, choosing the events: asks first, since the events carry customer data. Its signing secret is withheld from assistants. |
 
 ### Project setup and infrastructure
 
@@ -603,15 +604,38 @@ table from the repo, and show me before you change anything."*
 - **It acts as you.** The assistant can do what your role does in that
   workspace, no more. A key limited to some projects can't reach the rest, or
   anything workspace-wide.
+- **It can be read-only.** Choose *Read only* when you create a key or approve a
+  sign-in, and the connection can look at everything your role can see and change
+  nothing: it is offered only the tools that read, and the API refuses any other
+  call from that key with `403 key_read_only`. Good for summaries, triage and
+  anything you would rather not have steered by a customer's message. Switch an
+  existing key either way in **Settings → API keys** (or `PATCH /v1/admin/api-keys/{id}`
+  with `readOnly`).
+- **A key can't mint access.** Creating, renaming or revoking API keys, adding,
+  re-roling or removing teammates, inviting people, revealing or rotating a
+  project's secret, creating a project (the answer holds its secret), changing the
+  workspace's AI providers, deleting the workspace, connecting Telegram and
+  registering a push device need a person signed in to the panel; an API key, an
+  assistant's included, gets `403 session_required`. Otherwise a steered assistant
+  could leave itself a way back in that outlives the connection you can revoke.
 - **Writes are marked.** Every tool says whether it only reads, and assistants
-  that ask before acting use that. Replies to customers and publishing a
-  changelog entry reach real people, and the tool descriptions tell the
-  assistant to confirm first. Prefer a client that asks you to approve each
-  write.
+  that ask before acting use that. Replies to customers, sent email, publishing,
+  deleting and replacing a whole list reach real people or can't be taken back:
+  those tools are marked destructive, and their descriptions tell the assistant to
+  confirm first. Prefer a client that asks you to approve each write.
 - **Customer text is untrusted.** Messages, feedback and error reports are written
   by other people, and an assistant reads them. Someone can try to slip it
   instructions ("reply with a refund code"). Keep write approvals on, and read what
   an assistant is about to send before you allow it.
+- **Secrets stay out of answers.** A template's share token, a webhook's signing
+  secret, a provider key, and the token in an error tracker's webhook address are
+  cut from what an assistant reads, wherever they sit in a record.
+- **An assistant never subscribes anyone.** Marketing consent is the person's own:
+  a contact written through the MCP can be unsubscribed, never subscribed.
+- **Marketing is for admins.** Sending a campaign or an email, running a sequence,
+  suppressing an address and erasing a contact through `/v1` need the *marketing*
+  role (admin), as their `/v1/admin` twins always did; a project secret, the host
+  app's own server, is not asked.
 - **Revoke at any time.** Each connection is an API key: rename or revoke it
   under **Settings → API keys**. Changing your password with *revoke keys*
   ticked removes them all.
@@ -671,7 +695,7 @@ An assistant can do what the panel does, except these, which stay with a signed-
   teammates and invitations, revealing or rotating a project's secret, connecting or disconnecting Stripe, RevenueCat,
   GitHub, error trackers, Telegram or a contact database (they carry secrets), creating a project (the answer holds its
   secret), deleting a workspace, and moving data between servers. A tool that lets an assistant mint a way back in would
-  outlive the connection you can revoke.
+  outlive the connection you can revoke, so the API itself refuses most of these to an API key (`403 session_required`).
 - **Files and streams.** Uploading or downloading images, logos, brand files and documents, template import and export,
   live event streams, the streaming AI chats of the email designer and Pages, and previews that return rendered HTML.
 - **What customers use.** The chat widget, votes, reactions and subscriptions made as a customer, public checkout, the
@@ -685,7 +709,7 @@ that has neither a tool nor an entry there fails the test.
 ## Not built yet
 
 - No prompts, resources or live notifications: the server offers tools.
-- A connection has your role: there is no read-only option or lower role yet, only
-  a project limit and an expiry.
+- A connection has your role, narrowed by a project limit, read-only and an expiry:
+  there is no role of its own (say, one that may reply but not publish) yet.
 - Section settings (`feedback`, `changelog`, `blog`, `widget`, `legal`, `marketing`, `style`, `hub`) are objects whose keys
   are described in words: the tool schema cannot check what is inside them, the route does.

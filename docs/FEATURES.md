@@ -649,6 +649,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Accounts.** Edit your name and email, reset your password by email, choose
   light, dark or system theme, and sign out.
 - **Admin API keys.** Create, rename and revoke `ak_…` keys for scripts and tools.
+  A key can be made **read-only** (it reads, and any other call answers `403 key_read_only`), and creating, renaming
+  or revoking keys, adding or removing teammates, invitations, project secrets and AI providers are for a signed-in
+  person: an API key gets `403 session_required`.
 - **Projects.** Create a project, then set its site URL, allowed widget origins,
   reply name, notification addresses, accent colour (the Brand kit's) and logo, and choose which
   sections show in its sidebar. See and rotate its secret. An overview page
@@ -778,6 +781,8 @@ repository. See [EDITIONS.md](EDITIONS.md).
 
 ## 14. Not built yet, and known limits
 
+- **Read-only keys on native.** The native app lists API keys with their read-only state but cannot create a read-only
+  key or switch one; Settings → API keys and the assistant approval page on the web do. The API takes `readOnly`.
 - **Planning on native.** Statuses and labels are reordered with arrow buttons (the web panel drags them), a new
   item's unsaved draft is not kept when its sheet closes (the web panel keeps it), and the editor saves with its Save
   button (Cmd and Return on a keyboard) instead of as you go.

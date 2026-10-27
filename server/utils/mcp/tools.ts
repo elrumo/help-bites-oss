@@ -575,7 +575,7 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'create_webhook_endpoint', title: 'Add a webhook endpoint', destructive: true, method: 'POST', path: '/v1/admin/projects/{id}/webhooks',
-    description: 'Post the chosen events to a URL, signed with a secret that is returned once. The events carry customer data (people, conversations, feedback), and from now on they are sent to that URL, so confirm the address with the user first. `events` are filters: * (everything), a group such as feedback.*, or an exact type such as changelog.entry.published. A project has at most 10 endpoints and the plan must include event webhooks. Returns `{ endpoint }` with the signing secret: do not repeat it.',
+    description: 'Post the chosen events to a URL, signed with a secret that is never shown to an assistant (rotate it in the panel\'s webhook list to see a new one). The events carry customer data (people, conversations, feedback), and from now on they are sent to that URL, so confirm the address with the user first. `events` are filters: * (everything), a group such as feedback.*, or an exact type such as changelog.entry.published. A project has at most 10 endpoints and the plan must include event webhooks. Returns `{ endpoint }`.',
     params: {
       id: id('project'),
       url: { type: 'string', required: true, description: 'The http(s) address to post to; use https.' },

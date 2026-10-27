@@ -36,6 +36,14 @@ describe('what a tool answer never carries', () => {
     expect(() => redactSecrets(deep)).not.toThrow()
   })
 
+  test('a new webhook endpoint\'s signing secret never reaches the assistant', async () => {
+    const call: McpCall = async () => ({ status: 200, data: { endpoint: { id: 'W1', url: 'https://hook.example/in', events: ['*'], secret: 'whsec_9f8e7d6c5b4a3210' } } })
+    const answer = await handleMcpBody({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'create_webhook_endpoint', arguments: { id: 'p1', url: 'https://hook.example/in' } } }, call) as any
+    const text = answer.result.content[0].text as string
+    expect(text).not.toContain('whsec_')
+    expect(JSON.parse(text).endpoint).toMatchObject({ id: 'W1', url: 'https://hook.example/in', secret: REDACTED })
+  })
+
   test('the protocol applies it to every successful answer', async () => {
     const call: McpCall = async () => ({ status: 200, data: { template: { id: 'T1', shareToken: 'abc123' }, alertWebhookUrl: 'https://h.example/v1/webhooks/bugsink/p?token=abcdef' } })
     const answer = await handleMcpBody({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'list_projects' } }, call) as any

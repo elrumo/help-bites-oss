@@ -1,4 +1,6 @@
 import { cleanTags, readContactInput } from '#shared/contacts'
+import { clientSource } from '../../../utils/clientSource'
+import { withoutSubscribing } from '../../../utils/mcp/consent'
 
 defineRouteMeta({
   openAPI: {
@@ -14,6 +16,8 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
   const body = await readObjectBody(event)
+  // Consent is the person's own: an assistant may unsubscribe someone, never subscribe them.
+  if (clientSource(event) === 'mcp') withoutSubscribing(body)
   const project = await callerProject(event, caller, body.project)
   const row = await getProjectContact(project, getRouterParam(event, 'id') || '')
 
