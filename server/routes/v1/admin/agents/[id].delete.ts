@@ -19,5 +19,6 @@ export default defineEventHandler(async (event) => {
     // Still signed in elsewhere: just stop any cached session acting here.
     await invalidate('agent', id)
   }
+  await auditAccess(ctx, event, 'member.remove', id)
   return { deleted: true }
 })

@@ -11,6 +11,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'marketing' })
+  assertSession(ctx)
   await assertFeature(ctx.workspace, 'contactSources')
   const body = await readObjectBody(event)
   const project = await requireProject(ctx, String(body.project || ''))

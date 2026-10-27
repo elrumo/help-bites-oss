@@ -46,6 +46,7 @@ const EXCLUDED: { routes: RegExp, why: string }[] = [
   { routes: /^GET \/v1\/admin\/revenue\/sources$/, why: 'Returns the RevenueCat webhook token.' },
   { routes: /^POST \/v1\/admin\/revenue\/payments$/, why: 'Writes made-up payments into the revenue numbers.' },
   { routes: /^(GET \/v1\/admin\/stripe\/report|POST \/v1\/admin\/stripe\/sync)$/, why: 'Same as get_revenue_report and sync_revenue_source (source stripe).' },
+  { routes: /^(POST \/v1\/admin\/projects\/\{\}\/(webhooks|domains|inbound-addresses)|PATCH \/v1\/admin\/projects\/\{\}\/(webhooks|domains)\/\{\}|DELETE \/v1\/admin\/projects\/\{\}\/(domains|inbound-addresses)\/\{\}|POST \/v1\/admin\/projects\/\{\}\/(domains|inbound-addresses)\/\{\}\/verify|PUT \/v1\/admin\/projects\/\{\}\/repos)$/, why: 'Where events, mail and pages go: a webhook address, a custom domain, an inbound address and which repos the AI reads are set by a person.' },
   // ---- files and streams a JSON tool cannot carry ----
   { routes: /^POST \/v1\/(admin\/(attachments|blog\/images|brand\/assets|cms\/assets|emails\/\{\}\/image|knowledge\/imports\/upload|knowledge\/documents\/\{\}\/replace|onboarding\/images|projects\/\{\}\/logo)|attachments)$/, why: 'Multipart file uploads.' },
   { routes: /^GET \/v1\/admin\/(knowledge\/documents\/\{\}|lead-files\/\{\})\/download$/, why: 'Binary downloads.' },

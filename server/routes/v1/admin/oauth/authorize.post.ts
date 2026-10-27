@@ -22,5 +22,6 @@ export default defineEventHandler(async (event) => {
   if (body.readOnly !== undefined && typeof body.readOnly !== 'boolean') throw createError({ statusCode: 400, statusMessage: 'readOnly must be true or false' })
   await checkGauge(ctx.workspace, 'apiKeys')
   const code = await issueCode({ agentId: ctx.agentId, workspaceId: ctx.workspaceId, projectIds, clientId: String(body.clientId), redirectUri: String(body.redirectUri), challenge: body.codeChallenge, clientName: client.name, readOnly: body.readOnly === true })
+  await auditAccess(ctx, event, 'oauth.approve', client.name, { redirectHost: new URL(String(body.redirectUri)).host, readOnly: body.readOnly === true, projects: projectIds?.length ?? 'all' })
   return { redirectTo: redirectWith(String(body.redirectUri), { code, state: String(body.state || '').slice(0, 500) }) }
 })

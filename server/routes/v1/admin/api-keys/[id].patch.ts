@@ -16,5 +16,6 @@ export default defineEventHandler(async (event) => {
     else row.unset('readOnly')
   }
   await row.save(null, MASTER)
+  await auditAccess(ctx, event, 'apikey.update', row.id, { name, readOnly: typeof body.readOnly === 'boolean' ? body.readOnly : undefined })
   return { apiKey: serializeAdminApiKey(row) }
 })

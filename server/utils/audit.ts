@@ -3,6 +3,8 @@
 // exports. Write-only from the app's point of view; read in the super-admin
 // screens. A lost entry never fails the action it describes.
 
+import type { H3Event } from 'h3'
+
 export type AuditEntry = {
   action: string
   actor?: ParseObject | null
@@ -43,4 +45,12 @@ export function serializeAuditEntry(row: ParseObject) {
     data: (row.get('data') || {}) as Record<string, unknown>,
     createdAt: iso(row.createdAt)
   }
+}
+
+/**
+ * One line for an operator changing who can sign in, or where data and mail go: a key, a teammate, a project secret, the AI
+ * providers. These routes need a signed-in person; the line says who, from where, and what, so a takeover is visible afterwards.
+ */
+export async function auditAccess(ctx: { agent: ParseObject, workspace: ParseObject, apiKeyId?: string }, event: H3Event, action: string, target?: string, data?: Record<string, unknown>): Promise<void> {
+  await audit({ action, actor: ctx.agent, workspace: ctx.workspace, target, data: { via: ctx.apiKeyId ? 'key' : 'session', ...data }, ip: clientIp(event) })
 }

@@ -14,6 +14,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'workspace.export' })
+  assertSession(ctx)
   const row = await queueUpload(ctx, getRequestWebStream(event) ?? null, Number(getHeader(event, 'content-length') || 0), clientIp(event))
   setResponseStatus(event, 202)
   return serializeTransfer(row)

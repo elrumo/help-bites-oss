@@ -2,6 +2,7 @@ defineRouteMeta({ openAPI: { tags: ['GitHub'], summary: 'Start connecting a GitH
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'projects.manage' })
+  assertSession(ctx)
   assertWorkspaceWide(ctx)
   return { url: installUrl(ctx.workspaceId, ctx.agentId) }
 })

@@ -11,7 +11,7 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
   const body = await readObjectBody(event)
-  const project = await callerProject(event, caller, body.project)
+  const project = await callerProject(event, caller, body.project, { can: 'marketing' })
   const row = await getProjectSegment(project, getRouterParam(event, 'id') || '')
   if (typeof body.name === 'string' && body.name.trim()) row.set('name', body.name.trim().slice(0, 80))
   if (body.filter !== undefined) row.set('filter', readSegmentFilter(body.filter))

@@ -10,6 +10,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'marketing' })
+  assertSession(ctx)
   const project = await requireProject(ctx, String(getQuery(event).project || ''))
   const row = await getProjectSource(project, getRouterParam(event, 'id') || '')
   await row.destroy(MASTER)

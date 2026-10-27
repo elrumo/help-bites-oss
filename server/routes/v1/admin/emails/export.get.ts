@@ -12,6 +12,8 @@ export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event)
   const query = getQuery(event)
   const project = query.project ? await requireProject(ctx, String(query.project)) : null
+  // The shared master templates belong to the workspace, not to a project.
+  if (!project) assertWorkspaceWide(ctx)
   const templates = await exportEmailTemplates(project, ctx.workspace)
   if (query.download) {
     const name = project ? slugKey(project.get('name')) || 'project' : 'masters'

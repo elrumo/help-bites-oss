@@ -16,5 +16,6 @@ export default defineEventHandler(async (event) => {
   project.set('secret', secret)
   await project.save(null, MASTER)
   forgetProject(String(project.get('publicKey')))
+  await auditAccess(ctx, event, 'project.secret.rotate', project.id)
   return { project: serializeAdminProject(project), secret }
 })

@@ -11,6 +11,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'marketing' })
+  assertSession(ctx)
   const project = await requireProject(ctx, getRouterParam(event, 'id') || '')
   const row = await createEndpoint(project, await readObjectBody(event))
   return { endpoint: serializeWebhookEndpoint(row, true) }

@@ -15,5 +15,7 @@ export default defineEventHandler(async (event) => {
   assertSession(ctx)
   const { role } = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   if (!isRole(role)) throw createError({ statusCode: 400, statusMessage: 'role must be owner, admin or agent' })
-  return { agent: await setMemberRole(ctx, getRouterParam(event, 'id') || '', role) }
+  const agent = await setMemberRole(ctx, getRouterParam(event, 'id') || '', role)
+  await auditAccess(ctx, event, 'member.role', getRouterParam(event, 'id') || '', { role })
+  return { agent }
 })

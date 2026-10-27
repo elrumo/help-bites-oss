@@ -16,7 +16,11 @@ export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
   let readOnly = false
   try {
-    readOnly = (await requireAgentIdentity(event)).apiKeyReadOnly === true
+    const identity = await requireAgentIdentity(event)
+    // A panel session reaches every route as itself, past the guards that only a signed-in person may pass for a key: the MCP
+    // is for keys and OAuth sign-ins, which are what those guards recognise.
+    if (!identity.apiKeyId) throw createError({ statusCode: 401, statusMessage: 'The MCP server takes an API key or an OAuth sign-in, not a panel session' })
+    readOnly = identity.apiKeyReadOnly === true
   } catch (error) {
     if ((error as { statusCode?: number }).statusCode !== 401) throw error
     setResponseStatus(event, 401)

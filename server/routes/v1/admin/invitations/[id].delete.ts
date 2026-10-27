@@ -5,6 +5,7 @@ export default defineEventHandler(async (event) => {
   assertSession(ctx)
   const row = await new (useParse()).Query('WorkspaceInvite').get(getRouterParam(event, 'id') || '', MASTER).catch(() => null)
   assertWorkspaceRow(ctx, row, 'Invitation not found')
+  await auditAccess(ctx, event, 'invitation.revoke', row.id)
   await row.destroy(MASTER)
   return { deleted: true }
 })

@@ -559,7 +559,6 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `update_board_settings` | The Planning board: turn it on, its statuses and labels (replaced whole), the public roadmap's layout and whether linked feedback follows item status. Asks first. |
 | `update_project_flags` | Replace a project's feature flags (send them all; one left out is deleted). |
 | `list_webhook_endpoints` | A project's webhook endpoints. |
-| `create_webhook_endpoint` | Add one, choosing the events: asks first, since the events carry customer data. Its signing secret is withheld from assistants. |
 
 ### Project setup and infrastructure
 
@@ -568,21 +567,12 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `get_project_overview` | One project's numbers, setup checklist, what needs attention and latest activity. |
 | `get_project_setup` | What is wired up in a project and what is still to do. |
 | `get_project_email_setup` | Whether the project's email can send, and whether campaigns can start. |
-| `update_webhook_endpoint` | Change an endpoint's URL, description, events or on/off: asks first when the URL changes. |
 | `delete_webhook_endpoint` | Remove an endpoint: asks first. |
 | `test_webhook_endpoint` | Send a signed `webhook.test` event to an endpoint. |
 | `list_webhook_deliveries` | Recent deliveries with their status and errors. |
 | `list_project_domains` | Custom domains with their DNS records and check results. |
-| `add_project_domain` | Register a custom domain and get the DNS records to add. |
-| `update_project_domain` | Change which public page a domain's root shows. |
-| `verify_project_domain` | Check the DNS records; a correct domain starts serving. |
-| `remove_project_domain` | Stop serving a custom domain: asks first. |
 | `list_inbound_addresses` | The addresses a project receives mail at. |
-| `add_inbound_address` | Receive mail on your own domain, or through a forwarding alias. |
-| `verify_inbound_address` | Check a domain address's MX records. |
-| `remove_inbound_address` | Stop receiving mail at an address: asks first. |
 | `get_project_repos` | The GitHub repos a project reads. |
-| `set_project_repos` | Replace the project's repos (send them all): asks first. |
 | `create_cards_with_ai` | Turn pasted text into feedback posts or board items with AI: asks first. |
 
 ### GitHub and the workspace

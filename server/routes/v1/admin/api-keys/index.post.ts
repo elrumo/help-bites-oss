@@ -19,5 +19,6 @@ export default defineEventHandler(async (event) => {
   if (body.readOnly !== undefined && typeof body.readOnly !== 'boolean') throw createError({ statusCode: 400, statusMessage: 'readOnly must be true or false' })
   await checkGauge(ctx.workspace, 'apiKeys')
   const { row, token } = await saveAdminApiKey({ agent: ctx.agent, workspace: ctx.workspace, name, projectIds, expiresAt, readOnly: body.readOnly === true })
+  await auditAccess(ctx, event, 'apikey.create', row.id, { name, readOnly: body.readOnly === true, projects: projectIds?.length ?? 'all', expires: expiresAt ? expiresAt.toISOString().slice(0, 10) : 'never' })
   return { apiKey: serializeAdminApiKey(row), key: token }
 })

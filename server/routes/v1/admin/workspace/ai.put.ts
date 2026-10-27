@@ -19,5 +19,6 @@ export default defineEventHandler(async (event) => {
   applyWorkspaceAiInput(ctx.workspace, body)
   await ctx.workspace.save(null, MASTER)
   await invalidate('workspace', ctx.workspaceId)
+  await auditAccess(ctx, event, 'workspace.ai.update')
   return { ai: serializeWorkspaceAi(ctx.workspace) }
 })

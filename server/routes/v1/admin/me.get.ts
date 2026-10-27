@@ -14,7 +14,8 @@ export default defineEventHandler(async (event) => {
   // A stale or foreign X-Workspace falls back to the default here, so the
   // panel can recover its footing instead of failing every call.
   const member = await resolveMember(identity, String(getHeader(event, 'x-workspace') || '')) || await resolveMember(identity, '')
-  const memberships = await membershipsOf(identity.agentId)
+  // A key is bound to one workspace and learns nothing about the operator's others.
+  const memberships = (await membershipsOf(identity.agentId)).filter(m => !identity.apiKeyWorkspaceId || m.workspaceId === identity.apiKeyWorkspaceId)
   const workspaces = (await Promise.all(memberships.map(async m => ({ m, row: await getWorkspace(m.workspaceId) }))))
     .flatMap(({ m, row }) => row ? [serializeWorkspace(row, m.role)] : [])
   const { id, policy } = edition()

@@ -2,6 +2,7 @@ defineRouteMeta({ openAPI: { tags: ['Error tracking'], summary: 'Add an error tr
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'projects.manage' })
+  assertSession(ctx)
   const id = await saveErrorServer(ctx.workspace, (await readBody(event).catch(() => ({}))) as Record<string, unknown>)
   return { id, servers: await listErrorServers(ctx.workspaceId) }
 })

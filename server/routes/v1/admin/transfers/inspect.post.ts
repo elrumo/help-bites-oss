@@ -12,6 +12,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'workspace.export' })
+  assertSession(ctx)
   await rateLimit(`sb:rl:transfer-inspect:${ctx.workspaceId}`, 20, 3600)
   return await inspectSource(readSource(await readBody(event).catch(() => ({}))))
 })

@@ -2,6 +2,7 @@ defineRouteMeta({ openAPI: { tags: ['GitHub'], summary: 'Set the GitHub repos of
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'projects.manage' })
+  assertSession(ctx)
   const project = await requireProject(ctx, getRouterParam(event, 'id') || '')
   const body = (await readBody(event).catch(() => ({}))) as { repos?: Array<{ installationId: string, id: number }> }
   if (!Array.isArray(body.repos)) throw createError({ statusCode: 400, statusMessage: 'Send repos as a list' })

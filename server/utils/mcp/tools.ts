@@ -573,17 +573,6 @@ export const MCP_TOOLS: readonly McpTool[] = [
     description: 'A project\'s webhook endpoints and the events each one receives.',
     params: { id: id('project') }
   },
-  {
-    name: 'create_webhook_endpoint', title: 'Add a webhook endpoint', destructive: true, method: 'POST', path: '/v1/admin/projects/{id}/webhooks',
-    description: 'Post the chosen events to a URL, signed with a secret that is never shown to an assistant (rotate it in the panel\'s webhook list to see a new one). The events carry customer data (people, conversations, feedback), and from now on they are sent to that URL, so confirm the address with the user first. `events` are filters: * (everything), a group such as feedback.*, or an exact type such as changelog.entry.published. A project has at most 10 endpoints and the plan must include event webhooks. Returns `{ endpoint }`.',
-    params: {
-      id: id('project'),
-      url: { type: 'string', required: true, description: 'The http(s) address to post to; use https.' },
-      events: { type: 'array', items: { type: 'string' }, description: 'Event filters, at most 30. Default everything.' },
-      description: { type: 'string', description: 'What it is for, up to 120 characters.' },
-      enabled: { type: 'boolean', description: 'false creates it switched off. Default true.' }
-    }
-  },
   // ---- email -----------------------------------------------------------------------------------------,
   {
     name: 'list_pricing_tables', title: 'List pricing tables', readOnly: true, method: 'GET', path: '/v1/admin/pricing-tables',
@@ -2288,18 +2277,6 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   // ---- project infrastructure: webhooks, domains, inbound mail, repos, overview, AI cards ------
   {
-    name: 'update_webhook_endpoint', title: 'Change a webhook endpoint', destructive: true, method: 'PATCH', path: '/v1/admin/projects/{id}/webhooks/{wid}',
-    description: 'Changes a webhook endpoint\'s URL, description, event filters or whether it is on. Only the keys you send change, and `events` REPLACES the filters. Changing `url` sends every matching event to the new address: confirm with the user first. The signing secret is not returned or changed here.',
-    params: {
-      id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' },
-      wid: { type: 'string', required: true, description: 'The endpoint\'s id, from list_webhook_endpoints.' },
-      url: { type: 'string', description: 'The http(s) address to post to.' },
-      description: { type: 'string', description: 'What it is for.' },
-      events: { type: 'array', items: { type: 'string' }, description: 'Event filters, replacing the old ones: * (everything), a group such as feedback.*, or an exact type such as changelog.entry.published.' },
-      enabled: { type: 'boolean', description: 'false pauses it without deleting it.' }
-    }
-  },
-  {
     name: 'delete_webhook_endpoint', title: 'Remove a webhook endpoint', destructive: true, method: 'DELETE', path: '/v1/admin/projects/{id}/webhooks/{wid}',
     description: 'Permanently removes a webhook endpoint; deliveries still waiting for it are dropped. Confirm with the user first.',
     params: {
@@ -2330,83 +2307,14 @@ export const MCP_TOOLS: readonly McpTool[] = [
     params: { id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' } }
   },
   {
-    name: 'add_project_domain', title: 'Add a custom domain', method: 'POST', path: '/v1/admin/projects/{id}/domains',
-    description: 'Registers a host such as feedback.example.com for the project\'s public pages and returns it with the DNS records (a TXT that proves the host is yours, a CNAME or A that points it here) for the user to add at their DNS provider. Nothing is served until verify_project_domain finds them. Needs a plan with custom domains.',
-    params: {
-      id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' },
-      host: { type: 'string', required: true, description: 'The host name, such as feedback.example.com.' },
-      target: { type: 'string', enum: ['hub', 'feedback', 'roadmap', 'changelog', 'blog'], description: 'The public page the host\'s root shows (every public page is also reachable under it). Default hub.' }
-    }
-  },
-  {
-    name: 'update_project_domain', title: 'Change what a custom domain shows', method: 'PATCH', path: '/v1/admin/projects/{id}/domains/{domainId}',
-    description: 'Changes which public page a custom domain\'s root shows; every public page stays reachable under it.',
-    params: {
-      id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' },
-      domainId: { type: 'string', required: true, description: 'The domain\'s id, from list_project_domains.' },
-      target: { type: 'string', required: true, enum: ['hub', 'feedback', 'roadmap', 'changelog', 'blog'], description: 'The public page the host\'s root shows.' }
-    }
-  },
-  {
-    name: 'verify_project_domain', title: 'Check a custom domain\'s DNS', method: 'POST', path: '/v1/admin/projects/{id}/domains/{domainId}/verify',
-    description: 'Looks up the domain\'s TXT and CNAME/A records. When both are right the domain becomes `verified` and starts serving; otherwise it is `failed` and each record says whether it was found. DNS changes can take a while to spread: call it again later. At most 10 checks a minute.',
-    params: {
-      id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' },
-      domainId: { type: 'string', required: true, description: 'The domain\'s id, from list_project_domains.' }
-    }
-  },
-  {
-    name: 'remove_project_domain', title: 'Remove a custom domain', destructive: true, method: 'DELETE', path: '/v1/admin/projects/{id}/domains/{domainId}',
-    description: 'Stops serving the host at once; its DNS records are the user\'s to remove. Confirm with the user first.',
-    params: {
-      id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' },
-      domainId: { type: 'string', required: true, description: 'The domain\'s id, from list_project_domains.' }
-    }
-  },
-  {
     name: 'list_inbound_addresses', title: 'Inbound mail addresses', readOnly: true, method: 'GET', path: '/v1/admin/projects/{id}/inbound-addresses',
     description: 'The addresses a project receives mail at: mail sent to one becomes a conversation in the inbox. Each has a kind (`domain` or `forward`), a state (pending, verified or failed), the MX records to set and the public address replies use. Also returns `limit` and `forwardingDomain` (empty when the server offers none). A forwarding alias works like a password, since anyone who knows it can write into the inbox: do not repeat it.',
     params: { id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' } }
   },
   {
-    name: 'add_inbound_address', title: 'Add an inbound mail address', method: 'POST', path: '/v1/admin/projects/{id}/inbound-addresses',
-    description: 'Adds an address that receives mail. Kind `domain` takes an `address` on a domain whose MX records point at the mail provider; it stays pending until verify_inbound_address. Kind `forward` makes a HelpBites alias for the user to forward their own mailbox to; pass `publicAddress` so replies come from the address customers know. Needs a plan with support email addresses.',
-    params: {
-      id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' },
-      kind: { type: 'string', required: true, enum: ['domain', 'forward'], description: 'domain: an address on the user\'s own domain; forward: a HelpBites alias to forward to.' },
-      address: { type: 'string', description: 'Kind domain only: the address to receive at, such as support@mail.example.com.' },
-      publicAddress: { type: 'string', description: 'Kind forward: the address customers know, such as support@example.com, which replies are sent from.' },
-      fromName: { type: 'string', description: 'The sender name replies carry (up to 80 characters).' }
-    }
-  },
-  {
-    name: 'remove_inbound_address', title: 'Remove an inbound mail address', destructive: true, method: 'DELETE', path: '/v1/admin/projects/{id}/inbound-addresses/{addressId}',
-    description: 'Stops receiving mail at an address: mail sent to it afterwards is dropped. Conversations already made from it stay. Confirm with the user first.',
-    params: {
-      id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' },
-      addressId: { type: 'string', required: true, description: 'The address\'s id, from list_inbound_addresses.' }
-    }
-  },
-  {
-    name: 'verify_inbound_address', title: 'Check an address\'s MX records', method: 'POST', path: '/v1/admin/projects/{id}/inbound-addresses/{addressId}/verify',
-    description: 'For a `domain` address: looks up the domain\'s MX records and marks the address `verified` when they point at the mail provider, otherwise `failed`. A forwarding alias has nothing to check. At most 10 checks a minute.',
-    params: {
-      id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' },
-      addressId: { type: 'string', required: true, description: 'The address\'s id, from list_inbound_addresses.' }
-    }
-  },
-  {
     name: 'get_project_repos', title: 'A project\'s GitHub repos', readOnly: true, method: 'GET', path: '/v1/admin/projects/{id}/repos',
     description: 'The GitHub repos a project reads, as `{ repos: [{ installationId, id, fullName, defaultBranch }] }`. They are read-only sources for AI error notes, legal-document answers and pricing suggestions.',
     params: { id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' } }
-  },
-  {
-    name: 'set_project_repos', title: 'Set a project\'s GitHub repos', destructive: true, method: 'PUT', path: '/v1/admin/projects/{id}/repos',
-    description: 'REPLACES the project\'s repo list (up to 10). Each repo must be visible to one of the workspace\'s GitHub connections (see list_github_connection_repos), so read get_project_repos first and send back the ones to keep. Returns `{ repos }`. Confirm with the user first.',
-    params: {
-      id: { type: 'string', required: true, description: 'The project\'s id, from list_projects.' },
-      repos: { type: 'array', items: { type: 'object' }, required: true, description: 'Every repo to keep, each { installationId, id }: the connection\'s id from list_github_connections and the repo\'s numeric id from list_github_connection_repos. An empty list removes all.' }
-    }
   },
   {
     name: 'get_project_overview', title: 'Project overview', readOnly: true, method: 'GET', path: '/v1/admin/projects/{id}/overview',
@@ -2791,23 +2699,15 @@ export const MCP_TOOLS: readonly McpTool[] = [
   // ---- project settings (PATCH /v1/admin/projects/{id}; replaces the older update_project_settings) ----------
   {
     name: 'update_project_settings', title: 'Change a project\'s settings', destructive: true, method: 'PATCH', path: '/v1/admin/projects/{id}',
-    description: 'Changes what the panel\'s Settings pages edit: the basics (name, site, sender, access), the feedback board, changelog, blog, legal pages, newsletter, chat widget, public hub, company profile and the project style. ' +
-      'Only the arguments you pass change, and inside a section object only the keys you send change. Lists marked REPLACES (allowedOrigins, notifyEmails, guestSurfaces, hiddenSections and the lists inside sections) are swapped whole, so read the current values from list_projects first and send the full list with your change. ' +
+    description: 'Changes what the panel\'s Settings pages edit: the basics (name, access), the feedback board, changelog, blog, legal pages, newsletter, chat widget, public hub, company profile and the project style. ' +
+      'Only the arguments you pass change, and inside a section object only the keys you send change. Lists marked REPLACES (guestSurfaces, hiddenSections and the lists inside sections) are swapped whole, so read the current values from list_projects first and send the full list with your change. ' +
       'A bad value is a 400 that names it and nothing is saved; a few values are cleaned silently instead (said on the argument). The Planning board has its own tool, update_board_settings, and feature flags have update_project_flags. ' +
-      'Returns the updated project. Needs the admin role. Some settings go live or reach people (turning on a public page or the hub, emailing changelog subscribers, which sites may embed the chat): confirm with the user first.',
+      'Where mail, notifications and events go (the site address, sender, reply-to, mail domain, allowed origins, notification addresses, email logging, webhook addresses, and the addresses and links inside the changelog, blog, newsletter, feedback and hub sections) is set in the panel: a request from a key that names one is refused with 403, whatever else it says. ' +
+      'Returns the updated project. Needs the admin role. Some settings go live or reach people (turning on a public page or the hub, emailing changelog subscribers): confirm with the user first.',
     params: {
       id: { ...id('project'), description: 'The project\'s id, from list_projects.' },
       name: { type: 'string', description: 'The project\'s name, up to 80 characters. An empty value is ignored: a name cannot be cleared.' },
       slug: { type: 'string', description: 'The project\'s short name for URLs: lowercased, anything but letters and digits becomes a dash, cut to 40 characters. An empty value is ignored.' },
-      siteUrl: { type: 'string', description: 'The address of the project\'s own site or app (http or https), used to build links in emails and the {siteUrl} part of the changelog and blog link templates. A trailing slash is removed. An empty string clears it; a value that is not an http(s) URL is silently saved as empty.' },
-      allowedOrigins: { type: 'array', items: { type: 'string' }, description: 'REPLACES the sites (browser origins) allowed to use the project\'s embeds, forms and checkout return links, e.g. https://app.example.com. Each entry is cut down to its origin (no path); entries that are not URLs are dropped silently, duplicates removed, at most 20. An empty list clears it. Removing an origin can break the embed on that site.' },
-      inboxPath: { type: 'string', description: 'Where the chat lives on the project\'s own site, as a path such as /support: the "you have a reply" email to a customer of an in-app chat links to siteUrl plus this path. Up to 200 characters; an empty string clears it.' },
-      fromName: { type: 'string', description: 'The sender name on the project\'s emails; it also signs the team\'s chat replies. Up to 80 characters; an empty string falls back to the project name.' },
-      fromEmail: { type: 'string', description: 'The address the project\'s emails are sent from, up to 200 characters. It should be on mailDomain so SPF and DKIM line up. A value that is not an email address is a 400; an empty string uses the server\'s default sender.' },
-      replyTo: { type: 'string', description: 'The reply-to address on the project\'s emails, up to 200 characters. A value that is not an email address is a 400; an empty string means none.' },
-      mailDomain: { type: 'string', description: 'The sending domain, such as mail.example.com; it must belong to the mail account the server uses. Lowercased; a value that is not a domain is a 400; an empty string uses the server\'s default domain.' },
-      emailLogContent: { type: 'boolean', description: 'Keep a copy of every sent email\'s HTML and text in the email log (default off). The copies can include one-time sign-in codes, so only turn it on when the user wants it.' },
-      notifyEmails: { type: 'array', items: { type: 'string' }, description: 'REPLACES the addresses emailed when a customer writes in the chat (also the fallback recipients of error alerts). Up to 5; `Name <a@b.com>` is reduced to the address; entries that are not email addresses are dropped silently. An empty list clears it.' },
       allowAttachments: { type: 'boolean', description: 'Whether customers may attach images and files in the chat.' },
       allowAnonymousUsers: { type: 'boolean', description: 'Let people use chat and feedback with only an email address, with no sign-in from the host app. After a few actions they must confirm the address with a code we email them.' },
       guestSurfaces: { type: 'array', items: { type: 'string' }, description: 'REPLACES the surfaces open to guests (visitors with no account and no email): any of chat, feedback, comments. An empty list turns guest access off and ends every guest session. Unknown names are dropped silently.' },

@@ -21,6 +21,9 @@ const MARKETING = [
   'email-suppressions/index.post.ts',
   'email-suppressions/[email].delete.ts',
   'contacts/[id].delete.ts',
+  'segments/index.post.ts',
+  'segments/[id].patch.ts',
+  'segments/[id].delete.ts',
   'automations/recipes/[id]/install.post.ts'
 ]
 

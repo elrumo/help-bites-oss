@@ -30,5 +30,6 @@ export default defineEventHandler(async (event) => {
     user.set('defaultWorkspace', ctx.workspace)
     await user.save(null, MASTER)
   }
+  await auditAccess(ctx, event, 'member.add', user.id, { role, email: String(user.get('email') || '') })
   return { agent: { ...serializeAgent(user), role } }
 })
