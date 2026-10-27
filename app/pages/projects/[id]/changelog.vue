@@ -75,10 +75,15 @@
     <!-- Entry editor -->
     <USlideover v-model:open="entryOpen" :title="current ? (current.number ? $t('changelog.entryNumber', { number: current.number }) : $t('changelog.entry')) : $t('changelog.newEntry')" :description="current ? $t('changelog.created', { time: timeAgo(current.createdAt) }) : $t('changelog.draftUntilPublish')" :ui="{ content: 'sm:max-w-2xl' }">
       <template #body>
-        <div class="space-y-6">
+        <div class="space-y-6" @keydown.meta.enter.prevent="submitShortcut" @keydown.ctrl.enter.prevent="submitShortcut">
+          <p v-if="!current && restored" class="flex items-center gap-2 rounded-lg border border-default bg-elevated px-3 py-2 text-xs text-muted">
+            <UIcon name="i-lucide-history" class="size-3.5 shrink-0" />
+            <span class="min-w-0 flex-1">{{ $t('changelog.draftRestored') }}</span>
+            <UButton :label="$t('changelog.discardDraft')" size="xs" color="neutral" variant="ghost" @click="discardDraft" />
+          </p>
           <div class="space-y-2">
-            <UInput v-model="draft.title" :placeholder="$t('changelog.whatChanged')" variant="none" size="xl" class="w-full" :ui="{ base: 'px-0 text-lg font-semibold' }" :maxlength="200" :aria-label="$t('changelog.title')" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')" />
-            <UTextarea v-model="draft.body" :placeholder="$t('changelog.bodyPlaceholder')" variant="none" :rows="4" autoresize :maxrows="18" class="w-full" :ui="{ base: 'px-0' }" :aria-label="$t('changelog.text')" @blur="saveText('body')" />
+            <UInput v-model="draft.title" :placeholder="$t('changelog.whatChanged')" size="xl" class="w-full" :ui="titleField" :maxlength="200" :aria-label="$t('changelog.title')" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')" />
+            <UTextarea v-model="draft.body" :placeholder="$t('changelog.bodyPlaceholder')" :rows="4" autoresize :maxrows="18" class="w-full" :aria-label="$t('changelog.text')" @blur="saveText('body')" />
           </div>
 
           <section class="space-y-2">
@@ -94,17 +99,17 @@
             <UInput variant="subtle" v-model="draft.area" :placeholder="project?.changelog.areas?.length ? $t('changelog.areaList', { areas: project.changelog.areas.join(', ') }) : $t('changelog.areaOptional')" size="sm" class="w-full" :maxlength="40" :aria-label="$t('changelog.area')" @blur="saveField('area')" />
           </section>
 
-          <section class="grid gap-x-4 sm:grid-cols-2">
-            <USelect v-model="draft.tag" :items="tagItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('changelog.type')" @update:model-value="patch({ tag: draft.tag })">
+          <section class="grid gap-x-4 gap-y-2 sm:grid-cols-2">
+            <USelect v-model="draft.tag" :items="tagItems" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('changelog.type')" @update:model-value="patch({ tag: draft.tag })">
               <template #leading><UIcon name="i-lucide-tag" class="size-3.5 text-dimmed" /></template>
             </USelect>
-            <USelect v-model="draft.releaseId" :items="releaseItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('changelog.release')" @update:model-value="patch({ releaseId: draft.releaseId === NO_RELEASE ? null : draft.releaseId })">
+            <USelect v-model="draft.releaseId" :items="releaseItems" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('changelog.release')" @update:model-value="patch({ releaseId: draft.releaseId === NO_RELEASE ? null : draft.releaseId })">
               <template #leading><UIcon name="i-lucide-package" class="size-3.5 text-dimmed" /></template>
             </USelect>
-            <USelect v-model="draft.status" :items="statusItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('changelog.status')" @update:model-value="patch({ status: draft.status })">
+            <USelect v-model="draft.status" :items="statusItems" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('changelog.status')" @update:model-value="patch({ status: draft.status })">
               <template #leading><span class="size-2.5 rounded-full" :class="draft.status === 'published' ? 'bg-emerald-500' : 'bg-stone-400'" /></template>
             </USelect>
-            <label class="group relative flex h-8 items-center rounded-md ps-8 pe-2 text-[13px] text-default hover:bg-elevated" :class="current ? '' : 'pointer-events-none opacity-50'">
+            <label class="group" :class="[propertyBox, current ? '' : 'pointer-events-none opacity-50']">
               <UIcon name="i-lucide-calendar" class="absolute left-2.5 size-3.5 text-dimmed" />
               <input v-model="draft.date" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.date ? '' : 'text-dimmed'" :aria-label="$t('changelog.date')" :disabled="!current" @change="patch({ publishedAt: draft.date ? `${draft.date}T12:00:00.000Z` : null })">
             </label>
@@ -163,10 +168,12 @@
       <template #footer>
         <div class="flex w-full items-center gap-2">
           <UButton v-if="current" :label="confirmDelete ? $t('changelog.clickAgainDelete') : $t('changelog.delete')" icon="i-lucide-trash-2" :color="confirmDelete ? 'error' : 'neutral'" :variant="confirmDelete ? 'solid' : 'ghost'" @click="deleteEntry" />
-          <span v-if="current" class="ml-auto text-xs text-muted">{{ savingEntry ? $t('changelog.saving') : $t('changelog.changesSave') }}</span>
+          <SaveStatus v-if="current" class="ml-auto" :saving="savingEntry" :saved="savedEntry" :idle="$t('changelog.changesSave')" />
           <template v-else>
-            <UButton class="ml-auto" label="Cancel" color="neutral" variant="ghost" @click="entryOpen = false" />
-            <UButton :label="$t('changelog.createDraft')" color="primary" :loading="savingEntry" :disabled="!draft.title.trim()" @click="createEntry" />
+            <UButton class="ml-auto" :label="$t('common.cancel')" color="neutral" variant="ghost" @click="entryOpen = false" />
+            <UButton :label="$t('changelog.createDraft')" color="primary" :loading="savingEntry" :disabled="!draft.title.trim()" @click="createEntry">
+              <template #trailing><span class="hidden items-center gap-0.5 sm:inline-flex" aria-hidden="true"><UKbd value="meta" size="sm" class="bg-white/20 text-white ring-0" /><UKbd value="enter" size="sm" class="bg-white/20 text-white ring-0" /></span></template>
+            </UButton>
           </template>
         </div>
       </template>
@@ -295,7 +302,6 @@ const SOURCE_LABEL = computed<Record<ChangelogLinkKind, string>>(() => ({ feedba
 const TAG_KEYS: Record<ChangelogTag, string> = { new: 'changelog.tagNew', improved: 'changelog.tagImproved', fix: 'changelog.tagFixed', removed: 'changelog.tagRemoved', breaking: 'changelog.tagBreaking' }
 const SOURCE_ICON: Record<ChangelogLinkKind, string> = { feedback: 'i-lucide-lightbulb', board: 'i-lucide-square-kanban', conversation: 'i-lucide-message-square' }
 const STATE_CLASS = { public: 'bg-success/10 text-success', waiting: 'bg-warning/10 text-warning', draft: 'bg-elevated text-toned' }
-const property = { base: 'h-8 w-full rounded-md ps-8 text-[13px] text-default', trailing: 'opacity-0 transition-opacity group-hover:opacity-100' }
 const tagItems = computed(() => CHANGELOG_TAGS.map(value => ({ label: t(TAG_KEYS[value]), value })))
 const statusItems = computed(() => [{ label: t('changelog.draft'), value: 'draft' }, { label: t('changelog.published'), value: 'published' }])
 const imageWidthItems = computed(() => CHANGELOG_IMAGE_WIDTHS.map(value => ({ label: t(`changelog.imageWidth_${value}`), value })))
@@ -381,6 +387,8 @@ const reviewNotes = ref('')
 const reviewing = ref<'' | 'approve' | 'reject'>('')
 const entryError = ref('')
 const savingEntry = ref(false)
+/** The last change to the open entry has landed; the footer says so until the next one starts. */
+const savedEntry = ref(false)
 const confirmDelete = ref(false)
 const sourceKind = ref<'feedback' | 'board'>('feedback')
 const sourceRef = ref('')
@@ -402,6 +410,40 @@ function fill(entry: ChangelogEntry | null) {
   entryError.value = ''
   confirmDelete.value = false
   sourceRef.value = ''
+  savedEntry.value = false
+  restored.value = false
+}
+
+// ---- the new entry's unsaved draft ----
+// Kept in this browser while the panel is a new entry, and brought back the next time it opens.
+type DraftSnapshot = Pick<typeof draft, 'title' | 'summary' | 'area' | 'body' | 'tag' | 'releaseId' | 'status'>
+const saved = useSavedDraft<Partial<DraftSnapshot>>(() => `hb-draft:changelog:${id}`)
+const restored = ref(false)
+
+const hasDraftContent = () => Boolean(draft.title.trim() || draft.summary.trim() || draft.area.trim() || draft.body.trim())
+
+watch(draft, () => {
+  if (!entryOpen.value || current.value) return
+  saved.schedule(() => (hasDraftContent() ? { title: draft.title, summary: draft.summary, area: draft.area, body: draft.body, tag: draft.tag, releaseId: draft.releaseId, status: draft.status } : null))
+}, { deep: true })
+
+function restoreDraft(snapshot: Partial<DraftSnapshot>) {
+  const text = (value: unknown) => (typeof value === 'string' ? value : '')
+  Object.assign(draft, {
+    title: text(snapshot.title),
+    summary: text(snapshot.summary),
+    area: text(snapshot.area),
+    body: text(snapshot.body),
+    tag: CHANGELOG_TAGS.find(tag => tag === snapshot.tag) || 'improved',
+    releaseId: snapshot.releaseId && releaseOf(snapshot.releaseId) ? snapshot.releaseId : NO_RELEASE,
+    status: snapshot.status === 'published' ? 'published' : 'draft'
+  })
+}
+
+function discardDraft() {
+  saved.clear()
+  fill(null)
+  restored.value = false
 }
 
 function replaceEntry(entry: ChangelogEntry) {
@@ -415,7 +457,13 @@ function openEntry(entryId: string) {
 
 function openNewEntry() {
   editingId.value = ''
+  const snapshot = saved.read()
   fill(null)
+  restored.value = false
+  if (snapshot) {
+    restoreDraft(snapshot)
+    restored.value = hasDraftContent()
+  }
   entryOpen.value = true
 }
 
@@ -455,6 +503,8 @@ watch(() => [current.value?.id, current.value && stateOf(current.value).key, cur
 
 watch(entryOpen, (open) => {
   if (open) return
+  // A field still being edited saves with the panel closing, not only on blur.
+  flushText()
   editingId.value = ''
   linkedConversations.value = null
   replyOpen.value = false
@@ -508,9 +558,11 @@ async function dropOn(group: ChangelogGroup) {
 async function patch(body: Record<string, unknown>) {
   if (!current.value) return
   savingEntry.value = true
+  savedEntry.value = false
   entryError.value = ''
   try {
     replaceEntry((await api<{ entry: ChangelogEntry }>(`/admin/changelog/entries/${current.value.id}`, { method: 'PATCH', body })).entry)
+    savedEntry.value = true
   } catch (e: any) {
     entryError.value = e?.message || t('changelog.saveError')
     fill(current.value)
@@ -548,8 +600,27 @@ function saveText(key: 'title' | 'body') {
   if (value !== current.value[key]) void patch({ [key]: value })
 }
 
+/** Saves every text field that changed in one request. */
+function flushText() {
+  const entry = current.value
+  if (!entry) return
+  const body: Record<string, unknown> = {}
+  for (const key of ['title', 'body', 'summary', 'slug', 'area'] as const) {
+    const value = draft[key].trim()
+    if ((key === 'title' || key === 'slug') && !value) continue
+    if (value !== entry[key]) body[key] = value
+  }
+  if (Object.keys(body).length) void patch(body)
+}
+
+/** Cmd or Ctrl and Enter: creates the new entry, or saves what is being typed in an existing one. */
+function submitShortcut() {
+  if (current.value) flushText()
+  else void createEntry()
+}
+
 async function createEntry() {
-  if (!draft.title.trim()) return
+  if (savingEntry.value || !draft.title.trim()) return
   savingEntry.value = true
   entryError.value = ''
   try {
@@ -559,6 +630,8 @@ async function createEntry() {
       body: { title: draft.title, summary: draft.summary, area: draft.area, body: draft.body, tag: draft.tag, status: draft.status, releaseId: draft.releaseId === NO_RELEASE ? null : draft.releaseId }
     })
     replaceEntry(entry)
+    saved.clear()
+    restored.value = false
     editingId.value = entry.id
     void router.replace({ query: { ...route.query, entry: entry.id } })
   } catch (e: any) {

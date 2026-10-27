@@ -12,7 +12,8 @@
     "cancel": "Cancelar",
     "sourceCode": "Código fuente",
     "search": "Buscar",
-    "saved": "Guardado"
+    "saved": "Guardado",
+    "saving": "Guardando…"
   },
   "nav": {
     "openNavigation": "Abrir navegación",
@@ -430,7 +431,13 @@
     "unlinkItem": "Desvincular #{number} {title}",
     "attachFeedback": "Buscar feedback para adjuntar…",
     "searchFeedback": "Buscar feedback…",
-    "noFeedbackMatches": "Ningún feedback coincide."
+    "noFeedbackMatches": "Ningún feedback coincide.",
+    "draftRestored": "Tu borrador sin guardar ha vuelto.",
+    "discardDraft": "Descartar",
+    "pillDescription": "Tiene descripción",
+    "pillImages": "{count} imagen | {count} imágenes",
+    "pillFiles": "{count} archivo | {count} archivos",
+    "saveLists": "Guardar estados y etiquetas"
   },
   "style": {
     "useProject": "Usar el estilo del proyecto",
@@ -653,7 +660,9 @@
     "tagImproved": "Mejorado",
     "tagFixed": "Corregido",
     "tagRemoved": "Eliminado",
-    "tagBreaking": "Cambio importante"
+    "tagBreaking": "Cambio importante",
+    "draftRestored": "Tu borrador sin guardar ha vuelto.",
+    "discardDraft": "Descartar"
   },
   "blog": {
     "styleTitle": "Estilo del blog",
@@ -2408,7 +2417,8 @@
       "fix": "Corregido",
       "removed": "Eliminado",
       "breaking": "Cambio incompatible"
-    }
+    },
+    "dragToReorder": "Arrastra para reordenar, o usa las flechas"
   },
   "knowledge": {
     "newModel": "Nuevo modelo",

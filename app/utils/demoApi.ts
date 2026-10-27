@@ -517,7 +517,7 @@ const boardItems: BoardItem[] = []
 function boardItem(number: number, title: string, status: string, statusCategory: BoardItem['statusCategory'], labels: string[], assigneeId: string, priority: BoardItem['priority'], postNumbers: number[], conversationIds: string[], isPublic: boolean, minutesAgo: number) {
   const posts = postNumbers.map(demoPost)
   boardItems.push({
-    id: `item_demo${number}`, projectId: 'acme', number, title, description: '', publicDescription: isPublic ? title : '', status, statusCategory,
+    id: `item_demo${number}`, projectId: 'acme', number, title, description: '', publicDescription: isPublic ? title : '', attachments: [], status, statusCategory,
     rank: boardItems.length + 1, priority, assigneeId, labels, targetDate: null, public: isPublic,
     feedbackPostIds: posts.map(post => post.id), conversationIds, relatedItemIds: [], related: [], errorRefs: [],
     voteCount: posts.reduce((sum, post) => sum + post.voteCount, 0),
@@ -527,6 +527,8 @@ function boardItem(number: number, title: string, status: string, statusCategory
   })
 }
 boardItem(1, 'Export notebooks to Markdown', 'in-progress', 'active', ['web', 'api'], 'agent_sam', 'high', [14], ['conv_demo5'], true, 60 * 5)
+boardItems[0]!.description = 'Maya and Ren both asked for a Markdown export. One .md file per notebook, with images alongside.'
+boardItems[0]!.attachments = [{ url: 'https://example.com/export-mockup.png', name: 'export-mockup.png', mime: 'image/png', size: 84213 }, { url: 'https://example.com/export-spec.pdf', name: 'export-spec.pdf', mime: 'application/pdf', size: 120400 }]
 boardItem(2, 'Fix the Safari calendar offset', 'in-progress', 'active', ['web'], 'agent_sam', 'high', [17], ['conv_demo9'], false, 60 * 3)
 boardItem(3, 'Dark mode on receipts', 'planned', 'planned', ['web'], '', 'normal', [15], [], true, 60 * 24)
 boardItem(4, 'Slack notifications', 'planned', 'planned', ['api'], 'agent_demo', 'normal', [16], [], true, 60 * 30)

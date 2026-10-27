@@ -12,7 +12,8 @@
     "cancel": "Cancel",
     "sourceCode": "Source code",
     "search": "Search",
-    "saved": "Saved"
+    "saved": "Saved",
+    "saving": "Saving…"
   },
   "nav": {
     "openNavigation": "Open navigation",
@@ -527,7 +528,13 @@
     "openInTracker": "Open in {provider}",
     "attachFeedback": "Search feedback to attach…",
     "searchFeedback": "Search feedback…",
-    "noFeedbackMatches": "No feedback matches."
+    "noFeedbackMatches": "No feedback matches.",
+    "draftRestored": "Your unsaved draft is back.",
+    "discardDraft": "Discard",
+    "pillDescription": "Has a description",
+    "pillImages": "{count} image | {count} images",
+    "pillFiles": "{count} file | {count} files",
+    "saveLists": "Save statuses and labels"
   },
   "style": {
     "useProject": "Use the project style",
@@ -770,7 +777,9 @@
       "error": "Could not send the replies.",
       "hint": "This entry answers {count} conversation. You can tell them it shipped. | This entry answers {count} conversations. You can tell them it shipped.",
       "button": "Reply to {count} linked conversation | Reply to {count} linked conversations"
-    }
+    },
+    "draftRestored": "Your unsaved draft is back.",
+    "discardDraft": "Discard"
   },
   "blog": {
     "styleTitle": "Blog style",
@@ -2591,7 +2600,8 @@
       "fix": "Fixed",
       "removed": "Removed",
       "breaking": "Breaking"
-    }
+    },
+    "dragToReorder": "Drag to reorder, or use the arrow keys"
   },
   "knowledge": {
     "newModel": "New model",

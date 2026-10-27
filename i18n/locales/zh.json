@@ -12,7 +12,8 @@
     "cancel": "取消",
     "sourceCode": "源代码",
     "search": "搜索",
-    "saved": "已保存"
+    "saved": "已保存",
+    "saving": "保存中…"
   },
   "nav": {
     "openNavigation": "打开导航",
@@ -417,7 +418,13 @@
     "untitled": "未命名",
     "setUpBoard": "设置规划",
     "addToExisting": "添加到现有条目…",
-    "unlinkItem": "取消关联 #{number} {title}"
+    "unlinkItem": "取消关联 #{number} {title}",
+    "draftRestored": "已恢复你未保存的草稿。",
+    "discardDraft": "丢弃",
+    "pillDescription": "有描述",
+    "pillImages": "{count} 张图片 | {count} 张图片",
+    "pillFiles": "{count} 个文件 | {count} 个文件",
+    "saveLists": "保存状态和标签"
   },
   "style": {
     "useProject": "使用项目样式",
@@ -640,7 +647,9 @@
     "tagImproved": "改进",
     "tagFixed": "修复",
     "tagRemoved": "移除",
-    "tagBreaking": "破坏性变更"
+    "tagBreaking": "破坏性变更",
+    "draftRestored": "已恢复你未保存的草稿。",
+    "discardDraft": "丢弃"
   },
   "blog": {
     "styleTitle": "博客样式",
@@ -2351,7 +2360,8 @@
       "fix": "已修复",
       "removed": "已移除",
       "breaking": "破坏性变更"
-    }
+    },
+    "dragToReorder": "拖动以重新排序，或使用方向键"
   },
   "knowledge": {
     "newModel": "新建模型",

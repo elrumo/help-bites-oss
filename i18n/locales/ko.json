@@ -12,7 +12,8 @@
     "cancel": "취소",
     "sourceCode": "소스 코드",
     "search": "검색",
-    "saved": "저장됨"
+    "saved": "저장됨",
+    "saving": "저장 중…"
   },
   "nav": {
     "openNavigation": "탐색 열기",
@@ -427,7 +428,13 @@
     "untitled": "제목 없음",
     "setUpBoard": "계획 설정하기",
     "addToExisting": "기존 항목에 추가…",
-    "unlinkItem": "#{number} {title} 연결 해제"
+    "unlinkItem": "#{number} {title} 연결 해제",
+    "draftRestored": "저장하지 않은 초안을 복원했습니다.",
+    "discardDraft": "버리기",
+    "pillDescription": "설명 있음",
+    "pillImages": "이미지 {count}개 | 이미지 {count}개",
+    "pillFiles": "파일 {count}개 | 파일 {count}개",
+    "saveLists": "상태 및 라벨 저장"
   },
   "style": {
     "useProject": "프로젝트 스타일 사용",
@@ -650,7 +657,9 @@
     "tagImproved": "개선",
     "tagFixed": "수정",
     "tagRemoved": "제거",
-    "tagBreaking": "호환성 깨짐"
+    "tagBreaking": "호환성 깨짐",
+    "draftRestored": "저장하지 않은 초안을 복원했습니다.",
+    "discardDraft": "버리기"
   },
   "blog": {
     "styleTitle": "블로그 스타일",
@@ -2361,7 +2370,8 @@
       "fix": "수정됨",
       "removed": "제거됨",
       "breaking": "호환성 깨짐"
-    }
+    },
+    "dragToReorder": "드래그하여 순서 변경 또는 화살표 키 사용"
   },
   "knowledge": {
     "newModel": "새 모델",

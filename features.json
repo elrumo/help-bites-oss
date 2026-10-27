@@ -629,7 +629,7 @@
       "id": "project-board",
       "name": "Planning and public roadmap",
       "category": "product",
-      "summary": "Planning: a private Linear-style kanban per project linked to feedback posts, conversations and other items (related both ways); the items you publish form the public roadmap. Items take images and files and can be filed from errors and list the GitHub commits and pull requests that mention them. The web and native editors show private threaded comments with up to 10 images or files each, and the API and MCP expose the same comments; MCP comments display the assistant name and retain its authorizing operator. The editors also show a collapsible edit history with field values, the actor, source and time for item edits and links. The API exposes the same history. A feedback post becomes one or several items from its right-click menu or Planning button, written by the AI (which also sets the urgency) when one is configured, and feedback is attached to items by search. A column (a status with a name and a category) is added from the tile after the last one, on web and native. A label is created from an item's label picker by typing a new name, on web and native. A new item with no title gets one written by the AI from its description (after a pause in typing, on Create, or from the title field's AI button), on web, native and the share sheet. On iPhone and iPad an item is filed from the system share sheet (a screenshot, photo, link or text, with every field of New item and the shared image attached). Admins reorder columns by dragging a column's header onto another.",
+      "summary": "Planning: a private Linear-style kanban per project linked to feedback posts, conversations and other items (related both ways); the items you publish form the public roadmap. Items take images and files and can be filed from errors and list the GitHub commits and pull requests that mention them. The web and native editors show private threaded comments with up to 10 images or files each, and the API and MCP expose the same comments; MCP comments display the assistant name and retain its authorizing operator. The editors also show a collapsible edit history with field values, the actor, source and time for item edits and links. The API exposes the same history. A feedback post becomes one or several items from its right-click menu or Planning button, written by the AI (which also sets the urgency) when one is configured, and feedback is attached to items by search. A column (a status with a name and a category) is added from the tile after the last one, on web and native. A label is created from an item's label picker by typing a new name, on web and native. A new item with no title gets one written by the AI from its description (after a pause in typing, on Create, or from the title field's AI button), on web, native and the share sheet. On iPhone and iPad an item is filed from the system share sheet (a screenshot, photo, link or text, with every field of New item and the shared image attached). Admins reorder columns by dragging a column's header onto another, and reorder the statuses and labels in Planning settings by dragging their grips. Cards show pills for a description, images and files. The board remembers the order picked last (per project, per device), and the web item panel keeps a new item's unsaved draft, creates with Cmd or Ctrl and Enter, and shows saving and saved as it goes.",
       "editions": [
         "community",
         "cloud"
@@ -642,7 +642,9 @@
           "app/components/GithubRefs.vue",
           "app/components/PlanningPickerModal.vue",
           "app/components/FeedbackSearchPicker.vue",
-          "app/components/BoardItemComments.vue"
+          "app/components/BoardItemComments.vue",
+          "app/components/feedback/FeedbackBoardSettings.vue",
+          "app/components/SaveStatus.vue"
         ],
         "public": [
           "/roadmap/:pk"
@@ -679,7 +681,7 @@
       "id": "changelog",
       "name": "Changelog",
       "category": "product",
-      "summary": "Entries grouped into releases, with up to 10 images each, drafted from shipped work, public page, JSON, RSS, digest emails, reader comments, git CLI. When an entry ships, the followers of the posts it answers are emailed once, and the editor offers a reply to the conversations it answers. A release's editor has an AI button that reads its entries and writes the title and summary. The public page and embed wear the project's style in light and dark, or the changelog's own over it.",
+      "summary": "Entries grouped into releases, with up to 10 images each, drafted from shipped work, public page, JSON, RSS, digest emails, reader comments, git CLI. When an entry ships, the followers of the posts it answers are emailed once, and the editor offers a reply to the conversations it answers. A release's editor has an AI button that reads its entries and writes the title and summary. The public page and embed wear the project's style in light and dark, or the changelog's own over it. The entry editor keeps a new entry's unsaved draft for when the panel is opened again, creates with Cmd or Ctrl and Enter, and shows saving and saved as it goes (web).",
       "editions": [
         "community",
         "cloud"
@@ -1994,6 +1996,7 @@
     }
   ],
   "notBuilt": [
+    "In the native Planning screens, statuses and labels are reordered with the arrow buttons, not by dragging; a new item's unsaved draft is not kept when its sheet closes (the web panel keeps it per project); and the editor saves with its Save button (Cmd and Return on a keyboard) rather than as you go.",
     "Add to Planning from the system share sheet is an iPhone and iPad extension: the Mac app has none, and the web panel has no equivalent (a browser has no share sheet; New item and the API cover it). It shares a session through the App Group group.com.helpbites.operator, which must be enabled on both targets in your Apple developer account.",
     "The pricing table's preview can be edited in place on the web (click a title, plan name, description, badge, button, feature or footnote and type); the native preview is read-only.",
     "The native app edits the project style and the changelog's style but not any other feature's (web panel and API only), and its Swift snippets do not read the finished `look` / `style` the public payloads carry. Other embeds (the CMS pages) and the brand kit's typefaces do not wear the full style yet: kit fonts are not loaded on blog, legal, form, onboarding or pricing pages.",
