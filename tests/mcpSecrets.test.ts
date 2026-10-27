@@ -65,3 +65,34 @@ describe('an assistant never subscribes anyone', () => {
     expect(() => withoutSubscribing({ contacts: { 0: { subscription: 'subscribed' } } })).not.toThrow()
   })
 })
+
+describe('a read-only connection', () => {
+  const ok: McpCall = async request => ({ status: 200, data: { seen: request.url } })
+
+  test('is offered only the tools that read', async () => {
+    const all = await handleMcpBody({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, ok) as any
+    const some = await handleMcpBody({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, ok, { readOnly: true }) as any
+    expect(some.result.tools.length).toBeGreaterThan(20)
+    expect(some.result.tools.length).toBeLessThan(all.result.tools.length)
+    expect(some.result.tools.every((t: any) => t.annotations.readOnlyHint === true)).toBe(true)
+  })
+
+  test('cannot call a tool that changes something, and is told why', async () => {
+    let called = false
+    const call: McpCall = async () => { called = true; return { status: 200, data: {} } }
+    const refused = await handleMcpBody({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'reply_to_conversation', arguments: { id: 'c1', body: 'Hi' } } }, call, { readOnly: true }) as any
+    expect(called).toBe(false)
+    expect(refused.result.isError).toBe(true)
+    expect(refused.result.content[0].text).toContain('read-only')
+    const read = await handleMcpBody({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'get_conversation', arguments: { id: 'c1' } } }, call, { readOnly: true }) as any
+    expect(called).toBe(true)
+    expect(read.result.isError).toBe(false)
+  })
+
+  test('says so in its instructions, and a normal connection does not', async () => {
+    const some = await handleMcpBody({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, ok, { readOnly: true }) as any
+    const all = await handleMcpBody({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, ok) as any
+    expect(some.result.instructions).toContain('read-only')
+    expect(all.result.instructions).not.toContain('read-only')
+  })
+})

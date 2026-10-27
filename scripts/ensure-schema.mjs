@@ -298,7 +298,9 @@ const SCHEMAS = {
       expiresAt: { type: 'Date' },
       lastUsedAt: { type: 'Date' },
       // The only projects it may act in; absent = every project and the workspace itself.
-      projectIds: { type: 'Array' }
+      projectIds: { type: 'Array' },
+      // True: it can read and change nothing. Absent = it may write, as far as its operator's role allows.
+      readOnly: { type: 'Boolean' }
     },
     indexes: { hash_1: { hash: 1 }, workspace_1: { _p_workspace: 1 } }
   },

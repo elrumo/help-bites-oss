@@ -14,8 +14,9 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
+  let readOnly = false
   try {
-    await requireAgentIdentity(event)
+    readOnly = (await requireAgentIdentity(event)).apiKeyReadOnly === true
   } catch (error) {
     if ((error as { statusCode?: number }).statusCode !== 401) throw error
     setResponseStatus(event, 401)
@@ -44,7 +45,7 @@ export default defineEventHandler(async (event) => {
     return { status: response.status, data }
   }
 
-  const answer = await handleMcpBody(body, call)
+  const answer = await handleMcpBody(body, call, { readOnly })
   if (answer === null) {
     setResponseStatus(event, 202)
     return ''

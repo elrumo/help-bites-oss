@@ -11,6 +11,8 @@ export type AdminApiKey = {
   lastUsedAt: string | null
   /** The only projects the key may act in; null = every project, and the workspace itself. */
   projectIds: string[] | null
+  /** Looks at everything its operator's role can see and changes nothing. */
+  readOnly: boolean
 }
 
 /** Days a key lives when its creator does not say. */
@@ -51,7 +53,7 @@ export async function readKeyProjectIds(value: unknown, workspaceId: string): Pr
 }
 
 /** Store a new key for an operator in one workspace. The token comes back once; only its hash is kept. */
-export async function saveAdminApiKey(input: { agent: ParseObject, workspace: ParseObject, name: string, projectIds: string[] | null, expiresAt: Date | null }): Promise<{ row: ParseObject, token: string }> {
+export async function saveAdminApiKey(input: { agent: ParseObject, workspace: ParseObject, name: string, projectIds: string[] | null, expiresAt: Date | null, readOnly?: boolean }): Promise<{ row: ParseObject, token: string }> {
   const value = newAdminApiKey()
   const row = new (useParse().Object.extend('AdminApiKey'))()
   row.set('agent', input.agent)
@@ -60,6 +62,7 @@ export async function saveAdminApiKey(input: { agent: ParseObject, workspace: Pa
   row.set('hash', value.hash)
   row.set('prefix', value.prefix)
   if (input.projectIds) row.set('projectIds', input.projectIds)
+  if (input.readOnly) row.set('readOnly', true)
   if (input.expiresAt) row.set('expiresAt', input.expiresAt)
   await row.save(null, MASTER)
   return { row, token: value.token }
@@ -94,7 +97,8 @@ export function serializeAdminApiKey(row: ParseObject): AdminApiKey {
     createdAt: iso(row.createdAt),
     expiresAt: iso(row.get('expiresAt')),
     lastUsedAt: iso(row.get('lastUsedAt')),
-    projectIds: keyProjectIds(row)
+    projectIds: keyProjectIds(row),
+    readOnly: keyReadOnly(row)
   }
 }
 
@@ -102,4 +106,19 @@ export function serializeAdminApiKey(row: ParseObject): AdminApiKey {
 export function keyProjectIds(row: ParseObject): string[] | null {
   const ids = row.get('projectIds')
   return Array.isArray(ids) ? ids.map(String) : null
+}
+
+/** Whether a key may only read. */
+export function keyReadOnly(row: ParseObject): boolean {
+  return row.get('readOnly') === true
+}
+
+/**
+ * What a read-only key may call: reads, and the MCP endpoint itself (each tool call it makes is a request of its own,
+ * carrying the same key, and is checked here again: a write is refused there).
+ */
+export function readOnlyKeyMay(method: string, path: string): boolean {
+  const verb = method.toUpperCase()
+  if (verb === 'GET' || verb === 'HEAD' || verb === 'OPTIONS') return true
+  return path.split('?')[0] === '/mcp'
 }

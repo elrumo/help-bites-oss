@@ -28,6 +28,13 @@
         <UButton type="submit" icon="i-lucide-plus" :loading="creating" :disabled="scope === 'projects' && !pickedProjects.length">{{ $t('workspaceSettings.apiKeys.create') }}</UButton>
       </div>
       <URadioGroup
+        v-model="access"
+        :items="[
+          { label: $t('workspaceSettings.apiKeys.accessWrite'), value: 'write', description: $t('workspaceSettings.apiKeys.accessWriteDescription') },
+          { label: $t('workspaceSettings.apiKeys.accessRead'), value: 'read', description: $t('workspaceSettings.apiKeys.accessReadDescription') }
+        ]"
+      />
+      <URadioGroup
         v-model="scope"
         :items="[
           { label: $t('workspaceSettings.apiKeys.scopeAll'), value: 'all', description: $t('workspaceSettings.apiKeys.scopeAllDescription') },
@@ -68,7 +75,10 @@
           
           <span class="min-w-0 flex-1">
             <div class="flex flex-col gap-y-1">
-              <span class="block truncate text-[13px] font-medium text-highlighted">{{ key.name }}</span>
+              <span class="flex items-center gap-2">
+                <span class="block truncate text-[13px] font-medium text-highlighted">{{ key.name }}</span>
+                <UBadge v-if="key.readOnly" color="neutral" variant="subtle" size="sm">{{ $t('workspaceSettings.apiKeys.readOnly') }}</UBadge>
+              </span>
               <span class="hidden truncate text-xs text-muted sm:block">{{ scopeLabel(key) }}</span>
             </div>
 
@@ -89,12 +99,13 @@
 </template>
 
 <script setup lang="ts">
-type ApiKey = { id: string, name: string, prefix: string, createdAt: string | null, expiresAt: string | null, lastUsedAt: string | null, projectIds: string[] | null }
+type ApiKey = { id: string, name: string, prefix: string, createdAt: string | null, expiresAt: string | null, lastUsedAt: string | null, projectIds: string[] | null, readOnly?: boolean }
 const { api, projects, loadProjects } = useAgent()
 const { t } = useI18n()
 const appUrl = useAppUrl()
 const mcpUrl = computed(() => `${appUrl.value}/mcp`)
 const mcpCopied = ref(false)
+const access = ref<'write' | 'read'>('write')
 const scope = ref<'all' | 'projects'>('all')
 const pickedProjects = ref<string[]>([])
 const expiry = ref('90')
@@ -118,9 +129,10 @@ async function create() {
   creating.value = true
   error.value = ''
   try {
-    const result = await api<{ apiKey: ApiKey, key: string }>('/admin/api-keys', { method: 'POST', body: { name: newName.value, projectIds: scope.value === 'projects' ? pickedProjects.value : undefined, expiresInDays: expiry.value === 'never' ? null : Number(expiry.value) } })
+    const result = await api<{ apiKey: ApiKey, key: string }>('/admin/api-keys', { method: 'POST', body: { name: newName.value, projectIds: scope.value === 'projects' ? pickedProjects.value : undefined, readOnly: access.value === 'read' ? true : undefined, expiresInDays: expiry.value === 'never' ? null : Number(expiry.value) } })
     keys.value.unshift(result.apiKey)
     newName.value = ''
+    access.value = 'write'
     scope.value = 'all'
     pickedProjects.value = []
     createdKey.value = result.key

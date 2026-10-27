@@ -89,7 +89,7 @@ export function validChallenge(value: unknown): value is string {
 // ---- authorization codes -------------------------------------------------------
 
 /** What an approved sign-in grants: this operator, in this workspace, on these projects (null: all). */
-export type CodeGrant = { agentId: string, workspaceId: string, projectIds: string[] | null, clientId: string, redirectUri: string, challenge: string, clientName: string }
+export type CodeGrant = { agentId: string, workspaceId: string, projectIds: string[] | null, clientId: string, redirectUri: string, challenge: string, clientName: string, /** The operator chose a connection that only reads. Absent in a code issued before the choice existed: it may write. */ readOnly?: boolean }
 export type RefreshGrant = { agentId: string, workspaceId: string, clientId: string, apiKeyId: string }
 
 const codeKey = (code: string) => `${CODE_PREFIX}${createHash('sha256').update(code).digest('hex')}`

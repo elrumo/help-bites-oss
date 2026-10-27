@@ -14,7 +14,7 @@ import { anonymousWriteGate, verifyAnonymousToken } from './endUserSessions'
 //   else  a host-signed identity token → an end user of one project
 
 /** Who is calling. `apiKeyWorkspaceId` is set for an `ak_` key: the only workspace it may act in; `apiKeyProjectIds` (when not null) the only projects, and then nothing workspace-wide. */
-export type AgentContext = { agent: ParseObject, agentId: string, sessionToken: string, apiKeyId: string, apiKeyWorkspaceId: string, apiKeyProjectIds?: string[] | null }
+export type AgentContext = { agent: ParseObject, agentId: string, sessionToken: string, apiKeyId: string, apiKeyWorkspaceId: string, apiKeyProjectIds?: string[] | null, apiKeyReadOnly?: boolean }
 export type EndUserContext = {
   project: ParseObject
   projectId: string
@@ -81,6 +81,7 @@ export async function requireAgentIdentity(event: H3Event): Promise<AgentContext
   let apiKeyId = ''
   let apiKeyWorkspaceId = ''
   let apiKeyProjectIds: string[] | null = null
+  let apiKeyReadOnly = false
   if (token.startsWith('r:')) agent = await agentForSession(token)
   else if (token.startsWith('ak_')) {
     const Parse = useParse()
@@ -93,10 +94,13 @@ export async function requireAgentIdentity(event: H3Event): Promise<AgentContext
       apiKeyId = key!.id || ''
       apiKeyWorkspaceId = pointerId(key!.get('workspace'))
       apiKeyProjectIds = keyProjectIds(key!)
+      apiKeyReadOnly = keyReadOnly(key!)
+      // A read-only key looks and changes nothing: refused before the route knows what it was.
+      if (apiKeyReadOnly && !readOnlyKeyMay(event.method, event.path)) throw createError({ statusCode: 403, statusMessage: 'This API key is read-only', data: { code: 'key_read_only' } })
     } else await rateLimit(`sb:rl:bad-admin-key:${clientIp(event) || 'ip'}`, 20, 60)
   }
   if (!agent) throw createError({ statusCode: 401, statusMessage: 'Valid admin session or API key required' })
-  return { agent, agentId: agent.id || '', sessionToken: token, apiKeyId, apiKeyWorkspaceId, apiKeyProjectIds }
+  return { agent, agentId: agent.id || '', sessionToken: token, apiKeyId, apiKeyWorkspaceId, apiKeyProjectIds, apiKeyReadOnly }
 }
 
 /** Server-to-server authentication for host-initiated tickets. The project

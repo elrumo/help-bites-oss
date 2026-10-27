@@ -24,6 +24,14 @@
 
         <template v-if="preview.canApprove">
           <URadioGroup
+            v-model="access"
+            class="mb-3"
+            :items="[
+              { label: $t('oauth.accessWrite'), value: 'write', description: $t('oauth.accessWriteDescription') },
+              { label: $t('oauth.accessRead'), value: 'read', description: $t('oauth.accessReadDescription') }
+            ]"
+          />
+          <URadioGroup
             v-model="scope"
             class="mb-3"
             :items="[
@@ -73,6 +81,7 @@ const loading = ref(true)
 const saving = ref(false)
 const redirecting = ref(false)
 const error = ref('')
+const access = ref<'write' | 'read'>('write')
 const scope = ref<'all' | 'projects'>('all')
 const picked = ref<string[]>([])
 
@@ -82,6 +91,7 @@ async function load() {
   loading.value = !preview.value
   error.value = ''
   picked.value = []
+  access.value = 'write'
   scope.value = 'all'
   if (!wellFormed) { loading.value = false; return }
   try {
@@ -101,7 +111,7 @@ async function approve() {
     const { redirectTo } = await $fetch<{ redirectTo: string }>('/v1/admin/oauth/authorize', {
       method: 'POST',
       headers: headers(),
-      body: { clientId, redirectUri, codeChallenge: challenge, state, projectIds: scope.value === 'projects' ? picked.value : undefined }
+      body: { clientId, redirectUri, codeChallenge: challenge, state, readOnly: access.value === 'read' ? true : undefined, projectIds: scope.value === 'projects' ? picked.value : undefined }
     })
     redirecting.value = true
     window.location.href = redirectTo

@@ -71,7 +71,8 @@ export default defineEventHandler(async (event) => {
     workspace,
     name: `MCP: ${grant.clientName}`.slice(0, 80),
     projectIds: grant.projectIds,
-    expiresAt
+    expiresAt,
+    readOnly: grant.readOnly === true
   })
   const refreshToken = await issueRefreshToken({ agentId: grant.agentId, workspaceId: grant.workspaceId, clientId: String(body.client_id), apiKeyId: row.id || '' })
   setHeader(event, 'Cache-Control', 'no-store')

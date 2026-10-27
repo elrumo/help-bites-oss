@@ -21,6 +21,10 @@ const INSTRUCTIONS = [
 /** What a tool call produced: the HTTP status and body of the /v1 route behind it. */
 export type McpCall = (request: McpRequest) => Promise<{ status: number, data: unknown }>
 
+/** `readOnly`: the connection's key only reads, so it is offered the tools that read and no others. */
+export type McpOptions = { readOnly?: boolean }
+const READ_ONLY_NOTE = 'This connection is read-only: tools that change anything are not offered.'
+
 type JsonRpcId = string | number | null
 export type JsonRpcResponse = { jsonrpc: '2.0', id: JsonRpcId } & ({ result: unknown } | { error: { code: number, message: string } })
 
@@ -40,20 +44,20 @@ const fail = (id: JsonRpcId, code: number, message: string): JsonRpcResponse => 
  * batch, or null when there is nothing to say (notifications and responses
  * from the client get an HTTP 202 and no body).
  */
-export async function handleMcpBody(body: unknown, call: McpCall): Promise<JsonRpcResponse | JsonRpcResponse[] | null> {
+export async function handleMcpBody(body: unknown, call: McpCall, options: McpOptions = {}): Promise<JsonRpcResponse | JsonRpcResponse[] | null> {
   if (Array.isArray(body)) {
     if (!body.length) return fail(null, INVALID_REQUEST, 'An empty batch')
-    const answers = (await Promise.all(body.map(message => handleMcpMessage(message, call)))).filter((answer): answer is JsonRpcResponse => answer !== null)
+    const answers = (await Promise.all(body.map(message => handleMcpMessage(message, call, options)))).filter((answer): answer is JsonRpcResponse => answer !== null)
     return answers.length ? answers : null
   }
-  return handleMcpMessage(body, call)
+  return handleMcpMessage(body, call, options)
 }
 
 export function mcpParseError(): JsonRpcResponse {
   return fail(null, PARSE_ERROR, 'The body is not valid JSON')
 }
 
-async function handleMcpMessage(message: unknown, call: McpCall): Promise<JsonRpcResponse | null> {
+async function handleMcpMessage(message: unknown, call: McpCall, options: McpOptions): Promise<JsonRpcResponse | null> {
   if (!message || typeof message !== 'object' || Array.isArray(message)) return fail(null, INVALID_REQUEST, 'Not a JSON-RPC message')
   const { id, method, params } = message as { id?: JsonRpcId, method?: unknown, params?: unknown }
   const hasId = id !== undefined && id !== null
@@ -70,19 +74,21 @@ async function handleMcpMessage(message: unknown, call: McpCall): Promise<JsonRp
         protocolVersion: MCP_PROTOCOL_VERSIONS.includes(asked) ? asked : MCP_PROTOCOL_VERSIONS[0],
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: 'helpbites', title: 'HelpBites', version: '1.0.0' },
-        instructions: INSTRUCTIONS
+        instructions: options.readOnly ? `${INSTRUCTIONS} ${READ_ONLY_NOTE}` : INSTRUCTIONS
       })
     }
     case 'ping': return reply(id, {})
-    case 'tools/list': return reply(id, { tools: MCP_TOOLS.map(describeTool) })
-    case 'tools/call': return callTool(id, input, call)
+    case 'tools/list': return reply(id, { tools: (options.readOnly ? MCP_TOOLS.filter(tool => tool.readOnly) : MCP_TOOLS).map(describeTool) })
+    case 'tools/call': return callTool(id, input, call, options)
     default: return fail(id, METHOD_NOT_FOUND, `Unsupported method: ${method}`)
   }
 }
 
-async function callTool(id: JsonRpcId, params: Record<string, unknown>, call: McpCall): Promise<JsonRpcResponse> {
+async function callTool(id: JsonRpcId, params: Record<string, unknown>, call: McpCall, options: McpOptions): Promise<JsonRpcResponse> {
   const tool = MCP_TOOLS.find(candidate => candidate.name === params.name)
   if (!tool) return fail(id, INVALID_PARAMS, `Unknown tool: ${String(params.name)}`)
+  // Not offered, so not callable either: the key would refuse the route anyway, this says why.
+  if (options.readOnly && !tool.readOnly) return reply(id, toolText('This connection is read-only: it can look at things but not change them. Ask the user for a connection that may write.', true))
   const request = buildRequest(tool, params.arguments)
   if ('error' in request) return reply(id, toolText(request.error, true))
   try {
