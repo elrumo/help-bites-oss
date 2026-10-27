@@ -1069,6 +1069,7 @@ const SCHEMAS = {
       project: { type: 'Pointer', targetClass: 'Project' },
       item: { type: 'Pointer', targetClass: 'BoardItem' },
       body: { type: 'String' },
+      attachments: { type: 'Array' },
       parentId: { type: 'String' },
       replyToId: { type: 'String' },
       actorId: { type: 'String' },

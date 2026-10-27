@@ -109,6 +109,7 @@ export type BoardItemComment = {
   id: string
   itemId: string
   body: string
+  attachments: ItemAttachment[]
   parentId: string | null
   replyToId: string | null
   actorId: string

@@ -287,7 +287,7 @@ Project → **Planning** → *Turn on planning*.
   post. A post can feed several items and an item can hold several posts.
 - **Related items.** *Relate to another item* in an item's Related items section links it to another item of the board. The link is two-way: both items list each other, and an item cannot relate to itself. It is internal; the public roadmap does not show it. The API takes it as `kind: "item"` on `POST /v1/admin/board-items/:id/links`, and items carry `relatedItemIds` and the resolved `related` list.
 - **Edit history.** The collapsed **Edit history** section in the web and native item editors shows each recorded change, the before and after values, who made it, where they made it (web, app, API or MCP), and when. Creating an item, changing any item field, moving it between columns or in column order, changing its links, and adding or removing a two-way related-item link all record history. `GET /v1/admin/board-items/:id/history?project=<id>&limit=50&offset=0` returns entries newest first; `limit` is 1–100 and `nextOffset` is null when there are no older entries. The history is workspace-scoped like the item. Existing items show their current last-modified time, but edits made before this feature was deployed are not available.
-- **Comments and threads.** The collapsed **Comments** section in the web and native item editors supports internal comments and replies. Comments never appear on the public roadmap. MCP comments show the connected assistant's name (for example, ChatGPT or Claude); the operator who authorized the connection is retained in the record. `GET /v1/admin/board-items/:id/comments?project=<id>&limit=50&offset=0` returns comments oldest first, including `parentId` and `replyToId` for replies. `POST /v1/admin/board-items/:id/comments?project=<id>` accepts `{ "body": "…", "parentId": "…", "replyToId": "…" }`; omit both ids to start a thread. Both routes accept an operator session or an admin API key and enforce the same workspace and project scope as the item.
+- **Comments and threads.** The collapsed **Comments** section in the web and native item editors supports internal comments, replies and up to 10 images or files per comment. Comments never appear on the public roadmap. MCP comments show the connected assistant's name (for example, ChatGPT or Claude); the operator who authorized the connection is retained in the record. `GET /v1/admin/board-items/:id/comments?project=<id>&limit=50&offset=0` returns comments oldest first, including `attachments`, `parentId` and `replyToId`. `POST /v1/admin/board-items/:id/comments?project=<id>` accepts `{ "body": "…", "attachments": [{ "url": "…", "name": "…", "mime": "…", "size": 123 }], "parentId": "…", "replyToId": "…" }`; omit both ids to start a thread, and text may be omitted when an attachment is present. Upload with `POST /v1/feedback/attachments?project=<id>` (multipart `file`, or JSON `{ "filename": "…", "contentBase64": "…" }` for MCP). The API returns a download URL; MCP comment reads return the same URL and metadata. Both comment routes accept an operator session or an admin API key and enforce the same workspace and project scope as the item.
 - **Attach feedback by search.** In an item, *Search feedback to attach* finds posts by title,
   text, author or `#N` and links them; the *New item* form takes posts the same way and links them
   on creation.
@@ -388,10 +388,14 @@ done status. From then on Planning's public items are the roadmap.
 - `GET /v1/admin/board-items/:id/comments?project=<id>&limit=50&offset=0` lists
   internal comments oldest first. Replies include `parentId` (the thread root)
   and `replyToId` (the specific comment). `POST` to the same path with
-  `{ "body": "…", "parentId": "…", "replyToId": "…" }` adds a comment or
-  reply; omit the ids to start a thread. Both routes use the item's project
-  scope. MCP comments display the assistant named by its connection's API key,
-  while retaining the authorizing operator's id and name.
+  `{ "body": "…", "attachments": [...], "parentId": "…", "replyToId": "…" }`
+  adds a comment or reply; omit the ids to start a thread. `attachments` holds
+  up to 10 objects returned by `POST /v1/feedback/attachments?project=<id>`;
+  uploads accept multipart `file` or JSON `{ "filename", "contentBase64" }`.
+  The returned URL is the download URL and also appears in comment reads. Both
+  routes use the item's project scope. MCP comments display the assistant named
+  by its connection's API key, while retaining the authorizing operator's id
+  and name.
 
 `POST /v1/admin/board-items/suggest-title?project=<id>` with `{ "description": "…" }` has the AI propose a short title
 (in the description's language) and returns `{ title }`; nothing is saved, so you send it as `title` to

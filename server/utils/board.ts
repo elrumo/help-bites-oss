@@ -18,6 +18,7 @@ import {
 } from '#shared/board'
 import { defaultFeedbackStatus, feedbackStatusCategory, parsePostRef, type FeedbackStatusCategory } from '#shared/feedback'
 import type { FeedbackContext } from './feedback'
+import { eachBatch } from './batches'
 import { emitDomainEventLater } from './domainEvents'
 import type { ClientSource } from './clientSource'
 
@@ -410,6 +411,8 @@ export function readLinkInput(payload: unknown): { kind: BoardLinkKind, id: stri
 }
 
 export async function deleteBoardItem(row: ParseObject): Promise<void> {
+  const Parse = useParse()
+  await eachBatch(() => new Parse.Query('BoardItemComment').equalTo('item', row), comments => Parse.Object.destroyAll(comments, MASTER), { keys: ['objectId'] })
   await row.destroy(MASTER)
 }
 

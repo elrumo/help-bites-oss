@@ -136,6 +136,7 @@ struct BoardItemHistoryPage: Codable, Sendable {
 
 struct BoardItemComment: Codable, Equatable, Sendable, Identifiable {
   let id, itemId, body, actorId, actorName, authorName, authorType, source, createdAt: String
+  let attachments: [ItemAttachment]
   let parentId, replyToId: String?
 }
 

@@ -350,7 +350,7 @@
     "commentsLoading": "コメントを読み込み中…",
     "commentsFailed": "コメントを読み込めませんでした。",
     "noComments": "まだコメントはありません。",
-    "olderComments": "以前のコメントを読み込む",
+    "moreComments": "さらにコメントを読み込む",
     "writeComment": "コメントを書く…",
     "postComment": "コメントする",
     "reply": "返信",

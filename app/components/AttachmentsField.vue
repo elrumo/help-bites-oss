@@ -1,19 +1,36 @@
 <template>
-  <div class="space-y-2 rounded-lg transition-shadow" :class="dragging ? 'ring-2 ring-primary/60 ring-offset-2 ring-offset-default' : ''" @dragenter="onDragEnter" @dragleave="onDragLeave" @dragover="onDragOver" @drop="onDrop">
-    <ul v-if="model.length" class="grid gap-2 sm:grid-cols-2">
-      <li v-for="(file, i) in model" :key="file.url" class="group flex items-center gap-2 rounded-lg border border-default p-1.5 text-[13px]">
-        <a :href="file.url" target="_blank" rel="noopener" class="flex min-w-0 flex-1 items-center gap-2">
-          <img v-if="isImageMime(file.mime)" :src="file.url" :alt="file.name" class="size-10 shrink-0 rounded object-cover" loading="lazy">
-          <span v-else class="grid size-10 shrink-0 place-items-center rounded bg-elevated text-muted"><UIcon name="i-lucide-file" class="size-4" /></span>
-          <span class="min-w-0"><span class="block truncate">{{ file.name }}</span><span class="block text-[11px] text-muted">{{ size(file.size) }}</span></span>
-        </a>
-        <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square :aria-label="$t('attachments.remove', { name: file.name })" @click="model = model.filter((_, n) => n !== i)" />
-      </li>
-    </ul>
-    <input ref="input" type="file" multiple class="hidden" :accept="imagesOnly ? ITEM_IMAGE_ACCEPT : ITEM_ATTACHMENT_ACCEPT" @change="upload([...(($event.target as HTMLInputElement).files || [])])">
-    <UButton icon="i-lucide-paperclip" :label="addLabel || $t('attachments.add')" size="xs" color="neutral" variant="soft" :loading="uploading > 0" :disabled="model.length >= ITEM_ATTACHMENTS_MAX" @click="input?.click()" />
-    <p v-if="!model.length" class="text-xs text-muted">{{ $t('attachments.dropHint') }}</p>
-    <p v-if="error" class="text-xs text-error">{{ error }}</p>
+  <div class="space-y-2">
+    <div class="flex flex-col gap-2 items-center">
+      <h3 class="text-sm font-semibold">
+        {{ $t('attachments.title') }}
+      </h3>
+      <UButton
+        icon="i-lucide-paperclip"
+        :label="addLabel || $t('attachments.add')"
+        size="xs"
+        color="neutral"
+        variant="soft"
+        :loading="uploading > 0"
+        :disabled="model.length >= ITEM_ATTACHMENTS_MAX"
+        @click="input?.click()"
+      />
+    </div>
+
+    <div class="space-y-2 rounded-lg transition-shadow" :class="dragging ? 'ring-2 ring-primary/60 ring-offset-2 ring-offset-default' : ''" @dragenter="onDragEnter" @dragleave="onDragLeave" @dragover="onDragOver" @drop="onDrop">
+      <ul v-if="model.length" class="grid gap-2 sm:grid-cols-2">
+        <li v-for="(file, i) in model" :key="file.url" class="group flex items-center gap-2 rounded-lg border border-default p-1.5 text-[13px]">
+          <a :href="file.url" target="_blank" rel="noopener" class="flex min-w-0 flex-1 items-center gap-2">
+            <img v-if="isImageMime(file.mime)" :src="file.url" :alt="file.name" class="size-10 shrink-0 rounded object-cover" loading="lazy">
+            <span v-else class="grid size-10 shrink-0 place-items-center rounded bg-elevated text-muted"><UIcon name="i-lucide-file" class="size-4" /></span>
+            <span class="min-w-0"><span class="block truncate">{{ file.name }}</span><span class="block text-[11px] text-muted">{{ size(file.size) }}</span></span>
+          </a>
+          <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square :aria-label="$t('attachments.remove', { name: file.name })" @click="model = model.filter((_, n) => n !== i)" />
+        </li>
+      </ul>
+      <input ref="input" type="file" multiple class="hidden" :accept="imagesOnly ? ITEM_IMAGE_ACCEPT : ITEM_ATTACHMENT_ACCEPT" @change="upload([...(($event.target as HTMLInputElement).files || [])])">
+      <p v-if="!model.length" class="text-xs text-muted">{{ $t('attachments.dropHint') }}</p>
+      <p v-if="error" class="text-xs text-error">{{ error }}</p>
+    </div>
   </div>
 </template>
 

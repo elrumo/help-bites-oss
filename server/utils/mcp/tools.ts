@@ -207,6 +207,15 @@ export const MCP_TOOLS: readonly McpTool[] = [
     }
   },
   {
+    name: 'upload_board_comment_attachment', title: 'Upload a planning comment attachment', method: 'POST', path: '/v1/feedback/attachments',
+    description: 'Uploads one image or file for a planning comment and returns its attachment object and download URL. Send the file bytes as base64, then pass the returned object in comment_on_board_item.attachments.',
+    params: {
+      project: { ...projectId, in: 'query' },
+      filename: { type: 'string', required: true, description: 'Filename with an accepted extension.' },
+      contentBase64: { type: 'string', required: true, description: 'The file bytes encoded as standard base64 (up to 25 MB decoded).' }
+    }
+  },
+  {
     name: 'list_board_item_comments', title: 'Read planning comments', readOnly: true, method: 'GET', path: '/v1/admin/board-items/{id}/comments',
     description: 'Reads an item’s internal comments and threaded replies, oldest first. Page with offset and limit.',
     params: { id: id('item'), project: { ...projectId, in: 'query' }, offset: { type: 'integer', description: 'Comments to skip.' }, limit: limit(100) }
@@ -216,9 +225,10 @@ export const MCP_TOOLS: readonly McpTool[] = [
     description: 'Adds an internal comment or threaded reply. The author is shown as this assistant, while the authorizing operator remains recorded.',
     params: {
       id: id('item'), project: { ...projectId, in: 'query' },
-      body: { type: 'string', required: true, description: 'The comment, up to 8,000 characters.' },
+      body: { type: 'string', description: 'The comment text, up to 8,000 characters. It may be omitted when attachments are included.' },
       parentId: { type: 'string', description: 'Root comment id when replying.' },
-      replyToId: { type: 'string', description: 'Comment being replied to; use with parentId for replies within a thread.' }
+      replyToId: { type: 'string', description: 'Comment being replied to; use with parentId for replies within a thread.' },
+      attachments: { type: 'array', items: { type: 'object' }, description: 'Attachment objects returned by upload_board_comment_attachment, up to 10.' }
     }
   },
   {

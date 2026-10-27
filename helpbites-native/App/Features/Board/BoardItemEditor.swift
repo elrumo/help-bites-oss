@@ -29,7 +29,9 @@ struct BoardItemEditor: View {
   @State private var commentsOffset = 0
   @State private var comments: [BoardItemComment] = []
   @State private var commentDraft = ""
+  @State private var commentAttachments: [ItemAttachment] = []
   @State private var replyTarget: BoardItemComment?
+  @State private var commentPostFailed = false
   @State private var postingComment = false
   @State private var historyExpanded = false
   @State private var historyLoading = false
@@ -466,6 +468,18 @@ struct BoardItemEditor: View {
                   .help(historyTimestamp(comment.createdAt))
               }
               Text(comment.body).font(.lnMeta).foregroundStyle(Theme.textToned).fixedSize(horizontal: false, vertical: true)
+              ForEach(comment.attachments, id: \.url) { file in
+                HStack(spacing: 8) {
+                  if file.isImage, let url = URL(string: file.url) {
+                    AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
+                      .frame(width: 36, height: 36).clipShape(RoundedRectangle(cornerRadius: 6))
+                  } else {
+                    Image(systemName: "doc").frame(width: 36, height: 36).background(Theme.elevated, in: RoundedRectangle(cornerRadius: 6))
+                  }
+                  if let url = URL(string: file.url) { Link(file.name, destination: url).lineLimit(1) } else { Text(file.name).lineLimit(1) }
+                }
+                .font(.lnMeta)
+              }
               Button("Reply") { replyTarget = comment; commentDraft = "" }
                 .buttonStyle(.lnGhost)
             }
@@ -474,7 +488,7 @@ struct BoardItemEditor: View {
           }
         }
         if commentsHasMore && !commentsLoading {
-          Button("Load older comments") { Task { await loadComments(itemId: item.id, reset: false) } }
+          Button("Load more comments") { Task { await loadComments(itemId: item.id, reset: false) } }
             .buttonStyle(.lnSecondaryCompact)
         }
         if let replyTarget {
@@ -484,12 +498,13 @@ struct BoardItemEditor: View {
           }
         }
         LinearTextEditor(text: $commentDraft, placeholder: "Write a comment…", minHeight: 64)
-        if commentsFailed { Text("Could not save the comment.").font(.lnCaption).foregroundStyle(Theme.error) }
+        AttachmentsSection(attachments: $commentAttachments, session: store.session, projectId: store.projectId)
+        if commentPostFailed { Text("Could not save the comment.").font(.lnCaption).foregroundStyle(Theme.error) }
         HStack {
           Spacer(minLength: 0)
           Button(replyTarget == nil ? "Comment" : "Reply") { Task { await postComment(itemId: item.id) } }
             .buttonStyle(.lnSecondaryCompact)
-            .disabled(commentDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || postingComment)
+            .disabled((commentDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && commentAttachments.isEmpty) || postingComment)
         }
       }
       .padding(.top, 8)
@@ -525,19 +540,20 @@ struct BoardItemEditor: View {
 
   private func postComment(itemId: String) async {
     let body = commentDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !body.isEmpty, !postingComment else { return }
+    guard (!body.isEmpty || !commentAttachments.isEmpty), !postingComment else { return }
     postingComment = true
-    commentsFailed = false
+    commentPostFailed = false
     defer { postingComment = false }
     do {
       let target = replyTarget
       let rootId = target.map { $0.parentId ?? $0.id }
-      let comment = try await store.comment(itemId, body: body, parentId: rootId, replyToId: target?.id)
+      let comment = try await store.comment(itemId, body: body, attachments: commentAttachments, parentId: rootId, replyToId: target?.id)
       comments.append(comment)
       commentDraft = ""
+      commentAttachments = []
       replyTarget = nil
     } catch {
-      commentsFailed = true
+      commentPostFailed = true
     }
   }
 

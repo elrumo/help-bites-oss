@@ -141,7 +141,8 @@
     <!-- Item editor -->
     <USlideover v-model:open="editorOpen" :title="current ? (current.number ? $t('board.itemNumber', { number: current.number }) : $t('board.item')) : $t('board.newItem')" :description="current ? $t('board.created', { time: timeAgo(current.createdAt) }) : $t('board.privateUntilRoadmap')" :ui="{ content: 'sm:max-w-2xl' }">
       <template #body>
-        <div v-if="board" class="space-y-6">
+        <div v-if="board" class="space-y-4">
+          <!-- Planning title and description -->
           <div class="space-y-2">
             <UInput v-model="draft.title" :placeholder="$t('board.title')" variant="none" size="xl" class="w-full" :ui="{ base: 'px-0 text-lg font-semibold' }" :maxlength="200" :aria-label="$t('board.title')" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')">
               <template v-if="draft.description.trim()" #trailing>
@@ -156,7 +157,7 @@
 
           <!-- Linear's property rows: quiet until hovered -->
           <section class="grid gap-x-4 sm:grid-cols-2">
-            <USelect v-model="draft.status" :items="statusItems" variant="soft" size="sm" class="w-full" :ui="property" :aria-label="$t('board.status')" @update:model-value="patch({ status: draft.status })">
+            <USelect v-model="draft.status" :items="statusItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('board.status')" @update:model-value="patch({ status: draft.status })">
               <template #leading><span class="size-2.5 rounded-full" :class="toneDot(statusOf(draft.status)?.color)" /></template>
             </USelect>
             <USelect v-model="draft.priority" :items="priorityItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('board.priority')" @update:model-value="patch({ priority: draft.priority === 'none' ? '' : draft.priority })">
@@ -177,7 +178,8 @@
             </USelectMenu>
           </section>
 
-          <section class="space-y-3 rounded-xl border border-default p-3">
+          <!-- Public status -->
+          <section class="space-y-3 px-3">
             <USwitch v-model="draft.public" :label="$t('board.onPublicRoadmap')" :description="$t('board.onPublicRoadmapDescription')" @update:model-value="patch({ public: draft.public })" />
             <template v-if="draft.public">
               <UFormField :label="$t('board.publicDescription')" :hint="$t('board.publicDescriptionHint')">
@@ -188,8 +190,8 @@
             </template>
           </section>
 
+          <!-- Attachments -->
           <section class="space-y-2">
-            <h3 class="text-sm font-semibold">{{ $t('attachments.title') }}</h3>
             <AttachmentsField v-model="draft.attachments" :project-id="id" @update:model-value="current && patch({ attachments: draft.attachments })" />
           </section>
 
@@ -206,7 +208,10 @@
             <FeedbackSearchPicker :project-id="id" :exclude="draft.posts.map(p => p.id)" class="w-full" @pick="post => draft.posts.push({ id: post.id, number: post.number, title: post.title, voteCount: post.voteCount })" />
           </section>
 
+          <!-- Current item feedback feedback -->
           <template v-if="current">
+            <div>
+            <!-- Current item feedback -->
             <section class="space-y-2">
               <h3 class="flex items-center gap-2 text-sm font-semibold">{{ $t('board.feedback') }} <span class="font-normal text-muted">{{ current.posts.length }}</span><span v-if="current.posts.length" class="ml-auto inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-muted"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ $t('board.votes', current.voteCount) }}</span></h3>
               <ul v-if="current.posts.length" class="divide-y divide-default rounded-lg border border-default">
@@ -221,6 +226,7 @@
               <FeedbackSearchPicker :project-id="id" :exclude="current.feedbackPostIds" class="w-full" @pick="post => setLink('feedback', post.id, true)" />
             </section>
 
+            <!-- Current item related items -->
             <section class="space-y-2">
               <h3 class="text-sm font-semibold">{{ $t('board.related') }} <span class="font-normal text-muted">{{ current.related.length }}</span></h3>
               <ul v-if="current.related.length" class="divide-y divide-default rounded-lg border border-default">
@@ -233,6 +239,7 @@
               <USelectMenu v-if="relatable.length" :items="relatable" value-key="value" class="w-full" :model-value="null" :placeholder="$t('board.relateItem')" :aria-label="$t('board.relateItem')" :disabled="linking" @update:model-value="id => id && setLink('item', String(id), true)" />
             </section>
 
+            <!-- Current item conversations -->
             <section class="space-y-2">
               <h3 class="text-sm font-semibold">{{ $t('board.conversations') }} <span class="font-normal text-muted">{{ current.conversations.length }}</span></h3>
               <ul v-if="current.conversations.length" class="divide-y divide-default rounded-lg border border-default">
@@ -249,6 +256,7 @@
               <p v-else class="text-xs text-muted">{{ $t('board.linkFromInbox') }}</p>
             </section>
 
+            <!-- Current item filed from errors -->
             <section v-if="current.errorRefs.length" class="space-y-2">
               <h3 class="text-sm font-semibold">{{ $t('board.filedFromErrors') }} <span class="font-normal text-muted">{{ current.errorRefs.length }}</span></h3>
               <ul class="divide-y divide-default rounded-lg border border-default">

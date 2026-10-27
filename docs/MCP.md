@@ -115,8 +115,9 @@ a key's project limit apply exactly as they do in the panel and the native app.
 | `create_board_item` | Add an item. |
 | `create_board_item_from_feedback` | Plan a feedback post: the AI writes the item, the post is linked. |
 | `update_board_item` | Edit or move an item. |
-| `list_board_item_comments` | Read an item's private comments and threaded replies. |
-| `comment_on_board_item` | Add a private comment or threaded reply as this assistant. |
+| `upload_board_comment_attachment` | Upload an image or file as base64 and get its download URL. |
+| `list_board_item_comments` | Read an item's private comments, threaded replies and attachment URLs. |
+| `comment_on_board_item` | Add a private comment or threaded reply, optionally with uploaded files. |
 | `list_changelog_entries` | Changelog entries, drafts included. |
 | `create_changelog_entry` | Write an entry: a draft unless told to publish. |
 | `update_changelog_entry` | Edit an entry, or publish a draft. |

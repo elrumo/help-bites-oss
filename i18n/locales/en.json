@@ -407,7 +407,7 @@
     "commentsLoading": "Loading comments…",
     "commentsFailed": "Could not load comments.",
     "noComments": "No comments yet.",
-    "olderComments": "Load older comments",
+    "moreComments": "Load more comments",
     "writeComment": "Write a comment…",
     "postComment": "Comment",
     "reply": "Reply",

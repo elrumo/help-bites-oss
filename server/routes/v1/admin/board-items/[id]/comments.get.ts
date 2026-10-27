@@ -1,4 +1,5 @@
 import type { BoardItemComment } from '#shared/board'
+import { itemAttachments } from '../../../../../utils/itemAttachments'
 import { scoped } from '../../../../../utils/scoped'
 
 defineRouteMeta({
@@ -35,6 +36,7 @@ export default defineEventHandler(async (event) => {
     id: comment.id || '',
     itemId: row.id || '',
     body: String(comment.get('body') || ''),
+    attachments: itemAttachments(comment.get('attachments')),
     parentId: String(comment.get('parentId') || '') || null,
     replyToId: String(comment.get('replyToId') || '') || null,
     actorId: String(comment.get('actorId') || ''),

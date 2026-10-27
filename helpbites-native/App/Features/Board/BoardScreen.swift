@@ -238,10 +238,10 @@ struct BoardScreen: View {
     try await session.get("/v1/admin/board-items/\(itemId)/comments", query: ["project": projectId, "offset": String(offset), "limit": "50"])
   }
 
-  func comment(_ itemId: String, body: String, parentId: String?, replyToId: String?) async throws -> BoardItemComment {
-    struct Body: Encodable, Sendable { let body: String; let parentId: String?; let replyToId: String? }
+  func comment(_ itemId: String, body: String, attachments: [ItemAttachment], parentId: String?, replyToId: String?) async throws -> BoardItemComment {
+    struct Body: Encodable, Sendable { let body: String; let attachments: [ItemAttachment]; let parentId: String?; let replyToId: String? }
     struct Response: Decodable, Sendable { let comment: BoardItemComment }
-    let result: Response = try await session.send("/v1/admin/board-items/\(itemId)/comments?project=\(projectId)", body: Body(body: body, parentId: parentId, replyToId: replyToId))
+    let result: Response = try await session.send("/v1/admin/board-items/\(itemId)/comments?project=\(projectId)", body: Body(body: body, attachments: attachments, parentId: parentId, replyToId: replyToId))
     return result.comment
   }
 

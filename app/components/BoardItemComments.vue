@@ -18,11 +18,19 @@
             <time class="ml-auto text-muted" :datetime="comment.createdAt" :title="new Date(comment.createdAt).toLocaleString()">{{ new Date(comment.createdAt).toLocaleString() }}</time>
           </div>
           <p class="whitespace-pre-wrap break-words text-[13px] text-toned">{{ comment.body }}</p>
+          <div v-if="comment.attachments.length" class="flex flex-wrap gap-2 pt-1">
+            <a v-for="file in comment.attachments" :key="file.url" :href="file.url" target="_blank" rel="noopener" class="flex max-w-full items-center gap-2 rounded-lg border border-default px-2 py-1.5 text-xs text-toned">
+              <img v-if="file.mime.startsWith('image/')" :src="file.url" :alt="file.name" class="size-9 rounded object-cover" loading="lazy">
+              <UIcon v-else name="i-lucide-file" class="size-4 shrink-0 text-muted" />
+              <span class="max-w-52 truncate">{{ file.name }}</span>
+              <UIcon name="i-lucide-download" class="size-3.5 shrink-0 text-muted" />
+            </a>
+          </div>
           <UButton size="xs" color="neutral" variant="ghost" :label="$t('board.reply')" @click="replyTo(comment)" />
         </li>
       </ol>
 
-      <UButton v-if="hasMore" size="xs" color="neutral" variant="ghost" :loading="loading" :label="$t('board.olderComments')" @click="loadMore" />
+      <UButton v-if="hasMore" size="xs" color="neutral" variant="ghost" :loading="loading" :label="$t('board.moreComments')" @click="loadMore" />
 
       <form class="space-y-2" @submit.prevent="submit">
         <p v-if="replyTarget" class="text-xs text-muted">
@@ -30,9 +38,10 @@
           <button type="button" class="ml-1 underline" @click="cancelReply">{{ $t('common.cancel') }}</button>
         </p>
         <UTextarea v-model="draft" :rows="3" :maxlength="8000" :placeholder="$t('board.writeComment')" class="w-full" />
+        <AttachmentsField v-model="draftAttachments" :project-id="projectId" />
         <p v-if="error" class="text-xs text-error">{{ error }}</p>
         <div class="flex justify-end">
-          <UButton type="submit" size="sm" :label="replyTarget ? $t('board.reply') : $t('board.postComment')" :loading="saving" :disabled="!draft.trim()" />
+          <UButton type="submit" size="sm" :label="replyTarget ? $t('board.reply') : $t('board.postComment')" :loading="saving" :disabled="!draft.trim() && !draftAttachments.length" />
         </div>
       </form>
     </div>
@@ -48,6 +57,7 @@ const { t } = useI18n()
 
 const comments = ref<BoardItemComment[]>([])
 const draft = ref('')
+const draftAttachments = ref<BoardItemComment['attachments']>([])
 const replyTarget = ref<BoardItemComment | null>(null)
 const loaded = ref(false)
 const loading = ref(false)
@@ -89,17 +99,18 @@ function cancelReply() { replyTarget.value = null }
 
 async function submit() {
   const body = draft.value.trim()
-  if (!body || saving.value) return
+  if ((!body && !draftAttachments.value.length) || saving.value) return
   saving.value = true
   error.value = ''
   try {
     const target = replyTarget.value
     const result = await api<{ comment: BoardItemComment }>(`/admin/board-items/${props.itemId}/comments`, {
       method: 'POST', query: { project: props.projectId },
-      body: { body, ...(target ? { parentId: target.parentId || target.id, replyToId: target.id } : {}) }
+      body: { body, attachments: draftAttachments.value, ...(target ? { parentId: target.parentId || target.id, replyToId: target.id } : {}) }
     })
     comments.value = [...comments.value, result.comment]
     draft.value = ''
+    draftAttachments.value = []
     replyTarget.value = null
     loaded.value = true
   } catch {

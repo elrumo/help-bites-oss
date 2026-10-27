@@ -1,12 +1,14 @@
 import { createHash } from 'node:crypto'
+import { createError, getHeader, type H3Event } from 'h3'
+import { ITEM_FILE_MAX_BYTES } from '#shared/itemAttachments'
 
 defineRouteMeta({
   openAPI: {
     tags: ['Feedback'], operationId: 'uploadFeedbackAttachment', security: [{ EndUserToken: [] }, { AgentSession: [] }, { AdminApiKey: [] }],
     summary: 'Upload an image or file for a post or board item',
-    description: 'Multipart field `file`: an image (PNG, JPEG, GIF, WebP; up to 8 MB) or a PDF, text, CSV, JSON, ZIP, Office document or MP4/MOV video (up to 25 MB). Files are served as downloads under the type their extension implies, never as HTML. Returns `{ url, name, mime, size }`; pass up to 10 of them as `attachments` when you create or edit a post (`POST /v1/feedback`, `PATCH /v1/feedback/:id`) or a board item (`POST /v1/admin/board-items`, `PATCH /v1/admin/board-items/:id`). A changelog entry shows images only: pass PNG, JPEG, GIF or WebP uploads as its `images` (`POST /v1/admin/changelog/entries`, `PATCH /v1/admin/changelog/entries/:id`). Operators pass `?project=<id>` and use this route for board items too. End users upload with their identity token, once their address is verified, and only where the project allows attachments. Counts against the workspace\'s storage.',
+    description: 'Multipart field `file`: an image (PNG, JPEG, GIF, WebP; up to 8 MB) or a PDF, text, CSV, JSON, ZIP, Office document or MP4/MOV video (up to 25 MB). JSON clients, including MCP, may instead send `{ filename, contentBase64 }` (base64 encoded, up to 25 MB decoded). Files are served as downloads under the type their extension implies, never as HTML. Returns `{ url, name, mime, size }`; pass up to 10 of them as `attachments` when creating or editing posts or board items, or when posting a planning comment. A changelog entry shows images only. Operators pass `?project=<id>`; end users upload with their identity token, once their address is verified, and only where the project allows attachments. Counts against the workspace\'s storage.',
     parameters: [{ name: 'project', in: 'query', schema: { type: 'string' }, description: 'Project id (operators)' }],
-    requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary' } } } } } },
+    requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary' } } } }, 'application/json': { schema: { type: 'object', required: ['filename', 'contentBase64'], properties: { filename: { type: 'string' }, contentBase64: { type: 'string', description: 'Base64 encoded file bytes.' } } } } } },
     responses: { 200: { description: 'The stored file.', content: { 'application/json': { schema: { type: 'object', properties: { url: { type: 'string' }, name: { type: 'string' }, mime: { type: 'string' }, size: { type: 'integer' } } } } } }, 401: { description: 'Sign in to upload.' }, 402: { description: 'The workspace\'s storage is full.' }, 403: { description: 'Attachments are off for this project.' }, 413: { description: 'Too large.' }, 415: { description: 'Not an accepted type.' }, 429: { description: 'Rate limited.' } }
   }
 })
@@ -23,5 +25,21 @@ export default defineEventHandler(async (event) => {
     owner = `u-${createHash('sha1').update(ctx.actor.externalId).digest('hex').slice(0, 16)}`
   }
   await rateLimit(`sb:rl:upload:${ctx.project.id}:${owner}`, LIMITS.uploadsPerUser.limit, LIMITS.uploadsPerUser.window)
-  return await storeItemFile(await readUploadedFile(event), ctx.project.id || '', owner)
+  const file = String(getHeader(event, 'content-type') || '').toLowerCase().includes('application/json')
+    ? await readBase64Upload(event)
+    : await readUploadedFile(event)
+  return await storeItemFile(file, ctx.project.id || '', owner)
 })
+
+async function readBase64Upload(event: H3Event): Promise<{ filename: string, data: Buffer }> {
+  const input = (await readBody(event).catch(() => ({})) || {}) as Record<string, unknown>
+  const filename = typeof input.filename === 'string' ? input.filename.trim() : ''
+  const encoded = typeof input.contentBase64 === 'string' ? input.contentBase64 : ''
+  if (!filename || !encoded) throw createError({ statusCode: 400, statusMessage: 'Send filename and contentBase64' })
+  if (encoded.length > Math.ceil(ITEM_FILE_MAX_BYTES * 4 / 3) + 4) throw createError({ statusCode: 413, statusMessage: 'File is larger than 25 MB' })
+  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) throw createError({ statusCode: 400, statusMessage: 'contentBase64 must be valid base64' })
+  const data = Buffer.from(encoded, 'base64')
+  if (!data.length || data.toString('base64') !== encoded) throw createError({ statusCode: 400, statusMessage: 'contentBase64 must be valid base64' })
+  if (data.length > ITEM_FILE_MAX_BYTES) throw createError({ statusCode: 413, statusMessage: 'File is larger than 25 MB' })
+  return { filename, data }
+}

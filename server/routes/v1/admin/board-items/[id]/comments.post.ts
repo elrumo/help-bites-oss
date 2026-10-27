@@ -1,6 +1,8 @@
 import { createError } from 'h3'
 import { FEEDBACK_COMMENT_MAX_LENGTH } from '#shared/feedback'
+import { readItemAttachments } from '#shared/itemAttachments'
 import { clientSource } from '../../../../../utils/clientSource'
+import { assertOwnAttachments } from '../../../../../utils/itemAttachments'
 import { pointerId } from '../../../../../utils/parse'
 import { scoped } from '../../../../../utils/scoped'
 
@@ -8,9 +10,9 @@ defineRouteMeta({
   openAPI: {
     tags: ['Board'], operationId: 'commentOnBoardItem', security: [{ AgentSession: [] }, { AdminApiKey: [] }],
     summary: 'Comment on a planning item',
-    description: 'Adds an internal comment or reply. MCP comments show the connected assistant name while retaining the operator who authorized it.',
+    description: 'Adds an internal comment or reply, with up to 10 project uploads. MCP comments show the connected assistant name while retaining the operator who authorized it.',
     parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'project', in: 'query', schema: { type: 'string' } }],
-    requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['body'], properties: { body: { type: 'string', maxLength: FEEDBACK_COMMENT_MAX_LENGTH }, parentId: { type: 'string', description: 'The root comment id when replying.' }, replyToId: { type: 'string', description: 'The comment being replied to; also determines parentId.' } } } } } },
+    requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { body: { type: 'string', description: `Up to ${FEEDBACK_COMMENT_MAX_LENGTH} characters.` }, attachments: { type: 'array', items: { type: 'object' }, description: 'Up to 10 files returned by POST /v1/feedback/attachments.' }, parentId: { type: 'string', description: 'The root comment id when replying.' }, replyToId: { type: 'string', description: 'The comment being replied to; also determines parentId.' } } } } } },
     responses: { 201: { description: 'The comment.' }, 400: { description: 'Empty or too-long comment, or invalid thread target.' }, 401: { description: 'Admin session or API key required.' }, 404: { description: 'Item or comment not found.' } }
   }
 })
@@ -18,10 +20,14 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'content' })
   const { project, row: item } = await scoped.boardItem(ctx, getRouterParam(event, 'id') || '', String(getQuery(event).project || '') || undefined)
-  const input = await readBody<Record<string, unknown>>(event).catch(() => ({})) || {}
+  const input = (await readBody(event).catch(() => ({})) || {}) as Record<string, unknown>
   const body = typeof input.body === 'string' ? input.body.trim() : ''
-  if (!body) throw createError({ statusCode: 400, statusMessage: 'Comment cannot be empty' })
   if (body.length > FEEDBACK_COMMENT_MAX_LENGTH) throw createError({ statusCode: 400, statusMessage: `Comment is longer than ${FEEDBACK_COMMENT_MAX_LENGTH} characters` })
+  const attachmentErrors: string[] = []
+  const attachments = input.attachments === undefined ? [] : readItemAttachments(input.attachments, attachmentErrors) || []
+  if (attachmentErrors.length) throw createError({ statusCode: 400, statusMessage: attachmentErrors.join('; ') })
+  assertOwnAttachments(project, attachments)
+  if (!body && !attachments.length) throw createError({ statusCode: 400, statusMessage: 'Comment text or an attachment is required' })
 
   const parentId = typeof input.parentId === 'string' ? input.parentId.trim() : ''
   const replyToId = typeof input.replyToId === 'string' ? input.replyToId.trim() : ''
@@ -50,6 +56,7 @@ export default defineEventHandler(async (event) => {
   comment.set('project', project)
   comment.set('item', item)
   comment.set('body', body)
+  comment.set('attachments', attachments)
   comment.set('actorId', ctx.agentId)
   comment.set('actorName', actorName)
   comment.set('authorName', authorName)
@@ -63,7 +70,7 @@ export default defineEventHandler(async (event) => {
   setResponseStatus(event, 201)
   return {
     comment: {
-      id: comment.id || '', itemId: item.id || '', body,
+      id: comment.id || '', itemId: item.id || '', body, attachments,
       parentId: rootId || null, replyToId: repliedToId || null,
       actorId: ctx.agentId, actorName, authorName,
       authorType: source === 'mcp' ? 'assistant' : 'operator', source,
