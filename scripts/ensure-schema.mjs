@@ -1016,6 +1016,11 @@ const SCHEMAS = {
       project: { type: 'Pointer', targetClass: 'Project' },
       number: { type: 'Number' },
       title: { type: 'String' },
+      // task (absent on older rows) | epic | release. A card points at its epic and release by item id;
+      // an epic may point at a release. Their cards are found by querying these two fields.
+      kind: { type: 'String' },
+      epicId: { type: 'String' },
+      releaseId: { type: 'String' },
       // Internal Markdown; never public.
       description: { type: 'String' },
       // The only text the roadmap shows; never falls back to `description`.
@@ -1047,7 +1052,9 @@ const SCHEMAS = {
       project_status_rank: { _p_project: 1, status: 1, rank: 1 },
       project_number: { _p_project: 1, number: 1 },
       project_posts: { _p_project: 1, feedbackPostIds: 1 },
-      project_conversations: { _p_project: 1, conversationIds: 1 }
+      project_conversations: { _p_project: 1, conversationIds: 1 },
+      project_epic: { _p_project: 1, epicId: 1 },
+      project_release: { _p_project: 1, releaseId: 1 }
     }
   },
   BoardItemHistory: {

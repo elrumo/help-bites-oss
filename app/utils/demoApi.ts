@@ -517,7 +517,7 @@ const boardItems: BoardItem[] = []
 function boardItem(number: number, title: string, status: string, statusCategory: BoardItem['statusCategory'], labels: string[], assigneeId: string, priority: BoardItem['priority'], postNumbers: number[], conversationIds: string[], isPublic: boolean, minutesAgo: number) {
   const posts = postNumbers.map(demoPost)
   boardItems.push({
-    id: `item_demo${number}`, projectId: 'acme', number, title, description: '', publicDescription: isPublic ? title : '', attachments: [], status, statusCategory,
+    id: `item_demo${number}`, projectId: 'acme', number, title, kind: 'task', epicId: '', releaseId: '', epic: null, release: null, progress: null, description: '', publicDescription: isPublic ? title : '', attachments: [], status, statusCategory,
     rank: boardItems.length + 1, priority, assigneeId, labels, targetDate: null, public: isPublic,
     feedbackPostIds: posts.map(post => post.id), conversationIds, relatedItemIds: [], related: [], errorRefs: [],
     voteCount: posts.reduce((sum, post) => sum + post.voteCount, 0),
@@ -534,6 +534,13 @@ boardItem(3, 'Dark mode on receipts', 'planned', 'planned', ['web'], '', 'normal
 boardItem(4, 'Slack notifications', 'planned', 'planned', ['api'], 'agent_demo', 'normal', [16], [], true, 60 * 30)
 boardItem(5, 'Offline mode for iPad', 'backlog', 'open', ['ios'], '', 'normal', [19], [], false, 60 * 6)
 boardItem(6, 'Rename the workspace URL', 'done', 'done', ['web'], 'agent_sam', 'normal', [18], [], true, 60 * 24 * 2)
+// An epic and a release over the cards above; the panel counts their progress from the cards.
+boardItem(7, 'Sharing and export', 'in-progress', 'active', [], '', 'normal', [], [], false, 60 * 8)
+boardItem(8, '2.5.0', 'planned', 'planned', [], '', 'normal', [], [], true, 60 * 10)
+Object.assign(boardItems[6]!, { kind: 'epic', releaseId: 'item_demo8' })
+Object.assign(boardItems[7]!, { kind: 'release', targetDate: '2026-11-30T00:00:00.000Z' })
+for (const number of [1, 4]) boardItems[number - 1]!.epicId = 'item_demo7'
+for (const number of [1, 3, 4]) boardItems[number - 1]!.releaseId = 'item_demo8'
 
 const changelogEntries: ChangelogEntry[] = []
 function changelogEntry(number: number, title: string, summary: string, tag: ChangelogEntry['tag'], status: 'draft' | 'published', version: string, minutesAgo: number, ai = false) {

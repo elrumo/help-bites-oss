@@ -104,7 +104,7 @@ export const ID_PATHS: Record<string, Record<string, string>> = {
   Message: { replyToId: 'Message' },
   FeedbackPost: { pinnedCommentId: 'FeedbackComment' },
   FeedbackComment: { parentId: 'FeedbackComment', replyToId: 'FeedbackComment' },
-  BoardItem: { feedbackPostIds: 'FeedbackPost', conversationIds: 'Conversation' },
+  BoardItem: { feedbackPostIds: 'FeedbackPost', conversationIds: 'Conversation', epicId: 'BoardItem', releaseId: 'BoardItem' },
   BoardItemHistory: { itemId: 'BoardItem' },
   BoardItemComment: { parentId: 'BoardItemComment', replyToId: 'BoardItemComment' },
   ChangelogEntry: { feedbackPostIds: 'FeedbackPost', boardItemIds: 'BoardItem', conversationIds: 'Conversation' },

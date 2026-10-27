@@ -43,6 +43,12 @@ struct BoardScreen: View {
   /// '' is any; 'none', or a priority.
   var priorityFilter = ""
   var roadmapOnly = false
+  /// '' is every kind; 'task', 'epic' or 'release'.
+  var kindFilter = ""
+  /// 'kanban' or 'list', remembered per project.
+  var view = "kanban"
+  /// What the list groups by: 'status', 'epic' or 'release'.
+  var grouping = "status"
   /// The order cards show in a column: 'manual' (the order they are dragged into), 'newest' or 'oldest' (by when made).
   var order = "manual"
 
@@ -51,6 +57,7 @@ struct BoardScreen: View {
     self.workspace = workspace
     // The order picked last time on this project, as the web keeps it per project.
     if let saved = UserDefaults.standard.string(forKey: Self.orderKey(projectId)), Self.orders.contains(saved) { order = saved }
+    if UserDefaults.standard.string(forKey: Self.viewKey(projectId)) == "list" { view = "list" }
   }
 
   private static let orders = ["manual", "newest", "oldest"]
@@ -63,6 +70,14 @@ struct BoardScreen: View {
     UserDefaults.standard.set(value, forKey: Self.orderKey(projectId))
   }
 
+  private static func viewKey(_ projectId: String) -> String { "helpbites.board.view.\(projectId)" }
+
+  /// Picks kanban or list and remembers it for this project.
+  func setView(_ value: String) {
+    view = value == "list" ? "list" : "kanban"
+    UserDefaults.standard.set(view, forKey: Self.viewKey(projectId))
+  }
+
   var session: SessionStore { workspace.session }
 
   var publicCount: Int { items.filter(\.isPublic).count }
@@ -73,7 +88,7 @@ struct BoardScreen: View {
   }
 
   var filtering: Bool {
-    !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !labelFilter.isEmpty || !assigneeFilter.isEmpty || !priorityFilter.isEmpty || roadmapOnly
+    !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !labelFilter.isEmpty || !assigneeFilter.isEmpty || !priorityFilter.isEmpty || !kindFilter.isEmpty || roadmapOnly
   }
 
   func clearFilters() {
@@ -81,6 +96,7 @@ struct BoardScreen: View {
     labelFilter = []
     assigneeFilter = ""
     priorityFilter = ""
+    kindFilter = ""
     roadmapOnly = false
   }
 
@@ -94,8 +110,9 @@ struct BoardScreen: View {
   }
 
   /// The column as the filters and the order show it.
-  func visible(_ status: String) -> [BoardItem] {
-    let shown = column(status).filter { matches($0) }
+  func visible(_ status: String) -> [BoardItem] { ordered(column(status).filter { matches($0) }) }
+
+  private func ordered(_ shown: [BoardItem]) -> [BoardItem] {
     guard order != "manual" else { return shown }
     // Newest first or oldest first by creation; the number breaks ties.
     return shown.sorted { lhs, rhs in
@@ -104,8 +121,37 @@ struct BoardScreen: View {
     }
   }
 
+  /// One group of the list view: the items (as the filters and order show them) and what a quick add in it fills in.
+  struct ListGroup: Identifiable {
+    let id: String
+    let title: String
+    let tint: Color
+    let items: [BoardItem]
+    let fields: [String: JSONValue]
+  }
+
+  func parentId(_ item: BoardItem, _ parent: String) -> String { (parent == "epic" ? item.epicId : item.releaseId) ?? "" }
+
+  /// The list's groups: a group per status (the board's order), or per epic or release with the rest in a last group.
+  func groups() -> [ListGroup] {
+    guard let config else { return [] }
+    let shown = ordered(items.sorted(by: boardOrder).filter { matches($0) })
+    guard grouping == "epic" || grouping == "release" else {
+      return config.statuses.map { status in
+        ListGroup(id: status.key, title: status.label, tint: FeedbackFormat.tint(status.color) ?? Theme.textDimmed, items: shown.filter { config.column(of: $0) == status.key }, fields: ["status": .string(status.key)])
+      }
+    }
+    let parents = items.filter { $0.itemKind == grouping }.sorted(by: boardOrder)
+    let known = Set(parents.map(\.id))
+    let key = grouping == "epic" ? "epicId" : "releaseId"
+    return parents.map { parent in
+      ListGroup(id: parent.id, title: parent.title, tint: Theme.accent, items: shown.filter { parentId($0, grouping) == parent.id }, fields: [key: .string(parent.id)])
+    } + [ListGroup(id: "none", title: grouping == "epic" ? String(localized: "No epic") : String(localized: "No release"), tint: Theme.textDimmed, items: shown.filter { !known.contains(parentId($0, grouping)) }, fields: [:])]
+  }
+
   private func matches(_ item: BoardItem) -> Bool {
     if roadmapOnly && !item.isPublic { return false }
+    if !kindFilter.isEmpty && item.itemKind != kindFilter { return false }
     if !labelFilter.isEmpty && !item.labels.contains(where: { labelFilter.contains($0) }) { return false }
     switch assigneeFilter {
     case "": break
@@ -225,6 +271,20 @@ struct BoardScreen: View {
     let result: ItemResponse = try await session.send("/v1/admin/board-items?project=\(projectId)", body: fields)
     upsert(result.item)
     return result.item
+  }
+
+  /// A list group's quick add: a title, filed into that group's status, epic or release.
+  func quickAdd(_ title: String, into group: ListGroup) async {
+    var fields = group.fields
+    fields["title"] = .string(title)
+    do { _ = try await create(fields) } catch { alert = error.localizedDescription }
+  }
+
+  /// Put an item into an epic or release (`field` is epicId or releaseId), or out of it with an empty id.
+  /// The items are read again, so the group's progress follows.
+  func assign(_ itemId: String, field: String, to parentId: String) async throws {
+    _ = try await update(itemId, [field: .string(parentId)])
+    try await loadItems()
   }
 
   /// The AI reads a description and proposes a title; nothing is saved.
@@ -392,7 +452,11 @@ private struct BoardView: View {
         VStack(spacing: 0) {
           filterBar(config)
           Rectangle().fill(Theme.border).frame(height: 1)
-          board(config)
+          if store.view == "list" {
+            BoardList(store: store) { item in editor = BoardEditorRoute(itemId: item.id) }
+          } else {
+            board(config)
+          }
         }
       } else {
         notEnabled
@@ -465,7 +529,17 @@ private struct BoardView: View {
 
   private func filterBar(_ config: BoardConfig) -> some View {
     VStack(spacing: 10) {
-      SearchField(text: $store.search, prompt: "Search or #12").padding(.horizontal, Metrics.gutter)
+      HStack(spacing: 10) {
+        SearchField(text: $store.search, prompt: "Search or #12")
+        Picker("View", selection: Binding(get: { store.view }, set: { store.setView($0) })) {
+          Image(systemName: "rectangle.split.3x1").tag("kanban").accessibilityLabel("Kanban")
+          Image(systemName: "list.bullet").tag("list").accessibilityLabel("List")
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(width: 96)
+      }
+      .padding(.horizontal, Metrics.gutter)
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 6) {
           Pill(label: "On roadmap", count: store.publicCount, systemImage: "globe", isActive: store.roadmapOnly) { store.roadmapOnly.toggle() }
@@ -474,6 +548,21 @@ private struct BoardView: View {
               Text("Anyone").tag("")
               Text("Unassigned").tag("unassigned")
               ForEach(store.agents) { agent in Text(agent.inboxName).tag(agent.id) }
+            }
+          }
+          if store.view == "list" {
+            filterMenu("Group by", value: groupingTitle, active: store.grouping != "status") {
+              Picker("Group by", selection: $store.grouping) {
+                Text("Group by status").tag("status")
+                Text("Group by epic").tag("epic")
+                Text("Group by release").tag("release")
+              }
+            }
+          }
+          filterMenu("Type", value: store.kindFilter.isEmpty ? String(localized: "Any type") : BoardKind.name(store.kindFilter), active: !store.kindFilter.isEmpty) {
+            Picker("Type", selection: $store.kindFilter) {
+              Text("Any type").tag("")
+              ForEach(BoardKind.all, id: \.self) { kind in Text(BoardKind.name(kind)).tag(kind) }
             }
           }
           filterMenu("Order", value: orderTitle, active: store.order != "manual") {
@@ -520,6 +609,14 @@ private struct BoardView: View {
     case "": String(localized: "Anyone")
     case "unassigned": String(localized: "Unassigned")
     default: store.agent(store.assigneeFilter)?.inboxName ?? String(localized: "Assignee")
+    }
+  }
+
+  private var groupingTitle: String {
+    switch store.grouping {
+    case "epic": String(localized: "Group by epic")
+    case "release": String(localized: "Group by release")
+    default: String(localized: "Group by status")
     }
   }
 
@@ -580,6 +677,191 @@ private struct BoardView: View {
       }
       .padding(Metrics.gutter)
     }
+  }
+}
+
+// MARK: - List
+
+/// The list view, as Monday lays out a board: collapsible groups with a coloured header and a count, one row per
+/// item, and a quick add at the foot of each group. A row is two lines so it fits a phone: number, kind and title
+/// with the status; then priority, epic, release, assignee and date.
+/// ponytail: no drag to reorder here and no per-column table on iPad/Mac; reorder on the kanban, add columns if asked.
+private struct BoardList: View {
+  let store: BoardStore
+  let open: (BoardItem) -> Void
+  @State private var collapsed: Set<String> = []
+
+  var body: some View {
+    let groups = store.groups()
+    ScrollView {
+      LazyVStack(alignment: .leading, spacing: 18) {
+        ForEach(groups) { group in section(group) }
+      }
+      .padding(Metrics.gutter)
+    }
+  }
+
+  private func section(_ group: BoardStore.ListGroup) -> some View {
+    let isCollapsed = collapsed.contains(group.id)
+    return VStack(alignment: .leading, spacing: 0) {
+      Button {
+        if isCollapsed { collapsed.remove(group.id) } else { collapsed.insert(group.id) }
+      } label: {
+        HStack(spacing: 8) {
+          Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).rotationEffect(.degrees(isCollapsed ? 0 : 90)).foregroundStyle(group.tint)
+          Text(group.title).font(.lnMetaMedium).foregroundStyle(group.tint).lineLimit(1)
+          Text("\(group.items.count)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
+          Spacer(minLength: 0)
+        }
+        .frame(minHeight: 36)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("\(group.title), \(group.items.count)")
+      .accessibilityValue(isCollapsed ? "Collapsed" : "Expanded")
+
+      if !isCollapsed {
+        VStack(spacing: 0) {
+          ForEach(group.items) { item in
+            row(item)
+            Rectangle().fill(Theme.borderMuted).frame(height: 1)
+          }
+          BoardQuickAdd { title in await store.quickAdd(title, into: group) }
+        }
+        .overlay(alignment: .leading) { Rectangle().fill(group.tint).frame(width: 3) }
+        .background(Theme.panel, in: RoundedRectangle(cornerRadius: Metrics.radius))
+        .clipShape(RoundedRectangle(cornerRadius: Metrics.radius))
+        .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
+      }
+    }
+  }
+
+  private func row(_ item: BoardItem) -> some View {
+    HStack(alignment: .top, spacing: 8) {
+      Button { open(item) } label: {
+        VStack(alignment: .leading, spacing: 5) {
+          HStack(spacing: 6) {
+            if let number = item.number { Text("#\(number)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted) }
+            if let icon = BoardKind.icon(item.itemKind) {
+              Image(systemName: icon).font(.system(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel(BoardKind.name(item.itemKind))
+            }
+            Text(item.title).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).lineLimit(2).multilineTextAlignment(.leading)
+          }
+          meta(item)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      statusMenu(item)
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 8)
+    .contextMenu { Button { open(item) } label: { Label("Open", systemImage: "square.and.pencil") } }
+  }
+
+  @ViewBuilder private func meta(_ item: BoardItem) -> some View {
+    let day = BoardFormat.shortDay(item.targetDay)
+    if !item.priority.isEmpty || item.epic != nil || item.release != nil || item.progress?.total ?? 0 > 0 || store.agent(item.assigneeId) != nil || day != nil || item.isPublic {
+      FlowLayout(spacing: 6) {
+        if !item.priority.isEmpty { PriorityIcon(priority: item.priority, size: 12) }
+        if let progress = item.progress, progress.total > 0 { BoardProgressBar(progress: progress).frame(width: 110) }
+        if let epic = item.epic { BoardParentChip(kind: "epic", title: epic.title) }
+        if let release = item.release { BoardParentChip(kind: "release", title: release.title) }
+        if let agent = store.agent(item.assigneeId) { Avatar(name: agent.inboxName, size: 18) }
+        if let day { Label(day, systemImage: "calendar").labelStyle(BoardCompactLabelStyle()).accessibilityLabel("Target \(day)") }
+        if item.isPublic { Image(systemName: "globe").font(.system(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel("On the public roadmap") }
+      }
+    }
+  }
+
+  /// The status as a pill; tapping it moves the item to another status, the way a card's "Move to" does.
+  @ViewBuilder private func statusMenu(_ item: BoardItem) -> some View {
+    if let config = store.config, let status = config.status(config.column(of: item)) {
+      Menu {
+        ForEach(config.statuses.filter { $0.key != status.key }) { target in
+          Button(target.label) { Task { await store.move(item.id, to: target.key, before: nil) } }
+        }
+      } label: {
+        FeedbackStatusBadge(status: status)
+      }
+      .accessibilityLabel("Status: \(status.label)")
+    }
+  }
+}
+
+/// "+ Add item" at the foot of a group; opens a title field that files the item into the group.
+private struct BoardQuickAdd: View {
+  let add: (String) async -> Void
+  @State private var adding = false
+  @State private var title = ""
+  @FocusState private var focused: Bool
+
+  var body: some View {
+    if adding {
+      HStack(spacing: 8) {
+        TextField("Title", text: $title)
+          .textFieldStyle(.linear)
+          .focused($focused)
+          .submitLabel(.done)
+          .onSubmit { Task { await submit() } }
+        Button("Add") { Task { await submit() } }
+          .buttonStyle(GhostButtonStyle(tint: Theme.accentText))
+          .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        Button { adding = false; title = "" } label: { Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24) }
+          .buttonStyle(.plain)
+          .accessibilityLabel("Cancel")
+      }
+      .padding(.horizontal, 12)
+      .padding(.vertical, 6)
+    } else {
+      Button { adding = true; focused = true } label: {
+        Label("Add item", systemImage: "plus").font(.lnMeta).foregroundStyle(Theme.textMuted).frame(maxWidth: .infinity, minHeight: 36, alignment: .leading).padding(.horizontal, 12).contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
+  private func submit() async {
+    let text = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !text.isEmpty else { return }
+    title = ""
+    await add(String(text.prefix(BoardTitle.maxLength)))
+    focused = true
+  }
+}
+
+/// The epic or release an item belongs to, as a small capsule.
+struct BoardParentChip: View {
+  let kind: String
+  let title: String
+
+  var body: some View {
+    HStack(spacing: 3) {
+      Image(systemName: BoardKind.icon(kind) ?? "square.stack.3d.up").font(.system(size: 10))
+      Text(title).font(.lnCaption).lineLimit(1)
+    }
+    .foregroundStyle(Theme.textToned)
+    .padding(.horizontal, 6)
+    .frame(height: 18)
+    .background(Theme.elevated, in: Capsule())
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("\(BoardKind.name(kind)): \(title)")
+  }
+}
+
+/// How far an epic or release is: a bar, and cards done of cards.
+struct BoardProgressBar: View {
+  let progress: BoardProgress
+
+  var body: some View {
+    HStack(spacing: 6) {
+      Capsule().fill(Theme.elevated).frame(height: 4)
+        .overlay(alignment: .leading) { GeometryReader { box in Capsule().fill(Theme.success).frame(width: box.size.width * progress.fraction) } }
+      Text("\(progress.done)/\(progress.total)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
+    }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("\(progress.done) of \(progress.total) cards done")
   }
 }
 
@@ -757,6 +1039,9 @@ private struct BoardCard: View {
     VStack(alignment: .leading, spacing: 6) {
       HStack(spacing: 6) {
         if let number = item.number { Text("#\(number)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted) }
+        if let icon = BoardKind.icon(item.itemKind) {
+          Image(systemName: icon).font(.system(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel(BoardKind.name(item.itemKind))
+        }
         if !item.priority.isEmpty { PriorityIcon(priority: item.priority, size: 12) }
         Spacer(minLength: 0)
         if item.isPublic {
@@ -765,6 +1050,13 @@ private struct BoardCard: View {
         if let agent = store.agent(item.assigneeId) { Avatar(name: agent.inboxName, size: 18) }
       }
       Text(item.title).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).lineLimit(3).multilineTextAlignment(.leading)
+      if let progress = item.progress, progress.total > 0 { BoardProgressBar(progress: progress) }
+      if item.epic != nil || item.release != nil {
+        FlowLayout(spacing: 4) {
+          if let epic = item.epic { BoardParentChip(kind: "epic", title: epic.title) }
+          if let release = item.release { BoardParentChip(kind: "release", title: release.title) }
+        }
+      }
       if let config = store.config, !item.labels.isEmpty {
         FlowLayout(spacing: 4) {
           ForEach(item.labels, id: \.self) { key in

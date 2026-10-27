@@ -407,6 +407,37 @@
     "showDatesDescription": "Dates objectiu; la cronologia sempre les mostra",
     "anyPriority": "Qualsevol prioritat",
     "noPriority": "Sense prioritat",
+    "view": "Vista",
+    "views": {
+      "kanban": "Tauler",
+      "list": "Llista"
+    },
+    "groupBy": "Agrupa per",
+    "groupByOptions": {
+      "status": "Agrupa per estat",
+      "epic": "Agrupa per èpica",
+      "release": "Agrupa per versió"
+    },
+    "kind": "Tipus",
+    "kinds": {
+      "task": "Targeta",
+      "epic": "Èpica",
+      "release": "Versió"
+    },
+    "anyKind": "Qualsevol tipus",
+    "epic": "Èpica",
+    "release": "Versió",
+    "noEpic": "Sense èpica",
+    "noRelease": "Sense versió",
+    "anyEpic": "Qualsevol èpica",
+    "anyRelease": "Qualsevol versió",
+    "cards": "Targetes",
+    "addCard": "Afegeix una targeta",
+    "removeCard": "Treu #{number} d'aquí",
+    "progressTitle": "{done} de {total} fetes",
+    "openItem": "Obre",
+    "colItem": "Element",
+    "quickAdd": "Afegeix un element",
     "low": "Baixa",
     "normal": "Normal",
     "high": "Alta",

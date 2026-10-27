@@ -3,6 +3,7 @@ import {
   DEFAULT_BOARD_CONFIG,
   normalizeBoardConfig,
   rankBetween,
+  kindCanHave,
   readBoardItemInput,
   roadmapGroups,
   toRoadmapItem,
@@ -18,6 +19,7 @@ const item = (fields: Partial<BoardItem> = {}): BoardItem => ({
   projectId: 'p1',
   number: 7,
   title: 'CSV export',
+  kind: 'task',
   description: 'Internal: the importer needs a rewrite first',
   publicDescription: 'Export your library as CSV',
   status: 'planned',
@@ -33,6 +35,11 @@ const item = (fields: Partial<BoardItem> = {}): BoardItem => ({
   conversationIds: ['conv1'],
   relatedItemIds: [],
   related: [],
+  epicId: '',
+  releaseId: '',
+  epic: null,
+  release: null,
+  progress: null,
   errorRefs: [],
   voteCount: 0,
   posts: [],
@@ -178,5 +185,24 @@ describe('roadmap', () => {
     expect(groups.map(g => g.label)).toEqual(['Q3 2026', 'Q1 2027', 'No date'])
     expect(groups[0]!.items.map(i => i.id)).toEqual(['q3a', 'q3b'])
     expect(groups.at(-1)!.items.map(i => i.id).sort()).toEqual(['bad', 'none'])
+  })
+})
+
+describe('epics and releases', () => {
+  test('kind, epicId and releaseId are read; an empty id clears the parent', () => {
+    const { values, errors } = readBoardItemInput({ title: 'Export', kind: 'epic', releaseId: ' #4 ', epicId: null }, config, { create: true })
+    expect(errors).toEqual([])
+    expect(values).toMatchObject({ kind: 'epic', releaseId: '#4', epicId: '' })
+    expect(readBoardItemInput({ kind: 'sprint' }, config, { create: false }).errors[0]).toContain('kind must be one of')
+    expect(readBoardItemInput({ epicId: 3 }, config, { create: false }).errors).toContain('epicId must be a string')
+  })
+
+  test('only a card has an epic; a release is held by nothing', () => {
+    expect(kindCanHave('task', 'epic')).toBe(true)
+    expect(kindCanHave('epic', 'epic')).toBe(false)
+    expect(kindCanHave('release', 'epic')).toBe(false)
+    expect(kindCanHave('task', 'release')).toBe(true)
+    expect(kindCanHave('epic', 'release')).toBe(true)
+    expect(kindCanHave('release', 'release')).toBe(false)
   })
 })

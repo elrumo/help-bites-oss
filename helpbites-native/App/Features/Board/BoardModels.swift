@@ -66,11 +66,44 @@ struct BoardRelatedItem: Codable, Equatable, Sendable, Identifiable {
   let status: String
 }
 
+/// An epic's or release's cards, and how many are in a done status.
+struct BoardProgress: Codable, Equatable, Sendable {
+  let total, done: Int
+  var fraction: Double { total > 0 ? Double(done) / Double(total) : 0 }
+}
+
+/// What an item is (BOARD_ITEM_KINDS): a card, an epic that groups cards, or a release that ships cards and epics.
+enum BoardKind {
+  static let all = ["task", "epic", "release"]
+
+  /// kindCanHave: only a card has an epic; a release has no parent.
+  static func canHave(_ kind: String, parent: String) -> Bool { parent == "epic" ? kind == "task" : kind != "release" }
+
+  static func name(_ kind: String) -> String {
+    switch kind {
+    case "epic": String(localized: "Epic")
+    case "release": String(localized: "Release")
+    default: String(localized: "Task")
+    }
+  }
+
+  /// nil for a plain card, which shows no kind mark.
+  static func icon(_ kind: String) -> String? {
+    switch kind {
+    case "epic": "square.stack.3d.up"
+    case "release": "shippingbox"
+    default: nil
+    }
+  }
+}
+
 struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   let id: String
   let projectId: String
   let number: Int?
   var title: String
+  /// task · epic · release; absent from a server that predates epics and releases.
+  var kind: String?
   /// Internal Markdown; never public.
   var description: String
   /// The only text the roadmap shows.
@@ -94,6 +127,13 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   /// Related items, linked both ways; absent from a server that predates them.
   var relatedItemIds: [String]?
   var related: [BoardRelatedItem]?
+  /// The epic and the release it belongs to ('' or nil for none); absent from a server that predates them.
+  var epicId: String?
+  var releaseId: String?
+  var epic: BoardRelatedItem?
+  var release: BoardRelatedItem?
+  /// Set on an epic or a release: its cards.
+  var progress: BoardProgress?
   /// The errors it was filed from; absent from a server that predates filing them.
   var errorRefs: [BoardErrorRef]?
   /// Σ of the linked, non-hidden posts' votes.
@@ -107,10 +147,13 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   var lastModifiedSource: String?
 
   enum CodingKeys: String, CodingKey {
-    case id, projectId, number, title, description, publicDescription, status, statusCategory, rank, priority, assigneeId, labels, attachments, targetDate
+    case id, projectId, number, title, kind, description, publicDescription, status, statusCategory, rank, priority, assigneeId, labels, attachments, targetDate
     case isPublic = "public"
-    case feedbackPostIds, conversationIds, relatedItemIds, related, errorRefs, voteCount, posts, conversations, completedAt, createdAt, updatedAt, lastModifiedBy, lastModifiedSource
+    case feedbackPostIds, conversationIds, relatedItemIds, related, epicId, releaseId, epic, release, progress, errorRefs, voteCount, posts, conversations, completedAt, createdAt, updatedAt, lastModifiedBy, lastModifiedSource
   }
+
+  var itemKind: String { kind ?? "task" }
+  var isGroup: Bool { itemKind != "task" }
 
   /// "2026-11-15" from the stored date, as a date input holds it; '' for none.
   var targetDay: String { String((targetDate ?? "").prefix(10)) }

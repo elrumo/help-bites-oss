@@ -397,6 +397,37 @@
     "showDatesDescription": "目标日期；时间线始终显示",
     "anyPriority": "任意优先级",
     "noPriority": "无优先级",
+    "view": "视图",
+    "views": {
+      "kanban": "看板",
+      "list": "列表"
+    },
+    "groupBy": "分组方式",
+    "groupByOptions": {
+      "status": "按状态分组",
+      "epic": "按史诗分组",
+      "release": "按发布分组"
+    },
+    "kind": "类型",
+    "kinds": {
+      "task": "卡片",
+      "epic": "史诗",
+      "release": "发布"
+    },
+    "anyKind": "所有类型",
+    "epic": "史诗",
+    "release": "发布",
+    "noEpic": "无史诗",
+    "noRelease": "无发布",
+    "anyEpic": "所有史诗",
+    "anyRelease": "所有发布",
+    "cards": "卡片",
+    "addCard": "添加卡片",
+    "removeCard": "将 #{number} 从此处移除",
+    "progressTitle": "{total} 项中已完成 {done} 项",
+    "openItem": "打开",
+    "colItem": "条目",
+    "quickAdd": "添加条目",
     "low": "低",
     "normal": "普通",
     "high": "高",

@@ -10,6 +10,9 @@ struct BoardItemEditor: View {
   @State private var draft: BoardItemDraft
   @State private var pickingPost = false
   @State private var pickingItem = false
+  @State private var pickingCard = false
+  /// A card of this epic or release opened from its Cards list.
+  @State private var openedCard: CardRoute?
   @State private var newLabel = ""
   @State private var addingLabel = false
   /// Feedback chosen for an item that does not exist yet; linked when it is created.
@@ -114,6 +117,10 @@ struct BoardItemEditor: View {
           if itemId == nil { newPosts.append(post) } else { Task { await setLink("feedback", post.id, true) } }
         }
       }
+      .sheet(item: $openedCard) { route in BoardItemEditor(store: store, itemId: route.id) }
+      .sheet(isPresented: $pickingCard) {
+        BoardItemPicker(store: store, exclude: cardPickerExclusion) { card in Task { await setCard(card.id, in: true) } }
+      }
       .sheet(isPresented: $pickingItem) {
         BoardItemPicker(store: store, exclude: Set((itemId.map { [$0] } ?? []) + (current?.relatedItemIds ?? []))) { other in
           Task { await setLink("item", other.id, true) }
@@ -128,6 +135,14 @@ struct BoardItemEditor: View {
   @ViewBuilder private func form(_ config: BoardConfig) -> some View {
     if let current { meta(current, config) } else { Text("Private until you put it on the roadmap").font(.lnMeta).foregroundStyle(Theme.textMuted) }
 
+    LabeledField(label: "Type") {
+      FeedbackSelect(options: BoardKind.all.map { FeedbackOption(value: $0, label: BoardKind.name($0)) }, selection: $draft.kind)
+        .onChange(of: draft.kind) { _, kind in
+          // Only a card has an epic; a release has no parent: the choice that no longer fits goes.
+          if !BoardKind.canHave(kind, parent: "epic") { draft.epicId = "" }
+          if !BoardKind.canHave(kind, parent: "release") { draft.releaseId = "" }
+        }
+    }
     LabeledField(label: "Title") {
       TextField("", text: $draft.title)
         .textFieldStyle(.linear)
@@ -172,6 +187,19 @@ struct BoardItemEditor: View {
     }
     LabeledField(label: "Assignee") {
       FeedbackSelect(options: [FeedbackOption(value: "", label: String(localized: "Unassigned"))] + store.agents.map { FeedbackOption(value: $0.id, label: $0.inboxName) }, selection: $draft.assigneeId)
+    }
+    if BoardKind.canHave(draft.kind, parent: "epic") { parentPicker("epic", selection: $draft.epicId) }
+    if BoardKind.canHave(draft.kind, parent: "release") { parentPicker("release", selection: $draft.releaseId) }
+  }
+
+  /// The board's epics (or releases), and none.
+  private func parentPicker(_ kind: String, selection: Binding<String>) -> some View {
+    let none = kind == "epic" ? String(localized: "No epic") : String(localized: "No release")
+    let others = store.items.filter { $0.itemKind == kind && $0.id != itemId }.sorted(by: boardOrder)
+    // An epic or release deleted since stays listed while the item points at it, so it can be taken off.
+    let missing = selection.wrappedValue.isEmpty || others.contains { $0.id == selection.wrappedValue } ? [] : [FeedbackOption(value: selection.wrappedValue, label: String(localized: "Unknown \(BoardKind.name(kind).lowercased())"))]
+    return LabeledField(label: kind == "epic" ? "Epic" : "Release") {
+      FeedbackSelect(options: [FeedbackOption(value: "", label: none)] + others.map { other in FeedbackOption(value: other.id, label: other.number.map { "#\($0) \(other.title)" } ?? other.title) } + missing, selection: selection)
     }
   }
 
@@ -322,6 +350,8 @@ struct BoardItemEditor: View {
     VStack(alignment: .leading, spacing: 20) {
       Rectangle().fill(Theme.borderMuted).frame(height: 1).padding(.top, 12)
 
+      if item.isGroup { cards(item) }
+
       VStack(alignment: .leading, spacing: 8) {
         HStack(spacing: 6) {
           Text("Feedback").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
@@ -397,6 +427,64 @@ struct BoardItemEditor: View {
       }
 
       Button { confirmDelete = true } label: { Label("Delete item", systemImage: "trash") }.buttonStyle(GhostButtonStyle(tint: Theme.error))
+    }
+  }
+
+  /// An epic's or release's cards, with how far along they are; a card is taken out of it, or put in from the board.
+  private func cards(_ item: BoardItem) -> some View {
+    let children = store.items.filter { store.parentId($0, item.itemKind) == item.id }.sorted(by: boardOrder)
+    return VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 6) {
+        Text("Cards").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+        Text("\(children.count)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
+      }
+      if let progress = item.progress, progress.total > 0 { BoardProgressBar(progress: progress) }
+      if !children.isEmpty {
+        Card {
+          ForEach(children) { child in
+            CardRow(divider: child.id != children.last?.id) {
+              HStack(spacing: 8) {
+                Button { openedCard = CardRoute(id: child.id) } label: {
+                  HStack(spacing: 8) {
+                    if let icon = BoardKind.icon(child.itemKind) { Image(systemName: icon).font(.system(size: 11)).foregroundStyle(Theme.accentText) }
+                    Text(child.number.map { "#\($0) \(child.title)" } ?? child.title).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
+                    Spacer(minLength: 4)
+                    if let status = store.config?.status(child.status) { Text(status.label).font(.lnCaption).foregroundStyle(Theme.textToned) }
+                  }
+                  .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                Button { Task { await setCard(child.id, in: false) } } label: {
+                  Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(linking)
+                .accessibilityLabel("Take \(child.title) out of this \(BoardKind.name(item.itemKind).lowercased())")
+              }
+            }
+          }
+        }
+      }
+      Button { pickingCard = true } label: { Label("Add a card", systemImage: "plus") }
+        .buttonStyle(.lnSecondaryCompact)
+        .disabled(linking)
+    }
+  }
+
+  /// What the card picker leaves out: this item, its cards so far, and whatever cannot belong to it (an epic holds cards only).
+  private var cardPickerExclusion: Set<String> {
+    guard let current else { return [] }
+    return Set(store.items.filter { $0.id == current.id || store.parentId($0, current.itemKind) == current.id || !BoardKind.canHave($0.itemKind, parent: current.itemKind) }.map(\.id))
+  }
+
+  private func setCard(_ cardId: String, in isIn: Bool) async {
+    guard let current else { return }
+    linking = true
+    defer { linking = false }
+    do {
+      try await store.assign(cardId, field: current.itemKind == "epic" ? "epicId" : "releaseId", to: isIn ? current.id : "")
+    } catch {
+      self.error = error.localizedDescription
     }
   }
 
@@ -575,6 +663,9 @@ struct BoardItemEditor: View {
   private func historyField(_ field: String) -> String {
     switch field {
     case "title": String(localized: "Title")
+    case "kind": String(localized: "Type")
+    case "epicId": String(localized: "Epic")
+    case "releaseId": String(localized: "Release")
     case "description": String(localized: "Description")
     case "publicDescription": String(localized: "Public description")
     case "status": String(localized: "Column")
@@ -610,6 +701,8 @@ struct BoardItemEditor: View {
     if case .string(let key) = value {
       if field == "status", let status = store.config?.status(key) { return status.label }
       if field == "assignee", let agent = store.agent(key) { return agent.name }
+      if field == "kind" { return BoardKind.name(key) }
+      if field == "epicId" || field == "releaseId", let parent = store.item(key) { return parent.title }
     }
     if field == "labels", case .array(let values) = value {
       return values.map { value in
@@ -833,9 +926,12 @@ struct BoardItemEditor: View {
   }
 }
 
+private struct CardRoute: Identifiable { let id: String }
+
 /// The editor's fields, as the web's draft holds them.
 private struct BoardItemDraft: Equatable, Codable {
   var title = "", description = "", publicDescription = "", status = "", priority = "", assigneeId = ""
+  var kind = "task", epicId = "", releaseId = ""
   var labels: [String] = []
   var attachments: [ItemAttachment] = []
   /// "2026-11-15", like a date input; '' for none.
@@ -848,6 +944,9 @@ private struct BoardItemDraft: Equatable, Codable {
       return
     }
     title = item.title
+    kind = item.itemKind
+    epicId = item.epicId ?? ""
+    releaseId = item.releaseId ?? ""
     description = item.description
     publicDescription = item.publicDescription
     status = item.status
@@ -883,6 +982,9 @@ private struct BoardItemDraft: Equatable, Codable {
       "attachments": .array(attachments.map(\.asJSON)),
       "public": .bool(isPublic)
     ]
+    if kind != "task" { fields["kind"] = .string(kind) }
+    if !epicId.isEmpty { fields["epicId"] = .string(epicId) }
+    if !releaseId.isEmpty { fields["releaseId"] = .string(releaseId) }
     if !status.isEmpty { fields["status"] = .string(status) }
     if !priority.isEmpty { fields["priority"] = .string(priority) }
     if !assigneeId.isEmpty { fields["assigneeId"] = .string(assigneeId) }
@@ -895,6 +997,9 @@ private struct BoardItemDraft: Equatable, Codable {
     let original = BoardItemDraft(item: item, defaultStatus: "")
     var patch: [String: JSONValue] = [:]
     if title != original.title { patch["title"] = .string(title) }
+    if kind != original.kind { patch["kind"] = .string(kind) }
+    if epicId != original.epicId { patch["epicId"] = .string(epicId) }
+    if releaseId != original.releaseId { patch["releaseId"] = .string(releaseId) }
     if description != original.description { patch["description"] = .string(description) }
     if publicDescription != original.publicDescription { patch["publicDescription"] = .string(publicDescription) }
     if status != original.status { patch["status"] = .string(status) }

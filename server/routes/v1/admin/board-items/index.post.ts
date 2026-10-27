@@ -4,10 +4,13 @@ defineRouteMeta({
   openAPI: {
     tags: ['Board'], operationId: 'createBoardItem', security: [{ AgentSession: [] }, { AdminApiKey: [] }],
     summary: 'Create a board item',
-    description: 'Adds an item to the bottom of its status column with the board’s next `number`. `status` defaults to the board’s default status and `labels` must be keys the board defines. Items are private until `public` is set; a public item shows on the roadmap once its status is planned, in progress or done, with only its `publicDescription`. Optional `feedbackPostIds` (ids or `#N`) and `conversationIds` link the item on creation; every one must belong to the project.',
+    description: 'Adds an item to the bottom of its status column with the board’s next `number`. `status` defaults to the board’s default status and `labels` must be keys the board defines. Items are private until `public` is set; a public item shows on the roadmap once its status is planned, in progress or done, with only its `publicDescription`. `kind` is `task` (default), `epic` (groups cards) or `release` (ships cards and epics; `targetDate` is its date). A card takes an `epicId` and a `releaseId` (ids or `#N` of an epic / release of this project); an epic takes a `releaseId`; a release takes neither. Optional `feedbackPostIds` (ids or `#N`) and `conversationIds` link the item on creation; every one must belong to the project.',
     parameters: [{ name: 'project', in: 'query', required: true, schema: { type: 'string' }, description: 'Project id' }],
     requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['title'], properties: {
       title: { type: 'string', description: 'Up to 200 characters', example: 'CSV export' },
+      kind: { type: 'string', enum: ['task', 'epic', 'release'], default: 'task' },
+      epicId: { type: 'string', description: 'The epic this card belongs to (id or #N); empty for none' },
+      releaseId: { type: 'string', description: 'The release this card or epic ships in (id or #N); empty for none' },
       description: { type: 'string', description: 'Internal Markdown; never public' },
       publicDescription: { type: 'string', description: 'What the roadmap shows' },
       status: { type: 'string', example: 'planned' },

@@ -407,6 +407,37 @@
     "showDatesDescription": "目標日。タイムラインでは常に表示されます",
     "anyPriority": "すべての優先度",
     "noPriority": "優先度なし",
+    "view": "ビュー",
+    "views": {
+      "kanban": "ボード",
+      "list": "リスト"
+    },
+    "groupBy": "グループ化",
+    "groupByOptions": {
+      "status": "ステータスでグループ化",
+      "epic": "エピックでグループ化",
+      "release": "リリースでグループ化"
+    },
+    "kind": "種類",
+    "kinds": {
+      "task": "カード",
+      "epic": "エピック",
+      "release": "リリース"
+    },
+    "anyKind": "すべての種類",
+    "epic": "エピック",
+    "release": "リリース",
+    "noEpic": "エピックなし",
+    "noRelease": "リリースなし",
+    "anyEpic": "すべてのエピック",
+    "anyRelease": "すべてのリリース",
+    "cards": "カード",
+    "addCard": "カードを追加",
+    "removeCard": "#{number} をここから外す",
+    "progressTitle": "{total} 件中 {done} 件完了",
+    "openItem": "開く",
+    "colItem": "項目",
+    "quickAdd": "項目を追加",
     "low": "低",
     "normal": "通常",
     "high": "高",

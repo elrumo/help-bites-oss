@@ -407,6 +407,37 @@
     "showDatesDescription": "목표일. 타임라인에는 항상 표시됩니다",
     "anyPriority": "모든 우선순위",
     "noPriority": "우선순위 없음",
+    "view": "보기",
+    "views": {
+      "kanban": "보드",
+      "list": "목록"
+    },
+    "groupBy": "그룹 기준",
+    "groupByOptions": {
+      "status": "상태별 그룹",
+      "epic": "에픽별 그룹",
+      "release": "릴리스별 그룹"
+    },
+    "kind": "유형",
+    "kinds": {
+      "task": "카드",
+      "epic": "에픽",
+      "release": "릴리스"
+    },
+    "anyKind": "모든 유형",
+    "epic": "에픽",
+    "release": "릴리스",
+    "noEpic": "에픽 없음",
+    "noRelease": "릴리스 없음",
+    "anyEpic": "모든 에픽",
+    "anyRelease": "모든 릴리스",
+    "cards": "카드",
+    "addCard": "카드 추가",
+    "removeCard": "#{number}을(를) 여기서 제거",
+    "progressTitle": "{total}개 중 {done}개 완료",
+    "openItem": "열기",
+    "colItem": "항목",
+    "quickAdd": "항목 추가",
     "low": "낮음",
     "normal": "보통",
     "high": "높음",

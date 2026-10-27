@@ -407,6 +407,37 @@
     "showDatesDescription": "Fechas objetivo; la cronología siempre las muestra",
     "anyPriority": "Cualquier prioridad",
     "noPriority": "Sin prioridad",
+    "view": "Vista",
+    "views": {
+      "kanban": "Tablero",
+      "list": "Lista"
+    },
+    "groupBy": "Agrupar por",
+    "groupByOptions": {
+      "status": "Agrupar por estado",
+      "epic": "Agrupar por épica",
+      "release": "Agrupar por versión"
+    },
+    "kind": "Tipo",
+    "kinds": {
+      "task": "Tarjeta",
+      "epic": "Épica",
+      "release": "Versión"
+    },
+    "anyKind": "Cualquier tipo",
+    "epic": "Épica",
+    "release": "Versión",
+    "noEpic": "Sin épica",
+    "noRelease": "Sin versión",
+    "anyEpic": "Cualquier épica",
+    "anyRelease": "Cualquier versión",
+    "cards": "Tarjetas",
+    "addCard": "Añadir una tarjeta",
+    "removeCard": "Quitar #{number} de aquí",
+    "progressTitle": "{done} de {total} hechas",
+    "openItem": "Abrir",
+    "colItem": "Elemento",
+    "quickAdd": "Añadir un elemento",
     "low": "Baja",
     "normal": "Normal",
     "high": "Alta",

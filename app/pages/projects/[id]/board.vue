@@ -26,14 +26,23 @@
     <template v-else-if="board">
       <!-- Toolbar: filters on the left, search on the right -->
       <div class="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-default px-4 py-2.5">
+        <div class="mr-1 inline-flex rounded-lg border border-default p-0.5" role="group" :aria-label="$t('board.view')">
+          <UButton v-for="option in VIEWS" :key="option.value" :icon="option.icon" :label="$t(`board.views.${option.value}`)" size="xs" :color="view === option.value ? 'primary' : 'neutral'" :variant="view === option.value ? 'soft' : 'ghost'" :aria-pressed="view === option.value" @click="view = option.value" />
+        </div>
         <button type="button" class="chip h-6 px-2.5 text-xs" :class="roadmapOnly ? 'chip-active' : 'border-transparent text-dimmed'" :aria-pressed="roadmapOnly" @click="roadmapOnly = !roadmapOnly">
           <UIcon name="i-lucide-globe" class="size-3" />{{ $t('board.roadmapChip') }}<span class="tabular-nums opacity-70">{{ publicCount }}</span>
         </button>
         <USelectMenu v-if="board.labels.length" v-model="labelFilter" :items="labelItems" value-key="value" multiple size="sm" class="w-40" :placeholder="$t('board.labels')" :aria-label="$t('board.labels')" />
         <USelect v-model="assigneeFilter" :items="assigneeFilterItems" size="sm" class="w-36" :aria-label="$t('board.assignee')" />
         <USelect v-model="priorityFilter" :items="priorityFilterItems" size="sm" class="w-32" :aria-label="$t('board.priority')" />
+        <USelect v-if="epics.length || releases.length" v-model="kindFilter" :items="kindFilterItems" size="sm" class="w-32" :aria-label="$t('board.kind')" />
+        <USelect v-if="epics.length" v-model="epicFilter" :items="epicFilterItems" size="sm" class="w-40" :aria-label="$t('board.epic')" />
+        <USelect v-if="releases.length" v-model="releaseFilter" :items="releaseFilterItems" size="sm" class="w-40" :aria-label="$t('board.release')" />
         <USelect v-model="order" :items="orderItems" size="sm" class="w-40" :aria-label="$t('board.order')">
           <template #leading><UIcon name="i-lucide-arrow-up-down" class="size-3.5 text-dimmed" /></template>
+        </USelect>
+        <USelect v-if="view === 'list'" v-model="groupBy" :items="groupByItems" size="sm" class="w-44" :aria-label="$t('board.groupBy')">
+          <template #leading><UIcon name="i-lucide-rows-3" class="size-3.5 text-dimmed" /></template>
         </USelect>
         <UButton v-if="filtering" :label="$t('board.clear')" size="xs" color="neutral" variant="link" @click="clearFilters" />
         <div class="ml-auto">
@@ -49,7 +58,7 @@
       <p v-else-if="error" class="p-8 text-[13px] text-error">{{ error }}</p>
 
       <!-- Kanban: drag a card across columns to change its status, within one to reorder -->
-      <div v-else class="flex-1 min-h-0 overflow-x-auto">
+      <div v-else-if="view === 'kanban'" class="flex-1 min-h-0 overflow-x-auto">
         <div class="flex h-full gap-3 p-4 md:px-6">
           <section
             v-for="status in board.statuses"
@@ -81,6 +90,7 @@
                   @click="openItem(item.id)"
                 >
                   <span class="flex items-center gap-1.5 text-[11px] text-muted">
+                    <UIcon v-if="item.kind !== 'task'" :name="KIND_ICONS[item.kind]" class="size-3.5 text-primary" :title="$t(`board.kinds.${item.kind}`)" />
                     <span v-if="item.number" class="tabular-nums">#{{ item.number }}</span>
                     <PriorityIcon v-if="item.priority" :priority="item.priority" />
                     <span class="ml-auto flex items-center gap-1.5">
@@ -89,6 +99,10 @@
                     </span>
                   </span>
                   <span class="mt-1 block text-[13px] font-medium leading-snug line-clamp-3">{{ item.title }}</span>
+                  <BoardProgress v-if="item.kind !== 'task'" :done="progressOf(item).done" :total="progressOf(item).total" class="mt-2 flex" />
+                  <span v-if="parentChips(item).length" class="mt-2 flex flex-wrap gap-1">
+                    <span v-for="chip in parentChips(item)" :key="chip.key" class="inline-flex max-w-full items-center gap-1 rounded-full bg-primary/10 px-1.5 py-px text-[10px] text-primary" :title="chip.title"><UIcon :name="chip.icon" class="size-3 shrink-0" /><span class="truncate">{{ chip.label }}</span></span>
+                  </span>
                   <span v-if="item.labels.length" class="mt-2 flex flex-wrap gap-1">
                     <span v-for="label in item.labels" :key="label" class="inline-flex items-center gap-1 rounded-full border border-default px-1.5 py-px text-[10px] text-toned">
                       <span class="size-1.5 rounded-full" :class="toneDot(labelOf(label)?.color)" />{{ labelOf(label)?.label || label }}
@@ -115,6 +129,65 @@
           <button v-if="listsConfig" type="button" class="flex h-16 w-72 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-dashed border-default text-[13px] text-muted transition-colors hover:text-default" @click="openAddColumn">
             <UIcon name="i-lucide-plus" class="size-4" />{{ $t('board.addColumn') }}
           </button>
+        </div>
+      </div>
+
+      <!-- List: Monday-style groups of rows; every cell edits in place, a row opens the editor -->
+      <div v-else class="flex-1 min-h-0 overflow-auto">
+        <div class="min-w-[62rem] space-y-5 p-4 md:px-6">
+          <section v-for="g in listGroups" :key="g.key">
+            <div class="flex items-center gap-2 py-1">
+              <button type="button" class="flex min-w-0 items-center gap-2 text-left" :aria-expanded="!isCollapsed(g.key)" @click="toggleGroup(g.key)">
+                <UIcon :name="isCollapsed(g.key) ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'" class="size-4 shrink-0 text-muted" />
+                <span class="size-2.5 shrink-0 rounded-full" :class="toneDot(g.color)" />
+                <span class="truncate text-sm font-semibold">{{ g.label }}</span>
+                <span class="text-xs tabular-nums text-muted">{{ g.items.length }}</span>
+              </button>
+              <BoardProgress v-if="g.parent" :done="progressOf(g.parent).done" :total="progressOf(g.parent).total" class="w-40" />
+              <UButton v-if="g.parent" icon="i-lucide-arrow-up-right" size="xs" color="neutral" variant="ghost" square :aria-label="$t('board.openItem')" @click="openItem(g.parent.id)" />
+            </div>
+            <div v-if="!isCollapsed(g.key)" class="overflow-hidden rounded-lg border border-default bg-default">
+              <div :class="[LIST_GRID, 'border-b border-default bg-elevated/60 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted']">
+                <span>{{ $t('board.colItem') }}</span><span>{{ $t('board.epic') }}</span><span>{{ $t('board.release') }}</span><span>{{ $t('board.assignee') }}</span><span>{{ $t('board.priority') }}</span><span>{{ $t('board.status') }}</span><span>{{ $t('board.targetDate') }}</span>
+              </div>
+              <div v-for="item in g.items" :key="item.id" :class="[LIST_GRID, 'border-b border-default px-3 py-1 text-[13px] hover:bg-elevated/50']">
+                <button type="button" class="flex min-w-0 items-center gap-2 py-1 text-left" @click="openItem(item.id)">
+                  <UIcon v-if="item.kind !== 'task'" :name="KIND_ICONS[item.kind]" class="size-3.5 shrink-0 text-primary" :title="$t(`board.kinds.${item.kind}`)" />
+                  <span v-if="item.number" class="shrink-0 tabular-nums text-muted">#{{ item.number }}</span>
+                  <span class="min-w-0 truncate font-medium">{{ item.title }}</span>
+                  <UIcon v-if="item.public" name="i-lucide-globe" class="size-3.5 shrink-0 text-primary" :aria-label="$t('board.publicRoadmapLabel')" />
+                  <BoardProgress v-if="item.kind !== 'task'" :done="progressOf(item).done" :total="progressOf(item).total" class="w-24 shrink-0" />
+                </button>
+                <select v-if="kindCanHave(item.kind, 'epic')" :value="item.epicId" :class="CELL" :aria-label="$t('board.epic')" @change="quickPatch(item, { epicId: ($event.target as HTMLSelectElement).value })">
+                  <option value="">—</option>
+                  <option v-for="epic in epics" :key="epic.id" :value="epic.id">{{ parentLabel(epic.id) }}</option>
+                </select>
+                <span v-else />
+                <select v-if="kindCanHave(item.kind, 'release')" :value="item.releaseId" :class="CELL" :aria-label="$t('board.release')" @change="quickPatch(item, { releaseId: ($event.target as HTMLSelectElement).value })">
+                  <option value="">—</option>
+                  <option v-for="release in releases" :key="release.id" :value="release.id">{{ parentLabel(release.id) }}</option>
+                </select>
+                <span v-else />
+                <select :value="item.assigneeId" :class="CELL" :aria-label="$t('board.assignee')" @change="quickPatch(item, { assigneeId: ($event.target as HTMLSelectElement).value })">
+                  <option value="">—</option>
+                  <option v-for="agent in agents" :key="agent.id" :value="agent.id">{{ agent.name || agent.username }}</option>
+                </select>
+                <select :value="item.priority" :class="CELL" :aria-label="$t('board.priority')" @change="quickPatch(item, { priority: ($event.target as HTMLSelectElement).value })">
+                  <option value="">—</option>
+                  <option v-for="value in PRIORITIES" :key="value" :value="value">{{ $t(PRIORITY_KEYS[value]) }}</option>
+                </select>
+                <select :value="columnOf(item)" :class="[CELL_BASE, 'text-center font-medium text-white [&>option]:bg-default [&>option]:text-default', toneDot(statusOf(columnOf(item))?.color)]" :aria-label="$t('board.status')" @change="changeStatus(item, ($event.target as HTMLSelectElement).value)">
+                  <option v-for="status in board.statuses" :key="status.key" :value="status.key">{{ status.label }}</option>
+                </select>
+                <input type="date" :value="item.targetDate ? item.targetDate.slice(0, 10) : ''" :class="[CELL, '[color-scheme:light] dark:[color-scheme:dark]']" :aria-label="$t('board.targetDate')" @change="quickPatch(item, { targetDate: ($event.target as HTMLInputElement).value || null })">
+              </div>
+              <p v-if="!g.items.length" class="px-3 py-3 text-xs text-dimmed">{{ filtering ? $t('board.nothingMatches') : $t('board.noItems') }}</p>
+              <form class="flex items-center gap-2 px-3 py-1.5" @submit.prevent="quickAdd(g)">
+                <UIcon name="i-lucide-plus" class="size-3.5 shrink-0 text-dimmed" />
+                <input v-model="quickTitle[g.key]" type="text" maxlength="200" class="min-w-0 flex-1 bg-transparent py-1 text-[13px] outline-none placeholder:text-dimmed" :placeholder="$t('board.quickAdd')" :aria-label="$t('board.quickAdd')">
+              </form>
+            </div>
+          </section>
         </div>
       </div>
     </template>
@@ -182,6 +255,15 @@
               <UIcon name="i-lucide-calendar" class="absolute left-2.5 size-3.5 text-dimmed" />
               <input v-model="draft.targetDate" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.targetDate ? '' : 'text-dimmed'" :aria-label="$t('board.targetDate')" @change="patch({ targetDate: draft.targetDate || null })">
             </label>
+            <USelect v-model="draft.kind" :items="kindItems" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('board.kind')" @update:model-value="changeKind">
+              <template #leading><UIcon :name="KIND_ICONS[draft.kind]" class="size-3.5 text-dimmed" /></template>
+            </USelect>
+            <USelect v-if="kindCanHave(draft.kind, 'epic')" v-model="draft.epicId" :items="epicItems" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('board.epic')" @update:model-value="setParent('epicId')">
+              <template #leading><UIcon name="i-lucide-zap" class="size-3.5 text-dimmed" /></template>
+            </USelect>
+            <USelect v-if="kindCanHave(draft.kind, 'release')" v-model="draft.releaseId" :items="releaseItems" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('board.release')" @update:model-value="setParent('releaseId')">
+              <template #leading><UIcon name="i-lucide-rocket" class="size-3.5 text-dimmed" /></template>
+            </USelect>
             <USelectMenu v-model="draft.labels" :items="labelItems" value-key="value" multiple create-item="always" size="sm" class="w-full sm:col-span-2" :ui="propertyField" :placeholder="$t('board.addLabels')" :aria-label="$t('board.labels')" @create="createLabel" @update:model-value="patch({ labels: draft.labels })">
               <template #leading><UIcon name="i-lucide-tag" class="size-3.5 text-dimmed" /></template>
             </USelectMenu>
@@ -232,6 +314,21 @@
                 </li>
               </ul>
               <FeedbackSearchPicker :project-id="id" :exclude="current.feedbackPostIds" class="w-full" @pick="post => setLink('feedback', post.id, true)" />
+            </section>
+
+            <!-- An epic's or release's cards -->
+            <section v-if="current.kind !== 'task'" class="col-span-2 space-y-2">
+              <h3 class="flex items-center gap-2 text-sm font-semibold">{{ $t('board.cards') }} <span class="font-normal text-muted">{{ cards.length }}</span></h3>
+              <BoardProgress v-if="cards.length" :done="progressOf(current).done" :total="progressOf(current).total" class="flex" />
+              <ul v-if="cards.length" class="divide-y divide-default rounded-lg border border-default">
+                <li v-for="card in cards" :key="card.id" class="group flex items-center gap-2.5 px-2.5 py-2 text-[13px]">
+                  <UIcon v-if="card.kind !== 'task'" :name="KIND_ICONS[card.kind]" class="size-3.5 shrink-0 text-primary" />
+                  <button type="button" class="min-w-0 flex-1 truncate text-left hover:underline" @click="openItem(card.id)"><span v-if="card.number" class="mr-1 tabular-nums text-muted">#{{ card.number }}</span>{{ card.title }}</button>
+                  <FeedbackStatusBadge v-if="statusOf(card.status)" :status="statusOf(card.status)!" />
+                  <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" :aria-label="$t('board.removeCard', { number: card.number ?? '' })" @click="quickPatch(card, { [current.kind === 'epic' ? 'epicId' : 'releaseId']: '' })" />
+                </li>
+              </ul>
+              <USelectMenu v-if="addableCards.length" :items="addableCards" value-key="value" class="w-full" :model-value="null" :placeholder="$t('board.addCard')" :aria-label="$t('board.addCard')" @update:model-value="cardId => cardId && addCard(String(cardId))" />
             </section>
 
             <!-- Current item related items -->
@@ -391,7 +488,7 @@ import { DEFAULT_FEEDBACK_CONFIG, FEEDBACK_STATUS_CATEGORIES, defaultFeedbackSta
 import { isImageMime, type ItemAttachment } from '#shared/itemAttachments'
 import { can } from '#shared/roles'
 import { BOARD_TITLE_DEBOUNCE_MS, fallbackBoardTitle } from '#shared/boardTitle'
-import { BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, rankBetween, type BoardConfig, type BoardItem, type BoardItemHistory, type BoardItemPriority, type BoardRoadmapLayout } from '#shared/board'
+import { BOARD_ITEM_KINDS, BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, kindCanHave, rankBetween, type BoardConfig, type BoardItem, type BoardItemHistory, type BoardItemKind, type BoardItemPriority, type BoardRoadmapLayout } from '#shared/board'
 import type { ConversationPriority } from '#shared/support'
 import type { AdminProject } from '~~/server/utils/projects'
 
@@ -443,6 +540,9 @@ function cardPills(item: BoardItem) {
 /** Target dates are calendar days at UTC midnight. */
 const dayLabel = (value: string) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
+const KIND_ICONS: Record<BoardItemKind, string> = { task: 'i-lucide-square', epic: 'i-lucide-zap', release: 'i-lucide-rocket' }
+const kindItems = computed(() => BOARD_ITEM_KINDS.map(value => ({ label: t(`board.kinds.${value}`), value })))
+const PRIORITIES = ['urgent', 'high', 'normal', 'low'] as const
 const PRIORITY_KEYS: Record<ConversationPriority, string> = { low: 'board.low', normal: 'board.normal', high: 'board.high', urgent: 'board.urgent' }
 const priorityItems = computed(() => [{ label: t('board.noPriority'), value: 'none' }, ...(['urgent', 'high', 'normal', 'low'] as const).map(value => ({ label: t(PRIORITY_KEYS[value]), value }))])
 const LAYOUT_KEYS: Record<BoardRoadmapLayout, string> = { columns: 'board.layoutColumns', timeline: 'board.layoutTimeline', list: 'board.layoutList' }
@@ -492,12 +592,21 @@ const order = computed<BoardOrder>({
   set: (value) => { savedOrder.value = value }
 })
 const orderItems = computed(() => [{ label: t('board.orderManual'), value: 'manual' }, { label: t('board.orderNewest'), value: 'newest' }, { label: t('board.orderOldest'), value: 'oldest' }])
-const filtering = computed(() => Boolean(search.value.trim() || labelFilter.value.length || assigneeFilter.value !== '__all__' || priorityFilter.value !== '__all__' || roadmapOnly.value))
+const kindFilter = ref('__all__')
+const epicFilter = ref('__all__')
+const releaseFilter = ref('__all__')
+const kindFilterItems = computed(() => [{ label: t('board.anyKind'), value: '__all__' }, ...kindItems.value])
+const epicFilterItems = computed(() => [{ label: t('board.anyEpic'), value: '__all__' }, ...epics.value.map(epic => ({ label: parentLabel(epic.id), value: epic.id }))])
+const releaseFilterItems = computed(() => [{ label: t('board.anyRelease'), value: '__all__' }, ...releases.value.map(release => ({ label: parentLabel(release.id), value: release.id }))])
+const filtering = computed(() => Boolean(search.value.trim() || labelFilter.value.length || assigneeFilter.value !== '__all__' || priorityFilter.value !== '__all__' || roadmapOnly.value || kindFilter.value !== '__all__' || epicFilter.value !== '__all__' || releaseFilter.value !== '__all__'))
 function clearFilters() {
   search.value = ''
   labelFilter.value = []
   assigneeFilter.value = '__all__'
   priorityFilter.value = '__all__'
+  kindFilter.value = '__all__'
+  epicFilter.value = '__all__'
+  releaseFilter.value = '__all__'
   roadmapOnly.value = false
 }
 
@@ -506,6 +615,36 @@ const defaultStatus = computed(() => (board.value ? defaultFeedbackStatus(board.
 /** A status the board no longer knows sits in the default column. */
 const columnOf = (item: BoardItem) => (statusOf(item.status) ? item.status : defaultStatus.value)
 const sorted = computed(() => [...items.value].sort((a, b) => a.rank - b.rank || (a.number ?? 0) - (b.number ?? 0)))
+// Epics and releases are items too. Their cards and progress are read from the loaded items, so every edit moves them at once.
+const epics = computed(() => sorted.value.filter(i => i.kind === 'epic'))
+const releases = computed(() => sorted.value.filter(i => i.kind === 'release'))
+const itemById = computed(() => new Map(items.value.map(i => [i.id, i])))
+const progressById = computed(() => {
+  const progress = new Map<string, { total: number, done: number }>()
+  for (const item of items.value) {
+    for (const parent of new Set([item.epicId, item.releaseId])) {
+      if (!parent) continue
+      const entry = progress.get(parent) || { total: 0, done: 0 }
+      entry.total++
+      if (item.statusCategory === 'done') entry.done++
+      progress.set(parent, entry)
+    }
+  }
+  return progress
+})
+const progressOf = (item: BoardItem) => progressById.value.get(item.id) || { total: 0, done: 0 }
+const childrenOf = (parent: BoardItem) => items.value.filter(i => i.id !== parent.id && (i.epicId === parent.id || i.releaseId === parent.id))
+function parentLabel(itemId: string) {
+  const parent = itemById.value.get(itemId)
+  return parent ? `${parent.number ? `#${parent.number} ` : ''}${parent.title}` : ''
+}
+/** The epic and release a card sits in, as chips. */
+function parentChips(item: BoardItem) {
+  return [
+    ...(item.epicId && itemById.value.get(item.epicId) ? [{ key: 'epic', icon: KIND_ICONS.epic, label: itemById.value.get(item.epicId)!.title, title: `${t('board.epic')}: ${parentLabel(item.epicId)}` }] : []),
+    ...(item.releaseId && itemById.value.get(item.releaseId) ? [{ key: 'release', icon: KIND_ICONS.release, label: itemById.value.get(item.releaseId)!.title, title: `${t('board.release')}: ${parentLabel(item.releaseId)}` }] : [])
+  ]
+}
 const ordered = computed(() => {
   if (order.value === 'manual') return sorted.value
   const direction = order.value === 'newest' ? -1 : 1
@@ -516,12 +655,15 @@ function group(list: BoardItem[]): Record<string, BoardItem[]> {
   return list.reduce<Record<string, BoardItem[]>>((acc, item) => { (acc[columnOf(item)] ||= []).push(item); return acc }, {})
 }
 const columns = computed(() => group(sorted.value))
-const visibleByColumn = computed(() => {
+const visible = computed(() => {
   let list = ordered.value.filter(item =>
     (!roadmapOnly.value || item.public)
     && (!labelFilter.value.length || item.labels.some(label => labelFilter.value.includes(label)))
     && (assigneeFilter.value === '__all__' || (assigneeFilter.value === 'unassigned' ? !item.assigneeId : item.assigneeId === assigneeFilter.value))
-    && (priorityFilter.value === '__all__' || (priorityFilter.value === 'none' ? !item.priority : item.priority === priorityFilter.value)))
+    && (priorityFilter.value === '__all__' || (priorityFilter.value === 'none' ? !item.priority : item.priority === priorityFilter.value))
+    && (kindFilter.value === '__all__' || item.kind === kindFilter.value)
+    && (epicFilter.value === '__all__' || item.epicId === epicFilter.value)
+    && (releaseFilter.value === '__all__' || item.releaseId === releaseFilter.value))
   const text = search.value.trim()
   const number = /^#?(\d+)$/.exec(text)
   if (number) list = list.filter(item => item.number === Number(number[1]))
@@ -529,13 +671,92 @@ const visibleByColumn = computed(() => {
     const hits = new Set(new Fuse(list, { keys: [{ name: 'title', weight: 2 }, 'description', 'publicDescription'], threshold: 0.38, ignoreLocation: true }).search(text).map(r => r.item.id))
     list = list.filter(item => hits.has(item.id))
   }
-  return group(list)
+  return list
 })
+const visibleByColumn = computed(() => group(visible.value))
 
 function replaceItem(item: BoardItem) {
   const index = items.value.findIndex(i => i.id === item.id)
   if (index === -1) items.value = [...items.value, item]
   else items.value = [...items.value.slice(0, index), item, ...items.value.slice(index + 1)]
+}
+
+// ---- kanban or list ----
+// The view and the list's grouping are remembered per project in this browser.
+type BoardView = 'kanban' | 'list'
+type GroupBy = 'status' | 'epic' | 'release'
+const VIEWS: { value: BoardView, icon: string }[] = [{ value: 'kanban', icon: 'i-lucide-square-kanban' }, { value: 'list', icon: 'i-lucide-list' }]
+const savedView = useLocalStorage<BoardView>(`hb-board-view:${id}`, 'kanban')
+const view = computed<BoardView>({
+  get: () => (savedView.value === 'list' ? 'list' : 'kanban'),
+  set: (value) => { savedView.value = value }
+})
+const savedGroup = useLocalStorage<GroupBy>(`hb-board-group:${id}`, 'status')
+const groupBy = computed<GroupBy>({
+  get: () => (savedGroup.value === 'epic' || savedGroup.value === 'release' ? savedGroup.value : 'status'),
+  set: (value) => { savedGroup.value = value }
+})
+const groupByItems = computed(() => (['status', 'epic', 'release'] as const).map(value => ({ label: t(`board.groupByOptions.${value}`), value })))
+
+// Tailwind reads these class strings as written.
+const LIST_GRID = 'grid grid-cols-[minmax(14rem,1fr)_9rem_9rem_8rem_7rem_9rem_7rem] items-center gap-2'
+const CELL_BASE = 'w-full min-w-0 truncate rounded-md border border-transparent px-1.5 py-1 text-[13px] outline-none hover:border-default focus:border-primary'
+const CELL = `${CELL_BASE} bg-transparent`
+
+type ListGroup = { key: string, label: string, color?: FeedbackColor, parent?: BoardItem, items: BoardItem[], /** What a row added to this group starts with. */ create: Record<string, string> }
+const listGroups = computed<ListGroup[]>(() => {
+  const list = visible.value
+  let groups: ListGroup[]
+  if (groupBy.value === 'status') {
+    groups = (board.value?.statuses || []).map(status => ({ key: `status:${status.key}`, label: status.label, color: status.color, items: list.filter(item => columnOf(item) === status.key), create: { status: status.key } }))
+  } else {
+    const field = groupBy.value === 'epic' ? 'epicId' : 'releaseId'
+    const parents = groupBy.value === 'epic' ? epics.value : releases.value
+    groups = [
+      ...parents.map(parent => ({ key: `${groupBy.value}:${parent.id}`, label: parentLabel(parent.id), color: 'primary' as FeedbackColor, parent, items: list.filter(item => item[field] === parent.id), create: { [field]: parent.id } })),
+      { key: `${groupBy.value}:none`, label: t(groupBy.value === 'epic' ? 'board.noEpic' : 'board.noRelease'), color: 'neutral' as FeedbackColor, items: list.filter(item => !item[field]), create: {} }
+    ]
+  }
+  // A filter hides the groups it empties.
+  return filtering.value ? groups.filter(group => group.items.length) : groups
+})
+const collapsed = ref(new Set<string>())
+const isCollapsed = (key: string) => collapsed.value.has(key)
+function toggleGroup(key: string) {
+  const next = new Set(collapsed.value)
+  if (!next.delete(key)) next.add(key)
+  collapsed.value = next
+}
+
+/** A list cell saves at once, the way a drop does: shown first, put back if the server refuses. */
+async function quickPatch(item: BoardItem, body: Record<string, unknown>, shown: Record<string, unknown> = {}) {
+  const snapshot = item
+  replaceItem({ ...item, ...body, ...shown } as BoardItem)
+  try {
+    replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${item.id}`, { method: 'PATCH', body })).item)
+  } catch (e: any) {
+    replaceItem(snapshot)
+    actionError.value = e?.message || t('board.saveError')
+  }
+}
+
+function changeStatus(item: BoardItem, status: string) {
+  if (!board.value) return
+  // Moving statuses also moves the item's done state, which its epic and release count.
+  return quickPatch(item, { status }, { statusCategory: feedbackStatusCategory(board.value, status) })
+}
+
+const quickTitle = reactive<Record<string, string>>({})
+async function quickAdd(group: ListGroup) {
+  const title = (quickTitle[group.key] || '').trim()
+  if (!title) return
+  try {
+    const { item } = await api<{ item: BoardItem }>('/admin/board-items', { method: 'POST', query: { project: id }, body: { title, ...group.create } })
+    replaceItem(item)
+    quickTitle[group.key] = ''
+  } catch (e: any) {
+    actionError.value = e?.message || t('board.createError')
+  }
 }
 
 async function loadItems() {
@@ -574,6 +795,8 @@ function toggleHistory(event: Event) {
 function historyValue(field: string, value: unknown): string {
   if (value === null || value === undefined || value === '') return '—'
   if (field === 'status' && typeof value === 'string') return statusOf(value)?.label || value
+  if ((field === 'epicId' || field === 'releaseId') && typeof value === 'string') return itemById.value.get(value)?.title || value
+  if (field === 'kind' && typeof value === 'string') return t(`board.kinds.${value}`)
   if (field === 'assignee' && typeof value === 'string') return agents.value.find(agent => agent.id === value)?.name || value
   if (field === 'labels' && Array.isArray(value)) return value.map(label => typeof label === 'string' ? labelOf(label)?.label || label : historyValue('', label)).join(', ') || '—'
   if (typeof value === 'boolean') return value ? 'On' : 'Off'
@@ -684,8 +907,20 @@ async function dropOn(status: string) {
 const editorOpen = ref(false)
 const editingId = ref('')
 const current = computed(() => (editingId.value ? items.value.find(i => i.id === editingId.value) || null : null))
-const draft = reactive({ title: '', description: '', publicDescription: '', status: '', priority: 'none' as BoardItemPriority | 'none', assigneeId: 'unassigned', labels: [] as string[], attachments: [] as ItemAttachment[], targetDate: '', public: false, posts: [] as { id: string, number: number | null, title: string, voteCount: number }[] })
+const draft = reactive({ title: '', kind: 'task' as BoardItemKind, epicId: 'none', releaseId: 'none', description: '', publicDescription: '', status: '', priority: 'none' as BoardItemPriority | 'none', assigneeId: 'unassigned', labels: [] as string[], attachments: [] as ItemAttachment[], targetDate: '', public: false, posts: [] as { id: string, number: number | null, title: string, voteCount: number }[] })
 const draftAssignee = computed(() => agents.value.find(agent => agent.id === draft.assigneeId) || null)
+const epicItems = computed(() => [{ label: t('board.noEpic'), value: 'none' }, ...epics.value.map(epic => ({ label: parentLabel(epic.id), value: epic.id }))])
+const releaseItems = computed(() => [{ label: t('board.noRelease'), value: 'none' }, ...releases.value.map(release => ({ label: parentLabel(release.id), value: release.id }))])
+/** The open epic's or release's cards, and the items it can still take. */
+const cards = computed(() => (current.value && current.value.kind !== 'task' ? childrenOf(current.value) : []))
+const addableCards = computed(() => {
+  const open = current.value
+  if (!open || open.kind === 'task') return []
+  const field = open.kind === 'epic' ? 'epicId' : 'releaseId'
+  return items.value
+    .filter(item => item.id !== open.id && item[field] !== open.id && kindCanHave(item.kind, open.kind as 'epic' | 'release'))
+    .map(item => ({ label: parentLabel(item.id), value: item.id }))
+})
 const roadmapStatus = computed(() => ROADMAP_CATEGORIES.includes(statusOf(draft.status)?.category || 'open'))
 const editorError = ref('')
 const savingItem = ref(false)
@@ -715,6 +950,9 @@ watch(() => current.value?.id, () => {
 function fill(item: BoardItem | null) {
   Object.assign(draft, {
     title: item?.title || '',
+    kind: item?.kind || 'task',
+    epicId: item?.epicId || 'none',
+    releaseId: item?.releaseId || 'none',
     description: item?.description || '',
     publicDescription: item?.publicDescription || '',
     status: item?.status || defaultStatus.value,
@@ -836,6 +1074,34 @@ function saveText(key: 'title' | 'description' | 'publicDescription') {
   if (value !== current.value[key]) void patch({ [key]: value })
 }
 
+/** Puts the type, epic and release pickers back to what the server holds (after a refusal, or a change that clears one). */
+function resetParents() {
+  const item = current.value
+  if (item) Object.assign(draft, { kind: item.kind, epicId: item.epicId || 'none', releaseId: item.releaseId || 'none' })
+}
+
+async function changeKind() {
+  // Only a card has an epic, and a release is in nothing: the server clears them too.
+  if (!kindCanHave(draft.kind, 'epic')) draft.epicId = 'none'
+  if (!kindCanHave(draft.kind, 'release')) draft.releaseId = 'none'
+  if (!current.value) return
+  await patch({ kind: draft.kind })
+  resetParents()
+}
+
+async function setParent(field: 'epicId' | 'releaseId') {
+  if (!current.value) return
+  await patch({ [field]: draft[field] === 'none' ? '' : draft[field] })
+  resetParents()
+}
+
+/** Puts an item into the open epic or release; it leaves the one it was in. */
+function addCard(cardId: string) {
+  const open = current.value
+  const card = items.value.find(item => item.id === cardId)
+  if (open && card) void quickPatch(card, { [open.kind === 'epic' ? 'epicId' : 'releaseId']: open.id })
+}
+
 /** Saves every text field that changed in one request. */
 function flushText() {
   const item = current.value
@@ -915,6 +1181,9 @@ async function createItem() {
       query: { project: id },
       body: {
         title: draft.title,
+        kind: draft.kind,
+        epicId: draft.epicId === 'none' ? '' : draft.epicId,
+        releaseId: draft.releaseId === 'none' ? '' : draft.releaseId,
         description: draft.description,
         publicDescription: draft.publicDescription,
         status: draft.status,
@@ -948,8 +1217,11 @@ async function deleteItem() {
   }
   const itemId = current.value.id
   try {
+    const grouping = current.value.kind !== 'task'
     await api(`/admin/board-items/${itemId}`, { method: 'DELETE' })
     items.value = items.value.filter(i => i.id !== itemId)
+    // An epic or release leaves its cards free of it: read them again.
+    if (grouping) await loadItems()
     editorOpen.value = false
   } catch (e: any) {
     editorError.value = e?.message || t('board.deleteError')

@@ -200,11 +200,14 @@ export const MCP_TOOLS: readonly McpTool[] = [
   // ---- planning board --------------------------------------------------------------------------------,
   {
     name: 'list_board_items', title: 'List board items', readOnly: true, method: 'GET', path: '/v1/admin/board-items',
-    description: 'A project\'s internal work board (the roadmap\'s source): items with status, priority, assignee and linked feedback, in rank order. Returns 50 at a time; the reply has `total`, so page with `offset` or narrow with `status`.',
+    description: 'A project\'s internal work board (the roadmap\'s source): items with status, priority, assignee and linked feedback, in rank order. An item is a card (`kind` task), an epic that groups cards, or a release that ships cards and epics; epics and releases carry `progress` ({ total, done }) and cards carry their `epic` and `release`. Returns 50 at a time; the reply has `total`, so page with `offset` or narrow with `status`, `kind`, `epic` or `release`.',
     params: {
       project: projectId,
       status: { type: 'string', description: 'Only items in this status key.' },
       conversation: { type: 'string', description: 'Only items linked to this conversation id.' },
+      kind: { type: 'string', enum: ['task', 'epic', 'release'], description: 'Only cards, only epics or only releases.' },
+      epic: { type: 'string', description: 'Only the cards of this epic (its id or `#12`).' },
+      release: { type: 'string', description: 'Only the items of this release (its id or `#12`).' },
       feedbackPost: { type: 'string', description: 'Only items linked to this feedback post (its id or number).' },
       offset: { type: 'integer', description: 'Items to skip.' },
       limit: { ...limit(200), default: 50 }
@@ -216,6 +219,9 @@ export const MCP_TOOLS: readonly McpTool[] = [
     params: {
       project: { ...projectId, in: 'query' },
       title: { type: 'string', required: true, description: 'Up to 200 characters.' },
+      kind: { type: 'string', enum: ['task', 'epic', 'release'], description: 'task (default), epic (groups cards) or release (ships cards and epics; targetDate is its date).' },
+      epicId: { type: 'string', description: 'The epic this card belongs to (its id or `#12`); only a card has one.' },
+      releaseId: { type: 'string', description: 'The release this card or epic ships in (its id or `#12`).' },
       description: { type: 'string', description: 'Internal Markdown.' },
       publicDescription: { type: 'string', description: 'What the public roadmap shows.' },
       status: { type: 'string', description: 'A status key of the board (from `board.statuses` in list_projects). Default: the board\'s default status.' },
@@ -245,6 +251,9 @@ export const MCP_TOOLS: readonly McpTool[] = [
     params: {
       id: id('item'), project: { ...projectId, in: 'query' },
       title: { type: 'string', description: 'New title.' },
+      kind: { type: 'string', enum: ['task', 'epic', 'release'], description: 'Change what the item is; an epic or release that still has cards cannot change.' },
+      epicId: { type: 'string', description: 'Move the card into this epic (its id or `#12`); empty removes it from its epic.' },
+      releaseId: { type: 'string', description: 'Move the card or epic into this release (its id or `#12`); empty removes it from its release.' },
       description: { type: 'string', description: 'Internal Markdown; empty clears it.' },
       publicDescription: { type: 'string', description: 'What the public roadmap shows; empty clears it.' },
       status: { type: 'string', description: 'A status key of the board (from `board.statuses` in list_projects).' },
@@ -259,7 +268,7 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'delete_board_item', title: 'Delete a board item', destructive: true, method: 'DELETE', path: '/v1/admin/board-items/{id}',
-    description: 'Permanently removes the item and its links; the linked feedback posts and conversations stay. Confirm with the user first, and prefer moving it to a canceled status.',
+    description: 'Permanently removes the item and its links; the linked feedback posts and conversations stay, and the cards of a deleted epic or release stay too, free of it. Confirm with the user first, and prefer moving it to a canceled status.',
     params: { id: id('item'), project: { type: 'string', description: 'Project id, needed when `id` is an item number.' } }
   },
   {
