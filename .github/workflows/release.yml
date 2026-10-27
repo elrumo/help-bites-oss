@@ -60,7 +60,7 @@ jobs:
       - name: The image must not contain the commercial layer
         run: |
           docker run --rm --entrypoint sh ghcr.io/${{ env.IMAGE }}:latest -c 'test ! -e /app/ee'
-      - uses: peter-evans/dockerhub-description@v4
+      - uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
