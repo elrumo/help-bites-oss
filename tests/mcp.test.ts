@@ -54,6 +54,7 @@ describe('MCP tools', () => {
       expect(inputSchema.type).toBe('object')
       expect(inputSchema.additionalProperties).toBe(false)
       expect(JSON.stringify(inputSchema)).not.toContain('"in"')
+      expect(JSON.stringify(inputSchema)).not.toContain('"as"')
       for (const required of inputSchema.required || []) expect(required in inputSchema.properties).toBe(true)
     }
   })
@@ -83,6 +84,29 @@ describe('buildRequest', () => {
     expect(buildRequest(tool('update_conversation'), { id: 'c1', priority: 'asap' })).toMatchObject({ error: expect.stringContaining('must be one of low, normal, high, urgent') })
     expect(buildRequest(tool('update_conversation'), { id: 'c1', tags: 'vip' })).toEqual({ error: 'Argument "tags" must be a list of strings.' })
     expect(buildRequest(tool('add_internal_note'), { id: 'c1', body: '  ' })).toEqual({ error: 'Argument "body" must not be empty.' })
+  })
+
+  test('an argument can go out under the route\'s own name, and a number may be a fraction', () => {
+    // The route reads the linked thing as `id` in the body, next to the item's `id` in the path.
+    expect(buildRequest(tool('link_board_item'), { id: 'b1', kind: 'feedback', linkedId: '#12' })).toEqual({ method: 'POST', url: '/v1/admin/board-items/b1/links', body: { kind: 'feedback', id: '#12' } })
+    expect(buildRequest(tool('update_board_item'), { id: 'b1', project: 'p1', rank: 1759312345678.5, labels: ['ios'] })).toEqual({ method: 'PATCH', url: '/v1/admin/board-items/b1?project=p1', body: { rank: 1759312345678.5, labels: ['ios'] } })
+    expect(buildRequest(tool('update_board_item'), { id: 'b1', project: 'p1', rank: '3' })).toEqual({ error: 'Argument "rank" must be a number.' })
+  })
+
+  test('planning tools carry what the web board edits', () => {
+    expect(Object.keys(tool('create_board_item').params)).toEqual(expect.arrayContaining(['assigneeId', 'labels', 'targetDate', 'attachments', 'rank']))
+    expect(Object.keys(tool('update_board_item').params)).toEqual(expect.arrayContaining(['assigneeId', 'labels', 'targetDate', 'attachments', 'rank']))
+    expect(buildRequest(tool('list_board_items'), { project: 'p1', feedbackPost: '#12' })).toMatchObject({ url: '/v1/admin/board-items?project=p1&feedbackPost=%2312&limit=50' })
+    expect(buildRequest(tool('list_board_item_history'), { id: 'b1', project: 'p1', limit: 20 })).toEqual({ method: 'GET', url: '/v1/admin/board-items/b1/history?project=p1&limit=20' })
+    expect(buildRequest(tool('suggest_board_item_title'), { project: 'p1', description: 'Export contacts' })).toEqual({ method: 'POST', url: '/v1/admin/board-items/suggest-title?project=p1', body: { description: 'Export contacts' } })
+    expect(tool('delete_board_item').destructive).toBe(true)
+  })
+
+  test('PUT carries its arguments in the body', () => {
+    const put = MCP_TOOLS.find(t => t.method === 'PUT')
+    if (!put) return
+    const args = Object.fromEntries(Object.entries(put.params).filter(([, p]) => p.required).map(([name, p]) => [name, p.type === 'string' ? 'x' : p.type === 'boolean' ? true : p.type === 'integer' || p.type === 'number' ? 1 : p.type === 'array' ? [] : {}]))
+    expect(buildRequest(put, args)).toMatchObject({ method: 'PUT', body: expect.any(Object) })
   })
 
   test('null and absent optional arguments are left out', () => {

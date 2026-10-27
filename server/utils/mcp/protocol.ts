@@ -11,9 +11,10 @@ import { buildRequest, describeTool, MCP_TOOLS, type McpRequest } from './tools'
 export const MCP_PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05']
 
 const INSTRUCTIONS = [
-  'HelpBites is a toolkit for an app\'s support inbox, feedback board, roadmap, changelog and error tracking.',
+  'HelpBites is a toolkit for an app\'s support inbox, feedback board, planning board and roadmap, changelog, knowledge base, email and campaigns, onboarding, forms, pricing, legal documents, pages, blog and error tracking.',
   'Call list_projects first: most tools need a project id.',
-  'Replies to customers and published changelog entries reach real people, so confirm the wording before sending or publishing.'
+  'Replies to customers, sent email, campaigns and anything published (changelog entries, pages, blog posts, legal documents, pricing tables) reach real people, so confirm the wording before sending or publishing.',
+  'If no tool does what you need, the API reference is at /_docs/scalar on this host and its OpenAPI spec at /_docs/openapi.json.'
 ].join(' ')
 
 /** What a tool call produced: the HTTP status and body of the /v1 route behind it. */

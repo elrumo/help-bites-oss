@@ -4,7 +4,7 @@
 // an API key's project limit all apply with nothing re-implemented here.
 // tests/mcp.test.ts checks every tool names a route that exists.
 
-export type McpParamType = 'string' | 'integer' | 'boolean' | 'array' | 'object'
+export type McpParamType = 'string' | 'integer' | 'number' | 'boolean' | 'array' | 'object'
 export type McpParam = {
   type: McpParamType
   description: string
@@ -17,12 +17,14 @@ export type McpParam = {
   required?: boolean
   /** Where the value goes in the request. Default: the path when the route has `{name}`, else the query for GET and DELETE, else the body. */
   in?: 'path' | 'query' | 'body'
+  /** The name the route reads it under, when that differs from the argument's own (a body `id` next to a path `{id}`). */
+  as?: string
 }
 export type McpTool = {
   name: string
   title: string
   description: string
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   /** The route, `{name}` standing for a path parameter. */
   path: string
   params: Record<string, McpParam>
@@ -165,6 +167,8 @@ export const MCP_TOOLS: readonly McpTool[] = [
     params: {
       project: projectId,
       status: { type: 'string', description: 'Only items in this status key.' },
+      conversation: { type: 'string', description: 'Only items linked to this conversation id.' },
+      feedbackPost: { type: 'string', description: 'Only items linked to this feedback post (its id or number).' },
       offset: { type: 'integer', description: 'Items to skip.' },
       limit: { ...limit(200), default: 50 }
     }
@@ -177,11 +181,16 @@ export const MCP_TOOLS: readonly McpTool[] = [
       title: { type: 'string', required: true, description: 'Up to 200 characters.' },
       description: { type: 'string', description: 'Internal Markdown.' },
       publicDescription: { type: 'string', description: 'What the public roadmap shows.' },
-      status: { type: 'string', description: 'A status key of the board. Default: its first.' },
+      status: { type: 'string', description: 'A status key of the board (from `board.statuses` in list_projects). Default: the board\'s default status.' },
       priority: { type: 'string', enum: ['low', 'normal', 'high', 'urgent'], description: 'Priority.' },
+      assigneeId: { type: 'string', description: 'A team member\'s id (from list_team); empty for nobody.' },
+      labels: { type: 'array', items: { type: 'string' }, description: 'Label keys the board defines (`board.labels` in list_projects).' },
+      targetDate: { type: 'string', description: 'A date such as 2026-11-30; empty for none.' },
+      attachments: { type: 'array', items: { type: 'object' }, description: 'Up to 10 attachment objects ({ url, name, mime, size }) returned by upload_board_comment_attachment: screenshots, logs, files.' },
+      rank: { type: 'number', description: 'Sort key within its column; lower comes first. Default: the bottom.' },
       public: { type: 'boolean', description: 'Show on the public roadmap once planned, in progress or done.' },
-      feedbackPostIds: { type: 'array', items: { type: 'string' }, description: 'Feedback posts to link (ids or `#12`).' },
-      conversationIds: { type: 'array', items: { type: 'string' }, description: 'Conversations to link.' }
+      feedbackPostIds: { type: 'array', items: { type: 'string' }, description: 'Feedback posts to link (ids or `#12`), up to 50.' },
+      conversationIds: { type: 'array', items: { type: 'string' }, description: 'Conversations to link, up to 50.' }
     }
   },
   {
@@ -195,20 +204,59 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'update_board_item', title: 'Update a board item', method: 'PATCH', path: '/v1/admin/board-items/{id}',
-    description: 'Changes a board item (move it by changing `status`). Only the fields you pass change.',
+    description: 'Changes a board item (move it by changing `status`, and `rank` to place it between neighbours). Only the fields you pass change; a list you pass (`labels`, `attachments`) replaces the old one. The first move into a done status stamps the completion time, and with the board\'s feedback sync on, a change of status category also moves the linked feedback posts and emails their followers. Link posts and conversations with link_board_item.',
     params: {
       id: id('item'), project: { ...projectId, in: 'query' },
       title: { type: 'string', description: 'New title.' },
-      description: { type: 'string', description: 'Internal Markdown.' },
-      publicDescription: { type: 'string', description: 'What the public roadmap shows.' },
-      status: { type: 'string', description: 'A status key of the board.' },
+      description: { type: 'string', description: 'Internal Markdown; empty clears it.' },
+      publicDescription: { type: 'string', description: 'What the public roadmap shows; empty clears it.' },
+      status: { type: 'string', description: 'A status key of the board (from `board.statuses` in list_projects).' },
       priority: { type: 'string', enum: ['', 'low', 'normal', 'high', 'urgent'], description: 'Priority; empty clears it.' },
+      assigneeId: { type: 'string', description: 'A team member\'s id (from list_team); empty unassigns.' },
+      labels: { type: 'array', items: { type: 'string' }, description: 'Replaces the item\'s labels with these label keys (an empty list clears them).' },
+      targetDate: { type: 'string', description: 'A date such as 2026-11-30; empty clears it.' },
+      attachments: { type: 'array', items: { type: 'object' }, description: 'REPLACES the item\'s attachments (up to 10 objects { url, name, mime, size } from upload_board_comment_attachment); an empty list removes them all.' },
+      rank: { type: 'number', description: 'Sort key within its column; lower comes first. Use the midpoint between the ranks of the two items it should sit between.' },
       public: { type: 'boolean', description: 'Show on the public roadmap.' }
     }
   },
   {
-    name: 'upload_board_comment_attachment', title: 'Upload a planning comment attachment', method: 'POST', path: '/v1/feedback/attachments',
-    description: 'Uploads one image or file for a planning comment and returns its attachment object and download URL. Send the file bytes as base64, then pass the returned object in comment_on_board_item.attachments.',
+    name: 'delete_board_item', title: 'Delete a board item', destructive: true, method: 'DELETE', path: '/v1/admin/board-items/{id}',
+    description: 'Permanently removes the item and its links; the linked feedback posts and conversations stay. Confirm with the user first, and prefer moving it to a canceled status.',
+    params: { id: id('item'), project: { type: 'string', description: 'Project id, needed when `id` is an item number.' } }
+  },
+  {
+    name: 'link_board_item', title: 'Link or unlink a board item', method: 'POST', path: '/v1/admin/board-items/{id}/links',
+    description: 'Links (or, with `linked` false, unlinks) one feedback post, support conversation or other item of the same project to this item, up to 50 of each kind. A related item is linked on both sides; linking a conversation adds a note to its timeline. Returns the item with its links.',
+    params: {
+      id: id('item'),
+      project: { type: 'string', description: 'Project id, needed when `id` is an item number.', in: 'query' },
+      kind: { type: 'string', required: true, enum: ['feedback', 'conversation', 'item'], description: 'What is being linked.' },
+      linkedId: { type: 'string', required: true, as: 'id', description: 'The post, conversation or item to link: its id or `#12`.' },
+      linked: { type: 'boolean', description: 'false unlinks. Default true.' }
+    }
+  },
+  {
+    name: 'list_board_item_history', title: 'Read a board item\'s edit history', readOnly: true, method: 'GET', path: '/v1/admin/board-items/{id}/history',
+    description: 'The item\'s edit history, newest first: each change with the field values before and after, who made it, where it came from (web, native app, API or MCP) and when. Page with `offset`; the reply has `hasMore` and `nextOffset`.',
+    params: {
+      id: id('item'),
+      project: { type: 'string', description: 'Project id, needed when `id` is an item number.' },
+      offset: { type: 'integer', description: 'Entries to skip.' },
+      limit: limit(100)
+    }
+  },
+  {
+    name: 'suggest_board_item_title', title: 'Write a board item title with AI', method: 'POST', path: '/v1/admin/board-items/suggest-title',
+    description: 'Has the workspace\'s AI propose a short title, in the same language, from an item\'s description. Saves nothing: pass the text as `title` to create_board_item or update_board_item. Needs an AI provider; can take several seconds.',
+    params: {
+      project: { ...projectId, in: 'query' },
+      description: { type: 'string', required: true, description: 'The item\'s description (the first 4,000 characters are read).' }
+    }
+  },
+  {
+    name: 'upload_board_comment_attachment', title: 'Upload a planning attachment', method: 'POST', path: '/v1/feedback/attachments',
+    description: 'Uploads one image or file for a planning comment or item (screenshots, logs, documents) and returns its attachment object and download URL. Send the file bytes as base64, then pass the returned object in the `attachments` of comment_on_board_item, create_board_item or update_board_item.',
     params: {
       project: { ...projectId, in: 'query' },
       filename: { type: 'string', required: true, description: 'Filename with an accepted extension.' },
@@ -717,7 +765,7 @@ export function paramLocation(tool: McpTool, name: string): 'path' | 'query' | '
 
 export function inputSchema(tool: McpTool) {
   const properties: Record<string, Record<string, unknown>> = {}
-  for (const [name, { required, in: _in, ...schema }] of Object.entries(tool.params)) properties[name] = schema
+  for (const [name, { required, in: _in, as: _as, ...schema }] of Object.entries(tool.params)) properties[name] = schema
   const required = Object.entries(tool.params).filter(([, param]) => param.required).map(([name]) => name)
   return { type: 'object', properties, ...(required.length ? { required } : {}), additionalProperties: false }
 }
@@ -744,7 +792,7 @@ export function buildRequest(tool: McpTool, args: unknown): McpRequest | { error
   for (const [name, param] of Object.entries(tool.params)) {
     const value = given[name]
     if (value === undefined || value === null) {
-      if (param.default !== undefined) query.set(name, String(param.default))
+      if (param.default !== undefined) query.set(param.as || name, String(param.default))
       else if (param.required) return { error: `Missing required argument "${name}".` }
       continue
     }
@@ -752,8 +800,8 @@ export function buildRequest(tool: McpTool, args: unknown): McpRequest | { error
     if (problem) return { error: `Argument "${name}" ${problem}.` }
     const where = paramLocation(tool, name)
     if (where === 'path') path = path.replace(`{${name}}`, encodeURIComponent(String(value)))
-    else if (where === 'query') query.set(name, Array.isArray(value) ? value.join(',') : String(value))
-    else body[name] = value
+    else if (where === 'query') query.set(param.as || name, Array.isArray(value) ? value.join(',') : String(value))
+    else body[param.as || name] = value
   }
   const search = query.toString()
   return { method: tool.method, url: search ? `${path}?${search}` : path, ...(tool.method === 'GET' || tool.method === 'DELETE' ? {} : { body }) }
@@ -769,6 +817,7 @@ function checkValue(param: McpParam, value: unknown): string {
     case 'integer':
       if (!Number.isInteger(value)) return 'must be a whole number'
       return param.maximum !== undefined && (value as number) > param.maximum ? `must be at most ${param.maximum}` : ''
+    case 'number': return typeof value === 'number' && Number.isFinite(value) ? '' : 'must be a number'
     case 'boolean': return typeof value === 'boolean' ? '' : 'must be true or false'
     case 'array':
       if (param.items?.type === 'object') return Array.isArray(value) && value.every(item => item && typeof item === 'object' && !Array.isArray(item)) ? '' : 'must be a list of objects'
