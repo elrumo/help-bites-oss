@@ -49,6 +49,15 @@ struct BoardScreen: View {
   init(projectId: String, workspace: Workspace) {
     self.projectId = projectId
     self.workspace = workspace
+    // The order is remembered per project, across launches.
+    if let saved = UserDefaults.standard.string(forKey: Self.orderKey(projectId)), ["manual", "newest", "oldest"].contains(saved) { order = saved }
+  }
+
+  private static func orderKey(_ projectId: String) -> String { "helpbites.board.order.\(projectId)" }
+
+  func setOrder(_ value: String) {
+    order = value
+    UserDefaults.standard.set(value, forKey: Self.orderKey(projectId))
   }
 
   var session: SessionStore { workspace.session }
@@ -465,7 +474,7 @@ private struct BoardView: View {
             }
           }
           filterMenu("Order", value: orderTitle, active: store.order != "manual") {
-            Picker("Order", selection: $store.order) {
+            Picker("Order", selection: Binding(get: { store.order }, set: { store.setOrder($0) })) {
               Text("Manual").tag("manual")
               Text("Newest first").tag("newest")
               Text("Oldest first").tag("oldest")
@@ -761,6 +770,24 @@ private struct BoardCard: View {
           }
         }
       }
+      let pills = cardPills
+      if !pills.isEmpty {
+        FlowLayout(spacing: 4) {
+          ForEach(pills, id: \.icon) { pill in
+            HStack(spacing: 3) {
+              Image(systemName: pill.icon).font(.system(size: 9))
+              if let count = pill.count { Text("\(count)").monospacedDigit() }
+            }
+            .font(.lnCaption)
+            .foregroundStyle(Theme.textToned)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 1)
+            .background(Theme.elevated, in: Capsule())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(pill.label)
+          }
+        }
+      }
       if !item.posts.isEmpty || !item.conversations.isEmpty || !item.targetDay.isEmpty {
         HStack(spacing: 10) {
           if !item.posts.isEmpty {
@@ -782,6 +809,23 @@ private struct BoardCard: View {
     .background(Theme.panel, in: RoundedRectangle(cornerRadius: Metrics.radius))
     .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
     .contentShape(RoundedRectangle(cornerRadius: Metrics.radius))
+  }
+}
+
+extension BoardCard {
+  /// What the card carries that its title does not say: attachments, a description, related items, the error it came from.
+  fileprivate var cardPills: [(icon: String, count: Int?, label: String)] {
+    let attachments = item.attachments ?? []
+    let images = attachments.filter(\.isImage).count
+    let files = attachments.count - images
+    let related = item.related?.count ?? 0
+    var pills: [(icon: String, count: Int?, label: String)] = []
+    if images > 0 { pills.append(("photo", images, String(localized: "\(images) images"))) }
+    if files > 0 { pills.append(("paperclip", files, String(localized: "\(files) files"))) }
+    if !item.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { pills.append(("text.alignleft", nil, String(localized: "Has a description"))) }
+    if related > 0 { pills.append(("link", related, String(localized: "\(related) related items"))) }
+    if !(item.errorRefs ?? []).isEmpty { pills.append(("ladybug", nil, String(localized: "Filed from an error"))) }
+    return pills
   }
 }
 

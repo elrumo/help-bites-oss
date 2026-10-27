@@ -47,7 +47,11 @@ struct BoardItemEditor: View {
   init(store: BoardStore, itemId: String?) {
     self.store = store
     _itemId = State(initialValue: itemId)
-    _draft = State(initialValue: BoardItemDraft(item: itemId.flatMap { store.item($0) }, defaultStatus: store.config?.defaultStatusKey ?? ""))
+    let defaultStatus = store.config?.defaultStatusKey ?? ""
+    // A new item that was never created comes back as it was left.
+    var restored = itemId == nil ? BoardItemDraft.stored(for: store.projectId) : nil
+    if let status = restored?.status, store.config?.statuses.contains(where: { $0.key == status }) != true { restored?.status = defaultStatus }
+    _draft = State(initialValue: restored ?? BoardItemDraft(item: itemId.flatMap { store.item($0) }, defaultStatus: defaultStatus))
   }
 
   private var current: BoardItem? { itemId.flatMap { store.item($0) } }
@@ -86,10 +90,12 @@ struct BoardItemEditor: View {
         ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
         ToolbarItem(placement: .confirmationAction) {
           Button(justSaved ? "Saved" : itemId == nil ? "Create" : "Save") { Task { await save() } }
+            .keyboardShortcut(.return, modifiers: .command)
             .disabled((draft.title.trimmed.isEmpty && (itemId != nil || draft.description.trimmed.isEmpty)) || saving || store.config == nil)
         }
       }
       .feedbackErrorAlert($error)
+      .onChange(of: draft) { _, value in if itemId == nil { value.store(for: store.projectId) } }
       .confirmationDialog("Delete this item?", isPresented: $confirmDelete, titleVisibility: .visible) {
         Button("Delete item", role: .destructive) { Task { await deleteItem() } }
       } message: {
@@ -781,6 +787,7 @@ struct BoardItemEditor: View {
       saving = false
       draft = BoardItemDraft(item: item, defaultStatus: config.defaultStatusKey)
       itemId = item.id
+      BoardItemDraft.forget(for: store.projectId)
       if historyExpanded { await loadHistory(itemId: item.id, reset: true) }
       justSaved = true
       try? await Task.sleep(for: .seconds(1.6))
@@ -827,7 +834,7 @@ struct BoardItemEditor: View {
 }
 
 /// The editor's fields, as the web's draft holds them.
-private struct BoardItemDraft: Equatable {
+private struct BoardItemDraft: Equatable, Codable {
   var title = "", description = "", publicDescription = "", status = "", priority = "", assigneeId = ""
   var labels: [String] = []
   var attachments: [ItemAttachment] = []
@@ -850,6 +857,20 @@ private struct BoardItemDraft: Equatable {
     attachments = item.attachments ?? []
     targetDay = item.targetDay
     isPublic = item.isPublic
+  }
+
+  private static func key(_ projectId: String) -> String { "helpbites.board.draft.\(projectId)" }
+
+  static func stored(for projectId: String) -> BoardItemDraft? {
+    UserDefaults.standard.data(forKey: key(projectId)).flatMap { try? JSONDecoder().decode(BoardItemDraft.self, from: $0) }
+  }
+
+  static func forget(for projectId: String) { UserDefaults.standard.removeObject(forKey: key(projectId)) }
+
+  /// Kept while it has content; an empty form forgets the draft.
+  func store(for projectId: String) {
+    let hasContent = !title.trimmed.isEmpty || !description.trimmed.isEmpty || !publicDescription.trimmed.isEmpty || !labels.isEmpty || !attachments.isEmpty
+    if hasContent, let data = try? JSONEncoder().encode(self) { UserDefaults.standard.set(data, forKey: Self.key(projectId)) } else { Self.forget(for: projectId) }
   }
 
   /// A new item: everything set; what is empty is left to the server's defaults.

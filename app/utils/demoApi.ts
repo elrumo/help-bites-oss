@@ -517,7 +517,7 @@ const boardItems: BoardItem[] = []
 function boardItem(number: number, title: string, status: string, statusCategory: BoardItem['statusCategory'], labels: string[], assigneeId: string, priority: BoardItem['priority'], postNumbers: number[], conversationIds: string[], isPublic: boolean, minutesAgo: number) {
   const posts = postNumbers.map(demoPost)
   boardItems.push({
-    id: `item_demo${number}`, projectId: 'acme', number, title, description: '', publicDescription: isPublic ? title : '', status, statusCategory,
+    id: `item_demo${number}`, projectId: 'acme', number, title, description: number <= 2 ? 'Notes from the customer thread.' : '', attachments: number === 1 ? [{ url: '/demo/export.png', name: 'export.png', mime: 'image/png', size: 48210 }, { url: '/demo/export.csv', name: 'export.csv', mime: 'text/csv', size: 2048 }] : [], publicDescription: isPublic ? title : '', status, statusCategory,
     rank: boardItems.length + 1, priority, assigneeId, labels, targetDate: null, public: isPublic,
     feedbackPostIds: posts.map(post => post.id), conversationIds, relatedItemIds: [], related: [], errorRefs: [],
     voteCount: posts.reduce((sum, post) => sum + post.voteCount, 0),

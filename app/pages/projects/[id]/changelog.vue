@@ -75,10 +75,10 @@
     <!-- Entry editor -->
     <USlideover v-model:open="entryOpen" :title="current ? (current.number ? $t('changelog.entryNumber', { number: current.number }) : $t('changelog.entry')) : $t('changelog.newEntry')" :description="current ? $t('changelog.created', { time: timeAgo(current.createdAt) }) : $t('changelog.draftUntilPublish')" :ui="{ content: 'sm:max-w-2xl' }">
       <template #body>
-        <div class="space-y-6">
+        <div class="space-y-6" @keydown.meta.enter.prevent="submitShortcut" @keydown.ctrl.enter.prevent="submitShortcut">
           <div class="space-y-2">
-            <UInput v-model="draft.title" :placeholder="$t('changelog.whatChanged')" variant="none" size="xl" class="w-full" :ui="{ base: 'px-0 text-lg font-semibold' }" :maxlength="200" :aria-label="$t('changelog.title')" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')" />
-            <UTextarea v-model="draft.body" :placeholder="$t('changelog.bodyPlaceholder')" variant="none" :rows="4" autoresize :maxrows="18" class="w-full" :ui="{ base: 'px-0' }" :aria-label="$t('changelog.text')" @blur="saveText('body')" />
+            <UInput v-model="draft.title" :placeholder="$t('changelog.whatChanged')" variant="none" size="xl" class="field w-full" :ui="{ base: 'px-3 text-lg font-semibold' }" :maxlength="200" :aria-label="$t('changelog.title')" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')" />
+            <UTextarea v-model="draft.body" :placeholder="$t('changelog.bodyPlaceholder')" variant="none" :rows="4" autoresize :maxrows="18" class="field w-full" :ui="{ base: 'px-3 py-2' }" :aria-label="$t('changelog.text')" @blur="saveText('body')" />
           </div>
 
           <section class="space-y-2">
@@ -104,7 +104,7 @@
             <USelect v-model="draft.status" :items="statusItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('changelog.status')" @update:model-value="patch({ status: draft.status })">
               <template #leading><span class="size-2.5 rounded-full" :class="draft.status === 'published' ? 'bg-emerald-500' : 'bg-stone-400'" /></template>
             </USelect>
-            <label class="group relative flex h-8 items-center rounded-md ps-8 pe-2 text-[13px] text-default hover:bg-elevated" :class="current ? '' : 'pointer-events-none opacity-50'">
+            <label class="field group relative flex h-8 items-center ps-8 pe-2 text-[13px] text-default" :class="current ? '' : 'pointer-events-none opacity-50'">
               <UIcon name="i-lucide-calendar" class="absolute left-2.5 size-3.5 text-dimmed" />
               <input v-model="draft.date" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.date ? '' : 'text-dimmed'" :aria-label="$t('changelog.date')" :disabled="!current" @change="patch({ publishedAt: draft.date ? `${draft.date}T12:00:00.000Z` : null })">
             </label>
@@ -163,10 +163,16 @@
       <template #footer>
         <div class="flex w-full items-center gap-2">
           <UButton v-if="current" :label="confirmDelete ? $t('changelog.clickAgainDelete') : $t('changelog.delete')" icon="i-lucide-trash-2" :color="confirmDelete ? 'error' : 'neutral'" :variant="confirmDelete ? 'solid' : 'ghost'" @click="deleteEntry" />
-          <span v-if="current" class="ml-auto text-xs text-muted">{{ savingEntry ? $t('changelog.saving') : $t('changelog.changesSave') }}</span>
+          <span v-if="current" class="ml-auto inline-flex items-center gap-1.5 text-xs text-muted" role="status">
+            <template v-if="savingEntry"><UIcon name="i-lucide-loader-circle" class="size-3.5 animate-spin" />{{ $t('changelog.saving') }}</template>
+            <template v-else-if="entrySaved"><UIcon name="i-lucide-check" class="size-3.5 text-success" />{{ $t('common.saved') }}</template>
+            <template v-else>{{ $t('changelog.changesSave') }}</template>
+          </span>
           <template v-else>
             <UButton class="ml-auto" label="Cancel" color="neutral" variant="ghost" @click="entryOpen = false" />
-            <UButton :label="$t('changelog.createDraft')" color="primary" :loading="savingEntry" :disabled="!draft.title.trim()" @click="createEntry" />
+            <UButton :label="$t('changelog.createDraft')" color="primary" :loading="savingEntry" :disabled="!draft.title.trim()" @click="createEntry">
+              <template #trailing><span class="hidden items-center gap-0.5 sm:inline-flex"><UKbd value="meta" variant="solid" /><UKbd value="enter" variant="solid" /></span></template>
+            </UButton>
           </template>
         </div>
       </template>
@@ -264,6 +270,7 @@
 
 <script setup lang="ts">
 const { openProjectSettings } = useProjectSettings()
+import { watchDebounced } from '@vueuse/core'
 import { CHANGELOG_IMAGE_WIDTHS, CHANGELOG_TAGS, CHANGELOG_TAG_LABELS, isEntryPublic, type ChangelogEntry, type ChangelogImageWidth, type ChangelogLinkKind, type ChangelogRelease, type ChangelogSource, type ChangelogStatus, type ChangelogTag } from '#shared/changelog'
 import type { ChangelogLinkedConversations } from '#shared/changelogReply'
 import type { ItemAttachment } from '#shared/itemAttachments'
@@ -295,7 +302,7 @@ const SOURCE_LABEL = computed<Record<ChangelogLinkKind, string>>(() => ({ feedba
 const TAG_KEYS: Record<ChangelogTag, string> = { new: 'changelog.tagNew', improved: 'changelog.tagImproved', fix: 'changelog.tagFixed', removed: 'changelog.tagRemoved', breaking: 'changelog.tagBreaking' }
 const SOURCE_ICON: Record<ChangelogLinkKind, string> = { feedback: 'i-lucide-lightbulb', board: 'i-lucide-square-kanban', conversation: 'i-lucide-message-square' }
 const STATE_CLASS = { public: 'bg-success/10 text-success', waiting: 'bg-warning/10 text-warning', draft: 'bg-elevated text-toned' }
-const property = { base: 'h-8 w-full rounded-md ps-8 text-[13px] text-default', trailing: 'opacity-0 transition-opacity group-hover:opacity-100' }
+const property = propertyUi
 const tagItems = computed(() => CHANGELOG_TAGS.map(value => ({ label: t(TAG_KEYS[value]), value })))
 const statusItems = computed(() => [{ label: t('changelog.draft'), value: 'draft' }, { label: t('changelog.published'), value: 'published' }])
 const imageWidthItems = computed(() => CHANGELOG_IMAGE_WIDTHS.map(value => ({ label: t(`changelog.imageWidth_${value}`), value })))
@@ -381,6 +388,9 @@ const reviewNotes = ref('')
 const reviewing = ref<'' | 'approve' | 'reject'>('')
 const entryError = ref('')
 const savingEntry = ref(false)
+/** True for a moment after a field saved: the footer says so. */
+const entrySaved = ref(false)
+let savedTimer: ReturnType<typeof setTimeout> | undefined
 const confirmDelete = ref(false)
 const sourceKind = ref<'feedback' | 'board'>('feedback')
 const sourceRef = ref('')
@@ -413,10 +423,27 @@ function openEntry(entryId: string) {
   void router.replace({ query: { ...route.query, entry: entryId } })
 }
 
+// A new entry that was never created is kept in this browser, so closing the panel or reloading does not lose it.
+const draftKey = `hb-changelog-draft-${id}`
+
 function openNewEntry() {
   editingId.value = ''
   fill(null)
+  const saved = readPanelDraft<Partial<typeof draft>>(draftKey)
+  if (saved) Object.assign(draft, saved)
   entryOpen.value = true
+}
+
+watchDebounced(() => JSON.stringify(draft), () => {
+  if (current.value || !entryOpen.value) return
+  const content = draft.title.trim() || draft.summary.trim() || draft.body.trim() || draft.area.trim()
+  writePanelDraft(draftKey, content ? { ...draft } : null)
+}, { debounce: 300 })
+
+/** Cmd/Ctrl+Enter creates a new entry; on an existing one it leaves the field, which saves it. */
+function submitShortcut() {
+  if (current.value) (document.activeElement as HTMLElement | null)?.blur()
+  else void createEntry()
 }
 
 // `?entry=<id>` is the editor's address: the inbox and the feedback board link to it.
@@ -508,9 +535,13 @@ async function dropOn(group: ChangelogGroup) {
 async function patch(body: Record<string, unknown>) {
   if (!current.value) return
   savingEntry.value = true
+  entrySaved.value = false
+  clearTimeout(savedTimer)
   entryError.value = ''
   try {
     replaceEntry((await api<{ entry: ChangelogEntry }>(`/admin/changelog/entries/${current.value.id}`, { method: 'PATCH', body })).entry)
+    entrySaved.value = true
+    savedTimer = setTimeout(() => { entrySaved.value = false }, 2000)
   } catch (e: any) {
     entryError.value = e?.message || t('changelog.saveError')
     fill(current.value)
@@ -560,6 +591,7 @@ async function createEntry() {
     })
     replaceEntry(entry)
     editingId.value = entry.id
+    writePanelDraft(draftKey, null)
     void router.replace({ query: { ...route.query, entry: entry.id } })
   } catch (e: any) {
     entryError.value = e?.message || t('changelog.createError')

@@ -105,6 +105,8 @@ body { font-family: var(--font-sans); font-size: 13px; line-height: 1.5; -webkit
   /* A public page's cards wear the style's shadow (see app/utils/styleRoot.ts); outside one there is none. */
   .hb-card { box-shadow: var(--hb-shadow, none); }
   .chip-active { @apply border-accented bg-elevated text-highlighted; }
+  /* A bare field (title, description, date) in an editor panel: a white fill, so it reads as a field on the panel's colour. */
+  .field { @apply rounded-lg border border-default bg-white transition-colors dark:bg-elevated; }
   /* A list group's header row: "Todo 4". */
   .group-row { @apply mx-2 mt-2 flex h-9 items-center gap-2 rounded-lg bg-elevated px-3 text-[13px] font-medium text-highlighted; }
   /* Small grey caption above a block of settings: Linear's sentence-case labels. */

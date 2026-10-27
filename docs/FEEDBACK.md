@@ -271,6 +271,11 @@ Project → **Planning** → *Turn on planning*.
   with the board's statuses (the same list as Settings). Admins drag a column's
   header onto another to reorder them. `?item=<id>` opens an
   item, so links to it can be shared.
+- **Unsaved new items** are kept in this browser (the app keeps them on the
+  device) until you create the item, and come back when the panel opens again.
+  Cmd/Ctrl+Enter creates it. The order you pick (manual, newest or oldest) is
+  remembered per project. Cards carry pills for attachments, a description,
+  related items and an item filed from an error. Nothing is stored on the server.
 - **Links.** An item links up to 50 feedback posts, 50 conversations and 50 other items. In the
   item, *Link post* takes a post's `#N`. In the inbox, a conversation's
   **Planning** section files a new item from it (prefilled with its subject and

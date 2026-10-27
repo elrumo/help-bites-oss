@@ -94,6 +94,9 @@
                       <span class="size-1.5 rounded-full" :class="toneDot(labelOf(label)?.color)" />{{ labelOf(label)?.label || label }}
                     </span>
                   </span>
+                  <span v-if="pillsOf(item).length" class="mt-2 flex flex-wrap gap-1">
+                    <span v-for="pill in pillsOf(item)" :key="pill.icon" class="inline-flex items-center gap-1 rounded-full bg-elevated px-1.5 py-px text-[10px] tabular-nums text-toned" :title="pill.title"><UIcon :name="pill.icon" class="size-3" />{{ pill.count }}</span>
+                  </span>
                   <span v-if="item.posts.length || item.conversations.length || item.targetDate" class="mt-2 flex items-center gap-2.5 text-[11px] text-muted">
                     <span v-if="item.posts.length" class="inline-flex items-center gap-0.5 font-semibold tabular-nums" :title="$t('board.votesTitle')"><UIcon name="i-lucide-chevron-up" class="size-3" />{{ item.voteCount }}</span>
                     <span v-if="item.posts.length" class="inline-flex items-center gap-0.5 tabular-nums" :title="$t('board.linkedPosts')"><UIcon name="i-lucide-lightbulb" class="size-3" />{{ item.posts.length }}</span>
@@ -141,10 +144,10 @@
     <!-- Item editor -->
     <USlideover v-model:open="editorOpen" :title="current ? (current.number ? $t('board.itemNumber', { number: current.number }) : $t('board.item')) : $t('board.newItem')" :description="current ? $t('board.created', { time: timeAgo(current.createdAt) }) : $t('board.privateUntilRoadmap')" :ui="{ content: 'sm:max-w-2xl' }">
       <template #body>
-        <div v-if="board" class="space-y-4">
+        <div v-if="board" class="space-y-4" @keydown.meta.enter.prevent="submitShortcut" @keydown.ctrl.enter.prevent="submitShortcut">
           <!-- Planning title and description -->
           <div class="space-y-2">
-            <UInput v-model="draft.title" :placeholder="$t('board.title')" variant="none" size="xl" class="w-full" :ui="{ base: 'px-0 text-lg font-semibold' }" :maxlength="200" :aria-label="$t('board.title')" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')">
+            <UInput v-model="draft.title" :placeholder="$t('board.title')" variant="none" size="xl" class="field w-full" :ui="{ base: 'px-3 text-lg font-semibold' }" :maxlength="200" :aria-label="$t('board.title')" @blur="saveText('title')" @keydown.enter.prevent="saveText('title')">
               <template v-if="draft.description.trim()" #trailing>
                 <UIcon v-if="writingTitle" name="i-lucide-loader-circle" class="size-4 animate-spin text-muted" :aria-label="$t('board.titleWriting')" />
                 <UTooltip v-else :text="$t('board.titleWriteAi')">
@@ -152,7 +155,7 @@
                 </UTooltip>
               </template>
             </UInput>
-            <UTextarea v-model="draft.description" :placeholder="$t('board.descriptionPlaceholder')" variant="none" :rows="3" autoresize :maxrows="18" class="w-full" :ui="{ base: 'px-0' }" :aria-label="$t('board.description')" @blur="saveText('description')" />
+            <UTextarea v-model="draft.description" :placeholder="$t('board.descriptionPlaceholder')" variant="none" :rows="3" autoresize :maxrows="18" class="field w-full" :ui="{ base: 'px-3 py-2' }" :aria-label="$t('board.description')" @blur="saveText('description')" />
           </div>
 
           <!-- Linear's property rows: quiet until hovered -->
@@ -169,7 +172,7 @@
                 <UIcon v-else name="i-lucide-circle-user-round" class="size-4 text-dimmed" />
               </template>
             </USelect>
-            <label class="group relative flex h-8 items-center rounded-md ps-8 pe-2 text-[13px] text-default hover:bg-elevated">
+            <label class="field group relative flex h-8 items-center ps-8 pe-2 text-[13px] text-default">
               <UIcon name="i-lucide-calendar" class="absolute left-2.5 size-3.5 text-dimmed" />
               <input v-model="draft.targetDate" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.targetDate ? '' : 'text-dimmed'" :aria-label="$t('board.targetDate')" @change="patch({ targetDate: draft.targetDate || null })">
             </label>
@@ -314,10 +317,16 @@
       <template #footer>
         <div class="flex w-full items-center gap-2">
           <UButton v-if="current" :label="confirmDelete ? $t('board.clickAgainDelete') : $t('board.delete')" icon="i-lucide-trash-2" :color="confirmDelete ? 'error' : 'neutral'" :variant="confirmDelete ? 'solid' : 'ghost'" @click="deleteItem" />
-          <span v-if="current" class="ml-auto text-xs text-muted">{{ savingItem ? $t('board.saving') : $t('board.changesSave') }}</span>
+          <span v-if="current" class="ml-auto inline-flex items-center gap-1.5 text-xs text-muted" role="status">
+            <template v-if="savingItem"><UIcon name="i-lucide-loader-circle" class="size-3.5 animate-spin" />{{ $t('board.saving') }}</template>
+            <template v-else-if="itemSaved"><UIcon name="i-lucide-check" class="size-3.5 text-success" />{{ $t('common.saved') }}</template>
+            <template v-else>{{ $t('board.changesSave') }}</template>
+          </span>
           <template v-else>
             <UButton class="ml-auto" :label="$t('common.cancel')" color="neutral" variant="ghost" @click="editorOpen = false" />
-            <UButton :label="$t('board.createItem')" color="primary" :loading="savingItem" :disabled="!draft.title.trim() && !draft.description.trim()" @click="createItem" />
+            <UButton :label="$t('board.createItem')" color="primary" :loading="savingItem" :disabled="!draft.title.trim() && !draft.description.trim()" @click="createItem">
+              <template #trailing><span class="hidden items-center gap-0.5 sm:inline-flex"><UKbd value="meta" variant="solid" /><UKbd value="enter" variant="solid" /></span></template>
+            </UButton>
           </template>
         </div>
       </template>
@@ -329,24 +338,23 @@
     <USlideover v-model:open="showSettings" :title="$t('board.settingsTitle')" :description="$t('board.settingsDescription')" :ui="{ content: 'sm:max-w-3xl' }">
       <template #body>
         <div v-if="board" class="space-y-8">
-          <section class="space-y-4">
+          <section v-for="group in settingGroups" :key="group.title" class="space-y-2">
             <div class="flex items-center gap-2">
-              <h3 class="text-sm font-semibold">{{ $t('sections.board') }}</h3>
-              <span class="text-xs text-muted">{{ savingBoard ? $t('board.saving') : boardSaved ? $t('common.saved') : $t('board.savesAsChange') }}</span>
+              <h3 class="text-sm font-semibold">{{ group.title }}</h3>
+              <span v-if="group.saves" class="text-xs text-muted">{{ savingBoard ? $t('board.saving') : boardSaved ? $t('common.saved') : $t('board.savesAsChange') }}</span>
             </div>
-            <div class="grid gap-3 sm:grid-cols-2">
-              <USwitch :model-value="board.enabled" :label="$t('board.boardOn')" :description="$t('board.boardOnDescription')" @update:model-value="saveBoard({ enabled: $event })" />
-              <USwitch :model-value="board.syncFeedback" :label="$t('board.syncFeedback')" :description="$t('board.syncFeedbackDescription')" @update:model-value="saveBoard({ syncFeedback: $event })" />
+            <div class="divide-y divide-default overflow-hidden rounded-xl border border-default bg-white dark:bg-elevated">
+              <div v-for="row in group.rows" :key="row.label" class="flex items-center justify-between gap-6 px-4 py-3">
+                <div class="min-w-0">
+                  <p class="text-[13px] font-medium text-highlighted">{{ row.label }}</p>
+                  <p class="text-xs text-muted">{{ row.description }}</p>
+                </div>
+                <USelect v-if="row.select" :model-value="row.select.value" :items="layoutItems" class="w-48 shrink-0" :aria-label="row.label" @update:model-value="saveBoard({ roadmap: { layout: $event } })" />
+                <USwitch v-else :model-value="row.value" :aria-label="row.label" @update:model-value="row.save($event)" />
+              </div>
             </div>
-            <div class="grid gap-3 sm:grid-cols-3">
-              <UFormField :label="$t('board.roadmapLayout')">
-                <USelect :model-value="board.roadmap.layout" :items="layoutItems" class="w-full" @update:model-value="saveBoard({ roadmap: { layout: $event } })" />
-              </UFormField>
-              <USwitch :model-value="board.roadmap.showLabels" :label="$t('board.showLabels')" :description="$t('board.showLabelsDescription')" class="sm:pt-5" @update:model-value="saveBoard({ roadmap: { showLabels: $event } })" />
-              <USwitch :model-value="board.roadmap.showDates" :label="$t('board.showDates')" :description="$t('board.showDatesDescription')" class="sm:pt-5" @update:model-value="saveBoard({ roadmap: { showDates: $event } })" />
-            </div>
-            <p v-if="boardError" class="text-sm text-error">{{ boardError }}</p>
           </section>
+          <p v-if="boardError" class="text-sm text-error">{{ boardError }}</p>
           <FeedbackBoardSettings v-if="listsConfig" board-only :config="listsConfig" :saving="savingLists" :saved="listsSaved" :error="listsError" @save="saveLists" />
         </div>
       </template>
@@ -356,9 +364,9 @@
 
 <script setup lang="ts">
 import Fuse from 'fuse.js'
-import { watchDebounced } from '@vueuse/core'
+import { useLocalStorage, watchDebounced } from '@vueuse/core'
 import { DEFAULT_FEEDBACK_CONFIG, FEEDBACK_STATUS_CATEGORIES, defaultFeedbackStatus, feedbackStatusCategory, normalizeFeedbackKey, type FeedbackBoardConfig, type FeedbackColor, type FeedbackStatusCategory } from '#shared/feedback'
-import type { ItemAttachment } from '#shared/itemAttachments'
+import { isImageMime, type ItemAttachment } from '#shared/itemAttachments'
 import { can } from '#shared/roles'
 import { BOARD_TITLE_DEBOUNCE_MS, fallbackBoardTitle } from '#shared/boardTitle'
 import { BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, rankBetween, type BoardConfig, type BoardItem, type BoardItemHistory, type BoardItemPriority, type BoardRoadmapLayout } from '#shared/board'
@@ -402,7 +410,7 @@ const assigneeOf = (item: BoardItem) => agents.value.find(agent => agent.id === 
 const dayLabel = (value: string) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
 // A property row: the value reads as plain text until you hover it.
-const property = { base: 'h-8 w-full rounded-md ps-8 text-[13px] text-default', trailing: 'opacity-0 transition-opacity group-hover:opacity-100' }
+const property = propertyUi
 const PRIORITY_KEYS: Record<ConversationPriority, string> = { low: 'board.low', normal: 'board.normal', high: 'board.high', urgent: 'board.urgent' }
 const priorityItems = computed(() => [{ label: t('board.noPriority'), value: 'none' }, ...(['urgent', 'high', 'normal', 'low'] as const).map(value => ({ label: t(PRIORITY_KEYS[value]), value }))])
 const LAYOUT_KEYS: Record<BoardRoadmapLayout, string> = { columns: 'board.layoutColumns', timeline: 'board.layoutTimeline', list: 'board.layoutList' }
@@ -444,7 +452,9 @@ const priorityFilter = ref('__all__')
 const roadmapOnly = ref(false)
 // Manual is the order the cards are dragged into; newest and oldest sort each column by when its item was made (drag still moves items between columns).
 type BoardOrder = 'manual' | 'newest' | 'oldest'
-const order = ref<BoardOrder>('manual')
+// Remembered per project, in this browser, across reloads.
+const order = useLocalStorage<BoardOrder>(`hb-board-order-${id}`, 'manual')
+if (!['manual', 'newest', 'oldest'].includes(order.value)) order.value = 'manual'
 const orderItems = computed(() => [{ label: t('board.orderManual'), value: 'manual' }, { label: t('board.orderNewest'), value: 'newest' }, { label: t('board.orderOldest'), value: 'oldest' }])
 const filtering = computed(() => Boolean(search.value.trim() || labelFilter.value.length || assigneeFilter.value !== '__all__' || priorityFilter.value !== '__all__' || roadmapOnly.value))
 function clearFilters() {
@@ -453,6 +463,20 @@ function clearFilters() {
   assigneeFilter.value = '__all__'
   priorityFilter.value = '__all__'
   roadmapOnly.value = false
+}
+
+// ---- card pills ----
+/** What a card carries that its title does not say: attachments, a description, related items, the error it came from. */
+function pillsOf(item: BoardItem) {
+  const images = item.attachments.filter(a => isImageMime(a.mime)).length
+  const files = item.attachments.length - images
+  return [
+    images && { icon: 'i-lucide-image', count: images, title: t('board.pillImages', images) },
+    files && { icon: 'i-lucide-paperclip', count: files, title: t('board.pillFiles', files) },
+    item.description.trim() && { icon: 'i-lucide-align-left', count: '', title: t('board.pillDescription') },
+    item.related.length && { icon: 'i-lucide-link-2', count: item.related.length, title: t('board.pillRelated', item.related.length) },
+    item.errorRefs.length && { icon: 'i-lucide-bug', count: '', title: t('board.pillError') }
+  ].filter((pill): pill is { icon: string, count: number | string, title: string } => Boolean(pill))
 }
 
 // ---- columns ----
@@ -643,6 +667,9 @@ const draftAssignee = computed(() => agents.value.find(agent => agent.id === dra
 const roadmapStatus = computed(() => ROADMAP_CATEGORIES.includes(statusOf(draft.status)?.category || 'open'))
 const editorError = ref('')
 const savingItem = ref(false)
+/** True for a moment after a field saved: the footer says so. */
+const itemSaved = ref(false)
+let savedTimer: ReturnType<typeof setTimeout> | undefined
 const writingTitle = ref(false)
 /** Which title request counts: a newer one, or closing the editor, makes an older answer stale. */
 let titleRun = 0
@@ -686,12 +713,29 @@ function openItem(itemId: string) {
   void router.replace({ query: { ...route.query, item: itemId } })
 }
 
+// A new item that was never created is kept in this browser, so closing the panel or reloading does not lose it.
+const draftKey = `hb-board-draft-${id}`
+
 function openNew() {
   titleRun++
   writingTitle.value = false
   editingId.value = ''
   fill(null)
+  const saved = readPanelDraft<Partial<typeof draft>>(draftKey)
+  if (saved) Object.assign(draft, saved)
   editorOpen.value = true
+}
+
+watchDebounced(() => JSON.stringify(draft), () => {
+  if (current.value || !editorOpen.value) return
+  const content = draft.title.trim() || draft.description.trim() || draft.publicDescription.trim() || draft.labels.length || draft.attachments.length || draft.posts.length
+  writePanelDraft(draftKey, content ? { ...draft } : null)
+}, { debounce: 300 })
+
+/** Cmd/Ctrl+Enter creates a new item; on an existing one it leaves the field, which saves it. */
+function submitShortcut() {
+  if (current.value) (document.activeElement as HTMLElement | null)?.blur()
+  else void createItem()
 }
 
 // `?item=<id>` is the editor's address: cards, the inbox and feedback posts link to it.
@@ -721,9 +765,13 @@ watch(editorOpen, (open) => {
 async function patch(body: Record<string, unknown>) {
   if (!current.value) return
   savingItem.value = true
+  itemSaved.value = false
+  clearTimeout(savedTimer)
   editorError.value = ''
   try {
     replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${current.value.id}`, { method: 'PATCH', body })).item)
+    itemSaved.value = true
+    savedTimer = setTimeout(() => { itemSaved.value = false }, 2000)
     if (historyExpanded.value) await loadHistory(true)
   } catch (e: any) {
     editorError.value = e?.message || t('board.saveError')
@@ -813,6 +861,7 @@ async function createItem() {
     })
     replaceItem(item)
     editingId.value = item.id
+    writePanelDraft(draftKey, null)
     void router.replace({ query: { ...route.query, item: item.id } })
   } catch (e: any) {
     editorError.value = e?.message || t('board.createError')
@@ -865,6 +914,30 @@ const boardError = ref('')
 const savingLists = ref(false)
 const listsSaved = ref(false)
 const listsError = ref('')
+
+const settingGroups = computed(() => {
+  const b = board.value
+  if (!b) return []
+  return [
+    {
+      title: t('sections.board'),
+      saves: true,
+      rows: [
+        { label: t('board.boardOn'), description: t('board.boardOnDescription'), value: b.enabled, save: (value: boolean) => saveBoard({ enabled: value }) },
+        { label: t('board.syncFeedback'), description: t('board.syncFeedbackDescription'), value: b.syncFeedback, save: (value: boolean) => saveBoard({ syncFeedback: value }) }
+      ]
+    },
+    {
+      title: t('board.publicRoadmap'),
+      saves: false,
+      rows: [
+        { label: t('board.roadmapLayout'), description: t('board.roadmapLayoutDescription'), select: { value: b.roadmap.layout } },
+        { label: t('board.showLabels'), description: t('board.showLabelsDescription'), value: b.roadmap.showLabels, save: (value: boolean) => saveBoard({ roadmap: { showLabels: value } }) },
+        { label: t('board.showDates'), description: t('board.showDatesDescription'), value: b.roadmap.showDates, save: (value: boolean) => saveBoard({ roadmap: { showDates: value } }) }
+      ]
+    }
+  ] as { title: string, saves: boolean, rows: { label: string, description: string, value?: boolean, save: (value: boolean) => unknown, select?: { value: string } }[] }[]
+})
 
 function storeProject(next: AdminProject) {
   projects.value = projects.value.map(p => (p.id === next.id ? next : p))
