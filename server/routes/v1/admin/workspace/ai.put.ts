@@ -13,6 +13,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'workspace.settings' })
+  assertSession(ctx)
   const body = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   if (Array.isArray(body.providers) && body.providers.length) await assertFeature(ctx.workspace, 'byoLlm')
   applyWorkspaceAiInput(ctx.workspace, body)

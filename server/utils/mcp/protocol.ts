@@ -6,6 +6,7 @@
 // is the route's, so everything here tests without a server.
 
 import { buildRequest, describeTool, MCP_TOOLS, type McpRequest } from './tools'
+import { redactSecrets } from './redact'
 
 /** Newest first. A client asking for one of these gets it; any other gets the newest. */
 export const MCP_PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05']
@@ -86,7 +87,7 @@ async function callTool(id: JsonRpcId, params: Record<string, unknown>, call: Mc
   if ('error' in request) return reply(id, toolText(request.error, true))
   try {
     const { status, data } = await call(request)
-    return reply(id, status >= 200 && status < 300 ? toolText(JSON.stringify(data ?? null, null, 2), false) : toolText(describeFailure(status, data), true))
+    return reply(id, status >= 200 && status < 300 ? toolText(JSON.stringify(redactSecrets(data ?? null), null, 2), false) : toolText(describeFailure(status, data), true))
   } catch (error) {
     return reply(id, toolText(`The request could not be made: ${(error as Error).message}`, true))
   }

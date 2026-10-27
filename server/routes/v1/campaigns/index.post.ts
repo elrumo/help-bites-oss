@@ -11,7 +11,7 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
   const body = await readObjectBody(event)
-  const project = await callerProject(event, caller, body.project)
+  const project = await callerProject(event, caller, body.project, { can: 'marketing' })
   await assertFeature(await projectWorkspaceId(project), 'campaigns')
   const row = new (useParse().Object.extend('Campaign'))()
   row.set('project', project)

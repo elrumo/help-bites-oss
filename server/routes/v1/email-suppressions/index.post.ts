@@ -11,7 +11,7 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
   const body = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
-  const project = await callerProject(event, caller, body.project)
+  const project = await callerProject(event, caller, body.project, { can: 'marketing' })
   const input = readSuppressionInput(body)
   return addEmailSuppressions(project, input.emails.map(email => ({ email, reason: input.reason, detail: input.detail, source: caller.source === 'api' ? 'api' : 'admin' })))
 })

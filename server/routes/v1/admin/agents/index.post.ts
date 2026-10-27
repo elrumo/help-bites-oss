@@ -12,6 +12,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'team.manage' })
+  assertSession(ctx)
   if (!edition().policy.teammatePasswords) throw createError({ statusCode: 403, statusMessage: 'Invite teammates by email instead', data: { code: 'invite_only' } })
   const payload = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   // Everyone a one-team install had was a full admin; new teammates still are unless told otherwise.

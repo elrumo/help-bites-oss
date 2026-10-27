@@ -14,6 +14,8 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'projects.manage' })
+  // The answer carries the new project's secret.
+  assertSession(ctx)
   const payload = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   if (typeof payload.name !== 'string' || !payload.name.trim()) throw createError({ statusCode: 400, statusMessage: 'name is required' })
   await checkGauge(ctx.workspace, 'projects')

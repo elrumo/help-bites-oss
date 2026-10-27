@@ -7,7 +7,10 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   // A device belongs to the operator's account, not to a workspace.
-  const { agent } = await requireAgentIdentity(event)
+  const identity = await requireAgentIdentity(event)
+  const { agent } = identity
+  // Push notifications (with message previews) go to the devices registered here.
+  assertSession(identity)
   const body = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   const token = String(body.token || '').trim().toLowerCase()
   const platform = String(body.platform || '')

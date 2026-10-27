@@ -57,7 +57,7 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
   const { body, files } = await readEmailSendBody(event)
-  const project = await callerProject(event, caller, body.project)
+  const project = await callerProject(event, caller, body.project, { can: 'marketing' })
   await rateLimit(`sb:rl:emailsend:${project.id}`, LIMITS.emailSendsPerProject.limit, LIMITS.emailSendsPerProject.window)
   const request = parseEmailSendRequest(body, files, event)
 

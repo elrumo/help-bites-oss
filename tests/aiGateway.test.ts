@@ -16,6 +16,7 @@ g.readUsage = async () => used
 g.chargeUsage = async (_ref: unknown, _metric: string, amount: number) => { charged.push(amount) }
 g.planLimitError = (p: Plan, metric: string, limit: number, n: number) => Object.assign(new Error('limit'), { statusCode: 402, data: { code: 'plan_limit', metric, limit, used: n, plan: p.id } })
 g.getWorkspace = async () => null
+g.assertWorkspaceWide = () => {}
 const fetched: { url: string, init: RequestInit }[] = []
 g.safeFetch = async (url: string, init: RequestInit) => {
   fetched.push({ url, init })
@@ -23,6 +24,7 @@ g.safeFetch = async (url: string, init: RequestInit) => {
 }
 
 const ai = await import('../server/utils/aiGateway')
+const { applySupportAgentInput } = await import('../server/utils/supportAgents')
 
 type Fields = Record<string, unknown>
 const row = (id: string, fields: Fields = {}) => {
@@ -183,5 +185,32 @@ describe('stored credentials', () => {
     expect(secrets.readCredential('sk-legacy-plain')).toBe('sk-legacy-plain')
     delete process.env.HELPBITES_SECRET
     expect(secrets.storeCredential('sk-2')).toBe('sk-2')
+  })
+})
+
+describe('an assistant\'s key stays with its endpoint', () => {
+  const edit = (agent: ReturnType<typeof row>, input: Fields) => applySupportAgentInput({ workspace: { id: 'W1' } } as never, agent as never, input)
+  const saved = () => row('A1', { endpoint: 'https://api.openai.com/v1', apiKey: secrets.storeCredential('sk-assistant'), workspace: { id: 'W1' } })
+
+  test('pointing it at another address drops the stored key', async () => {
+    const assistant = saved()
+    await edit(assistant, { endpoint: 'https://evil.example/v1' })
+    expect(assistant.get('endpoint')).toBe('https://evil.example/v1')
+    expect(assistant.get('apiKey')).toBeUndefined()
+  })
+
+  test('the same address, written another way, keeps it', async () => {
+    const assistant = saved()
+    await edit(assistant, { endpoint: 'https://api.openai.com/v1/chat/completions/' })
+    expect(assistant.get('apiKey')).toBeDefined()
+  })
+
+  test('a new address with a new key keeps that key; leaving the address out changes nothing', async () => {
+    const moved = saved()
+    await edit(moved, { endpoint: 'https://other.example/v1', apiKey: 'sk-new' })
+    expect(secrets.readCredential(moved.get('apiKey'))).toBe('sk-new')
+    const untouched = saved()
+    await edit(untouched, { model: 'gpt-4o' })
+    expect(untouched.get('apiKey')).toBeDefined()
   })
 })

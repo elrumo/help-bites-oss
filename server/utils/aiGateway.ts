@@ -39,7 +39,7 @@ export function gatewayEndpoint(): string {
 // Where an endpoint already names its API version (or, for Gemini and Groq, `/openai`), so none is added.
 const VERSIONED = /\/(v\d+(beta\d*)?|openai)$/
 
-function sameEndpoint(a: string, b: string): boolean {
+export function sameEndpoint(a: string, b: string): boolean {
   const clean = (value: string) => value.trim().replace(/\/+$/, '').replace(/\/chat\/completions$/, '').replace(VERSIONED, '')
   return !!a && !!b && clean(a) === clean(b)
 }

@@ -158,6 +158,15 @@ export function assertWorkspaceWide(ctx: { apiKeyProjectIds?: string[] | null })
   if (ctx.apiKeyProjectIds) forbidden('This API key is limited to specific projects', 'key_project_scope')
 }
 
+/**
+ * 403 for an API key, an AI assistant's included. Who can sign in, with what, and where notifications go are changed by a
+ * person signed in to the panel: a key that could mint another key, add a teammate or reveal a project secret would hand
+ * whoever holds it (or steers it) a way back in that outlives the key and cannot be revoked with it.
+ */
+export function assertSession(ctx: { apiKeyId?: string }, message = 'Do this from the panel, signed in: an API key cannot'): void {
+  if (ctx.apiKeyId) throw createError({ statusCode: 403, statusMessage: message, data: { code: 'session_required' } })
+}
+
 /** One of the caller's projects, or a 404, the same as a project that does not exist. */
 export async function requireProject(ctx: MemberContext, projectId: string): Promise<ParseObject> {
   const project = await loadProjectUnscoped(String(projectId || ''))

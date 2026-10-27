@@ -9,6 +9,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'projects.manage' })
+  assertSession(ctx)
   const project = await requireProject(ctx, getRouterParam(event, 'id') || '')
   return { secret: String(project.get('secret') || '') }
 })

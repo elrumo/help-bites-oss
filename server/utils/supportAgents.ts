@@ -1,6 +1,7 @@
 import { createError } from 'h3'
 import { SUPPORT_AGENT_STATUSES, AGENT_FALLBACKS, AGENT_RULE_ACTIONS, ASSISTANT_FAQ_LOOKUP, KNOWLEDGE_NAME_MAX_LENGTH, assistantReadiness, normalizeAgentRules, slugifyKnowledge, type AssistantReadiness, type SupportAgentStatus, type AgentFallback, type AgentRule, type AgentRuleAction } from '#shared/knowledge'
 import { safeHttpUrl } from '#shared/support'
+import { sameEndpoint } from './aiGateway'
 
 // A SupportAgent is an AI support configuration (system prompt, model, provider
 // settings, which knowledge it may use). Distinct from the human Team (_User).
@@ -51,7 +52,13 @@ export async function applySupportAgentInput(ctx: MemberContext, agent: ParseObj
   if (typeof input.status === 'string' && (SUPPORT_AGENT_STATUSES as readonly string[]).includes(input.status)) agent.set('status', input.status)
   if ('systemPrompt' in input) agent.set('systemPrompt', String(input.systemPrompt ?? '').slice(0, 8000))
   if ('model' in input) agent.set('model', String(input.model ?? '').trim().slice(0, 120))
-  if ('endpoint' in input) agent.set('endpoint', safeHttpUrl(input.endpoint).slice(0, 500))
+  if ('endpoint' in input) {
+    const endpoint = safeHttpUrl(input.endpoint).slice(0, 500)
+    // A key only follows its own endpoint (as in the workspace AI settings): pointing the assistant elsewhere must not carry the
+    // stored key along, or whoever may edit an assistant could have it sent to a server of their own.
+    if (typeof input.apiKey !== 'string' && agent.get('apiKey') && !sameEndpoint(String(agent.get('endpoint') || ''), endpoint)) agent.unset('apiKey')
+    agent.set('endpoint', endpoint)
+  }
   // apiKey is write-only; empty string clears it, absence leaves it untouched.
   if (typeof input.apiKey === 'string') {
     const key = input.apiKey.trim()

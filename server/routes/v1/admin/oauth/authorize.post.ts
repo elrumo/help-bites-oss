@@ -13,7 +13,7 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'apiKeys.manage' })
   // A key could otherwise mint wider keys for itself through an assistant it controls.
-  if (ctx.apiKeyId) throw createError({ statusCode: 403, statusMessage: 'Approve a connection from the panel, signed in', data: { code: 'session_required' } })
+  assertSession(ctx, 'Approve a connection from the panel, signed in')
   await assertWorkspaceVerified(ctx.workspaceId)
   const body = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   const client = requireClient(body.clientId, body.redirectUri)

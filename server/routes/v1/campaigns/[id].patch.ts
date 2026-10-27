@@ -12,7 +12,7 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
   const body = await readObjectBody(event)
-  const project = await callerProject(event, caller, body.project)
+  const project = await callerProject(event, caller, body.project, { can: 'marketing' })
   const row = await getProjectCampaign(project, getRouterParam(event, 'id') || '')
   // Pausing, canceling and editing stay open after a downgrade; only sending needs the plan.
   if (body.status === 'scheduled' || body.status === 'sending') await assertFeature(await projectWorkspaceId(project), 'campaigns')

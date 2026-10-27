@@ -9,6 +9,7 @@ defineRouteMeta({
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'apiKeys.manage' })
+  assertSession(ctx)
   await assertWorkspaceVerified(ctx.workspaceId)
   const body = (await readBody(event).catch(() => ({}))) as Record<string, unknown>
   const name = String(body.name || '').trim().slice(0, 80)

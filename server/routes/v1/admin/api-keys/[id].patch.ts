@@ -2,6 +2,7 @@ defineRouteMeta({ openAPI: { tags: ['Agent'], summary: 'Rename a general admin A
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'apiKeys.manage' })
+  assertSession(ctx)
   const name = String(((await readBody(event).catch(() => ({}))) as Record<string, unknown>).name || '').trim().slice(0, 80)
   if (!name) throw createError({ statusCode: 400, statusMessage: 'Name is required' })
   const Parse = useParse()

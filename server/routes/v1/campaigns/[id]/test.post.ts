@@ -12,7 +12,7 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const caller = await authenticateEmailCaller(event)
   const body = await readObjectBody(event)
-  const project = await callerProject(event, caller, body.project)
+  const project = await callerProject(event, caller, body.project, { can: 'marketing' })
   await assertFeature(await projectWorkspaceId(project), 'campaigns')
   await rateLimit(`sb:rl:campaigntest:${caller.actor.id || project.id}`, LIMITS.campaignTestsPerAgent.limit, LIMITS.campaignTestsPerAgent.window)
   const row = await getProjectCampaign(project, getRouterParam(event, 'id') || '')
