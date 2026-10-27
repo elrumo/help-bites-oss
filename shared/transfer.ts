@@ -124,6 +124,7 @@ export const DROP_FIELDS: Record<string, string[]> = {
   Project: ['repos', 'repoIds', 'telegram', 'changelogRun', 'legalLinks'],
   EmailTemplate: ['lastActorId'],
   EmailLog: ['actorId'],
+  BoardItemComment: ['actorId'],
   // The old instance's Stripe refusal; the next checkout tells the new one.
   PricingTable: ['checkoutError']
 }

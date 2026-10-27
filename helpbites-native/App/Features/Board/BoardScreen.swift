@@ -234,6 +234,17 @@ struct BoardScreen: View {
     try await session.get("/v1/admin/board-items/\(itemId)/history", query: ["project": projectId, "offset": String(offset)])
   }
 
+  func comments(_ itemId: String, offset: Int = 0) async throws -> BoardItemCommentsPage {
+    try await session.get("/v1/admin/board-items/\(itemId)/comments", query: ["project": projectId, "offset": String(offset), "limit": "50"])
+  }
+
+  func comment(_ itemId: String, body: String, parentId: String?, replyToId: String?) async throws -> BoardItemComment {
+    struct Body: Encodable, Sendable { let body: String; let parentId: String?; let replyToId: String? }
+    struct Response: Decodable, Sendable { let comment: BoardItemComment }
+    let result: Response = try await session.send("/v1/admin/board-items/\(itemId)/comments?project=\(projectId)", body: Body(body: body, parentId: parentId, replyToId: replyToId))
+    return result.comment
+  }
+
   func delete(_ itemId: String) async throws {
     try await session.delete("/v1/admin/board-items/\(itemId)")
     items.removeAll { $0.id == itemId }

@@ -12,6 +12,8 @@ export type McpParam = {
   /** An array's items: strings unless said otherwise. */
   items?: { type: 'string' | 'object' }
   maximum?: number
+  /** Sent when the caller leaves it out. */
+  default?: number
   required?: boolean
   /** Where the value goes in the request. Default: the path when the route has `{name}`, else the query for GET and DELETE, else the body. */
   in?: 'path' | 'query' | 'body'
@@ -159,8 +161,13 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'list_board_items', title: 'List board items', readOnly: true, method: 'GET', path: '/v1/admin/board-items',
-    description: 'A project\'s internal work board (the roadmap\'s source): items with status, priority, assignee and linked feedback.',
-    params: { project: projectId }
+    description: 'A project\'s internal work board (the roadmap\'s source): items with status, priority, assignee and linked feedback, in rank order. Returns 50 at a time; the reply has `total`, so page with `offset` or narrow with `status`.',
+    params: {
+      project: projectId,
+      status: { type: 'string', description: 'Only items in this status key.' },
+      offset: { type: 'integer', description: 'Items to skip.' },
+      limit: { ...limit(200), default: 50 }
+    }
   },
   {
     name: 'create_board_item', title: 'Create a board item', method: 'POST', path: '/v1/admin/board-items',
@@ -727,7 +734,8 @@ export function buildRequest(tool: McpTool, args: unknown): McpRequest | { error
   for (const [name, param] of Object.entries(tool.params)) {
     const value = given[name]
     if (value === undefined || value === null) {
-      if (param.required) return { error: `Missing required argument "${name}".` }
+      if (param.default !== undefined) query.set(name, String(param.default))
+      else if (param.required) return { error: `Missing required argument "${name}".` }
       continue
     }
     const problem = checkValue(param, value)

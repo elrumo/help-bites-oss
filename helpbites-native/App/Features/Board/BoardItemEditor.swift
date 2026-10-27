@@ -22,6 +22,15 @@ struct BoardItemEditor: View {
   @State private var linking = false
   @State private var confirmDelete = false
   @State private var error = ""
+  @State private var commentsExpanded = false
+  @State private var commentsLoading = false
+  @State private var commentsFailed = false
+  @State private var commentsHasMore = false
+  @State private var commentsOffset = 0
+  @State private var comments: [BoardItemComment] = []
+  @State private var commentDraft = ""
+  @State private var replyTarget: BoardItemComment?
+  @State private var postingComment = false
   @State private var historyExpanded = false
   @State private var historyLoading = false
   @State private var historyFailed = false
@@ -54,6 +63,7 @@ struct BoardItemEditor: View {
             form(config)
             if let current {
               links(current)
+              commentsSection(current)
               historySection(current)
             } else {
               newItemFeedback
@@ -433,6 +443,101 @@ struct BoardItemEditor: View {
     .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
     .onChange(of: historyExpanded) { _, expanded in
       if expanded { Task { await loadHistory(itemId: item.id, reset: true) } }
+    }
+  }
+
+  private func commentsSection(_ item: BoardItem) -> some View {
+    DisclosureGroup(isExpanded: $commentsExpanded) {
+      VStack(alignment: .leading, spacing: 12) {
+        if commentsLoading && comments.isEmpty {
+          ProgressView().frame(maxWidth: .infinity)
+        } else if commentsFailed && comments.isEmpty {
+          Text("Could not load comments.").font(.lnMeta).foregroundStyle(Theme.error)
+        } else if comments.isEmpty {
+          Text("No comments yet.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+        } else {
+          ForEach(comments) { comment in
+            VStack(alignment: .leading, spacing: 5) {
+              HStack(spacing: 6) {
+                Text(comment.authorName).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
+                Text(historySource(comment.source)).font(.lnCaption).foregroundStyle(Theme.textMuted)
+                Spacer(minLength: 4)
+                Text(FeedbackFormat.timeAgo(comment.createdAt)).font(.lnCaption).foregroundStyle(Theme.textMuted)
+                  .help(historyTimestamp(comment.createdAt))
+              }
+              Text(comment.body).font(.lnMeta).foregroundStyle(Theme.textToned).fixedSize(horizontal: false, vertical: true)
+              Button("Reply") { replyTarget = comment; commentDraft = "" }
+                .buttonStyle(.lnGhost)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, comment.parentId == nil ? 0 : 14)
+          }
+        }
+        if commentsHasMore && !commentsLoading {
+          Button("Load older comments") { Task { await loadComments(itemId: item.id, reset: false) } }
+            .buttonStyle(.lnSecondaryCompact)
+        }
+        if let replyTarget {
+          HStack(spacing: 6) {
+            Text("Replying to \(replyTarget.authorName)").font(.lnCaption).foregroundStyle(Theme.textMuted)
+            Button("Cancel") { self.replyTarget = nil }.buttonStyle(.lnGhost)
+          }
+        }
+        LinearTextEditor(text: $commentDraft, placeholder: "Write a comment…", minHeight: 64)
+        if commentsFailed { Text("Could not save the comment.").font(.lnCaption).foregroundStyle(Theme.error) }
+        HStack {
+          Spacer(minLength: 0)
+          Button(replyTarget == nil ? "Comment" : "Reply") { Task { await postComment(itemId: item.id) } }
+            .buttonStyle(.lnSecondaryCompact)
+            .disabled(commentDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || postingComment)
+        }
+      }
+      .padding(.top, 8)
+    } label: {
+      HStack(spacing: 6) {
+        Text("Comments").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+        Text("\(comments.count)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted)
+      }
+    }
+    .padding(14)
+    .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
+    .onChange(of: commentsExpanded) { _, expanded in
+      if expanded { Task { await loadComments(itemId: item.id, reset: true) } }
+    }
+  }
+
+  private func loadComments(itemId: String, reset: Bool) async {
+    guard !commentsLoading else { return }
+    if reset { comments = []; commentsOffset = 0; commentsHasMore = false }
+    commentsLoading = true
+    commentsFailed = false
+    defer { commentsLoading = false }
+    do {
+      let page = try await store.comments(itemId, offset: commentsOffset)
+      guard self.itemId == itemId else { return }
+      comments = reset ? page.comments : comments + page.comments
+      commentsHasMore = page.hasMore
+      commentsOffset = page.nextOffset ?? commentsOffset
+    } catch {
+      commentsFailed = true
+    }
+  }
+
+  private func postComment(itemId: String) async {
+    let body = commentDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !body.isEmpty, !postingComment else { return }
+    postingComment = true
+    commentsFailed = false
+    defer { postingComment = false }
+    do {
+      let target = replyTarget
+      let rootId = target.map { $0.parentId ?? $0.id }
+      let comment = try await store.comment(itemId, body: body, parentId: rootId, replyToId: target?.id)
+      comments.append(comment)
+      commentDraft = ""
+      replyTarget = nil
+    } catch {
+      commentsFailed = true
     }
   }
 

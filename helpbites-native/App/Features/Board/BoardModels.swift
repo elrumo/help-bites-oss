@@ -134,6 +134,17 @@ struct BoardItemHistoryPage: Codable, Sendable {
   let nextOffset: Int?
 }
 
+struct BoardItemComment: Codable, Equatable, Sendable, Identifiable {
+  let id, itemId, body, actorId, actorName, authorName, authorType, source, createdAt: String
+  let parentId, replyToId: String?
+}
+
+struct BoardItemCommentsPage: Codable, Sendable {
+  let comments: [BoardItemComment]
+  let hasMore: Bool
+  let nextOffset: Int?
+}
+
 /// rankBetween: the midpoint between two neighbours, one step past the only
 /// neighbour there is, 0 in an empty column.
 /// ponytail: about 50 halvings of the same gap exhaust a Double; rebalance the
