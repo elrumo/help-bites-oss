@@ -209,7 +209,7 @@
           </section>
 
           <!-- Current item feedback feedback -->
-          <template v-if="current">
+          <div v-if="current" class="grid grid-cols-2 gap-4">
             <!-- Current item feedback -->
             <section class="space-y-2">
               <h3 class="flex items-center gap-2 text-sm font-semibold">{{ $t('board.feedback') }} <span class="font-normal text-muted">{{ current.posts.length }}</span><span v-if="current.posts.length" class="ml-auto inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-muted"><UIcon name="i-lucide-chevron-up" class="size-3.5" />{{ $t('board.votes', current.voteCount) }}</span></h3>
@@ -306,7 +306,7 @@
                 <UButton v-if="historyHasMore" size="xs" color="neutral" variant="ghost" :loading="historyLoading" :label="$t('board.historyOlder')" @click="loadHistory(false)" />
               </div>
             </details>
-          </template>
+          </div>
 
           <p v-if="editorError" class="text-sm text-error">{{ editorError }}</p>
         </div>
