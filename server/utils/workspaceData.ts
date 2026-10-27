@@ -93,6 +93,7 @@ export const WORKSPACE_DATA: Record<string, DataRule> = {
   FeedbackSubscription: { scope: 'project' },
   BoardItem: { scope: 'project' },
   BoardItemHistory: { scope: 'project' },
+  BoardItemComment: { scope: 'project' },
   ChangelogRelease: { scope: 'project' },
   ChangelogEntry: { scope: 'project' },
   ChangelogComment: { scope: 'project' },

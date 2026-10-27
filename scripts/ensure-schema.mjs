@@ -1064,6 +1064,24 @@ const SCHEMAS = {
       project_item_created: { _p_project: 1, itemId: 1, _created_at: -1 }
     }
   },
+  BoardItemComment: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      item: { type: 'Pointer', targetClass: 'BoardItem' },
+      body: { type: 'String' },
+      parentId: { type: 'String' },
+      replyToId: { type: 'String' },
+      actorId: { type: 'String' },
+      actorName: { type: 'String' },
+      authorName: { type: 'String' },
+      authorType: { type: 'String' },
+      source: { type: 'String' }
+    },
+    indexes: {
+      project_item_created: { _p_project: 1, _p_item: 1, _created_at: 1 },
+      item_parent_created: { _p_item: 1, parentId: 1, _created_at: 1 }
+    }
+  },
   // --- Changelog: what shipped, written for the public. An entry is linked to
   // the feedback posts, board items and conversations (tickets and error
   // issues) it answers, as id arrays like BoardItem; ids that no longer

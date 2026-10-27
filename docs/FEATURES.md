@@ -299,6 +299,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   reorder. Type a new name in an item's label picker to create the label. Add a column from the tile after the last one: a name and a category,
   which decides whether its items show on the roadmap. Admins reorder columns by
   dragging a column's header onto another.
+- **Comments and threads.** Add private comments and replies from the web and native item editors, or through the API and MCP. An assistant comment shows the MCP client's name; its authorizing operator remains recorded.
 - **Edit history.** The web and native item editors have a collapsed history of
   field and link changes, with before and after values, who made them, whether
   they came from web, app, API or MCP, and when. The API returns the same history.

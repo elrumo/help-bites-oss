@@ -200,6 +200,21 @@ export const MCP_TOOLS: readonly McpTool[] = [
     }
   },
   {
+    name: 'list_board_item_comments', title: 'Read planning comments', readOnly: true, method: 'GET', path: '/v1/admin/board-items/{id}/comments',
+    description: 'Reads an item’s internal comments and threaded replies, oldest first. Page with offset and limit.',
+    params: { id: id('item'), project: { ...projectId, in: 'query' }, offset: { type: 'integer', description: 'Comments to skip.' }, limit: limit(100) }
+  },
+  {
+    name: 'comment_on_board_item', title: 'Comment on a planning item', method: 'POST', path: '/v1/admin/board-items/{id}/comments',
+    description: 'Adds an internal comment or threaded reply. The author is shown as this assistant, while the authorizing operator remains recorded.',
+    params: {
+      id: id('item'), project: { ...projectId, in: 'query' },
+      body: { type: 'string', required: true, description: 'The comment, up to 8,000 characters.' },
+      parentId: { type: 'string', description: 'Root comment id when replying.' },
+      replyToId: { type: 'string', description: 'Comment being replied to; use with parentId for replies within a thread.' }
+    }
+  },
+  {
     name: 'list_changelog_entries', title: 'List changelog entries', readOnly: true, method: 'GET', path: '/v1/admin/changelog/entries',
     description: 'A project\'s changelog entries, drafts included.',
     params: { project: projectId, status: { type: 'string', enum: ['draft', 'published', 'archived'], description: 'Only entries in this state.' } }

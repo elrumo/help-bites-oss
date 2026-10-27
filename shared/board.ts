@@ -105,6 +105,20 @@ export type BoardItemHistory = {
   changes: BoardItemHistoryChange[]
   createdAt: string
 }
+export type BoardItemComment = {
+  id: string
+  itemId: string
+  body: string
+  parentId: string | null
+  replyToId: string | null
+  actorId: string
+  actorName: string
+  /** The displayed author: the operator, or the MCP client for assistant comments. */
+  authorName: string
+  authorType: 'operator' | 'assistant'
+  source: 'web' | 'app' | 'api' | 'mcp'
+  createdAt: string
+}
 
 /** An item as the panel (and admin keys) see it. */
 export type BoardItem = {

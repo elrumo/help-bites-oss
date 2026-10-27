@@ -267,6 +267,8 @@
               <ChangelogLinks :project-id="id" kind="board" :target-id="current.id" :source="{ title: current.title, publicDescription: current.publicDescription }" />
             </section>
 
+            <BoardItemComments :key="current.id" :project-id="id" :item-id="current.id" />
+
             <details :open="historyExpanded" class="rounded-xl border border-default" @toggle="toggleHistory">
               <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-semibold">
                 <UIcon name="i-lucide-history" class="size-4 text-muted" />
