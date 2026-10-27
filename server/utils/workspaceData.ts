@@ -310,22 +310,27 @@ export async function lastWorkspaceExport(workspace: ParseObject): Promise<{ at:
   return { at: String(last.at || ''), url: exportDownloadUrl(last.key, 3600) }
 }
 
+// Sealed, not just signed: a signed token is readable, and the bucket is public by default, so anyone holding the link
+// could read the file's address out of it and fetch the export directly, for as long as the file exists.
+const EXPORT_LINK_PREFIX = 'workspace-export:'
+
 /**
  * A link that downloads an export for `seconds`, through the app rather than
  * S3: the bucket's address is often internal to the stack, and the token
- * names the one file it opens (server/routes/v1/exports/[token].get.ts).
+ * names the one file it opens, sealed so that only the server can read which
+ * (server/routes/v1/exports/[token].get.ts).
  */
 export function exportDownloadUrl(key: string, seconds: number, now = Date.now()): string {
   const base = String(process.env.ADMIN_URL || process.env.APP_URL || '').replace(/\/+$/, '')
-  return `${base}/v1/exports/${signLinkToken('workspace-export', JSON.stringify({ k: key, x: now + seconds * 1000 }))}`
+  return `${base}/v1/exports/${sealSecret(`${EXPORT_LINK_PREFIX}${JSON.stringify({ k: key, x: now + seconds * 1000 })}`)}`
 }
 
 /** The export a download link opens, or null when it is forged, expired or not an export. */
 export function readExportDownload(token: string, now = Date.now()): string | null {
-  const payload = readLinkToken('workspace-export', token)
-  if (!payload) return null
   try {
-    const { k, x } = JSON.parse(payload) as { k?: string, x?: number }
+    const payload = openSealedSecret(token)
+    if (!payload.startsWith(EXPORT_LINK_PREFIX)) return null
+    const { k, x } = JSON.parse(payload.slice(EXPORT_LINK_PREFIX.length)) as { k?: string, x?: number }
     return typeof k === 'string' && /^exports\/[\w-]+\/[\w.-]+\.jsonl\.gz$/.test(k) && typeof x === 'number' && x > now ? k : null
   } catch {
     return null

@@ -1,6 +1,7 @@
 import MarkdownIt from 'markdown-it'
 import sanitizeHtml from 'sanitize-html'
 import { blogReadingMinutes, BLOG_EXCERPT_MAX_LENGTH, type BlogBodyFormat } from '#shared/blog'
+import { replaceElements } from '#shared/htmlScan'
 
 // Pure helpers for a blog post's text: the HTML it is served as, its lead-in,
 // its reading time and the copy that goes out by email. No Parse, so they
@@ -87,7 +88,7 @@ export function blogPlainText(body: string, format: BlogBodyFormat = 'markdown')
 
 /** A lead-in cut on a word boundary, for a post with no excerpt of its own. Headings and captions are left out: they read badly run into the text. */
 export function deriveBlogExcerpt(body: string, length = 200, format: BlogBodyFormat = 'markdown'): string {
-  const text = textOf(sourceHtml(body, format).replace(/<(h[1-6]|figcaption)[^>]*>[\s\S]*?<\/\1>/gi, ' '))
+  const text = textOf(replaceElements(sourceHtml(body, format), ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'figcaption'], () => ' '))
   if (text.length <= length) return text
   const clipped = text.slice(0, Math.min(length, BLOG_EXCERPT_MAX_LENGTH))
   const lastSpace = clipped.lastIndexOf(' ')

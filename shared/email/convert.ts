@@ -2,6 +2,7 @@ import { findBlock, walkBlocks, type EmailDocument, type ImageBlock } from './bl
 import { removeBlock } from './ops'
 import { fillComponent, renderEmailHtml } from './render'
 import { decodeHtmlEntities } from './resolve'
+import { replaceBetween, replaceElements, stripTags } from '../htmlScan'
 
 // Checks a conversion against the HTML it came from. When someone pastes an
 // email and asks for it as blocks, every visible word and every link should
@@ -25,12 +26,13 @@ export function sourceHtmlOf(text: string): string | null {
 
 /** What a reader sees: no comments, head, hidden preview text or markup. */
 function visible(html: string): string {
-  return String(html || '')
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/<(head|style|script|title)\b[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<(div|span|p|td)\b[^>]*(display\s*:\s*none|max-height\s*:\s*0)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
+  // Each step reads the text once (shared/htmlScan.ts): the HTML can be anything a sender pasted.
+  const withoutComments = replaceBetween(String(html || ''), '<!--', '-->', ' ')
+  const withoutHead = replaceElements(withoutComments, ['head', 'style', 'script', 'title'], () => ' ')
+  return stripTags(replaceElements(withoutHead, ['div', 'span', 'p', 'td'], () => ' ', (_name, attrs) => HIDDEN_BLOCK.test(attrs)), ' ')
 }
+
+const HIDDEN_BLOCK = /display\s*:\s*none|max-height\s*:\s*0/i
 
 const TOKEN = /\{\{\{?\s*[\w.-]+\s*\}?\}\}|[\p{L}\p{N}]+(?:[.'’@&-][\p{L}\p{N}]+)*/gu
 const ACCENTS: Record<string, string> = { acute: '\u0301', grave: '\u0300', circ: '\u0302', uml: '\u0308', tilde: '\u0303', cedil: '\u0327', ring: '\u030A' }
@@ -49,7 +51,7 @@ function words(html: string): string[] {
 
 function urls(html: string): Set<string> {
   const found = new Set<string>()
-  const markup = String(html || '').replace(/<!--[\s\S]*?-->/g, ' ').replace(/<head\b[\s\S]*?<\/head>/gi, ' ')
+  const markup = replaceElements(replaceBetween(String(html || ''), '<!--', '-->', ' '), ['head'], () => ' ')
   for (const match of markup.matchAll(/\b(?:href|src)\s*=\s*("([^"]*)"|'([^']*)')/gi)) {
     const url = decode(match[2] ?? match[3] ?? '').trim()
     if (url && url !== '#') found.add(url)
@@ -60,8 +62,8 @@ function urls(html: string): Set<string> {
 /** Each source image's size as drawn: a CSS width beats the width attribute; height only when there's no width. */
 function imageSizes(html: string): Map<string, { width?: number, height?: number }> {
   const sizes = new Map<string, { width?: number, height?: number }>()
-  const markup = String(html || '').replace(/<!--[\s\S]*?-->/g, ' ')
-  for (const [tag] of markup.matchAll(/<img\b[^>]*>/gi)) {
+  const markup = replaceBetween(String(html || ''), '<!--', '-->', ' ')
+  for (const [tag] of markup.matchAll(/<img(?=[\s/>])[^<>]*>/gi)) {
     const attr = (name: string) => tag.match(new RegExp(`\\b${name}\\s*=\\s*("([^"]*)"|'([^']*)'|(\\d+))`, 'i'))
     const src = decode(attr('src')?.[2] ?? attr('src')?.[3] ?? '').trim()
     if (!src) continue

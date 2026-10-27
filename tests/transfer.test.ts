@@ -310,4 +310,10 @@ describe('reading a file', () => {
     for await (const item of linesOf(chunks)) lines.push(item)
     expect(lines).toEqual([JSON.stringify({ a: 'é' }), JSON.stringify({ b: 2 })])
   })
+
+  test('a file that is one endless line is refused, not buffered', async () => {
+    // 20 MB of one character compresses to a few KB; reading it into memory as a line is what the cap stops.
+    const bomb = gzipSync(Buffer.alloc(20 * 1024 * 1024, 97))
+    await expect((async () => { for await (const _line of linesOf(Readable.from([bomb]))) { /* drained */ } })()).rejects.toMatchObject({ statusCode: 400 })
+  })
 })

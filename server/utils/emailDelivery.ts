@@ -85,6 +85,17 @@ export function emailDomainOf(address: string): string {
  * domain could pass as the platform, or as another project.
  */
 export function projectEmailSender(project: ParseObject | null, override: { fromName?: string, fromEmail?: string, replyTo?: string } = {}): EmailSender {
+  return withEditionRewrite(baseEmailSender(project, override), project)
+}
+
+/** The edition's last word on a sender (the cloud's shared domain, for one): whatever picked the sender, this runs after it. */
+export function withEditionRewrite(sender: EmailSender, project: ParseObject | null): EmailSender {
+  const rewrite = edition().rewriteSender
+  return rewrite ? rewrite(sender, project) : sender
+}
+
+/** `projectEmailSender` before the edition's rewrite: for a caller that changes the sender again and then applies it itself. */
+export function baseEmailSender(project: ParseObject | null, override: { fromName?: string, fromEmail?: string, replyTo?: string } = {}): EmailSender {
   const defaults = mailgunDefaults()
   const projectFrom = String(project?.get('fromEmail') || '').trim()
   const projectDomain = String(project?.get('mailDomain') || '').trim()
@@ -106,8 +117,7 @@ export function projectEmailSender(project: ParseObject | null, override: { from
     }
     sender.fromEmail = wanted
   }
-  const rewrite = edition().rewriteSender
-  return rewrite ? rewrite(sender, project) : sender
+  return sender
 }
 
 // Values that unlock something (reset and verification links, codes, tokens)

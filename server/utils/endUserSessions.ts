@@ -256,6 +256,7 @@ export async function verifyAnonymousToken(event: H3Event, token: string): Promi
     if (expiresAt instanceof Date && expiresAt.getTime() < Date.now()) throw await bad('Invalid session token')
   } else if (!anonymousEnabled(project)) throw createError({ statusCode: 401, statusMessage: 'This project no longer allows email-only access' })
 
+  await rateLimit(`sb:rl:user:${project.id}:${String(row.get('externalId'))}`, LIMITS.requestsPerEndUser.limit, LIMITS.requestsPerEndUser.window)
   await rateLimit(`sb:rl:project:${project.id}`, LIMITS.requestsPerProject.limit, LIMITS.requestsPerProject.window)
   const last = session.get('lastUsedAt') as Date | undefined
   if (!last || Date.now() - last.getTime() > 10 * 60 * 1000) {

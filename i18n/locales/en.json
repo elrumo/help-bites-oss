@@ -5788,6 +5788,7 @@
     "accessReadDescription": "It can look at everything but change nothing: good for summaries and triage.",
     "projects": "Projects to connect",
     "redirectsTo": "After you decide, you go back to {host}.",
+    "unverified": "HelpBites can't tell who runs {host}: the name above is whatever the assistant called itself. Only approve if you just started connecting an assistant from there. Read only is selected for you.",
     "approve": "Approve",
     "deny": "Deny",
     "notAllowed": "Your role in this workspace can't create API keys, so it can't connect an assistant. Ask an owner or admin.",

@@ -2,6 +2,8 @@
 // stores. Pure: no Parse, so it unit-tests without a database. Markdown, HTML
 // and plain text go in; headings split it into sections.
 
+import { replaceBetween, replaceElements, stripTags } from '../htmlScan'
+
 export const LEGAL_IMPORT_FORMATS = ['markdown', 'html', 'text'] as const
 export type LegalImportFormat = (typeof LEGAL_IMPORT_FORMATS)[number]
 
@@ -19,31 +21,41 @@ function decode(text: string): string {
   })
 }
 
-const plain = (html: string) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+const HREF = /\bhref=["']([^"']*)["']/i
+const plain = (html: string) => stripTags(html).replace(/\s+/g, ' ').trim()
 
 /** HTML → Markdown for the tags a policy uses (headings, paragraphs, lists, links, emphasis). Everything else is dropped to its text. */
 export function htmlToMarkdown(html: string): string {
-  const md = html
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<(script|style|head|svg)[\s\S]*?<\/\1>/gi, '')
-    .replace(/<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/gi, (_, n: string, inner: string) => `\n\n${'#'.repeat(Number(n))} ${plain(inner)}\n\n`)
-    // Only links that are safe to keep; anything else (javascript:, data:) becomes its text.
-    .replace(/<a\s[^>]*href=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href: string, inner: string) => {
-      const url = decode(href).trim()
-      return /^(https?:\/\/|mailto:|\/|#)/i.test(url) ? `[${plain(inner)}](${url.replace(/\)/g, '%29')})` : plain(inner)
-    })
-    .replace(/<(strong|b)(\s[^>]*)?>([\s\S]*?)<\/\1>/gi, '**$3**')
-    .replace(/<(em|i)(\s[^>]*)?>([\s\S]*?)<\/\1>/gi, '*$3*')
-    .replace(/<li[^>]*>/gi, '\n- ')
+  // Each step looks at the text once (shared/htmlScan.ts): an import is up to LEGAL_IMPORT_MAX characters of whatever the sender wrote.
+  let md = replaceBetween(html, '<!--', '-->')
+  md = replaceElements(md, ['script', 'style', 'head', 'svg'], () => '')
+  md = replaceElements(md, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], ({ name, inner }) => `\n\n${'#'.repeat(Number(name.slice(1)))} ${plain(inner)}\n\n`)
+  // Only links that are safe to keep; anything else (javascript:, data:) becomes its text.
+  md = replaceElements(md, ['a'], ({ attrs, inner }) => {
+    const url = decode(HREF.exec(attrs)?.[1] ?? '').trim()
+    return /^(https?:\/\/|mailto:|\/|#)/i.test(url) ? `[${plain(inner)}](${url.replace(/\)/g, '%29')})` : plain(inner)
+  }, (_name, attrs) => HREF.test(attrs))
+  md = replaceElements(md, ['strong', 'b'], ({ inner }) => `**${inner}**`)
+  md = replaceElements(md, ['em', 'i'], ({ inner }) => `*${inner}*`)
+  md = md
+    .replace(/<li(?=[\s/>])[^<>]*>/gi, '\n- ')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/(p|div|ul|ol|section|article|table|tr|blockquote)>/gi, '\n\n')
-    .replace(/<[^>]+>/g, '')
-  return decode(md).replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+  return decode(stripTags(md)).replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
 }
 
 const looksLikeHtml = (text: string) => /<(h[1-6]|p|div|ul|ol|li|br|section|article)[\s>/]/i.test(text)
 
-const MD_HEADING = /^(#{1,6})\s+(.+?)\s*#*\s*$/
+const MD_HEADING = /^(#{1,6})\s+(.+)$/
+
+/** A Markdown heading line: its level and its text without the closing `#`s (`## Title ##`). Not one regex: a lazy match against `\s*#*\s*$` is cubic in a long run of spaces. */
+function mdHeading(line: string): { level: number, text: string } | null {
+  const match = MD_HEADING.exec(line)
+  if (!match) return null
+  const rest = match[2] ?? ''
+  const text = rest.replace(/\s+$/, '').replace(/#+$/, '').replace(/\s+$/, '')
+  return { level: (match[1] ?? '').length, text: text || rest.slice(0, 1) }
+}
 const NUMBERED = /^\d+(\.\d+)*[.)]?\s+\S.{0,100}$/
 const ALL_CAPS = /^[A-Z][A-Z0-9 &,'’/-]{3,80}$/
 
@@ -80,12 +92,12 @@ function chunk(section: ImportedSection, max: number): ImportedSection[] {
 export function parseImported(input: string, opts: { format?: LegalImportFormat, max: number }): { title: string, sections: ImportedSection[] } {
   const format = opts.format ?? (looksLikeHtml(input) ? 'html' : 'markdown')
   const lines = (format === 'html' ? htmlToMarkdown(input) : input).replace(/\r\n?/g, '\n').split('\n')
-  const hasMarkdownHeadings = format !== 'text' && lines.some(l => MD_HEADING.test(l))
+  const hasMarkdownHeadings = format !== 'text' && lines.some(l => mdHeading(l))
 
   const blocks: Block[] = [{ level: 0, heading: '', lines: [] }]
   lines.forEach((line, i) => {
-    const md = hasMarkdownHeadings ? MD_HEADING.exec(line) : null
-    if (md) blocks.push({ level: md[1]!.length, heading: md[2]!.trim(), lines: [] })
+    const md = hasMarkdownHeadings ? mdHeading(line) : null
+    if (md) blocks.push({ level: md.level, heading: md.text.trim(), lines: [] })
     else if (!hasMarkdownHeadings && plainHeading(line, i === 0 || !lines[i - 1]!.trim())) blocks.push({ level: 2, heading: line.trim().replace(/^\d+(\.\d+)*[.)]?\s+/, ''), lines: [] })
     else blocks[blocks.length - 1]!.lines.push(line)
   })

@@ -416,16 +416,42 @@ export function parsePostRef(value: unknown): number | null {
   return Number.isSafeInteger(number) && number > 0 ? number : null
 }
 
+/** `text` without its code spans (a run of backticks to the next run of the same length), each replaced by a space. One pass: each opener looks up its closer, never rescans for it. */
+function stripCodeSpans(text: string): string {
+  const runs = [...text.matchAll(/`+/g)].map(match => ({ at: match.index ?? 0, length: match[0].length }))
+  if (runs.length < 2) return text
+  const byLength = new Map<number, number[]>()
+  runs.forEach((run, i) => { const list = byLength.get(run.length); if (list) list.push(i); else byLength.set(run.length, [i]) })
+  const cursor = new Map<number, number>()
+  let out = ''
+  let copied = 0
+  for (let i = 0; i < runs.length; i++) {
+    const open = runs[i]!
+    const list = byLength.get(open.length) ?? []
+    let next = cursor.get(open.length) ?? 0
+    while (next < list.length && (list[next] ?? 0) <= i) next++
+    cursor.set(open.length, next)
+    const closing = list[next]
+    if (closing === undefined) continue
+    const close = runs[closing]!
+    out += `${text.slice(copied, open.at)} `
+    copied = close.at + close.length
+    i = closing
+  }
+  return out + text.slice(copied)
+}
+
 /**
  * Prose only: fenced blocks, code spans, tags, link targets and bare URLs
  * removed, so `#404` in a code sample or `https://x.dev/a#12` never reads as a
  * reference and `mailto:a@b.c` never reads as a mention.
  */
 export function stripNonProse(body: string): string {
-  return String(body || '')
-    .replace(/^[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:^[ \t]*\1[^\n]*$|(?![\s\S]))/gm, ' ')
-    .replace(/(`+)[\s\S]*?\1/g, ' ')
-    .replace(/<[^>]*>/g, ' ')
+  // A fence opens with a whole run of its marker (no giving characters back to retry shorter), and a code span is found by
+  // its run's length: a text of nothing but backticks must not cost the square of its length.
+  return stripCodeSpans(String(body || '')
+    .replace(/^[ \t]*(`{3,}(?!`)|~{3,}(?!~))[^\n]*\n[\s\S]*?(?:^[ \t]*\1[^\n]*$|(?![\s\S]))/gm, ' '))
+    .replace(/<[^<>]*>/g, ' ')
     .replace(/\]\([^)]*\)/g, '] ')
     .replace(/\bhttps?:\/\/\S+/gi, ' ')
     .replace(/\bmailto:\S+/gi, ' ')
@@ -630,7 +656,7 @@ const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"'
 export function feedbackPlainText(body: unknown, maxLength = 0): string {
   const flat = String(body ?? '')
     .replace(/<(br|\/p|\/li|\/h[1-6]|\/blockquote|\/pre)\s*\/?>/gi, '\n')
-    .replace(/<[^>]*>/g, '')
+    .replace(/<[^<>]*>/g, '')
     .replace(/&(#39|amp|lt|gt|quot|apos|nbsp);/g, (_, name: string) => ENTITIES[name] || '')
     // The Markdown that would read as noise in a one-line preview.
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')

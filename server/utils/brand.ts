@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { unsafeHtml } from '#shared/cms/unsafeHtml'
 import { createError, getQuery, getRouterParam, type H3Event } from 'h3'
 import {
   BRAND_RADIUS_PX, BRAND_ASSET_BACKGROUNDS, BRAND_ASSET_KINDS, BRAND_LIMITS, normalizeBrandConfig, validateBrandConfig,
@@ -74,7 +75,11 @@ const TYPES: Record<string, { ext: string, image: boolean }> = {
 // An SVG opened on its own runs its scripts, so anything that could run is refused rather than cleaned up.
 const SVG_ACTIVE = /<script|<foreignobject|<iframe|<embed|<object|<!entity|\bon[a-z]+\s*=|javascript:|data:text\/html/i
 
-export const svgIsActive = (data: Buffer) => SVG_ACTIVE.test(data.toString('utf8'))
+// The tag-aware check as well: `<a href="java&#115;cript:…">` and `<svg/onload=…>` are not what the regex above reads.
+export const svgIsActive = (data: Buffer) => {
+  const text = data.toString('utf8')
+  return SVG_ACTIVE.test(text) || unsafeHtml(text)
+}
 
 /** The file's real type from its bytes; '' for anything a brand kit does not take. */
 export function detectBrandMime(data: Buffer): string {

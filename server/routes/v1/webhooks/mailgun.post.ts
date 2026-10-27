@@ -8,10 +8,14 @@ defineRouteMeta({
 })
 
 const REPLAY_WINDOW_SECONDS = 24 * 60 * 60
+const MAX_BYTES = 1024 * 1024
 
 export default defineEventHandler(async (event) => {
   const key = process.env.MAILGUN_WEBHOOK_SIGNING_KEY || ''
   if (!key) throw createError({ statusCode: 503, statusMessage: 'MAILGUN_WEBHOOK_SIGNING_KEY is not set' })
+  // Anyone can post here: the signature is checked after the body is read, so the body is bounded first (an event is a few KB) and so is the rate.
+  if (Number(getHeader(event, 'content-length') || 0) > MAX_BYTES) throw createError({ statusCode: 406, statusMessage: 'Too large' })
+  await rateLimit(`sb:rl:mgwh:${clientIp(event) || 'ip'}`, 600, 60)
   const body = (await readBody(event).catch(() => null)) as { signature?: MailgunSignature, 'event-data'?: Record<string, unknown> } | null
   if (!body?.signature || !body['event-data']) throw createError({ statusCode: 406, statusMessage: 'Expected a Mailgun JSON webhook' })
   if (!verifyMailgunSignature(body.signature, key)) throw createError({ statusCode: 401, statusMessage: 'Invalid signature' })

@@ -2,6 +2,7 @@ import { emptyDocument, walkBlocks, type EmailDocument } from './blocks'
 import { applyTemplateVariables } from './placeholders'
 import { currentTheme } from './theme'
 import { componentValue } from './render'
+import { replaceBetween, replaceElements, stripTags } from '../htmlScan'
 
 // The one render pipeline: panel preview, share page and the send API all go
 // through resolveTemplate, so what an operator previews is what gets sent.
@@ -162,21 +163,24 @@ export function decodeHtmlEntities(value: string): string {
   })
 }
 
+const ANCHOR_HREF = /\bhref\s*=\s*"([^"]+)"/i
+/** A span or div with nothing but text in it (a hidden preheader is one). */
+const LEAF_BLOCK = /<(div|span)(?=[\s/>])([^<>]*)>[^<]*<\/\1>/gi
+
 /** Plain-text part for the HTML a template renders to. */
 export function htmlToText(html: string): string {
-  const text = html
-    .replace(/<(style|title|head|script)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    // Hidden preheaders belong to the inbox preview, not the text body.
-    .replace(/<(div|span)\b[^>]*display\s*:\s*none[^>]*>[^<]*<\/\1>/gi, '')
-    .replace(/<a\s[^>]*href\s*=\s*"([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_match, href: string, inner: string) => {
-      const label = inner.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
-      if (href.startsWith('#')) return label
-      return label && decodeHtmlEntities(label) !== decodeHtmlEntities(href) ? `${label} (${href})` : href
-    })
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/(p|div|h[1-6]|tr|li|table|section)>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
+  // Each step reads the HTML once (shared/htmlScan.ts): a template can be anything its author wrote.
+  let text = replaceElements(html, ['style', 'title', 'head', 'script'], () => '')
+  text = replaceBetween(text, '<!--', '-->')
+  // Hidden preheaders belong to the inbox preview, not the text body.
+  text = text.replace(LEAF_BLOCK, (full, _tag, attrs: string) => /display\s*:\s*none/i.test(attrs) ? '' : full)
+  text = replaceElements(text, ['a'], ({ attrs, inner }) => {
+    const href = ANCHOR_HREF.exec(attrs)?.[1] ?? ''
+    const label = stripTags(inner).replace(/\s+/g, ' ').trim()
+    if (href.startsWith('#')) return label
+    return label && decodeHtmlEntities(label) !== decodeHtmlEntities(href) ? `${label} (${href})` : href
+  }, (_name, attrs) => ANCHOR_HREF.test(attrs))
+  text = stripTags(text.replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|h[1-6]|tr|li|table|section)>/gi, '\n'))
   return decodeHtmlEntities(text)
     .replace(/[ \t ]+/g, ' ')
     .split('\n')

@@ -16,6 +16,31 @@ describe('components', () => {
     for (const def of BUILTIN_COMPONENTS) expect(normalizeComponentInput(def)).toMatchObject({ ok: true })
   })
 
+  test('what a browser reads as a handler or a script address is refused, however it is spelled', () => {
+    const base = { key: 'card', name: 'Card' }
+    for (const html of [
+      '<div><svg/onload=alert(1)></svg></div>',
+      '<div><img src="x"onerror=alert(1)></div>',
+      '<div><a title=">"/onclick=alert(1)>x</a></div>',
+      '<div><a title="a > b" onclick=alert(1)>x</a></div>',
+      '<div><a href="java&#115;cript:alert(1)">x</a></div>',
+      '<div><a href="java&#x73;cript:alert(1)">x</a></div>',
+      '<div><a href="java&Tab;script&colon;alert(1)">x</a></div>',
+      '<div><a href="&#106;avascript:alert(1)">x</a></div>',
+      '<div><a href=" \tjava\nscript:alert(1)">x</a></div>',
+      '<div><a href="data&colon;text/html;base64,PHNjcmlwdD4=">x</a></div>',
+      '<div><form action="vb&#115;cript:x()"><button>go</button></form></div>',
+      '<div><meta http-equiv="refresh" content="0;url=https://evil.test"></div>',
+      '<div><ONCLICK=x></div><div ONMOUSEOVER="y()">z</div>'
+    ]) expect(normalizeComponentInput({ ...base, html })).toMatchObject({ ok: false })
+    // Ordinary markup, and text that merely looks like it, is fine (an unquoted value runs to the next space, slashes and all).
+    for (const html of [
+      '<div><img src=x/onerror=alert(1)></div>',
+      '<section class="a"><a href="/online=1" title="a > b">Online = yes</a><p>online = true</p><img src="/x.png" alt="one = 1"></section>',
+      '<section><a href="https://example.com/a?b=c&amp;d=e" target="_blank">x</a><svg viewBox="0 0 1 1"><path d="M0 0"/></svg></section>'
+    ]) expect(normalizeComponentInput({ ...base, html })).toMatchObject({ ok: true })
+  })
+
   test('templates never carry anything that runs, and built-in keys stay reserved', () => {
     const base = { key: 'card', name: 'Card' }
     for (const html of ['<div><script>alert(1)</script></div>', '<div onclick="x()">hi</div>', '<a href="javascript:alert(1)">x</a>', '<div><iframe srcdoc="<b>x</b>"></iframe></div>', '<div><link rel="stylesheet" href="https://evil.test/x.css"></div>']) {

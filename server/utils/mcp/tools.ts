@@ -867,13 +867,13 @@ export const MCP_TOOLS: readonly McpTool[] = [
   // ---- starting, closing, reading and deleting conversations ---------------------------
   {
     name: 'start_conversation', title: 'Start a conversation with a customer', destructive: true, method: 'POST', path: '/v1/admin/conversations',
-    description: 'Opens a new conversation with a customer and sends them the first message from the team, even if they never used the chat: pass the host app\'s user id as `externalId` and the customer is found or created in the project. The `name` and `email` you give replace the ones on record. Emails them the message when they have an address, unless `notifyByEmail` is false. Returns the conversation, the message, the customer and whether the email went out (`emailSent`, `emailError`). This reaches a real person and cannot be taken back: confirm the wording and the recipient with the user first.',
+    description: 'Opens a new conversation with a customer and sends them the first message from the team, even if they never used the chat: pass the host app\'s user id as `externalId` and the customer is found or created in the project. The `name` and `email` you give only fill what the customer has not got: a name or address already on record is kept. Emails them the message when they have an address, unless `notifyByEmail` is false. Returns the conversation, the message, the customer and whether the email went out (`emailSent`, `emailError`). This reaches a real person and cannot be taken back: confirm the wording and the recipient with the user first.',
     params: {
       projectId: { type: 'string', required: true, description: 'Project id, from list_projects.' },
       externalId: { type: 'string', required: true, description: 'The customer\'s id in the host app, up to 200 characters. The same id in the same project is always the same customer; search_end_users finds existing ones.' },
       body: { type: 'string', required: true, description: 'The first message, as plain text or Markdown, up to 8,000 characters.' },
-      name: { type: 'string', description: 'The customer\'s name. It replaces the one on record.' },
-      email: { type: 'string', description: 'The customer\'s email address, where the message is sent. It replaces the one on record, so leave it out for a customer who already has one.' },
+      name: { type: 'string', description: 'The customer\'s name, used when none is on record.' },
+      email: { type: 'string', description: 'The customer\'s email address, where the message is sent, used when none is on record. A customer who already has one keeps it.' },
       subject: { type: 'string', description: 'A subject line, up to 200 characters.' },
       type: { type: 'string', description: 'The conversation type\'s key, from list_conversation_types. Default support.' },
       fields: { type: 'object', description: 'Values for the type\'s intake fields, by field key (the keys are in list_conversation_types).' },
@@ -2803,6 +2803,24 @@ export function describeTool(tool: McpTool) {
 
 export type McpRequest = { method: McpTool['method'], url: string, body?: Record<string, unknown> }
 
+/**
+ * Words that name a route next to an `{id}` one (`/v1/admin/board-items/{id}` and `/v1/admin/board-items/export`). An id
+ * argument that spells one would reach that other route, so it is refused; tests/mcpPathWords.test.ts keeps the list in step
+ * with the route files.
+ */
+export const RESERVED_PATH_WORDS = new Set([
+  'alerts', 'analyses', 'analyze', 'attachments', 'batch', 'bulk', 'comments', 'config', 'connect', 'deliveries', 'events', 'export',
+  'from-feedback', 'import', 'links', 'merge', 'preferences', 'preview', 'providers', 'render', 'reports', 'roadmap', 'schedule', 'send',
+  'servers', 'starters', 'stats', 'subscribe', 'subscription', 'suggest-title', 'test', 'upload'
+])
+
+/** What may stand in a URL path: ids, slugs and keys are letters, digits, dashes and underscores, and never a word that names a sibling route. */
+function pathProblem(value: string): string {
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(value)) return 'may only hold letters, digits, dashes and underscores (up to 128)'
+  if (RESERVED_PATH_WORDS.has(value.toLowerCase())) return 'is a reserved word: use the item\'s id'
+  return ''
+}
+
 /** The call to make for a tool and its arguments, or a sentence saying what is wrong with them (the assistant reads it and retries). */
 export function buildRequest(tool: McpTool, args: unknown): McpRequest | { error: string } {
   const given = (args && typeof args === 'object' && !Array.isArray(args) ? args : {}) as Record<string, unknown>
@@ -2820,7 +2838,11 @@ export function buildRequest(tool: McpTool, args: unknown): McpRequest | { error
     const problem = checkValue(param, value)
     if (problem) return { error: `Argument "${name}" ${problem}.` }
     const where = paramLocation(tool, name)
-    if (where === 'path') path = path.replace(`{${name}}`, encodeURIComponent(String(value)))
+    if (where === 'path') {
+      const bad = pathProblem(String(value))
+      if (bad) return { error: `Argument "${name}" ${bad}.` }
+      path = path.replace(`{${name}}`, encodeURIComponent(String(value)))
+    }
     else if (where === 'query') query.set(param.as || name, Array.isArray(value) ? value.join(',') : String(value))
     else body[param.as || name] = value
   }

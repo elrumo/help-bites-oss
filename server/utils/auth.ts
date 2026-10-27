@@ -111,7 +111,7 @@ export async function requireProjectSecret(event: H3Event): Promise<ParseObject>
   const project = await new (useParse()).Query('Project').equalTo('secret', token).first(MASTER)
   // A suspended or deleting workspace's secret opens nothing, and says no more than a wrong one.
   if (!project || !(await workspaceIsActive(pointerId(project.get('workspace'))))) throw createError({ statusCode: 401, statusMessage: 'Invalid project secret' })
-  await rateLimit(`sb:rl:project:${project.id}`, LIMITS.requestsPerProject.limit, LIMITS.requestsPerProject.window)
+  await rateLimit(`sb:rl:projectsecret:${project.id}`, LIMITS.requestsPerProjectSecret.limit, LIMITS.requestsPerProjectSecret.window)
   return project
 }
 
@@ -157,6 +157,7 @@ export async function verifyEndUserToken(event: H3Event, token: string): Promise
     throw createError({ statusCode: 401, statusMessage: `Invalid identity token (${result.reason})` })
   }
 
+  await rateLimit(`sb:rl:user:${project.id}:${result.claims.sub}`, LIMITS.requestsPerEndUser.limit, LIMITS.requestsPerEndUser.window)
   await rateLimit(`sb:rl:project:${project.id}`, LIMITS.requestsPerProject.limit, LIMITS.requestsPerProject.window)
   // The setup checklist's "identity seen": a real host signed this one. Never holds up the request.
   void markIdentitySeen(project).catch(() => {})

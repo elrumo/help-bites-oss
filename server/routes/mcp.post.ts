@@ -29,6 +29,11 @@ export default defineEventHandler(async (event) => {
     return { jsonrpc: '2.0', id: null, error: { code: -32001, message: (error as { statusMessage?: string }).statusMessage || 'Authentication required' } }
   }
 
+  // The biggest honest call is an email's HTML (2 MB) in JSON; anything past this is not an assistant's request.
+  if (Number(getHeader(event, 'content-length') || 0) > 4_000_000) {
+    setResponseStatus(event, 413)
+    return { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'The request is too large' } }
+  }
   const body = await readBody(event).catch(() => undefined)
   if (body === undefined) {
     setResponseStatus(event, 400)

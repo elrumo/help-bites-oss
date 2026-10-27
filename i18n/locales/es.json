@@ -5537,6 +5537,7 @@
     "accessReadDescription": "Lo ve todo pero no cambia nada: ideal para resúmenes y clasificación.",
     "projects": "Proyectos a conectar",
     "redirectsTo": "Cuando decidas, volverás a {host}.",
+    "unverified": "HelpBites no puede saber quién está detrás de {host}: el nombre de arriba es el que el asistente se ha puesto. Aprueba solo si acabas de empezar a conectar un asistente desde ahí. Te dejamos seleccionado solo lectura.",
     "approve": "Aprobar",
     "deny": "Rechazar",
     "notAllowed": "Tu rol en este espacio de trabajo no puede crear claves de API, así que no puede conectar un asistente. Pídeselo a un propietario o administrador.",

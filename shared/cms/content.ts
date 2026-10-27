@@ -1,5 +1,6 @@
 import { BRAND_RADII, BRAND_THEMES, type BrandRadius, type BrandTheme } from '../brand'
 import { CMS_ICONS } from './icons'
+import { unsafeHtml } from './unsafeHtml'
 
 /**
  * The content model behind Pages (the landing page builder) and the headless
@@ -122,7 +123,6 @@ export const SAFE_COLOR = /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([\d\s.,%/+-]+\)|[a-z]+|
  * The page's CSP blocks the rest (frames outside YouTube and Vimeo, forms
  * posting elsewhere, outside stylesheets).
  */
-export const UNSAFE_HTML = /<script|<object|<embed|<base\b|<link\b|<meta\b[^>]*http-equiv|\son[a-z]+\s*=|javascript:|vbscript:|data:text\/html|srcdoc\s*=/i
 export const UNSAFE_CSS = /<\/style|@import|expression\s*\(|javascript:|-moz-binding|behavior\s*:/i
 
 export const uid = (): string => globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 12)
@@ -204,7 +204,7 @@ export function normalizeComponentInput(input: unknown, reserved: Iterable<strin
   const css = typeof raw.css === 'string' ? raw.css.trim() : ''
   if (html.length > CMS_LIMITS.html) return { ok: false, error: 'The HTML is larger than 100 KB' }
   if (css.length > CMS_LIMITS.css) return { ok: false, error: 'The CSS is larger than 100 KB' }
-  if (UNSAFE_HTML.test(html)) return { ok: false, error: 'The HTML has something that runs (script, on… handlers, javascript: links, object, embed, base, link or srcdoc). Components are HTML and CSS only' }
+  if (unsafeHtml(html)) return { ok: false, error: 'The HTML has something that runs (script, on… handlers, javascript: links, object, embed, base, link or srcdoc). Components are HTML and CSS only' }
   if (UNSAFE_CSS.test(css)) return { ok: false, error: 'The CSS uses @import, expression() or javascript:' }
   if (html && !/^<[a-zA-Z][\w-]*[\s>/]/.test(html)) return { ok: false, error: 'The HTML starts with one element that wraps the component (e.g. <section>)' }
   const fields: CmsField[] = []

@@ -5490,6 +5490,7 @@
     "accessReadDescription": "Ho pot veure tot però no canvia res: ideal per a resums i triatge.",
     "projects": "Projectes a connectar",
     "redirectsTo": "Quan decideixis, tornaràs a {host}.",
+    "unverified": "HelpBites no pot saber qui hi ha darrere de {host}: el nom de dalt és el que l'assistent s'ha posat. Aprova només si acabes de començar a connectar-hi un assistent. T'hem deixat seleccionat només lectura.",
     "approve": "Aprovar",
     "deny": "Rebutjar",
     "notAllowed": "El teu rol en aquest espai de treball no pot crear claus d'API, així que no pot connectar un assistent. Demana-ho a un propietari o administrador.",

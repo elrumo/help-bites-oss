@@ -26,7 +26,17 @@ export default defineEventHandler(async (event) => {
   if (body.grant_type === 'refresh_token') {
     // Refresh tokens rotate on use and are bound to both the OAuth client and the revocable API-key row.
     if (!readClient(body.client_id)) return failure(event, 'invalid_client', 'Unknown OAuth client')
-    const grant = await takeRefreshToken(body.refresh_token)
+    const taken = await takeRefreshToken(body.refresh_token)
+    if (taken && 'reusedKeyId' in taken) {
+      // A spent token again, after the grace period: a copy was kept, so the connection it belonged to ends.
+      if (taken.revoke) {
+        const Parse = useParse()
+        const stolen = await new Parse.Query('AdminApiKey').get(taken.reusedKeyId, MASTER).catch(() => null)
+        if (stolen) await stolen.destroy(MASTER).catch(() => {})
+      }
+      return failure(event, 'invalid_grant', 'The refresh token was already used')
+    }
+    const grant = taken?.grant
     if (!grant || grant.clientId !== body.client_id) return failure(event, 'invalid_grant', 'The refresh token is unknown, expired, or belongs to another client')
 
     const Parse = useParse()

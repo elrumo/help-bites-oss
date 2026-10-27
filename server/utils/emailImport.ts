@@ -30,6 +30,8 @@ export type EmailImportAction = 'created' | 'updated' | 'unchanged' | 'skipped' 
 export type EmailImportResult = { key: string, action: EmailImportAction, id: string | null, name: string, error?: string }
 
 export const MAX_IMPORT_ITEMS = 100
+/** One imported email's HTML: an email past this is not an email, and reading it is work for the whole server. */
+export const MAX_IMPORT_HTML = 2_000_000
 
 function stable(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stable)
@@ -49,6 +51,7 @@ export function importItemDocument(item: EmailImportItem): EmailDocument | null 
     if (item.preheader !== undefined) doc = { ...doc, settings: { ...doc.settings, preheader: item.preheader } }
     if (item.text !== undefined) doc = { ...doc, settings: { ...doc.settings, text: item.text } }
   } else if (typeof item.html === 'string' && item.html.trim()) {
+    if (item.html.length > MAX_IMPORT_HTML) throw createError({ statusCode: 400, statusMessage: `html is up to ${MAX_IMPORT_HTML.toLocaleString('en-US')} characters` })
     doc = validateDocument(htmlToEmailDocument(item.html, { title: item.subject, preheader: item.preheader, text: item.text, settings: item.settings as Partial<EmailDocument['settings']> }))
   } else {
     throw createError({ statusCode: 400, statusMessage: 'needs a document, html or master' })

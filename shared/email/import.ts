@@ -1,5 +1,6 @@
 import { DEFAULT_SETTINGS, type EmailDocument, type EmailSettings } from './blocks'
 import { decodeHtmlEntities } from './resolve'
+import { findElement, replaceElements } from '../htmlScan'
 
 // An HTML email from elsewhere (a file, an API import, another app's
 // template) becomes one custom-HTML block: the design stays exactly as
@@ -21,21 +22,23 @@ export type HtmlImportOptions = {
 
 export const IMPORTED_CONTENT_WIDTH = 672
 
-const LEAF_RE = /<(span|div)\b([^>]*)>([^<]*)<\/\1>/gi
+const LEAF_RE = /<(span|div)(?=[\s/>])([^<>]*)>([^<]*)<\/\1>/gi
 const HIDDEN_STYLE_RE = /display\s*:\s*none|max-height\s*:\s*0|visibility\s*:\s*hidden/i
 const COLOR_RE = /(?:background(?:-color)?\s*:\s*|bgcolor\s*=\s*["']?)(#[0-9a-f]{6}|#[0-9a-f]{3})\b/i
 
 function stripDocumentShell(html: string): string {
-  const body = html.match(/<body\b[^>]*>([\s\S]*)<\/body>/i)?.[1]
-  if (body === undefined) return html.replace(/<!doctype[^>]*>/i, '').trim()
+  // The body runs to the last </body>; each lookup reads the text once (shared/htmlScan.ts), whatever was pasted.
+  const body = findElement(html, 'body', { last: true })?.inner
+  if (body === undefined) return html.replace(/<!doctype[^<>]*>/i, '').trim()
   // Mail clients that honour <style> also honour it in the body; keep the head's.
-  const styles = (html.match(/<head\b[^>]*>([\s\S]*?)<\/head>/i)?.[1] || '').match(/<style\b[^>]*>[\s\S]*?<\/style>/gi) || []
+  const styles: string[] = []
+  replaceElements(findElement(html, 'head')?.inner || '', ['style'], ({ whole }) => { styles.push(whole); return '' })
   return [...styles, body.trim()].join('\n')
 }
 
 /** The page colour: the body's, else the outermost wrapper's (the first one declared near the top). */
 function backgroundOf(html: string): string | null {
-  const body = html.match(/<body\b([^>]*)>/i)?.[1] || ''
+  const body = html.match(/<body(?=[\s/>])([^<>]*)>/i)?.[1] || ''
   return body.match(COLOR_RE)?.[1] || stripDocumentShell(html).slice(0, 1500).match(COLOR_RE)?.[1] || null
 }
 
@@ -65,7 +68,7 @@ export function extractPreheader(html: string): { preheader: string, html: strin
 }
 
 function titleOf(html: string): string {
-  return decodeHtmlEntities(html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.replace(/\s+/g, ' ').trim() || '')
+  return decodeHtmlEntities(html.match(/<title(?=[\s/>])[^<>]*>([^<]*)<\/title>/i)?.[1]?.replace(/\s+/g, ' ').trim() || '')
 }
 
 /** One custom-HTML block, with subject, preheader and background lifted into the settings. */

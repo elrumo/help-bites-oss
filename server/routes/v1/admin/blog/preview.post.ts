@@ -26,6 +26,8 @@ const text = (value: unknown, max: number) => (typeof value === 'string' ? value
 
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'content' })
+  // A preview renders the whole post on every call (typing in the editor asks for one now and then, not many a second).
+  await rateLimit(`sb:rl:blogpreview:${ctx.agent.id}`, 60, 60)
   const input = ((await readBody(event).catch(() => ({}))) || {}) as Record<string, unknown>
   const project = await blogProject(ctx, event, input)
   const body = typeof input.body === 'string' ? input.body : ''

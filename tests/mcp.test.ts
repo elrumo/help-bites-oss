@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { createHash } from 'node:crypto'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { handleMcpBody, describeFailure, MCP_PROTOCOL_VERSIONS, type McpCall } from '../server/utils/mcp/protocol'
-import { MCP_TOOLS, buildRequest, describeTool, paramLocation } from '../server/utils/mcp/tools'
-import { pkceMatches, readClient, redirectWith, registerClient, requireClient, validChallenge, validRedirectUri } from '../server/utils/mcp/oauth'
+import { MCP_TOOLS, RESERVED_PATH_WORDS, buildRequest, describeTool, paramLocation } from '../server/utils/mcp/tools'
+import { OAUTH_KEY_DAYS, OAUTH_REFRESH_DAYS, REFRESH_REUSE_GRACE_MS, cleanClientName, knownRedirect, pkceMatches, readClient, readRefreshEntry, redirectWith, registerClient, requireClient, validChallenge, validRedirectUri } from '../server/utils/mcp/oauth'
 
 const root = join(import.meta.dir, '..')
 const tool = (name: string) => MCP_TOOLS.find(t => t.name === name)!
@@ -61,9 +61,30 @@ describe('MCP tools', () => {
 })
 
 describe('buildRequest', () => {
-  test('GET arguments become the query string, path arguments are encoded', () => {
+  test('GET arguments become the query string', () => {
     expect(buildRequest(tool('list_conversations'), { project: 'p1', unread: true, limit: 20 })).toEqual({ method: 'GET', url: '/v1/admin/conversations?project=p1&unread=true&limit=20' })
-    expect(buildRequest(tool('get_conversation'), { id: 'a/b?c' })).toEqual({ method: 'GET', url: '/v1/admin/conversations/a%2Fb%3Fc' })
+    expect(buildRequest(tool('get_conversation'), { id: 'aB3_x-9' })).toEqual({ method: 'GET', url: '/v1/admin/conversations/aB3_x-9' })
+  })
+
+  test('a path argument is an id, never a way to another route', () => {
+    const get = tool('get_conversation')
+    for (const id of ['a/b', 'a?b', 'a#b', '..', '.', 'a%2fb', 'a b', 'a\nb', '', 'x'.repeat(129)]) expect(buildRequest(get, { id })).toHaveProperty('error')
+    // A word that names a sibling route (/conversations/export, /conversations/bulk) is refused in any case.
+    for (const id of ['export', 'Bulk', 'config', 'import', 'stats']) expect((buildRequest(get, { id }) as { error: string }).error).toContain('reserved')
+    expect(buildRequest(get, { id: 'x'.repeat(128) })).toHaveProperty('url')
+  })
+
+  test('every route name that sits beside an {id} route is a reserved path word', () => {
+    // A new /export or /bulk next to a /[id] route fails here until it is added to RESERVED_PATH_WORDS.
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap(name => statSync(join(dir, name)).isDirectory() ? [join(dir, name), ...walk(join(dir, name))] : [])
+    const stripped = (name: string) => name.replace(/\.(get|post|put|patch|delete)\.ts$/, '').replace(/\.ts$/, '')
+    const siblings = new Set<string>()
+    for (const dir of [join(root, 'server/routes/v1'), ...walk(join(root, 'server/routes/v1'))].filter(d => statSync(d).isDirectory())) {
+      const names = readdirSync(dir).map(stripped)
+      if (!names.some(name => name.startsWith('['))) continue
+      for (const name of names) if (!name.startsWith('[') && name !== 'index') siblings.add(name)
+    }
+    expect([...siblings].filter(name => !RESERVED_PATH_WORDS.has(name))).toEqual([])
   })
 
   test('writes put arguments in the body, except where the route reads the query', () => {
@@ -178,6 +199,16 @@ describe('MCP protocol', () => {
     expect((await send([])).error.code).toBe(-32600)
   })
 
+  test('a batch is capped, and a route that never answers is given up on', async () => {
+    const ping = (id: number) => ({ jsonrpc: '2.0', id, method: 'ping' })
+    expect((await send(Array.from({ length: 21 }, (_, i) => ping(i + 1)))).error.message).toContain('at most 20')
+    expect(await send(Array.from({ length: 20 }, (_, i) => ping(i + 1)))).toHaveLength(20)
+    const never: McpCall = () => new Promise(() => {})
+    const answer = await handleMcpBody({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'list_projects' } }, never, { timeoutMs: 20 }) as any
+    expect(answer.result.isError).toBe(true)
+    expect(answer.result.content[0].text).toContain('did not answer')
+  })
+
   test('malformed input is an invalid request', async () => {
     expect((await send('hello')).error.code).toBe(-32600)
     expect((await send({ id: 1 })).error.code).toBe(-32600)
@@ -196,7 +227,23 @@ describe('MCP sign-in', () => {
 
   test('redirect addresses: https, loopback http and app schemes only', () => {
     for (const ok of [redirect, 'http://localhost:6274/callback', 'http://127.0.0.1:8080/cb', 'cursor://anysphere.cursor-mcp/oauth/callback', 'vscode://x/y']) expect(validRedirectUri(ok)).toBe(true)
+    // Schemes that open a local handler with a link someone else wrote are not an app's own.
+    for (const bad of ['search-ms:query=x', 'ms-msdt:/id', 'intent://x#Intent;end', 'ws://localhost/x', 'ftp://a.example/x', 'slack://open', 'https://user:pass@a.example/cb']) expect(validRedirectUri(bad)).toBe(false)
+    for (const ok of ['com.example.app://cb', 'claude://auth/cb', 'windsurf://x/y']) expect(validRedirectUri(ok)).toBe(true)
     for (const bad of ['http://evil.example/cb', 'javascript:alert(1)', 'data:text/html,hi', 'file:///etc/passwd', 'https://a.example/cb#frag', 'not a url', '', 42, `https://a.example/${'x'.repeat(600)}`]) expect(validRedirectUri(bad)).toBe(false)
+  })
+
+  test('the consent page knows which addresses are an assistant it can name', () => {
+    for (const known of ['https://claude.ai/api/mcp/auth_callback', 'https://chatgpt.com/connector_platform_oauth_redirect', 'https://platform.openai.com/x', 'http://localhost:6274/cb', 'cursor://anysphere.cursor-mcp/oauth/callback']) expect(knownRedirect(known)).toBe(true)
+    for (const unknown of ['https://evil.example/cb', 'https://claude.ai.evil.example/cb', 'https://notclaude.ai/cb', 'com.example.app://cb', 'nonsense']) expect(knownRedirect(unknown)).toBe(false)
+  })
+
+  test('a client names itself in plain text only', () => {
+    // Bidi overrides, zero-width and control characters would let a name read as something else, or as several lines.
+    expect(cleanClientName('Cla\u202eude\u200b \u0007AI\nTeam')).toBe('Claude AI Team')
+    expect(cleanClientName('  \u202e\u200b ')).toBe('')
+    expect(registerClient({ client_name: '\u202e\u200b', redirect_uris: [redirect] }).client.name).toBe('AI assistant')
+    expect(cleanClientName('x'.repeat(100))).toHaveLength(60)
   })
 
   test('a client id is the signed registration: readable, not forgeable', () => {
@@ -238,5 +285,30 @@ describe('MCP sign-in', () => {
   test('the redirect carries the code and the state, and keeps existing parameters', () => {
     expect(redirectWith('https://x.example/cb?a=1', { code: 'abc', state: 's t' })).toBe('https://x.example/cb?a=1&code=abc&state=s+t')
     expect(redirectWith('https://x.example/cb', { error: 'access_denied', state: '' })).toBe('https://x.example/cb?error=access_denied')
+  })
+})
+
+describe('MCP refresh tokens', () => {
+  const grant = { agentId: 'a1', workspaceId: 'w1', clientId: 'c1', apiKeyId: 'k1' }
+
+  test('a stored entry is a live grant, a spent token, or nothing', () => {
+    expect(readRefreshEntry(JSON.stringify(grant))).toEqual({ grant })
+    expect(readRefreshEntry(null)).toBeNull()
+    expect(readRefreshEntry('not json')).toBeNull()
+    expect(readRefreshEntry(JSON.stringify({ agentId: 'a1' }))).toBeNull()
+    expect(readRefreshEntry('used:')).toBeNull()
+  })
+
+  test('a spent token presented again at once is a retry; later, a copy someone kept', () => {
+    const at = 1_000_000
+    expect(readRefreshEntry(`used:k1:${at}`, at + 5_000)).toEqual({ reusedKeyId: 'k1', revoke: false })
+    expect(readRefreshEntry(`used:k1:${at}`, at + REFRESH_REUSE_GRACE_MS + 1)).toEqual({ reusedKeyId: 'k1', revoke: true })
+    // A note with no time is old enough.
+    expect(readRefreshEntry('used:k1', at)).toEqual({ reusedKeyId: 'k1', revoke: true })
+  })
+
+  test('a connection lasts as long as it is used, and not for years unused', () => {
+    expect(OAUTH_KEY_DAYS).toBeLessThanOrEqual(30)
+    expect(OAUTH_REFRESH_DAYS).toBeLessThanOrEqual(90)
   })
 })

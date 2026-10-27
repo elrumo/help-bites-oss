@@ -59,7 +59,9 @@ describe('brand kit files', () => {
 
   test('SVGs that could run anything are refused', () => {
     expect(svgIsActive(Buffer.from('<svg><path d="M0 0"/></svg>'))).toBe(false)
-    for (const bad of ['<svg><script>alert(1)</script></svg>', '<svg onload="x()"></svg>', '<svg><a href="javascript:x()"/></svg>', '<svg><foreignObject/></svg>']) {
+    for (const bad of ['<svg><script>alert(1)</script></svg>', '<svg onload="x()"></svg>', '<svg><a href="javascript:x()"/></svg>', '<svg><foreignObject/></svg>',
+      // Spelled the way a browser reads them but a regex does not.
+      '<svg><a href="java&#115;cript:alert(1)"><text>x</text></a></svg>', '<svg/onload=alert(1)>', '<svg><a xlink:href="&#x6A;avascript&colon;alert(1)"/></svg>', '<svg><set attributeName="href" to="java\tscript:alert(1)"/></svg>']) {
       expect(svgIsActive(Buffer.from(bad))).toBe(true)
     }
   })

@@ -47,9 +47,19 @@ What this needs:
 - `HELPBITES_SECRET` set on the server (it signs the assistant's registration).
 - A role that may manage API keys (owners and admins).
 
-The browser connection refreshes its one-year access key automatically. Its
-rotating refresh token is tied to the API-key record, so revoking that key under
-**Settings → API keys** disconnects the assistant.
+The browser connection renews its 30-day access key automatically each time the
+assistant uses it, and a connection nobody uses for 90 days ends. Its rotating
+refresh token is tied to the API-key record, so revoking that key under
+**Settings → API keys** disconnects the assistant. A refresh token that is used a
+second time after the first minute is treated as a stolen copy and the whole
+connection is revoked; reconnect from the assistant if that happens.
+
+The approval page shows the address you are sent back to, in plain sight. For an
+assistant HelpBites doesn't recognise (anything other than Claude, ChatGPT, a
+local app or an editor's own address) it says so and selects *Read only* for you.
+Only approve a connection you just started. An assistant's registration can only
+point at an https address, a loopback address or an app's own scheme, and its name
+is shown as plain text.
 
 Changes made by an assistant through MCP tools are marked **via MCP** in a
 Planning item's edit history; direct API-key edits are marked **via API**.
@@ -601,13 +611,27 @@ table from the repo, and show me before you change anything."*
   anything you would rather not have steered by a customer's message. Switch an
   existing key either way in **Settings → API keys** (or `PATCH /v1/admin/api-keys/{id}`
   with `readOnly`).
-- **A key can't mint access.** Creating, renaming or revoking API keys, adding,
-  re-roling or removing teammates, inviting people, revealing or rotating a
-  project's secret, creating a project (the answer holds its secret), changing the
-  workspace's AI providers, deleting the workspace, connecting Telegram and
-  registering a push device need a person signed in to the panel; an API key, an
-  assistant's included, gets `403 session_required`. Otherwise a steered assistant
-  could leave itself a way back in that outlives the connection you can revoke.
+- **A key can't mint access or move where things go.** Creating, renaming or
+  revoking API keys, adding, re-roling or removing teammates, inviting people,
+  revealing or rotating a project's secret, creating a project (the answer holds
+  its secret), changing the workspace's AI providers, deleting the workspace,
+  connecting Telegram, Stripe, a revenue source, GitHub or an error tracker,
+  registering a push device, approving an assistant's sign-in, importing or
+  exporting a workspace, and everything that sets where customer data, mail or
+  credentials go (custom domains, inbound addresses, webhook endpoints, a
+  project's linked repositories, contact sources, a project's notification
+  addresses, sender, reply-to and mail domain, site URL, allowed origins, whether
+  email bodies are logged, and its event and action webhooks) need a person
+  signed in to the panel; an API key, an assistant's included, gets
+  `403 session_required`. Otherwise a steered assistant could leave itself a way
+  back in, or a copy of your customers' messages going somewhere, that outlives the
+  connection you can revoke. Each of these actions writes a line to the audit log.
+- **A path argument is an id.** The assistant's arguments are put in a URL, so an
+  id may only hold letters, digits, dashes and underscores, and never a word that
+  names another route (`export`, `stats`, `config`…).
+- **A call that doesn't answer is given up on** after 30 seconds, a request body
+  is limited to 4 MB, and a batch to 20 messages. `/mcp` takes API keys and OAuth
+  connections, not a panel session.
 - **Writes are marked.** Every tool says whether it only reads, and assistants
   that ask before acting use that. Replies to customers, sent email, publishing,
   deleting and replacing a whole list reach real people or can't be taken back:

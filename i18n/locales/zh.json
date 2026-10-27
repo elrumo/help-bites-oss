@@ -5480,6 +5480,7 @@
     "accessReadDescription": "可以查看一切但不能更改任何内容，适合做摘要和分拣。",
     "projects": "要连接的项目",
     "redirectsTo": "你做出决定后将返回 {host}。",
+    "unverified": "HelpBites 无法确认 {host} 的运营方：上面的名称只是助手自己取的。只有在你刚刚从那里开始连接助手时才批准。已为你选中“只读”。",
     "approve": "批准",
     "deny": "拒绝",
     "notAllowed": "你在此工作区的角色不能创建 API 密钥，因此无法连接助手。请联系所有者或管理员。",

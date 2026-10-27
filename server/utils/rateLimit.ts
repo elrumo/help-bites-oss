@@ -38,6 +38,10 @@ export const LIMITS = {
   messagesPerUser: { limit: 30, window: 60 },
   uploadsPerUser: { limit: 10, window: 60 },
   requestsPerProject: { limit: 600, window: 60 },
+  // One person's share of that, so a single token (a guest session costs nothing) cannot use up the whole project's requests.
+  requestsPerEndUser: { limit: 240, window: 60 },
+  // The host's own server (project secret) counts apart from browsers, so a busy widget cannot starve its backend.
+  requestsPerProjectSecret: { limit: 600, window: 60 },
   badTokensPerIp: { limit: 20, window: 60 },
   adminLoginPerIp: { limit: 10, window: 300 },
   // Caps guesses spread across many addresses; looser than per-IP, since it

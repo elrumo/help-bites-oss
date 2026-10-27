@@ -6,6 +6,7 @@ import { can, type Action } from '#shared/roles'
 import { normalizeDocument } from '#shared/email/ops'
 import { escapeHtmlValue, fillPlaceholders } from '#shared/email/placeholders'
 import { renderEmailHtml } from '#shared/email/render'
+import { replaceElements } from '#shared/htmlScan'
 import { decodeHtmlEntities, htmlToText, plainTextFor, projectBrandVars, resolveTemplate } from '#shared/email/resolve'
 import { withPoweredByHtml, withPoweredByText, type PoweredBy } from './branding'
 import { brandOf, cleanVariableValues, renderEmailTemplate, serializeEmailTemplate, validateDocument } from './emails'
@@ -421,7 +422,7 @@ export async function resolveEmailContent(project: ParseObject, content: EmailCo
 /** A fragment becomes a document (so the charset is declared); a full document is sent as written. */
 function wrapHtml(html: string, subject: string): string {
   if (/<html[\s>]/i.test(html)) return html
-  const body = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, '').trim()
+  const body = replaceElements(html, ['title'], () => '').trim()
   return `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${escapeHtmlValue(subject)}</title>\n</head>\n<body style="margin:0;padding:0;">\n${body}\n</body>\n</html>`
 }
 
@@ -456,7 +457,7 @@ export function composeEmail(project: ParseObject, content: ResolvedContent, req
     text = ownText || plainTextFor(document, html)
   } else if (content.type === 'html') {
     const filled = fillPlaceholders(content.html, withBrand, { html: true })
-    subject = subjectOverride || decodeHtmlEntities(filled.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() || '')
+    subject = subjectOverride || decodeHtmlEntities(filled.match(/<title(?=[\s/>])[^<>]*>([^<]*)<\/title>/i)?.[1]?.trim() || '')
     html = wrapHtml(filled, subject)
     text = ownText || htmlToText(html)
   } else {
