@@ -52,6 +52,9 @@ rotating refresh token is tied to the API-key record, so revoking that key under
 
 Changes made by an assistant through MCP tools are marked **via MCP** in a
 Planning item's edit history; direct API-key edits are marked **via API**.
+Comments written with `comment_on_board_item` display the connected assistant's
+name (such as ChatGPT or Claude), while the operator who authorized the
+connection remains recorded as the actor.
 
 ChatGPT's custom MCP connections are available on supported Business,
 Enterprise and Edu workspaces; availability and controls depend on the
@@ -112,6 +115,8 @@ a key's project limit apply exactly as they do in the panel and the native app.
 | `create_board_item` | Add an item. |
 | `create_board_item_from_feedback` | Plan a feedback post: the AI writes the item, the post is linked. |
 | `update_board_item` | Edit or move an item. |
+| `list_board_item_comments` | Read an item's private comments and threaded replies. |
+| `comment_on_board_item` | Add a private comment or threaded reply as this assistant. |
 | `list_changelog_entries` | Changelog entries, drafts included. |
 | `create_changelog_entry` | Write an entry: a draft unless told to publish. |
 | `update_changelog_entry` | Edit an entry, or publish a draft. |
