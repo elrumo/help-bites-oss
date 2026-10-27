@@ -12,7 +12,8 @@
     "cancel": "Cancel·la",
     "sourceCode": "Codi font",
     "search": "Cerca",
-    "saved": "Desat"
+    "saved": "Desat",
+    "saving": "Desant…"
   },
   "nav": {
     "openNavigation": "Obre la navegació",
@@ -427,7 +428,13 @@
     "untitled": "Sense títol",
     "setUpBoard": "Configura la planificació",
     "addToExisting": "Afegeix a un d'existent…",
-    "unlinkItem": "Desenllaça #{number} {title}"
+    "unlinkItem": "Desenllaça #{number} {title}",
+    "draftRestored": "El teu esborrany sense desar ha tornat.",
+    "discardDraft": "Descarta",
+    "pillDescription": "Té descripció",
+    "pillImages": "{count} imatge | {count} imatges",
+    "pillFiles": "{count} fitxer | {count} fitxers",
+    "saveLists": "Desa estats i etiquetes"
   },
   "style": {
     "useProject": "Fes servir l'estil del projecte",
@@ -650,7 +657,9 @@
     "tagImproved": "Millorat",
     "tagFixed": "Corregit",
     "tagRemoved": "Eliminat",
-    "tagBreaking": "Canvi important"
+    "tagBreaking": "Canvi important",
+    "draftRestored": "El teu esborrany sense desar ha tornat.",
+    "discardDraft": "Descarta"
   },
   "blog": {
     "styleTitle": "Estil del blog",
@@ -2361,7 +2370,8 @@
       "fix": "Corregit",
       "removed": "Eliminat",
       "breaking": "Canvi incompatible"
-    }
+    },
+    "dragToReorder": "Arrossega per reordenar, o fes servir les fletxes"
   },
   "knowledge": {
     "newModel": "Nou model",

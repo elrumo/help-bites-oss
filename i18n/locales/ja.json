@@ -12,7 +12,8 @@
     "cancel": "キャンセル",
     "sourceCode": "ソースコード",
     "search": "検索",
-    "saved": "保存しました"
+    "saved": "保存しました",
+    "saving": "保存中…"
   },
   "nav": {
     "openNavigation": "ナビゲーションを開く",
@@ -427,7 +428,13 @@
     "untitled": "無題",
     "setUpBoard": "プランニングを設定",
     "addToExisting": "既存のアイテムに追加…",
-    "unlinkItem": "#{number} {title} のリンクを解除"
+    "unlinkItem": "#{number} {title} のリンクを解除",
+    "draftRestored": "保存されていない下書きを復元しました。",
+    "discardDraft": "破棄",
+    "pillDescription": "説明あり",
+    "pillImages": "画像 {count} 件 | 画像 {count} 件",
+    "pillFiles": "ファイル {count} 件 | ファイル {count} 件",
+    "saveLists": "ステータスとラベルを保存"
   },
   "style": {
     "useProject": "プロジェクトのスタイルを使う",
@@ -650,7 +657,9 @@
     "tagImproved": "改善",
     "tagFixed": "修正",
     "tagRemoved": "削除",
-    "tagBreaking": "破壊的変更"
+    "tagBreaking": "破壊的変更",
+    "draftRestored": "保存されていない下書きを復元しました。",
+    "discardDraft": "破棄"
   },
   "blog": {
     "styleTitle": "ブログのスタイル",
@@ -2361,7 +2370,8 @@
       "fix": "修正",
       "removed": "削除",
       "breaking": "破壊的変更"
-    }
+    },
+    "dragToReorder": "ドラッグして並べ替え、または矢印キーを使用"
   },
   "knowledge": {
     "newModel": "新しいモデル",

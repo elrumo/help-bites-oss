@@ -49,6 +49,18 @@ struct BoardScreen: View {
   init(projectId: String, workspace: Workspace) {
     self.projectId = projectId
     self.workspace = workspace
+    // The order picked last time on this project, as the web keeps it per project.
+    if let saved = UserDefaults.standard.string(forKey: Self.orderKey(projectId)), Self.orders.contains(saved) { order = saved }
+  }
+
+  private static let orders = ["manual", "newest", "oldest"]
+  private static func orderKey(_ projectId: String) -> String { "helpbites.board.order.\(projectId)" }
+
+  /// Picks an order and remembers it for this project.
+  func setOrder(_ value: String) {
+    guard Self.orders.contains(value) else { return }
+    order = value
+    UserDefaults.standard.set(value, forKey: Self.orderKey(projectId))
   }
 
   var session: SessionStore { workspace.session }
@@ -465,7 +477,7 @@ private struct BoardView: View {
             }
           }
           filterMenu("Order", value: orderTitle, active: store.order != "manual") {
-            Picker("Order", selection: $store.order) {
+            Picker("Order", selection: Binding(get: { store.order }, set: { store.setOrder($0) })) {
               Text("Manual").tag("manual")
               Text("Newest first").tag("newest")
               Text("Oldest first").tag("oldest")
@@ -761,6 +773,17 @@ private struct BoardCard: View {
           }
         }
       }
+      let attachments = item.attachments ?? []
+      let images = attachments.filter(\.isImage).count
+      let files = attachments.count - images
+      let hasDescription = !item.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      if hasDescription || !attachments.isEmpty {
+        HStack(spacing: 4) {
+          if hasDescription { BoardPill(systemImage: "text.alignleft", count: nil, label: "Has a description") }
+          if images > 0 { BoardPill(systemImage: "photo", count: images, label: "\(images) images") }
+          if files > 0 { BoardPill(systemImage: "paperclip", count: files, label: "\(files) files") }
+        }
+      }
       if !item.posts.isEmpty || !item.conversations.isEmpty || !item.targetDay.isEmpty {
         HStack(spacing: 10) {
           if !item.posts.isEmpty {
@@ -782,6 +805,26 @@ private struct BoardCard: View {
     .background(Theme.panel, in: RoundedRectangle(cornerRadius: Metrics.radius))
     .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
     .contentShape(RoundedRectangle(cornerRadius: Metrics.radius))
+  }
+}
+
+/// A small capsule on a card: an icon and, for images and files, how many.
+private struct BoardPill: View {
+  let systemImage: String
+  let count: Int?
+  let label: LocalizedStringKey
+
+  var body: some View {
+    HStack(spacing: 3) {
+      Image(systemName: systemImage).font(.system(size: 10))
+      if let count { Text("\(count)").font(.lnCaption).monospacedDigit() }
+    }
+    .foregroundStyle(Theme.textToned)
+    .padding(.horizontal, 6)
+    .frame(height: 18)
+    .background(Theme.elevated, in: Capsule())
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(label)
   }
 }
 

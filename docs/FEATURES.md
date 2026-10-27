@@ -299,6 +299,11 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   reorder. Type a new name in an item's label picker to create the label. Add a column from the tile after the last one: a name and a category,
   which decides whether its items show on the roadmap. Admins reorder columns by
   dragging a column's header onto another.
+  In Planning settings, drag a status or label by its grip (or press the arrow keys on it) to reorder it. Cards show
+  small pills for a description, images and files. The order picked in the toolbar (Manual, Newest first, Oldest
+  first) is remembered per project on that device, and survives a refresh. In the web item panel, a new item's unsaved
+  draft comes back when the panel is opened again, Cmd or Ctrl and Enter create it, and the footer shows saving and
+  saved as changes land.
 - **Comments and threads.** Add private comments and replies from the web and native item editors, or through the API and MCP. An assistant comment shows the MCP client's name; its authorizing operator remains recorded.
 - **Edit history.** The web and native item editors have a collapsed history of
   field and link changes, with before and after values, who made them, whether
@@ -768,6 +773,9 @@ repository. See [EDITIONS.md](EDITIONS.md).
 
 ## 14. Not built yet, and known limits
 
+- **Planning on native.** Statuses and labels are reordered with arrow buttons (the web panel drags them), a new
+  item's unsaved draft is not kept when its sheet closes (the web panel keeps it), and the editor saves with its Save
+  button (Cmd and Return on a keyboard) instead of as you go.
 - **Share sheet.** *Add to Planning* is an iPhone and iPad share extension only: the Mac app has none, and the web
   panel has no equivalent (a browser has no share sheet; use *New item* or the API).
   [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)
