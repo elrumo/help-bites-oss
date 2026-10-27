@@ -1,4 +1,5 @@
 import { clampText } from '#shared/support'
+import { clientSource } from '../../../../../utils/clientSource'
 
 defineRouteMeta({
   openAPI: {
@@ -17,6 +18,6 @@ export default defineEventHandler(async (event) => {
   const project = await requireProject(ctx, clampText(body.project, 40))
   const link = errorLinkOf(project, clampText(body.link, 40))
   if (!link) throw createError({ statusCode: 404, statusMessage: 'Error tracking is not connected' })
-  const { item, created } = await fileErrorOnBoard(project, ctx.agent, link, getRouterParam(event, 'id') || '')
+  const { item, created } = await fileErrorOnBoard(project, ctx.agent, link, getRouterParam(event, 'id') || '', clientSource(event))
   return { item: await serializeBoardItem(project, item), created }
 })

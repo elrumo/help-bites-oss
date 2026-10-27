@@ -8,6 +8,7 @@ import {
   toRoadmapItem,
   type BoardConfig,
   type BoardItem,
+  type BoardItemHistoryChange,
   type BoardItemPriority,
   type BoardItemValues,
   type BoardLinkedConversation,
@@ -18,6 +19,7 @@ import {
 import { defaultFeedbackStatus, feedbackStatusCategory, parsePostRef, type FeedbackStatusCategory } from '#shared/feedback'
 import type { FeedbackContext } from './feedback'
 import { emitDomainEventLater } from './domainEvents'
+import type { ClientSource } from './clientSource'
 
 // Project boards: Linear-style items an operator triages on a kanban, linked to
 // the feedback posts and support conversations they answer. Operators only —
@@ -41,6 +43,51 @@ function badRequest(errors: string[]): never {
 
 function stringList(value: unknown): string[] {
   return Array.isArray(value) ? value.map(String).filter(Boolean) : []
+}
+
+const HISTORY_FIELDS = [
+  'title', 'description', 'publicDescription', 'status', 'rank', 'priority', 'assignee', 'labels', 'attachments',
+  'targetDate', 'public', 'feedbackPostIds', 'conversationIds', 'relatedItemIds', 'completedAt', 'errorRefs', 'errorKeys'
+] as const
+
+function historyValue(row: ParseObject, field: string): unknown {
+  const value = field === 'assignee' ? pointerId(row.get(field)) || null : row.get(field)
+  if (value instanceof Date) return value.toISOString()
+  return value === undefined ? null : JSON.parse(JSON.stringify(value))
+}
+
+function historyChanges(before: Record<string, unknown>, row: ParseObject): BoardItemHistoryChange[] {
+  return HISTORY_FIELDS.flatMap(field => {
+    const from = before[field] ?? null
+    const to = historyValue(row, field)
+    return JSON.stringify(from) === JSON.stringify(to) ? [] : [{ field, from, to }]
+  })
+}
+
+function historySnapshot(row: ParseObject): Record<string, unknown> {
+  return Object.fromEntries(HISTORY_FIELDS.map(field => [field, historyValue(row, field)]))
+}
+
+export function markBoardItem(row: ParseObject, agent: ParseObject, source: ClientSource): void {
+  row.set('lastModifiedBy', String(agent.get('name') || agent.get('username') || 'Unknown'))
+  row.set('lastModifiedSource', source)
+}
+
+/** Save one immutable before/after record after the corresponding item write succeeds. */
+export async function recordBoardItemHistory(project: ParseObject, row: ParseObject, agent: ParseObject, source: ClientSource, action: 'created' | 'updated', changes: BoardItemHistoryChange[]): Promise<void> {
+  if (action === 'updated' && !changes.length) return
+  const actorName = String(agent.get('name') || agent.get('username') || 'Unknown')
+  const history = new (useParse().Object.extend('BoardItemHistory'))()
+  history.set('project', project)
+  history.set('itemId', row.id || '')
+  if (typeof row.get('number') === 'number') history.set('itemNumber', row.get('number'))
+  history.set('itemTitle', String(row.get('title') || ''))
+  history.set('actorId', agent.id || '')
+  history.set('actorName', actorName)
+  history.set('source', source)
+  history.set('action', action)
+  history.set('changes', changes)
+  await history.save(null, MASTER)
 }
 
 function unique(values: string[]): string[] {
@@ -127,6 +174,8 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
       related: stringList(row.get('relatedItemIds')).map(id => related.get(id)).filter((item): item is BoardRelatedItem => Boolean(item)),
       errorRefs: readErrorRefs(row.get('errorRefs')),
       voteCount: linkedPosts.filter(post => !post.hidden).reduce((sum, post) => sum + post.voteCount, 0),
+      lastModifiedBy: String(row.get('lastModifiedBy') || ''),
+      lastModifiedSource: String(row.get('lastModifiedSource') || '') as BoardItem['lastModifiedSource'],
       posts: linkedPosts,
       conversations: stringList(row.get('conversationIds')).map(id => conversations.get(id)).filter((c): c is BoardLinkedConversation => Boolean(c)),
       completedAt: iso(row.get('completedAt')),
@@ -213,27 +262,33 @@ function readIdList(value: unknown, label: string): string[] {
 }
 
 /** Add or remove one link with $addToSet / $pull, so two operators linking at once both land. A related item is linked on both sides. */
-async function applyLink(row: ParseObject, target: LinkTarget, linked: boolean, agent: ParseObject): Promise<void> {
+async function applyLink(project: ParseObject, row: ParseObject, target: LinkTarget, linked: boolean, agent: ParseObject, source: ClientSource, trackHistory = true): Promise<void> {
   const field = LINK_FIELD[target.kind]
   const ids = stringList(row.get(field))
   if (target.kind === 'item' && target.id === row.id) badRequest(['An item cannot be related to itself'])
   if (linked === ids.includes(target.id)) return
   const full = ids.length >= BOARD_LINKS_MAX || (target.kind === 'item' && stringList(target.row.get(field)).length >= BOARD_LINKS_MAX)
   if (linked && full) badRequest([`An item links at most ${BOARD_LINKS_MAX} ${LINK_NOUN[target.kind]}`])
+  const before = historySnapshot(row)
   if (linked) row.addUnique(field, target.id)
   else row.remove(field, target.id)
+  if (trackHistory) markBoardItem(row, agent, source)
   await row.save(null, MASTER)
+  if (trackHistory) await recordBoardItemHistory(project, row, agent, source, 'updated', historyChanges(before, row))
   if (target.kind === 'item') {
+    const targetBefore = historySnapshot(target.row)
     if (linked) target.row.addUnique(field, row.id)
     else target.row.remove(field, row.id)
+    if (trackHistory) markBoardItem(target.row, agent, source)
     await target.row.save(null, MASTER)
+    if (trackHistory) await recordBoardItemHistory(project, target.row, agent, source, 'updated', historyChanges(targetBefore, target.row))
   }
   if (target.kind === 'conversation') {
     await appendEvent(target.row, { type: linked ? 'board.linked' : 'board.unlinked', itemId: row.id || '', number: row.get('number') ?? null, title: String(row.get('title') || '') }, agent)
   }
 }
 
-export async function createBoardItem(project: ParseObject, agent: ParseObject, payload: unknown): Promise<ParseObject> {
+export async function createBoardItem(project: ParseObject, agent: ParseObject, payload: unknown, source: ClientSource = 'api'): Promise<ParseObject> {
   const board = getBoardConfig(project)
   const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>
   const { values, errors } = readBoardItemInput(raw, board, { create: true })
@@ -262,8 +317,11 @@ export async function createBoardItem(project: ParseObject, agent: ParseObject, 
   const { completedAt } = statusTransition(board, '', String(row.get('status')), undefined, new Date())
   if (completedAt) row.set('completedAt', completedAt)
   row.set('number', await allocateProjectNumber(project, 'boardItemSeq', 'BoardItem'))
+  markBoardItem(row, agent, source)
   await row.save(null, MASTER)
-  for (const target of targets) await applyLink(row, target, true, agent)
+  for (const target of targets) await applyLink(project, row, target, true, agent, source, false)
+  const empty = Object.fromEntries(HISTORY_FIELDS.map(field => [field, null]))
+  await recordBoardItemHistory(project, row, agent, source, 'created', historyChanges(empty, row))
   emitDomainEventLater(project, 'board.item.created', { itemId: row.id, number: row.get('number') ?? null })
   return row
 }
@@ -274,18 +332,24 @@ export async function createBoardItem(project: ParseObject, agent: ParseObject, 
  * linked post to the feedback board's first status of that category, through
  * the same path an admin edit takes — so followers get the usual emails.
  */
-export async function updateBoardItem(project: ParseObject, agent: ParseObject, row: ParseObject, payload: unknown): Promise<ParseObject> {
+export async function updateBoardItem(project: ParseObject, agent: ParseObject, row: ParseObject, payload: unknown, source: ClientSource = 'api'): Promise<ParseObject> {
   const board = getBoardConfig(project)
   const { values, errors } = readBoardItemInput(payload, board, { create: false })
   if (errors.length) badRequest(errors)
   assertOwnAttachments(project, values.attachments)
+  const before = historySnapshot(row)
   const from = String(row.get('status') || '')
   applyValues(row, values)
   if (values.assigneeId !== undefined) await setAssignee(row, values.assigneeId)
   const to = String(row.get('status') || '')
   const transition = statusTransition(board, from, to, row.get('completedAt') as Date | undefined, new Date())
   if (transition.completedAt) row.set('completedAt', transition.completedAt)
-  await row.save(null, MASTER)
+  const changes = historyChanges(before, row)
+  if (changes.length) {
+    markBoardItem(row, agent, source)
+    await row.save(null, MASTER)
+    await recordBoardItemHistory(project, row, agent, source, 'updated', changes)
+  }
   if (transition.changed) emitDomainEventLater(project, 'board.item.status_changed', { itemId: row.id, number: row.get('number') ?? null, from, to })
 
   const category = feedbackStatusCategory(board, to)
@@ -316,7 +380,7 @@ async function syncLinkedPosts(project: ParseObject, agent: ParseObject, row: Pa
 }
 
 /** Link or unlink one post (`id` or `#N`) or conversation. Linking a conversation notes it on its timeline. */
-export async function linkBoardItem(project: ParseObject, agent: ParseObject, row: ParseObject, kind: BoardLinkKind, id: string, linked: boolean): Promise<ParseObject> {
+export async function linkBoardItem(project: ParseObject, agent: ParseObject, row: ParseObject, kind: BoardLinkKind, id: string, linked: boolean, source: ClientSource = 'api'): Promise<ParseObject> {
   let target: LinkTarget
   try {
     target = await resolveLinkTarget(project, kind, id)
@@ -324,11 +388,14 @@ export async function linkBoardItem(project: ParseObject, agent: ParseObject, ro
     // Unlinking something deleted since: drop the stale id as stored.
     const field = LINK_FIELD[kind]
     if (linked || !stringList(row.get(field)).includes(id)) throw error
+    const before = historySnapshot(row)
     row.remove(field, id)
+    markBoardItem(row, agent, source)
     await row.save(null, MASTER)
+    await recordBoardItemHistory(project, row, agent, source, 'updated', historyChanges(before, row))
     return await new (useParse()).Query('BoardItem').get(row.id || '', MASTER)
   }
-  await applyLink(row, target, linked, agent)
+  await applyLink(project, row, target, linked, agent, source)
   // Re-read after the atomic op, so the response carries the stored arrays.
   return await new (useParse()).Query('BoardItem').get(row.id || '', MASTER)
 }

@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Each tool is an internal request to its /v1 route, carrying the caller's own credentials: the route authenticates, scopes and rate-limits exactly as it would for the panel.
-  const headers: Record<string, string> = { authorization: String(getHeader(event, 'authorization') || ''), accept: 'application/json', 'content-type': 'application/json' }
+  const headers: Record<string, string> = { authorization: String(getHeader(event, 'authorization') || ''), accept: 'application/json', 'content-type': 'application/json', 'x-helpbites-client': 'mcp' }
   for (const name of ['x-workspace', 'x-forwarded-for']) {
     const value = getHeader(event, name)
     if (value) headers[name] = String(value)

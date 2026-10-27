@@ -1036,7 +1036,9 @@ const SCHEMAS = {
       errorKeys: { type: 'Array' },
       // Images and files: [{ url, name, mime, size }], see shared/itemAttachments.ts.
       attachments: { type: 'Array' },
-      completedAt: { type: 'Date' }
+      completedAt: { type: 'Date' },
+      lastModifiedBy: { type: 'String' },
+      lastModifiedSource: { type: 'String' }
     },
     indexes: {
       project_error_keys: { _p_project: 1, errorKeys: 1 },
@@ -1044,6 +1046,22 @@ const SCHEMAS = {
       project_number: { _p_project: 1, number: 1 },
       project_posts: { _p_project: 1, feedbackPostIds: 1 },
       project_conversations: { _p_project: 1, conversationIds: 1 }
+    }
+  },
+  BoardItemHistory: {
+    fields: {
+      project: { type: 'Pointer', targetClass: 'Project' },
+      itemId: { type: 'String' },
+      itemNumber: { type: 'Number' },
+      itemTitle: { type: 'String' },
+      actorId: { type: 'String' },
+      actorName: { type: 'String' },
+      source: { type: 'String' },
+      action: { type: 'String' },
+      changes: { type: 'Array' }
+    },
+    indexes: {
+      project_item_created: { _p_project: 1, itemId: 1, _created_at: -1 }
     }
   },
   // --- Changelog: what shipped, written for the public. An entry is linked to

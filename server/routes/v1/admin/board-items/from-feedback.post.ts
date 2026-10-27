@@ -1,3 +1,5 @@
+import { clientSource } from '../../../../utils/clientSource'
+
 defineRouteMeta({
   openAPI: {
     tags: ['Board'], operationId: 'createBoardItemsFromFeedback', security: [{ AgentSession: [] }, { AdminApiKey: [] }],
@@ -20,7 +22,7 @@ export default defineEventHandler(async (event) => {
   const body = (await readBody(event).catch(() => ({}))) as { postId?: unknown, ai?: unknown }
   const postId = String(body.postId ?? '').trim()
   if (!postId) throw createError({ statusCode: 400, statusMessage: 'postId is required' })
-  const { rows, ai } = await createBoardItemsFromFeedback(ctx, project, postId, { ai: body.ai !== false })
+  const { rows, ai } = await createBoardItemsFromFeedback(ctx, project, postId, { ai: body.ai !== false, source: clientSource(event) })
   const items = await serializeBoardItems(project, rows)
   return { item: items[0], items, ai }
 })

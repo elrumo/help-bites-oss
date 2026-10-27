@@ -230,6 +230,10 @@ struct BoardScreen: View {
     return result.item
   }
 
+  func history(_ itemId: String, offset: Int = 0) async throws -> BoardItemHistoryPage {
+    try await session.get("/v1/admin/board-items/\(itemId)/history", query: ["project": projectId, "offset": String(offset)])
+  }
+
   func delete(_ itemId: String) async throws {
     try await session.delete("/v1/admin/board-items/\(itemId)")
     items.removeAll { $0.id == itemId }

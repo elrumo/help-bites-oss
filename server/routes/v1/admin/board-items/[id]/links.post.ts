@@ -1,3 +1,5 @@
+import { clientSource } from '../../../../../utils/clientSource'
+
 defineRouteMeta({
   openAPI: {
     tags: ['Board'], operationId: 'linkBoardItem', security: [{ AgentSession: [] }, { AdminApiKey: [] }],
@@ -13,6 +15,6 @@ export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'content' })
   const { project, row } = await scoped.boardItem(ctx, getRouterParam(event, 'id') || '', String(getQuery(event).project || '') || undefined)
   const { kind, id, linked } = readLinkInput(await readBody(event).catch(() => ({})))
-  const fresh = await linkBoardItem(project, ctx.agent, row, kind, id, linked)
+  const fresh = await linkBoardItem(project, ctx.agent, row, kind, id, linked, clientSource(event))
   return { item: await serializeBoardItem(project, fresh) }
 })

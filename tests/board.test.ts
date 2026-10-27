@@ -31,12 +31,17 @@ const item = (fields: Partial<BoardItem> = {}): BoardItem => ({
   public: true,
   feedbackPostIds: ['post1', 'post2'],
   conversationIds: ['conv1'],
+  relatedItemIds: [],
+  related: [],
+  errorRefs: [],
   voteCount: 0,
   posts: [],
   conversations: [{ id: 'conv1', subject: 'Help', status: 'open', endUserName: 'Ada' }],
   completedAt: null,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-02T00:00:00.000Z',
+  lastModifiedBy: '',
+  lastModifiedSource: '',
   ...fields
 })
 

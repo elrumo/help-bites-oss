@@ -134,6 +134,7 @@ actor APIClient {
     guard let url = components.url else { throw APIError.invalidURL }
     var request = URLRequest(url: url); request.httpMethod = method
     request.setValue("application/json", forHTTPHeaderField: "Accept")
+    request.setValue("app", forHTTPHeaderField: "X-HelpBites-Client")
     if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
     if !workspaceId.isEmpty { request.setValue(workspaceId, forHTTPHeaderField: "X-Workspace") }
     return request

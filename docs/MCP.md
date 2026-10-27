@@ -20,17 +20,18 @@ page (with the Claude Code command below).
 
 ## Connect
 
-There are two ways to sign in. Both end in the same thing: an admin API key
-(`ak_…`) that the assistant sends as `Authorization: Bearer …`.
+There are two ways to sign in. Browser sign-in creates and manages a scoped API
+key for the assistant behind the scenes; you do not need to create or paste one.
+For clients that only support static headers, you can provide an API key yourself.
 
-### Sign in with your browser (claude.ai, ChatGPT)
+### Sign in with your browser (Claude, ChatGPT)
 
 Assistants that run in the cloud can't be given a header, so they sign in with
 OAuth instead.
 
-1. In the assistant, add a custom connector (Claude: **Settings → Connectors →
-   Add custom connector**; ChatGPT: **Settings → Connectors**, with developer
-   mode on) and paste the address above.
+1. In Claude, add a custom connector from **Settings → Connectors → Add custom
+   connector**. In ChatGPT, open **Plugins → + → Add custom MCP server**, paste
+   the address above, and choose **OAuth** authentication.
 2. Your browser opens HelpBites. Sign in if you aren't, check the workspace,
    choose all projects or only some, and press **Approve**.
 3. The assistant gets a key named `MCP: Claude` (or whatever it called itself).
@@ -45,8 +46,16 @@ What this needs:
 - `HELPBITES_SECRET` set on the server (it signs the assistant's registration).
 - A role that may manage API keys (owners and admins).
 
-The key lasts a year. There are no refresh tokens: when it expires, the
-assistant asks you to sign in again.
+The browser connection refreshes its one-year access key automatically. Its
+rotating refresh token is tied to the API-key record, so revoking that key under
+**Settings → API keys** disconnects the assistant.
+
+Changes made by an assistant through MCP tools are marked **via MCP** in a
+Planning item's edit history; direct API-key edits are marked **via API**.
+
+ChatGPT's custom MCP connections are available on supported Business,
+Enterprise and Edu workspaces; availability and controls depend on the
+workspace plan and admin settings.
 
 ### Paste a key (Claude Code, Cursor, scripts)
 
@@ -229,12 +238,12 @@ For the curious, or anyone writing a client. It is standard OAuth 2.1 with PKCE
 Registration stores nothing: the client id is the client's name and redirect
 addresses, signed with a key derived from `HELPBITES_SECRET`. Redirect addresses
 must be https, `http://localhost`, or an app's own scheme (`cursor://`). The
-authorization code lives two minutes in Redis and works once. The access token
-is an ordinary admin API key, minted when the code is exchanged.
+authorization code lives two minutes in Redis and works once. Access tokens are
+ordinary admin API keys, rotated with one-use refresh tokens; revoking the key
+also prevents further refreshes.
 
 ## Not built yet
 
-- No refresh tokens (the key lasts a year, then the assistant signs in again).
 - No prompts, resources or live notifications: the server offers tools.
 - No tools yet for creating a legal document (the wizard), importing knowledge
   documents, the email template designer, forms, onboarding or the blog; the API

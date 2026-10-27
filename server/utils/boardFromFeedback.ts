@@ -1,6 +1,7 @@
 import { extractJson } from '#shared/legal/compose'
 import { feedbackPlainText } from '#shared/feedback'
 import { boardDraftSystemPrompt, boardDraftUserMessage, readBoardItemDrafts, type BoardItemDraft } from '#shared/boardFromFeedback'
+import type { ClientSource } from './clientSource'
 
 // Files planning items from a feedback post and links each to it. With an AI provider configured the
 // model decides whether the post is one piece of work or several and writes each item's title,
@@ -37,7 +38,7 @@ async function draftWithAi(member: MemberContext, project: ParseObject, post: Pa
   }
 }
 
-export async function createBoardItemsFromFeedback(member: MemberContext, project: ParseObject, postRef: string, options: { ai?: boolean } = {}): Promise<BoardItemsFromFeedback> {
+export async function createBoardItemsFromFeedback(member: MemberContext, project: ParseObject, postRef: string, options: { ai?: boolean, source?: ClientSource } = {}): Promise<BoardItemsFromFeedback> {
   const post = await findFeedbackPost(project, String(postRef || '').trim().replace(/^#/, ''))
   if (!post) throw createError({ statusCode: 404, statusMessage: 'Post not found' })
   const drafts = options.ai === false ? [] : await draftWithAi(member, project, post)
@@ -52,7 +53,7 @@ export async function createBoardItemsFromFeedback(member: MemberContext, projec
       ...(draft.priority ? { priority: draft.priority } : {}),
       ...(draft.labels.length ? { labels: draft.labels } : {}),
       feedbackPostIds: [post.id]
-    }))
+    }, options.source))
   }
   return { rows, ai: drafts.length > 0 }
 }

@@ -7,17 +7,18 @@ import { readLinkToken, signLinkToken } from '../secrets'
 // need to connect: OAuth 2.1 with PKCE and dynamic client registration. It is
 // a thin front for the admin API keys that already exist. The operator signs
 // in to the panel and approves (app/pages/oauth/authorize.vue); the token
-// endpoint then mints an ordinary `ak_` key, named after the assistant and
-// shown in Settings → API keys like any other, so revoking it there cuts the
-// assistant off. Nothing about clients or tokens is stored beyond the
-// short-lived authorization code.
+// endpoint mints an ordinary `ak_` key, named after the assistant and shown
+// in Settings → API keys. Rotating refresh tokens are tied to that key, so
+// revoking it cuts the assistant off.
 
 const CLIENT_PURPOSE = 'mcp-client'
 const CODE_PREFIX = 'sb:mcp:code:'
+const REFRESH_PREFIX = 'sb:mcp:refresh:'
 /** Seconds an authorization code can be exchanged for. */
 export const CODE_TTL_SECONDS = 120
-/** The longest an API key may live (readKeyExpiry); there are no refresh tokens, so assistants sign in again after it. */
+/** API keys are rotated before they expire; refresh grants have a longer inactivity window. */
 export const OAUTH_KEY_DAYS = 365
+export const OAUTH_REFRESH_DAYS = 730
 const MAX_REDIRECT_URIS = 5
 
 // A redirect that runs script or opens a local file is never a client.
@@ -89,6 +90,7 @@ export function validChallenge(value: unknown): value is string {
 
 /** What an approved sign-in grants: this operator, in this workspace, on these projects (null: all). */
 export type CodeGrant = { agentId: string, workspaceId: string, projectIds: string[] | null, clientId: string, redirectUri: string, challenge: string, clientName: string }
+export type RefreshGrant = { agentId: string, workspaceId: string, clientId: string, apiKeyId: string }
 
 const codeKey = (code: string) => `${CODE_PREFIX}${createHash('sha256').update(code).digest('hex')}`
 
@@ -104,6 +106,25 @@ export async function takeCode(code: unknown): Promise<CodeGrant | null> {
   const raw = await useRedis().getdel(codeKey(code))
   if (!raw) return null
   try { return JSON.parse(raw) as CodeGrant } catch { return null }
+}
+
+const refreshKey = (token: string) => `${REFRESH_PREFIX}${createHash('sha256').update(token).digest('hex')}`
+
+/** A rotating, one-use refresh token. Revoking its API key makes it unusable. */
+export async function issueRefreshToken(grant: RefreshGrant): Promise<string> {
+  const token = randomBytes(32).toString('base64url')
+  await useRedis().set(refreshKey(token), JSON.stringify(grant), 'EX', OAUTH_REFRESH_DAYS * 24 * 60 * 60)
+  return token
+}
+
+export async function takeRefreshToken(token: unknown): Promise<RefreshGrant | null> {
+  if (typeof token !== 'string' || !token || token.length > 200) return null
+  const raw = await useRedis().getdel(refreshKey(token))
+  if (!raw) return null
+  try {
+    const grant = JSON.parse(raw) as Partial<RefreshGrant>
+    return typeof grant.agentId === 'string' && typeof grant.workspaceId === 'string' && typeof grant.clientId === 'string' && typeof grant.apiKeyId === 'string' ? grant as RefreshGrant : null
+  } catch { return null }
 }
 
 /** The redirect a client is sent back to, with `code` or `error` and the `state` it gave. */

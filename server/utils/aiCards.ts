@@ -2,6 +2,7 @@ import { extractJson } from '#shared/legal/compose'
 import { AI_BOARD_ITEMS_MAX, aiCardsSystemPrompt, readAiCards, type AiBoardItem, type AiCardsKind, type AiChatMessage, type AiItemSet } from '#shared/aiCards'
 import type { ItemAttachment } from '#shared/itemAttachments'
 import { assertOwnAttachments } from './itemAttachments'
+import type { ClientSource } from './clientSource'
 
 // The AI chat behind the feedback and board pages. It asks the model for cards, and on the board
 // for changes to existing items and links between them, as JSON (shared/aiCards.ts cleans the
@@ -34,7 +35,7 @@ function changeLines(set: AiItemSet): string[] {
   })
 }
 
-export async function createCardsFromChat(member: MemberContext, project: ParseObject, kind: AiCardsKind, messages: AiChatMessage[], attachments: ItemAttachment[] = []): Promise<AiCardsResult> {
+export async function createCardsFromChat(member: MemberContext, project: ParseObject, kind: AiCardsKind, messages: AiChatMessage[], attachments: ItemAttachment[] = [], source: ClientSource = 'api'): Promise<AiCardsResult> {
   await rateLimit(`sb:rl:aicards:${member.agentId}`, LIMITS.aiCardsPerAgent.limit, LIMITS.aiCardsPerAgent.window)
   if (messages.at(-1)?.role !== 'user') throw createError({ statusCode: 400, statusMessage: 'The last message must be the user\'s' })
   // Files the operator attached go onto every card this message creates; a file that is not the project's own is refused before the AI runs.
@@ -73,7 +74,7 @@ export async function createCardsFromChat(member: MemberContext, project: ParseO
     try {
       const row = kind === 'feedback'
         ? await createFeedbackPost(ctx, { title: card.title, body: card.body, type: card.type, tags: card.tags, attachments })
-        : await createBoardItem(project, member.agent, { title: card.title, description: card.body, labels: card.tags, priority: card.priority, attachments })
+        : await createBoardItem(project, member.agent, { title: card.title, description: card.body, labels: card.tags, priority: card.priority, attachments }, source)
       if (card.ref) refs.set(card.ref, row)
       created.push({ id: row.id!, number: row.get('number') ?? null, title: card.title })
     } catch (error) {
@@ -87,7 +88,7 @@ export async function createCardsFromChat(member: MemberContext, project: ParseO
     try {
       const row = await find(update.item)
       if (!row) throw createError({ statusCode: 404, statusMessage: 'Item not found' })
-      await updateBoardItem(project, member.agent, row, update.set)
+      await updateBoardItem(project, member.agent, row, update.set, source)
       note(row, changeLines(update.set))
     } catch (error) {
       failed.push({ title: update.item, message: (error as Error)?.message || 'Could not change this item' })
@@ -98,7 +99,7 @@ export async function createCardsFromChat(member: MemberContext, project: ParseO
       const from = await find(link.from)
       const to = await find(link.to)
       if (!from || !to) throw createError({ statusCode: 404, statusMessage: 'Item not found' })
-      await linkBoardItem(project, member.agent, from, 'item', to.id || '', link.linked)
+      await linkBoardItem(project, member.agent, from, 'item', to.id || '', link.linked, source)
       const verb = link.linked ? 'related to' : 'unrelated from'
       note(from, [`${verb} #${to.get('number')}`])
       note(to, [`${verb} #${from.get('number')}`])

@@ -92,6 +92,19 @@ export type BoardLinkedPost = FeedbackPostRef & { voteCount: number, hidden: boo
 export type BoardLinkedConversation = { id: string, subject: string, status: string, endUserName: string }
 /** Another item of the same board that this one is related to. */
 export type BoardRelatedItem = { id: string, number: number | null, title: string, status: string }
+export type BoardItemHistoryChange = { field: string, from: unknown, to: unknown }
+export type BoardItemHistory = {
+  id: string
+  itemId: string
+  itemNumber: number | null
+  itemTitle: string
+  actorId: string
+  actorName: string
+  source: 'web' | 'app' | 'api' | 'mcp'
+  action: 'created' | 'updated'
+  changes: BoardItemHistoryChange[]
+  createdAt: string
+}
 
 /** An item as the panel (and admin keys) see it. */
 export type BoardItem = {
@@ -121,6 +134,8 @@ export type BoardItem = {
   errorRefs: BoardErrorRef[]
   /** Σ of the linked, non-hidden posts' votes. */
   voteCount: number
+  lastModifiedBy: string
+  lastModifiedSource: 'web' | 'app' | 'api' | 'mcp' | ''
   /** Linked posts that still exist, hidden ones included (flagged). */
   posts: BoardLinkedPost[]
   conversations: BoardLinkedConversation[]

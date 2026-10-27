@@ -22,6 +22,12 @@ struct BoardItemEditor: View {
   @State private var linking = false
   @State private var confirmDelete = false
   @State private var error = ""
+  @State private var historyExpanded = false
+  @State private var historyLoading = false
+  @State private var historyFailed = false
+  @State private var historyHasMore = false
+  @State private var historyOffset = 0
+  @State private var history: [BoardItemHistory] = []
   @Environment(Workspace.self) private var workspace
   @Environment(\.dismiss) private var dismiss
   @Environment(\.openURL) private var openURL
@@ -46,7 +52,12 @@ struct BoardItemEditor: View {
         if let config = store.config {
           VStack(alignment: .leading, spacing: 20) {
             form(config)
-            if let current { links(current) } else { newItemFeedback }
+            if let current {
+              links(current)
+              historySection(current)
+            } else {
+              newItemFeedback
+            }
           }
           .frame(maxWidth: 640, alignment: .leading)
           .padding(20)
@@ -371,6 +382,121 @@ struct BoardItemEditor: View {
     }
   }
 
+  private func historySection(_ item: BoardItem) -> some View {
+    DisclosureGroup(isExpanded: $historyExpanded) {
+      VStack(alignment: .leading, spacing: 12) {
+        if historyLoading {
+          ProgressView().frame(maxWidth: .infinity)
+        } else if historyFailed {
+          Text("Could not load edit history.").font(.lnMeta).foregroundStyle(Theme.error)
+        } else if history.isEmpty {
+          Text("No edit history recorded yet. Earlier edits were not tracked.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+        } else {
+          ForEach(history) { entry in
+            VStack(alignment: .leading, spacing: 6) {
+              HStack(alignment: .firstTextBaseline) {
+                Text("\(entry.action == "created" ? String(localized: "Created") : String(localized: "Updated")) · \(entry.actorName) \(historySource(entry.source))")
+                  .font(.lnMeta).foregroundStyle(Theme.textHighlighted)
+                Spacer(minLength: 4)
+                Text(FeedbackFormat.timeAgo(entry.createdAt)).font(.lnCaption).foregroundStyle(Theme.textMuted)
+                  .help(historyTimestamp(entry.createdAt))
+              }
+              ForEach(entry.changes) { change in
+                Text(change.field == "rank" ? String(localized: "Position changed") : "\(historyField(change.field)): \(historyValue(change.field, change.from)) → \(historyValue(change.field, change.to))")
+                  .font(.lnCaption).foregroundStyle(Theme.textToned).fixedSize(horizontal: false, vertical: true)
+              }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+          }
+        }
+        if historyHasMore && !historyLoading {
+          Button("Load older changes") { Task { await loadHistory(itemId: item.id, reset: false) } }
+            .buttonStyle(.lnSecondaryCompact)
+        }
+      }
+      .padding(.top, 8)
+    } label: {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Edit history").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
+        if let name = item.lastModifiedBy, !name.isEmpty {
+          Text("Last modified \(FeedbackFormat.timeAgo(item.updatedAt)) by \(name) \(historySource(item.lastModifiedSource ?? "api"))")
+            .font(.lnCaption).foregroundStyle(Theme.textMuted)
+            .help(historyTimestamp(item.updatedAt))
+        } else {
+          Text("Last modified \(FeedbackFormat.timeAgo(item.updatedAt)); earlier edits were not tracked")
+            .font(.lnCaption).foregroundStyle(Theme.textMuted)
+            .help(historyTimestamp(item.updatedAt))
+        }
+      }
+    }
+    .padding(14)
+    .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
+    .onChange(of: historyExpanded) { _, expanded in
+      if expanded { Task { await loadHistory(itemId: item.id, reset: true) } }
+    }
+  }
+
+  private func historySource(_ source: String) -> String {
+    switch source {
+    case "web": String(localized: "on web")
+    case "app": String(localized: "on app")
+    case "mcp": String(localized: "via MCP")
+    default: String(localized: "via API")
+    }
+  }
+
+  private func historyField(_ field: String) -> String {
+    switch field {
+    case "title": String(localized: "Title")
+    case "description": String(localized: "Description")
+    case "publicDescription": String(localized: "Public description")
+    case "status": String(localized: "Column")
+    case "rank": String(localized: "Position")
+    case "priority": String(localized: "Priority")
+    case "assignee": String(localized: "Assignee")
+    case "labels": String(localized: "Labels")
+    case "attachments": String(localized: "Files")
+    case "targetDate": String(localized: "Target date")
+    case "public": String(localized: "Roadmap visibility")
+    case "feedbackPostIds": String(localized: "Feedback links")
+    case "conversationIds": String(localized: "Conversation links")
+    case "relatedItemIds": String(localized: "Related items")
+    case "completedAt": String(localized: "Completed")
+    case "errorRefs": String(localized: "Linked errors")
+    case "errorKeys": String(localized: "Error references")
+    default: field
+    }
+  }
+
+  private func historyValue(_ value: JSONValue) -> String {
+    switch value {
+    case .string(let value): value.isEmpty ? "—" : value
+    case .number(let value): value.formatted(.number)
+    case .bool(let value): value ? String(localized: "On") : String(localized: "Off")
+    case .null: "—"
+    case .array(let values): values.map(historyValue).joined(separator: ", ")
+    case .object(let fields): fields.keys.sorted().compactMap { key in fields[key].map { "\(key): \(historyValue($0))" } }.joined(separator: ", ")
+    }
+  }
+
+  private func historyValue(_ field: String, _ value: JSONValue) -> String {
+    if case .string(let key) = value {
+      if field == "status", let status = store.config?.status(key) { return status.label }
+      if field == "assignee", let agent = store.agent(key) { return agent.name }
+    }
+    if field == "labels", case .array(let values) = value {
+      return values.map { value in
+        guard case .string(let key) = value else { return historyValue(value) }
+        return store.config?.label(key).label ?? key
+      }.joined(separator: ", ")
+    }
+    return historyValue(value)
+  }
+
+  private func historyTimestamp(_ raw: String) -> String {
+    DateText.date(raw)?.formatted(date: .abbreviated, time: .shortened) ?? raw
+  }
+
   /// An error this item was filed from, with the way back to the tracker.
   private func errorRow(_ ref: BoardErrorRef) -> some View {
     HStack(spacing: 8) {
@@ -472,6 +598,27 @@ struct BoardItemEditor: View {
     if itemId != nil, current == nil, store.error.isEmpty { error = String(localized: "That item no longer exists.") }
   }
 
+  private func loadHistory(itemId: String, reset: Bool) async {
+    guard !historyLoading else { return }
+    if reset {
+      history = []
+      historyOffset = 0
+      historyHasMore = false
+    }
+    historyLoading = true
+    historyFailed = false
+    defer { historyLoading = false }
+    do {
+      let page = try await store.history(itemId, offset: historyOffset)
+      guard self.itemId == itemId else { return }
+      history = reset ? page.history : history + page.history
+      historyHasMore = page.hasMore
+      historyOffset = page.nextOffset ?? historyOffset
+    } catch {
+      historyFailed = true
+    }
+  }
+
   /// The AI reads the description and writes the title. `manual` is the AI button: it replaces a title and says
   /// why when it fails. Otherwise a title typed in the meantime stays.
   private func writeTitle(manual: Bool = false) async {
@@ -513,6 +660,7 @@ struct BoardItemEditor: View {
       saving = false
       draft = BoardItemDraft(item: item, defaultStatus: config.defaultStatusKey)
       itemId = item.id
+      if historyExpanded { await loadHistory(itemId: item.id, reset: true) }
       justSaved = true
       try? await Task.sleep(for: .seconds(1.6))
       justSaved = false
@@ -541,6 +689,7 @@ struct BoardItemEditor: View {
       _ = try await store.link(itemId, kind: kind, target: target, linked: linked)
       // A related item is linked on the other side too, so the board is read again.
       if kind == "item" { await store.load() }
+      if historyExpanded { await loadHistory(itemId: itemId, reset: true) }
       return true
     } catch {
       self.error = error.localizedDescription

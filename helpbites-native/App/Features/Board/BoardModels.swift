@@ -103,15 +103,35 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   var completedAt: String?
   var createdAt: String
   var updatedAt: String
+  var lastModifiedBy: String?
+  var lastModifiedSource: String?
 
   enum CodingKeys: String, CodingKey {
     case id, projectId, number, title, description, publicDescription, status, statusCategory, rank, priority, assigneeId, labels, attachments, targetDate
     case isPublic = "public"
-    case feedbackPostIds, conversationIds, relatedItemIds, related, errorRefs, voteCount, posts, conversations, completedAt, createdAt, updatedAt
+    case feedbackPostIds, conversationIds, relatedItemIds, related, errorRefs, voteCount, posts, conversations, completedAt, createdAt, updatedAt, lastModifiedBy, lastModifiedSource
   }
 
   /// "2026-11-15" from the stored date, as a date input holds it; '' for none.
   var targetDay: String { String((targetDate ?? "").prefix(10)) }
+}
+
+struct BoardItemHistoryChange: Codable, Equatable, Sendable, Identifiable {
+  let field: String
+  let from, to: JSONValue
+  var id: String { field }
+}
+
+struct BoardItemHistory: Codable, Equatable, Sendable, Identifiable {
+  let id, itemId, itemTitle, actorId, actorName, source, action, createdAt: String
+  let itemNumber: Int?
+  let changes: [BoardItemHistoryChange]
+}
+
+struct BoardItemHistoryPage: Codable, Sendable {
+  let history: [BoardItemHistory]
+  let hasMore: Bool
+  let nextOffset: Int?
 }
 
 /// rankBetween: the midpoint between two neighbours, one step past the only

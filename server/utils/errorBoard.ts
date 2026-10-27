@@ -1,10 +1,11 @@
 import { createError } from 'h3'
 import { BOARD_ERROR_REFS_MAX, errorRefKey, type BoardErrorRef } from '#shared/board'
 import { errorBoardDraft, errorDetailOf, flattenEvent, trackerIssueUrl } from '#shared/errors'
-import { createBoardItem, getBoardConfig, linkBoardItem } from './board'
+import { createBoardItem, getBoardConfig, linkBoardItem, markBoardItem, recordBoardItemHistory } from './board'
 import { emitDomainEvent } from './domainEvents'
 import { errorConversationKey, errorIssueDetail, issuesUrlOf, providerOf, MAIN_LINK, type ErrorConfig } from './errorTracking'
 import type { ParseObject } from './parse'
+import type { ClientSource } from './clientSource'
 
 // "File on board": an error from the tracker becomes a board item, once. The
 // item remembers which issue it came from (`errorRefs`, with the tracker link;
@@ -23,11 +24,11 @@ export async function findFiledError(project: ParseObject, link: ErrorConfig, is
   return await new (useParse()).Query('BoardItem').equalTo('project', project).equalTo('errorKeys', errorRefKey(providerOf(link).id, issueId)).first(MASTER)
 }
 
-async function linkErrorConversation(project: ParseObject, agent: ParseObject, item: ParseObject, link: ErrorConfig, issueId: string): Promise<string> {
+async function linkErrorConversation(project: ParseObject, agent: ParseObject, item: ParseObject, link: ErrorConfig, issueId: string, source: ClientSource): Promise<string> {
   const conversation = await new (useParse()).Query('Conversation').equalTo('project', project).equalTo('idempotencyKey', errorConversationKey(providerOf(link).id, issueId)).first(MASTER)
   if (!conversation) return ''
   try {
-    await linkBoardItem(project, agent, item, 'conversation', conversation.id || '', true)
+    await linkBoardItem(project, agent, item, 'conversation', conversation.id || '', true, source)
   } catch (error) {
     // The item exists either way; a conversation it could not take is not worth failing the filing.
     console.warn('[errors] could not link the error conversation to the board item:', (error as Error).message)
@@ -40,7 +41,7 @@ async function linkErrorConversation(project: ParseObject, agent: ParseObject, i
  * board's first status). Idempotent: an issue already filed answers with its
  * item. The board must be switched on.
  */
-export async function fileErrorOnBoard(project: ParseObject, agent: ParseObject, link: ErrorConfig, issueId: string): Promise<FiledError> {
+export async function fileErrorOnBoard(project: ParseObject, agent: ParseObject, link: ErrorConfig, issueId: string, source: ClientSource = 'api'): Promise<FiledError> {
   if (!getBoardConfig(project).enabled) badRequest('Turn the project board on first (Board → Settings).')
   const providerId = providerOf(link).id
   const key = errorRefKey(providerId, issueId)
@@ -49,18 +50,25 @@ export async function fileErrorOnBoard(project: ParseObject, agent: ParseObject,
   const held = await runExclusive(`sb:errboard:${project.id}:${key}`, 30, async (): Promise<FiledError> => {
     const existing = await findFiledError(project, link, issueId)
     if (existing) {
-      await linkErrorConversation(project, agent, existing, link, issueId)
+      await linkErrorConversation(project, agent, existing, link, issueId, source)
       return { item: existing, created: false }
     }
     const { issue, event } = await errorIssueDetail(project, providerId, issueId, link.linkId)
     const url = trackerIssueUrl(providerId, issuesUrlOf(link), issueId)
     const draft = errorBoardDraft(issue, errorDetailOf(issue, flattenEvent(event)), { providerName: providerOf(link).name, url })
-    const item = await createBoardItem(project, agent, { title: draft.title, description: draft.description })
+    const item = await createBoardItem(project, agent, { title: draft.title, description: draft.description }, source)
     const ref: BoardErrorRef = { provider: providerId, issueId, linkId: link.linkId || MAIN_LINK, title: draft.title, url }
+    const oldRefs = Array.isArray(item.get('errorRefs')) ? item.get('errorRefs') as BoardErrorRef[] : []
+    const oldKeys = Array.isArray(item.get('errorKeys')) ? item.get('errorKeys') as string[] : []
     item.set('errorRefs', [ref].slice(0, BOARD_ERROR_REFS_MAX))
     item.set('errorKeys', [key])
+    markBoardItem(item, agent, source)
     await item.save(null, MASTER)
-    const conversationId = await linkErrorConversation(project, agent, item, link, issueId)
+    await recordBoardItemHistory(project, item, agent, source, 'updated', [
+      { field: 'errorRefs', from: oldRefs, to: [ref] },
+      { field: 'errorKeys', from: oldKeys, to: [key] }
+    ])
+    const conversationId = await linkErrorConversation(project, agent, item, link, issueId, source)
     await emitDomainEvent(project, 'errors.filed_on_board', { itemId: item.id, number: item.get('number') ?? null, provider: providerId, issueId, linkId: ref.linkId, conversationId: conversationId || null })
     return { item, created: true }
   }, { failOpen: true, waitMs: 5000 })

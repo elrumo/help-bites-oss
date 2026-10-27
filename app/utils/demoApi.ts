@@ -519,11 +519,11 @@ function boardItem(number: number, title: string, status: string, statusCategory
   boardItems.push({
     id: `item_demo${number}`, projectId: 'acme', number, title, description: '', publicDescription: isPublic ? title : '', status, statusCategory,
     rank: boardItems.length + 1, priority, assigneeId, labels, targetDate: null, public: isPublic,
-    feedbackPostIds: posts.map(post => post.id), conversationIds, errorRefs: [],
+    feedbackPostIds: posts.map(post => post.id), conversationIds, relatedItemIds: [], related: [], errorRefs: [],
     voteCount: posts.reduce((sum, post) => sum + post.voteCount, 0),
     posts: posts.map(post => ({ ...postRef(post), voteCount: post.voteCount, hidden: false })),
     conversations: conversationIds.map(id => ({ id, subject: id === 'conv_demo5' ? 'Export stuck' : 'Calendar shows tasks a day early', status: 'open', endUserName: id === 'conv_demo5' ? 'Maya Chen' : 'Priya Natarajan' })),
-    completedAt: statusCategory === 'done' ? ago(minutesAgo) : null, createdAt: ago(minutesAgo + 60 * 24 * 5), updatedAt: ago(minutesAgo)
+    completedAt: statusCategory === 'done' ? ago(minutesAgo) : null, createdAt: ago(minutesAgo + 60 * 24 * 5), updatedAt: ago(minutesAgo), lastModifiedBy: '', lastModifiedSource: ''
   })
 }
 boardItem(1, 'Export notebooks to Markdown', 'in-progress', 'active', ['web', 'api'], 'agent_sam', 'high', [14], ['conv_demo5'], true, 60 * 5)

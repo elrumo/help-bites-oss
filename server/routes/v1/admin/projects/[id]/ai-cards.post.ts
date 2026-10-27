@@ -1,5 +1,6 @@
 import { readAiChatMessages } from '#shared/aiCards'
 import { readItemAttachments } from '#shared/itemAttachments'
+import { clientSource } from '../../../../../utils/clientSource'
 
 defineRouteMeta({
   openAPI: {
@@ -24,5 +25,5 @@ export default defineEventHandler(async (event) => {
   const errors: string[] = []
   const attachments = readItemAttachments(body.attachments ?? [], errors)
   if (!attachments || errors.length) throw createError({ statusCode: 400, statusMessage: errors.join('; ') || 'attachments must be an array' })
-  return await createCardsFromChat(member, project, body.kind, readAiChatMessages(body.messages), attachments)
+  return await createCardsFromChat(member, project, body.kind, readAiChatMessages(body.messages), attachments, clientSource(event))
 })

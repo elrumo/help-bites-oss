@@ -299,6 +299,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   reorder. Type a new name in an item's label picker to create the label. Add a column from the tile after the last one: a name and a category,
   which decides whether its items show on the roadmap. Admins reorder columns by
   dragging a column's header onto another.
+- **Edit history.** The web and native item editors have a collapsed history of
+  field and link changes, with before and after values, who made them, whether
+  they came from web, app, API or MCP, and when. The API returns the same history.
+  Changes from before this feature was enabled cannot be reconstructed.
 - **AI titles.** A new item with no title gets one written by the AI from its description: a second after you stop
   typing, or when you press Create. A sparkles button in the title field writes (or rewrites) it on demand, with a spinner
   in the field while it works. Panel, native app and the iOS share sheet.
@@ -863,8 +867,7 @@ repository. See [EDITIONS.md](EDITIONS.md).
   stay on the old site, and no MCP tools for it yet. [BLOG.md](BLOG.md)
 - **MCP.** The server offers tools only: no prompts, resources or live notifications. It has no tools yet for
   creating legal documents, importing knowledge documents, the email designer, forms, onboarding or the
-  blog, and it issues no refresh tokens, so an
-  OAuth-connected assistant signs in again after a year. [MCP.md](MCP.md)
+  blog. OAuth connections use rotating refresh tokens. [MCP.md](MCP.md)
 - **Native translations.** The legal screen cannot yet link an existing document as
   a translation of another (the API and web can); the email editor shows translation
   edits made elsewhere after a reload; the onboarding offline copy holds only the

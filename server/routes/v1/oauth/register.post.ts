@@ -24,5 +24,5 @@ export default defineEventHandler(async (event) => {
   }
   setResponseStatus(event, 201)
   setHeader(event, 'Cache-Control', 'no-store')
-  return { client_id: registered.clientId, client_name: registered.client.name, redirect_uris: registered.client.redirectUris, grant_types: ['authorization_code'], response_types: ['code'], token_endpoint_auth_method: 'none' }
+  return { client_id: registered.clientId, client_name: registered.client.name, redirect_uris: registered.client.redirectUris, grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'], token_endpoint_auth_method: 'none' }
 })

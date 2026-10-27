@@ -211,7 +211,7 @@ const { t } = useI18n()
 const appUrl = useAppUrl()
 
 const mcpUrl = computed(() => `${appUrl.value}/mcp`)
-const mcpSnippet = computed(() => `claude mcp add --transport http helpbites ${mcpUrl.value} \\
+const mcpSnippet = computed(() => `# ChatGPT: Plugins → + → Add custom MCP server; choose OAuth\n\nclaude mcp add --transport http helpbites ${mcpUrl.value} \\
   --header "Authorization: Bearer ak_…"`)
 const copied = ref(false)
 async function copyMcp() {

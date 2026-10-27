@@ -156,7 +156,7 @@
 
           <!-- Linear's property rows: quiet until hovered -->
           <section class="grid gap-x-4 sm:grid-cols-2">
-            <USelect v-model="draft.status" :items="statusItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('board.status')" @update:model-value="patch({ status: draft.status })">
+            <USelect v-model="draft.status" :items="statusItems" variant="soft" size="sm" class="w-full" :ui="property" :aria-label="$t('board.status')" @update:model-value="patch({ status: draft.status })">
               <template #leading><span class="size-2.5 rounded-full" :class="toneDot(statusOf(draft.status)?.color)" /></template>
             </USelect>
             <USelect v-model="draft.priority" :items="priorityItems" variant="ghost" size="sm" class="w-full" :ui="property" :aria-label="$t('board.priority')" @update:model-value="patch({ priority: draft.priority === 'none' ? '' : draft.priority })">
@@ -266,6 +266,37 @@
               <h3 class="text-sm font-semibold">{{ $t('sections.changelog') }}</h3>
               <ChangelogLinks :project-id="id" kind="board" :target-id="current.id" :source="{ title: current.title, publicDescription: current.publicDescription }" />
             </section>
+
+            <details :open="historyExpanded" class="rounded-xl border border-default" @toggle="toggleHistory">
+              <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-semibold">
+                <UIcon name="i-lucide-history" class="size-4 text-muted" />
+                <span>{{ $t('board.editHistory') }}</span>
+                <span class="ml-auto max-w-[70%] truncate text-right text-xs font-normal text-muted" :title="current.updatedAt ? new Date(current.updatedAt).toLocaleString() : ''">
+                  <template v-if="current.lastModifiedBy">{{ $t('board.historyActor', { name: current.lastModifiedBy, source: $t(`board.historySource.${current.lastModifiedSource || 'api'}`) }) }} · {{ timeAgo(current.updatedAt) }}</template>
+                  <template v-else>{{ $t('board.lastModifiedUnknown', { time: timeAgo(current.updatedAt) }) }}</template>
+                </span>
+              </summary>
+              <div class="space-y-3 border-t border-default px-3 py-3">
+                <p v-if="historyLoading" class="text-xs text-muted">{{ $t('board.historyLoading') }}</p>
+                <p v-else-if="historyError" class="text-xs text-error">{{ $t('board.historyFailed') }}</p>
+                <p v-else-if="!itemHistory.length" class="text-xs text-muted">{{ $t('board.historyNotAvailable') }}</p>
+                <ol v-else class="space-y-4">
+                  <li v-for="entry in itemHistory" :key="entry.id" class="border-l border-default pl-3">
+                    <div class="flex flex-wrap items-baseline gap-x-2 text-xs">
+                      <span class="font-medium text-highlighted">{{ entry.action === 'created' ? $t('board.historyCreated') : $t('board.historyUpdated') }} · {{ $t('board.historyActor', { name: entry.actorName, source: $t(`board.historySource.${entry.source}`) }) }}</span>
+                      <time class="text-muted" :datetime="entry.createdAt" :title="new Date(entry.createdAt).toLocaleString()">{{ timeAgo(entry.createdAt) }}</time>
+                    </div>
+                    <ul v-if="entry.changes.length" class="mt-2 space-y-2 text-xs">
+                      <li v-for="(change, index) in entry.changes" :key="`${entry.id}-${index}`" class="space-y-0.5">
+                        <span v-if="change.field !== 'rank'" class="font-medium text-toned">{{ $t(`board.historyField.${change.field}`) }}</span>
+                        <div class="whitespace-pre-wrap break-words text-muted">{{ change.field === 'rank' ? $t('board.historyPositionChanged') : `${historyValue(change.field, change.from)} → ${historyValue(change.field, change.to)}` }}</div>
+                      </li>
+                    </ul>
+                  </li>
+                </ol>
+                <UButton v-if="historyHasMore" size="xs" color="neutral" variant="ghost" :loading="historyLoading" :label="$t('board.historyOlder')" @click="loadHistory(false)" />
+              </div>
+            </details>
           </template>
 
           <p v-if="editorError" class="text-sm text-error">{{ editorError }}</p>
@@ -321,7 +352,7 @@ import { DEFAULT_FEEDBACK_CONFIG, FEEDBACK_STATUS_CATEGORIES, defaultFeedbackSta
 import type { ItemAttachment } from '#shared/itemAttachments'
 import { can } from '#shared/roles'
 import { BOARD_TITLE_DEBOUNCE_MS, fallbackBoardTitle } from '#shared/boardTitle'
-import { BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, rankBetween, type BoardConfig, type BoardItem, type BoardItemPriority, type BoardRoadmapLayout } from '#shared/board'
+import { BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, rankBetween, type BoardConfig, type BoardItem, type BoardItemHistory, type BoardItemPriority, type BoardRoadmapLayout } from '#shared/board'
 import type { ConversationPriority } from '#shared/support'
 import type { AdminProject } from '~~/server/utils/projects'
 
@@ -456,6 +487,46 @@ async function loadItems() {
   items.value = (await api<{ items: BoardItem[] }>('/admin/board-items', { query: { project: id } })).items
 }
 
+async function loadHistory(reset = true) {
+  const itemId = current.value?.id
+  if (!itemId || historyLoading.value) return
+  if (reset || historyItemId.value !== itemId) {
+    itemHistory.value = []
+    historyOffset.value = 0
+    historyItemId.value = itemId
+    historyHasMore.value = false
+  }
+  historyLoading.value = true
+  historyError.value = false
+  try {
+    const result = await api<{ history: BoardItemHistory[], hasMore: boolean, nextOffset: number | null }>(`/admin/board-items/${itemId}/history`, { query: { project: id, offset: historyOffset.value, limit: 50 } })
+    if (current.value?.id !== itemId) return
+    itemHistory.value = reset ? result.history : [...itemHistory.value, ...result.history]
+    historyHasMore.value = result.hasMore
+    historyOffset.value = result.nextOffset ?? historyOffset.value
+  } catch {
+    historyError.value = true
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+function toggleHistory(event: Event) {
+  historyExpanded.value = (event.currentTarget as HTMLDetailsElement).open
+  if (historyExpanded.value && (!itemHistory.value.length || historyItemId.value !== current.value?.id || historyError.value)) void loadHistory(true)
+}
+
+function historyValue(field: string, value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—'
+  if (field === 'status' && typeof value === 'string') return statusOf(value)?.label || value
+  if (field === 'assignee' && typeof value === 'string') return agents.value.find(agent => agent.id === value)?.name || value
+  if (field === 'labels' && Array.isArray(value)) return value.map(label => typeof label === 'string' ? labelOf(label)?.label || label : historyValue('', label)).join(', ') || '—'
+  if (typeof value === 'boolean') return value ? 'On' : 'Off'
+  if (Array.isArray(value)) return value.map(item => historyValue('', item)).join(', ') || '—'
+  if (typeof value === 'object') return JSON.stringify(value, null, 2)
+  return String(value)
+}
+
 // ---- drag and drop ----
 const dragging = ref('')
 /** A column dragged by its header (admins only): its status key. */
@@ -568,6 +639,21 @@ const writingTitle = ref(false)
 let titleRun = 0
 const confirmDelete = ref(false)
 const linking = ref(false)
+const itemHistory = ref<BoardItemHistory[]>([])
+const historyLoading = ref(false)
+const historyError = ref(false)
+const historyHasMore = ref(false)
+const historyOffset = ref(0)
+const historyItemId = ref('')
+const historyExpanded = ref(false)
+
+watch(() => current.value?.id, () => {
+  itemHistory.value = []
+  historyItemId.value = ''
+  historyOffset.value = 0
+  historyHasMore.value = false
+  historyExpanded.value = false
+})
 
 function fill(item: BoardItem | null) {
   Object.assign(draft, {
@@ -629,6 +715,7 @@ async function patch(body: Record<string, unknown>) {
   editorError.value = ''
   try {
     replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${current.value.id}`, { method: 'PATCH', body })).item)
+    if (historyExpanded.value) await loadHistory(true)
   } catch (e: any) {
     editorError.value = e?.message || t('board.saveError')
   } finally {
@@ -748,6 +835,7 @@ async function setLink(kind: 'feedback' | 'conversation' | 'item', targetId: str
   editorError.value = ''
   try {
     replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${current.value.id}/links`, { method: 'POST', body: { kind, id: targetId, linked } })).item)
+    if (historyExpanded.value) await loadHistory(true)
     // A related item is linked on the other side too, so the list is read again.
     if (kind === 'item') await loadItems()
     return true

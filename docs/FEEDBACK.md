@@ -286,6 +286,7 @@ Project → **Planning** → *Turn on planning*.
   while the AI works. With no AI, or if its answer is unusable, you get one item copied from the
   post. A post can feed several items and an item can hold several posts.
 - **Related items.** *Relate to another item* in an item's Related items section links it to another item of the board. The link is two-way: both items list each other, and an item cannot relate to itself. It is internal; the public roadmap does not show it. The API takes it as `kind: "item"` on `POST /v1/admin/board-items/:id/links`, and items carry `relatedItemIds` and the resolved `related` list.
+- **Edit history.** The collapsed **Edit history** section in the web and native item editors shows each recorded change, the before and after values, who made it, where they made it (web, app, API or MCP), and when. Creating an item, changing any item field, moving it between columns or in column order, changing its links, and adding or removing a two-way related-item link all record history. `GET /v1/admin/board-items/:id/history?project=<id>&limit=50&offset=0` returns entries newest first; `limit` is 1–100 and `nextOffset` is null when there are no older entries. The history is workspace-scoped like the item. Existing items show their current last-modified time, but edits made before this feature was deployed are not available.
 - **Attach feedback by search.** In an item, *Search feedback to attach* finds posts by title,
   text, author or `#N` and links them; the *New item* form takes posts the same way and links them
   on creation.
@@ -375,7 +376,8 @@ done status. From then on Planning's public items are the roadmap.
   in a roadmap status).
 - `GET|POST /v1/admin/board-items?project=<id>` (list, or create with optional
   `feedbackPostIds` / `conversationIds`), `PATCH|DELETE
-  /v1/admin/board-items/:id`, `POST /v1/admin/board-items/from-feedback`
+  /v1/admin/board-items/:id`, `GET /v1/admin/board-items/:id/history`
+  (newest first, `limit` 1–100 and `offset`), `POST /v1/admin/board-items/from-feedback`
   (below), and `POST /v1/admin/board-items/:id/links` with
   `{ kind: "feedback" | "conversation", id, linked }`. These take an operator
   session or an `ak_…` admin key, so release scripts and other tools can file

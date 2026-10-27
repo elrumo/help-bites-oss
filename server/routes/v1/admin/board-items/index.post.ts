@@ -1,3 +1,5 @@
+import { clientSource } from '../../../../utils/clientSource'
+
 defineRouteMeta({
   openAPI: {
     tags: ['Board'], operationId: 'createBoardItem', security: [{ AgentSession: [] }, { AdminApiKey: [] }],
@@ -28,6 +30,6 @@ export default defineEventHandler(async (event) => {
   const projectId = String(getQuery(event).project || '')
   if (!projectId) throw createError({ statusCode: 400, statusMessage: 'Pass ?project=<projectId>' })
   const project = await requireProject(ctx, projectId)
-  const row = await createBoardItem(project, ctx.agent, await readBody(event).catch(() => ({})))
+  const row = await createBoardItem(project, ctx.agent, await readBody(event).catch(() => ({})), clientSource(event))
   return { item: await serializeBoardItem(project, row) }
 })
