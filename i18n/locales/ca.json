@@ -2850,6 +2850,10 @@
         "domains": {
           "term": "El teu propi domini",
           "desc": "Posa el tauler de feedback, les novetats o el blog a feedback.lateva.app. Afegeix un TXT i un CNAME, i la pàgina, els embeds i l'API responen allà amb el seu propi certificat."
+        },
+        "render": {
+          "term": "Embeds renderitzats al servidor",
+          "desc": "ssr.mjs és una petita ajuda per al teu servidor. Llegeix l’API pública dins d’un límit de temps i pinta el changelog, la full de ruta, el tauler o el xat a la teva pàgina, així que hi és abans que s’executi cap script."
         }
       },
       "inbox": {
@@ -2861,10 +2865,6 @@
         },
         "overview": {
           "term": "Totes les apps d'un cop d'ull",
-        },
-        "render": {
-          "term": "Embeds renderitzats al servidor",
-          "desc": "ssr.mjs és una petita ajuda per al teu servidor. Llegeix l’API pública dins d’un límit de temps i pinta el changelog, la full de ruta, el tauler o el xat a la teva pàgina, així que hi és abans que s’executi cap script."
           "desc": "El panell s'obre amb una visió general: una targeta per app amb les converses no llegides i obertes i els ingressos, una sola llista del que necessita atenció (esborranys per aprovar, sincronitzacions fallides, rebots, alertes activades), els últims missatges no llegits i els ingressos per app. Cada app té una llista de posada en marxa que només es posa en verd quan les coses es connecten de debò."
         },
         "notes": {
@@ -2886,6 +2886,10 @@
         "email": {
           "term": "El correu a suport@teu esdevé conversa",
           "desc": "Dóna a un projecte una adreça com suport@lateva.app, al teu domini o reenviada des de la teva bústia. Els missatges arriben a la safata com a converses i les respostes surten per correu, al mateix fil del client."
+        },
+        "saved": {
+          "term": "Respostes desades",
+          "desc": "Respostes predefinides amb el nom del client ja posat, cercades juntament amb les teves FAQ en un selector al costat del quadre de resposta. O deixa que la IA en redacti una perquè l’editis."
         }
       },
       "feedback": {
@@ -2897,10 +2901,6 @@
         },
         "roadmap": {
           "term": "Un full de ruta a partir de la teva pròpia planificació",
-        },
-        "saved": {
-          "term": "Respostes desades",
-          "desc": "Respostes predefinides amb el nom del client ja posat, cercades juntament amb les teves FAQ en un selector al costat del quadre de resposta. O deixa que la IA en redacti una perquè l’editis."
           "desc": "Planifica el treball intern en un kanban, enllaça'l amb publicacions i converses, i publica només els elements que triïs."
         },
         "changelog": {
@@ -2914,6 +2914,10 @@
         "followers": {
           "term": "Els seguidors reben les novetats",
           "desc": "Correu quan una publicació seguida canvia d'estat, rep una resposta pública o els menciona. Qualsevol pot silenciar-la o deixar de seguir-la."
+        },
+        "cards": {
+          "term": "Enganxa notes, obtén targetes",
+          "desc": "Enganxa comentaris, la transcripció d’una trucada o una llista i la IA ho arxiva com a publicacions o elements de planificació separats, fent servir només els teus tipus, etiquetes i rètols. A Planificació també pot editar i relacionar els elements que ja tens."
         }
       },
       "knowledge": {
@@ -2925,10 +2929,6 @@
         },
         "assistants": {
           "term": "Els assistents hi responen",
-        },
-        "cards": {
-          "term": "Enganxa notes, obtén targetes",
-          "desc": "Enganxa comentaris, la transcripció d’una trucada o una llista i la IA ho arxiva com a publicacions o elements de planificació separats, fent servir només els teus tipus, etiquetes i rètols. A Planificació també pot editar i relacionar els elements que ja tens."
           "desc": "Cadascun té les seves pròpies instruccions, la IA que triïs entre OpenAI, Anthropic, Gemini i altres (o qualsevol endpoint compatible), i regles d'enrutament que envien una conversa a la IA o a una persona. Prova abans una pregunta i comprova per què respon o la passa a una persona."
         },
         "scope": {
@@ -2962,6 +2962,14 @@
         "forms": {
           "term": "Llistes d’espera i formularis de contacte",
           "desc": "Recull interessats abans de llançar amb un simple camp d’email o un formulari a mida, amb pujada de fitxers i en l’idioma dels teus visitants, al teu web, en una pàgina allotjada o a la teva app. Cada registre es converteix en un contacte amb el seu propi segment, doble confirmació, un email de benvinguda i una seqüència."
+        },
+        "recipes": {
+          "term": "Automatitzacions en un clic",
+          "desc": "Instal·la una seqüència ja feta per a un registre, un onboarding acabat, una publicació de feedback o una conversa resolta. Arriba com a esborrany amb els emails escrits; edita-la i activa-la."
+        },
+        "translate": {
+          "term": "Tots els idiomes, un sol lloc",
+          "desc": "Onboarding, taules de preus, pàgines legals, plantilles d’email i formularis porten cadascun la seva traducció, escrita a mà o per la teva IA. Les apps en trien una per idioma i les campanyes fan servir l’idioma de cada contacte."
         }
       },
       "team": {
@@ -2973,14 +2981,6 @@
         },
         "legal": {
           "term": "Pàgines legals allotjades",
-        },
-        "recipes": {
-          "term": "Automatitzacions en un clic",
-          "desc": "Instal·la una seqüència ja feta per a un registre, un onboarding acabat, una publicació de feedback o una conversa resolta. Arriba com a esborrany amb els emails escrits; edita-la i activa-la."
-        },
-        "translate": {
-          "term": "Tots els idiomes, un sol lloc",
-          "desc": "Onboarding, taules de preus, pàgines legals, plantilles d’email i formularis porten cadascun la seva traducció, escrita a mà o per la teva IA. Les apps en trien una per idioma i les campanyes fan servir l’idioma de cada contacte."
           "desc": "Redacta una política de privacitat, termes, política de cookies i de reemborsaments a partir de clàusules revisades, i publica'ls en una pàgina a la qual enllacis."
         },
         "brand": {
@@ -3006,17 +3006,6 @@
         "mcp": {
           "term": "Controla'l des de Claude o ChatGPT",
           "desc": "Connecta qualsevol assistent MCP amb una sola adreça. Llegeix la safata, respon, classifica comentaris i escriu entrades del registre de canvis com tu, amb el teu rol. Revoca'l amb un clic."
-        }
-      }
-    },
-    "cta": {
-      "title": "Tot el teu kit comença aquí.",
-      "body": "Fes un tomb pel panell real amb dades d'exemple, o executa'l tu mateix amb una sola ordre."
-    }
-  },
-  "docs": {
-    "title": "Documentació",
-    "seoTitle": "Documentació — HelpBites",
         },
         "webhooks": {
           "term": "Webhooks per a cada canvi",
@@ -3029,6 +3018,17 @@
         "company": {
           "term": "Qui ets, una sola vegada",
           "desc": "El nom de la teva empresa, l’adreça i les dades de contacte s’escriuen una vegada per projecte. Les pàgines legals et nomenen com a responsable, i els peus de les campanyes i les plantilles d’email els omplen."
+        }
+      }
+    },
+    "cta": {
+      "title": "Tot el teu kit comença aquí.",
+      "body": "Fes un tomb pel panell real amb dades d'exemple, o executa'l tu mateix amb una sola ordre."
+    }
+  },
+  "docs": {
+    "title": "Documentació",
+    "seoTitle": "Documentació — HelpBites",
     "seoDescription": "Autoallotja HelpBites, connecta'l a la teva app i configura la resta: guies per a l'única safata d'assistència de totes les teves apps.",
     "seoOgTitle": "Documentació de HelpBites",
     "seoOgDescription": "Autoallotja HelpBites, connecta'l a la teva app i configura la resta.",
