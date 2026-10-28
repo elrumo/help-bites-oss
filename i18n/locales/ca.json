@@ -2849,6 +2849,10 @@
         },
         "overview": {
           "term": "Totes les apps d'un cop d'ull",
+        },
+        "render": {
+          "term": "Embeds renderitzats al servidor",
+          "desc": "ssr.mjs és una petita ajuda per al teu servidor. Llegeix l’API pública dins d’un límit de temps i pinta el changelog, la full de ruta, el tauler o el xat a la teva pàgina, així que hi és abans que s’executi cap script."
           "desc": "El panell s'obre amb una visió general: una targeta per app amb les converses no llegides i obertes i els ingressos, una sola llista del que necessita atenció (esborranys per aprovar, sincronitzacions fallides, rebots, alertes activades), els últims missatges no llegits i els ingressos per app. Cada app té una llista de posada en marxa que només es posa en verd quan les coses es connecten de debò."
         },
         "notes": {
@@ -2881,6 +2885,10 @@
         },
         "roadmap": {
           "term": "Un full de ruta a partir de la teva pròpia planificació",
+        },
+        "saved": {
+          "term": "Respostes desades",
+          "desc": "Respostes predefinides amb el nom del client ja posat, cercades juntament amb les teves FAQ en un selector al costat del quadre de resposta. O deixa que la IA en redacti una perquè l’editis."
           "desc": "Planifica el treball intern en un kanban, enllaça'l amb publicacions i converses, i publica només els elements que triïs."
         },
         "changelog": {
@@ -2905,6 +2913,10 @@
         },
         "assistants": {
           "term": "Els assistents hi responen",
+        },
+        "cards": {
+          "term": "Enganxa notes, obtén targetes",
+          "desc": "Enganxa comentaris, la transcripció d’una trucada o una llista i la IA ho arxiva com a publicacions o elements de planificació separats, fent servir només els teus tipus, etiquetes i rètols. A Planificació també pot editar i relacionar els elements que ja tens."
           "desc": "Cadascun té les seves pròpies instruccions, la IA que triïs entre OpenAI, Anthropic, Gemini i altres (o qualsevol endpoint compatible), i regles d'enrutament que envien una conversa a la IA o a una persona. Prova abans una pregunta i comprova per què respon o la passa a una persona."
         },
         "scope": {
@@ -2949,6 +2961,14 @@
         },
         "legal": {
           "term": "Pàgines legals allotjades",
+        },
+        "recipes": {
+          "term": "Automatitzacions en un clic",
+          "desc": "Instal·la una seqüència ja feta per a un registre, un onboarding acabat, una publicació de feedback o una conversa resolta. Arriba com a esborrany amb els emails escrits; edita-la i activa-la."
+        },
+        "translate": {
+          "term": "Tots els idiomes, un sol lloc",
+          "desc": "Onboarding, taules de preus, pàgines legals, plantilles d’email i formularis porten cadascun la seva traducció, escrita a mà o per la teva IA. Les apps en trien una per idioma i les campanyes fan servir l’idioma de cada contacte."
           "desc": "Redacta una política de privacitat, termes, política de cookies i de reemborsaments a partir de clàusules revisades, i publica'ls en una pàgina a la qual enllacis."
         },
         "brand": {
@@ -2985,6 +3005,18 @@
   "docs": {
     "title": "Documentació",
     "seoTitle": "Documentació — HelpBites",
+        },
+        "webhooks": {
+          "term": "Webhooks per a cada canvi",
+          "desc": "Tot el que passa en un projecte és un esdeveniment. Envia’ls als teus propis endpoints, cadascun amb el seu secret de signatura i un filtre com feedback.*, amb reintents, o inicia una seqüència amb ells."
+        },
+        "github": {
+          "term": "GitHub, només lectura",
+          "desc": "Menciona #12 en un commit o pull request i s’enllaça amb l’element del tauler o la publicació; una paraula de tancament el passa a fet. El mateix accés escriu notes d’errors amb IA i esborranys del changelog."
+        },
+        "company": {
+          "term": "Qui ets, una sola vegada",
+          "desc": "El nom de la teva empresa, l’adreça i les dades de contacte s’escriuen una vegada per projecte. Les pàgines legals et nomenen com a responsable, i els peus de les campanyes i les plantilles d’email els omplen."
     "seoDescription": "Autoallotja HelpBites, connecta'l a la teva app i configura la resta: guies per a l'única safata d'assistència de totes les teves apps.",
     "seoOgTitle": "Documentació de HelpBites",
     "seoOgDescription": "Autoallotja HelpBites, connecta'l a la teva app i configura la resta.",

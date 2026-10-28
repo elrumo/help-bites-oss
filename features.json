@@ -240,8 +240,8 @@
         ]
       },
       "landing": {
-        "listed": false,
-        "key": null
+        "listed": true,
+        "key": "landing.features.app.render"
       }
     },
     {
@@ -273,8 +273,8 @@
       },
       "embed": null,
       "landing": {
-        "listed": false,
-        "key": null
+        "listed": true,
+        "key": "landing.features.team.company"
       }
     },
     {
@@ -391,8 +391,8 @@
       },
       "embed": null,
       "landing": {
-        "listed": false,
-        "key": null
+        "listed": true,
+        "key": "landing.features.inbox.saved"
       }
     },
     {
@@ -1192,7 +1192,8 @@
       },
       "embed": null,
       "landing": {
-        "listed": false
+        "listed": true,
+        "key": "landing.features.feedback.cards"
       }
     },
     {
@@ -1374,8 +1375,8 @@
         ]
       },
       "landing": {
-        "listed": false,
-        "key": null
+        "listed": true,
+        "key": "landing.features.email.translate"
       }
     },
     {
@@ -1592,8 +1593,8 @@
       },
       "embed": null,
       "landing": {
-        "listed": false,
-        "key": null
+        "listed": true,
+        "key": "landing.features.team.github"
       }
     },
     {
@@ -1957,8 +1958,8 @@
       },
       "embed": null,
       "landing": {
-        "listed": false,
-        "key": null
+        "listed": true,
+        "key": "landing.features.team.webhooks"
       }
     },
     {
@@ -1991,8 +1992,8 @@
       },
       "embed": null,
       "landing": {
-        "listed": false,
-        "key": null
+        "listed": true,
+        "key": "landing.features.email.recipes"
       }
     },
     {

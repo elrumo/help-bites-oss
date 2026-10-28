@@ -2896,6 +2896,10 @@
         },
         "overview": {
           "term": "Todas tus apps de un vistazo",
+        },
+        "render": {
+          "term": "Embeds renderizados en el servidor",
+          "desc": "ssr.mjs es una pequeña ayuda para tu servidor. Lee la API pública dentro de un límite de tiempo y pinta el changelog, la hoja de ruta, el tablero o el chat en tu página, así que está ahí antes de que se ejecute ningún script."
           "desc": "El panel se abre con una vista general: una tarjeta por app con sus conversaciones no leídas y abiertas y sus ingresos, una sola lista de lo que requiere atención (borradores por aprobar, sincronizaciones fallidas, rebotes, alertas activadas), los últimos mensajes no leídos y los ingresos por app. Cada app tiene una lista de puesta en marcha que solo se pone en verde cuando las cosas se conectan de verdad."
         },
         "notes": {
@@ -2928,6 +2932,10 @@
         },
         "roadmap": {
           "term": "Una hoja de ruta a partir de tu propia planificación",
+        },
+        "saved": {
+          "term": "Respuestas guardadas",
+          "desc": "Respuestas predefinidas con el nombre del cliente ya puesto, buscadas junto a tus FAQ en un selector junto al cuadro de respuesta. O deja que la IA redacte una para que la edites."
           "desc": "Planifica el trabajo interno en un kanban, enlázalo con publicaciones y conversaciones, y publica solo los elementos que elijas."
         },
         "changelog": {
@@ -2952,6 +2960,10 @@
         },
         "assistants": {
           "term": "Los asistentes responden con ello",
+        },
+        "cards": {
+          "term": "Pega notas, obtén tarjetas",
+          "desc": "Pega comentarios, la transcripción de una llamada o una lista y la IA los archiva como publicaciones o elementos de planificación separados, usando solo tus tipos, etiquetas y rótulos. En Planificación también puede editar y relacionar los elementos que ya tienes."
           "desc": "Cada uno tiene sus propias instrucciones, la IA que elijas entre OpenAI, Anthropic, Gemini y otras (o cualquier endpoint compatible), y reglas de enrutamiento que envían una conversación a la IA o a una persona. Prueba antes una pregunta y comprueba por qué responde o la pasa a una persona."
         },
         "scope": {
@@ -2996,6 +3008,14 @@
         },
         "legal": {
           "term": "Páginas legales alojadas",
+        },
+        "recipes": {
+          "term": "Automatizaciones en un clic",
+          "desc": "Instala una secuencia ya hecha para un registro, un onboarding terminado, una publicación de feedback o una conversación resuelta. Llega como borrador con los emails escritos; edítala y actívala."
+        },
+        "translate": {
+          "term": "Todos los idiomas, un solo sitio",
+          "desc": "Onboarding, tablas de precios, páginas legales, plantillas de email y formularios llevan cada uno su traducción, escrita a mano o por tu IA. Las apps eligen una por idioma y las campañas usan el idioma de cada contacto."
           "desc": "Redacta una política de privacidad, términos, política de cookies y de reembolsos a partir de cláusulas revisadas, y publícalos en una página a la que enlaces."
         },
         "brand": {
@@ -3032,6 +3052,18 @@
   "docs": {
     "title": "Documentación",
     "seoTitle": "Documentación — HelpBites",
+        },
+        "webhooks": {
+          "term": "Webhooks para cada cambio",
+          "desc": "Todo lo que pasa en un proyecto es un evento. Envíalos a tus propios endpoints, cada uno con su secreto de firma y un filtro como feedback.*, con reintentos, o inicia una secuencia con ellos."
+        },
+        "github": {
+          "term": "GitHub, solo lectura",
+          "desc": "Menciona #12 en un commit o pull request y se enlaza con el elemento del tablero o la publicación; una palabra de cierre lo pasa a hecho. El mismo acceso escribe notas de errores con IA y borradores del changelog."
+        },
+        "company": {
+          "term": "Quién eres, una sola vez",
+          "desc": "El nombre de tu empresa, su dirección y sus datos de contacto se escriben una vez por proyecto. Las páginas legales te nombran como responsable, y los pies de las campañas y las plantillas de email los rellenan."
     "seoDescription": "Aloja HelpBites tú mismo, conéctalo a tu app y configura el resto: guías para la única bandeja de soporte de todas tus apps.",
     "seoOgTitle": "Documentación de HelpBites",
     "seoOgDescription": "Aloja HelpBites tú mismo, conéctalo a tu app y configura el resto.",

@@ -3039,6 +3039,10 @@
           "desc": "Attach the page, record or link they are on, and update it as they move around your app."
         },
         "onboarding": {
+        "render": {
+          "term": "Server-rendered embeds",
+          "desc": "ssr.mjs is a small helper for your server. It reads the public API within a time budget and renders the changelog, roadmap, board or chat into your page, so it is there before any script runs."
+        },
           "term": "Onboarding that always loads",
           "desc": "Write welcome screens in the panel and show them once with one script tag or a SwiftUI file, in your users' languages. Your app keeps a copy, so they still show when HelpBites is unreachable."
         },
@@ -3079,6 +3083,10 @@
           "desc": "The panel opens on an overview: a card per app with its unread and open conversations and revenue, one list of what needs attention (drafts to approve, failed syncs, bounces, fired alerts), the latest unread messages, and revenue by app. Each app has a setup checklist that turns green only when things really connect."
         },
         "notes": {
+        "saved": {
+          "term": "Saved replies",
+          "desc": "Canned answers with the customer’s name filled in, searched together with your FAQs in a picker beside the reply box. Or have the AI draft one for you to edit."
+        },
           "term": "Notes, context and errors",
           "desc": "Internal notes your customer never sees. Their recent errors and linked planning items sit beside the conversation."
         },
@@ -3115,6 +3123,10 @@
           "desc": "Plan internal work on a kanban, link it to posts and conversations, and publish only the items you pick. Turn a post into planning items in one click, with the AI writing them and setting the urgency. Group cards under epics and releases, and switch the board to a list. File an error on it in one click, and see the GitHub commits and pull requests that finished each item."
         },
         "changelog": {
+        "cards": {
+          "term": "Paste notes, get cards",
+          "desc": "Paste feedback, a call transcript or a list and the AI files it as separate posts or planning items, using only your own types, tags and labels. On Planning it can also edit and relate the items you already have."
+        },
           "term": "A changelog from what shipped",
           "desc": "Entries grouped into releases, drafted from finished work and reviewed before they go public. Includes RSS and digest emails."
         },
@@ -3159,6 +3171,14 @@
           "desc": "POST a template, your own HTML or a block document, with per-recipient variables and language, attachments, scheduling and idempotency keys."
         },
         "log": {
+        "recipes": {
+          "term": "Automations in one click",
+          "desc": "Install a ready-made sequence for a sign-up, finished onboarding, a feedback post or a resolved conversation. It arrives as a draft with the emails written; edit it and switch it on."
+        },
+        "translate": {
+          "term": "Every language, one place",
+          "desc": "Onboarding, pricing tables, legal pages, email templates and forms each carry a translation, written by hand or by your AI. Apps pick one by locale, and campaigns use each contact’s own language."
+        },
           "term": "A log of every delivery",
           "desc": "One entry per recipient, kept current by Mailgun. Bounces, complaints and unsubscribes are suppressed automatically."
         },
@@ -3183,6 +3203,18 @@
           "desc": "Draft a privacy policy, terms, cookie and refund policy from reviewed clauses, translate them with AI, then publish them on a page you link to."
         },
         "brand": {
+        "webhooks": {
+          "term": "Webhooks for every change",
+          "desc": "Everything that happens in a project is an event. Send them to your own endpoints, each with its own signing secret and a filter such as feedback.*, with retries, or start a sequence from them."
+        },
+        "github": {
+          "term": "GitHub, read-only",
+          "desc": "Mention #12 in a commit or pull request and it links to the board item or post; a closing keyword moves it to done. The same access writes AI error notes and changelog drafts."
+        },
+        "company": {
+          "term": "Who you are, once",
+          "desc": "Your company name, address and contact details are written once per project. Legal pages name you as the operator, and campaign footers and email templates fill them in."
+        },
           "term": "A brand kit to share",
           "desc": "Logos, app icons, screenshots, colours, fonts and guidelines on a public press page in one of three templates, with downloads and an embed for your site."
         },

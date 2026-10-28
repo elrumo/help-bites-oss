@@ -482,6 +482,7 @@ const features = computed(() => [
       { term: t('landing.features.app.media.term'), desc: t('landing.features.app.media.desc') },
       { term: t('landing.features.app.colours.term'), desc: t('landing.features.app.colours.desc') },
       { term: t('landing.features.app.hub.term'), desc: t('landing.features.app.hub.desc') },
+      { term: t('landing.features.app.render.term'), desc: t('landing.features.app.render.desc') },
       { term: t('landing.features.app.domains.term'), desc: t('landing.features.app.domains.desc') },
       { term: t('landing.features.app.none.term'), desc: t('landing.features.app.none.desc') }
     ]
@@ -495,6 +496,7 @@ const features = computed(() => [
       { term: t('landing.features.inbox.overview.term'), desc: t('landing.features.inbox.overview.desc') },
       { term: t('landing.features.inbox.notes.term'), desc: t('landing.features.inbox.notes.desc') },
       { term: t('landing.features.inbox.hub.term'), desc: t('landing.features.inbox.hub.desc') },
+      { term: t('landing.features.inbox.saved.term'), desc: t('landing.features.inbox.saved.desc') },
       { term: t('landing.features.inbox.away.term'), desc: t('landing.features.inbox.away.desc') },
       { term: t('landing.features.inbox.first.term'), desc: t('landing.features.inbox.first.desc') },
       { term: t('landing.features.inbox.native.term'), desc: t('landing.features.inbox.native.desc') }
@@ -506,6 +508,7 @@ const features = computed(() => [
     items: [
       { term: t('landing.features.feedback.board.term'), desc: t('landing.features.feedback.board.desc') },
       { term: t('landing.features.feedback.roadmap.term'), desc: t('landing.features.feedback.roadmap.desc') },
+      { term: t('landing.features.feedback.cards.term'), desc: t('landing.features.feedback.cards.desc') },
       { term: t('landing.features.feedback.changelog.term'), desc: t('landing.features.feedback.changelog.desc') },
       { term: t('landing.features.feedback.blog.term'), desc: t('landing.features.feedback.blog.desc') },
       { term: t('landing.features.feedback.followers.term'), desc: t('landing.features.feedback.followers.desc') }
@@ -529,6 +532,8 @@ const features = computed(() => [
       { term: t('landing.features.email.api.term'), desc: t('landing.features.email.api.desc') },
       { term: t('landing.features.email.log.term'), desc: t('landing.features.email.log.desc') },
       { term: t('landing.features.email.contacts.term'), desc: t('landing.features.email.contacts.desc') },
+      { term: t('landing.features.email.recipes.term'), desc: t('landing.features.email.recipes.desc') },
+      { term: t('landing.features.email.translate.term'), desc: t('landing.features.email.translate.desc') },
       { term: t('landing.features.email.forms.term'), desc: t('landing.features.email.forms.desc') }
     ]
   },
@@ -544,7 +549,10 @@ const features = computed(() => [
       { term: t('landing.features.team.flags.term'), desc: t('landing.features.team.flags.desc') },
       { term: t('landing.features.team.types.term'), desc: t('landing.features.team.types.desc') },
       { term: t('landing.features.team.roles.term'), desc: t('landing.features.team.roles.desc') },
-      { term: t('landing.features.team.mcp.term'), desc: t('landing.features.team.mcp.desc') }
+      { term: t('landing.features.team.mcp.term'), desc: t('landing.features.team.mcp.desc') },
+      { term: t('landing.features.team.webhooks.term'), desc: t('landing.features.team.webhooks.desc') },
+      { term: t('landing.features.team.github.term'), desc: t('landing.features.team.github.desc') },
+      { term: t('landing.features.team.company.term'), desc: t('landing.features.team.company.desc') }
     ]
   }
 ])
