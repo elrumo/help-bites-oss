@@ -23,6 +23,9 @@ import {
 /** Posts, conversations and other items, one item may link to. */
 export const BOARD_LINKS_MAX = 50
 
+/** The largest estimate an item takes, in points. */
+export const BOARD_ESTIMATE_MAX = 1000
+
 /** What an item is: a card, an epic that groups cards, or a release that ships them. */
 export const BOARD_ITEM_KINDS = ['task', 'epic', 'release'] as const
 export type BoardItemKind = typeof BOARD_ITEM_KINDS[number]
@@ -41,6 +44,27 @@ export type BoardRoadmapOptions = {
   showDates: boolean
 }
 
+/** Saved views a board keeps: the layout, grouping, order and filters, named. */
+export const BOARD_VIEWS_MAX = 20
+export const BOARD_VIEW_NAME_MAX = 40
+export const BOARD_VIEW_LAYOUTS = ['kanban', 'list'] as const
+export const BOARD_VIEW_GROUPS = ['status', 'epic', 'release'] as const
+export const BOARD_VIEW_ORDERS = ['manual', 'newest', 'oldest', 'votes'] as const
+
+/** Filters as a view stores them: '' is "any". `assignee` may be 'unassigned', `priority` 'none'. */
+export type BoardViewFilters = { search: string, labels: string[], assignee: string, priority: string, kind: string, epic: string, release: string, roadmapOnly: boolean }
+
+export type BoardSavedView = {
+  id: string
+  name: string
+  layout: typeof BOARD_VIEW_LAYOUTS[number]
+  group: typeof BOARD_VIEW_GROUPS[number]
+  order: typeof BOARD_VIEW_ORDERS[number]
+  filters: BoardViewFilters
+}
+
+export const EMPTY_BOARD_VIEW_FILTERS: BoardViewFilters = { search: '', labels: [], assignee: '', priority: '', kind: '', epic: '', release: '', roadmapOnly: false }
+
 export type BoardConfig = {
   enabled: boolean
   statuses: FeedbackStatusDefinition[]
@@ -48,6 +72,8 @@ export type BoardConfig = {
   /** Linked feedback posts follow an item's status category, emails and all. */
   syncFeedback: boolean
   roadmap: BoardRoadmapOptions
+  /** Saved views, shared by everyone on the project. */
+  views: BoardSavedView[]
 }
 
 export const DEFAULT_BOARD_STATUSES: FeedbackStatusDefinition[] = [
@@ -63,7 +89,8 @@ export const DEFAULT_BOARD_CONFIG: BoardConfig = {
   statuses: DEFAULT_BOARD_STATUSES,
   labels: [],
   syncFeedback: false,
-  roadmap: { layout: 'columns', showLabels: false, showDates: false }
+  roadmap: { layout: 'columns', showLabels: false, showDates: false },
+  views: []
 }
 
 // ---- wire types -------------------------------------------------------------
@@ -96,8 +123,8 @@ export type BoardLinkedPost = FeedbackPostRef & { voteCount: number, hidden: boo
 export type BoardLinkedConversation = { id: string, subject: string, status: string, endUserName: string }
 /** Another item of the same board that this one is related to. */
 export type BoardRelatedItem = { id: string, number: number | null, title: string, status: string }
-/** How far an epic or release is: its cards, and those in a done status. */
-export type BoardProgress = { total: number, done: number }
+/** How far an epic or release is: its cards, and those in a done status; the same in estimate points. */
+export type BoardProgress = { total: number, done: number, estimateTotal: number, estimateDone: number }
 export type BoardItemHistoryChange = { field: string, from: unknown, to: unknown }
 export type BoardItemHistory = {
   id: string
@@ -146,6 +173,8 @@ export type BoardItem = {
   labels: string[]
   attachments: ItemAttachment[]
   targetDate: string | null
+  /** Effort in points; null when nobody sized it. */
+  estimate: number | null
   public: boolean
   feedbackPostIds: string[]
   conversationIds: string[]
@@ -211,6 +240,49 @@ function isLayout(value: unknown): value is BoardRoadmapLayout {
   return (BOARD_ROADMAP_LAYOUTS as readonly string[]).includes(String(value))
 }
 
+function oneOf<T extends string>(list: readonly T[], value: unknown, fallback: T, label: string, errors: string[]): T {
+  if (value === undefined || value === null || value === '') return fallback
+  if ((list as readonly string[]).includes(String(value))) return value as T
+  errors.push(`${label} must be one of ${list.join(', ')}`)
+  return fallback
+}
+
+/** A whole list of saved views, as the API takes it (it replaces the stored list). */
+export function readBoardViews(value: unknown, errors: string[]): BoardSavedView[] {
+  if (!Array.isArray(value)) { errors.push('views must be an array'); return [] }
+  if (value.length > BOARD_VIEWS_MAX) { errors.push(`A board keeps at most ${BOARD_VIEWS_MAX} views`); return [] }
+  const ids = new Set<string>()
+  return value.flatMap((entry, index) => {
+    const raw = record(entry)
+    const label = `views[${index}]`
+    const id = typeof raw.id === 'string' ? raw.id.trim() : ''
+    const name = typeof raw.name === 'string' ? raw.name.trim() : ''
+    if (!/^[a-z0-9-]{1,40}$/.test(id)) { errors.push(`${label}.id must be lowercase letters, digits and dashes (up to 40)`); return [] }
+    if (ids.has(id)) { errors.push(`${label}.id is used twice`); return [] }
+    if (!name || name.length > BOARD_VIEW_NAME_MAX) { errors.push(`${label}.name must be 1 to ${BOARD_VIEW_NAME_MAX} characters`); return [] }
+    ids.add(id)
+    const f = record(raw.filters)
+    const text = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
+    return [{
+      id,
+      name,
+      layout: oneOf(BOARD_VIEW_LAYOUTS, raw.layout, 'kanban', `${label}.layout`, errors),
+      group: oneOf(BOARD_VIEW_GROUPS, raw.group, 'status', `${label}.group`, errors),
+      order: oneOf(BOARD_VIEW_ORDERS, raw.order, 'manual', `${label}.order`, errors),
+      filters: {
+        search: text(f.search, 200),
+        labels: Array.isArray(f.labels) ? [...new Set(f.labels.map(l => text(l, 40)).filter(Boolean))].slice(0, 30) : [],
+        assignee: text(f.assignee, 40),
+        priority: text(f.priority, 10),
+        kind: text(f.kind, 10),
+        epic: text(f.epic, 40),
+        release: text(f.release, 40),
+        roadmapOnly: f.roadmapOnly === true
+      }
+    }]
+  })
+}
+
 /**
  * Validate a (partial) board config on top of `base`. Statuses and labels go
  * through the feedback board's validation (labels are its tags); `roadmap`
@@ -223,10 +295,11 @@ export function validateBoardConfig(value: unknown, base: BoardConfig = DEFAULT_
     { ...DEFAULT_FEEDBACK_CONFIG, statuses: base.statuses, tags: base.labels }
   )
   const errors = lists.errors.map(error => error.replace(/^tags\b/, 'labels').replace('Every tag needs', 'Every label needs'))
-  const config: BoardConfig = { ...base, statuses: lists.config.statuses, labels: lists.config.tags, roadmap: { ...base.roadmap } }
+  const config: BoardConfig = { ...base, statuses: lists.config.statuses, labels: lists.config.tags, roadmap: { ...base.roadmap }, views: [...(base.views || [])] }
 
   if (raw.enabled !== undefined) config.enabled = Boolean(raw.enabled)
   if (raw.syncFeedback !== undefined) config.syncFeedback = Boolean(raw.syncFeedback)
+  if (raw.views !== undefined) config.views = readBoardViews(raw.views, errors)
   if (raw.roadmap !== undefined) {
     if (!raw.roadmap || typeof raw.roadmap !== 'object' || Array.isArray(raw.roadmap)) errors.push('roadmap must be an object')
     else {
@@ -268,6 +341,8 @@ export type BoardItemValues = Partial<{
   labels: string[]
   attachments: ItemAttachment[]
   targetDate: Date | null
+  /** null clears it. */
+  estimate: number | null
   public: boolean
 }>
 
@@ -327,6 +402,13 @@ export function readBoardItemInput(payload: unknown, config: Pick<BoardConfig, '
   if (has('targetDate')) {
     const date = readDate(raw.targetDate, 'targetDate', errors)
     if (date !== undefined) values.targetDate = date
+  }
+  if (has('estimate')) {
+    // A numeric string is read as a number: MCP clients clear a field with an empty string.
+    const estimate = typeof raw.estimate === 'string' && raw.estimate.trim() ? Number(raw.estimate) : raw.estimate
+    if (estimate === null || (typeof estimate === 'string' && !estimate.trim())) values.estimate = null
+    else if (typeof estimate !== 'number' || !Number.isFinite(estimate) || estimate < 0 || estimate > BOARD_ESTIMATE_MAX) errors.push(`estimate must be a number from 0 to ${BOARD_ESTIMATE_MAX}, or null`)
+    else values.estimate = Math.round(estimate * 100) / 100
   }
   if (has('public')) values.public = Boolean(raw.public)
   else if (options.create) values.public = false

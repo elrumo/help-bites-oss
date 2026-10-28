@@ -307,6 +307,13 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   with every cell editable in place. A card's Epic or Release picker also
   creates one from a typed name. Web and native, API (`kind`, `epicId`,
   `releaseId`) and MCP. [FEEDBACK.md](FEEDBACK.md#planning--roadmap)
+- **Estimates, saved views and more events.** Give an item an estimate in points
+  (an epic or release adds up its cards), sort the board by most votes, and save
+  the current layout, grouping, order and filters as a named view the whole project
+  can apply (admins save them). The board's list endpoint also filters by assignee,
+  priority, label and text, and cards publish `board.item.assigned`, `.updated` and
+  `.commented` events for webhooks. Web, native, API and MCP; a view's epic and
+  release filters apply on the web only. [FEEDBACK.md](FEEDBACK.md#planning--roadmap)
 - **Drafts, shortcuts and card pills.** A new item that was not created comes
   back as you left it when the panel (or, on the web, a reload) opens again; the
   same holds for new changelog entries on the web. Cmd/Ctrl+Enter creates the

@@ -1032,6 +1032,8 @@ const SCHEMAS = {
       assignee: { type: 'Pointer', targetClass: '_User' },
       labels: { type: 'Array' },
       targetDate: { type: 'Date' },
+      // Effort in points; absent when not sized.
+      estimate: { type: 'Number' },
       public: { type: 'Boolean' },
       feedbackPostIds: { type: 'Array' },
       conversationIds: { type: 'Array' },

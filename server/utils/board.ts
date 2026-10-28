@@ -51,7 +51,7 @@ function stringList(value: unknown): string[] {
 
 const HISTORY_FIELDS = [
   'title', 'kind', 'epicId', 'releaseId', 'description', 'publicDescription', 'status', 'rank', 'priority', 'assignee', 'labels', 'attachments',
-  'targetDate', 'public', 'feedbackPostIds', 'conversationIds', 'relatedItemIds', 'completedAt', 'errorRefs', 'errorKeys'
+  'targetDate', 'estimate', 'public', 'feedbackPostIds', 'conversationIds', 'relatedItemIds', 'completedAt', 'errorRefs', 'errorKeys'
 ] as const
 
 function historyValue(row: ParseObject, field: string): unknown {
@@ -66,6 +66,14 @@ function historyChanges(before: Record<string, unknown>, row: ParseObject): Boar
     const to = historyValue(row, field)
     return JSON.stringify(from) === JSON.stringify(to) ? [] : [{ field, from, to }]
   })
+}
+
+/** Fields a `board.item.updated` event reports. Long text, links and the rank stay out: events carry ids and short values. */
+const UPDATED_EVENT_FIELDS = new Set<string>(['title', 'kind', 'epicId', 'releaseId', 'priority', 'labels', 'targetDate', 'estimate', 'public'])
+
+/** Who did it, on every board event: lets a webhook or flow tell a person from the API. */
+function eventActor(agent: ParseObject, source: ClientSource): { source: ClientSource, by: string } {
+  return { source, by: agent.id || '' }
 }
 
 function historySnapshot(row: ParseObject): Record<string, unknown> {
@@ -152,7 +160,7 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
     conversationIds.length ? collectAll(() => new Parse.Query('Conversation').equalTo('project', project).containedIn('objectId', conversationIds).include('endUser'), { max: conversationIds.length }) : [],
     relatedIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn('objectId', relatedIds), { max: relatedIds.length, keys: ['number', 'title', 'status'] }) : [],
     parentIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn('objectId', parentIds), { max: parentIds.length, keys: ['number', 'title', 'status'] }) : [],
-    ...(['epicId', 'releaseId'] as const).map(field => groupIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn(field, groupIds), { max: BOARD_ITEMS_MAX, keys: ['status', 'epicId', 'releaseId'] }) : [])
+    ...(['epicId', 'releaseId'] as const).map(field => groupIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn(field, groupIds), { max: BOARD_ITEMS_MAX, keys: ['status', 'epicId', 'releaseId', 'estimate'] }) : [])
   ])
   const ref = (row: ParseObject): [string, BoardRelatedItem] => [row.id || '', { id: row.id || '', number: typeof row.get('number') === 'number' ? row.get('number') : null, title: String(row.get('title') || ''), status: String(row.get('status') || '') }]
   const related = new Map<string, BoardRelatedItem>(relatedRows.map(ref))
@@ -163,9 +171,11 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
     const done = feedbackStatusCategory(board, String(child.get('status') || '')) === 'done'
     // A card under an epic and a release counts for both; a card is never counted twice for the same parent.
     for (const parent of unique([String(child.get('epicId') || ''), String(child.get('releaseId') || '')])) {
-      const entry = progress.get(parent) || { total: 0, done: 0 }
+      const entry = progress.get(parent) || { total: 0, done: 0, estimateTotal: 0, estimateDone: 0 }
+      const points = Number(child.get('estimate')) || 0
       entry.total++
-      if (done) entry.done++
+      entry.estimateTotal += points
+      if (done) { entry.done++; entry.estimateDone += points }
       progress.set(parent, entry)
     }
   }
@@ -196,6 +206,7 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
       labels: stringList(row.get('labels')),
       attachments: itemAttachments(row.get('attachments')),
       targetDate: iso(row.get('targetDate')),
+      estimate: typeof row.get('estimate') === 'number' ? row.get('estimate') : null,
       public: row.get('public') === true,
       feedbackPostIds: stringList(row.get('feedbackPostIds')),
       conversationIds: stringList(row.get('conversationIds')),
@@ -205,7 +216,7 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
       releaseId: String(row.get('releaseId') || ''),
       epic: parents.get(String(row.get('epicId') || '')) || null,
       release: parents.get(String(row.get('releaseId') || '')) || null,
-      progress: kindOf(row) === 'task' ? null : progress.get(row.id || '') || { total: 0, done: 0 },
+      progress: kindOf(row) === 'task' ? null : progress.get(row.id || '') || { total: 0, done: 0, estimateTotal: 0, estimateDone: 0 },
       errorRefs: readErrorRefs(row.get('errorRefs')),
       voteCount: linkedPosts.filter(post => !post.hidden).reduce((sum, post) => sum + post.voteCount, 0),
       lastModifiedBy: String(row.get('lastModifiedBy') || ''),
@@ -255,6 +266,8 @@ function applyValues(row: ParseObject, values: BoardItemValues): void {
   }
   if (values.targetDate === null) row.unset('targetDate')
   else if (values.targetDate) row.set('targetDate', values.targetDate)
+  if (values.estimate === null) row.unset('estimate')
+  else if (values.estimate !== undefined) row.set('estimate', values.estimate)
 }
 
 /**
@@ -388,7 +401,10 @@ export async function createBoardItem(project: ParseObject, agent: ParseObject, 
   for (const target of targets) await applyLink(project, row, target, true, agent, source, false)
   const empty = Object.fromEntries(HISTORY_FIELDS.map(field => [field, null]))
   await recordBoardItemHistory(project, row, agent, source, 'created', historyChanges(empty, row))
-  emitDomainEventLater(project, 'board.item.created', { itemId: row.id, number: row.get('number') ?? null })
+  emitDomainEventLater(project, 'board.item.created', {
+    itemId: row.id, number: row.get('number') ?? null, ...eventActor(agent, source),
+    status: row.get('status'), kind: kindOf(row), priority: row.get('priority') || '', assigneeId: pointerId(row.get('assignee')), labels: stringList(row.get('labels'))
+  })
   return row
 }
 
@@ -418,7 +434,12 @@ export async function updateBoardItem(project: ParseObject, agent: ParseObject, 
     await row.save(null, MASTER)
     await recordBoardItemHistory(project, row, agent, source, 'updated', changes)
   }
-  if (transition.changed) emitDomainEventLater(project, 'board.item.status_changed', { itemId: row.id, number: row.get('number') ?? null, from, to })
+  const eventBase = { itemId: row.id, number: row.get('number') ?? null, ...eventActor(agent, source) }
+  if (transition.changed) emitDomainEventLater(project, 'board.item.status_changed', { ...eventBase, from, to })
+  const assigned = changes.find(change => change.field === 'assignee')
+  if (assigned) emitDomainEventLater(project, 'board.item.assigned', { ...eventBase, from: assigned.from, to: assigned.to })
+  const updated = changes.filter(change => UPDATED_EVENT_FIELDS.has(change.field))
+  if (updated.length) emitDomainEventLater(project, 'board.item.updated', { ...eventBase, changes: updated })
 
   const category = feedbackStatusCategory(board, to)
   // An item that has just shipped may get a draft changelog entry. Before the sync below, so

@@ -5,6 +5,8 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 ## Unreleased
 
+- **Planning: estimates, saved views, filters and richer events** (web, native, API, MCP): items take an `estimate` in points that epics and releases add up, the board sorts by most votes, and a named view (layout, grouping, order, filters) can be saved for the project in `board.views`. `GET /v1/admin/board-items` filters by `assignee`, `priority`, `label` and `q`. Webhook endpoints can subscribe to the new `board.item.assigned`, `board.item.updated` and `board.item.commented` events, and every board event now carries `source` and `by`. Run `bun run schema:apply`: it adds `estimate` to `BoardItem`. No env change.
+
 ## 0.2.0 — 2026-10-28
 
 HelpBites is in public beta from this release: every feature below is on `main` and in production for its author, but expect rough edges, back up before you upgrade and read these notes first.

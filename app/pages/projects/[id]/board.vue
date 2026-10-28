@@ -29,6 +29,14 @@
         <div class="mr-1 inline-flex rounded-lg border border-default p-0.5" role="group" :aria-label="$t('board.view')">
           <UButton v-for="option in VIEWS" :key="option.value" :icon="option.icon" :label="$t(`board.views.${option.value}`)" size="xs" :color="view === option.value ? 'primary' : 'neutral'" :variant="view === option.value ? 'soft' : 'ghost'" :aria-pressed="view === option.value" @click="view = option.value" />
         </div>
+        <UDropdownMenu v-if="savedViews.length || canManage" :items="viewMenu">
+          <UButton icon="i-lucide-bookmark" :label="$t('board.savedViews')" trailing-icon="i-lucide-chevron-down" size="xs" color="neutral" variant="outline" />
+        </UDropdownMenu>
+        <form v-if="savingView" class="flex items-center gap-1" @submit.prevent="saveView">
+          <UInput v-model="viewName" :maxlength="40" size="sm" class="w-40" :placeholder="$t('board.viewName')" :aria-label="$t('board.viewName')" autofocus />
+          <UButton type="submit" :label="$t('board.viewSave')" size="xs" :loading="savingViewNow" :disabled="!viewName.trim()" />
+          <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square :aria-label="$t('board.viewCancel')" @click="savingView = false" />
+        </form>
         <button type="button" class="chip h-6 px-2.5 text-xs" :class="roadmapOnly ? 'chip-active' : 'border-transparent text-dimmed'" :aria-pressed="roadmapOnly" @click="roadmapOnly = !roadmapOnly">
           <UIcon name="i-lucide-globe" class="size-3" />{{ $t('board.roadmapChip') }}<span class="tabular-nums opacity-70">{{ publicCount }}</span>
         </button>
@@ -99,7 +107,7 @@
                     </span>
                   </span>
                   <span class="mt-1 block text-[13px] font-medium leading-snug line-clamp-3">{{ item.title }}</span>
-                  <BoardProgress v-if="item.kind !== 'task'" :done="progressOf(item).done" :total="progressOf(item).total" class="mt-2 flex" />
+                  <BoardProgress v-if="item.kind !== 'task'" :done="progressOf(item).done" :total="progressOf(item).total" :points="progressOf(item).estimateTotal" :points-done="progressOf(item).estimateDone" class="mt-2 flex" />
                   <span v-if="parentChips(item).length" class="mt-2 flex flex-wrap gap-1">
                     <span v-for="chip in parentChips(item)" :key="chip.key" class="inline-flex max-w-full items-center gap-1 rounded-full bg-primary/10 px-1.5 py-px text-[10px] text-primary" :title="chip.title"><UIcon :name="chip.icon" class="size-3 shrink-0" /><span class="truncate">{{ chip.label }}</span></span>
                   </span>
@@ -111,7 +119,8 @@
                   <span v-if="cardPills(item).length" class="mt-2 flex flex-wrap gap-1">
                     <span v-for="pill in cardPills(item)" :key="pill.key" class="inline-flex items-center gap-1 rounded-full bg-elevated px-1.5 py-px text-[10px] tabular-nums text-toned" :title="pill.title"><UIcon :name="pill.icon" class="size-3" />{{ pill.count || '' }}</span>
                   </span>
-                  <span v-if="item.posts.length || item.conversations.length || item.targetDate" class="mt-2 flex items-center gap-2.5 text-[11px] text-muted">
+                  <span v-if="item.posts.length || item.conversations.length || item.targetDate || item.estimate != null" class="mt-2 flex items-center gap-2.5 text-[11px] text-muted">
+                    <span v-if="item.estimate != null" class="inline-flex items-center gap-0.5 tabular-nums" :title="$t('board.estimate')"><UIcon name="i-lucide-gauge" class="size-3" />{{ item.estimate }}</span>
                     <span v-if="item.posts.length" class="inline-flex items-center gap-0.5 font-semibold tabular-nums" :title="$t('board.votesTitle')"><UIcon name="i-lucide-chevron-up" class="size-3" />{{ item.voteCount }}</span>
                     <span v-if="item.posts.length" class="inline-flex items-center gap-0.5 tabular-nums" :title="$t('board.linkedPosts')"><UIcon name="i-lucide-lightbulb" class="size-3" />{{ item.posts.length }}</span>
                     <span v-if="item.conversations.length" class="inline-flex items-center gap-0.5 tabular-nums" :title="$t('board.linkedConversations')"><UIcon name="i-lucide-message-square" class="size-3" />{{ item.conversations.length }}</span>
@@ -134,7 +143,7 @@
 
       <!-- List: Monday-style groups of rows; every cell edits in place, a row opens the editor -->
       <div v-else class="flex-1 min-h-0 overflow-auto">
-        <div class="min-w-[62rem] space-y-5 p-4 md:px-6">
+        <div class="min-w-[67rem] space-y-5 p-4 md:px-6">
           <section v-for="g in listGroups" :key="g.key">
             <div class="flex items-center gap-2 py-1">
               <button type="button" class="flex min-w-0 items-center gap-2 text-left" :aria-expanded="!isCollapsed(g.key)" @click="toggleGroup(g.key)">
@@ -143,12 +152,12 @@
                 <span class="truncate text-sm font-semibold">{{ g.label }}</span>
                 <span class="text-xs tabular-nums text-muted">{{ g.items.length }}</span>
               </button>
-              <BoardProgress v-if="g.parent" :done="progressOf(g.parent).done" :total="progressOf(g.parent).total" class="w-40" />
+              <BoardProgress v-if="g.parent" :done="progressOf(g.parent).done" :total="progressOf(g.parent).total" :points="progressOf(g.parent).estimateTotal" :points-done="progressOf(g.parent).estimateDone" class="w-48" />
               <UButton v-if="g.parent" icon="i-lucide-arrow-up-right" size="xs" color="neutral" variant="ghost" square :aria-label="$t('board.openItem')" @click="openItem(g.parent.id)" />
             </div>
             <div v-if="!isCollapsed(g.key)" class="overflow-hidden rounded-lg border border-default bg-default">
               <div :class="[LIST_GRID, 'border-b border-default bg-elevated/60 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted']">
-                <span>{{ $t('board.colItem') }}</span><span>{{ $t('board.epic') }}</span><span>{{ $t('board.release') }}</span><span>{{ $t('board.assignee') }}</span><span>{{ $t('board.priority') }}</span><span>{{ $t('board.status') }}</span><span>{{ $t('board.targetDate') }}</span>
+                <span>{{ $t('board.colItem') }}</span><span>{{ $t('board.epic') }}</span><span>{{ $t('board.release') }}</span><span>{{ $t('board.assignee') }}</span><span>{{ $t('board.priority') }}</span><span>{{ $t('board.status') }}</span><span>{{ $t('board.targetDate') }}</span><span>{{ $t('board.estimateShort') }}</span>
               </div>
               <div v-for="item in g.items" :key="item.id" :class="[LIST_GRID, 'border-b border-default px-3 py-1 text-[13px] hover:bg-elevated/50']">
                 <button type="button" class="flex min-w-0 items-center gap-2 py-1 text-left" @click="openItem(item.id)">
@@ -156,7 +165,7 @@
                   <span v-if="item.number" class="shrink-0 tabular-nums text-muted">#{{ item.number }}</span>
                   <span class="min-w-0 truncate font-medium">{{ item.title }}</span>
                   <UIcon v-if="item.public" name="i-lucide-globe" class="size-3.5 shrink-0 text-primary" :aria-label="$t('board.publicRoadmapLabel')" />
-                  <BoardProgress v-if="item.kind !== 'task'" :done="progressOf(item).done" :total="progressOf(item).total" class="w-24 shrink-0" />
+                  <BoardProgress v-if="item.kind !== 'task'" :done="progressOf(item).done" :total="progressOf(item).total" :points="progressOf(item).estimateTotal" :points-done="progressOf(item).estimateDone" class="w-32 shrink-0" />
                 </button>
                 <select v-if="kindCanHave(item.kind, 'epic')" :value="item.epicId" :class="CELL" :aria-label="$t('board.epic')" @change="quickPatch(item, { epicId: ($event.target as HTMLSelectElement).value })">
                   <option value="">—</option>
@@ -180,6 +189,7 @@
                   <option v-for="status in board.statuses" :key="status.key" :value="status.key">{{ status.label }}</option>
                 </select>
                 <input type="date" :value="item.targetDate ? item.targetDate.slice(0, 10) : ''" :class="[CELL, '[color-scheme:light] dark:[color-scheme:dark]']" :aria-label="$t('board.targetDate')" @change="quickPatch(item, { targetDate: ($event.target as HTMLInputElement).value || null })">
+                <input type="number" min="0" max="1000" step="any" :value="item.estimate ?? ''" :class="[CELL, 'text-right tabular-nums']" :aria-label="$t('board.estimate')" @change="quickPatch(item, { estimate: estimateOf(($event.target as HTMLInputElement).value) })">
               </div>
               <p v-if="!g.items.length" class="px-3 py-3 text-xs text-dimmed">{{ filtering ? $t('board.nothingMatches') : $t('board.noItems') }}</p>
               <form class="flex items-center gap-2 px-3 py-1.5" @submit.prevent="quickAdd(g)">
@@ -254,6 +264,10 @@
             <label class="group" :class="propertyBox">
               <UIcon name="i-lucide-calendar" class="absolute left-2.5 size-3.5 text-dimmed" />
               <input v-model="draft.targetDate" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.targetDate ? '' : 'text-dimmed'" :aria-label="$t('board.targetDate')" @change="patch({ targetDate: draft.targetDate || null })">
+            </label>
+            <label class="group" :class="propertyBox">
+              <UIcon name="i-lucide-gauge" class="absolute left-2.5 size-3.5 text-dimmed" />
+              <input v-model="draft.estimate" type="number" min="0" max="1000" step="any" class="w-full bg-transparent outline-none" :placeholder="$t('board.estimate')" :aria-label="$t('board.estimate')" @change="patch({ estimate: estimateOf(String(draft.estimate)) })">
             </label>
             <USelect v-model="draft.kind" :items="kindItems" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('board.kind')" @update:model-value="changeKind">
               <template #leading><UIcon :name="KIND_ICONS[draft.kind]" class="size-3.5 text-dimmed" /></template>
@@ -490,7 +504,7 @@ import { DEFAULT_FEEDBACK_CONFIG, FEEDBACK_STATUS_CATEGORIES, defaultFeedbackSta
 import { isImageMime, type ItemAttachment } from '#shared/itemAttachments'
 import { can } from '#shared/roles'
 import { BOARD_TITLE_DEBOUNCE_MS, fallbackBoardTitle } from '#shared/boardTitle'
-import { BOARD_ITEM_KINDS, BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, kindCanHave, rankBetween, type BoardConfig, type BoardItem, type BoardItemHistory, type BoardItemKind, type BoardItemPriority, type BoardRoadmapLayout } from '#shared/board'
+import { BOARD_ITEM_KINDS, BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, kindCanHave, rankBetween, type BoardConfig, type BoardItem, type BoardItemHistory, type BoardItemKind, type BoardItemPriority, type BoardRoadmapLayout, type BoardSavedView } from '#shared/board'
 import type { ConversationPriority } from '#shared/support'
 import type { AdminProject } from '~~/server/utils/projects'
 
@@ -584,16 +598,16 @@ const labelFilter = ref<string[]>([])
 const assigneeFilter = ref('__all__')
 const priorityFilter = ref('__all__')
 const roadmapOnly = ref(false)
-// Manual is the order the cards are dragged into; newest and oldest sort each column by when its item was made (drag still moves items between columns).
-type BoardOrder = 'manual' | 'newest' | 'oldest'
-const ORDERS: BoardOrder[] = ['manual', 'newest', 'oldest']
+// Manual is the order the cards are dragged into; newest and oldest sort each column by when its item was made, votes by the most voted first (drag still moves items between columns).
+type BoardOrder = 'manual' | 'newest' | 'oldest' | 'votes'
+const ORDERS: BoardOrder[] = ['manual', 'newest', 'oldest', 'votes']
 // The chosen order is remembered per project in this browser, so it survives a refresh.
 const savedOrder = useLocalStorage<BoardOrder>(`hb-board-order:${id}`, 'manual')
 const order = computed<BoardOrder>({
   get: () => (ORDERS.includes(savedOrder.value) ? savedOrder.value : 'manual'),
   set: (value) => { savedOrder.value = value }
 })
-const orderItems = computed(() => [{ label: t('board.orderManual'), value: 'manual' }, { label: t('board.orderNewest'), value: 'newest' }, { label: t('board.orderOldest'), value: 'oldest' }])
+const orderItems = computed(() => [{ label: t('board.orderManual'), value: 'manual' }, { label: t('board.orderNewest'), value: 'newest' }, { label: t('board.orderOldest'), value: 'oldest' }, { label: t('board.orderVotes'), value: 'votes' }])
 const kindFilter = ref('__all__')
 const epicFilter = ref('__all__')
 const releaseFilter = ref('__all__')
@@ -612,6 +626,67 @@ function clearFilters() {
   roadmapOnly.value = false
 }
 
+// ---- saved views ----
+// A view is the layout, grouping, order and filters, named and shared by the project (`board.views`). Saving needs the admin role, like the columns.
+const savedViews = computed(() => board.value?.views || [])
+const savingView = ref(false)
+const savingViewNow = ref(false)
+const viewName = ref('')
+const anyOf = (value: string) => value || '__all__'
+const stored = (value: string) => (value === '__all__' ? '' : value)
+
+function applyView(saved: BoardSavedView) {
+  view.value = saved.layout
+  groupBy.value = saved.group
+  order.value = saved.order
+  const f = saved.filters
+  search.value = f.search
+  labelFilter.value = f.labels.filter(label => labelOf(label))
+  assigneeFilter.value = anyOf(f.assignee)
+  priorityFilter.value = anyOf(f.priority)
+  kindFilter.value = anyOf(f.kind)
+  // An epic or release deleted since reads as "any", not as an empty board.
+  epicFilter.value = epics.value.some(epic => epic.id === f.epic) ? f.epic : '__all__'
+  releaseFilter.value = releases.value.some(release => release.id === f.release) ? f.release : '__all__'
+  roadmapOnly.value = f.roadmapOnly
+}
+
+async function writeViews(views: BoardSavedView[]) {
+  actionError.value = ''
+  try {
+    storeProject((await api<{ project: AdminProject }>(`/admin/projects/${id}`, { method: 'PATCH', body: { board: { views } } })).project)
+    return true
+  } catch (e: any) {
+    actionError.value = e?.message || t('board.saveError')
+    return false
+  }
+}
+
+async function saveView() {
+  const name = viewName.value.trim()
+  if (!name || savingViewNow.value) return
+  savingViewNow.value = true
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'view'
+  const saved: BoardSavedView = {
+    id: `${slug}-${Math.random().toString(36).slice(2, 7)}`,
+    name,
+    layout: view.value,
+    group: groupBy.value,
+    order: order.value,
+    filters: { search: search.value.trim(), labels: [...labelFilter.value], assignee: stored(assigneeFilter.value), priority: stored(priorityFilter.value), kind: stored(kindFilter.value), epic: stored(epicFilter.value), release: stored(releaseFilter.value), roadmapOnly: roadmapOnly.value }
+  }
+  if (await writeViews([...savedViews.value, saved])) { savingView.value = false; viewName.value = '' }
+  savingViewNow.value = false
+}
+
+const viewMenu = computed(() => [
+  savedViews.value.map(saved => ({ label: saved.name, icon: 'i-lucide-bookmark', onSelect: () => applyView(saved) })),
+  [
+    ...(canManage.value ? [{ label: t('board.saveView'), icon: 'i-lucide-bookmark-plus', onSelect: () => { viewName.value = ''; savingView.value = true } }] : []),
+    ...(canManage.value && savedViews.value.length ? [{ label: t('board.deleteView'), icon: 'i-lucide-trash-2', children: savedViews.value.map(saved => ({ label: saved.name, onSelect: () => { void writeViews(savedViews.value.filter(v => v.id !== saved.id)) } })) }] : [])
+  ]
+].filter(group => group.length))
+
 // ---- columns ----
 const defaultStatus = computed(() => (board.value ? defaultFeedbackStatus(board.value).key : ''))
 /** A status the board no longer knows sits in the default column. */
@@ -621,20 +696,22 @@ const sorted = computed(() => [...items.value].sort((a, b) => a.rank - b.rank ||
 const epics = computed(() => sorted.value.filter(i => i.kind === 'epic'))
 const releases = computed(() => sorted.value.filter(i => i.kind === 'release'))
 const itemById = computed(() => new Map(items.value.map(i => [i.id, i])))
+type BoardProgressTotals = { total: number, done: number, estimateTotal: number, estimateDone: number }
 const progressById = computed(() => {
-  const progress = new Map<string, { total: number, done: number }>()
+  const progress = new Map<string, BoardProgressTotals>()
   for (const item of items.value) {
     for (const parent of new Set([item.epicId, item.releaseId])) {
       if (!parent) continue
-      const entry = progress.get(parent) || { total: 0, done: 0 }
+      const entry = progress.get(parent) || { total: 0, done: 0, estimateTotal: 0, estimateDone: 0 }
       entry.total++
-      if (item.statusCategory === 'done') entry.done++
+      entry.estimateTotal += item.estimate ?? 0
+      if (item.statusCategory === 'done') { entry.done++; entry.estimateDone += item.estimate ?? 0 }
       progress.set(parent, entry)
     }
   }
   return progress
 })
-const progressOf = (item: BoardItem) => progressById.value.get(item.id) || { total: 0, done: 0 }
+const progressOf = (item: BoardItem): BoardProgressTotals => progressById.value.get(item.id) || { total: 0, done: 0, estimateTotal: 0, estimateDone: 0 }
 const childrenOf = (parent: BoardItem) => items.value.filter(i => i.id !== parent.id && (i.epicId === parent.id || i.releaseId === parent.id))
 function parentLabel(itemId: string) {
   const parent = itemById.value.get(itemId)
@@ -649,6 +726,7 @@ function parentChips(item: BoardItem) {
 }
 const ordered = computed(() => {
   if (order.value === 'manual') return sorted.value
+  if (order.value === 'votes') return [...sorted.value].sort((a, b) => b.voteCount - a.voteCount || a.rank - b.rank || (a.number ?? 0) - (b.number ?? 0))
   const direction = order.value === 'newest' ? -1 : 1
   return [...sorted.value].sort((a, b) => direction * (Date.parse(a.createdAt) - Date.parse(b.createdAt)) || direction * ((a.number ?? 0) - (b.number ?? 0)))
 })
@@ -701,7 +779,9 @@ const groupBy = computed<GroupBy>({
 const groupByItems = computed(() => (['status', 'epic', 'release'] as const).map(value => ({ label: t(`board.groupByOptions.${value}`), value })))
 
 // Tailwind reads these class strings as written.
-const LIST_GRID = 'grid grid-cols-[minmax(14rem,1fr)_9rem_9rem_8rem_7rem_9rem_7rem] items-center gap-2'
+const LIST_GRID = 'grid grid-cols-[minmax(14rem,1fr)_9rem_9rem_8rem_7rem_9rem_7rem_4.5rem] items-center gap-2'
+/** An estimate field's text as the API takes it: a number of points, null for none. */
+const estimateOf = (text: string) => (text.trim() === '' ? null : Number(text))
 const CELL_BASE = 'w-full min-w-0 truncate rounded-md border border-transparent px-1.5 py-1 text-[13px] outline-none hover:border-default focus:border-primary'
 const CELL = `${CELL_BASE} bg-transparent`
 
@@ -909,7 +989,7 @@ async function dropOn(status: string) {
 const editorOpen = ref(false)
 const editingId = ref('')
 const current = computed(() => (editingId.value ? items.value.find(i => i.id === editingId.value) || null : null))
-const draft = reactive({ title: '', kind: 'task' as BoardItemKind, epicId: 'none', releaseId: 'none', description: '', publicDescription: '', status: '', priority: 'none' as BoardItemPriority | 'none', assigneeId: 'unassigned', labels: [] as string[], attachments: [] as ItemAttachment[], targetDate: '', public: false, posts: [] as { id: string, number: number | null, title: string, voteCount: number }[] })
+const draft = reactive({ title: '', kind: 'task' as BoardItemKind, epicId: 'none', releaseId: 'none', description: '', publicDescription: '', status: '', priority: 'none' as BoardItemPriority | 'none', assigneeId: 'unassigned', labels: [] as string[], attachments: [] as ItemAttachment[], targetDate: '', estimate: '' as number | '', public: false, posts: [] as { id: string, number: number | null, title: string, voteCount: number }[] })
 const draftAssignee = computed(() => agents.value.find(agent => agent.id === draft.assigneeId) || null)
 const epicItems = computed(() => [{ label: t('board.noEpic'), value: 'none' }, ...epics.value.map(epic => ({ label: parentLabel(epic.id), value: epic.id }))])
 const releaseItems = computed(() => [{ label: t('board.noRelease'), value: 'none' }, ...releases.value.map(release => ({ label: parentLabel(release.id), value: release.id }))])
@@ -963,6 +1043,7 @@ function fill(item: BoardItem | null) {
     labels: [...(item?.labels || [])],
     attachments: [...(item?.attachments || [])],
     targetDate: item?.targetDate ? item.targetDate.slice(0, 10) : '',
+    estimate: item?.estimate ?? '',
     public: item?.public || false,
     posts: []
   })
@@ -974,11 +1055,11 @@ function fill(item: BoardItem | null) {
 
 // ---- the new item's unsaved draft ----
 // Kept in this browser while the panel is a new item, and brought back the next time it opens.
-type DraftSnapshot = Pick<typeof draft, 'title' | 'description' | 'publicDescription' | 'status' | 'priority' | 'assigneeId' | 'labels' | 'attachments' | 'targetDate' | 'public' | 'posts'>
+type DraftSnapshot = Pick<typeof draft, 'title' | 'description' | 'publicDescription' | 'status' | 'priority' | 'assigneeId' | 'labels' | 'attachments' | 'targetDate' | 'estimate' | 'public' | 'posts'>
 const saved = useSavedDraft<Partial<DraftSnapshot>>(() => `hb-draft:board:${id}`)
 const restored = ref(false)
 
-const hasDraftContent = () => Boolean(draft.title.trim() || draft.description.trim() || draft.publicDescription.trim() || draft.labels.length || draft.attachments.length || draft.posts.length || draft.targetDate)
+const hasDraftContent = () => Boolean(draft.title.trim() || draft.description.trim() || draft.publicDescription.trim() || draft.labels.length || draft.attachments.length || draft.posts.length || draft.targetDate || draft.estimate !== '')
 
 watch(draft, () => {
   if (!editorOpen.value || current.value) return
@@ -998,6 +1079,7 @@ function restoreDraft(snapshot: Partial<DraftSnapshot>) {
     labels: (Array.isArray(snapshot.labels) ? snapshot.labels : []).filter(label => labelOf(label)),
     attachments: Array.isArray(snapshot.attachments) ? snapshot.attachments : [],
     targetDate: /^\d{4}-\d{2}-\d{2}$/.test(text(snapshot.targetDate)) ? text(snapshot.targetDate) : '',
+    estimate: typeof snapshot.estimate === 'number' ? snapshot.estimate : '',
     public: snapshot.public === true,
     posts: Array.isArray(snapshot.posts) ? snapshot.posts : []
   })
@@ -1209,6 +1291,7 @@ async function createItem() {
         labels: draft.labels,
         attachments: draft.attachments,
         targetDate: draft.targetDate || null,
+        estimate: estimateOf(String(draft.estimate)),
         public: draft.public,
         feedbackPostIds: draft.posts.map(post => post.id)
       }

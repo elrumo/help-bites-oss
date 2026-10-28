@@ -166,6 +166,9 @@ struct BoardItemEditor: View {
       pickers(config)
     }
     LabeledField(label: "Target date") { targetDate }
+    LabeledField(label: "Estimate", hint: "Points; an epic or release adds up its cards.") {
+      TextField("", text: Binding(get: { draft.estimate ?? "" }, set: { draft.estimate = $0 })).textFieldStyle(.linear).inputHints(.decimalPad)
+    }
     labelPicker(config)
     AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId)
     roadmap(config)
@@ -700,6 +703,7 @@ struct BoardItemEditor: View {
     case "labels": String(localized: "Labels")
     case "attachments": String(localized: "Files")
     case "targetDate": String(localized: "Target date")
+    case "estimate": String(localized: "Estimate")
     case "public": String(localized: "Roadmap visibility")
     case "feedbackPostIds": String(localized: "Feedback links")
     case "conversationIds": String(localized: "Conversation links")
@@ -961,6 +965,8 @@ private struct BoardItemDraft: Equatable, Codable {
   var attachments: [ItemAttachment] = []
   /// "2026-11-15", like a date input; '' for none.
   var targetDay = ""
+  /// Points as typed; optional so a draft saved before estimates still loads.
+  var estimate: String?
   var isPublic = false
 
   init(item: BoardItem?, defaultStatus: String) {
@@ -980,6 +986,7 @@ private struct BoardItemDraft: Equatable, Codable {
     labels = item.labels
     attachments = item.attachments ?? []
     targetDay = item.targetDay
+    estimate = item.estimate.map(BoardEstimate.text)
     isPublic = item.isPublic
   }
 
@@ -993,7 +1000,7 @@ private struct BoardItemDraft: Equatable, Codable {
 
   /// Kept while it has content; an empty form forgets the draft.
   func store(for projectId: String) {
-    let hasContent = !title.trimmed.isEmpty || !description.trimmed.isEmpty || !publicDescription.trimmed.isEmpty || !labels.isEmpty || !attachments.isEmpty
+    let hasContent = !title.trimmed.isEmpty || !description.trimmed.isEmpty || !publicDescription.trimmed.isEmpty || !labels.isEmpty || !attachments.isEmpty || !(estimate ?? "").trimmed.isEmpty
     if hasContent, let data = try? JSONEncoder().encode(self) { UserDefaults.standard.set(data, forKey: Self.key(projectId)) } else { Self.forget(for: projectId) }
   }
 
@@ -1014,6 +1021,7 @@ private struct BoardItemDraft: Equatable, Codable {
     if !priority.isEmpty { fields["priority"] = .string(priority) }
     if !assigneeId.isEmpty { fields["assigneeId"] = .string(assigneeId) }
     if !targetDay.isEmpty { fields["targetDate"] = .string(targetDay) }
+    if let points = BoardEstimate.points(estimate) { fields["estimate"] = .number(points) }
     return fields
   }
 
@@ -1033,6 +1041,7 @@ private struct BoardItemDraft: Equatable, Codable {
     if labels != original.labels { patch["labels"] = .array(labels.map(JSONValue.string)) }
     if attachments != original.attachments { patch["attachments"] = .array(attachments.map(\.asJSON)) }
     if targetDay != original.targetDay { patch["targetDate"] = targetDay.isEmpty ? .null : .string(targetDay) }
+    if BoardEstimate.points(estimate) != BoardEstimate.points(original.estimate) { patch["estimate"] = BoardEstimate.points(estimate).map(JSONValue.number) ?? .null }
     if isPublic != original.isPublic { patch["public"] = .bool(isPublic) }
     return patch
   }

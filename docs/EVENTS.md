@@ -30,8 +30,13 @@ timeout can arrive twice) and ignore old `createdAt`s.
 | `feedback.post.created` | `{ postId, number, contact?: { id, externalId } }` (the author, when a person wrote it) |
 | `feedback.post.status_changed` | `{ postId, number, from, to }` |
 | `feedback.post.voted` | `{ postId, number, voterExternalId }` (only when a vote is added) |
-| `board.item.created` | `{ itemId, number }` |
-| `board.item.status_changed` | `{ itemId, number, from, to }` |
+| `board.item.created` | `{ itemId, number, source, by, status, kind, priority, assigneeId, labels }` |
+| `board.item.status_changed` | `{ itemId, number, source, by, from, to }` |
+| `board.item.assigned` | `{ itemId, number, source, by, from, to }` (member ids; `null` when there was no assignee, or there is none now) |
+| `board.item.updated` | `{ itemId, number, source, by, changes: [{ field, from, to }] }` (title, kind, epicId, releaseId, priority, labels, targetDate, estimate, public) |
+| `board.item.commented` | `{ itemId, number, source, by, commentId }` |
+
+Every `board.item.*` event carries `source` (`web`, `app`, `api` or `mcp`) and `by` (the operator's user id).
 | `changelog.entry.published` | `{ entryId, number, releaseId, feedbackPostIds, boardItemIds, conversationIds }` |
 | `errors.filed_on_board` | `{ itemId, provider, issueId }` |
 | `github.commit.referenced` | `{ sha, repo, targetKind, targetId }` |

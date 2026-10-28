@@ -13,7 +13,10 @@ enum DomainEventCatalog {
     Group(key: "feedback", label: "Feedback", events: [
       ("feedback.post.created", "Feedback post created"), ("feedback.post.status_changed", "Feedback status changed"), ("feedback.post.voted", "Feedback vote")
     ]),
-    Group(key: "board", label: "Board", events: [("board.item.created", "Board item created"), ("board.item.status_changed", "Board item status changed")]),
+    Group(key: "board", label: "Board", events: [
+      ("board.item.created", "Board item created"), ("board.item.status_changed", "Board item status changed"), ("board.item.assigned", "Board item assigned"),
+      ("board.item.updated", "Board item updated"), ("board.item.commented", "Board item commented")
+    ]),
     Group(key: "changelog", label: "Changelog", events: [("changelog.entry.published", "Changelog entry published")]),
     Group(key: "errors", label: "Errors", events: [("errors.filed_on_board", "Error filed on the board")]),
     Group(key: "github", label: "GitHub", events: [("github.commit.referenced", "Commit references an item"), ("github.pull_request.merged", "Pull request merged")]),

@@ -12,6 +12,45 @@ struct BoardRoadmapOptions: Codable, Equatable, Sendable {
   var showDates: Bool
 }
 
+/// Filters a saved view keeps (BoardViewFilters): '' is any; assignee may be 'unassigned', priority 'none'.
+struct BoardViewFilters: Codable, Equatable, Sendable {
+  var search = ""
+  var labels: [String] = []
+  var assignee = ""
+  var priority = ""
+  var kind = ""
+  var epic = ""
+  var release = ""
+  var roadmapOnly = false
+}
+
+/// A named layout, grouping, order and set of filters, shared by the project (BoardSavedView, `board.views`).
+struct BoardSavedView: Codable, Equatable, Sendable, Identifiable {
+  let id: String
+  var name: String
+  /// kanban · list
+  var layout: String
+  /// status · epic · release
+  var group: String
+  /// manual · newest · oldest · votes
+  var order: String
+  var filters: BoardViewFilters
+
+  static let maxCount = 20
+  static let maxNameLength = 40
+
+  var asJSON: JSONValue {
+    .object([
+      "id": .string(id), "name": .string(name), "layout": .string(layout), "group": .string(group), "order": .string(order),
+      "filters": .object([
+        "search": .string(filters.search), "labels": .array(filters.labels.map(JSONValue.string)), "assignee": .string(filters.assignee),
+        "priority": .string(filters.priority), "kind": .string(filters.kind), "epic": .string(filters.epic), "release": .string(filters.release),
+        "roadmapOnly": .bool(filters.roadmapOnly)
+      ])
+    ])
+  }
+}
+
 struct BoardConfig: Codable, Equatable, Sendable {
   var enabled: Bool
   var statuses: [FeedbackStatusDefinition]
@@ -19,6 +58,8 @@ struct BoardConfig: Codable, Equatable, Sendable {
   /// Linked feedback posts follow an item's status category.
   var syncFeedback: Bool
   var roadmap: BoardRoadmapOptions
+  /// Saved views; absent from a server that predates them.
+  var views: [BoardSavedView]?
 
   /// The categories the public roadmap shows (ROADMAP_CATEGORIES).
   static let roadmapCategories = ["planned", "active", "done"]
@@ -69,6 +110,8 @@ struct BoardRelatedItem: Codable, Equatable, Sendable, Identifiable {
 /// An epic's or release's cards, and how many are in a done status.
 struct BoardProgress: Codable, Equatable, Sendable {
   let total, done: Int
+  /// The same in estimate points; absent from a server that predates estimates.
+  var estimateTotal, estimateDone: Double?
   var fraction: Double { total > 0 ? Double(done) / Double(total) : 0 }
 }
 
@@ -120,6 +163,8 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   var attachments: [ItemAttachment]?
   /// An ISO date at UTC midnight, or nil.
   var targetDate: String?
+  /// Effort in points, or nil when nobody sized it; absent from a server that predates estimates.
+  var estimate: Double?
   /// On the public roadmap once its status is planned, active or done.
   var isPublic: Bool
   var feedbackPostIds: [String]
@@ -147,7 +192,7 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   var lastModifiedSource: String?
 
   enum CodingKeys: String, CodingKey {
-    case id, projectId, number, title, kind, description, publicDescription, status, statusCategory, rank, priority, assigneeId, labels, attachments, targetDate
+    case id, projectId, number, title, kind, description, publicDescription, status, statusCategory, rank, priority, assigneeId, labels, attachments, targetDate, estimate
     case isPublic = "public"
     case feedbackPostIds, conversationIds, relatedItemIds, related, epicId, releaseId, epic, release, progress, errorRefs, voteCount, posts, conversations, completedAt, createdAt, updatedAt, lastModifiedBy, lastModifiedSource
   }
@@ -157,6 +202,16 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
 
   /// "2026-11-15" from the stored date, as a date input holds it; '' for none.
   var targetDay: String { String((targetDate ?? "").prefix(10)) }
+}
+
+enum BoardEstimate {
+  /// "3" or "2.5": no trailing zero, as the field and the cards show it.
+  static func text(_ points: Double) -> String { points == points.rounded() ? String(Int(points)) : String(points) }
+  /// A field's text as points; nil for empty or anything that is not a number from 0 to 1000 (BOARD_ESTIMATE_MAX).
+  static func points(_ text: String?) -> Double? {
+    guard let text = text?.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."), let value = Double(text), value >= 0, value <= 1000 else { return nil }
+    return (value * 100).rounded() / 100
+  }
 }
 
 struct BoardItemHistoryChange: Codable, Equatable, Sendable, Identifiable {

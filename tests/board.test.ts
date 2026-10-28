@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   DEFAULT_BOARD_CONFIG,
+  EMPTY_BOARD_VIEW_FILTERS,
   normalizeBoardConfig,
   rankBetween,
   kindCanHave,
@@ -30,6 +31,7 @@ const item = (fields: Partial<BoardItem> = {}): BoardItem => ({
   labels: ['editor'],
   attachments: [],
   targetDate: '2026-08-15T00:00:00.000Z',
+  estimate: null,
   public: true,
   feedbackPostIds: ['post1', 'post2'],
   conversationIds: ['conv1'],
@@ -116,6 +118,45 @@ describe('item input', () => {
     expect(readBoardItemInput({ rank: '3' }, config, { create: false }).errors).toContain('rank must be a finite number')
     expect(readBoardItemInput({ rank: 2.5 }, config, { create: false }).values.rank).toBe(2.5)
     expect(readBoardItemInput({ assigneeId: null }, config, { create: false }).values.assigneeId).toBe('')
+  })
+})
+
+describe('estimates', () => {
+  test('a number of points from 0 to 1000, null or empty to clear, numeric strings read as numbers', () => {
+    expect(readBoardItemInput({ estimate: 3 }, config, { create: false }).values.estimate).toBe(3)
+    expect(readBoardItemInput({ estimate: 2.555 }, config, { create: false }).values.estimate).toBe(2.56)
+    expect(readBoardItemInput({ estimate: '5' }, config, { create: false }).values.estimate).toBe(5)
+    expect(readBoardItemInput({ estimate: null }, config, { create: false }).values.estimate).toBeNull()
+    expect(readBoardItemInput({ estimate: '' }, config, { create: false }).values.estimate).toBeNull()
+    expect(readBoardItemInput({ title: 'x' }, config, { create: true }).values.estimate).toBeUndefined()
+    for (const bad of [-1, 1001, 'many', Number.NaN, true]) expect(readBoardItemInput({ estimate: bad }, config, { create: false }).errors[0]).toContain('estimate must be a number')
+  })
+})
+
+describe('saved views', () => {
+  const view = { id: 'mine', name: 'My urgent work', layout: 'list', group: 'epic', order: 'votes', filters: { assignee: 'u1', priority: 'urgent', labels: ['web', 'web'], roadmapOnly: true } }
+
+  test('a view is read with defaults for what it leaves out', () => {
+    const { config: read, errors } = validateBoardConfig({ views: [view, { id: 'plain', name: 'Plain' }] })
+    expect(errors).toEqual([])
+    expect(read.views[0]).toEqual({ ...view, filters: { search: '', labels: ['web'], assignee: 'u1', priority: 'urgent', kind: '', epic: '', release: '', roadmapOnly: true } })
+    expect(read.views[1]).toMatchObject({ layout: 'kanban', group: 'status', order: 'manual', filters: EMPTY_BOARD_VIEW_FILTERS })
+  })
+
+  test('views replace the stored list, and survive a partial update that does not send them', () => {
+    const base = validateBoardConfig({ views: [view] }).config
+    expect(validateBoardConfig({ syncFeedback: true }, base).config.views).toHaveLength(1)
+    expect(validateBoardConfig({ views: [] }, base).config.views).toEqual([])
+  })
+
+  test('bad ids, names, repeats, enums and counts are reported', () => {
+    const errors = (views: unknown) => validateBoardConfig({ views }).errors
+    expect(errors('nope')).toContain('views must be an array')
+    expect(errors([{ id: 'Bad Id', name: 'x' }])[0]).toContain('id must be')
+    expect(errors([{ id: 'a', name: '' }])[0]).toContain('name must be')
+    expect(errors([{ id: 'a', name: 'x' }, { id: 'a', name: 'y' }])).toContain('views[1].id is used twice')
+    expect(errors([{ id: 'a', name: 'x', layout: 'gantt' }])[0]).toContain('layout must be one of')
+    expect(errors(Array.from({ length: 21 }, (_, i) => ({ id: `v${i}`, name: 'x' })))[0]).toContain('at most 20')
   })
 })
 

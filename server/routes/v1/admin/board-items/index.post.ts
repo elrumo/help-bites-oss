@@ -19,6 +19,7 @@ defineRouteMeta({
       labels: { type: 'array', items: { type: 'string' } },
       attachments: { type: 'array', maxItems: 10, items: { type: 'object', properties: { url: { type: 'string' }, name: { type: 'string' }, mime: { type: 'string' }, size: { type: 'integer' } } }, description: 'Images and files from POST /v1/feedback/attachments' },
       targetDate: { type: 'string', format: 'date', nullable: true },
+      estimate: { type: 'number', nullable: true, description: 'Effort in points, 0 to 1000; null clears it. An epic or release shows the total of its cards as `progress.estimateTotal` and `progress.estimateDone`.' },
       public: { type: 'boolean', default: false },
       rank: { type: 'number', description: 'Sort key within a column; lower comes first' },
       feedbackPostIds: { type: 'array', items: { type: 'string' }, maxItems: 50 },

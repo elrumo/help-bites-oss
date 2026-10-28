@@ -2,6 +2,7 @@ import { createError } from 'h3'
 import { FEEDBACK_COMMENT_MAX_LENGTH } from '#shared/feedback'
 import { readItemAttachments } from '#shared/itemAttachments'
 import { clientSource } from '../../../../../utils/clientSource'
+import { emitDomainEventLater } from '../../../../../utils/domainEvents'
 import { assertOwnAttachments } from '../../../../../utils/itemAttachments'
 import { pointerId } from '../../../../../utils/parse'
 import { scoped } from '../../../../../utils/scoped'
@@ -67,6 +68,7 @@ export default defineEventHandler(async (event) => {
     comment.set('replyToId', repliedToId)
   }
   await comment.save(null, MASTER)
+  emitDomainEventLater(project, 'board.item.commented', { itemId: item.id, number: item.get('number') ?? null, commentId: comment.id, source, by: ctx.agentId })
   setResponseStatus(event, 201)
   return {
     comment: {

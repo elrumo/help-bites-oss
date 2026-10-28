@@ -97,5 +97,10 @@ Every new feature, removal, rename, edition change, or a change to what a featur
   with no tool; a parameter you add to an existing route is yours to add to its tool.
 - Both clients were opened and the feature works in each; say so, or say which you could not check.
 - Match the surrounding code: comment density, naming, idiom. No new dependency for something a few lines can do.
+- HelpBites runs on itself (project "HelpBites", `list_projects` for its id). Every new feature or user-visible change,
+  when finished, gets both: a card in the **Done** column of its planning board (`create_board_item` with
+  `status: "done"`, or move the card that tracked it) and a changelog entry in the same project (`create_changelog_entry`,
+  left as a **draft**: publishing emails subscribers, so only publish when the user says so). This is separate from the
+  `CHANGELOG.md` line in section 4, which is for self-hosters.
 - The release number lives in `package.json` only: never hand-edit it elsewhere (`bun run release:bump X.Y.Z`, `docs/RELEASING.md`).
   A new surface that names the product (a page header, an About screen) shows it with `<AppVersion />` / the Beta tag.

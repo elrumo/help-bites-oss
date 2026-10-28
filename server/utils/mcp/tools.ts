@@ -209,6 +209,10 @@ export const MCP_TOOLS: readonly McpTool[] = [
       epic: { type: 'string', description: 'Only the cards of this epic (its id or `#12`).' },
       release: { type: 'string', description: 'Only the items of this release (its id or `#12`).' },
       feedbackPost: { type: 'string', description: 'Only items linked to this feedback post (its id or number).' },
+      assignee: { type: 'string', description: 'Only items assigned to this team member id (from list_team_members); `none` for unassigned items.' },
+      priority: { type: 'string', enum: ['low', 'normal', 'high', 'urgent', 'none'], description: 'Only items with this priority; `none` for items without one.' },
+      label: { type: 'string', description: 'Only items carrying this label key.' },
+      q: { type: 'string', description: 'Only items whose title or description contains this text, or whose number matches (`#12`).' },
       offset: { type: 'integer', description: 'Items to skip.' },
       limit: { ...limit(200), default: 50 }
     }
@@ -229,6 +233,7 @@ export const MCP_TOOLS: readonly McpTool[] = [
       assigneeId: { type: 'string', description: 'A team member\'s id (from list_team_members); empty for nobody.' },
       labels: { type: 'array', items: { type: 'string' }, description: 'Label keys the board defines (`board.labels` in list_projects).' },
       targetDate: { type: 'string', description: 'A date such as 2026-11-30; empty for none.' },
+      estimate: { type: 'number', description: 'Effort in points (0 to 1000). An epic or release totals its cards\' estimates in `progress`.' },
       attachments: { type: 'array', items: { type: 'object' }, description: 'Up to 10 attachment objects ({ url, name, mime, size }) returned by upload_board_comment_attachment: screenshots, logs, files.' },
       rank: { type: 'number', description: 'Sort key within its column; lower comes first. Default: the bottom.' },
       public: { type: 'boolean', description: 'Show on the public roadmap once planned, in progress or done.' },
@@ -261,6 +266,7 @@ export const MCP_TOOLS: readonly McpTool[] = [
       assigneeId: { type: 'string', description: 'A team member\'s id (from list_team_members); empty unassigns.' },
       labels: { type: 'array', items: { type: 'string' }, description: 'Replaces the item\'s labels with these label keys (an empty list clears them).' },
       targetDate: { type: 'string', description: 'A date such as 2026-11-30; empty clears it.' },
+      estimate: { type: 'string', description: 'Effort in points as a number such as 3 (0 to 1000); empty clears it.' },
       attachments: { type: 'array', items: { type: 'object' }, description: 'REPLACES the item\'s attachments (up to 10 objects { url, name, mime, size } from upload_board_comment_attachment); an empty list removes them all.' },
       rank: { type: 'number', description: 'Sort key within its column; lower comes first. Use the midpoint between the ranks of the two items it should sit between.' },
       public: { type: 'boolean', description: 'Show on the public roadmap.' }
@@ -2768,7 +2774,7 @@ export const MCP_TOOLS: readonly McpTool[] = [
   // ---- the Planning board's settings (same route) -------------------------------------------------------------
   {
     name: 'update_board_settings', title: 'Change a project\'s Planning board settings', destructive: true, method: 'PATCH', path: '/v1/admin/projects/{id}',
-    description: 'Changes the Planning board\'s settings: turning it on, its statuses and labels, the public roadmap\'s layout, and whether linked feedback follows item status. ' +
+    description: 'Changes the Planning board\'s settings: turning it on, its statuses and labels, the public roadmap\'s layout, whether linked feedback follows item status, and the saved views. ' +
       'Partial: only the keys you send inside `board` change, but `statuses` and `labels` REPLACE their whole lists, so read the current ones from list_projects (the project\'s `board` field) and send every one you want to keep. ' +
       'Removing a status or a label does not touch the items that use it, and nothing checks or moves them: an item keeps the old status key, the panel shows it in the default status\'s column, it counts as category open and it stays off the public roadmap until it is moved to a status that exists (move items first with update_board_item when you remove or rename a key; to rename only what people read, keep the key and change `label`). An item keeps a removed label\'s key too. ' +
       'Returns the updated project. Needs the admin role. A bad value is a 400 that names it and nothing is saved. Confirm with the user first.',
@@ -2779,7 +2785,8 @@ export const MCP_TOOLS: readonly McpTool[] = [
         'syncFeedback (boolean, off by default: when an item moves to a status of another category, every feedback post linked to it moves to the feedback board\'s first status of that category, and the post\'s followers get the usual status emails); ' +
         'roadmap: { layout (columns, timeline or list), showLabels (send each item\'s labels to the public roadmap), showDates (send target dates; the timeline layout always does) }, merged key by key; ' +
         'statuses REPLACES the list: [{ key, label, category, color, isDefault }], at least one and at most 40, keys unique. A key is lowercased, anything but a-z, 0-9, - and _ becomes a dash, up to 40 characters; label up to 60 (the key when empty); category is required: open, planned, active, done or closed, and is what the status means (only planned, active and done statuses, and their names, reach the public roadmap; moving an item into done marks it completed); color is neutral, primary, info, success, warning or error (default follows the category); isDefault is true on at most one status, where new items start (the first when none is marked); ' +
-        'labels REPLACES the list: [{ key, label, color }], at most 40, keys as above, label up to 60, color as above (default neutral). An empty labels list removes every label.' }
+        'labels REPLACES the list: [{ key, label, color }], at most 40, keys as above, label up to 60, color as above (default neutral). An empty labels list removes every label; ' +
+        'views REPLACES the saved views the whole project shares: [{ id, name, layout, group, order, filters }], at most 20; id is lowercase letters, digits and dashes (up to 40, unique), name up to 40 characters, layout is kanban or list, group is status, epic or release (the list layout\'s grouping), order is manual, newest, oldest or votes, and filters is { search, labels: [keys], assignee (a member id or "unassigned"), priority (low, normal, high, urgent or "none"), kind, epic, release (ids), roadmapOnly }, where an empty string means any. Read the current views from list_projects first and send the ones you keep.' }
     }
   }
 ]

@@ -49,7 +49,7 @@ struct BoardScreen: View {
   var view = "kanban"
   /// What the list groups by: 'status', 'epic' or 'release'.
   var grouping = "status"
-  /// The order cards show in a column: 'manual' (the order they are dragged into), 'newest' or 'oldest' (by when made).
+  /// The order cards show in a column: 'manual' (the order they are dragged into), 'newest' or 'oldest' (by when made), or 'votes' (most voted first).
   var order = "manual"
 
   init(projectId: String, workspace: Workspace) {
@@ -60,7 +60,7 @@ struct BoardScreen: View {
     if UserDefaults.standard.string(forKey: Self.viewKey(projectId)) == "list" { view = "list" }
   }
 
-  private static let orders = ["manual", "newest", "oldest"]
+  private static let orders = ["manual", "newest", "oldest", "votes"]
   private static func orderKey(_ projectId: String) -> String { "helpbites.board.order.\(projectId)" }
 
   /// Picks an order and remembers it for this project.
@@ -100,6 +100,38 @@ struct BoardScreen: View {
     roadmapOnly = false
   }
 
+  // MARK: Saved views
+
+  var savedViews: [BoardSavedView] { config?.views ?? [] }
+
+  /// The layout, grouping, order and filters of a saved view. Epic and release filters are not part of this screen, so a view that has them only keeps them for the web.
+  func applyView(_ saved: BoardSavedView) {
+    setView(saved.layout)
+    grouping = ["status", "epic", "release"].contains(saved.group) ? saved.group : "status"
+    setOrder(saved.order)
+    search = saved.filters.search
+    labelFilter = Set(saved.filters.labels.filter { label in config?.labels.contains { $0.key == label } == true })
+    assigneeFilter = saved.filters.assignee
+    priorityFilter = saved.filters.priority
+    kindFilter = saved.filters.kind
+    roadmapOnly = saved.filters.roadmapOnly
+  }
+
+  func saveCurrentView(named name: String) async {
+    let name = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(BoardSavedView.maxNameLength))
+    guard !name.isEmpty, savedViews.count < BoardSavedView.maxCount else { return }
+    let slug = String(name.lowercased().map { $0.isLetter || $0.isNumber ? $0 : "-" }.map(String.init).joined().prefix(30))
+    let saved = BoardSavedView(
+      id: "\(slug.isEmpty ? "view" : slug)-\(String(UUID().uuidString.prefix(5)).lowercased())", name: name, layout: view, group: grouping, order: order,
+      filters: BoardViewFilters(search: search.trimmingCharacters(in: .whitespacesAndNewlines), labels: labelFilter.sorted(), assignee: assigneeFilter, priority: priorityFilter, kind: kindFilter, roadmapOnly: roadmapOnly)
+    )
+    await saveBoard(["views": .array((savedViews + [saved]).map(\.asJSON))])
+  }
+
+  func deleteView(_ saved: BoardSavedView) async {
+    await saveBoard(["views": .array(savedViews.filter { $0.id != saved.id }.map(\.asJSON))])
+  }
+
   func item(_ id: String) -> BoardItem? { items.first { $0.id == id } }
   func agent(_ id: String) -> Agent? { id.isEmpty ? nil : agents.first { $0.id == id } }
 
@@ -114,6 +146,7 @@ struct BoardScreen: View {
 
   private func ordered(_ shown: [BoardItem]) -> [BoardItem] {
     guard order != "manual" else { return shown }
+    if order == "votes" { return shown.sorted { ($0.voteCount, $1.rank, $1.number ?? 0) > ($1.voteCount, $0.rank, $0.number ?? 0) } }
     // Newest first or oldest first by creation; the number breaks ties.
     return shown.sorted { lhs, rhs in
       let (a, b) = order == "newest" ? (rhs, lhs) : (lhs, rhs)
@@ -423,6 +456,8 @@ private struct BoardView: View {
   @State private var showAi = false
   @State private var editor: BoardEditorRoute?
   @State private var roadmapHelp = false
+  @State private var namingView = false
+  @State private var viewName = ""
   @Environment(\.scenePhase) private var scenePhase
 
   var body: some View {
@@ -434,6 +469,13 @@ private struct BoardView: View {
       .sheet(isPresented: $showSettings) { BoardSettingsSheet(store: store) }
       .sheet(isPresented: $addingColumn) { AddColumnSheet(store: store) }
       .feedbackErrorAlert($store.alert)
+      .alert("Save current view", isPresented: $namingView) {
+        TextField("View name", text: $viewName)
+        Button("Save") { Task { await store.saveCurrentView(named: viewName) } }
+        Button("Cancel", role: .cancel) {}
+      } message: {
+        Text("Keeps the layout, grouping, order and filters, for everyone on this project.")
+      }
       .alert("Turn on feedback first", isPresented: $roadmapHelp) {
         Button("OK", role: .cancel) {}
       } message: {
@@ -542,6 +584,20 @@ private struct BoardView: View {
       .padding(.horizontal, Metrics.gutter)
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 6) {
+          if !store.savedViews.isEmpty || store.session.canManage {
+            filterMenu("Views", value: String(localized: "Views"), active: false) {
+              ForEach(store.savedViews) { saved in Button(saved.name) { store.applyView(saved) } }
+              if store.session.canManage {
+                if !store.savedViews.isEmpty { Divider() }
+                Button("Save current view…") { viewName = ""; namingView = true }.disabled(store.savedViews.count >= BoardSavedView.maxCount)
+                if !store.savedViews.isEmpty {
+                  Menu("Delete a view") {
+                    ForEach(store.savedViews) { saved in Button(saved.name, role: .destructive) { Task { await store.deleteView(saved) } } }
+                  }
+                }
+              }
+            }
+          }
           Pill(label: "On roadmap", count: store.publicCount, systemImage: "globe", isActive: store.roadmapOnly) { store.roadmapOnly.toggle() }
           filterMenu("Assignee", value: assigneeTitle, active: !store.assigneeFilter.isEmpty) {
             Picker("Assignee", selection: $store.assigneeFilter) {
@@ -570,6 +626,7 @@ private struct BoardView: View {
               Text("Manual").tag("manual")
               Text("Newest first").tag("newest")
               Text("Oldest first").tag("oldest")
+              Text("Most votes first").tag("votes")
             }
           }
           filterMenu("Priority", value: priorityTitle, active: !store.priorityFilter.isEmpty) {
@@ -624,6 +681,7 @@ private struct BoardView: View {
     switch store.order {
     case "newest": String(localized: "Newest first")
     case "oldest": String(localized: "Oldest first")
+    case "votes": String(localized: "Most votes first")
     default: String(localized: "Manual")
     }
   }
@@ -762,7 +820,7 @@ private struct BoardList: View {
 
   @ViewBuilder private func meta(_ item: BoardItem) -> some View {
     let day = BoardFormat.shortDay(item.targetDay)
-    if !item.priority.isEmpty || item.epic != nil || item.release != nil || item.progress?.total ?? 0 > 0 || store.agent(item.assigneeId) != nil || day != nil || item.isPublic {
+    if !item.priority.isEmpty || item.epic != nil || item.release != nil || item.progress?.total ?? 0 > 0 || store.agent(item.assigneeId) != nil || day != nil || item.estimate != nil || item.isPublic {
       FlowLayout(spacing: 6) {
         if !item.priority.isEmpty { PriorityIcon(priority: item.priority, size: 12) }
         if let progress = item.progress, progress.total > 0 { BoardProgressBar(progress: progress).frame(width: 110) }
@@ -770,6 +828,7 @@ private struct BoardList: View {
         if let release = item.release { BoardParentChip(kind: "release", title: release.title) }
         if let agent = store.agent(item.assigneeId) { Avatar(name: agent.inboxName, size: 18) }
         if let day { Label(day, systemImage: "calendar").labelStyle(BoardCompactLabelStyle()).accessibilityLabel("Target \(day)") }
+        if let estimate = item.estimate { Label(BoardEstimate.text(estimate), systemImage: "gauge.with.needle").labelStyle(BoardCompactLabelStyle()).accessibilityLabel("Estimate \(BoardEstimate.text(estimate)) points") }
         if item.isPublic { Image(systemName: "globe").font(.system(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel("On the public roadmap") }
       }
     }
@@ -859,6 +918,9 @@ struct BoardProgressBar: View {
       Capsule().fill(Theme.elevated).frame(height: 4)
         .overlay(alignment: .leading) { GeometryReader { box in Capsule().fill(Theme.success).frame(width: box.size.width * progress.fraction) } }
       Text("\(progress.done)/\(progress.total)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
+      if let points = progress.estimateTotal, points > 0 {
+        Text("\(BoardEstimate.text(progress.estimateDone ?? 0))/\(BoardEstimate.text(points)) pts").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
+      }
     }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("\(progress.done) of \(progress.total) cards done")

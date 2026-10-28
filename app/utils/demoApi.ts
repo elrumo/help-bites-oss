@@ -518,7 +518,7 @@ function boardItem(number: number, title: string, status: string, statusCategory
   const posts = postNumbers.map(demoPost)
   boardItems.push({
     id: `item_demo${number}`, projectId: 'acme', number, title, kind: 'task', epicId: '', releaseId: '', epic: null, release: null, progress: null, description: '', publicDescription: isPublic ? title : '', attachments: [], status, statusCategory,
-    rank: boardItems.length + 1, priority, assigneeId, labels, targetDate: null, public: isPublic,
+    rank: boardItems.length + 1, priority, assigneeId, labels, targetDate: null, estimate: null, public: isPublic,
     feedbackPostIds: posts.map(post => post.id), conversationIds, relatedItemIds: [], related: [], errorRefs: [],
     voteCount: posts.reduce((sum, post) => sum + post.voteCount, 0),
     posts: posts.map(post => ({ ...postRef(post), voteCount: post.voteCount, hidden: false })),
