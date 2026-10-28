@@ -13,6 +13,9 @@ struct BoardItemEditor: View {
   @State private var pickingCard = false
   /// A card of this epic or release opened from its Cards list.
   @State private var openedCard: CardRoute?
+  /// The kind (epic or release) being named in the "New epic…" prompt, and the name so far.
+  @State private var namingParent: String?
+  @State private var parentName = ""
   @State private var newLabel = ""
   @State private var addingLabel = false
   /// Feedback chosen for an item that does not exist yet; linked when it is created.
@@ -98,6 +101,11 @@ struct BoardItemEditor: View {
         }
       }
       .feedbackErrorAlert($error)
+      .alert(namingParent == "release" ? "New release" : "New epic", isPresented: Binding(get: { namingParent != nil }, set: { if !$0 { namingParent = nil } })) {
+        TextField("Name", text: $parentName)
+        Button("Cancel", role: .cancel) { parentName = "" }
+        Button("Create") { if let kind = namingParent { Task { await createParent(kind) } } }
+      }
       .onChange(of: draft) { _, value in if itemId == nil { value.store(for: store.projectId) } }
       .confirmationDialog("Delete this item?", isPresented: $confirmDelete, titleVisibility: .visible) {
         Button("Delete item", role: .destructive) { Task { await deleteItem() } }
@@ -199,7 +207,24 @@ struct BoardItemEditor: View {
     // An epic or release deleted since stays listed while the item points at it, so it can be taken off.
     let missing = selection.wrappedValue.isEmpty || others.contains { $0.id == selection.wrappedValue } ? [] : [FeedbackOption(value: selection.wrappedValue, label: String(localized: "Unknown \(BoardKind.name(kind).lowercased())"))]
     return LabeledField(label: kind == "epic" ? "Epic" : "Release") {
-      FeedbackSelect(options: [FeedbackOption(value: "", label: none)] + others.map { other in FeedbackOption(value: other.id, label: other.number.map { "#\($0) \(other.title)" } ?? other.title) } + missing, selection: selection)
+      FeedbackSelect(
+        options: [FeedbackOption(value: "", label: none)] + others.map { other in FeedbackOption(value: other.id, label: other.number.map { "#\($0) \(other.title)" } ?? other.title) } + missing,
+        selection: selection,
+        create: (kind == "epic" ? "New epic…" : "New release…", { parentName = ""; namingParent = kind })
+      )
+    }
+  }
+
+  /// An epic or release named from its picker is created now, and this item takes it (the item's own Save keeps that).
+  private func createParent(_ kind: String) async {
+    let title = String(parentName.trimmed.prefix(BoardTitle.maxLength))
+    parentName = ""
+    guard !title.isEmpty else { return }
+    do {
+      let parent = try await store.create(["title": .string(title), "kind": .string(kind)])
+      if kind == "epic" { draft.epicId = parent.id } else { draft.releaseId = parent.id }
+    } catch {
+      self.error = error.localizedDescription
     }
   }
 

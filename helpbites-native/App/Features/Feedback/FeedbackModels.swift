@@ -389,6 +389,8 @@ struct FeedbackSelect: View {
   let options: [FeedbackOption]
   @Binding var selection: String
   var compact = false
+  /// An extra entry under the choices, such as "New epic…".
+  var create: (title: LocalizedStringKey, action: () -> Void)? = nil
   @Environment(\.isEnabled) private var isEnabled
 
   var body: some View {
@@ -397,6 +399,10 @@ struct FeedbackSelect: View {
       Picker(selection: $selection) {
         ForEach(options, id: \.value) { option in Text(option.label).tag(option.value) }
       } label: { EmptyView() }
+      if let create {
+        Divider()
+        Button(action: create.action) { Label(create.title, systemImage: "plus") }
+      }
     } label: {
       HStack(spacing: 7) {
         if let color = current?.color { Circle().fill(FeedbackFormat.tint(color) ?? Theme.textDimmed).frame(width: 7, height: 7) }

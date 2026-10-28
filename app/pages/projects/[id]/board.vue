@@ -258,12 +258,14 @@
             <USelect v-model="draft.kind" :items="kindItems" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('board.kind')" @update:model-value="changeKind">
               <template #leading><UIcon :name="KIND_ICONS[draft.kind]" class="size-3.5 text-dimmed" /></template>
             </USelect>
-            <USelect v-if="kindCanHave(draft.kind, 'epic')" v-model="draft.epicId" :items="epicItems" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('board.epic')" @update:model-value="setParent('epicId')">
+            <USelectMenu v-if="kindCanHave(draft.kind, 'epic')" v-model="draft.epicId" :items="epicItems" value-key="value" create-item="always" :search-input="{ placeholder: $t('board.createParentHint') }" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('board.epic')" @create="createParent('epic', $event)" @update:model-value="setParent('epicId')">
               <template #leading><UIcon name="i-lucide-zap" class="size-3.5 text-dimmed" /></template>
-            </USelect>
-            <USelect v-if="kindCanHave(draft.kind, 'release')" v-model="draft.releaseId" :items="releaseItems" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('board.release')" @update:model-value="setParent('releaseId')">
+              <template #create-item-label="{ item }">{{ $t('board.createEpic', { name: item }) }}</template>
+            </USelectMenu>
+            <USelectMenu v-if="kindCanHave(draft.kind, 'release')" v-model="draft.releaseId" :items="releaseItems" value-key="value" create-item="always" :search-input="{ placeholder: $t('board.createParentHint') }" size="sm" class="w-full" :ui="propertyField" :aria-label="$t('board.release')" @create="createParent('release', $event)" @update:model-value="setParent('releaseId')">
               <template #leading><UIcon name="i-lucide-rocket" class="size-3.5 text-dimmed" /></template>
-            </USelect>
+              <template #create-item-label="{ item }">{{ $t('board.createRelease', { name: item }) }}</template>
+            </USelectMenu>
             <USelectMenu v-model="draft.labels" :items="labelItems" value-key="value" multiple create-item="always" size="sm" class="w-full sm:col-span-2" :ui="propertyField" :placeholder="$t('board.addLabels')" :aria-label="$t('board.labels')" @create="createLabel" @update:model-value="patch({ labels: draft.labels })">
               <template #leading><UIcon name="i-lucide-tag" class="size-3.5 text-dimmed" /></template>
             </USelectMenu>
@@ -1093,6 +1095,21 @@ async function setParent(field: 'epicId' | 'releaseId') {
   if (!current.value) return
   await patch({ [field]: draft[field] === 'none' ? '' : draft[field] })
   resetParents()
+}
+
+/** An epic or release named in its picker is created now, and the item takes it. */
+async function createParent(kind: 'epic' | 'release', name: string) {
+  const title = name.trim().slice(0, 200)
+  if (!title) return
+  try {
+    const { item } = await api<{ item: BoardItem }>('/admin/board-items', { method: 'POST', query: { project: id }, body: { kind, title } })
+    replaceItem(item)
+    const field = kind === 'epic' ? 'epicId' : 'releaseId'
+    draft[field] = item.id
+    await setParent(field)
+  } catch (e: any) {
+    editorError.value = e?.message || t('board.createError')
+  }
 }
 
 /** Puts an item into the open epic or release; it leaves the one it was in. */

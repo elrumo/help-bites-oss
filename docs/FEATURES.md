@@ -304,7 +304,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   cards or a release that ships cards and epics; a card points at its epic and
   release (and back: an epic or release lists its cards with their progress).
   Switch the board to a Monday-style list grouped by status, epic or release,
-  with every cell editable in place. Web and native, API (`kind`, `epicId`,
+  with every cell editable in place. A card's Epic or Release picker also
+  creates one from a typed name. Web and native, API (`kind`, `epicId`,
   `releaseId`) and MCP. [FEEDBACK.md](FEEDBACK.md#planning--roadmap)
 - **Drafts, shortcuts and card pills.** A new item that was not created comes
   back as you left it when the panel (or, on the web, a reload) opens again; the
