@@ -13,7 +13,13 @@
     "sourceCode": "ソースコード",
     "search": "検索",
     "saved": "保存しました",
-    "saving": "保存中…"
+    "saving": "保存中…",
+    "beta": "ベータ",
+    "releaseNotes": "リリースノート",
+    "version": "バージョン {version}",
+    "changelog": "更新履歴",
+    "readme": "README",
+    "dockerHub": "Docker Hub"
   },
   "nav": {
     "openNavigation": "ナビゲーションを開く",
@@ -203,7 +209,8 @@
     "theme": "テーマ",
     "themeNote": "「システム」はお使いのデバイスの設定に従います。変更されるのはパネルのみで、各プロジェクトのウィジェットの色はプロジェクト設定で決まります。",
     "language": "言語",
-    "languageNote": "既定ではシステムの言語を使用します。変更されるのはパネルのみです。"
+    "languageNote": "既定ではシステムの言語を使用します。変更されるのはパネルのみです。",
+    "aboutHint": "公開ベータ版です。粗い部分があるかもしれません。バージョンを開くとリリースノートを表示します。"
   },
   "inbox": {
     "searchPlaceholder": "名前、メール、ユーザー ID で検索",

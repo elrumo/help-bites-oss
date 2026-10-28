@@ -1,5 +1,6 @@
 {
   "name": "help-bites",
+  "version": "0.2.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "repository": {
@@ -26,7 +27,9 @@
     "list-agents": "bun scripts/list-agents.mjs",
     "smoke": "bun scripts/smoke.mjs",
     "smoke:isolation": "bun scripts/smoke-isolation.mjs",
-    "backfill:contacts": "bun scripts/backfill-contacts.mjs"
+    "backfill:contacts": "bun scripts/backfill-contacts.mjs",
+    "release:bump": "bun scripts/bump-version.mjs",
+    "release:changelog": "bun scripts/publish-changelog.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "3.0.67",

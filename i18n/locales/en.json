@@ -13,7 +13,13 @@
     "sourceCode": "Source code",
     "search": "Search",
     "saved": "Saved",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "beta": "Beta",
+    "changelog": "Changelog",
+    "readme": "README",
+    "dockerHub": "Docker Hub",
+    "releaseNotes": "Release notes",
+    "version": "Version {version}"
   },
   "nav": {
     "openNavigation": "Open navigation",
@@ -185,6 +191,7 @@
     }
   },
   "settings": {
+    "aboutHint": "Public beta: expect rough edges. Select the version for the release notes.",
     "title": "Settings",
     "description": "Your account, the panel's look, the workspace, its team, AI provider, connections and API keys.",
     "close": "Close settings",

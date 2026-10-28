@@ -13,7 +13,13 @@
     "sourceCode": "Codi font",
     "search": "Cerca",
     "saved": "Desat",
-    "saving": "Desant…"
+    "saving": "Desant…",
+    "beta": "Beta",
+    "releaseNotes": "Notes de la versió",
+    "version": "Versió {version}",
+    "changelog": "Novetats",
+    "readme": "README",
+    "dockerHub": "Docker Hub"
   },
   "nav": {
     "openNavigation": "Obre la navegació",
@@ -203,7 +209,8 @@
     "theme": "Tema",
     "themeNote": "Sistema segueix el teu dispositiu. Només canvia el panell; el widget de cada projecte defineix el seu propi color a la configuració del projecte.",
     "language": "Idioma",
-    "languageNote": "Per defecte usa l'idioma del teu sistema. Només canvia el panell."
+    "languageNote": "Per defecte usa l'idioma del teu sistema. Només canvia el panell.",
+    "aboutHint": "Beta pública: pot haver-hi arestes. Obre la versió per veure les notes."
   },
   "inbox": {
     "searchPlaceholder": "Cerca per nom, correu o ID d'usuari",

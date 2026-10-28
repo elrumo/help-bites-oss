@@ -14,6 +14,8 @@ request. You keep your copyright; the CLA lets the maintainer offer HelpBites un
 
 ## Getting set up
 
+The full guide is [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md); the short version:
+
 ```bash
 cp .env.example .env
 docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile dev up -d sb-mongo sb-parse sb-redis sb-meili sb-rustfs

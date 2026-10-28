@@ -857,7 +857,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Pin a release with `HELPBITES_VERSION=0.1.0` in `.env` (default `latest`). To roll
+Pin a release with `HELPBITES_VERSION=0.2.0` in `.env` (default `latest`; `edge` follows `main`). To roll
 back, set the previous version and run `docker compose up -d` again. Back up first:
 a rollback does not undo a schema change. Building from source instead: add
 `-f docker-compose.build.yml` and `--build`. On Dokploy, redeploy.

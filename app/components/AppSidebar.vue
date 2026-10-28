@@ -80,6 +80,7 @@
         <UButton :icon="isDark ? 'i-lucide-sun' : 'i-lucide-moon'" color="neutral" variant="outline" size="sm" square class="text-muted" :aria-label="isDark ? $t('nav.switchToLight') : $t('nav.switchToDark')" @click="colorMode.preference = isDark ? 'light' : 'dark'" />
       </UTooltip>
       <!-- The AGPL's offer of source: everyone using this deployment can get the code it runs. -->
+      <AppVersion class="mr-3 text-xs text-dimmed" />
       <a :href="meta.sourceCodeUrl" target="_blank" rel="noopener" class="ml-auto text-xs text-dimmed transition-colors hover:text-muted">{{ $t('common.sourceCode') }}</a>
     </div>
   </div>

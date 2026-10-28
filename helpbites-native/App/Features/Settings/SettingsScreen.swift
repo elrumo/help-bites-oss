@@ -104,7 +104,8 @@ struct SettingsScreen: View {
           }
 
         if let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String {
-          Text("HelpBites \(version)").font(.lnCaption).foregroundStyle(Theme.textDimmed)
+          // Beta tag: RELEASE_STAGE in shared/version.ts.
+          Text("HelpBites \(version) · Beta").font(.lnCaption).foregroundStyle(Theme.textDimmed)
         }
       }
       .frame(maxWidth: 560, alignment: .leading)

@@ -5,11 +5,13 @@ import brand from '../../docs/BRAND.md'
 import connecting from '../../docs/CONNECTING.md'
 import customDomains from '../../docs/CUSTOM-DOMAINS.md'
 import deployment from '../../docs/DEPLOYMENT.md'
+import development from '../../docs/DEVELOPMENT.md'
 import errors from '../../docs/ERRORS.md'
 import feedback from '../../docs/FEEDBACK.md'
 import events from '../../docs/EVENTS.md'
 import flags from '../../docs/FLAGS.md'
 import forms from '../../docs/FORMS.md'
+import gettingStarted from '../../docs/GETTING-STARTED.md'
 import github from '../../docs/GITHUB.md'
 import hub from '../../docs/HUB.md'
 import inboundEmail from '../../docs/INBOUND-EMAIL.md'
@@ -23,6 +25,7 @@ import style from '../../docs/STYLE.md'
 import support from '../../docs/SUPPORT.md'
 import pricing from '../../docs/PRICING.md'
 import revenue from '../../docs/REVENUE.md'
+import setup from '../../docs/SETUP.md'
 import transfer from '../../docs/TRANSFER.md'
 
 // The text of each published guide, bundled into the server at build time (the
@@ -34,11 +37,13 @@ const SOURCES: Record<string, string> = {
   'CONNECTING.md': connecting,
   'CUSTOM-DOMAINS.md': customDomains,
   'DEPLOYMENT.md': deployment,
+  'DEVELOPMENT.md': development,
   'ERRORS.md': errors,
   'FEEDBACK.md': feedback,
   'EVENTS.md': events,
   'FLAGS.md': flags,
   'FORMS.md': forms,
+  'GETTING-STARTED.md': gettingStarted,
   'GITHUB.md': github,
   'HUB.md': hub,
   'INBOUND-EMAIL.md': inboundEmail,
@@ -52,6 +57,7 @@ const SOURCES: Record<string, string> = {
   'SUPPORT.md': support,
   'PRICING.md': pricing,
   'REVENUE.md': revenue,
+  'SETUP.md': setup,
   'TRANSFER.md': transfer
 }
 

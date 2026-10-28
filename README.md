@@ -1,6 +1,14 @@
-# help-bites
+# HelpBites
 
-One support inbox for every app you run. Each app is a *project*; its users
+[![Docker Hub](https://img.shields.io/docker/v/elrumo/helpbites?label=docker%20hub&sort=semver)](https://hub.docker.com/r/elrumo/helpbites)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+[![Status: beta](https://img.shields.io/badge/status-beta-orange)](CHANGELOG.md)
+
+> **HelpBites is in public beta.** It runs in production for its author and everything below is on `main`, but expect
+> rough edges, back up before you upgrade and read the [release notes](CHANGELOG.md) first (they are also public at
+> [helpbites.app](https://helpbites.app/changelog/pk_68ccfcddaabeee44c8cd907a)). Issues and pull requests are welcome.
+
+The all-in-one toolkit for indie developers: a support inbox, feedback board, roadmap, changelog and more for every app you run. Each app is a *project*; its users
 keep their own accounts (the app signs an identity token), an operator answers
 everything from one panel, and a drop-in widget or your own UI talks to a
 documented API.
@@ -14,7 +22,7 @@ documented API.
 - **Planning & roadmap** — Linear-style items per project on a kanban, linked to feedback posts and inbox conversations. Items you mark public make the roadmap at `/roadmap/<pk>`, in the feedback embed, or on `GET /v1/feedback/roadmap`; operators plan under Project → Planning.
 - **Email** — a block email designer (sections, a reusable component library) with an AI designer (High / Ultra models) that converts pasted HTML into editable blocks. Master templates are designed once and linked into projects, each filling in its own brand and values. Projects send a template, their own HTML (or an uploaded `.html` file), a block document or a plain message with `POST /v1/emails/send`: per-recipient variables, attachments, custom headers, scheduling, idempotency keys and a per-project sender. Every message lands in a searchable log kept current by Mailgun's delivery webhook, bounces and complaints are suppressed automatically.
 - **Error tracking** — optional GlitchTip or Bugsink projects provide Sentry-compatible DSNs; alerts become inbox conversations and status syncs both ways.
-- Docs: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), [docs/CONNECTING.md](docs/CONNECTING.md), [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md), [docs/FEEDBACK.md](docs/FEEDBACK.md), [docs/EMAIL.md](docs/EMAIL.md), [docs/ERRORS.md](docs/ERRORS.md)
+- Docs on the web: [helpbites.app/docs](https://helpbites.app/docs). Image: [Docker Hub](https://hub.docker.com/r/elrumo/helpbites). In this repo: [Getting started](docs/GETTING-STARTED.md), [Setting things up](docs/SETUP.md) (AI, email, GitHub, storage…), [Development](docs/DEVELOPMENT.md), [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), [docs/CONNECTING.md](docs/CONNECTING.md), [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md), [docs/FEEDBACK.md](docs/FEEDBACK.md), [docs/EMAIL.md](docs/EMAIL.md), [docs/ERRORS.md](docs/ERRORS.md)
 
 ## Self-host in two commands
 
@@ -27,9 +35,11 @@ docker compose up -d                       # pulls elrumo/helpbites from Docker 
 `install.sh` writes a `.env` with generated secrets. With a domain it also turns on the bundled Caddy for HTTPS (point
 the domain and `files.<domain>` at the server first). Open the site and **create the first operator right away**:
 whoever gets there first becomes the owner. The image is also at `ghcr.io/elrumo/helpbites`. Pin a version with
-`HELPBITES_VERSION=0.1.0` in `.env`. Full guide, upgrades and backups: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+`HELPBITES_VERSION=0.2.0` in `.env`. AI, email and GitHub are switched on afterwards: [docs/SETUP.md](docs/SETUP.md). Full guide, upgrades and backups: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Develop it
+
+Full guide: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ```bash
 cp .env.example .env                       # fill in keys

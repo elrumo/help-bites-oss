@@ -13,7 +13,13 @@
     "sourceCode": "소스 코드",
     "search": "검색",
     "saved": "저장됨",
-    "saving": "저장 중…"
+    "saving": "저장 중…",
+    "beta": "베타",
+    "releaseNotes": "릴리스 노트",
+    "version": "버전 {version}",
+    "changelog": "변경 내역",
+    "readme": "README",
+    "dockerHub": "Docker Hub"
   },
   "nav": {
     "openNavigation": "탐색 열기",
@@ -203,7 +209,8 @@
     "theme": "테마",
     "themeNote": "시스템은 기기 설정을 따릅니다. 패널만 바뀌며, 각 프로젝트 위젯의 색상은 프로젝트 설정에서 정합니다.",
     "language": "언어",
-    "languageNote": "기본값은 시스템 언어입니다. 패널만 바뀝니다."
+    "languageNote": "기본값은 시스템 언어입니다. 패널만 바뀝니다.",
+    "aboutHint": "공개 베타입니다. 거친 부분이 있을 수 있어요. 버전을 누르면 릴리스 노트가 열립니다."
   },
   "inbox": {
     "searchPlaceholder": "이름, 이메일 또는 사용자 ID로 검색",

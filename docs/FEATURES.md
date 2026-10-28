@@ -774,6 +774,18 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Source link.** `/source` points visitors to the source code, as the AGPL
   requires (`SOURCE_CODE_URL`).
 - **Demo.** `/demo` runs the real panel on sample data. Nothing is saved.
+- **Version and beta.** The release number lives in `package.json` and shows,
+  with a Beta tag, on the landing page and docs, in the panel (sidebar and
+  Settings → Account), in the native app's Settings and in `GET /v1/meta`. It
+  links to the project's public changelog. [RELEASING.md](RELEASING.md)
+- **Releases.** A tag `vX.Y.Z` builds the community image for Docker Hub
+  (`elrumo/helpbites`) and GHCR, creates the GitHub release and publishes the
+  version's `CHANGELOG.md` section to the HelpBites project's own public
+  changelog, so HelpBites keeps its changelog on HelpBites.
+- **Guides.** *Getting started*, *Setting things up* (AI, email, inbound email,
+  GitHub, storage, search, error tracking, revenue, domains, push, MCP) and
+  *Development* are published at `/docs`. [GETTING-STARTED.md](GETTING-STARTED.md),
+  [SETUP.md](SETUP.md), [DEVELOPMENT.md](DEVELOPMENT.md)
 - **AI is optional.** Everything works without an LLM. Search falls back to
   keywords.
 

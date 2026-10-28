@@ -5,9 +5,13 @@
 // published page mentions it.
 
 export const REPO_URL = 'https://github.com/elrumo/help-bites-oss'
+/** The repository's front page: what HelpBites is and how to run it. */
+export const README_URL = `${REPO_URL}#readme`
+/** The published community image (docs/RELEASING.md). */
+export const DOCKER_HUB_URL = 'https://hub.docker.com/r/elrumo/helpbites'
 const BRANCH = 'main'
 
-export const DOC_GROUPS = ['Get started', 'Guides'] as const
+export const DOC_GROUPS = ['Get started', 'Guides', 'Contribute'] as const
 export type DocGroup = typeof DOC_GROUPS[number]
 
 export interface DocPage {
@@ -25,11 +29,25 @@ export interface DocPage {
 // is rendered, listed, prerendered and link-checked (tests/docs.test.ts).
 export const DOCS: readonly DocPage[] = [
   {
+    slug: 'getting-started',
+    title: 'Getting started',
+    description: 'From nothing to a working support inbox, feedback board and changelog in about ten minutes: install, first operator, first project, the widget on your site. HelpBites is in beta.',
+    group: 'Get started',
+    file: 'GETTING-STARTED.md'
+  },
+  {
     slug: 'self-host',
     title: 'Self-hosting',
     description: 'Run HelpBites on your own servers with Docker Compose or Dokploy: the services, every environment variable, backups and upgrades.',
     group: 'Get started',
     file: 'DEPLOYMENT.md'
+  },
+  {
+    slug: 'setup',
+    title: 'Setting things up',
+    description: 'Switch on AI, email, inbound email, GitHub, storage, search, error tracking, revenue, custom domains and push: what you need, what to click and how to tell it worked.',
+    group: 'Get started',
+    file: 'SETUP.md'
   },
   {
     slug: 'connect',
@@ -191,6 +209,13 @@ export const DOCS: readonly DocPage[] = [
     description: 'Render the embeds and API reads on your server when HelpBites answers fast, fall back to a skeleton and the browser when it does not, and self-host and cache the scripts.',
     group: 'Guides',
     file: 'SSR.md'
+  },
+  {
+    slug: 'development',
+    title: 'Development',
+    description: 'Run HelpBites from source, find your way around the code, add a feature the way the project expects and ship the native app.',
+    group: 'Contribute',
+    file: 'DEVELOPMENT.md'
   }
 ]
 

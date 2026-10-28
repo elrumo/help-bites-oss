@@ -7,11 +7,14 @@
           <span class="grid size-6 place-items-center rounded-md bg-primary-500 text-white" aria-hidden="true"><UIcon name="i-lucide-message-circle-more" class="size-3.5" /></span>
           HelpBites
         </NuxtLink>
+        <AppVersion class="-ml-3 text-[12px]" />
         <nav class="hidden items-center gap-5 text-[13px] sm:flex" :aria-label="$t('landing.nav.sections')">
           <a href="#connect" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.connect') }}</a>
           <a href="#tour" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.tour') }}</a>
           <a href="#features" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.features') }}</a>
           <NuxtLink to="/docs" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.docs') }}</NuxtLink>
+          <a :href="CHANGELOG_URL" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('common.changelog') }}</a>
+          <a :href="README_URL" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('common.readme') }}</a>
           <a :href="repo" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.source') }}</a>
           <!-- Registered by the edition's client plugins, which the prerendered page never ran. -->
           <ClientOnly>
@@ -293,8 +296,12 @@
         <p class="mr-auto flex items-center gap-2 font-semibold text-highlighted">
           <span class="grid size-5 place-items-center rounded-[5px] bg-primary-500 text-white" aria-hidden="true"><UIcon name="i-lucide-message-circle-more" class="size-3" /></span>
           HelpBites
+          <AppVersion class="text-[12px] font-normal" />
         </p>
         <a :href="repo" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.source') }}</a>
+        <a :href="CHANGELOG_URL" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('common.changelog') }}</a>
+        <a :href="README_URL" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('common.readme') }}</a>
+        <a :href="DOCKER_HUB_URL" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('common.dockerHub') }}</a>
         <NuxtLink to="/docs" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.docs') }}</NuxtLink>
         <a href="/_docs/scalar" target="_blank" class="text-muted transition-colors hover:text-highlighted">{{ $t('docs.apiReference') }}</a>
         <NuxtLink to="/demo" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.demo') }}</NuxtLink>
@@ -305,6 +312,9 @@
 </template>
 
 <script setup lang="ts">
+import { DOCKER_HUB_URL, README_URL } from '#shared/docs'
+import { CHANGELOG_URL } from '#shared/version'
+
 definePageMeta({ layout: 'bare' })
 
 const repo = 'https://github.com/elrumo/help-bites-oss'

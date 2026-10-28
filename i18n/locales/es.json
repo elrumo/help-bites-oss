@@ -13,7 +13,13 @@
     "sourceCode": "Código fuente",
     "search": "Buscar",
     "saved": "Guardado",
-    "saving": "Guardando…"
+    "saving": "Guardando…",
+    "beta": "Beta",
+    "releaseNotes": "Notas de la versión",
+    "version": "Versión {version}",
+    "changelog": "Novedades",
+    "readme": "README",
+    "dockerHub": "Docker Hub"
   },
   "nav": {
     "openNavigation": "Abrir navegación",
@@ -203,7 +209,8 @@
     "theme": "Tema",
     "themeNote": "Sistema sigue tu dispositivo. Solo cambia el panel; el widget de cada proyecto define su propio color en los ajustes del proyecto.",
     "language": "Idioma",
-    "languageNote": "Por defecto usa el idioma de tu sistema. Solo cambia el panel."
+    "languageNote": "Por defecto usa el idioma de tu sistema. Solo cambia el panel.",
+    "aboutHint": "Beta pública: puede haber asperezas. Abre la versión para ver las notas."
   },
   "inbox": {
     "searchPlaceholder": "Buscar por nombre, correo o ID de usuario",

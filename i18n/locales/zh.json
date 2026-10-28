@@ -13,7 +13,13 @@
     "sourceCode": "源代码",
     "search": "搜索",
     "saved": "已保存",
-    "saving": "保存中…"
+    "saving": "保存中…",
+    "beta": "测试版",
+    "releaseNotes": "更新日志",
+    "version": "版本 {version}",
+    "changelog": "更新日志",
+    "readme": "README",
+    "dockerHub": "Docker Hub"
   },
   "nav": {
     "openNavigation": "打开导航",
@@ -203,7 +209,8 @@
     "theme": "主题",
     "themeNote": "“跟随系统”会使用你设备的设置。这只会改变面板；每个项目的小组件在项目设置中有自己的颜色。",
     "language": "语言",
-    "languageNote": "默认使用你的系统语言。这只会改变面板。"
+    "languageNote": "默认使用你的系统语言。这只会改变面板。",
+    "aboutHint": "公开测试版，可能还有不完善之处。点击版本号查看更新日志。"
   },
   "inbox": {
     "searchPlaceholder": "按姓名、邮箱或用户 ID 搜索",

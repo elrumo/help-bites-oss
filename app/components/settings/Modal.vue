@@ -52,6 +52,15 @@
                 </div>
                 <UButton type="button" icon="i-lucide-circle-play" color="neutral" variant="outline" size="sm" :label="$t('welcomeTour.replay')" @click="replayTour" />
               </div>
+              <div class="flex items-center gap-3 border-t border-default pt-6">
+                <div class="min-w-0 flex-1">
+                  <p class="text-[13px] font-medium text-highlighted">HelpBites</p>
+                  <p class="text-xs text-muted">{{ $t('settings.aboutHint') }}</p>
+                </div>
+                <AppVersion class="text-[13px]" />
+                <UButton :to="README_URL" target="_blank" external color="neutral" variant="outline" size="sm" icon="i-lucide-book-open" :label="$t('common.readme')" />
+                <UButton :to="DOCKER_HUB_URL" target="_blank" external color="neutral" variant="outline" size="sm" icon="i-lucide-container" :label="$t('common.dockerHub')" />
+              </div>
             </form>
 
             <!-- Appearance -->
@@ -125,6 +134,8 @@
 </template>
 
 <script setup lang="ts">
+import { DOCKER_HUB_URL, README_URL } from '#shared/docs'
+
 // The panel's own settings, over whatever page you are on. `settings-tab` is
 // the open tab; '' is closed, so anything can open it on a given tab.
 const tab = useState('settings-tab', () => '')

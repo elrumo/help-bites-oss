@@ -1,10 +1,16 @@
 name: Release
 
-# Push a tag like v0.1.0 to publish the community image (AGPL core only, no
-# ee/) for amd64 and arm64 to Docker Hub and GHCR.
+# Push a tag like v0.2.0 (docs/RELEASING.md) to:
+#   1. check it against package.json and CHANGELOG.md,
+#   2. publish the community image (AGPL core only, no ee/) for amd64 and arm64
+#      to Docker Hub and GHCR,
+#   3. create the GitHub release from CHANGELOG.md's section,
+#   4. publish that section to a HelpBites project's public changelog.
 #
 # Repository secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN (a Docker Hub access
 # token with write access to elrumo/helpbites). GHCR uses the built-in token.
+# Step 4 needs HELPBITES_URL, HELPBITES_ADMIN_KEY and HELPBITES_PROJECT and is
+# skipped without them.
 
 on:
   push:
@@ -14,7 +20,22 @@ env:
   IMAGE: elrumo/helpbites
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - name: The tag, package.json and CHANGELOG.md agree
+        run: |
+          version="$(bun -p "require('./package.json').version")"
+          test "${GITHUB_REF_NAME}" = "v${version}" || { echo "Tag ${GITHUB_REF_NAME} is not v${version} (package.json)" >&2; exit 1; }
+          bun scripts/publish-changelog.mjs --dry-run --version "${version}"
+
   image:
+    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -66,3 +87,39 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: elrumo/helpbites
           readme-filepath: ./README.md
+
+  github-release:
+    needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Release notes from CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '/^## /{p = index($0, "## " v) == 1; next} p' CHANGELOG.md > notes.md
+          { printf 'Image: `docker pull elrumo/helpbites:%s`\n\n' "$version"; cat notes.md; } > body.md
+          # A pre-release while shared/version.ts says beta; set RELEASE_STAGE to null and it is a normal release.
+          title="HelpBites $version"; flags=""
+          if grep -q "RELEASE_STAGE: 'beta' | null = 'beta'" shared/version.ts; then title="$title (beta)"; flags="--prerelease"; fi
+          gh release create "$GITHUB_REF_NAME" --title "$title" --notes-file body.md --verify-tag $flags
+
+  changelog:
+    needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - name: Publish this release to the public changelog
+        env:
+          HELPBITES_URL: ${{ secrets.HELPBITES_URL }}
+          HELPBITES_ADMIN_KEY: ${{ secrets.HELPBITES_ADMIN_KEY }}
+          HELPBITES_PROJECT: ${{ secrets.HELPBITES_PROJECT }}
+        run: bun scripts/publish-changelog.mjs --version "${GITHUB_REF_NAME#v}"

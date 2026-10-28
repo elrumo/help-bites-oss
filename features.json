@@ -682,7 +682,7 @@
       "id": "changelog",
       "name": "Changelog",
       "category": "product",
-      "summary": "Entries grouped into releases, with up to 10 images each, drafted from shipped work, public page, JSON, RSS, digest emails, reader comments, git CLI. When an entry ships, the followers of the posts it answers are emailed once, and the editor offers a reply to the conversations it answers. A release's editor has an AI button that reads its entries and writes the title and summary. The public page and embed wear the project's style in light and dark, or the changelog's own over it. The entry editor keeps a new entry's unsaved draft for when the panel is opened again, creates with Cmd or Ctrl and Enter, and shows saving and saved as it goes (web).",
+      "summary": "Entries grouped into releases, with up to 10 images each, drafted from shipped work, public page, JSON, RSS, digest emails, reader comments, git CLI. When an entry ships, the followers of the posts it answers are emailed once, and the editor offers a reply to the conversations it answers. A release's editor has an AI button that reads its entries and writes the title and summary. The public page and embed wear the project's style in light and dark, or the changelog's own over it. HelpBites keeps its own public changelog this way: each release's CHANGELOG.md section is published to the HelpBites project on helpbites.app (see releases-beta). The entry editor keeps a new entry's unsaved draft for when the panel is opened again, creates with Cmd or Ctrl and Enter, and shows saving and saved as it goes (web).",
       "editions": [
         "community",
         "cloud"
@@ -1993,6 +1993,45 @@
       "landing": {
         "listed": false,
         "key": null
+      }
+    },
+    {
+      "id": "releases-beta",
+      "name": "Version, beta notice and release process",
+      "category": "platform",
+      "summary": "One release number (package.json, kept equal by a test with the native app's MARKETING_VERSION) shown with a Beta tag at the top of the landing page and the docs, in the panel's sidebar and Settings → Account, in the native app's Settings and in GET /v1/meta (`version`, `stage`), each linking to the project's public changelog. A tag `vX.Y.Z` verifies the version against package.json and CHANGELOG.md, publishes the community image to Docker Hub (elrumo/helpbites) and GHCR for amd64 and arm64, creates the GitHub release and publishes that CHANGELOG.md section to the HelpBites project's own public changelog (scripts/publish-changelog.mjs), so HelpBites keeps its changelog on HelpBites. Getting started, Setting things up (AI, email, GitHub and the rest) and Development guides are published at /docs.",
+      "editions": [
+        "community",
+        "cloud"
+      ],
+      "plan": "all",
+      "status": "beta",
+      "web": {
+        "panel": [
+          "app/components/AppVersion.vue",
+          "shared/version.ts",
+          "app/components/settings/Modal.vue",
+          "app/components/AppSidebar.vue"
+        ],
+        "public": [
+          "/",
+          "/docs"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Settings"
+        ]
+      },
+      "api": {
+        "prefixes": [
+          "/v1/meta"
+        ],
+        "docs": "docs/RELEASING.md"
+      },
+      "embed": null,
+      "landing": {
+        "listed": false
       }
     }
   ],

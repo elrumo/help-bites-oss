@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { copyFile, mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { DOCS, DOCS_INDEX_MARKDOWN, docMarkdownPath, docPath } from './shared/docs'
@@ -10,6 +10,9 @@ const edition = process.env.HELPBITES_EDITION === 'cloud' ? 'cloud' : 'community
 if (edition === 'cloud' && !existsSync(new URL('./ee/nuxt.config.ts', import.meta.url))) {
   throw new Error('HELPBITES_EDITION=cloud needs the commercial ee/ layer, which is not part of the open-source repository (see docs/EDITIONS.md)')
 }
+
+// package.json is the one place the release number lives (shared/version.ts).
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
 
 const baselineHeaders = { 'X-Frame-Options': 'SAMEORIGIN', 'Content-Security-Policy': "frame-ancestors 'self'", 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin' }
 
@@ -59,7 +62,9 @@ export default defineNuxtConfig({
       // Plausible's script for this deployment's own site and panel (app/plugins/plausible.client.ts). Empty: no stats.
       plausibleSrc: process.env.NUXT_PUBLIC_PLAUSIBLE_SRC || '',
       // Fixed at build time: which edition this bundle is.
-      edition
+      edition,
+      // Fixed at build time: which release this bundle is.
+      version
     }
   },
 

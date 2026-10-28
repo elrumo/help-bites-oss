@@ -97,3 +97,5 @@ Every new feature, removal, rename, edition change, or a change to what a featur
   with no tool; a parameter you add to an existing route is yours to add to its tool.
 - Both clients were opened and the feature works in each; say so, or say which you could not check.
 - Match the surrounding code: comment density, naming, idiom. No new dependency for something a few lines can do.
+- The release number lives in `package.json` only: never hand-edit it elsewhere (`bun run release:bump X.Y.Z`, `docs/RELEASING.md`).
+  A new surface that names the product (a page header, an About screen) shows it with `<AppVersion />` / the Beta tag.

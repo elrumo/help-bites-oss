@@ -8,6 +8,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: '6.0'
+    # The release (kept equal to package.json by tests/versionParity.test.ts).
+    MARKETING_VERSION: 0.2.0
     SWIFT_STRICT_CONCURRENCY: complete
     # Panel languages (i18n/locales): the catalog App/Localizable.xcstrings holds every string.
     SWIFT_EMIT_LOC_STRINGS: YES

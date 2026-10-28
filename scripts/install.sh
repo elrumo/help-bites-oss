@@ -62,4 +62,4 @@ echo "Wrote .env. Next:"
 echo "  docker compose up -d"
 echo "  $next and create the first operator account."
 if [ -z "$domain" ]; then echo "Whoever opens that page first becomes the owner, so do it right away."; fi
-echo "Email (Mailgun) and AI replies stay off until you fill in MAILGUN_* / LITELLM_* in .env."
+echo "Email (Mailgun) stays off until you fill in MAILGUN_* in .env, and AI until you add a provider in Settings → AI (or LITELLM_*). See docs/SETUP.md."
