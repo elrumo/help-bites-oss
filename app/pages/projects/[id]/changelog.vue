@@ -42,8 +42,9 @@
         </div>
 
         <section v-for="group in groups" :key="group.key" class="space-y-2 rounded-xl transition-shadow" :class="dropKey === group.key ? 'ring-2 ring-primary/60 bg-primary/5' : ''" @dragover="dragOver(group, $event)" @drop.prevent="dropOn(group)">
-          <header class="flex flex-wrap items-center gap-2">
+          <header class="group/release flex flex-wrap items-center gap-2">
             <template v-if="group.release">
+              <UCheckbox v-if="group.entries.length" :model-value="releaseState(group.entries)" class="transition-opacity" :class="releaseState(group.entries) === false ? 'opacity-0 group-hover/release:opacity-100 focus-within:opacity-100' : ''" :aria-label="$t('changelog.selectRelease', { version: group.release.version })" @update:model-value="toggleRelease(group.entries)" />
               <h2 class="text-sm font-semibold">{{ group.release.version }}<span v-if="group.release.title" class="font-normal text-muted"> · {{ group.release.title }}</span></h2>
               <span class="rounded-full px-1.5 text-[11px]" :class="group.release.status === 'published' ? 'bg-success/10 text-success' : 'bg-elevated text-toned'">{{ group.release.status === 'published' ? $t('changelog.published') : $t('changelog.draft') }}</span>
               <time v-if="group.release.publishedAt" class="text-xs text-muted" :datetime="group.release.publishedAt">{{ shortDate(group.release.publishedAt) }}</time>
@@ -56,7 +57,7 @@
           </header>
           <ul class="divide-y divide-default rounded-lg border border-default">
             <li v-for="entry in group.entries" :key="entry.id" draggable="true" :title="$t('changelog.dragToMove')" class="flex items-center transition-colors hover:bg-elevated cursor-grab active:cursor-grabbing" :class="moving === entry.id ? 'opacity-50' : ''" @dragstart="startDrag(entry, $event)" @dragend="endDrag">
-              <UCheckbox :model-value="selected.has(entry.id)" class="pl-3" :aria-label="$t('changelog.selectEntry', { title: entry.title })" @update:model-value="toggleSelected(entry.id)" />
+              <UCheckbox :model-value="selected.has(entry.id)" class="pl-3" :aria-label="$t('changelog.selectEntry', { title: entry.title })" @click.capture="shiftHeld = $event.shiftKey" @update:model-value="toggleSelected(entry.id)" />
               <button type="button" class="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left text-[13px]" @click="openEntry(entry.id)">
                 <span class="w-16 shrink-0 rounded-full px-1.5 text-center text-[11px] font-semibold" :class="CHANGELOG_TAG_CLASS[entry.tag]">{{ $t(TAG_KEYS[entry.tag]) }}</span>
                 <span v-if="entry.number" class="shrink-0 tabular-nums text-muted">#{{ entry.number }}</span>
@@ -692,9 +693,33 @@ const confirmMerge = ref(false)
 const selectedEntries = computed(() => entries.value.filter(e => selected.value.has(e.id)))
 const selectedDrafts = computed(() => selectedEntries.value.filter(e => e.status === 'draft'))
 
+// Shift-click selects everything between the last clicked entry and this one, in the order shown.
+const shiftHeld = ref(false)
+let anchorId = ''
+
 function toggleSelected(entryId: string) {
   const next = new Set(selected.value)
-  if (!next.delete(entryId)) next.add(entryId)
+  const add = !next.has(entryId)
+  const shown = groups.value.flatMap(g => g.entries.map(e => e.id))
+  const from = shown.indexOf(anchorId)
+  const to = shown.indexOf(entryId)
+  const span = shiftHeld.value && from >= 0 ? shown.slice(Math.min(from, to), Math.max(from, to) + 1) : [entryId]
+  for (const id of span) add ? next.add(id) : next.delete(id)
+  anchorId = entryId
+  selected.value = next
+  confirmMerge.value = false
+}
+
+/** true when every entry of a release is selected, 'indeterminate' when some are. */
+function releaseState(list: ChangelogEntry[]) {
+  const n = list.filter(e => selected.value.has(e.id)).length
+  return n === 0 ? false : n === list.length ? true : 'indeterminate' as const
+}
+
+function toggleRelease(list: ChangelogEntry[]) {
+  const next = new Set(selected.value)
+  const all = releaseState(list) === true
+  for (const e of list) all ? next.delete(e.id) : next.add(e.id)
   selected.value = next
   confirmMerge.value = false
 }

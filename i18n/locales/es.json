@@ -575,6 +575,7 @@
     "editRelease": "Editar lanzamiento {version}",
     "noRelease": "Sin lanzamiento",
     "selectEntry": "Seleccionar {title}",
+    "selectRelease": "Seleccionar todo en {version}",
     "linkedDone": "{done} de {total} elementos vinculados están hechos",
     "aiTitle": "Escrito por IA a partir de commits de git",
     "noEntries": "Aún no hay entradas. Añade una y elige este lanzamiento.",

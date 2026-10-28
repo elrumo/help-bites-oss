@@ -562,6 +562,7 @@
     "editRelease": "编辑发布版本 {version}",
     "noRelease": "无发布版本",
     "selectEntry": "选择 {title}",
+    "selectRelease": "选择 {version} 中的全部",
     "linkedDone": "已完成 {total} 个关联项中的 {done} 个",
     "aiTitle": "由 AI 根据 Git 提交撰写",
     "noEntries": "还没有条目。添加一个并选择此发布版本。",

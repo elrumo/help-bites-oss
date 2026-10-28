@@ -572,6 +572,7 @@
     "editRelease": "リリース {version} を編集",
     "noRelease": "リリースなし",
     "selectEntry": "{title} を選択",
+    "selectRelease": "{version} をすべて選択",
     "linkedDone": "リンクされた {total} 件のうち {done} 件が完了",
     "aiTitle": "AI が Git コミットから作成",
     "noEntries": "エントリーはまだありません。追加して、このリリースを選択してください。",

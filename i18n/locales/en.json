@@ -664,6 +664,7 @@
     "editRelease": "Edit release {version}",
     "noRelease": "No release",
     "selectEntry": "Select {title}",
+    "selectRelease": "Select all in {version}",
     "linkedDone": "{done} of {total} linked items are done",
     "aiTitle": "Written by AI from git commits",
     "noEntries": "No entries yet. Add one and choose this release.",

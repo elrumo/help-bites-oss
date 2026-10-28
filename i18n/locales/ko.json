@@ -572,6 +572,7 @@
     "editRelease": "릴리스 {version} 편집",
     "noRelease": "릴리스 없음",
     "selectEntry": "{title} 선택",
+    "selectRelease": "{version} 전체 선택",
     "linkedDone": "연결된 항목 {total}개 중 {done}개 완료",
     "aiTitle": "AI가 git 커밋으로부터 작성",
     "noEntries": "아직 항목이 없습니다. 항목을 추가하고 이 릴리스를 선택하세요.",

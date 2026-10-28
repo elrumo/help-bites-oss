@@ -572,6 +572,7 @@
     "editRelease": "Edita el llançament {version}",
     "noRelease": "Sense llançament",
     "selectEntry": "Selecciona {title}",
+    "selectRelease": "Selecciona tot a {version}",
     "linkedDone": "{done} de {total} elements enllaçats estan fets",
     "aiTitle": "Escrit per IA a partir de commits de git",
     "noEntries": "Encara no hi ha entrades. Afegeix-ne una i tria aquest llançament.",
