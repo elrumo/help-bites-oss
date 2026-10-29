@@ -87,6 +87,11 @@ struct BoardScreen: View {
     return URL(string: "\(session.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/")))/roadmap/\(publicKey)")
   }
 
+  /// An item's address in the panel: `?item=` opens its editor, the link the web's cards, inbox and posts share.
+  func itemURL(_ item: BoardItem) -> URL? {
+    URL(string: "\(session.endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/")))/projects/\(projectId)/board?item=\(item.id)")
+  }
+
   var filtering: Bool {
     !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !labelFilter.isEmpty || !assigneeFilter.isEmpty || !priorityFilter.isEmpty || !kindFilter.isEmpty || roadmapOnly
   }
@@ -815,7 +820,10 @@ private struct BoardList: View {
     }
     .padding(.horizontal, 12)
     .padding(.vertical, 8)
-    .contextMenu { Button { open(item) } label: { Label("Open", systemImage: "square.and.pencil") } }
+    .contextMenu {
+      Button { open(item) } label: { Label("Open", systemImage: "square.and.pencil") }
+      if let url = store.itemURL(item) { Button { Clipboard.copy(url.absoluteString) } label: { Label("Copy link", systemImage: "link") } }
+    }
   }
 
   @ViewBuilder private func meta(_ item: BoardItem) -> some View {
@@ -1088,6 +1096,7 @@ private struct BoardColumn: View {
         Label("Move to", systemImage: "arrow.right.circle")
       }
     }
+    if let url = store.itemURL(item) { Button { Clipboard.copy(url.absoluteString) } label: { Label("Copy link", systemImage: "link") } }
   }
 }
 

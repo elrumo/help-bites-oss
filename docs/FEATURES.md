@@ -321,6 +321,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   board order (manual, newest, oldest) is remembered per project. Cards show small
   pills for images, files, a description, related items and an item filed from an
   error.
+- **Copy an item's link.** On the native app, press and hold a card (kanban or list) and choose *Copy link*: it copies
+  the item's panel address (`/projects/<id>/board?item=<id>`), the one the web keeps in its address bar while an item is
+  open, which opens that item's editor.
 - **Comments and threads.** Add private comments and replies from the web and native item editors, or through the API and MCP. An assistant comment shows the MCP client's name; its authorizing operator remains recorded.
 - **Edit history.** The web and native item editors have a collapsed history of
   field and link changes, with before and after values, who made them, whether
