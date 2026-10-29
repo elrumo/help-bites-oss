@@ -12,6 +12,21 @@ describe('native board kinds parity', () => {
     expect(swift).toContain(`static let all = [${BOARD_ITEM_KINDS.map(kind => JSON.stringify(kind)).join(', ')}]`)
   })
 
+  test('the kinds are named as the panel names them', () => {
+    const names = JSON.parse(readFileSync(join(import.meta.dir, '..', 'i18n/locales/en.json'), 'utf8')).board.kinds as Record<string, string>
+    const naming = /static func name\(_ kind: String\) -> String \{([\s\S]*?)\n  \}/.exec(swift)
+    expect(naming).not.toBeNull()
+    expect(naming![1]).toContain(`case "epic": String(localized: "${names.epic}")`)
+    expect(naming![1]).toContain(`case "release": String(localized: "${names.release}")`)
+    expect(naming![1]).toContain(`default: String(localized: "${names.task}")`)
+  })
+
+  test('the epic and release menus offer only what the kinds can have', () => {
+    const screen = readFileSync(join(import.meta.dir, '..', 'helpbites-native/App/Features/Board/BoardScreen.swift'), 'utf8')
+    expect(screen).toContain('BoardKind.canHave(item.itemKind, parent: "epic")')
+    expect(screen).toContain('BoardKind.canHave(item.itemKind, parent: "release")')
+  })
+
   test('BoardKind.canHave is kindCanHave', () => {
     // Swift's rule, as written: epic holds cards only, a release holds anything but a release.
     const canHave = (kind: string, parent: string) => parent === 'epic' ? kind === 'task' : kind !== 'release'

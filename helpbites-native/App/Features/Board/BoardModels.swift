@@ -126,7 +126,7 @@ enum BoardKind {
     switch kind {
     case "epic": String(localized: "Epic")
     case "release": String(localized: "Release")
-    default: String(localized: "Task")
+    default: String(localized: "Card")
     }
   }
 

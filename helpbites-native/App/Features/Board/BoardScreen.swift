@@ -45,6 +45,10 @@ struct BoardScreen: View {
   var roadmapOnly = false
   /// '' is every kind; 'task', 'epic' or 'release'.
   var kindFilter = ""
+  /// '' is any epic; otherwise an epic's id, and only that epic's cards show.
+  var epicFilter = ""
+  /// '' is any release; otherwise a release's id, and only what it ships shows.
+  var releaseFilter = ""
   /// 'kanban' or 'list', remembered per project.
   var view = "kanban"
   /// What the list groups by: 'status', 'epic' or 'release'.
@@ -93,7 +97,7 @@ struct BoardScreen: View {
   }
 
   var filtering: Bool {
-    !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !labelFilter.isEmpty || !assigneeFilter.isEmpty || !priorityFilter.isEmpty || !kindFilter.isEmpty || roadmapOnly
+    !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !labelFilter.isEmpty || !assigneeFilter.isEmpty || !priorityFilter.isEmpty || !kindFilter.isEmpty || !epicFilter.isEmpty || !releaseFilter.isEmpty || roadmapOnly
   }
 
   func clearFilters() {
@@ -102,14 +106,31 @@ struct BoardScreen: View {
     assigneeFilter = ""
     priorityFilter = ""
     kindFilter = ""
+    epicFilter = ""
+    releaseFilter = ""
     roadmapOnly = false
+  }
+
+  // MARK: Epics and releases
+
+  /// The board's epics and releases in board order: what the filters, the menus and the pickers list.
+  var epics: [BoardItem] { items.filter { $0.itemKind == "epic" }.sorted(by: boardOrder) }
+  var releases: [BoardItem] { items.filter { $0.itemKind == "release" }.sorted(by: boardOrder) }
+
+  /// How an epic or release is named where one is picked, "#12 Title" (the web's `parentLabel`).
+  func parentLabel(_ item: BoardItem) -> String { item.number.map { "#\($0) \(item.title)" } ?? item.title }
+
+  /// An epic or release filter that names one deleted since reads as "any", not as an empty board.
+  private func pruneParentFilters() {
+    if !epicFilter.isEmpty, !items.contains(where: { $0.id == epicFilter && $0.itemKind == "epic" }) { epicFilter = "" }
+    if !releaseFilter.isEmpty, !items.contains(where: { $0.id == releaseFilter && $0.itemKind == "release" }) { releaseFilter = "" }
   }
 
   // MARK: Saved views
 
   var savedViews: [BoardSavedView] { config?.views ?? [] }
 
-  /// The layout, grouping, order and filters of a saved view. Epic and release filters are not part of this screen, so a view that has them only keeps them for the web.
+  /// The layout, grouping, order and filters of a saved view. An epic or release the view names that no longer exists reads as "any".
   func applyView(_ saved: BoardSavedView) {
     setView(saved.layout)
     grouping = ["status", "epic", "release"].contains(saved.group) ? saved.group : "status"
@@ -119,6 +140,9 @@ struct BoardScreen: View {
     assigneeFilter = saved.filters.assignee
     priorityFilter = saved.filters.priority
     kindFilter = saved.filters.kind
+    epicFilter = saved.filters.epic
+    releaseFilter = saved.filters.release
+    pruneParentFilters()
     roadmapOnly = saved.filters.roadmapOnly
   }
 
@@ -128,7 +152,7 @@ struct BoardScreen: View {
     let slug = String(name.lowercased().map { $0.isLetter || $0.isNumber ? $0 : "-" }.map(String.init).joined().prefix(30))
     let saved = BoardSavedView(
       id: "\(slug.isEmpty ? "view" : slug)-\(String(UUID().uuidString.prefix(5)).lowercased())", name: name, layout: view, group: grouping, order: order,
-      filters: BoardViewFilters(search: search.trimmingCharacters(in: .whitespacesAndNewlines), labels: labelFilter.sorted(), assignee: assigneeFilter, priority: priorityFilter, kind: kindFilter, roadmapOnly: roadmapOnly)
+      filters: BoardViewFilters(search: search.trimmingCharacters(in: .whitespacesAndNewlines), labels: labelFilter.sorted(), assignee: assigneeFilter, priority: priorityFilter, kind: kindFilter, epic: epicFilter, release: releaseFilter, roadmapOnly: roadmapOnly)
     )
     await saveBoard(["views": .array((savedViews + [saved]).map(\.asJSON))])
   }
@@ -190,6 +214,8 @@ struct BoardScreen: View {
   private func matches(_ item: BoardItem) -> Bool {
     if roadmapOnly && !item.isPublic { return false }
     if !kindFilter.isEmpty && item.itemKind != kindFilter { return false }
+    if !epicFilter.isEmpty && item.epicId != epicFilter { return false }
+    if !releaseFilter.isEmpty && item.releaseId != releaseFilter { return false }
     if !labelFilter.isEmpty && !item.labels.contains(where: { labelFilter.contains($0) }) { return false }
     switch assigneeFilter {
     case "": break
@@ -227,6 +253,7 @@ struct BoardScreen: View {
   func loadItems() async throws {
     let result: ItemsResponse = try await session.get("/v1/admin/board-items", query: ["project": projectId])
     items = result.items
+    pruneParentFilters()
   }
 
   private func apply(_ project: ProjectsAdminProject) {
@@ -325,6 +352,11 @@ struct BoardScreen: View {
     try await loadItems()
   }
 
+  /// The same from a card's or row's menu: a refusal shows as the board's alert.
+  func setParent(_ itemId: String, field: String, to parentId: String) async {
+    do { try await assign(itemId, field: field, to: parentId) } catch { alert = error.localizedDescription }
+  }
+
   /// The AI reads a description and proposes a title; nothing is saved.
   func suggestTitle(_ description: String) async throws -> String {
     struct Body: Encodable, Sendable { let description: String }
@@ -356,8 +388,12 @@ struct BoardScreen: View {
   }
 
   func delete(_ itemId: String) async throws {
+    let groupsCards = item(itemId).map { $0.itemKind != "task" } ?? false
     try await session.delete("/v1/admin/board-items/\(itemId)")
     items.removeAll { $0.id == itemId }
+    // An epic or release leaves its cards free of it: read them again (the delete itself went through either way).
+    if groupsCards { try? await loadItems() }
+    pruneParentFilters()
   }
 
   /// Link or unlink a feedback post (an id or `#N`) or a conversation.
@@ -626,6 +662,23 @@ private struct BoardView: View {
               ForEach(BoardKind.all, id: \.self) { kind in Text(BoardKind.name(kind)).tag(kind) }
             }
           }
+          // Narrow the board to one epic's cards or one release's items; offered once the board has some.
+          if !store.epics.isEmpty {
+            filterMenu("Epic", value: epicTitle, active: !store.epicFilter.isEmpty) {
+              Picker("Epic", selection: $store.epicFilter) {
+                Text("Any epic").tag("")
+                ForEach(store.epics) { epic in Text(store.parentLabel(epic)).tag(epic.id) }
+              }
+            }
+          }
+          if !store.releases.isEmpty {
+            filterMenu("Release", value: releaseTitle, active: !store.releaseFilter.isEmpty) {
+              Picker("Release", selection: $store.releaseFilter) {
+                Text("Any release").tag("")
+                ForEach(store.releases) { release in Text(store.parentLabel(release)).tag(release.id) }
+              }
+            }
+          }
           filterMenu("Order", value: orderTitle, active: store.order != "manual") {
             Picker("Order", selection: Binding(get: { store.order }, set: { store.setOrder($0) })) {
               Text("Manual").tag("manual")
@@ -672,6 +725,16 @@ private struct BoardView: View {
     case "unassigned": String(localized: "Unassigned")
     default: store.agent(store.assigneeFilter)?.inboxName ?? String(localized: "Assignee")
     }
+  }
+
+  /// The filter's pill: "Any epic", or the epic it narrows to, cut short so a long title does not stretch the bar.
+  private var epicTitle: String { parentFilterTitle(store.epicFilter, none: String(localized: "Any epic")) }
+  private var releaseTitle: String { parentFilterTitle(store.releaseFilter, none: String(localized: "Any release")) }
+
+  private func parentFilterTitle(_ id: String, none: String) -> String {
+    guard !id.isEmpty, let parent = store.item(id) else { return none }
+    let label = store.parentLabel(parent)
+    return label.count > 26 ? String(label.prefix(25)) + "…" : label
   }
 
   private var groupingTitle: String {
@@ -822,6 +885,7 @@ private struct BoardList: View {
     .padding(.vertical, 8)
     .contextMenu {
       Button { open(item) } label: { Label("Open", systemImage: "square.and.pencil") }
+      BoardParentMenus(item: item, store: store)
       if let url = store.itemURL(item) { Button { Clipboard.copy(url.absoluteString) } label: { Label("Copy link", systemImage: "link") } }
     }
   }
@@ -895,6 +959,41 @@ private struct BoardQuickAdd: View {
     title = ""
     await add(String(text.prefix(BoardTitle.maxLength)))
     focused = true
+  }
+}
+
+/// "Epic" and "Release" in an item's menu: put it into one, or take it out, as the web list's cells do. Each shows
+/// where the item's kind can have one (a card has an epic; a card or an epic has a release) and the board has some.
+private struct BoardParentMenus: View {
+  let item: BoardItem
+  let store: BoardStore
+
+  var body: some View {
+    if BoardKind.canHave(item.itemKind, parent: "epic") { menu("epic", parents: store.epics, current: item.epicId ?? "") }
+    if BoardKind.canHave(item.itemKind, parent: "release") { menu("release", parents: store.releases, current: item.releaseId ?? "") }
+  }
+
+  @ViewBuilder private func menu(_ kind: String, parents: [BoardItem], current: String) -> some View {
+    let others = parents.filter { $0.id != item.id }
+    if !others.isEmpty {
+      let none = kind == "epic" ? String(localized: "No epic") : String(localized: "No release")
+      Menu {
+        Button { pick(kind, "") } label: {
+          if current.isEmpty { Label(none, systemImage: "checkmark") } else { Text(none) }
+        }
+        ForEach(others) { parent in
+          Button { pick(kind, parent.id) } label: {
+            if parent.id == current { Label(store.parentLabel(parent), systemImage: "checkmark") } else { Text(store.parentLabel(parent)) }
+          }
+        }
+      } label: {
+        if kind == "epic" { Label("Epic", systemImage: "square.stack.3d.up") } else { Label("Release", systemImage: "shippingbox") }
+      }
+    }
+  }
+
+  private func pick(_ kind: String, _ parentId: String) {
+    Task { await store.setParent(item.id, field: kind == "epic" ? "epicId" : "releaseId", to: parentId) }
   }
 }
 
@@ -1096,6 +1195,7 @@ private struct BoardColumn: View {
         Label("Move to", systemImage: "arrow.right.circle")
       }
     }
+    BoardParentMenus(item: item, store: store)
     if let url = store.itemURL(item) { Button { Clipboard.copy(url.absoluteString) } label: { Label("Copy link", systemImage: "link") } }
   }
 }

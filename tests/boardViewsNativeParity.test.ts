@@ -27,6 +27,15 @@ describe('native saved views and estimates parity', () => {
     for (const key of Object.keys(EMPTY_BOARD_VIEW_FILTERS)) expect(models).toContain(`"${key}"`)
   })
 
+  test('applying a view sets every filter it stores, and saving one keeps every filter', () => {
+    const saving = /BoardViewFilters\((search:[^\n]*)/.exec(screen)
+    expect(saving).not.toBeNull()
+    for (const key of Object.keys(EMPTY_BOARD_VIEW_FILTERS)) {
+      expect(screen, `applyView ignores filters.${key}`).toContain(`saved.filters.${key}`)
+      expect(saving![1], `saveCurrentView drops ${key}`).toContain(`${key}:`)
+    }
+  })
+
   test('the estimate range is the server\'s', () => {
     expect(models).toContain(`value <= ${BOARD_ESTIMATE_MAX}`)
   })
