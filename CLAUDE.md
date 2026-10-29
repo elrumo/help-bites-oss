@@ -104,3 +104,12 @@ Every new feature, removal, rename, edition change, or a change to what a featur
   `CHANGELOG.md` line in section 4, which is for self-hosters.
 - The release number lives in `package.json` only: never hand-edit it elsewhere (`bun run release:bump X.Y.Z`, `docs/RELEASING.md`).
   A new surface that names the product (a page header, an About screen) shows it with `<AppVersion />` / the Beta tag.
+
+## 6. Referencing HelpBites items
+
+Whenever you mention a HelpBites planning item (a card, epic or release) in a reply, a commit message, a PR, a doc or a
+comment, **link it**, never write a bare `#12`. The link is
+`https://helpbites.app/projects/<projectId>/board?item=<itemId>` and the text is `#<number> <title>`, for example
+`[#17 Anti-abuse 1/4: sign-up](https://helpbites.app/projects/oQ9vs15hvA/board?item=6Ici3s3qUx)`. `projectId` and
+`itemId` are the `id` fields from `list_projects` and `list_board_items` / `create_board_item` (the HelpBites project's
+id is `oQ9vs15hvA`); the `number` is the short `#N`.

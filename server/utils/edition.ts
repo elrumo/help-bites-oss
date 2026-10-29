@@ -5,6 +5,7 @@
 // does not even contain it), so every difference has to pass through here.
 
 import { UNLIMITED_PLAN, type Plan } from '#shared/entitlements'
+import type { OutgoingEmail } from './emailDelivery'
 
 export type EditionId = 'community' | 'cloud'
 
@@ -36,6 +37,8 @@ export type EditionHooks = {
   brandUrl: string
   /** Who mail appears to come from; the cloud edition sends from its shared domain. Absent: the project's own settings. */
   rewriteSender?: (sender: EmailSender, project: ParseObject | null) => EmailSender
+  /** Looks at counted mail before it is reserved and sent; throws to refuse the batch (the cloud edition refuses phishing-style links on its shared domain). Absent: send. */
+  checkOutgoing?: (mails: OutgoingEmail[]) => void | Promise<void>
   /** Whether a workspace may receive mail for a domain (an inbound address on it). Absent: yes. The cloud edition checks the domain is one the workspace has verified, so nobody claims another tenant's. */
   canReceiveFor?: (workspace: ParseObject, domain: string) => boolean | Promise<boolean>
   /** Called when an owner deletes a workspace, before its data goes (the cloud edition cancels the subscription). */

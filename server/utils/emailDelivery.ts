@@ -243,6 +243,7 @@ export async function deliverEmails(mails: OutgoingEmail[]): Promise<DeliveryRes
   if (metered) {
     // Only counted mail waits for a confirmed owner: the confirmation mail itself is the platform's own.
     await assertWorkspaceVerified(workspaceId)
+    await edition().checkOutgoing?.(mails.filter(isMetered))
     await reserveUsage(workspaceId, 'emails', metered)
     try {
       await reserveUsage(workspaceId, 'emailsPerDay', metered)

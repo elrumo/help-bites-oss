@@ -85,6 +85,7 @@ answer at boot.
 | `aiCredits(call)` | What a call to the server's AI gateway costs [0] |
 | `brandUrl` | Where "Powered by HelpBites" links |
 | `rewriteSender(sender, project)` | Who mail appears to come from [the project's own settings] |
+| `checkOutgoing(mails)` | A look at counted mail before it is reserved and sent; throwing refuses the batch [send] |
 | `onWorkspaceDeleting(workspace)` | Cleanup before a workspace's data goes (the cloud edition cancels its subscription) |
 | `meExtras(identity, member)` | More for `/v1/admin/me` under `extras` (confirmation, billing state, super-admin) |
 
