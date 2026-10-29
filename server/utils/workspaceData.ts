@@ -7,7 +7,7 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { createGzip } from 'node:zlib'
 import { createError } from 'h3'
-import { IMPORT_ORDER, NOT_PORTABLE, PROJECT_PINNED, EXPORT_FORMAT } from '#shared/transfer'
+import { CREDENTIAL_CLASSES, EXPORT_FORMAT, FILE_CHUNK_BYTES, FILE_CLASS, FILE_KEY_FIELDS, FILE_MAX_BYTES, IMPORT_ORDER, NOT_PORTABLE, PROJECT_PINNED, SEALED_KEY, WORKSPACE_SETTINGS_CLASS, fileKeysIn, type TransferFiles, type TransferOptions } from '#shared/transfer'
 
 // Everything a workspace owns, in one map: what its export reads and what
 // deleting it removes. It follows scripts/ensure-schema.mjs class by class,
@@ -222,19 +222,23 @@ function isGone(workspace: ParseObject): boolean {
 
 const EXPORT_LINK_SECONDS = 7 * 24 * 3600
 
-// Credentials, not data: an export ends up in someone's downloads folder.
+// Credentials, not data: an export ends up in someone's downloads folder. They leave only when the person asks for
+// them (`secrets`), and then sealed values are opened so that the importing instance can seal them with its own key.
 const SECRET_FIELDS: Record<string, string[]> = {
   Project: ['secret', 'telegram.tokenSealed', 'actionWebhookSecret', 'eventWebhookSecret', 'errors.webhookToken', 'errors.more.*.webhookToken', 'errorTrackers.*.token'],
-  AdminApiKey: ['hash'],
-  EndUserSession: ['hash'],
-  EndUser: ['verifyCodeHash'],
-  WorkspaceInvite: ['tokenHash'],
+  SupportAgent: ['apiKey'],
+  WebhookEndpoint: ['secret'],
   ContactSource: ['secretSealed'],
   StripeAccount: ['secretSealed'],
   RevenueSource: ['secretSealed'],
-  SupportAgent: ['apiKey'],
-  WebhookEndpoint: ['secret'],
   EmailTemplate: ['shareToken']
+}
+// Never leave: they only mean something to the account or session they were made for.
+const HASHES: Record<string, string[]> = {
+  AdminApiKey: ['hash'],
+  EndUserSession: ['hash'],
+  EndUser: ['verifyCodeHash'],
+  WorkspaceInvite: ['tokenHash']
 }
 const ACCOUNT_SECRETS = ['_hashed_password', '_password_history', '_email_verify_token', '_perishable_token', 'sessionToken', 'authData']
 // sealSecret's output (secrets.ts): `v1.<12-byte iv>.<16-byte tag>.<ciphertext>`, base64url.
@@ -248,6 +252,16 @@ function withoutSealed(value: unknown): unknown {
   return value
 }
 
+/** Sealed strings opened to `{ $sealed: plain }`; one that does not open here (another HELPBITES_SECRET) is left out. */
+function openSealed(value: unknown): unknown {
+  if (isSealed(value)) {
+    try { return { [SEALED_KEY]: openSealedSecret(value as string) } } catch { return undefined }
+  }
+  if (Array.isArray(value)) return value.map(openSealed).filter(item => item !== undefined)
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, openSealed(item)]).filter(([, item]) => item !== undefined))
+  return value
+}
+
 function dropPath(value: unknown, path: string[]): void {
   if (!value || typeof value !== 'object') return
   const [head = '', ...rest] = path
@@ -258,15 +272,22 @@ function dropPath(value: unknown, path: string[]): void {
   }
 }
 
-export function exportHeader(workspaceId: string, exportedAt: Date, projectId = '') {
-  // Version 2 adds `scope`; an importer reads 1 the same way (a workspace).
-  return { format: EXPORT_FORMAT, version: 2, scope: projectId ? 'project' : 'workspace', workspaceId, ...(projectId ? { projectId } : {}), exportedAt: exportedAt.toISOString() }
+export function exportHeader(workspaceId: string, exportedAt: Date, projectId = '', options: Partial<TransferOptions> = {}) {
+  // Version 2 adds `scope`; 3 adds files and credentials. An importer reads 1 the same way (a workspace), and an older one refuses 3.
+  const binary = options.files === 'binary'
+  const version = binary || options.secrets ? 3 : 2
+  return {
+    format: EXPORT_FORMAT, version, scope: projectId ? 'project' : 'workspace', workspaceId, ...(projectId ? { projectId } : {}), exportedAt: exportedAt.toISOString(),
+    ...(version === 3 ? { files: binary ? 'binary' : 'urls', fileBase: publicBase(), secrets: !!options.secrets } : {})
+  }
 }
 
-/** One row of the export, its credentials taken out. The row's own JSON is left as it was. */
-export function exportLine(className: string, data: Record<string, unknown>): { class: string, data: Record<string, unknown> } {
-  const copy = withoutSealed(JSON.parse(JSON.stringify(data))) as Record<string, unknown>
-  for (const path of [...ACCOUNT_SECRETS, ...(SECRET_FIELDS[className] || [])]) dropPath(copy, path.split('.'))
+/** One row of the export, its credentials taken out (or, with `secrets`, opened). The row's own JSON is left as it was. */
+export function exportLine(className: string, data: Record<string, unknown>, secrets = false): { class: string, data: Record<string, unknown> } {
+  const raw = JSON.parse(JSON.stringify(data))
+  const copy = (secrets ? openSealed(raw) : withoutSealed(raw)) as Record<string, unknown>
+  const dropped = [...ACCOUNT_SECRETS, ...(HASHES[className] || []), ...(secrets ? [] : SECRET_FIELDS[className] || [])]
+  for (const path of dropped) dropPath(copy, path.split('.'))
   return { class: className, data: copy }
 }
 
@@ -275,21 +296,84 @@ export function exportKey(workspaceId: string, at: Date, nonce = randomBytes(8).
   return `exports/${workspaceId}/${at.toISOString().replace(/[:.]/g, '-')}-${nonce}.jsonl.gz`
 }
 
-async function* exportLines(workspaceId: string, exportedAt: Date, options: { classes?: string[], projectId?: string } = {}): AsyncGenerator<string> {
-  yield `${JSON.stringify(exportHeader(workspaceId, exportedAt, options.projectId))}\n`
+/** A stored file as `_File` lines: its key and headers on the first, then its bytes in base64, `last` on the final one. */
+async function* fileLines(key: string): AsyncGenerator<string> {
+  const stat = await statStoredObject(key)
+  if (!stat || stat.size > FILE_MAX_BYTES) return
+  let index = 0
+  const line = (bytes: Buffer, last: boolean) => `${JSON.stringify({ class: FILE_CLASS, data: { key, index: index++, last, ...(index === 1 ? { headers: stat.headers } : {}), b64: bytes.toString('base64') } })}\n`
+  let held = Buffer.alloc(0)
+  for await (const chunk of await readObjectStream(key)) {
+    held = Buffer.concat([held, Buffer.from(chunk)])
+    while (held.length > FILE_CHUNK_BYTES) {
+      yield line(held.subarray(0, FILE_CHUNK_BYTES), false)
+      held = held.subarray(FILE_CHUNK_BYTES)
+    }
+  }
+  yield line(held, true)
+}
+
+/**
+ * The keys a binary export may read from the bucket: those under this workspace's projects, knowledge models and
+ * email templates. A row can say any URL, so a key outside them (another workspace's file) is never fetched.
+ */
+async function bucketScope(holdings: Holdings) {
+  const ids = async (className: string) => {
+    const found = new Set<string>()
+    for await (const rows of classPages(className, holdings, ['objectId'])) for (const row of rows) found.add(row.id || '')
+    return found
+  }
+  const projects = new Set(holdings.projectIds)
+  const models = await ids('KnowledgeModel')
+  const templates = await ids('EmailTemplate')
+  return (key: string) => {
+    const [first = '', second = ''] = key.split('/')
+    if (key.includes('..')) return false
+    return first === 'knowledge' ? models.has(second) : first === 'emails' ? templates.has(second) : projects.has(first)
+  }
+}
+
+async function* exportLines(workspaceId: string, exportedAt: Date, options: { classes?: string[], projectId?: string, files?: TransferFiles, secrets?: boolean } = {}): AsyncGenerator<string> {
+  yield `${JSON.stringify(exportHeader(workspaceId, exportedAt, options.projectId, options))}\n`
+  if (options.secrets && !options.projectId) {
+    const workspace = await new (useParse().Query)('Workspace').get(workspaceId, MASTER).catch(() => null)
+    const settings = Object.fromEntries(['ai', 'settings'].map(field => [field, openSealed(JSON.parse(JSON.stringify(workspace?.get(field) ?? null)))]).filter(([, value]) => value))
+    if (Object.keys(settings).length) yield `${JSON.stringify({ class: WORKSPACE_SETTINGS_CLASS, data: settings })}\n`
+  }
+  const binary = options.files === 'binary'
+  const base = publicBase()
+  const inScope = binary ? await bucketScope(await holdingsOf(workspaceId, options.projectId)) : () => false
+  const sent = new Set<string>()
   for await (const { className, rows } of workspaceRows(workspaceId, options.classes, options.projectId)) {
-    yield rows.map(row => `${JSON.stringify(exportLine(className, row.toJSON() as Record<string, unknown>))}\n`).join('')
+    const lines = rows.map(row => exportLine(className, row.toJSON() as Record<string, unknown>, options.secrets))
+    if (binary) {
+      for (const line of lines) {
+        const keys = fileKeysIn(line.data, base)
+        const own = FILE_KEY_FIELDS[className] && line.data[FILE_KEY_FIELDS[className]!]
+        if (typeof own === 'string' && own) keys.add(own)
+        // A file two rows share goes once; an importer maps it for both.
+        for (const key of keys) {
+          if (sent.has(key) || !inScope(key)) continue
+          sent.add(key)
+          yield* fileLines(key)
+        }
+      }
+    }
+    yield lines.map(line => `${JSON.stringify(line)}\n`).join('')
   }
 }
 
 /**
  * What another instance can import, as a gzipped JSON Lines stream: the whole
- * workspace, or one project. Credentials are left out and so is everything in
- * NOT_PORTABLE. Served to a download and to an importing instance alike.
+ * workspace, or one project. Credentials are left out unless `secrets`, and
+ * so is everything in NOT_PORTABLE. Uploaded files travel as the links they
+ * have, or with `files: 'binary'` as the files themselves. Served to a
+ * download and to an importing instance alike.
  */
-export function portableExport(workspaceId: string, projectId = ''): Readable {
+export function portableExport(workspaceId: string, projectId = '', options: Partial<TransferOptions> = {}): Readable {
   const gzip = createGzip()
-  const lines = Readable.from(exportLines(workspaceId, new Date(), { classes: PORTABLE, projectId }))
+  const classes = options.secrets ? PORTABLE : PORTABLE.filter(name => !CREDENTIAL_CLASSES.includes(name))
+  const lines = Readable.from(exportLines(workspaceId, new Date(), { classes, projectId, files: options.files, secrets: options.secrets }))
   lines.on('error', error => gzip.destroy(error))
   return lines.pipe(gzip)
 }
@@ -453,7 +537,7 @@ export async function purgeWorkspace(workspaceId: string): Promise<void> {
     const models = await rowsOf('KnowledgeModel', ['objectId'])
     // A master template's images live under emails/<its id>/; a project's under the project.
     const masters = (await rowsOf('EmailTemplate', ['project'])).filter(row => !row.get('project'))
-    const prefixes = [...holdings.projectIds.map(id => `${id}/`), ...models.map(row => `knowledge/${row.id}/`), ...masters.map(row => `emails/${row.id}/`), `exports/${workspaceId}/`]
+    const prefixes = [...holdings.projectIds.map(id => `${id}/`), ...models.map(row => `knowledge/${row.id}/`), ...masters.map(row => `emails/${row.id}/`), `exports/${workspaceId}/`, `imports/${workspaceId}/`]
     for (const prefix of prefixes) await removeObjectsUnder(prefix)
   }
   if (meiliConfigured()) {

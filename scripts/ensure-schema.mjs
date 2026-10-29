@@ -144,6 +144,9 @@ const SCHEMAS = {
       // A pull of one project: its id on the other instance.
       sourceProjectId: { type: 'String' },
       sourceWorkspaceId: { type: 'String' },
+      // A pull: how the other instance sends uploaded files (urls | binary) and whether it sends credentials.
+      files: { type: 'String' },
+      secrets: { type: 'Boolean' },
       credential: { type: 'String' },
       // The uploaded file's key in the bucket.
       uploadKey: { type: 'String' },

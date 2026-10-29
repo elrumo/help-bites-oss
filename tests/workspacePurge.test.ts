@@ -306,7 +306,7 @@ function expectPurged() {
   expect(table('_User').get('u2')!.defaultWorkspace).toEqual(ptr('Workspace', 'B'))
 
   expect([...redisKeys].sort()).toEqual(['sb:usage:AB:2026-10:emails', 'sb:usage:B:2026-10:emails'])
-  expect(new Set(removedPrefixes)).toEqual(new Set(['pA1/', 'pA2/', 'knowledge/kA/', 'emails/tA/', 'exports/A/']))
+  expect(new Set(removedPrefixes)).toEqual(new Set(['pA1/', 'pA2/', 'knowledge/kA/', 'emails/tA/', 'exports/A/', 'imports/A/']))
   expect(new Set(meiliFilters)).toEqual(new Set(['conversations workspaceId = "A"', 'endusers workspaceId = "A"', 'knowledge workspaceId = "A"']))
   expect(invalidated).toContain('members:u1')
   expect(invalidated).toContain('members:u3')

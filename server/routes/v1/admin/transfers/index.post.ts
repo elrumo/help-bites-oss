@@ -1,3 +1,5 @@
+import { readTransferFiles } from '#shared/transfer'
+
 defineRouteMeta({
   openAPI: {
     tags: ['Workspace'],
@@ -12,7 +14,9 @@ defineRouteMeta({
         login: { type: 'string' }, password: { type: 'string' },
         workspaceId: { type: 'string', description: 'With a login that belongs to several workspaces there: which one.' }
       } },
-      projectId: { type: 'string', description: 'A project id on the other instance; leave out for its whole workspace.' }
+      projectId: { type: 'string', description: 'A project id on the other instance; leave out for its whole workspace.' },
+      files: { type: 'string', enum: ['urls', 'binary'], default: 'urls', description: 'How uploaded files come across: `urls` leaves the links pointing at the other instance\'s bucket; `binary` copies the files into this one (needs file storage here, with `S3_PUBLIC_URL`).' },
+      secrets: { type: 'boolean', default: false, description: 'Also bring credentials and connections (Stripe, contact databases, webhook secrets, AI keys, project secrets).' }
     } } } } },
     responses: { 202: { description: 'The queued import (same shape as an item of `GET /v1/admin/transfers`).' }, 400: { description: 'The other instance could not be reached or refused the login.' }, 409: { description: 'An import is already running here.' }, 429: { description: 'More than 10 imports in an hour.' } }
   }
@@ -21,8 +25,10 @@ defineRouteMeta({
 export default defineEventHandler(async (event) => {
   const ctx = await requireMember(event, { can: 'workspace.export' })
   assertSession(ctx)
-  const body = (await readBody(event).catch(() => ({}))) as { source?: Record<string, unknown>, projectId?: unknown }
-  const row = await queuePull(ctx, readSource(body.source), String(body.projectId || ''), clientIp(event))
+  const body = (await readBody(event).catch(() => ({}))) as { source?: Record<string, unknown>, projectId?: unknown, files?: unknown, secrets?: unknown }
+  const options = { files: readTransferFiles(body.files), secrets: body.secrets === true }
+  if (options.files === 'binary' && (!s3Configured() || !process.env.S3_PUBLIC_URL)) throw createError({ statusCode: 400, statusMessage: 'Copying the files themselves needs file storage here: set the server\'s S3_* settings and S3_PUBLIC_URL' })
+  const row = await queuePull(ctx, readSource(body.source), String(body.projectId || ''), options, clientIp(event))
   setResponseStatus(event, 202)
   return serializeTransfer(row)
 })

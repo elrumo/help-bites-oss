@@ -1643,7 +1643,7 @@
       "id": "data-transfer",
       "name": "Export and import between instances",
       "category": "platform",
-      "summary": "Download a whole workspace or one project as a portable file, import a file, or pull straight from another HelpBites (self-hosted or cloud) with an API key or login, in the background and all-or-nothing.",
+      "summary": "Download a whole workspace or one project as a portable file, import a file, or pull straight from another HelpBites (self-hosted or cloud) with an API key or login, in the background and all-or-nothing. Uploaded files travel as links or as the files themselves, and credentials and connections can come along.",
       "editions": [
         "community",
         "cloud"

@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
 import { gzipSync } from 'node:zlib'
-import { CLASS_FEATURES, CLASS_GAUGES, DROP_FIELDS, ID_PATHS, IMPORT_ORDER, NOT_PORTABLE, PROJECT_PINNED } from '../shared/transfer'
+import { CLASS_FEATURES, CLASS_GAUGES, DROP_FIELDS, FILE_KEY_FIELDS, ID_PATHS, IMPORT_ORDER, NOT_PORTABLE, PROJECT_PINNED, fileKeysIn, rewriteFileUrls } from '../shared/transfer'
+import { openSealedSecret, sealSecret } from '../server/utils/secrets'
 
 // Moving data between instances (server/utils/transfer.ts): the rules against
 // the schema, and the importer against a fake Parse REST batch endpoint.
@@ -34,6 +35,8 @@ let counter = 0
 let taken: string[] = []
 let allowed = { features: true }
 const gauges: string[] = []
+let bucket = new Map<string, { data: Buffer, headers: Record<string, string> }>()
+let s3On = true
 
 const fakeParse = {
   Query: class {
@@ -58,12 +61,18 @@ Object.assign(globalThis, {
   newSecret: () => `sk_new${++counter}`,
   forgetWorkspaceProjects: async () => {},
   enqueueJob: async () => {},
-  meiliConfigured: () => false
+  meiliConfigured: () => false,
+  openSealedSecret,
+  storeCredential: (plain: string) => `sealed(${plain})`,
+  s3Configured: () => s3On,
+  publicBase: () => 'https://new.cdn/bucket',
+  storeImportedFile: async (key: string, data: Buffer, headers: Record<string, string>) => { bucket.set(key, { data, headers }) },
+  removeImportedFiles: async (files: { key: string }[]) => { for (const item of files) bucket.delete(item.key) }
 })
 
 const realFetch = globalThis.fetch
 beforeEach(() => {
-  store = new Map(); creates = []; headers = []; failClass = ''; counter = 0; taken = []; allowed = { features: true }; gauges.length = 0
+  store = new Map(); creates = []; headers = []; failClass = ''; counter = 0; taken = []; allowed = { features: true }; gauges.length = 0; bucket = new Map(); s3On = true
   globalThis.fetch = (async (_url: string, init: RequestInit) => {
     headers.push(init.headers as Record<string, string>)
     const { requests } = JSON.parse(String(init.body)) as { requests: { method: string, path: string, body?: Json }[] }
@@ -99,6 +108,13 @@ describe('what travels', () => {
     expect(order.filter(name => NOT_PORTABLE[name])).toEqual([])
     expect(order.filter(name => !WORKSPACE_DATA[name])).toEqual([])
     expect(new Set(order).size).toBe(order.length)
+  })
+
+  test('the keys that name a file are real columns of classes that travel', () => {
+    for (const [className, field] of Object.entries(FILE_KEY_FIELDS)) {
+      expect(fieldsOf(className).some(item => item.name === field)).toBe(true)
+      expect(WORKSPACE_DATA[className]).toBeDefined()
+    }
   })
 
   test('what a row points at is created before it (a class\'s pointers to itself are fixed up after)', () => {
@@ -192,7 +208,7 @@ describe('importing', () => {
 
     expect(summary.rows).toMatchObject({ Project: 2, EndUser: 1, Conversation: 1, Message: 3, KnowledgeNode: 2, FeedbackPost: 1, FeedbackComment: 1, BoardItem: 1, Sequence: 1 })
     // A key of its own stays; a key another project holds is replaced.
-    expect(summary.projects).toEqual([{ name: 'Acme', publicKey: KEY_A, keptKey: true }, { name: 'Beta', publicKey: KEY_B, keptKey: true }])
+    expect(summary.projects).toEqual([{ name: 'Acme', publicKey: KEY_A, keptKey: true, keptSecret: false }, { name: 'Beta', publicKey: KEY_B, keptKey: true, keptSecret: false }])
   })
 
   test('a public key that is taken is replaced, and said so', async () => {
@@ -315,5 +331,125 @@ describe('reading a file', () => {
     // 20 MB of one character compresses to a few KB; reading it into memory as a line is what the cap stops.
     const bomb = gzipSync(Buffer.alloc(20 * 1024 * 1024, 97))
     await expect((async () => { for await (const _line of linesOf(Readable.from([bomb]))) { /* drained */ } })()).rejects.toMatchObject({ statusCode: 400 })
+  })
+})
+
+// ---- files and credentials -----------------------------------------------------------
+
+const OLD_CDN = 'https://old.cdn/bucket'
+const binaryHeader = { ...header, version: 3, files: 'binary', fileBase: OLD_CDN, secrets: false }
+const piece = (key: string, index: number, last: boolean, text: string, headers?: Json) =>
+  line('_File', { key, index, last, ...(headers ? { headers } : {}), b64: Buffer.from(text).toString('base64') })
+
+describe('files in an export', () => {
+  test('finds the keys that links under the exporter\'s address name, in text and nested values', () => {
+    const keys = fileKeysIn({ a: `see ${OLD_CDN}/p1/u/abc.png.`, b: [{ url: `${OLD_CDN}/p1/u/def.webp` }], c: 'https://elsewhere/p1/x.png', d: `<img src="${OLD_CDN}/emails/t1/i.png">` }, OLD_CDN)
+    expect([...keys].sort()).toEqual(['emails/t1/i.png', 'p1/u/abc.png', 'p1/u/def.webp'])
+    expect([...fileKeysIn({ a: 'x' }, '')]).toEqual([])
+  })
+
+  test('rewrites those links to the copies, and no other', () => {
+    const moved = new Map([['p1/u/abc.png', 'imports/w/r/p1/u/abc.png']])
+    const out = rewriteFileUrls({ a: `see ${OLD_CDN}/p1/u/abc.png.`, b: `${OLD_CDN}/p1/u/other.png`, c: 'https://elsewhere/p1/u/abc.png' }, OLD_CDN, 'https://new.cdn/bucket', moved)
+    expect(out).toEqual({ a: 'see https://new.cdn/bucket/imports/w/r/p1/u/abc.png.', b: `${OLD_CDN}/p1/u/other.png`, c: 'https://elsewhere/p1/u/abc.png' })
+  })
+
+  test('a binary export is stored again under this workspace, and the rows that used the files point at the copies', async () => {
+    const summary = await importLines(file(
+      binaryHeader,
+      line('Project', { objectId: 'p1', name: 'Acme', publicKey: KEY_A, ...old }),
+      piece('p1/u/abc.png', 0, false, 'PNG-', { 'Content-Type': 'image/png' }),
+      piece('p1/u/abc.png', 1, true, 'BYTES'),
+      piece('p1/brand/x.html', 0, true, '<script>alert(1)</script>', { 'Content-Type': 'text/html' }),
+      line('Message', { objectId: 'm1', project: ptr('Project', 'p1'), body: `![](${OLD_CDN}/p1/u/abc.png)`, attachments: [{ url: `${OLD_CDN}/p1/u/abc.png`, mime: 'image/png' }] }),
+      line('BrandAsset', { objectId: 'b1', project: ptr('Project', 'p1'), storageKey: 'p1/brand/x.html', url: `${OLD_CDN}/p1/brand/x.html` }),
+      line('CmsAsset', { objectId: 'c1', project: ptr('Project', 'p1'), storageKey: 'p1/cms/never-sent.png', url: `${OLD_CDN}/p1/cms/never-sent.png` })
+    ), workspace)
+
+    const [copied] = [...bucket.keys()].filter(key => key.endsWith('p1/u/abc.png'))
+    expect(copied).toMatch(/^imports\/wsNew\/[\da-f]{12}\/p1\/u\/abc\.png$/)
+    expect(bucket.get(copied!)!.data.toString()).toBe('PNG-BYTES')
+    expect(bucket.get(copied!)!.headers['Content-Type']).toBe('image/png')
+    expect(summary.files).toEqual({ stored: 2, bytes: 9 + 25 })
+
+    const message = made('Message')[0]!.body
+    expect(message.body).toBe(`![](https://new.cdn/bucket/${copied})`)
+    expect(message.attachments[0].url).toBe(`https://new.cdn/bucket/${copied}`)
+
+    // A page type is stored as a download, never as something the bucket would serve as a page.
+    const [page] = [...bucket.entries()].filter(([key]) => key.endsWith('x.html'))
+    expect(page![1].headers).toMatchObject({ 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment' })
+    const brand = made('BrandAsset')[0]!.body
+    expect(brand.storageKey).toBe(page![0])
+    expect(brand.url).toBe(`https://new.cdn/bucket/${page![0]}`)
+    // A file the export did not carry has no key here.
+    expect(made('CmsAsset')[0]!.body.storageKey).toBe('')
+    expect(summary.notes).toContain('fileLinks')
+  })
+
+  test('an export of links leaves the links as they were and clears the keys it cannot carry', async () => {
+    const summary = await importLines(file(
+      { ...header, version: 3, files: 'urls', fileBase: OLD_CDN, secrets: false },
+      line('Project', { objectId: 'p1', name: 'Acme', publicKey: KEY_A, ...old }),
+      line('Message', { objectId: 'm1', project: ptr('Project', 'p1'), body: `${OLD_CDN}/p1/u/abc.png` }),
+      line('KnowledgeModel', { objectId: 'km', ...old, project: ptr('Project', 'p1') }),
+      line('KnowledgeDocument', { objectId: 'kd', knowledgeModel: ptr('KnowledgeModel', 'km'), storageKey: 'knowledge/km/a.md' })
+    ), workspace)
+    expect(made('Message')[0]!.body.body).toBe(`${OLD_CDN}/p1/u/abc.png`)
+    expect(made('KnowledgeDocument')[0]!.body.storageKey).toBe('')
+    expect(summary.notes).toContain('fileLinks')
+    expect(bucket.size).toBe(0)
+  })
+
+  test('a file that needs the bucket is refused where there is none, or when it is malformed', async () => {
+    s3On = false
+    await expect(importLines(file(binaryHeader), workspace)).rejects.toMatchObject({ statusCode: 503 })
+    s3On = true
+    await expect(importLines(file(binaryHeader, piece('../escape.png', 0, true, 'x')), workspace)).rejects.toMatchObject({ statusCode: 400 })
+    await expect(importLines(file(binaryHeader, piece('p1/a.png', 1, true, 'x')), workspace)).rejects.toMatchObject({ statusCode: 400 })
+  })
+
+  test('a failed import takes the files it stored away again', async () => {
+    failClass = 'Message'
+    await expect(importLines(file(
+      binaryHeader,
+      line('Project', { objectId: 'p1', name: 'Acme', publicKey: KEY_A, ...old }),
+      piece('p1/u/abc.png', 0, true, 'x', { 'Content-Type': 'image/png' }),
+      line('Message', { objectId: 'm1', project: ptr('Project', 'p1'), body: 'x' })
+    ), workspace)).rejects.toThrow('boom')
+    expect(bucket.size).toBe(0)
+  })
+})
+
+describe('credentials in an export', () => {
+  const secret = `sk_${'c'.repeat(64)}`
+
+  test('an opened credential is sealed again here, and a project keeps its secret when nothing else uses it', async () => {
+    const summary = await importLines(file(
+      { ...header, version: 3, files: 'urls', fileBase: '', secrets: true },
+      line('Project', { objectId: 'p1', name: 'Acme', publicKey: KEY_A, secret, ...old }),
+      line('Project', { objectId: 'p2', name: 'Beta', publicKey: KEY_B, ...old }),
+      line('StripeAccount', { objectId: 's1', project: ptr('Project', 'p1'), projectId: 'p1', secretSealed: { $sealed: 'rk_live_x' }, enabled: true }),
+      line('WebhookEndpoint', { objectId: 'w1', project: ptr('Project', 'p1'), url: 'https://hook', secret: 'whsec_1' })
+    ), workspace)
+    const [acme, beta] = made('Project')
+    expect(acme!.body.secret).toBe(secret)
+    expect(beta!.body.secret).toMatch(/^sk_new/)
+    expect(summary.projects.map(item => item.keptSecret)).toEqual([true, false])
+    expect(made('StripeAccount')[0]!.body).toMatchObject({ secretSealed: 'sealed(rk_live_x)', projectId: acme!.id, project: ptr('Project', acme!.id) })
+    expect(made('WebhookEndpoint')[0]!.body.secret).toBe('whsec_1')
+  })
+
+  test('an export with credentials opens what is sealed; one without leaves it out', async () => {
+    process.env.HELPBITES_SECRET = 'x'.repeat(40)
+    const { exportLine } = await import('../server/utils/workspaceData')
+    const sealed = sealSecret('rk_live_x')
+    const row = { objectId: 's1', secretSealed: sealed, accountName: 'Acme' }
+    expect(exportLine('StripeAccount', row, true).data).toEqual({ objectId: 's1', secretSealed: { $sealed: 'rk_live_x' }, accountName: 'Acme' })
+    expect(exportLine('StripeAccount', row).data).toEqual({ objectId: 's1', accountName: 'Acme' })
+    // Hashes of an account's keys and sessions never leave, credentials or not.
+    expect(exportLine('AdminApiKey', { objectId: 'k', hash: 'h', name: 'CI' }, true).data).toEqual({ objectId: 'k', name: 'CI' })
+    expect(exportLine('Project', { objectId: 'p', secret: 'sk_x', name: 'A' }, true).data.secret).toBe('sk_x')
+    expect(exportLine('Project', { objectId: 'p', secret: 'sk_x', name: 'A' }).data.secret).toBeUndefined()
   })
 })

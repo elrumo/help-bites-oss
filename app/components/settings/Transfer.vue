@@ -10,6 +10,13 @@
       <UButton :label="$t('workspaceSettings.transfer.download')" icon="i-lucide-download" color="neutral" variant="outline" size="sm" class="shrink-0" :loading="downloading" @click="download" />
     </div>
 
+    <div class="space-y-3 rounded-xl border border-default px-4 py-3">
+      <UFormField :label="$t('workspaceSettings.transfer.filesLabel')" :hint="$t('workspaceSettings.transfer.filesHint')">
+        <USelect v-model="files" class="w-full" :items="filesItems" />
+      </UFormField>
+      <UCheckbox v-model="secrets" :label="$t('workspaceSettings.transfer.secretsLabel')" :description="$t('workspaceSettings.transfer.secretsHint')" />
+    </div>
+
     <template v-if="!projectId">
       <div class="flex items-center gap-3 rounded-xl border border-default px-4 py-3">
         <div class="min-w-0 flex-1">
@@ -36,7 +43,10 @@
           <div v-else-if="item.summary" class="space-y-1 text-xs text-muted">
             <p>{{ $t('workspaceSettings.transfer.done', { rows: total(item.summary.rows), projects: item.summary.projects.length }) }}</p>
             <p v-for="project in item.summary.projects.filter(p => !p.keptKey)" :key="project.publicKey" class="text-warning">{{ $t('workspaceSettings.transfer.newKey', { name: project.name, key: project.publicKey }) }}</p>
-            <p v-if="item.summary.projects.length">{{ $t('workspaceSettings.transfer.secrets') }}</p>
+            <p v-if="item.summary.files">{{ $t('workspaceSettings.transfer.filesStored', { count: item.summary.files.stored, size: megabytes(item.summary.files.bytes) }) }}</p>
+            <p v-if="item.summary.notes.includes('fileLinks')">{{ $t('workspaceSettings.transfer.fileLinks') }}</p>
+            <p v-if="item.summary.projects.some(p => p.keptSecret === false)">{{ $t('workspaceSettings.transfer.secrets') }}</p>
+            <p v-if="item.summary.projects.length && !item.secrets">{{ $t('workspaceSettings.transfer.connectionsAgain') }}</p>
             <p v-if="item.summary.notes.includes('sequences')">{{ $t('workspaceSettings.transfer.sequencesPaused') }}</p>
             <p v-for="(skipped, name) in item.summary.skipped" :key="name">{{ $t('workspaceSettings.transfer.skipped', { count: skipped.count, class: name, reason: skipped.reason }) }}</p>
           </div>
@@ -71,6 +81,10 @@
             <UFormField :label="$t('workspaceSettings.transfer.whatToImport')">
               <USelect v-model="projectId" class="w-full" :items="[{ label: $t('workspaceSettings.transfer.everything'), value: '' }, ...found.projects.map(p => ({ label: p.name, value: p.id }))]" />
             </UFormField>
+            <UFormField :label="$t('workspaceSettings.transfer.filesLabel')" :hint="$t('workspaceSettings.transfer.filesPullHint')">
+              <USelect v-model="files" class="w-full" :items="filesItems" />
+            </UFormField>
+            <UCheckbox v-model="secrets" :label="$t('workspaceSettings.transfer.secretsLabel')" :description="$t('workspaceSettings.transfer.secretsHint')" />
             <p class="text-xs text-muted">{{ $t('workspaceSettings.transfer.willCreate') }}</p>
           </template>
           <p v-if="connectError" class="text-[13px] text-error">{{ connectError }}</p>
@@ -90,12 +104,18 @@ import type { TransferStatus, TransferSummary } from '#shared/transfer'
 
 const props = defineProps<{ projectId?: string }>()
 
-type Transfer = { id: string, source: 'file' | 'instance', host: string, scope: 'workspace' | 'project', status: TransferStatus, progress: { className: string, rows: Record<string, number> } | null, summary: TransferSummary | null, error: string, createdAt: string }
+type Transfer = { id: string, source: 'file' | 'instance', host: string, files: 'urls' | 'binary', secrets: boolean, scope: 'workspace' | 'project', status: TransferStatus, progress: { className: string, rows: Record<string, number> } | null, summary: TransferSummary | null, error: string, createdAt: string }
 type Found = { host: string, workspace: { id: string, name: string }, workspaces: { id: string, name: string }[], projects: { id: string, name: string }[] }
 
 const { api, agentHeaders, demo } = useAgent()
 const toast = useToast()
 const { t } = useI18n()
+
+// What goes into an export or a pull: uploaded files as links or the files themselves, and whether credentials come along.
+const files = ref<'urls' | 'binary'>('urls')
+const secrets = ref(false)
+const filesItems = computed(() => (['urls', 'binary'] as const).map(value => ({ label: t(`workspaceSettings.transfer.files.${value}`), value })))
+const megabytes = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`
 
 const total = (rows: Record<string, number>) => Object.values(rows).reduce((sum, n) => sum + n, 0)
 const icon = (status: TransferStatus) => status === 'done' ? 'i-lucide-circle-check' : status === 'failed' ? 'i-lucide-circle-alert' : 'i-lucide-loader'
@@ -107,7 +127,7 @@ const downloading = ref(false)
 async function download() {
   downloading.value = true
   try {
-    const response = await fetch(`/v1/admin/transfers/export${props.projectId ? `?project=${encodeURIComponent(props.projectId)}` : ''}`, { headers: agentHeaders() })
+    const response = await fetch(`/v1/admin/transfers/export?${new URLSearchParams({ ...(props.projectId ? { project: props.projectId } : {}), files: files.value, ...(secrets.value ? { secrets: '1' } : {}) })}`, { headers: agentHeaders() })
     if (!response.ok) throw new Error(((await response.json().catch(() => ({}))) as { statusMessage?: string }).statusMessage || t('workspaceSettings.transfer.downloadFailed'))
     const link = document.createElement('a')
     link.href = URL.createObjectURL(await response.blob())
@@ -200,7 +220,7 @@ async function start() {
   connecting.value = true
   connectError.value = ''
   try {
-    await api('/admin/transfers', { method: 'POST', body: { source: credentials(), projectId: projectId.value } })
+    await api('/admin/transfers', { method: 'POST', body: { source: credentials(), projectId: projectId.value, files: files.value, secrets: secrets.value } })
     // The login is kept on the server only until the import ends; none stays in this page.
     Object.assign(source, { apiKey: '', password: '' })
     connectOpen.value = false

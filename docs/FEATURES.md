@@ -657,8 +657,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Moving between instances.** Download a workspace, or one project, as a portable
   file; import a file; or pull straight from another HelpBites (self-hosted or
   cloud) with an API key or a login. Runs in the background, adds new projects,
-  keeps public keys, and is all-or-nothing. Credentials, team members and uploaded
-  files stay behind. [TRANSFER.md](TRANSFER.md)
+  keeps public keys, and is all-or-nothing. Uploaded files travel as links or as the
+  files themselves, and credentials and connections (Stripe, contact databases,
+  webhook secrets, AI keys, project secrets) can come along when you ask. Team
+  members, API keys, custom domains and campaigns stay behind. [TRANSFER.md](TRANSFER.md)
 - **Welcome tour.** A new account (first run, an accepted invitation, a cloud sign-up) sees five short
   cards once: projects, the inbox, feedback and the changelog, then team and API keys. Skip it at any
   point; finishing or skipping is stored on the account, so no device shows it again. Replay it from

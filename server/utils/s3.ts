@@ -283,3 +283,38 @@ export async function removeObjectsUnder(prefix: string, olderThan?: Date): Prom
   for (let i = 0; i < keys.length; i += 1000) await s3.removeObjects(bucket(), keys.slice(i, i + 1000))
   return keys.length
 }
+
+/** A stored object's headers worth keeping, or null when it is not there. */
+export async function statStoredObject(key: string): Promise<{ size: number, headers: Record<string, string> } | null> {
+  const stat = await useS3().statObject(bucket(), key).catch(() => null)
+  if (!stat) return null
+  const meta = (stat.metaData || {}) as Record<string, unknown>
+  const headers: Record<string, string> = {}
+  for (const [header, name] of [['Content-Type', 'content-type'], ['Content-Disposition', 'content-disposition'], ['Cache-Control', 'cache-control']] as const) {
+    if (typeof meta[name] === 'string' && meta[name]) headers[header] = meta[name] as string
+  }
+  return { size: stat.size, headers }
+}
+
+/** The public address of a key in this instance's bucket ('' without S3_PUBLIC_URL). */
+export const publicBase = () => String(process.env.S3_PUBLIC_URL || '').replace(/\/+$/, '')
+
+/** Store a file an import carried, counting its bytes against the workspace's storage. The caller removes it again if the import fails. */
+export async function storeImportedFile(key: string, data: Buffer, headers: Record<string, string>, workspaceId: string): Promise<void> {
+  await reserveUsage(workspaceId, 'storageBytes', data.length)
+  try {
+    await ensureBucket()
+    await useS3().putObject(bucket(), key, data, data.length, headers)
+  } catch (error) {
+    await chargeUsage(workspaceId, 'storageBytes', -data.length)
+    throw error
+  }
+}
+
+/** Remove the objects an import stored (the keys it kept), and give their bytes back. */
+export async function removeImportedFiles(files: { key: string, bytes: number }[], workspaceId: string): Promise<void> {
+  for (const file of files) {
+    await deleteDocumentObject(file.key)
+    await chargeUsage(workspaceId, 'storageBytes', -file.bytes).catch(() => {})
+  }
+}

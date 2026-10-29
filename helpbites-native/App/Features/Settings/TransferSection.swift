@@ -9,6 +9,8 @@ struct TransferSection: View {
   @Environment(SessionStore.self) private var session
   @State private var transfers: [TransferRecord] = []
   @State private var downloading = false
+  @State private var filesAsFiles = false
+  @State private var withSecrets = false
   @State private var exported: URL?
   @State private var uploading = false
   @State private var picking = false
@@ -26,7 +28,10 @@ struct TransferSection: View {
           HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
               Text(projectId == nil ? String(localized: "Download everything, ready to import elsewhere") : String(localized: "Download this project, ready to import elsewhere")).font(.lnRow).foregroundStyle(Theme.textHighlighted)
-              Text("Conversations, contacts, knowledge, email, changelog and settings as one file another HelpBites can import. Passwords, API keys, Stripe and GitHub connections and uploaded files stay behind.").font(.lnCaption).foregroundStyle(Theme.textMuted)
+              Text("Everything you built and everyone who wrote in, as one file another HelpBites can import. Choose how uploaded files and credentials travel.").font(.lnCaption).foregroundStyle(Theme.textMuted)
+              Toggle("Include the uploaded files themselves (larger file)", isOn: $filesAsFiles).font(.lnCaption)
+              Toggle("Include credentials and connections", isOn: $withSecrets).font(.lnCaption)
+              if withSecrets { Text("Stripe, contact databases, webhook secrets, AI keys and project secrets, in plain text in the file. Only for a move you trust.").font(.lnCaption).foregroundStyle(Theme.warning) }
             }
             Spacer(minLength: 8)
             if let exported {
@@ -76,7 +81,8 @@ struct TransferSection: View {
     downloading = true; error = ""
     defer { downloading = false }
     do {
-      let data = try await session.download("/v1/admin/transfers/export" + (projectId.map { "?project=\($0)" } ?? ""))
+      let query = [projectId.map { "project=\($0)" }, "files=\(filesAsFiles ? "binary" : "urls")", withSecrets ? "secrets=1" : nil].compactMap { $0 }.joined(separator: "&")
+      let data = try await session.download("/v1/admin/transfers/export?" + query)
       let url = FileManager.default.temporaryDirectory.appending(path: "helpbites-\(projectId == nil ? "workspace" : "project").jsonl.gz")
       try data.write(to: url)
       exported = url
@@ -104,6 +110,8 @@ struct TransferRecord: Decodable, Identifiable, Sendable {
   let source: String
   let host: String
   let scope: String
+  let files: String?
+  let secrets: Bool?
   let status: String
   let progress: Progress?
   let summary: Summary?
@@ -116,9 +124,11 @@ struct TransferRecord: Decodable, Identifiable, Sendable {
     let skipped: [String: Skipped]
     let projects: [Imported]
     let notes: [String]
+    let files: Stored?
   }
+  struct Stored: Decodable, Sendable { let stored: Int; let bytes: Int }
   struct Skipped: Decodable, Sendable { let count: Int; let reason: String }
-  struct Imported: Decodable, Sendable { let name: String; let publicKey: String; let keptKey: Bool }
+  struct Imported: Decodable, Sendable { let name: String; let publicKey: String; let keptKey: Bool; let keptSecret: Bool? }
 }
 
 private struct TransferRow: View {
@@ -147,7 +157,10 @@ private struct TransferRow: View {
               ForEach(summary.projects.filter { !$0.keptKey }, id: \.publicKey) { project in
                 Text("\(project.name): its key was already used here, so it now has \(project.publicKey). Update the embed on your site.").font(.lnCaption).foregroundStyle(Theme.warning)
               }
-              if !summary.projects.isEmpty { caption("Each project has a new secret (rotate it in the project's keys). Connections that hold credentials, such as Stripe, GitHub, Telegram, error trackers and webhook secrets, need setting up again.") }
+              if let files = summary.files { caption("\(files.stored) uploaded files copied (\(String(format: "%.1f", Double(files.bytes) / 1_048_576)) MB).") }
+              if summary.notes.contains("fileLinks") { caption("Some uploaded files were not in the export (links only), so their copies are missing here: lead form uploads and knowledge originals. Other links still point at the old storage, so keep it until you have moved.") }
+              if summary.projects.contains(where: { $0.keptSecret == false }) { caption("Some projects have a new secret (rotate it in the project's keys).") }
+              if !summary.projects.isEmpty && record.secrets != true { caption("Connections that hold credentials, such as Stripe, GitHub, Telegram, error trackers and webhook secrets, need setting up again unless you included credentials.") }
               if summary.notes.contains("sequences") { caption("Sequences that were running are paused here. Turn them on when you are ready.") }
               ForEach(summary.skipped.sorted { $0.key < $1.key }, id: \.key) { name, skipped in
                 caption("\(skipped.count) \(name) left out: \(skipped.reason)")
@@ -175,13 +188,15 @@ private struct TransferConnectSheet: View {
   @State private var found: Found?
   @State private var workspaceId = ""
   @State private var projectId = ""
+  @State private var filesAsFiles = false
+  @State private var withSecrets = false
   @State private var working = false
   @State private var error = ""
 
   struct Named: Decodable, Identifiable, Hashable, Sendable { let id: String; let name: String }
   struct Found: Decodable, Sendable { let host: String; let workspace: Named; let workspaces: [Named]; let projects: [Named] }
   private struct Source: Encodable, Sendable { let url: String; let workspaceId: String; let apiKey: String?; let login: String?; let password: String? }
-  private struct Start: Encodable, Sendable { let source: Source; let projectId: String }
+  private struct Start: Encodable, Sendable { let source: Source; let projectId: String; let files: String; let secrets: Bool }
 
   private var source: Source {
     Source(url: url.trimmingCharacters(in: .whitespaces), workspaceId: workspaceId, apiKey: useKey ? apiKey : nil, login: useKey ? nil : login, password: useKey ? nil : password)
@@ -210,6 +225,8 @@ private struct TransferConnectSheet: View {
                 ForEach(found.projects) { Text($0.name).tag($0.id) }
               }.pickerStyle(.menu)
             }
+            Toggle("Copy the uploaded files into this storage", isOn: $filesAsFiles).font(.lnCaption)
+            Toggle("Bring credentials and connections", isOn: $withSecrets).font(.lnCaption)
             Text("It is created here as new projects, and keeps running over there until you switch your sites over.").font(.lnCaption).foregroundStyle(Theme.textMuted)
           } else {
             Picker("", selection: $useKey) { Text("Admin API key").tag(true); Text("Username and password").tag(false) }.pickerStyle(.segmented)
@@ -255,7 +272,7 @@ private struct TransferConnectSheet: View {
     working = true; error = ""
     defer { working = false }
     do {
-      let _: Output = try await session.send("/v1/admin/transfers", body: Start(source: source, projectId: projectId))
+      let _: Output = try await session.send("/v1/admin/transfers", body: Start(source: source, projectId: projectId, files: filesAsFiles ? "binary" : "urls", secrets: withSecrets))
       // The login stays on the server only until the import ends; none stays in this sheet.
       apiKey = ""; password = ""
       dismiss()
