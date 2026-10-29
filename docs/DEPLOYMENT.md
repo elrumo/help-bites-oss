@@ -746,6 +746,26 @@ pending):
 bun run schema
 ```
 
+### Security checks in the schema script
+
+The same run checks and hardens who may touch Parse data. Nothing outside the app should: every class is
+**master-only**, and the script makes that true of every class Parse holds, not only the ones it declares:
+
+- **Class-level permissions on every class.** Declared classes, Parse's own (`_Role`, `_Session`, `_Installation`, …) and
+  any stray class an older version or a hand-run script left behind. A permission left out of a CLP is not "denied", it
+  is Parse's default, which is everyone; a class Parse creates by itself on first write starts that way. The run
+  prints what was open (`! find: everyone`) and closes it.
+- **A probe without a key.** After the CLPs are set, the script asks every class for a row the way a stranger would
+  (the app id and nothing else). A class that answers is reported (`! Name: readable without a key`) and, after
+  `--apply`, the run exits `1` so a deploy does not carry on with it open. If your Parse server requires a client key,
+  set `PARSE_CLIENT_KEY` for the script so the probe is not turned away before it tests anything.
+- **Row ACLs, on request.** A row saved over REST with no ACL is readable and writable by everyone as far as Parse's own
+  row check goes; the master-only CLP is what makes that harmless. `bun run schema:acls` counts those rows in every
+  class (it reads every collection, so it is not part of the boot) and `bun run schema:acls:apply` gives them an empty
+  ACL. Closing a row is an update, so its `updatedAt` moves to now (Parse does not let a script put the old value back)
+  and so does its place in any list sorted by it: run it in a quiet hour, once. New rows are created without an ACL
+  again, so this is a periodic sweep, not a setting.
+
 ### Backups
 
 All durable state is in named Docker volumes. Back these up:

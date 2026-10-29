@@ -16,6 +16,8 @@
     "test": "bun test tests",
     "schema": "bun scripts/ensure-schema.mjs",
     "schema:apply": "bun scripts/ensure-schema.mjs --apply",
+    "schema:acls": "bun scripts/ensure-schema.mjs --acls",
+    "schema:acls:apply": "bun scripts/ensure-schema.mjs --acls --apply",
     "migrate:workspaces": "bun scripts/migrate-workspaces.mjs --apply",
     "migrate:changelog-public": "bun scripts/migrate-changelog-public.mjs --apply",
     "search:setup": "bun scripts/ensure-search.mjs",

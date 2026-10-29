@@ -9,19 +9,18 @@
 //
 //   bun scripts/ensure-schema.mjs           # dry run, exits 2 when work is pending
 //   bun scripts/ensure-schema.mjs --apply   # create / update
+//   bun scripts/ensure-schema.mjs --acls    # also look for rows anyone can read or write (with --apply: close them)
 //
 // Idempotent. Existing classes keep their data, gain missing fields, and have
 // CLPs and indexes re-asserted. The container entrypoint runs it on every boot.
+//
+// It also checks and hardens security (scripts/schemaSecurity.mjs): every class
+// Parse holds, declared here or not (Parse's own, strays), is master-only, and
+// each one is then probed without a key to prove a stranger cannot read it.
+// A class that is still open after --apply fails the run (exit 1).
 
-import { assertEnv, parseFetch } from './parseRest.mjs'
-
-const MASTER_ONLY = {}
-
-const CLP_MASTER_ONLY = {
-  find: MASTER_ONLY, get: MASTER_ONLY, count: MASTER_ONLY,
-  create: MASTER_ONLY, update: MASTER_ONLY, delete: MASTER_ONLY,
-  addField: MASTER_ONLY, protectedFields: { '*': [] }
-}
+import { assertEnv, parseFetch, parseFetchAnonymous } from './parseRest.mjs'
+import { ACL_SKIPPED, CLP_MASTER_ONLY, PRIVATE_ACL, PUBLIC_ACL_WHERE, clpDiffers, clpFindings, readableAnonymously, stable, undeclared } from './schemaSecurity.mjs'
 
 const SCHEMAS = {
   // A tenant (server/utils/tenancy.ts). Everything an operator works on
@@ -1883,19 +1882,6 @@ function indexChanges(existing, wanted) {
   return { add, drop }
 }
 
-// Parse returns the CLP keys in its own order; compare structurally.
-function stable(value) {
-  if (Array.isArray(value)) return value.map(stable)
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.keys(value).sort().map(key => [key, stable(value[key])]))
-  }
-  return value
-}
-
-function clpDiffers(existing, wanted) {
-  return JSON.stringify(stable(existing || {})) !== JSON.stringify(stable(wanted))
-}
-
 async function ensureClass(className, definition, apply) {
   const wantedClp = className === '_User' ? USER_CLP : CLP_MASTER_ONLY
   const current = await parseFetch(`/schemas/${className}`)
@@ -1922,6 +1908,7 @@ async function ensureClass(className, definition, apply) {
   }
 
   console.log(`~ ${className}: ${Object.keys(fields).length} field(s), ${Object.keys(indexes).length} index(es)${Object.keys(drop).length ? ` (${Object.keys(drop).length} replaced)` : ''}${clp ? ', CLP' : ''}`)
+  if (clp) for (const finding of clpFindings(current.body.classLevelPermissions, wantedClp)) console.log(`    ! ${finding}`)
   if (!apply) return true
   if (Object.keys(drop).length) {
     const dropped = await parseFetch(`/schemas/${className}`, { method: 'PUT', body: JSON.stringify({ className, indexes: drop }) })
@@ -1935,9 +1922,99 @@ async function ensureClass(className, definition, apply) {
   return true
 }
 
+// ---- security: every class Parse holds -------------------------------------------------
+
+const RESTRICTED = (className) => encodeURIComponent(className)
+
+/** Classes Parse holds that are not declared above (its own, and strays): locked down like the rest. */
+async function lockUndeclared(declared, apply) {
+  const listed = await parseFetch('/schemas')
+  if (!listed.ok) throw new Error(`could not list the schemas: ${listed.body?.error || listed.status}`)
+  const schemas = listed.body.results || []
+  let pending = false
+  for (const { className, kind } of undeclared(schemas, declared)) {
+    const current = schemas.find(schema => schema.className === className).classLevelPermissions
+    if (!clpDiffers(current, CLP_MASTER_ONLY)) {
+      console.log(`= ${className}: ${kind} class, master only`)
+      continue
+    }
+    pending = true
+    console.log(`~ ${className}: ${kind === 'system' ? 'Parse\'s own class' : 'not declared in ensure-schema.mjs (a stray)'}, CLP`)
+    for (const finding of clpFindings(current)) console.log(`    ! ${finding}`)
+    if (!apply) continue
+    const res = await parseFetch(`/schemas/${RESTRICTED(className)}`, { method: 'PUT', body: JSON.stringify({ className, classLevelPermissions: CLP_MASTER_ONLY }) })
+    if (!res.ok) throw new Error(`lock ${className} failed: ${res.body?.error || res.status}`)
+  }
+  return { pending, classNames: schemas.map(schema => schema.className) }
+}
+
+/** Ask for a page of every class the way a stranger would. A 2xx means the class is readable without a key. */
+async function probeAnonymously(classNames) {
+  const open = []
+  const unsure = []
+  for (const className of classNames) {
+    const probe = await parseFetchAnonymous(`/classes/${RESTRICTED(className)}?limit=1`).catch(() => null)
+    if (!probe) unsure.push(className)
+    else if (readableAnonymously(probe.status)) open.push(className)
+    else if (probe.status >= 500) unsure.push(className)
+  }
+  for (const className of open) console.log(`! ${className}: readable without a key`)
+  for (const className of unsure) console.log(`? ${className}: the probe got no answer`)
+  if (!open.length && !unsure.length) console.log(`= ${classNames.length} classes refuse a stranger`)
+  return open
+}
+
+// ---- security: rows anyone can read or write ----------------------------------------------
+
+const ACL_BATCH = 50
+
+/**
+ * Rows with no ACL, or one that names `*`. The CLP above is what keeps them out of reach;
+ * this closes the second door. A scan of every collection, so it runs only with --acls.
+ * Closing a row is an update: its `updatedAt` moves to now (Parse does not let a script
+ * put the old value back), and so does its place in any list sorted by it.
+ */
+async function auditRowAcls(classNames, apply) {
+  const where = encodeURIComponent(JSON.stringify(PUBLIC_ACL_WHERE))
+  const scanned = classNames.filter(name => !ACL_SKIPPED.includes(name))
+  let open = 0
+  for (const className of scanned) {
+    const counted = await parseFetch(`/classes/${RESTRICTED(className)}?limit=0&count=1&where=${where}`)
+    if (!counted.ok) {
+      console.log(`? ${className}: could not count public rows (${counted.body?.error || counted.status})`)
+      continue
+    }
+    const total = counted.body.count || 0
+    if (!total) continue
+    console.log(`~ ${className}: ${total} row(s) open to everyone by their ACL`)
+    let closed = 0
+    while (apply) {
+      const page = await parseFetch(`/classes/${RESTRICTED(className)}?limit=${ACL_BATCH}&keys=objectId&where=${where}`)
+      const rows = page.body?.results || []
+      if (!page.ok || !rows.length) break
+      const res = await parseFetch('/batch', {
+        method: 'POST',
+        body: JSON.stringify({ requests: rows.map(row => ({
+          method: 'PUT',
+          path: `${new URL(process.env.PARSE_URL).pathname.replace(/\/+$/, '')}/classes/${className}/${row.objectId}`,
+          body: { ACL: PRIVATE_ACL }
+        })) })
+      })
+      const failed = Array.isArray(res.body) ? res.body.filter(item => item.error) : [{ error: { error: res.body?.error || res.status } }]
+      if (failed.length) throw new Error(`closing rows of ${className} failed: ${failed[0].error.error}`)
+      closed += rows.length
+    }
+    if (apply) console.log(`    closed ${closed}`)
+    open += total - closed
+  }
+  if (!open) console.log(`= ${scanned.length} classes scanned, no row is open to everyone`)
+  return open
+}
+
 async function main() {
   assertEnv()
   const apply = process.argv.includes('--apply')
+  const acls = process.argv.includes('--acls')
   let pending = false
   for (const [className, definition] of Object.entries(SCHEMAS)) {
     pending = (await ensureClass(className, definition, apply)) || pending
@@ -1945,6 +2022,24 @@ async function main() {
   // emailVerifiedAt: when they confirmed their address (editions that ask for it, server/utils/tenancy.ts).
   // tourPending: set on a new account, cleared when they finish or skip the welcome tour (accounts from before it never had it).
   pending = (await ensureClass('_User', { fields: { name: { type: 'String' }, defaultWorkspace: { type: 'Pointer', targetClass: 'Workspace' }, emailVerifiedAt: { type: 'Date' }, tourPending: { type: 'Boolean' } }, indexes: {} }, apply)) || pending
+
+  console.log('\nSecurity')
+  const locked = await lockUndeclared([...Object.keys(SCHEMAS), '_User'], apply)
+  pending = locked.pending || pending
+  const exposed = await probeAnonymously(locked.classNames)
+  let rowsOpen = 0
+  if (acls) rowsOpen = await auditRowAcls(locked.classNames, apply)
+  else console.log('= row ACLs not scanned (add --acls: it reads every collection)')
+
+  if (exposed.length) {
+    // Dry run: the CLPs above are what would close them. After --apply they must be closed.
+    if (apply) {
+      console.error(`\nStill readable without a key after the CLPs were set: ${exposed.join(', ')}. Check that PARSE_SERVER has no public class-level override.`)
+      process.exit(1)
+    }
+    pending = true
+  }
+  if (rowsOpen && !apply) pending = true
 
   if (!apply && pending) {
     console.log('\nPending changes. Re-run with --apply.')
