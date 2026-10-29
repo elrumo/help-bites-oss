@@ -145,18 +145,18 @@ struct ProjectReposSection: View {
   @State private var connections: [GithubInstallation] = []
   @State private var configured = true
   @State private var repos: [Repo] = []
-  @State private var available: [Available] = []
+  @State private var available: [AvailableRepo] = []
   @State private var connection = ""
   @State private var loading = true
   @State private var listing = false
   @State private var saving = false
+  @State private var picking = false
   @State private var error = ""
 
   private struct Repo: Decodable, Identifiable, Equatable, Sendable { let installationId: String; let id: Int; let fullName, defaultBranch: String }
-  private struct Available: Decodable, Identifiable, Sendable { let id: Int; let fullName: String; let `private`: Bool; let defaultBranch: String }
   private struct RepoRef: Encodable, Sendable { let installationId: String; let id: Int }
 
-  private var choices: [Available] { available.filter { item in !repos.contains { $0.id == item.id } } }
+  private var choices: [AvailableRepo] { available.filter { item in !repos.contains { $0.id == item.id } } }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -188,11 +188,7 @@ struct ProjectReposSection: View {
               MenuPicker(selection: Binding(get: { connection }, set: { connection = $0; Task { await list() } }), options: connections.map { PickerOption(value: $0.id, label: $0.account) }, title: "GitHub account")
                 .frame(maxWidth: 180)
             }
-            Menu {
-              ForEach(choices) { item in
-                Button("\(item.fullName)\(item.private ? String(localized: " (private)") : "")") { Task { await save((repos.map { RepoRef(installationId: $0.installationId, id: $0.id) }) + [RepoRef(installationId: connection, id: item.id)]) } }
-              }
-            } label: {
+            Button { picking = true } label: {
               HStack { if listing { ProgressView().controlSize(.small) }; Label("Add a repo", systemImage: "plus") }
             }
             .disabled(saving || listing || choices.isEmpty)
@@ -202,6 +198,11 @@ struct ProjectReposSection: View {
       ErrorText(message: error)
     }
     .task { await load() }
+    .sheet(isPresented: $picking) {
+      GithubRepoPickerSheet(choices: choices) { item in
+        Task { await save((repos.map { RepoRef(installationId: $0.installationId, id: $0.id) }) + [RepoRef(installationId: connection, id: item.id)]) }
+      }
+    }
   }
 
   private func load() async {
@@ -218,7 +219,7 @@ struct ProjectReposSection: View {
   }
 
   private func list() async {
-    struct Output: Decodable, Sendable { let repos: [Available] }
+    struct Output: Decodable, Sendable { let repos: [AvailableRepo] }
     listing = true; error = ""
     defer { listing = false }
     do { available = (try await session.get("/v1/admin/github/installations/\(connection)/repos") as Output).repos }
@@ -232,5 +233,61 @@ struct ProjectReposSection: View {
     defer { saving = false }
     do { repos = (try await session.send("/v1/admin/projects/\(projectId)/repos", method: "PUT", body: Input(repos: next)) as Output).repos }
     catch { self.error = error.localizedDescription }
+  }
+}
+
+/// One repo a connection can read (`GET /v1/admin/github/installations/:id/repos`).
+private struct AvailableRepo: Decodable, Identifiable, Sendable {
+  let id: Int
+  let fullName: String
+  let `private`: Bool
+  let defaultBranch: String
+}
+
+/// "Add a repo": everything the connection can read, searchable by owner or name. The caller decides what picking means.
+private struct GithubRepoPickerSheet: View {
+  let choices: [AvailableRepo]
+  let pick: (AvailableRepo) -> Void
+  @State private var query = ""
+  @Environment(\.dismiss) private var dismiss
+
+  private var matches: [AvailableRepo] {
+    let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    return needle.isEmpty ? choices : choices.filter { $0.fullName.localizedStandardContains(needle) }
+  }
+
+  var body: some View {
+    NavigationStack {
+      Group {
+        if matches.isEmpty {
+          EmptyState(systemImage: "magnifyingglass", title: "Nothing matches")
+            .frame(maxHeight: .infinity, alignment: .top)
+        } else {
+          List(matches) { item in
+            Button {
+              pick(item)
+              dismiss()
+            } label: {
+              HStack(spacing: 8) {
+                Image(systemName: item.private ? "lock" : "arrow.triangle.branch").font(.system(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 18)
+                Text(item.fullName).foregroundStyle(Theme.text).lineLimit(1)
+                Spacer(minLength: 8)
+                Text(item.defaultBranch).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
+              }
+              .font(.lnMeta)
+              .frame(minHeight: 36)
+              .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .linearRow()
+          }
+          .linearList()
+        }
+      }
+      .searchable(text: $query, prompt: "Search repos")
+      .panelScreen("Add a repo")
+      .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+    }
+    .presentationDetents([.medium, .large])
   }
 }
