@@ -370,21 +370,23 @@ async function* exportLines(workspaceId: string, exportedAt: Date, options: { cl
  * have, or with `files: 'binary'` as the files themselves. Served to a
  * download and to an importing instance alike.
  */
-export function portableExport(workspaceId: string, projectId = '', options: Partial<TransferOptions> = {}): Readable {
+export function portableExport(workspaceId: string, projectId = '', options: Partial<TransferOptions> & { all?: boolean } = {}): Readable {
   const gzip = createGzip()
-  const classes = options.secrets ? PORTABLE : PORTABLE.filter(name => !CREDENTIAL_CLASSES.includes(name))
+  // `all`: the archive, with what an import cannot take in (team list, usage, domains) as well; a pull asks for just what it can use.
+  const classes = options.all ? EXPORTED : options.secrets ? PORTABLE : PORTABLE.filter(name => !CREDENTIAL_CLASSES.includes(name))
   const lines = Readable.from(exportLines(workspaceId, new Date(), { classes, projectId, files: options.files, secrets: options.secrets }))
   lines.on('error', error => gzip.destroy(error))
   return lines.pipe(gzip)
 }
 
 /** Queue an export of the caller's workspace; the link is mailed to them. */
-export async function requestWorkspaceExport(ctx: MemberContext, ip = ''): Promise<void> {
+export async function requestWorkspaceExport(ctx: MemberContext, ip = '', options: Partial<TransferOptions> = {}): Promise<void> {
   if (isGone(ctx.workspace)) throw createError({ statusCode: 403, statusMessage: 'This workspace is being deleted', data: { code: 'workspace_suspended' } })
   if (!s3Configured()) throw createError({ statusCode: 503, statusMessage: 'Exports need file storage: set the server\'s S3_* settings' })
   await rateLimit(`sb:rl:export:${ctx.workspaceId}`, 5, 3600)
-  await enqueueJob('workspace.export', { workspaceId: ctx.workspaceId, requestedBy: ctx.agentId }, { workspaceId: ctx.workspaceId, dedupeKey: `workspace.export:${ctx.workspaceId}:${ctx.agentId}` })
-  await audit({ action: 'workspace.export', actor: ctx.agent, workspace: ctx.workspace, ip })
+  if (options.files === 'binary' && !process.env.S3_PUBLIC_URL) throw createError({ statusCode: 400, statusMessage: 'Exporting the files themselves needs S3_PUBLIC_URL on the server' })
+  await enqueueJob('workspace.export', { workspaceId: ctx.workspaceId, requestedBy: ctx.agentId, files: options.files === 'binary' ? 'binary' : 'urls', secrets: !!options.secrets }, { workspaceId: ctx.workspaceId, dedupeKey: `workspace.export:${ctx.workspaceId}:${ctx.agentId}` })
+  await audit({ action: 'workspace.export', actor: ctx.agent, workspace: ctx.workspace, data: { via: 'email', files: options.files === 'binary' ? 'binary' : 'urls', secrets: !!options.secrets }, ip })
 }
 
 /** The last export, with a fresh download link that works for an hour. */
@@ -422,7 +424,7 @@ export function readExportDownload(token: string, now = Date.now()): string | nu
 }
 
 /** The `workspace.export` job: write the file, remember it, mail the link to whoever asked. */
-export async function runWorkspaceExport(workspaceId: string, requestedBy: string): Promise<void> {
+export async function runWorkspaceExport(workspaceId: string, requestedBy: string, options: Partial<TransferOptions> = {}): Promise<void> {
   const Parse = useParse()
   const workspace = await new Parse.Query('Workspace').get(workspaceId, MASTER).catch(() => null)
   // Asked for just before the workspace was deleted: its data is going, and the export with it.
@@ -431,7 +433,7 @@ export async function runWorkspaceExport(workspaceId: string, requestedBy: strin
   const key = exportKey(workspaceId, exportedAt)
   const file = join(tmpdir(), `helpbites-export-${randomBytes(8).toString('hex')}.jsonl.gz`)
   try {
-    await pipeline(Readable.from(exportLines(workspaceId, exportedAt)), createGzip(), createWriteStream(file))
+    await pipeline(Readable.from(exportLines(workspaceId, exportedAt, { files: options.files, secrets: options.secrets })), createGzip(), createWriteStream(file))
     await storePrivateFile(key, file, { 'Content-Type': 'application/gzip', 'Content-Disposition': `attachment; filename="helpbites-export-${exportedAt.toISOString().slice(0, 10)}.jsonl.gz"` })
   } finally {
     await unlink(file).catch(() => {})
@@ -442,18 +444,18 @@ export async function runWorkspaceExport(workspaceId: string, requestedBy: strin
   // Older files' links have run out, and a copy of the data should not linger.
   await removeObjectsUnder(`exports/${workspaceId}/`, new Date(Date.now() - EXPORT_LINK_SECONDS * 1000)).catch(error => console.warn('[export] old exports not removed:', (error as Error).message))
   // The file is there either way (the settings link it); a failed mail is not worth exporting again.
-  await mailExportLink(workspace, requestedBy, key).catch(error => console.error('[export] link not mailed:', (error as Error).message))
+  await mailExportLink(workspace, requestedBy, key, !!options.secrets).catch(error => console.error('[export] link not mailed:', (error as Error).message))
 }
 
-async function mailExportLink(workspace: ParseObject, userId: string, key: string): Promise<void> {
+async function mailExportLink(workspace: ParseObject, userId: string, key: string, secrets = false): Promise<void> {
   const Parse = useParse()
   const user = userId ? await new Parse.Query(Parse.User).get(userId, MASTER).catch(() => null) : null
   const email = String(user?.get('email') || '')
   if (!email || !isMailerConfigured()) return
   const url = exportDownloadUrl(key, EXPORT_LINK_SECONDS)
   const name = String(workspace.get('name') || 'your workspace')
-  const html = `<p>The export of <strong>${escapeHtml(name)}</strong> is ready: everything in it, as one gzipped JSON Lines file.</p><p><a href="${escapeHtml(url)}">Download the export</a></p><p>The link works for 7 days. The file holds your customers' data, so keep it somewhere safe.</p>`
-  const text = `The export of ${name} is ready: everything in it, as one gzipped JSON Lines file.\n\nDownload it (the link works for 7 days):\n\n${url}\n\nThe file holds your customers' data, so keep it somewhere safe.`
+  const html = `<p>The export of <strong>${escapeHtml(name)}</strong> is ready: everything in it, as one gzipped JSON Lines file.</p><p><a href="${escapeHtml(url)}">Download the export</a></p><p>The link works for 7 days. The file holds your customers' data${secrets ? ', and the credentials and API keys of your connections in plain text' : ''}, so keep it somewhere safe.</p>`
+  const text = `The export of ${name} is ready: everything in it, as one gzipped JSON Lines file.\n\nDownload it (the link works for 7 days):\n\n${url}\n\nThe file holds your customers' data${secrets ? ', and the credentials and API keys of your connections in plain text' : ''}, so keep it somewhere safe.`
   const [result] = await deliverEmails([{
     project: null,
     to: { email, name: String(user?.get('name') || '') },

@@ -521,11 +521,22 @@
     "anyPriority": "Any priority",
     "noPriority": "No priority",
     "view": "View",
-    "views": { "kanban": "Board", "list": "List" },
+    "views": {
+      "kanban": "Board",
+      "list": "List"
+    },
     "groupBy": "Group by",
-    "groupByOptions": { "status": "Group by status", "epic": "Group by epic", "release": "Group by release" },
+    "groupByOptions": {
+      "status": "Group by status",
+      "epic": "Group by epic",
+      "release": "Group by release"
+    },
     "kind": "Type",
-    "kinds": { "task": "Card", "epic": "Epic", "release": "Release" },
+    "kinds": {
+      "task": "Card",
+      "epic": "Epic",
+      "release": "Release"
+    },
     "anyKind": "Any type",
     "epic": "Epic",
     "release": "Release",
@@ -5526,9 +5537,6 @@
     "workspace": {
       "nameLabel": "Workspace name",
       "nameHint": "Shown in the top-left menu and in invitations",
-      "exportData": "Export data",
-      "exportTitle": "Everything in this workspace, as one file",
-      "exportDescription": "Conversations, contacts, knowledge, emails and settings as gzipped JSON Lines, without secrets.",
       "lastExport": "Last export {time}",
       "download": "Download",
       "exportStarted": "We'll email you a link",
@@ -5635,11 +5643,11 @@
       "notInPlan": "{feature} is not part of the {plan} plan. Anything already here is kept, and upgrading turns it on."
     },
     "transfer": {
-      "title": "Move to another HelpBites",
-      "projectTitle": "Move this project",
-      "downloadWorkspace": "Download everything, ready to import elsewhere",
-      "downloadProject": "Download this project, ready to import elsewhere",
-      "downloadHint": "Everything you built and everyone who wrote in, as one file another HelpBites can import. Choose below how uploaded files and credentials travel.",
+      "title": "Export and import",
+      "projectTitle": "Export this project",
+      "downloadWorkspace": "Export everything in this workspace",
+      "downloadProject": "Export this project",
+      "downloadHint": "Everything the workspace holds, as one file another HelpBites can import, including what an import cannot use (team list, usage, domains). Download it now, or have a link emailed for a big workspace. Choose below how uploaded files and credentials travel.",
       "filesLabel": "Uploaded files",
       "filesHint": "Attachments, logos, brand and page files",
       "filesPullHint": "Attachments, logos, brand and page files. The files themselves need file storage here.",
@@ -5692,7 +5700,9 @@
       "everything": "Everything in the workspace",
       "willCreate": "It is created here as new projects, and keeps running over there until you switch your sites over.",
       "back": "Back",
-      "startImport": "Start import"
+      "startImport": "Start import",
+      "emailLink": "Email me a link",
+      "downloadProjectHint": "This project and everything that belongs to it, as one file another HelpBites can import. Choose below how uploaded files and credentials travel."
     }
   },
   "errors": {

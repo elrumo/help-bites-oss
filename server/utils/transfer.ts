@@ -9,7 +9,7 @@ import { createGunzip, createGzip } from 'node:zlib'
 import { createError } from 'h3'
 import { ATTACHMENT_MIME_TYPES } from '#shared/support'
 import { ITEM_FILE_TYPES } from '#shared/itemAttachments'
-import { CLASS_FEATURES, CLASS_GAUGES, DROP_FIELDS, EXPORT_FORMAT, EXPORT_VERSIONS, FILE_CLASS, FILE_KEY_FIELDS, FILE_MAX_BYTES, ID_PATHS, IMPORT_ORDER, NOT_PORTABLE, SEALED_KEY, WORKSPACE_SETTINGS_CLASS, readTransferFiles, rewriteFileUrls, type TransferFiles, type TransferOptions, type TransferScope, type TransferSummary } from '#shared/transfer'
+import { CREDENTIAL_CLASSES, CLASS_FEATURES, CLASS_GAUGES, DROP_FIELDS, EXPORT_FORMAT, EXPORT_VERSIONS, FILE_CLASS, FILE_KEY_FIELDS, FILE_MAX_BYTES, ID_PATHS, IMPORT_ORDER, NOT_PORTABLE, SEALED_KEY, WORKSPACE_SETTINGS_CLASS, readTransferFiles, rewriteFileUrls, type TransferFiles, type TransferOptions, type TransferScope, type TransferSummary } from '#shared/transfer'
 import { WORKSPACE_DATA, pagedRows } from './workspaceData'
 
 // Moving a workspace or a project between instances. The source writes the
@@ -149,6 +149,7 @@ export async function importLines(lines: AsyncIterable<string>, workspace: Parse
   const storedFiles: { key: string, bytes: number }[] = []
   const runKey = `imports/${workspaceId}/${randomBytes(6).toString('hex')}`
   let fileBase = ''
+  let withSecrets = false
   let incoming: { key: string, headers: unknown, parts: Buffer[], bytes: number } | null = null
   const settingsSet: string[] = []
   const skip = (className: string, count: number, reason: string) => {
@@ -304,6 +305,7 @@ export async function importLines(lines: AsyncIterable<string>, workspace: Parse
         if (row.format !== EXPORT_FORMAT || !EXPORT_VERSIONS.includes(row.version)) throw createError({ statusCode: 400, statusMessage: 'This is not a HelpBites export, or it is from a newer version than this instance understands' })
         header = true
         fileBase = typeof row.fileBase === 'string' ? row.fileBase : ''
+        withSecrets = row.secrets === true
         const files: TransferFiles = readTransferFiles(row.files)
         if (files === 'binary' && (!s3Configured() || !publicBase())) throw createError({ statusCode: 503, statusMessage: 'This file carries its uploaded files: importing it needs file storage here (the server\'s S3_* settings, with S3_PUBLIC_URL)' })
         continue
@@ -316,6 +318,8 @@ export async function importLines(lines: AsyncIterable<string>, workspace: Parse
         await (className === FILE_CLASS ? takeFile(row.data) : takeSettings(row.data))
         continue
       }
+      // A connection written without its credentials would come in unable to connect: leave it out.
+      if (CREDENTIAL_CLASSES.includes(className) && !withSecrets) { skip(className, 1, 'exported without credentials; connect it again'); continue }
       if (!order.includes(className)) {
         if (WORKSPACE_DATA[className]) skip(className, 1, NOT_PORTABLE[className] || 'not part of an import')
         continue
@@ -459,7 +463,7 @@ async function openPull(source: TransferSource, projectId: string, options: Tran
   const base = sourceBase(source.url)
   const auth = await signIn(base, source)
   try {
-    const query = new URLSearchParams({ ...(projectId ? { project: projectId } : {}), files: options.files, ...(options.secrets ? { secrets: '1' } : {}) })
+    const query = new URLSearchParams({ ...(projectId ? { project: projectId } : {}), include: 'importable', files: options.files, ...(options.secrets ? { secrets: '1' } : {}) })
     const response = await sourceGet(base, `/v1/admin/transfers/export?${query}`, auth.token, source.workspaceId, PULL_MS)
     if (!response.ok || !response.body) throw sourceFailure(response.status, 'export')
     return { stream: Readable.fromWeb(response.body as never), close: auth.signOut }

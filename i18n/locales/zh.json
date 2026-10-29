@@ -5230,9 +5230,6 @@
     "workspace": {
       "nameLabel": "工作区名称",
       "nameHint": "显示在左上角菜单和邀请中",
-      "exportData": "导出数据",
-      "exportTitle": "此工作区的全部内容，合并为一个文件",
-      "exportDescription": "对话、联系人、知识库、邮件和设置，以 gzip 压缩的 JSON Lines 格式导出，不含敏感信息。",
       "lastExport": "上次导出：{time}",
       "download": "下载",
       "exportStarted": "我们会通过邮件发送下载链接",
@@ -5339,11 +5336,11 @@
       "notInPlan": "{feature}不包含在{plan}方案中。已有的内容会保留，升级后即可使用。"
     },
     "transfer": {
-      "title": "迁移到另一个 HelpBites",
-      "projectTitle": "迁移此项目",
-      "downloadWorkspace": "下载全部内容，可导入到其他实例",
-      "downloadProject": "下载此项目，可导入到其他实例",
-      "downloadHint": "你创建的一切和所有联系过你的人，合并为一个文件，另一个 HelpBites 可以导入。请在下方选择已上传文件和凭据如何迁移。",
+      "title": "导出与导入",
+      "projectTitle": "导出此项目",
+      "downloadWorkspace": "导出此工作区的全部内容",
+      "downloadProject": "导出此项目",
+      "downloadHint": "工作区拥有的一切，合并为一个文件，另一个 HelpBites 可以导入，包括导入用不到的内容（团队列表、用量、域名）。可以立即下载，较大时也可以让链接发到邮箱。请在下方选择已上传文件和凭据如何迁移。",
       "filesLabel": "已上传的文件",
       "filesHint": "附件、徽标、品牌和页面文件",
       "filesPullHint": "附件、徽标、品牌和页面文件。复制文件本身需要此处有文件存储。",
@@ -5396,7 +5393,9 @@
       "everything": "工作区中的全部内容",
       "willCreate": "它会在这里创建为新项目，并在你切换网站之前继续在对方运行。",
       "back": "返回",
-      "startImport": "开始导入"
+      "startImport": "开始导入",
+      "emailLink": "把链接发到我的邮箱",
+      "downloadProjectHint": "此项目及其所有内容，合并为一个文件，另一个 HelpBites 可以导入。请在下方选择已上传文件和凭据如何迁移。"
     }
   },
   "errors": {

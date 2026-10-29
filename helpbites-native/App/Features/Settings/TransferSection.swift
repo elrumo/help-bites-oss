@@ -1,16 +1,19 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Moving data to another HelpBites (web: components/settings/Transfer.vue). Download a workspace, or with
-/// `projectId` one project, as a file another instance can import; import a file; or pull straight from another
-/// instance, which runs in the background on the server. Docs: docs/TRANSFER.md.
+/// Export and import (web: components/settings/Transfer.vue). Download a workspace, or with `projectId` one project,
+/// as a file another instance can import (or, for a workspace, have a link emailed once the server has made it in the
+/// background); import a file; or pull straight from another instance. Docs: docs/TRANSFER.md.
 struct TransferSection: View {
   var projectId: String? = nil
   @Environment(SessionStore.self) private var session
+  @Environment(\.openURL) private var openURL
   @State private var transfers: [TransferRecord] = []
   @State private var downloading = false
   @State private var filesAsFiles = false
   @State private var withSecrets = false
+  @State private var emailing = false
+  @State private var lastExport: LastExport?
   @State private var exported: URL?
   @State private var uploading = false
   @State private var picking = false
@@ -18,27 +21,41 @@ struct TransferSection: View {
   @State private var error = ""
   @State private var notice = ""
 
+  private struct LastExport: Decodable, Sendable { let at: String; let url: String }
+
   private var busy: Bool { transfers.contains { $0.status == "queued" || $0.status == "running" } }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
-      SectionLabel(projectId == nil ? "Move to another HelpBites" : "Move this project")
+      SectionLabel(projectId == nil ? "Export and import" : "Export this project")
       Card {
         CardRow(divider: projectId == nil) {
           HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-              Text(projectId == nil ? String(localized: "Download everything, ready to import elsewhere") : String(localized: "Download this project, ready to import elsewhere")).font(.lnRow).foregroundStyle(Theme.textHighlighted)
-              Text("Everything you built and everyone who wrote in, as one file another HelpBites can import. Choose how uploaded files and credentials travel.").font(.lnCaption).foregroundStyle(Theme.textMuted)
+              Text(projectId == nil ? String(localized: "Export everything in this workspace") : String(localized: "Export this project")).font(.lnRow).foregroundStyle(Theme.textHighlighted)
+              Text(projectId == nil ? "Everything the workspace holds, as one file another HelpBites can import, including what an import cannot use (team list, usage, domains). Download it now, or have a link emailed for a big workspace. Choose how uploaded files and credentials travel." : "This project and everything that belongs to it, as one file another HelpBites can import. Choose how uploaded files and credentials travel.").font(.lnCaption).foregroundStyle(Theme.textMuted)
               Toggle("Include the uploaded files themselves (larger file)", isOn: $filesAsFiles).font(.lnCaption)
               Toggle("Include credentials and connections", isOn: $withSecrets).font(.lnCaption)
               if withSecrets { Text("Stripe, contact databases, webhook secrets, AI keys and project secrets, in plain text in the file. Only for a move you trust.").font(.lnCaption).foregroundStyle(Theme.warning) }
+              if projectId == nil, let lastExport {
+                HStack(spacing: 4) {
+                  Text("Last export \(DateText.day(lastExport.at)) ·").font(.lnCaption).foregroundStyle(Theme.textMuted)
+                  Button("Download") { if let url = URL(string: lastExport.url) { openURL(url) } }.buttonStyle(.plain).font(.lnCaption).foregroundStyle(Theme.accentText)
+                }
+              }
             }
             Spacer(minLength: 8)
-            if let exported {
-              ShareLink(item: exported) { Label("Save", systemImage: "square.and.arrow.up") }.buttonStyle(.lnSecondaryCompact)
-            } else {
-              Button { Task { await download() } } label: { if downloading { ProgressView() } else { Label("Download", systemImage: "square.and.arrow.down") } }
-                .buttonStyle(.lnSecondaryCompact).disabled(downloading)
+            VStack(spacing: 8) {
+              if let exported {
+                ShareLink(item: exported) { Label("Save", systemImage: "square.and.arrow.up") }.buttonStyle(.lnSecondaryCompact)
+              } else {
+                Button { Task { await download() } } label: { if downloading { ProgressView() } else { Label("Download", systemImage: "square.and.arrow.down") } }
+                  .buttonStyle(.lnSecondaryCompact).disabled(downloading)
+              }
+              if projectId == nil {
+                Button { Task { await emailLink() } } label: { if emailing { ProgressView() } else { Label("Email me a link", systemImage: "envelope") } }
+                  .buttonStyle(.lnSecondaryCompact).disabled(emailing)
+              }
             }
           }
         }
@@ -65,7 +82,14 @@ struct TransferSection: View {
         ForEach(transfers) { record in TransferRow(record: record) }
       }
     }
-    .task(id: session.workspace?.id) { if projectId == nil { await load() } }
+    .task(id: session.workspace?.id) {
+      guard projectId == nil else { return }
+      await load()
+      lastExport = nil
+      struct Response: Decodable, Sendable { let lastExport: LastExport? }
+      // Only a convenience: the export email has the link too.
+      if let response: Response = try? await session.get("/v1/admin/workspace/export") { lastExport = response.lastExport }
+    }
     // Follow a running import until it ends.
     .task(id: busy) { while busy && !Task.isCancelled { try? await Task.sleep(for: .seconds(3)); await load() } }
     .fileImporter(isPresented: $picking, allowedContentTypes: [.data]) { result in Task { await upload(result) } }
@@ -86,6 +110,18 @@ struct TransferSection: View {
       let url = FileManager.default.temporaryDirectory.appending(path: "helpbites-\(projectId == nil ? "workspace" : "project").jsonl.gz")
       try data.write(to: url)
       exported = url
+    } catch { self.error = error.localizedDescription }
+  }
+
+  /// The same export, made in the background and mailed as a link (`POST /v1/admin/workspace/export`).
+  private func emailLink() async {
+    struct Input: Encodable, Sendable { let files: String; let secrets: Bool }
+    struct Output: Decodable, Sendable { let queued: Bool }
+    emailing = true; error = ""; notice = ""
+    defer { emailing = false }
+    do {
+      let _: Output = try await session.send("/v1/admin/workspace/export", body: Input(files: filesAsFiles ? "binary" : "urls", secrets: withSecrets))
+      notice = String(localized: "We'll email you a link. The export runs in the background; a big workspace takes a few minutes.")
     } catch { self.error = error.localizedDescription }
   }
 

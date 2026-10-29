@@ -56,7 +56,11 @@ includes your own AI provider.
 
 ## What stays behind
 
-| Left out | Why | What to do |
+A file made with **Download** or **Email me a link** carries these as well, so nothing the workspace held is missing
+from the archive; an import reads what it can use and lists the rest as left out. A connection that was exported
+without its credentials is left out of an import too, rather than coming in unable to connect.
+
+| Left out of an import | Why | What to do |
 | --- | --- | --- |
 | Passwords, and the hashes of API keys and sessions | They belong to an account or session on one instance | Make new admin API keys. People sign in again. |
 | GitHub and Telegram connections | The repos a project reads and the bot's webhook are registered per instance | Connect them again. |
@@ -74,11 +78,17 @@ summary says so.
 
 ## In the panel
 
-**Settings → Workspace → Move to another HelpBites**
+**Settings → Workspace → Export and import**
 
-- **Download** gives you one `.jsonl.gz` file for the whole workspace. In a project's **Settings → Data** it is that
-  project alone. Above it, choose whether uploaded files are links or included, and whether to include credentials.
-- **Import → From a file** takes a file from either of the above (or the workspace export that arrives by email).
+- **Download** gives you one `.jsonl.gz` file for the whole workspace, **everything it holds**: besides what an import
+  can use, the team list, usage counters and domains, so the file is also a complete archive. In a project's
+  **Settings → Data** it is that project alone. Above it, choose whether uploaded files are links or included, and
+  whether to include credentials.
+- **Email me a link** makes the same file in the background and mails you a link that works for 7 days (the last one
+  is also linked under the buttons). Use it for a workspace too big to download in one go. It needs file storage and
+  mail on the server, and takes the same two choices; a file with credentials is a link to plain-text keys in your
+  inbox, so tick it only when you mean it.
+- **Import → From a file** takes a file from either of the above.
 - **Import → From another HelpBites** asks for its address and either an admin API key or a username and password. It
   lists the workspaces and projects it can see; pick everything or one project, choose the same two options, and start. You can close the page: the
   import runs in the background and the list shows progress, then what came in and what was left out.
@@ -103,13 +113,17 @@ All `/v1/admin/transfers` calls take an operator session or an admin API key (`A
 workspace named by `X-Workspace` (or the key's own), and need the owner or admin role. A key limited to some projects is
 refused. They are in the OpenAPI reference under **Workspace**.
 
-Export a workspace, or one project, to a file:
+Export a workspace, or one project, to a file. It is everything the workspace holds; add `include=importable` for just
+what another HelpBites can use (what **From another HelpBites** asks for):
 
 ```bash
 curl -H "Authorization: Bearer ak_…" -o helpbites.jsonl.gz \
   "https://help.example.com/v1/admin/transfers/export"
 curl -H "Authorization: Bearer ak_…" -o project.jsonl.gz \
   "https://help.example.com/v1/admin/transfers/export?project=PROJECT_ID"
+# have it made in the background and mailed as a link (same two choices as a body)
+curl -X POST -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{ "files": "urls", "secrets": false }' "https://help.example.com/v1/admin/workspace/export"
 # the files themselves, and credentials and connections too
 curl -H "Authorization: Bearer ak_…" -o everything.jsonl.gz \
   "https://help.example.com/v1/admin/transfers/export?files=binary&secrets=1"

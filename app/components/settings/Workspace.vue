@@ -12,20 +12,6 @@
       <p v-else class="text-[13px] text-muted">{{ $t('workspaceSettings.adminOnly') }}</p>
     </form>
 
-    <div v-if="canExport" class="space-y-2">
-      <p class="section-label">{{ $t('workspaceSettings.workspace.exportData') }}</p>
-      <div class="flex items-center gap-3 rounded-xl border border-default px-4 py-3">
-        <div class="min-w-0 flex-1">
-          <p class="text-[13px] font-medium text-highlighted">{{ $t('workspaceSettings.workspace.exportTitle') }}</p>
-          <p class="text-xs text-muted">
-            {{ $t('workspaceSettings.workspace.exportDescription') }}
-            <template v-if="lastExport">{{ $t('workspaceSettings.workspace.lastExport', { time: timeAgo(lastExport.at) }) }} · <a :href="lastExport.url" class="text-primary hover:underline">{{ $t('workspaceSettings.workspace.download') }}</a></template>
-          </p>
-        </div>
-        <UButton :label="$t('workspaceSettings.workspace.exportData')" icon="i-lucide-download" color="neutral" variant="outline" size="sm" class="shrink-0" :loading="exporting" @click="exportData" />
-      </div>
-    </div>
-
     <SettingsTransfer v-if="canExport" />
 
     <div v-if="canDelete" class="space-y-2">
@@ -92,27 +78,6 @@ async function save() {
   }
 }
 
-// ---- export -------------------------------------------------------------------
-
-const lastExport = ref<{ at: string, url: string } | null>(null)
-const exporting = ref(false)
-
-async function exportData() {
-  exporting.value = true
-  try {
-    await api('/admin/workspace/export', { method: 'POST' })
-    toast.add({ title: t('workspaceSettings.workspace.exportStarted'), description: t('workspaceSettings.workspace.exportStartedDescription') })
-  } catch (e: any) {
-    toast.add({ title: e?.message || t('workspaceSettings.workspace.exportFailed'), color: 'error' })
-  } finally {
-    exporting.value = false
-  }
-}
-
-onMounted(async () => {
-  // Only a convenience: the email has the link too.
-  if (canExport.value) lastExport.value = (await api<{ lastExport: { at: string, url: string } | null }>('/admin/workspace/export').catch(() => null))?.lastExport || null
-})
 
 // ---- deletion -----------------------------------------------------------------
 

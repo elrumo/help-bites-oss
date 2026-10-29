@@ -22,7 +22,7 @@ export default defineNitroPlugin(() => {
   registerJobHandler('changelog.commits', payload => runChangelogCommits(payload), { maxAttempts: 3, leaseSeconds: 15 * 60 })
   registerJobHandler('knowledge.index', payload => runKnowledgeIndex({ modelId: String(payload.modelId || ''), documentId: String(payload.documentId || ''), all: payload.all === true }))
   // Both walk all of a workspace's data.
-  registerJobHandler('workspace.export', payload => runWorkspaceExport(String(payload.workspaceId || ''), String(payload.requestedBy || '')), { maxAttempts: 3, leaseSeconds: 30 * 60 })
+  registerJobHandler('workspace.export', payload => runWorkspaceExport(String(payload.workspaceId || ''), String(payload.requestedBy || ''), { files: payload.files === 'binary' ? 'binary' : 'urls', secrets: payload.secrets === true }), { maxAttempts: 3, leaseSeconds: 30 * 60 })
   // An import runs once: a failed one rolls itself back, and the person starts it again.
   registerJobHandler('workspace.transfer', payload => runTransfer(String(payload.transferId || '')), { maxAttempts: 1, leaseSeconds: 6 * 3600 })
   registerJobHandler('workspace.purge', payload => purgeWorkspace(String(payload.workspaceId || '')), { leaseSeconds: 30 * 60 })

@@ -440,6 +440,18 @@ describe('credentials in an export', () => {
     expect(made('WebhookEndpoint')[0]!.body.secret).toBe('whsec_1')
   })
 
+  test('a connection exported without its credentials is left out rather than imported unable to connect', async () => {
+    const summary = await importLines(file(
+      { ...header, version: 2 },
+      line('Project', { objectId: 'p1', name: 'Acme', publicKey: KEY_A, ...old }),
+      line('StripeAccount', { objectId: 's1', project: ptr('Project', 'p1'), projectId: 'p1', enabled: true }),
+      line('WebhookEndpoint', { objectId: 'w1', project: ptr('Project', 'p1'), url: 'https://hook' })
+    ), workspace)
+    expect(made('StripeAccount')).toEqual([])
+    expect(made('WebhookEndpoint')).toEqual([])
+    expect(summary.skipped.StripeAccount!.reason).toContain('credentials')
+  })
+
   test('an export with credentials opens what is sealed; one without leaves it out', async () => {
     process.env.HELPBITES_SECRET = 'x'.repeat(40)
     const { exportLine } = await import('../server/utils/workspaceData')

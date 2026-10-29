@@ -652,8 +652,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   ([shared/roles.ts](../shared/roles.ts))
 - **Invitations.** Invite by email, and accept at the link you receive.
 - **Workspaces.** Several per account, switchable from the sidebar.
-- **Workspace settings.** AI provider, data export (a download link), and
-  workspace deletion for owners.
+- **Workspace settings.** AI provider, export and import (one Export card: download now or have a link
+  emailed, with the same file and options either way), and workspace deletion for owners.
 - **Moving between instances.** Download a workspace, or one project, as a portable
   file; import a file; or pull straight from another HelpBites (self-hosted or
   cloud) with an API key or a login. Runs in the background, adds new projects,

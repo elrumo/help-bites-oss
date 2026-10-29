@@ -5240,9 +5240,6 @@
     "workspace": {
       "nameLabel": "Nom de l'espai de treball",
       "nameHint": "Es mostra al menú superior esquerre i a les invitacions",
-      "exportData": "Exporta les dades",
-      "exportTitle": "Tot el d'aquest espai de treball, en un sol fitxer",
-      "exportDescription": "Converses, contactes, coneixement, correus i configuració en JSON Lines comprimit amb gzip, sense secrets.",
       "lastExport": "Última exportació {time}",
       "download": "Descarrega",
       "exportStarted": "T'enviarem un enllaç per correu",
@@ -5349,11 +5346,11 @@
       "notInPlan": "{feature} no forma part del pla {plan}. Tot el que ja hi ha es conserva, i millorar el pla ho activa."
     },
     "transfer": {
-      "title": "Porta-ho a un altre HelpBites",
-      "projectTitle": "Porta aquest projecte",
-      "downloadWorkspace": "Descarrega-ho tot, a punt per importar en un altre lloc",
-      "downloadProject": "Descarrega aquest projecte, a punt per importar en un altre lloc",
-      "downloadHint": "Tot el que has creat i tothom qui t'ha escrit, en un sol fitxer que un altre HelpBites pot importar. Tria a sota com viatgen els fitxers pujats i les credencials.",
+      "title": "Exportar i importar",
+      "projectTitle": "Exportar aquest projecte",
+      "downloadWorkspace": "Exportar tot d'aquest espai de treball",
+      "downloadProject": "Exportar aquest projecte",
+      "downloadHint": "Tot el que conté l'espai de treball, en un sol fitxer que un altre HelpBites pot importar, inclòs el que una importació no fa servir (equip, ús, dominis). Descarrega'l ara o rep un enllaç per correu si és gran. Tria a sota com viatgen els fitxers pujats i les credencials.",
       "filesLabel": "Fitxers pujats",
       "filesHint": "Adjunts, logotips i fitxers de marca i de pàgines",
       "filesPullHint": "Adjunts, logotips i fitxers de marca i de pàgines. Copiar els fitxers requereix emmagatzematge de fitxers aquí.",
@@ -5406,7 +5403,9 @@
       "everything": "Tot l'espai de treball",
       "willCreate": "Es crea aquí com a projectes nous i continua funcionant allà fins que canviïs els teus llocs.",
       "back": "Enrere",
-      "startImport": "Inicia la importació"
+      "startImport": "Inicia la importació",
+      "emailLink": "Envia'm un enllaç",
+      "downloadProjectHint": "Aquest projecte i tot el que li pertany, en un sol fitxer que un altre HelpBites pot importar. Tria a sota com viatgen els fitxers pujats i les credencials."
     }
   },
   "errors": {

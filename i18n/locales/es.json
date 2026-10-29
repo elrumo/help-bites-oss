@@ -5287,9 +5287,6 @@
     "workspace": {
       "nameLabel": "Nombre del espacio de trabajo",
       "nameHint": "Se muestra en el menú superior izquierdo y en las invitaciones",
-      "exportData": "Exportar datos",
-      "exportTitle": "Todo lo de este espacio de trabajo, en un solo archivo",
-      "exportDescription": "Conversaciones, contactos, conocimiento, correos y ajustes en JSON Lines comprimido con gzip, sin secretos.",
       "lastExport": "Última exportación {time}",
       "download": "Descargar",
       "exportStarted": "Te enviaremos un enlace por correo",
@@ -5396,11 +5393,11 @@
       "notInPlan": "{feature} no está incluido en el plan {plan}. Todo lo que ya hay se conserva, y mejorar el plan lo activa."
     },
     "transfer": {
-      "title": "Llevar a otro HelpBites",
-      "projectTitle": "Llevar este proyecto",
-      "downloadWorkspace": "Descarga todo, listo para importar en otro sitio",
-      "downloadProject": "Descarga este proyecto, listo para importar en otro sitio",
-      "downloadHint": "Todo lo que has creado y todos los que te escribieron, en un solo archivo que otro HelpBites puede importar. Elige abajo cómo viajan los archivos subidos y las credenciales.",
+      "title": "Exportar e importar",
+      "projectTitle": "Exportar este proyecto",
+      "downloadWorkspace": "Exportar todo lo de este espacio de trabajo",
+      "downloadProject": "Exportar este proyecto",
+      "downloadHint": "Todo lo que contiene el espacio de trabajo, en un solo archivo que otro HelpBites puede importar, incluido lo que una importación no usa (equipo, uso, dominios). Descárgalo ahora o recibe un enlace por correo si es grande. Elige abajo cómo viajan los archivos subidos y las credenciales.",
       "filesLabel": "Archivos subidos",
       "filesHint": "Adjuntos, logotipos y archivos de marca y de páginas",
       "filesPullHint": "Adjuntos, logotipos y archivos de marca y de páginas. Copiar los archivos requiere almacenamiento de archivos aquí.",
@@ -5453,7 +5450,9 @@
       "everything": "Todo el espacio de trabajo",
       "willCreate": "Se crea aquí como proyectos nuevos y sigue funcionando allí hasta que cambies tus sitios.",
       "back": "Atrás",
-      "startImport": "Iniciar importación"
+      "startImport": "Iniciar importación",
+      "emailLink": "Enviarme un enlace",
+      "downloadProjectHint": "Este proyecto y todo lo que le pertenece, en un solo archivo que otro HelpBites puede importar. Elige abajo cómo viajan los archivos subidos y las credenciales."
     }
   },
   "errors": {

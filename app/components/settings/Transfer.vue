@@ -5,10 +5,16 @@
     <div class="flex items-center gap-3 rounded-xl border border-default px-4 py-3">
       <div class="min-w-0 flex-1">
         <p class="text-[13px] font-medium text-highlighted">{{ projectId ? $t('workspaceSettings.transfer.downloadProject') : $t('workspaceSettings.transfer.downloadWorkspace') }}</p>
-        <p class="text-xs text-muted">{{ $t('workspaceSettings.transfer.downloadHint') }}</p>
+        <p class="text-xs text-muted">{{ projectId ? $t('workspaceSettings.transfer.downloadProjectHint') : $t('workspaceSettings.transfer.downloadHint') }}</p>
       </div>
-      <UButton :label="$t('workspaceSettings.transfer.download')" icon="i-lucide-download" color="neutral" variant="outline" size="sm" class="shrink-0" :loading="downloading" @click="download" />
+      <div class="flex shrink-0 gap-2">
+        <UButton :label="$t('workspaceSettings.transfer.download')" icon="i-lucide-download" color="neutral" variant="outline" size="sm" :loading="downloading" @click="download" />
+        <UButton v-if="!projectId" :label="$t('workspaceSettings.transfer.emailLink')" icon="i-lucide-mail" color="neutral" variant="outline" size="sm" :loading="emailing" @click="emailLink" />
+      </div>
     </div>
+    <p v-if="lastExport && !projectId" class="px-1 text-xs text-muted">
+      {{ $t('workspaceSettings.workspace.lastExport', { time: timeAgo(lastExport.at) }) }} · <a :href="lastExport.url" class="text-primary hover:underline">{{ $t('workspaceSettings.workspace.download') }}</a>
+    </p>
 
     <div class="space-y-3 rounded-xl border border-default px-4 py-3">
       <UFormField :label="$t('workspaceSettings.transfer.filesLabel')" :hint="$t('workspaceSettings.transfer.filesHint')">
@@ -23,7 +29,7 @@
           <p class="text-[13px] font-medium text-highlighted">{{ $t('workspaceSettings.transfer.importTitle') }}</p>
           <p class="text-xs text-muted">{{ $t('workspaceSettings.transfer.importHint') }}</p>
         </div>
-        <div class="flex shrink-0 gap-2">
+        <div class="flex flex-col items-end shrink-0 gap-2">
           <UButton :label="$t('workspaceSettings.transfer.fromFile')" icon="i-lucide-upload" color="neutral" variant="outline" size="sm" :loading="uploading" :disabled="busy" @click="fileInput?.click()" />
           <UButton :label="$t('workspaceSettings.transfer.fromInstance')" icon="i-lucide-cloud-download" color="neutral" variant="outline" size="sm" :disabled="busy" @click="openConnect" />
         </div>
@@ -141,6 +147,23 @@ async function download() {
   }
 }
 
+// ---- email me a link (the same export, made in the background for a workspace too big to stream) ----
+
+const emailing = ref(false)
+const lastExport = ref<{ at: string, url: string } | null>(null)
+
+async function emailLink() {
+  emailing.value = true
+  try {
+    await api('/admin/workspace/export', { method: 'POST', body: { files: files.value, secrets: secrets.value } })
+    toast.add({ title: t('workspaceSettings.workspace.exportStarted'), description: t('workspaceSettings.workspace.exportStartedDescription') })
+  } catch (e: any) {
+    toast.add({ title: e?.message || t('workspaceSettings.workspace.exportFailed'), color: 'error' })
+  } finally {
+    emailing.value = false
+  }
+}
+
 // ---- recent imports -------------------------------------------------------------
 
 const transfers = ref<Transfer[]>([])
@@ -155,7 +178,12 @@ watch(busy, (on) => {
   clearInterval(timer)
   if (on) timer = setInterval(load, 3000)
 })
-onMounted(() => { if (!props.projectId) load() })
+onMounted(async () => {
+  if (props.projectId) return
+  load()
+  // Only a convenience: the email has the link too.
+  lastExport.value = (await api<{ lastExport: { at: string, url: string } | null }>('/admin/workspace/export').catch(() => null))?.lastExport || null
+})
 onBeforeUnmount(() => clearInterval(timer))
 
 // ---- from a file ----------------------------------------------------------------
