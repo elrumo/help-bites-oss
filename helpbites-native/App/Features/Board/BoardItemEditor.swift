@@ -22,6 +22,9 @@ struct BoardItemEditor: View {
   @State private var newPosts: [FeedbackPost] = []
   @State private var saving = false
   @State private var justSaved = false
+  /// Images pasted into the description that are still uploading, and whether one has just been added to the list further down.
+  @State private var pasting = 0
+  @State private var pasted = false
   @State private var writingTitle = false
   /// Which title request counts: a newer one makes an older answer stale.
   @State private var titleRun = 0
@@ -97,7 +100,7 @@ struct BoardItemEditor: View {
         ToolbarItem(placement: .confirmationAction) {
           Button(justSaved ? "Saved" : itemId == nil ? "Create" : "Save") { Task { await save() } }
             .keyboardShortcut(.return, modifiers: .command)
-            .disabled((draft.title.trimmed.isEmpty && (itemId != nil || draft.description.trimmed.isEmpty)) || saving || store.config == nil)
+            .disabled((draft.title.trimmed.isEmpty && (itemId != nil || draft.description.trimmed.isEmpty)) || saving || pasting > 0 || store.config == nil)
         }
       }
       .feedbackErrorAlert($error)
@@ -158,7 +161,12 @@ struct BoardItemEditor: View {
         .overlay(alignment: .trailing) { titleAccessory }
         .onChange(of: draft.title) { _, value in if value.count > BoardTitle.maxLength { draft.title = String(value.prefix(BoardTitle.maxLength)) } }
     }
-    LabeledField(label: "Description", hint: "Markdown. Internal: the roadmap never shows it.") { LinearTextEditor(text: $draft.description, minHeight: 120) }
+    LabeledField(label: "Description", hint: "Markdown. Internal: the roadmap never shows it.") {
+      VStack(alignment: .leading, spacing: 6) {
+        LinearTextEditor(text: $draft.description, minHeight: 120, onPasteImage: { data in Task { await attachPasted(data) } })
+        pasteStatus
+      }
+    }
 
     if sizeClass == .regular {
       HStack(alignment: .top, spacing: 12) { pickers(config) }
@@ -172,6 +180,42 @@ struct BoardItemEditor: View {
     labelPicker(config)
     AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId)
     roadmap(config)
+  }
+
+  /// Under the description: a pasted image uploading, then a line saying where it went (the list is further down the form).
+  @ViewBuilder private var pasteStatus: some View {
+    if pasting > 0 {
+      HStack(spacing: 6) {
+        ProgressView().controlSize(.small)
+        Text("Attaching the image…")
+      }
+      .font(.lnCaption).foregroundStyle(Theme.textMuted)
+    } else if pasted {
+      Label("Attached. See the images and files below.", systemImage: "paperclip").font(.lnCaption).foregroundStyle(Theme.textMuted)
+    }
+  }
+
+  /// An image pasted into the description is uploaded and attached to the item, as a picked photo is: it is saved with the item,
+  /// and the text stays as it was.
+  private func attachPasted(_ data: Data) async {
+    guard draft.attachments.count + pasting < ItemAttachment.maxCount else {
+      error = String(localized: "An item holds up to \(ItemAttachment.maxCount) images and files.")
+      return
+    }
+    pasting += 1
+    let file: ItemAttachment
+    do {
+      file = try await ItemAttachment.upload(data, filename: "Pasted image.png", session: store.session, projectId: store.projectId)
+    } catch {
+      pasting -= 1
+      self.error = error.localizedDescription
+      return
+    }
+    pasting -= 1
+    draft.attachments.append(file)
+    pasted = true
+    try? await Task.sleep(for: .seconds(4))
+    pasted = false
   }
 
   /// While the AI writes the title, a spinner; otherwise the button that writes it from the description.

@@ -17732,6 +17732,40 @@
         }
       }
     },
+    "An item holds up to %lld images and files." : {
+      "localizations" : {
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un element pot tenir fins a %lld imatges i fitxers."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un elemento puede tener hasta %lld imágenes y archivos."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1つのアイテムに添付できる画像とファイルは最大%lld件です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "항목 하나에는 이미지와 파일을 최대 %lld개까지 첨부할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每个事项最多可附加 %lld 个图片和文件。"
+          }
+        }
+      }
+    },
     "an unknown address" : {
       "localizations" : {
         "ca" : {
@@ -21039,6 +21073,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "附加图片"
+          }
+        }
+      }
+    },
+    "Attached. See the images and files below." : {
+      "localizations" : {
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjuntada. Consulta les imatges i els fitxers a sota."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjuntada. Consulta las imágenes y los archivos más abajo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添付しました。画像とファイルは下に表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "첨부했습니다. 이미지와 파일은 아래에서 확인하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已附加。请在下方查看图片和文件。"
+          }
+        }
+      }
+    },
+    "Attaching the image…" : {
+      "localizations" : {
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjuntant la imatge…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjuntando la imagen…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像を添付しています…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이미지 첨부 중…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在附加图片…"
           }
         }
       }

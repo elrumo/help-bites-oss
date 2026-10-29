@@ -17,6 +17,18 @@ struct ItemAttachment: Codable, Equatable, Sendable, Hashable {
   static let maxBytes = 25 * 1024 * 1024
   /// The extensions the server accepts besides images (ITEM_FILE_TYPES).
   static let fileExtensions = ["pdf", "txt", "md", "csv", "log", "json", "zip", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "mp4", "mov"]
+
+  /// Uploads one file to `POST /v1/feedback/attachments` for the caller to add to its list. A file over the limit is not sent.
+  /// Whatever fails throws a line fit to show, with the file's name in it.
+  static func upload(_ data: Data, filename: String, session: SessionStore, projectId: String) async throws -> ItemAttachment {
+    guard data.count <= maxBytes else { throw APIError.server(String(localized: "\(filename) is larger than 25 MB.")) }
+    let mime = UTType(filenameExtension: (filename as NSString).pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+    do {
+      return try await session.upload("/v1/feedback/attachments?project=\(projectId)", file: data, filename: filename, mimeType: mime)
+    } catch {
+      throw APIError.server("\(filename): \(error.localizedDescription)")
+    }
+  }
 }
 
 /// Images and files on a post or item (AttachmentsField.vue): add from the photo library or Files, tap to open, remove.
@@ -99,16 +111,14 @@ struct AttachmentsSection: View {
 
   private func upload(_ data: Data, filename: String) async {
     guard attachments.count < ItemAttachment.maxCount else { return }
-    guard data.count <= ItemAttachment.maxBytes else { error = String(localized: "\(filename) is larger than 25 MB."); return }
     uploading += 1
     defer { uploading -= 1 }
     error = ""
-    let mime = UTType(filenameExtension: (filename as NSString).pathExtension)?.preferredMIMEType ?? "application/octet-stream"
     do {
-      let file: ItemAttachment = try await session.upload("/v1/feedback/attachments?project=\(projectId)", file: data, filename: filename, mimeType: mime)
+      let file = try await ItemAttachment.upload(data, filename: filename, session: session, projectId: projectId)
       attachments.append(file)
     } catch {
-      self.error = "\(filename): \(error.localizedDescription)"
+      self.error = error.localizedDescription
     }
   }
 }

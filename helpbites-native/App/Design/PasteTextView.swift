@@ -44,6 +44,12 @@ struct PasteTextView: UIViewRepresentable {
 final class PasteUITextView: UITextView {
   var onPasteImage: ((Data) -> Void)?
 
+  // A plain text view offers Paste for text only, so with just an image on the clipboard it has to be told to.
+  override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+    if action == #selector(paste(_:)), onPasteImage != nil, UIPasteboard.general.hasImages { return true }
+    return super.canPerformAction(action, withSender: sender)
+  }
+
   override func paste(_ sender: Any?) {
     if let onPasteImage, UIPasteboard.general.hasImages, let png = UIPasteboard.general.image?.pngData() {
       onPasteImage(png)
