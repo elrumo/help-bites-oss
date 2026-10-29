@@ -5,6 +5,10 @@ import UniformTypeIdentifiers
 /// A project's name, branding, chat widget, notifications and sidebar, its
 /// collaborators and GitHub repos (web: projects/[id]/settings.vue). The email
 /// sender is on Email; keys, snippets and webhooks are on Install & API.
+///
+/// Laid out like Apple's Settings: a first page of groups (`ProjectSettingsHub`), each page opening its own
+/// screen, and a search that jumps to a single setting. The form lives here, not in the pages, so what is
+/// typed on one page is saved together with the rest from any of them.
 struct ProjectSettingsScreen: View {
   let projectId: String
   @Environment(Workspace.self) private var workspace
@@ -20,6 +24,7 @@ struct ProjectSettingsScreen: View {
   @State private var saveError = ""
   @State private var uploading: SettingsImage?
   @State private var people: [Agent] = []
+  @State private var query = ""
 
   /// Linear's indigo, then the colours projects without one are given (settings.vue `swatches`).
   private static let swatches = ["#5e6ad2", "#0f766e", "#0369a1", "#0e7490", "#4d7c0f", "#b45309", "#c2410c", "#be123c", "#7c3aed"]
@@ -32,24 +37,12 @@ struct ProjectSettingsScreen: View {
     ScrollView {
       Group {
         if let project {
-          VStack(alignment: .leading, spacing: 40) {
-            general
-            branding(project)
-            companyCard
-            widget
-            hubCard(project)
-            section("Custom domains", "Serve your public pages on your own domain, such as feedback.example.com.") { ProjectDomainsSection(projectId: projectId) }
-            notifications
-            sidebar
-            collaborators
-            section("GitHub repos", "The code behind \(nameOrThis). AI error notes and legal documents read these; HelpBites never writes to them.") {
-              ProjectReposSection(projectId: projectId)
-            }
-            if session.canManage {
-              section("Data", "Take this project to another HelpBites.") { TransferSection(projectId: projectId) }
-            }
-            devLink
-          }
+          ProjectSettingsHub(
+            projectId: projectId, name: form.name.isEmpty ? project.name : form.name, siteUrl: form.siteUrl,
+            accent: form.accent, iconUrl: form.iconUrl, query: query, canManage: session.canManage,
+            openKeys: { workspace.go(.project(projectId, .dev)) },
+            destination: { page, focus in settingsPage(page, focus: focus) }
+          )
         } else if !loadError.isEmpty {
           ErrorText(message: loadError)
         } else {
@@ -58,39 +51,84 @@ struct ProjectSettingsScreen: View {
       }
       .frame(maxWidth: 680, alignment: .leading)
       .padding(.horizontal, 20)
-      .padding(.top, 28)
+      .padding(.top, 20)
       .padding(.bottom, 90)
       .frame(maxWidth: .infinity)
     }
     .scrollDismissesKeyboard(.interactively)
     .projectScreen(projectId, "Settings")
+    .searchable(text: $query, prompt: "Search settings")
     .safeAreaInset(edge: .bottom) { if dirty || !saveError.isEmpty { saveBar } }
-    .toolbar {
-      ToolbarItem(placement: .primaryAction) {
-        // ⌘S, as on the web.
-        Button { Task { await save() } } label: { Label("Save changes", systemImage: "checkmark") }
-          .keyboardShortcut("s", modifiers: .command)
-          .disabled(!dirty || saving || !validAccent)
+    .toolbar { saveToolbar }
+    .task { await load() }
+  }
+
+  /// ⌘S, as on the web; on every page, since the form is saved whole.
+  @ToolbarContentBuilder private var saveToolbar: some ToolbarContent {
+    ToolbarItem(placement: .primaryAction) {
+      Button { Task { await save() } } label: { Label("Save changes", systemImage: "checkmark") }
+        .keyboardShortcut("s", modifiers: .command)
+        .disabled(!dirty || saving || !validAccent)
+    }
+  }
+
+  // MARK: Pages
+
+  /// One page of the settings, pushed from the hub. A search result passes the setting to scroll to.
+  private func settingsPage(_ page: ProjectSettingsPage, focus: String?) -> some View {
+    ScrollViewReader { proxy in
+      ScrollView {
+        VStack(alignment: .leading, spacing: 20) { pageContent(page) }
+          .frame(maxWidth: 680, alignment: .leading)
+          .padding(.horizontal, 20)
+          .padding(.top, 20)
+          .padding(.bottom, 90)
+          .frame(maxWidth: .infinity)
+      }
+      .scrollDismissesKeyboard(.interactively)
+      .onAppear {
+        if let focus { withAnimation { proxy.scrollTo(focus, anchor: .top) } }
       }
     }
-    .task { await load() }
+    .panelScreen(page.title)
+    .safeAreaInset(edge: .bottom) { if dirty || !saveError.isEmpty { saveBar } }
+    .toolbar { saveToolbar }
+  }
+
+  @ViewBuilder private func pageContent(_ page: ProjectSettingsPage) -> some View {
+    if let project {
+      switch page {
+      case .general: general
+      case .branding: branding(project)
+      case .company: companyCard
+      case .sidebar: sidebar
+      case .widget: widget
+      case .notifications: notifications
+      case .collaborators: collaborators
+      case .hub: hubCard(project)
+      case .domains: domainsSection
+      case .repos: reposSection
+      case .data: dataSection
+      case .keys: EmptyView()   // opens Install & API from the hub instead
+      }
+    }
   }
 
   // MARK: Sections
 
   private var general: some View {
-    section("General", "What the project is called and where it lives.") {
-      LabeledField(label: "Name") { TextField("", text: $form.name).textFieldStyle(.linear) }
+    block("What the project is called and where it lives.") {
+      LabeledField(label: "Name") { TextField("", text: $form.name).textFieldStyle(.linear) }.id("general.name")
       pair {
-        LabeledField(label: "Site URL", hint: "Used in email links") { urlField("https://app.example.com", text: $form.siteUrl) }
+        LabeledField(label: "Site URL", hint: "Used in email links") { urlField("https://app.example.com", text: $form.siteUrl) }.id("general.site")
       } _: {
-        LabeledField(label: "Inbox path", hint: "Where the widget lives on that site") { urlField("/app", text: $form.inboxPath) }
+        LabeledField(label: "Inbox path", hint: "Where the widget lives on that site") { urlField("/app", text: $form.inboxPath) }.id("general.inbox")
       }
     }
   }
 
   private func branding(_ project: ProjectsAdminProject) -> some View {
-    section("Branding", "How the project looks in this panel and in the widget your users see.") {
+    block("How the project looks in this panel and in the widget your users see.") {
       row("Logo", "Shown in the sidebar, page headers and lists instead of the coloured initial. Square, at least 64×64.") {
         HStack(spacing: 12) {
           ProjectTile(id: projectId, name: form.name, accent: form.accent, icon: form.iconUrl, size: 48)
@@ -106,6 +144,7 @@ struct ProjectSettingsScreen: View {
           }
         }
       }
+      .id("branding.logo")
       divider
       row("Colour", "The sidebar tile, the widget's send button and your chat bubbles.") {
         VStack(alignment: .leading, spacing: 10) {
@@ -136,6 +175,7 @@ struct ProjectSettingsScreen: View {
           }
         }
       }
+      .id("branding.colour")
       divider
       row("Widget images", "The brand logo heads the chat; the assistant avatar sits beside AI replies.") {
         FlowLayout(spacing: 20) {
@@ -153,31 +193,33 @@ struct ProjectSettingsScreen: View {
           }
         }
       }
+      .id("branding.images")
       divider
-      widgetPreview
+      widgetPreview.id("branding.preview")
     }
   }
 
   private var companyCard: some View {
-    section("Company", "Who is behind the product, written once.") {
+    block("Who is behind the product, written once.") {
       cardBody { CompanyFields(company: $form.company) }
     }
   }
 
   private func hubCard(_ project: ProjectsAdminProject) -> some View {
-    section("Public hub", "One page that gathers what you publish, and a Home tab for the chat widget.") {
+    block("One page that gathers what you publish, and a Home tab for the chat widget.") {
       cardBody { HubFields(hub: $form.hub, publicKey: project.publicKey, projectName: form.name) }
     }
   }
 
   private var widget: some View {
-    section("Chat widget", "What users can do when they start a chat.") {
+    block("What users can do when they start a chat.") {
       cardBody {
         LabeledField(label: "Chat notice", hint: "Shown centered at the top of every new chat. Leave blank to hide.") {
           LinearTextEditor(text: $form.chatNotice, placeholder: String(localized: "A human will always read this chat, but an AI might answer your questions first."), minHeight: 64)
         }
-        toggle("Users can attach images", isOn: $form.allowAttachments)
-        toggle("Allow email-only users (no sign-in)", detail: "Apps without a backend can chat and post feedback with just an email address. After a few actions, the person must confirm the address with a code we email them.", isOn: $form.allowAnonymousUsers)
+        .id("widget.notice")
+        toggle("Users can attach images", isOn: $form.allowAttachments).id("widget.attachments")
+        toggle("Allow email-only users (no sign-in)", detail: "Apps without a backend can chat and post feedback with just an email address. After a few actions, the person must confirm the address with a code we email them.", isOn: $form.allowAnonymousUsers).id("widget.anonymous")
         VStack(alignment: .leading, spacing: 10) {
           Text("Guest access (no account, no email)").font(.lnCallout).foregroundStyle(Theme.text)
           Text("Let visitors use these without signing in or giving an address. Guests are rate limited, cannot upload files, get no reply emails, and their session expires after 30 days unused. Turn every box off to end all guest access.").font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
@@ -185,20 +227,23 @@ struct ProjectSettingsScreen: View {
           toggle("Feedback", detail: "Guests can post, vote and comment on the feedback board.", isOn: guest("feedback")).padding(.leading, 24)
           toggle("Comments", detail: "Guests can comment on blog posts and changelog entries.", isOn: guest("comments")).padding(.leading, 24)
         }
+        .id("widget.guests")
         VStack(alignment: .leading, spacing: 10) {
           toggle("Let users choose a request type when starting a chat", detail: "Only takes effect once the project has more than one ticket type.", isOn: $form.letUsersChooseType)
           toggle("Offer an “Other” option", detail: "Creates a plain support ticket.", isOn: $form.allowOtherType).disabled(!form.letUsersChooseType).padding(.leading, 24)
         }
+        .id("widget.types")
       }
     }
   }
 
   private var notifications: some View {
-    section("Notifications", "Who hears about new chats.") {
+    block("Who hears about new chats.") {
       cardBody {
         LabeledField(label: "Notify when a user writes", hint: "Comma separated, up to 5") {
           TextField("you@example.com", text: $form.notifyEmails).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
         }
+        .id("notifications.emails")
         VStack(alignment: .leading, spacing: 8) {
           Text("The sender and the rest of the project's email settings are in").font(.lnCaption).foregroundStyle(Theme.textMuted)
           Button { workspace.go(.project(projectId, .email)) } label: { Label("Email → Settings", systemImage: "envelope") }.buttonStyle(.lnSecondaryCompact)
@@ -210,7 +255,7 @@ struct ProjectSettingsScreen: View {
   /// Per group, a switch per section: on is shown. What is hidden leaves the sidebar, the project's
   /// section list and ⌘K; its pages still open from a link.
   private var sidebar: some View {
-    section("Sidebar", "Untick what this project does not use to take it out of the sidebar and the ⌘K list. Nothing is deleted, and its pages still open from a link. Overview and Settings are always there.") {
+    block("Untick what this project does not use to take it out of the sidebar and the ⌘K list. Nothing is deleted, and its pages still open from a link. Overview and Settings are always there.") {
       Card {
         ForEach(SectionGroup.allCases, id: \.self) { group in
           CardRow(divider: group != SectionGroup.allCases.last) {
@@ -227,7 +272,7 @@ struct ProjectSettingsScreen: View {
   }
 
   private var collaborators: some View {
-    section("Collaborators", "The people who answer \(nameOrThis)'s chats.") {
+    block("The people who answer \(nameOrThis)'s chats.") {
       cardBody {
         Text("Everyone on your team can open this project and every other one.").font(.lnMeta).foregroundStyle(Theme.textMuted)
         if !people.isEmpty {
@@ -250,11 +295,18 @@ struct ProjectSettingsScreen: View {
     }
   }
 
-  private var devLink: some View {
-    Button { workspace.go(.project(projectId, .dev)) } label: {
-      Label("Keys and webhooks", systemImage: "chevron.left.forwardslash.chevron.right").foregroundStyle(Theme.textMuted)
+  private var domainsSection: some View {
+    block("Serve your public pages on your own domain, such as feedback.example.com.") { ProjectDomainsSection(projectId: projectId) }
+  }
+
+  private var reposSection: some View {
+    block("The code behind \(nameOrThis). AI error notes and legal documents read these; HelpBites never writes to them.") {
+      ProjectReposSection(projectId: projectId)
     }
-    .buttonStyle(.lnGhost)
+  }
+
+  private var dataSection: some View {
+    block("Take this project to another HelpBites.") { TransferSection(projectId: projectId) }
   }
 
   private var saveBar: some View {
@@ -328,13 +380,10 @@ struct ProjectSettingsScreen: View {
 
   // MARK: Small pieces
 
-  /// A titled block: heading, one-line hint, then the content.
-  private func section<Content: View>(_ title: LocalizedStringKey, _ hint: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
+  /// A page's body: its one-line hint under the title bar (the page's own name is the bar's title), then the content.
+  private func block<Content: View>(_ hint: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
     VStack(alignment: .leading, spacing: 12) {
-      VStack(alignment: .leading, spacing: 2) {
-        Text(title).font(.lnHeading).foregroundStyle(Theme.textHighlighted)
-        Text(hint).font(.lnMeta).foregroundStyle(Theme.textMuted)
-      }
+      Text(hint).font(.lnMeta).foregroundStyle(Theme.textMuted)
       content()
     }
   }

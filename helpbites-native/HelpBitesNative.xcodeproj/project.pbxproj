@@ -15,6 +15,7 @@
 		052563DC69285E2D41E41F0E /* ProjectsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581A501E3BCB44922E5AA6CD /* ProjectsScreen.swift */; };
 		0573E44A3AB85F823F0EED97 /* WorkspaceScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFFA789E61CDCAB8BF82EC97 /* WorkspaceScreen.swift */; };
 		062F84C214CB0A188AFAE608 /* ContactsSources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7844D4D50218620BE7F5602F /* ContactsSources.swift */; };
+		06A3931E00964CE800048878 /* ProjectSettingsHub.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE827F280E59D923938CC73F /* ProjectSettingsHub.swift */; };
 		0960247ED18FE679ED2C84BF /* BoardTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E731CAEA02D33030BDE9425 /* BoardTitle.swift */; };
 		09DB59558E2644191FEABC66 /* ConnectionsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19383AF4F691F8638A3409D /* ConnectionsScreen.swift */; };
 		0A958293514ABADCFC8A8BDE /* ProjectsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 071722D237E4656E3D078FE0 /* ProjectsModels.swift */; };
@@ -69,6 +70,7 @@
 		3AF7B3A88A3ED906C8A2F103 /* ErrorReportsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 804FA1F2135D8B709BE9946E /* ErrorReportsSheet.swift */; };
 		3B2CB8C89BA91A04DE370CEB /* EmailActionSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 994B21B0BA5D44F33314C606 /* EmailActionSheets.swift */; };
 		3ED9AF6015CBDED4588870C5 /* EmailCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07E76A35B657E0E0E4633811 /* EmailCanvas.swift */; };
+		3EF92C6A923A050A7D348DBD /* ProjectSettingsIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36F657F78EE39EC94D2292EC /* ProjectSettingsIndex.swift */; };
 		3EFDB0482C05CCCAE7509439 /* ContactBillingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853CBA686AC8E4445BF2F19A /* ContactBillingSection.swift */; };
 		406C1CF8CDA83815C28222D2 /* EmailEditorStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30A1D376ADD0DEBA16A2A080 /* EmailEditorStore.swift */; };
 		41FA603DA180FBF0E5435EDA /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 6AA0CFA3977A39A816B15294 /* Localizable.xcstrings */; };
@@ -279,6 +281,7 @@
 		3355C6487BA31EDD842C76AB /* ChangelogSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogSheets.swift; sourceTree = "<group>"; };
 		3405C68EBDBA7CF773F10E27 /* ErrorsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorsModels.swift; sourceTree = "<group>"; };
 		355DCBC45459EAF7A8F528DA /* TabShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabShortcuts.swift; sourceTree = "<group>"; };
+		36F657F78EE39EC94D2292EC /* ProjectSettingsIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSettingsIndex.swift; sourceTree = "<group>"; };
 		38F8D2D6865E1FFC4CFDE887 /* BrandAssetSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandAssetSheet.swift; sourceTree = "<group>"; };
 		3A4E63426E9489CB63264A1C /* FeedbackPostEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackPostEditor.swift; sourceTree = "<group>"; };
 		3BA8D433FF9F026C9450913B /* LegalModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalModels.swift; sourceTree = "<group>"; };
@@ -408,6 +411,7 @@
 		CA3EE44191096B0DA543A539 /* RevenueConnect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueConnect.swift; sourceTree = "<group>"; };
 		CB34A5FCAC463A62FA1A2C45 /* PageFieldInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageFieldInput.swift; sourceTree = "<group>"; };
 		CB7820DCD292B8678533DFB0 /* LegalDocumentParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalDocumentParts.swift; sourceTree = "<group>"; };
+		CE827F280E59D923938CC73F /* ProjectSettingsHub.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSettingsHub.swift; sourceTree = "<group>"; };
 		CED2FB233E74DBD705178743 /* FeedbackChangelogLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackChangelogLinks.swift; sourceTree = "<group>"; };
 		CF171218B4A26DA6061C5C81 /* ManageErrorLinksSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManageErrorLinksSheet.swift; sourceTree = "<group>"; };
 		D0EF38DFF62B48EDF2A6CB43 /* KnowledgeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeModels.swift; sourceTree = "<group>"; };
@@ -615,6 +619,8 @@
 				AEF5A636AFCAC8B5CD45EA12 /* ProjectDomains.swift */,
 				B3A63BBAA58C1D20D201D7CD /* ProjectsCompanyHub.swift */,
 				54980534EE0B68CF0ED125B9 /* ProjectScreen.swift */,
+				CE827F280E59D923938CC73F /* ProjectSettingsHub.swift */,
+				36F657F78EE39EC94D2292EC /* ProjectSettingsIndex.swift */,
 				914029ADB1B3705EC808570B /* ProjectSettingsScreen.swift */,
 				071722D237E4656E3D078FE0 /* ProjectsModels.swift */,
 				581A501E3BCB44922E5AA6CD /* ProjectsScreen.swift */,
@@ -1211,6 +1217,8 @@
 				0D630453518DCBB742AC811E /* ProjectDevScreen.swift in Sources */,
 				D0BF11C0E4985535D9B6A39C /* ProjectDomains.swift in Sources */,
 				816F107C970E43AE0D3495A9 /* ProjectScreen.swift in Sources */,
+				06A3931E00964CE800048878 /* ProjectSettingsHub.swift in Sources */,
+				3EF92C6A923A050A7D348DBD /* ProjectSettingsIndex.swift in Sources */,
 				2D70EA12A7AABCFF6D83E124 /* ProjectSettingsScreen.swift in Sources */,
 				F866DA4E26577D7C82C0B73C /* ProjectStyleEditor.swift in Sources */,
 				CB9A889406DB7BF407C67B92 /* ProjectStyleModels.swift in Sources */,

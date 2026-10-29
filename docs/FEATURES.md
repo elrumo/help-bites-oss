@@ -694,6 +694,12 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 [helpbites-native/README.md](../helpbites-native/README.md)
 
 - **One SwiftUI app.** Tabs on iPhone, a sidebar on iPad, and Mac via Catalyst.
+- **Project settings in pages.** A project's Settings open on a list like Apple's Settings: who the project is, then
+  groups (*Project*: General, Branding, Company, Sidebar; *Chat and people*: Chat widget, Notifications, Collaborators;
+  *Publishing and code*: Public hub, Custom domains, GitHub repos; *Advanced*: Data, Keys and webhooks), each opening
+  its own screen. The search field finds a single setting by name or by a related word ("dns", "color", "webhook") and
+  opens its page scrolled to it. The form is saved as a whole from any page. Native only: the web keeps the same
+  settings on one long page.
 - **Your own tab bar.** *Settings → Tab bar* chooses which shortcuts sit along the bottom of the iPhone app (and the
   top of the iPad sidebar) and their order: Overview, Inbox, Projects, Templates, Knowledge and Settings, plus
   *Planning*, a list of every project that has a planning board, each opening its board. The bar holds five, Settings

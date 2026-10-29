@@ -1679,7 +1679,7 @@
       "id": "projects",
       "name": "Projects",
       "category": "platform",
-      "summary": "One project per app: keys and secret, allowed origins, accent (the Brand kit's), logo, company profile, public hub, notifications, guest access per surface (chat, feedback, comments), which sections show in its sidebar, overview with its setup checklist, and the Install & API page.",
+      "summary": "One project per app: keys and secret, allowed origins, accent (the Brand kit's), logo, company profile, public hub, notifications, guest access per surface (chat, feedback, comments), which sections show in its sidebar, overview with its setup checklist, and the Install & API page. On native a project's settings are a list of pages (General, Branding, Company, Sidebar, Chat widget, Notifications and more) like Apple's Settings, with a search that opens the page at the matching setting; the web keeps them on one page.",
       "editions": [
         "community",
         "cloud"
