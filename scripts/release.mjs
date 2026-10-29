@@ -26,6 +26,7 @@ const dry = opt['dry-run']
 const die = (message) => { console.error(message); process.exit(1) }
 const read = name => readFileSync(join(root, name), 'utf8')
 const sh = (cmd, ...args) => execFileSync(cmd, args, { cwd: root, encoding: 'utf8' }).trim()
+const ok = (cmd, ...args) => { try { execFileSync(cmd, args, { cwd: root, stdio: 'ignore' }); return true } catch { return false } }
 const run = (cmd, ...args) => {
   console.log(`$ ${[cmd, ...args].join(' ')}`)
   if (!dry) execFileSync(cmd, args, { cwd: root, stdio: 'inherit' })
@@ -52,15 +53,20 @@ if (!dry && !opt.yes) {
   if (!/^y/i.test(answer)) die('Cancelled.')
 }
 
+// Fail before the tag is pushed, not after.
+if (!dry && steps.some(s => s === 'dockerhub' || s === 'ghcr') && !ok('docker', 'info')) die('Docker is not running: start it (OrbStack or Docker Desktop) and retry.')
+if (!dry && steps.includes('github') && !ok('gh', 'auth', 'status')) die('gh is not logged in: run `gh auth login`.')
+
 if (steps.includes('bump')) run('bun', 'scripts/bump-version.mjs', version)
 if (steps.includes('test')) run('bun', 'test')
 
 const tag = `v${version}`
 if (steps.includes('commit')) {
-  if (sh('git', 'status', '--porcelain')) run('git', 'commit', '-am', `Release ${version} [skip release]`)
-  let tagged = true
-  try { sh('git', 'rev-parse', '-q', '--verify', `refs/tags/${tag}`) } catch { tagged = false }
-  if (!tagged) run('git', 'tag', tag)
+  // Always a commit (empty when nothing changed) so the tagged commit carries the marker that keeps CI out.
+  if (!ok('git', 'rev-parse', '-q', '--verify', `refs/tags/${tag}`)) {
+    run('git', 'commit', '-a', '--allow-empty', '-m', `Release ${version} [skip release]`)
+    run('git', 'tag', tag)
+  }
   run('git', 'push')
   run('git', 'push', 'origin', tag)
 }
