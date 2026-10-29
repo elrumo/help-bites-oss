@@ -36,7 +36,7 @@ struct AppShell: View {
     Tab(shortcut.localizedLabel, systemImage: shortcut.systemImage, value: shortcut.tab) {
       shortcutRoot(shortcut)
     }
-    .badge(badge(shortcut))
+    .badge(badgeCount(shortcut))
   }
 
   @ViewBuilder private func shortcutRoot(_ shortcut: TabShortcut) -> some View {
@@ -51,7 +51,7 @@ struct AppShell: View {
     }
   }
 
-  private func badge(_ shortcut: TabShortcut) -> Int {
+  private func badgeCount(_ shortcut: TabShortcut) -> Int {
     switch shortcut {
     case .overview: workspace.attention.total
     case .inbox: workspace.inbox.totalUnread
