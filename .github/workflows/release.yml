@@ -21,6 +21,8 @@ env:
 
 jobs:
   verify:
+    # scripts/release.mjs publishes from a maintainer's machine and marks its commit so CI does not repeat it.
+    if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

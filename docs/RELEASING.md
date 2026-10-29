@@ -15,6 +15,22 @@ git commit -am "Release 0.3.0"
 git tag v0.3.0 && git push && git push --tags
 ```
 
+**From your machine instead of CI.** `scripts/release.mjs` runs the same steps itself (bump, test, commit + tag + push,
+Docker Hub, GHCR, GitHub release, public changelog). Its release commit says `[skip release]`, which makes `release.yml`
+skip the tag so nothing is published twice. It needs `docker login` (and `ghcr.io` for GHCR), `gh auth login` and, for
+the changelog, the `HELPBITES_*` variables below.
+
+```bash
+bun run release minor --dry-run                              # prints every command, changes nothing
+bun run release 0.3.0                                        # everything
+bun run release patch --skip ghcr,changelog                  # no GHCR image, no public changelog
+bun run release --only dockerhub,ghcr,github,changelog       # resume a release at the current version
+bun run release 0.3.0 --only bump,test                       # prepare it, review the diff, publish later
+```
+
+Steps: `bump`, `test`, `commit`, `dockerhub`, `ghcr`, `github`, `changelog`; `--draft` leaves the changelog release
+unpublished, `--yes` skips the confirmation. It does not sync the Docker Hub description from `README.md` (CI does).
+
 The one number is `version` in `package.json`. Everything else follows it, and `tests/versionParity.test.ts` fails when
 the native app (`MARKETING_VERSION` in `helpbites-native/project.yml` and the generated project) or `CHANGELOG.md` drifts.
 Write release notes as you go: every self-hoster-visible change gets a bullet under *Unreleased* (that is rule 4.5 of
