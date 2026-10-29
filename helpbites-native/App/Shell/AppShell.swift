@@ -18,36 +18,45 @@ struct AppShell: View {
     MacShell()
     #else
     TabView(selection: $workspace.tab) {
-      Tab("Overview", systemImage: "house", value: AppTab.overview) {
-        NavigationStack { OverviewScreen().routes() }
-      }
-      .badge(workspace.attention.total)
-
-      Tab("Inbox", systemImage: "tray", value: AppTab.inbox) {
-        NavigationStack { InboxScreen() }
-      }
-      .badge(workspace.inbox.totalUnread)
-
-      Tab("Projects", systemImage: "square.stack", value: AppTab.projects) {
-        NavigationStack(path: $workspace.projectsPath) { ProjectsScreen().routes() }
-      }
-
-      Tab("Templates", systemImage: "envelope", value: AppTab.templates) {
-        NavigationStack(path: $workspace.templatesPath) { EmailLibraryScreen(projectId: nil).routes() }
-      }
+      // The user's shortcuts, in their order (Settings › Tab bar).
+      ForEach(workspace.shortcuts) { shortcut in shortcutTab(shortcut) }
 
       // Only beside a sidebar: a tab bar would list every section as a tab of its own.
       if workspace.sidebar {
         ForEach(workspace.projects) { project in projectSection(project) }
       }
-
-      Tab("Settings", systemImage: "gearshape", value: AppTab.settings) {
-        NavigationStack(path: $workspace.settingsPath) { SettingsScreen().routes() }
-      }
     }
     .tabViewStyle(.sidebarAdaptable)
     .tint(Theme.accent)
     #endif
+  }
+
+  /// One shortcut as a tab, its page in a stack of its own so the tab keeps its place.
+  @TabContentBuilder<AppTab> private func shortcutTab(_ shortcut: TabShortcut) -> some TabContent<AppTab> {
+    Tab(shortcut.localizedLabel, systemImage: shortcut.systemImage, value: shortcut.tab) {
+      shortcutRoot(shortcut)
+    }
+    .badge(badge(shortcut))
+  }
+
+  @ViewBuilder private func shortcutRoot(_ shortcut: TabShortcut) -> some View {
+    switch shortcut {
+    case .overview: NavigationStack { OverviewScreen().routes() }
+    case .inbox: NavigationStack { InboxScreen() }
+    case .projects: NavigationStack(path: $workspace.projectsPath) { ProjectsScreen().routes() }
+    case .planning: NavigationStack(path: $workspace.planningPath) { PlanningScreen().routes() }
+    case .knowledge: NavigationStack(path: $workspace.knowledgePath) { KnowledgeScreen(projectId: nil).routes() }
+    case .templates: NavigationStack(path: $workspace.templatesPath) { EmailLibraryScreen(projectId: nil).routes() }
+    case .settings: NavigationStack(path: $workspace.settingsPath) { SettingsScreen().routes() }
+    }
+  }
+
+  private func badge(_ shortcut: TabShortcut) -> Int {
+    switch shortcut {
+    case .overview: workspace.attention.total
+    case .inbox: workspace.inbox.totalUnread
+    default: 0
+    }
   }
 
   var body: some View {
@@ -127,6 +136,7 @@ struct RouteView: View {
     case .emailLog: EmailLibraryScreen(projectId: nil, initialTab: .log)
     case .knowledge: KnowledgeScreen(projectId: nil)
     case .projects: ProjectsScreen()
+    case .planning: PlanningScreen()
     case .project(let id, nil): ProjectScreen(projectId: id)
     case .project(let id, let section?):
       switch section {

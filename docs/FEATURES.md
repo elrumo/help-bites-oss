@@ -694,6 +694,11 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 [helpbites-native/README.md](../helpbites-native/README.md)
 
 - **One SwiftUI app.** Tabs on iPhone, a sidebar on iPad, and Mac via Catalyst.
+- **Your own tab bar.** *Settings → Tab bar* chooses which shortcuts sit along the bottom of the iPhone app (and the
+  top of the iPad sidebar) and their order: Overview, Inbox, Projects, Templates, Knowledge and Settings, plus
+  *Planning*, a list of every project that has a planning board, each opening its board. The bar holds five, Settings
+  always stays so the screen can be found again, and the choice is kept on that device. Native only: the web panel
+  has no tab bar, and the Mac sidebar lists everything.
 - **Overview.** The first tab on iPhone and the top of the sidebar on iPad and Mac
   (⌘0): every project's card, the workspace's numbers, unread messages and revenue
   by project, as on the web.

@@ -1803,7 +1803,7 @@
       "id": "native-app",
       "name": "Native app (iPhone, iPad, Mac)",
       "category": "platform",
-      "summary": "One SwiftUI app covering every panel page, in the panel's six languages, with push notifications (needs APNs credentials) and a command palette.",
+      "summary": "One SwiftUI app covering every panel page, in the panel's six languages, with push notifications (needs APNs credentials) and a command palette. On iPhone and iPad the tab bar is the user's own: Settings → Tab bar picks up to five shortcuts (including a Planning list of every project with a planning board) and their order, kept on the device.",
       "editions": [
         "community",
         "cloud"

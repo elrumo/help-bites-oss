@@ -2881,7 +2881,7 @@
         },
         "native": {
           "term": "iPhone, iPad i Mac",
-          "desc": "Una app nativa per a la safata, les respostes i gairebé tot el panell, amb notificacions push quan el teu servidor tingui APNs configurat."
+          "desc": "Una app nativa per a la safata, les respostes i gairebé tot el panell, amb notificacions push quan el teu servidor tingui APNs configurat, i una barra de pestanyes que ordenes tu."
         },
         "email": {
           "term": "El correu a suport@teu esdevé conversa",

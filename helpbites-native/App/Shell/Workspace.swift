@@ -13,6 +13,8 @@ enum AppRoute: Hashable {
   /// Knowledge models across every project (web: /knowledge).
   case knowledge
   case projects
+  /// The projects that have a planning board, each opening its board (the Planning shortcut).
+  case planning
   case project(String, ProjectSection?)
   case apiKeys
   case developer
@@ -41,9 +43,10 @@ enum AppRoute: Hashable {
 }
 
 /// The tab bar's tabs (iPhone), which become the sidebar on iPad and Mac. The
-/// sidebar also holds every project's sections, as the web's does.
+/// sidebar also holds every project's sections, as the web's does. Which of the first seven the bar shows
+/// is the user's choice (`TabShortcut`).
 enum AppTab: Hashable {
-  case overview, inbox, projects, templates, settings
+  case overview, inbox, projects, planning, knowledge, templates, settings
   case section(String, ProjectSection)
 }
 
@@ -176,8 +179,12 @@ struct SectionLayout {
   var projects: [Project] = []
   var tab: AppTab = .overview
   var projectsPath: [AppRoute] = []
+  var planningPath: [AppRoute] = []
+  var knowledgePath: [AppRoute] = []
   var templatesPath: [AppRoute] = []
   var settingsPath: [AppRoute] = []
+  /// The shortcuts on the tab bar, in order: the user's choice (Settings › Tab bar) or the default bar.
+  private(set) var shortcuts = TabShortcut.saved()
   /// The Email tab a link asked for (`email?view=log`); the Email screen takes it when it appears.
   var pendingEmailTab: EmailTab?
   /// The Mac window's sidebar selection and the pages pushed onto its detail.
@@ -202,9 +209,35 @@ struct SectionLayout {
     self.session = session
     self.inbox = InboxStore(session: session)
     projects = SnapshotCache.load([Project].self, "projects") ?? []
+    tab = shortcuts.first?.tab ?? .settings
   }
 
   func project(_ id: String) -> Project? { projects.first { $0.id == id } }
+
+  /// The projects the Planning shortcut lists: planning is on and the project did not hide its section.
+  var planningProjects: [Project] {
+    projects.filter { $0.board?.enabled == true && !($0.hiddenSections ?? []).contains(ProjectSection.board.path) }
+  }
+
+  /// Saves the tab bar the user arranged. When the tab on screen came off it, the first one left opens.
+  func setShortcuts(_ list: [TabShortcut]) {
+    shortcuts = TabShortcut.normalized(list)
+    TabShortcut.save(shortcuts)
+    if !onBar(tab) { tab = shortcuts.first?.tab ?? .settings }
+  }
+
+  /// Back to the default bar.
+  func resetShortcuts() {
+    TabShortcut.forget()
+    shortcuts = TabShortcut.defaults
+    if !onBar(tab) { tab = shortcuts.first?.tab ?? .settings }
+  }
+
+  /// Whether the tab bar has this tab. A project's section is a tab only beside a sidebar.
+  private func onBar(_ tab: AppTab) -> Bool {
+    if case .section = tab { return sidebar }
+    return shortcuts.contains { $0.tab == tab }
+  }
 
   /// A project's sections laid out for navigation: Overview, each group's sections the project has not
   /// hidden (an empty group is left out), then Settings. `keeping` stays listed even when hidden, so the
@@ -270,35 +303,69 @@ struct SectionLayout {
     return
     #else
     switch route {
-    case .overview: tab = .overview
-    case .inbox: tab = .inbox
-    case .emailTemplates: tab = .templates; templatesPath = []
-    case .emailLog: tab = .templates; templatesPath = [.emailLog]
-    case .knowledge: tab = .projects; projectsPath = [.knowledge]
-    case .projects: tab = .projects; projectsPath = []
+    case .overview: open(on: .overview, fallback: [.overview])
+    case .inbox: open(on: .inbox, fallback: [.inbox])
+    case .emailTemplates: open(on: .templates, fallback: [.emailTemplates])
+    case .emailLog: open(on: .templates, pages: [.emailLog], fallback: [.emailLog])
+    case .knowledge: open(on: .knowledge, fallback: [.knowledge])
+    case .planning: open(on: .planning, fallback: [.planning])
+    case .projects: open(on: .projects, fallback: [.projects])
     case .project(let id, let section):
       if sidebar, let section { tab = .section(id, section); return }
-      tab = .projects
-      projectsPath = [.project(id, nil)] + (section.map { [.project(id, $0)] } ?? [])
+      let pages: [AppRoute] = [.project(id, nil)] + (section.map { [.project(id, $0)] } ?? [])
+      open(on: .projects, pages: pages, fallback: [.projects] + pages)
     case .account: tab = .settings; settingsPath = []
     case .apiKeys, .developer, .team, .profile, .workspace, .usage, .ai, .connections: tab = .settings; settingsPath = [route]
     case .legalDocument(let id, _):
       if sidebar { tab = .section(id, .legal); return }
-      go(.project(id, .legal)); projectsPath.append(route)
+      go(.project(id, .legal)); push(route)
     case .onboardingFlow(let id, _):
       if sidebar { tab = .section(id, .onboarding); return }
-      go(.project(id, .onboarding)); projectsPath.append(route)
+      go(.project(id, .onboarding)); push(route)
     case .pageEntry(let id, _):
       if sidebar { tab = .section(id, .pages); return }
-      go(.project(id, .pages)); projectsPath.append(route)
+      go(.project(id, .pages)); push(route)
     case .leadForm(let id, _):
       if sidebar { tab = .section(id, .forms); return }
-      go(.project(id, .forms)); projectsPath.append(route)
+      go(.project(id, .forms)); push(route)
     case .pricingTable(let id, _):
       if sidebar { tab = .section(id, .pricing); return }
-      go(.project(id, .pricing)); projectsPath.append(route)
+      go(.project(id, .pricing)); push(route)
     }
     #endif
+  }
+
+  /// Selects `home` and lays `pages` out on its stack. A tab the bar does not have cannot be selected, so
+  /// `fallback` opens on the Projects tab instead, or on Settings (always on the bar) when Projects is off it too.
+  private func open(on home: AppTab, pages: [AppRoute] = [], fallback: [AppRoute]) {
+    if onBar(home) { tab = home; setPath(pages, on: home); return }
+    let host: AppTab = onBar(.projects) ? .projects : .settings
+    tab = host
+    setPath(fallback, on: host)
+  }
+
+  /// The stack of a tab that has one; Overview and Inbox push nothing from here.
+  private func setPath(_ pages: [AppRoute], on tab: AppTab) {
+    switch tab {
+    case .projects: projectsPath = pages
+    case .planning: planningPath = pages
+    case .knowledge: knowledgePath = pages
+    case .templates: templatesPath = pages
+    case .settings: settingsPath = pages
+    case .overview, .inbox, .section: break
+    }
+  }
+
+  /// One more page on the stack of the tab on screen.
+  private func push(_ route: AppRoute) {
+    switch tab {
+    case .projects: projectsPath.append(route)
+    case .planning: planningPath.append(route)
+    case .knowledge: knowledgePath.append(route)
+    case .templates: templatesPath.append(route)
+    case .settings: settingsPath.append(route)
+    case .overview, .inbox, .section: break
+    }
   }
 
   /// The Mac sidebar: the route's root page is the selection, anything deeper is pushed on its stack.

@@ -3123,7 +3123,7 @@
         },
         "native": {
           "term": "iPhone, iPad and Mac",
-          "desc": "A native app for the inbox, replies and most of the panel, with push notifications once your server has APNs set up."
+          "desc": "A native app for the inbox, replies and most of the panel, with push notifications once your server has APNs set up, and a tab bar you arrange yourself."
         },
         "hub": {
           "term": "The customer, beside the chat",

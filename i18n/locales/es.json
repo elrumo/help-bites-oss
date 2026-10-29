@@ -2928,7 +2928,7 @@
         },
         "native": {
           "term": "iPhone, iPad y Mac",
-          "desc": "Una app nativa para la bandeja, las respuestas y casi todo el panel, con notificaciones push una vez configurado APNs en tu servidor."
+          "desc": "Una app nativa para la bandeja, las respuestas y casi todo el panel, con notificaciones push una vez configurado APNs en tu servidor, y una barra de pestañas que organizas tú."
         },
         "email": {
           "term": "El correo a soporte@tu se vuelve conversación",

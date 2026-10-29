@@ -30,8 +30,10 @@ automatically.
 The app covers every page of the web panel (inbox, projects and all their
 sections including Changelog, Onboarding, Legal, Brand, Pages and Revenue, Knowledge, Email, workspace
 settings, AI, connections, team and invitations). It wears the web panel's
-Linear-style design, and gets around the way each platform does. iPhone has a tab bar (Inbox, Projects, Templates, Settings), with
-each tab's pages pushed beneath it: Projects › project › section. On iPad the
+Linear-style design, and gets around the way each platform does. iPhone has a tab bar (Overview, Inbox, Projects, Templates, Settings by default), with
+each tab's pages pushed beneath it: Projects › project › section. Settings › Tab bar picks up to five shortcuts
+(also Planning, which lists the projects that have a planning board, and Knowledge) and their order, kept on the
+device (`Shell/TabShortcuts.swift`); Settings always stays on the bar. On iPad the
 tabs open into a sidebar, which is all the Mac shows; the sidebar also lists
 every project's sections, as the web's does. The Mac menu bar (and iPad's ⌘
 menu) carries the web's shortcuts. Sources are generated into the project by

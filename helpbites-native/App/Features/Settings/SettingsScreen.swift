@@ -65,6 +65,20 @@ struct SettingsScreen: View {
         }
 
         Card {
+          #if os(iOS)
+          NavigationLink { TabBarScreen() } label: {
+            CardRow {
+              HStack(spacing: 10) {
+                Image(systemName: "dock.rectangle").font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
+                Text("Tab bar").font(.lnRow).foregroundStyle(Theme.text)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+              }
+            }
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          #endif
           Button { workspace.tourOpen = true } label: {
             CardRow(divider: false) {
               HStack(spacing: 10) {
