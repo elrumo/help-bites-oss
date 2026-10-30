@@ -43,11 +43,11 @@ struct BoardScreen: View {
   /// '' is any; 'none', or a priority.
   var priorityFilter = ""
   var roadmapOnly = false
-  /// '' is every kind; 'task', 'epic' or 'release'.
+  /// '' is every kind; 'task' or 'epic'.
   var kindFilter = ""
   /// '' is any epic; otherwise an epic's id, and only that epic's cards show.
   var epicFilter = ""
-  /// '' is any release; otherwise a release's id, and only what it ships shows.
+  /// '' is any release; otherwise a changelog release's id, and only what it ships shows.
   var releaseFilter = ""
   /// 'kanban' or 'list', remembered per project.
   var view = "kanban"
@@ -113,17 +113,25 @@ struct BoardScreen: View {
 
   // MARK: Epics and releases
 
-  /// The board's epics and releases in board order: what the filters, the menus and the pickers list.
+  /// The board's epics in board order, and the project's changelog releases (newest first, drafts included, from
+  /// GET /v1/admin/changelog/releases): what the filters, the menus and the pickers list.
   var epics: [BoardItem] { items.filter { $0.itemKind == "epic" }.sorted(by: boardOrder) }
-  var releases: [BoardItem] { items.filter { $0.itemKind == "release" }.sorted(by: boardOrder) }
+  var releases: [ChangelogRelease] = []
 
-  /// How an epic or release is named where one is picked, "#12 Title" (the web's `parentLabel`).
+  func release(_ id: String) -> ChangelogRelease? { id.isEmpty ? nil : releases.first { $0.id == id } }
+
+  /// The epics or releases a card can be put into, named as the pickers name them ("#12 Title", "2.4 · Autumn").
+  func parents(_ kind: String) -> [(id: String, label: String)] {
+    kind == "epic" ? epics.map { (id: $0.id, label: parentLabel($0)) } : releases.map { (id: $0.id, label: $0.pickerLabel) }
+  }
+
+  /// How an epic is named where one is picked, "#12 Title" (the web's `parentLabel`).
   func parentLabel(_ item: BoardItem) -> String { item.number.map { "#\($0) \(item.title)" } ?? item.title }
 
   /// An epic or release filter that names one deleted since reads as "any", not as an empty board.
   private func pruneParentFilters() {
     if !epicFilter.isEmpty, !items.contains(where: { $0.id == epicFilter && $0.itemKind == "epic" }) { epicFilter = "" }
-    if !releaseFilter.isEmpty, !items.contains(where: { $0.id == releaseFilter && $0.itemKind == "release" }) { releaseFilter = "" }
+    if !releaseFilter.isEmpty, !releases.contains(where: { $0.id == releaseFilter }) { releaseFilter = "" }
   }
 
   // MARK: Saved views
@@ -184,12 +192,14 @@ struct BoardScreen: View {
   }
 
   /// One group of the list view: the items (as the filters and order show them) and what a quick add in it fills in.
+  /// An epic or release group shows its progress in the header.
   struct ListGroup: Identifiable {
     let id: String
     let title: String
     let tint: Color
     let items: [BoardItem]
     let fields: [String: JSONValue]
+    var progress: BoardProgress? = nil
   }
 
   func parentId(_ item: BoardItem, _ parent: String) -> String { (parent == "epic" ? item.epicId : item.releaseId) ?? "" }
@@ -203,12 +213,12 @@ struct BoardScreen: View {
         ListGroup(id: status.key, title: status.label, tint: FeedbackFormat.tint(status.color) ?? Theme.textDimmed, items: shown.filter { config.column(of: $0) == status.key }, fields: ["status": .string(status.key)])
       }
     }
-    let parents = items.filter { $0.itemKind == grouping }.sorted(by: boardOrder)
-    let known = Set(parents.map(\.id))
     let key = grouping == "epic" ? "epicId" : "releaseId"
-    return parents.map { parent in
-      ListGroup(id: parent.id, title: parent.title, tint: Theme.accent, items: shown.filter { parentId($0, grouping) == parent.id }, fields: [key: .string(parent.id)])
-    } + [ListGroup(id: "none", title: grouping == "epic" ? String(localized: "No epic") : String(localized: "No release"), tint: Theme.textDimmed, items: shown.filter { !known.contains(parentId($0, grouping)) }, fields: [:])]
+    let parents: [ListGroup] = grouping == "epic"
+      ? epics.map { epic in ListGroup(id: epic.id, title: epic.title, tint: Theme.accent, items: shown.filter { parentId($0, grouping) == epic.id }, fields: [key: .string(epic.id)], progress: epic.progress) }
+      : releases.map { release in ListGroup(id: release.id, title: release.pickerLabel, tint: Theme.accent, items: shown.filter { parentId($0, grouping) == release.id }, fields: [key: .string(release.id)], progress: release.progress) }
+    let known = Set(parents.map(\.id))
+    return parents + [ListGroup(id: "none", title: grouping == "epic" ? String(localized: "No epic") : String(localized: "No release"), tint: Theme.textDimmed, items: shown.filter { !known.contains(parentId($0, grouping)) }, fields: [:])]
   }
 
   private func matches(_ item: BoardItem) -> Bool {
@@ -250,9 +260,13 @@ struct BoardScreen: View {
     }
   }
 
+  /// The items and the project's changelog releases, read together: a release's cards and progress come with them.
   func loadItems() async throws {
-    let result: ItemsResponse = try await session.get("/v1/admin/board-items", query: ["project": projectId])
+    async let rows: ItemsResponse = session.get("/v1/admin/board-items", query: ["project": projectId])
+    async let changelog: ReleasesResponse = session.get("/v1/admin/changelog/releases", query: ["project": projectId])
+    let (result, releaseList) = try await (rows, changelog)
     items = result.items
+    releases = releaseList.releases
     pruneParentFilters()
   }
 
@@ -387,11 +401,23 @@ struct BoardScreen: View {
     return result.comment
   }
 
+  /// A release named from a card's picker: a changelog release of that version already there is taken (versions are
+  /// not unique, so the match is made here, trimmed and case-insensitive), else a draft is created.
+  func releaseNamed(_ version: String) async throws -> ChangelogRelease {
+    let name = version.trimmingCharacters(in: .whitespacesAndNewlines)
+    if let existing = releases.first(where: { $0.version.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare(name) == .orderedSame }) { return existing }
+    struct ReleaseResponse: Decodable, Sendable { let release: ChangelogRelease }
+    let body: [String: JSONValue] = ["version": .string(name)]
+    let result: ReleaseResponse = try await session.send("/v1/admin/changelog/releases?project=\(projectId)", body: body)
+    releases.insert(result.release, at: 0)
+    return result.release
+  }
+
   func delete(_ itemId: String) async throws {
-    let groupsCards = item(itemId).map { $0.itemKind != "task" } ?? false
+    let groupsCards = item(itemId)?.itemKind == "epic"
     try await session.delete("/v1/admin/board-items/\(itemId)")
     items.removeAll { $0.id == itemId }
-    // An epic or release leaves its cards free of it: read them again (the delete itself went through either way).
+    // An epic leaves its cards free of it: read them again (the delete itself went through either way).
     if groupsCards { try? await loadItems() }
     pruneParentFilters()
   }
@@ -441,6 +467,7 @@ struct BoardScreen: View {
   // MARK: Wire
 
   private struct ItemsResponse: Decodable, Sendable { let items: [BoardItem] }
+  private struct ReleasesResponse: Decodable, Sendable { let releases: [ChangelogRelease] }
   private struct ItemResponse: Decodable, Sendable { let item: BoardItem }
   private struct AgentsResponse: Decodable, Sendable { let agents: [Agent] }
   private struct BoardPatch: Encodable, Sendable { let board: [String: JSONValue] }
@@ -675,7 +702,7 @@ private struct BoardView: View {
             filterMenu("Release", value: releaseTitle, active: !store.releaseFilter.isEmpty) {
               Picker("Release", selection: $store.releaseFilter) {
                 Text("Any release").tag("")
-                ForEach(store.releases) { release in Text(store.parentLabel(release)).tag(release.id) }
+                ForEach(store.releases) { release in Text(release.pickerLabel).tag(release.id) }
               }
             }
           }
@@ -728,12 +755,11 @@ private struct BoardView: View {
   }
 
   /// The filter's pill: "Any epic", or the epic it narrows to, cut short so a long title does not stretch the bar.
-  private var epicTitle: String { parentFilterTitle(store.epicFilter, none: String(localized: "Any epic")) }
-  private var releaseTitle: String { parentFilterTitle(store.releaseFilter, none: String(localized: "Any release")) }
+  private var epicTitle: String { parentFilterTitle(store.item(store.epicFilter).map { store.parentLabel($0) }, none: String(localized: "Any epic")) }
+  private var releaseTitle: String { parentFilterTitle(store.release(store.releaseFilter)?.pickerLabel, none: String(localized: "Any release")) }
 
-  private func parentFilterTitle(_ id: String, none: String) -> String {
-    guard !id.isEmpty, let parent = store.item(id) else { return none }
-    let label = store.parentLabel(parent)
+  private func parentFilterTitle(_ label: String?, none: String) -> String {
+    guard let label else { return none }
     return label.count > 26 ? String(label.prefix(25)) + "…" : label
   }
 
@@ -837,6 +863,7 @@ private struct BoardList: View {
           Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).rotationEffect(.degrees(isCollapsed ? 0 : 90)).foregroundStyle(group.tint)
           Text(group.title).font(.lnMetaMedium).foregroundStyle(group.tint).lineLimit(1)
           Text("\(group.items.count)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
+          if let progress = group.progress, progress.total > 0 { BoardProgressBar(progress: progress).frame(width: 110) }
           Spacer(minLength: 0)
         }
         .frame(minHeight: 36)
@@ -969,21 +996,21 @@ private struct BoardParentMenus: View {
   let store: BoardStore
 
   var body: some View {
-    if BoardKind.canHave(item.itemKind, parent: "epic") { menu("epic", parents: store.epics, current: item.epicId ?? "") }
-    if BoardKind.canHave(item.itemKind, parent: "release") { menu("release", parents: store.releases, current: item.releaseId ?? "") }
+    if BoardKind.canHave(item.itemKind, parent: "epic") { menu("epic", current: item.epicId ?? "") }
+    if BoardKind.canHave(item.itemKind, parent: "release") { menu("release", current: item.releaseId ?? "") }
   }
 
-  @ViewBuilder private func menu(_ kind: String, parents: [BoardItem], current: String) -> some View {
-    let others = parents.filter { $0.id != item.id }
+  @ViewBuilder private func menu(_ kind: String, current: String) -> some View {
+    let others = store.parents(kind).filter { $0.id != item.id }
     if !others.isEmpty {
       let none = kind == "epic" ? String(localized: "No epic") : String(localized: "No release")
       Menu {
         Button { pick(kind, "") } label: {
           if current.isEmpty { Label(none, systemImage: "checkmark") } else { Text(none) }
         }
-        ForEach(others) { parent in
+        ForEach(others, id: \.id) { parent in
           Button { pick(kind, parent.id) } label: {
-            if parent.id == current { Label(store.parentLabel(parent), systemImage: "checkmark") } else { Text(store.parentLabel(parent)) }
+            if parent.id == current { Label(parent.label, systemImage: "checkmark") } else { Text(parent.label) }
           }
         }
       } label: {
@@ -997,14 +1024,17 @@ private struct BoardParentMenus: View {
   }
 }
 
-/// The epic or release an item belongs to, as a small capsule.
+/// The epic or changelog release an item belongs to, as a small capsule.
 struct BoardParentChip: View {
   let kind: String
   let title: String
 
+  private var symbol: String { kind == "release" ? "shippingbox" : "square.stack.3d.up" }
+  private var name: String { kind == "release" ? String(localized: "Release") : BoardKind.name(kind) }
+
   var body: some View {
     HStack(spacing: 3) {
-      Image(systemName: BoardKind.icon(kind) ?? "square.stack.3d.up").font(.system(size: 10))
+      Image(systemName: symbol).font(.system(size: 10))
       Text(title).font(.lnCaption).lineLimit(1)
     }
     .foregroundStyle(Theme.textToned)
@@ -1012,7 +1042,7 @@ struct BoardParentChip: View {
     .frame(height: 18)
     .background(Theme.elevated, in: Capsule())
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("\(BoardKind.name(kind)): \(title)")
+    .accessibilityLabel("\(name): \(title)")
   }
 }
 

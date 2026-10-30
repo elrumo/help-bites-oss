@@ -211,7 +211,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 
 | Tool | What it does |
 |---|---|
-| `list_board_items` | The work board behind the roadmap: cards, epics and releases (filter with `kind`, `epic`, `release`). |
+| `list_board_items` | The work board behind the roadmap: cards and epics (filter with `kind`, `epic`, `release`, a changelog release). |
 | `create_board_item` | Add an item. |
 | `create_board_item_from_feedback` | Plan a feedback post: the AI writes the item, the post is linked. |
 | `update_board_item` | Edit or move an item. |

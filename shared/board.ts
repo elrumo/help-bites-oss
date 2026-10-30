@@ -26,8 +26,11 @@ export const BOARD_LINKS_MAX = 50
 /** The largest estimate an item takes, in points. */
 export const BOARD_ESTIMATE_MAX = 1000
 
-/** What an item is: a card, an epic that groups cards, or a release that ships them. */
-export const BOARD_ITEM_KINDS = ['task', 'epic', 'release'] as const
+/**
+ * What an item is: a card, or an epic that groups cards. A release is not an item: it is a changelog
+ * release (`releaseId` points at one), so the board and the changelog share one list of releases.
+ */
+export const BOARD_ITEM_KINDS = ['task', 'epic'] as const
 export type BoardItemKind = typeof BOARD_ITEM_KINDS[number]
 
 export const BOARD_ROADMAP_LAYOUTS = ['columns', 'timeline', 'list'] as const
@@ -181,7 +184,7 @@ export type BoardItem = {
   /** Related items, symmetric: linking A to B also links B to A. */
   relatedItemIds: string[]
   related: BoardRelatedItem[]
-  /** The epic and the release a card (or an epic, for its release) belongs to; '' for none. */
+  /** The epic and the release a card (or an epic) belongs to; '' for none. A release is a changelog release, its `title` its version. */
   epicId: string
   releaseId: string
   epic: BoardRelatedItem | null
@@ -329,7 +332,7 @@ export type BoardItemValues = Partial<{
   kind: BoardItemKind
   /** An epic's id or `#N`; '' clears it. Checked against the board's epics by the server. */
   epicId: string
-  /** A release's id or `#N`; '' clears it. */
+  /** A changelog release's id; '' clears it. Checked against the project's releases by the server. */
   releaseId: string
   description: string
   publicDescription: string
@@ -525,7 +528,7 @@ export function roadmapGroups<T extends { status: string, targetDate?: string | 
 
 // ---- epics and releases -----------------------------------------------------
 
-/** An epic holds cards; a release holds cards and epics; a release is held by nothing. */
+/** An epic holds cards; a release (a changelog release) holds cards and epics. */
 export function kindCanHave(kind: BoardItemKind, parent: 'epic' | 'release'): boolean {
-  return parent === 'epic' ? kind === 'task' : kind !== 'release'
+  return parent === 'epic' ? kind === 'task' : true
 }

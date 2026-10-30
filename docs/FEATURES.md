@@ -300,16 +300,17 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   which decides whether its items show on the roadmap. Admins reorder columns by
   dragging a column's header onto another. In settings, drag a status, label or
   post type by its grip to reorder it.
-- **Epics, releases and the list view.** An item is a card, an epic that groups
-  cards or a release that ships cards and epics; a card points at its epic and
-  release (and back: an epic or release lists its cards with their progress).
-  Switch the board to a Monday-style list grouped by status, epic or release,
-  with every cell editable in place. A card's Epic or Release picker also
-  creates one from a typed name. The Epic and Release filters narrow the board
-  to one epic's cards or one release's items; on native, a card's or row's menu
-  puts it into an epic or release, or takes it out, as the list's cells do on the
-  web, and deleting an epic or release frees its cards at once. Web and native, API
-  (`kind`, `epicId`, `releaseId`) and MCP. [FEEDBACK.md](FEEDBACK.md#planning--roadmap)
+- **Epics, releases and the list view.** An item is a card or an epic that
+  groups cards. A card points at its epic and at a **release**, and a release is
+  a changelog release: one list per project, shared with the changelog. A card's
+  Release picker lists those releases and creates a draft one from a typed name,
+  which the changelog shows too. Switch the board to a Monday-style list grouped
+  by status, epic or release, with every cell editable in place. The Epic and
+  Release filters narrow the board to one epic's cards or one release's cards;
+  on native, a card's or row's menu puts it into an epic or release, or takes it
+  out, as the list's cells do on the web. Deleting an epic or a changelog release
+  frees its cards at once. Web and native, API (`kind`, `epicId`, `releaseId`)
+  and MCP. [FEEDBACK.md](FEEDBACK.md#planning--roadmap)
 - **Estimates, saved views and more events.** Give an item an estimate in points
   (an epic or release adds up its cards), sort the board by most votes, and save
   the current layout, grouping, order and filters as a named view the whole project

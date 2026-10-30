@@ -107,7 +107,7 @@ struct BoardRelatedItem: Codable, Equatable, Sendable, Identifiable {
   let status: String
 }
 
-/// An epic's or release's cards, and how many are in a done status.
+/// An epic's or a changelog release's cards, and how many are in a done status.
 struct BoardProgress: Codable, Equatable, Sendable {
   let total, done: Int
   /// The same in estimate points; absent from a server that predates estimates.
@@ -115,17 +115,17 @@ struct BoardProgress: Codable, Equatable, Sendable {
   var fraction: Double { total > 0 ? Double(done) / Double(total) : 0 }
 }
 
-/// What an item is (BOARD_ITEM_KINDS): a card, an epic that groups cards, or a release that ships cards and epics.
+/// What an item is (BOARD_ITEM_KINDS): a card, or an epic that groups cards. A release is not an item: it is a
+/// changelog release (`BoardStore.releases`).
 enum BoardKind {
-  static let all = ["task", "epic", "release"]
+  static let all = ["task", "epic"]
 
-  /// kindCanHave: only a card has an epic; a release has no parent.
-  static func canHave(_ kind: String, parent: String) -> Bool { parent == "epic" ? kind == "task" : kind != "release" }
+  /// kindCanHave: an epic holds cards only; a release holds cards and epics.
+  static func canHave(_ kind: String, parent: String) -> Bool { parent == "epic" ? kind == "task" : true }
 
   static func name(_ kind: String) -> String {
     switch kind {
     case "epic": String(localized: "Epic")
-    case "release": String(localized: "Release")
     default: String(localized: "Card")
     }
   }
@@ -134,7 +134,6 @@ enum BoardKind {
   static func icon(_ kind: String) -> String? {
     switch kind {
     case "epic": "square.stack.3d.up"
-    case "release": "shippingbox"
     default: nil
     }
   }
@@ -172,12 +171,13 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
   /// Related items, linked both ways; absent from a server that predates them.
   var relatedItemIds: [String]?
   var related: [BoardRelatedItem]?
-  /// The epic and the release it belongs to ('' or nil for none); absent from a server that predates them.
+  /// The epic and the changelog release it belongs to ('' or nil for none); absent from a server that predates them.
+  /// A release's `title` is its version.
   var epicId: String?
   var releaseId: String?
   var epic: BoardRelatedItem?
   var release: BoardRelatedItem?
-  /// Set on an epic or a release: its cards.
+  /// Set on an epic: its cards. A release's progress comes from its own list.
   var progress: BoardProgress?
   /// The errors it was filed from; absent from a server that predates filing them.
   var errorRefs: [BoardErrorRef]?

@@ -200,14 +200,14 @@ export const MCP_TOOLS: readonly McpTool[] = [
   // ---- planning board --------------------------------------------------------------------------------,
   {
     name: 'list_board_items', title: 'List board items', readOnly: true, method: 'GET', path: '/v1/admin/board-items',
-    description: 'A project\'s internal work board (the roadmap\'s source): items with status, priority, assignee and linked feedback, in rank order. An item is a card (`kind` task), an epic that groups cards, or a release that ships cards and epics; epics and releases carry `progress` ({ total, done }) and cards carry their `epic` and `release`. Returns 50 at a time; the reply has `total`, so page with `offset` or narrow with `status`, `kind`, `epic` or `release`.',
+    description: 'A project\'s internal work board (the roadmap\'s source): items with status, priority, assignee and linked feedback, in rank order. An item is a card (`kind` task) or an epic that groups cards. A card ships in a changelog release (`release`, the releases list_changelog_releases shows); epics carry `progress` ({ total, done }) and cards carry their `epic` and `release`. Returns 50 at a time; the reply has `total`, so page with `offset` or narrow with `status`, `kind`, `epic` or `release`.',
     params: {
       project: projectId,
       status: { type: 'string', description: 'Only items in this status key.' },
       conversation: { type: 'string', description: 'Only items linked to this conversation id.' },
-      kind: { type: 'string', enum: ['task', 'epic', 'release'], description: 'Only cards, only epics or only releases.' },
+      kind: { type: 'string', enum: ['task', 'epic'], description: 'Only cards or only epics.' },
       epic: { type: 'string', description: 'Only the cards of this epic (its id or `#12`).' },
-      release: { type: 'string', description: 'Only the items of this release (its id or `#12`).' },
+      release: { type: 'string', description: 'Only the cards of this changelog release (its id from list_changelog_releases).' },
       feedbackPost: { type: 'string', description: 'Only items linked to this feedback post (its id or number).' },
       assignee: { type: 'string', description: 'Only items assigned to this team member id (from list_team_members); `none` for unassigned items.' },
       priority: { type: 'string', enum: ['low', 'normal', 'high', 'urgent', 'none'], description: 'Only items with this priority; `none` for items without one.' },
@@ -223,9 +223,9 @@ export const MCP_TOOLS: readonly McpTool[] = [
     params: {
       project: { ...projectId, in: 'query' },
       title: { type: 'string', required: true, description: 'Up to 200 characters.' },
-      kind: { type: 'string', enum: ['task', 'epic', 'release'], description: 'task (default), epic (groups cards) or release (ships cards and epics; targetDate is its date).' },
+      kind: { type: 'string', enum: ['task', 'epic'], description: 'task (default) or epic (groups cards).' },
       epicId: { type: 'string', description: 'The epic this card belongs to (its id or `#12`); only a card has one.' },
-      releaseId: { type: 'string', description: 'The release this card or epic ships in (its id or `#12`).' },
+      releaseId: { type: 'string', description: 'The changelog release this card or epic ships in (its id from list_changelog_releases; create_changelog_release makes one).' },
       description: { type: 'string', description: 'Internal Markdown.' },
       publicDescription: { type: 'string', description: 'What the public roadmap shows.' },
       status: { type: 'string', description: 'A status key of the board (from `board.statuses` in list_projects). Default: the board\'s default status.' },
@@ -256,9 +256,9 @@ export const MCP_TOOLS: readonly McpTool[] = [
     params: {
       id: id('item'), project: { ...projectId, in: 'query' },
       title: { type: 'string', description: 'New title.' },
-      kind: { type: 'string', enum: ['task', 'epic', 'release'], description: 'Change what the item is; an epic or release that still has cards cannot change.' },
+      kind: { type: 'string', enum: ['task', 'epic'], description: 'Change what the item is; an epic that still has cards cannot change.' },
       epicId: { type: 'string', description: 'Move the card into this epic (its id or `#12`); empty removes it from its epic.' },
-      releaseId: { type: 'string', description: 'Move the card or epic into this release (its id or `#12`); empty removes it from its release.' },
+      releaseId: { type: 'string', description: 'Move the card or epic into this changelog release (its id from list_changelog_releases); empty removes it from its release.' },
       description: { type: 'string', description: 'Internal Markdown; empty clears it.' },
       publicDescription: { type: 'string', description: 'What the public roadmap shows; empty clears it.' },
       status: { type: 'string', description: 'A status key of the board (from `board.statuses` in list_projects).' },
@@ -1399,7 +1399,7 @@ export const MCP_TOOLS: readonly McpTool[] = [
   // ---- changelog: releases --------------------------------------------------------
   {
     name: 'list_changelog_releases', title: 'List changelog releases', readOnly: true, method: 'GET', path: '/v1/admin/changelog/releases',
-    description: 'A project\'s releases, newest first, drafts included. A release is a version that groups entries (`releaseId` on an entry). Returns `{ releases }` with id, version, title, summary, status (draft or published) and publishedAt.',
+    description: 'A project\'s releases, newest first, drafts included. A release is a version that groups entries (`releaseId` on an entry). Returns `{ releases }` with id, version, title, summary, status (draft or published), publishedAt and `progress` (the board cards that ship it: total, done, estimateTotal, estimateDone).',
     params: { project: projectId }
   },
   {
@@ -1428,7 +1428,7 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'delete_changelog_release', title: 'Delete a changelog release', destructive: true, method: 'DELETE', path: '/v1/admin/changelog/releases/{id}',
-    description: 'Permanently removes a release. Its entries stay, as entries of no release (a published one is then public on its own). Returns `{ deleted: true }`. Confirm with the user first.',
+    description: 'Permanently removes a release. Its entries stay, as entries of no release (a published one is then public on its own), and the board cards that shipped in it stay, with no release. Returns `{ deleted: true }`. Confirm with the user first.',
     params: { id: id('release') }
   },
   {

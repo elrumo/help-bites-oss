@@ -98,6 +98,8 @@ struct ChangelogRelease: Decodable, Equatable, Identifiable, Sendable {
   let status: Status
   let publishedAt: String?
   let createdAt: String
+  /// Its planning cards and how many are done, from the list; absent from a server that predates it.
+  let progress: BoardProgress?
 
   /// "2.4 · Autumn" with a "(draft)" marker, for pickers.
   var pickerLabel: String { "\(version)\(title.isEmpty ? "" : " · \(title)")\(status == .draft ? String(localized: " (draft)") : "")" }

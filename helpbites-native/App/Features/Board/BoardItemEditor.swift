@@ -11,7 +11,7 @@ struct BoardItemEditor: View {
   @State private var pickingPost = false
   @State private var pickingItem = false
   @State private var pickingCard = false
-  /// A card of this epic or release opened from its Cards list.
+  /// A card of this epic opened from its Cards list.
   @State private var openedCard: CardRoute?
   /// The kind (epic or release) being named in the "New epic…" prompt, and the name so far.
   @State private var namingParent: String?
@@ -60,6 +60,8 @@ struct BoardItemEditor: View {
     // A new item that was never created comes back as it was left.
     var restored = itemId == nil ? BoardItemDraft.stored(for: store.projectId) : nil
     if let status = restored?.status, store.config?.statuses.contains(where: { $0.key == status }) != true { restored?.status = defaultStatus }
+    // A draft kept before releases stopped being items may still say "release"; it reads as a card.
+    if let kind = restored?.kind, !BoardKind.all.contains(kind) { restored?.kind = "task" }
     _draft = State(initialValue: restored ?? BoardItemDraft(item: itemId.flatMap { store.item($0) }, defaultStatus: defaultStatus))
   }
 
@@ -149,7 +151,7 @@ struct BoardItemEditor: View {
     LabeledField(label: "Type") {
       FeedbackSelect(options: BoardKind.all.map { FeedbackOption(value: $0, label: BoardKind.name($0)) }, selection: $draft.kind)
         .onChange(of: draft.kind) { _, kind in
-          // Only a card has an epic; a release has no parent: the choice that no longer fits goes.
+          // Only a card has an epic: the choice that no longer fits goes.
           if !BoardKind.canHave(kind, parent: "epic") { draft.epicId = "" }
           if !BoardKind.canHave(kind, parent: "release") { draft.releaseId = "" }
         }
@@ -247,29 +249,34 @@ struct BoardItemEditor: View {
     if BoardKind.canHave(draft.kind, parent: "release") { parentPicker("release", selection: $draft.releaseId) }
   }
 
-  /// The board's epics (or releases), and none.
+  /// The board's epics, or the project's changelog releases, and none.
   private func parentPicker(_ kind: String, selection: Binding<String>) -> some View {
     let none = kind == "epic" ? String(localized: "No epic") : String(localized: "No release")
-    let others = store.items.filter { $0.itemKind == kind && $0.id != itemId }.sorted(by: boardOrder)
+    let name = kind == "epic" ? String(localized: "Epic") : String(localized: "Release")
+    let others = store.parents(kind).filter { $0.id != itemId }
     // An epic or release deleted since stays listed while the item points at it, so it can be taken off.
-    let missing = selection.wrappedValue.isEmpty || others.contains { $0.id == selection.wrappedValue } ? [] : [FeedbackOption(value: selection.wrappedValue, label: String(localized: "Unknown \(BoardKind.name(kind).lowercased())"))]
+    let missing = selection.wrappedValue.isEmpty || others.contains { $0.id == selection.wrappedValue } ? [] : [FeedbackOption(value: selection.wrappedValue, label: String(localized: "Unknown \(name.lowercased())"))]
     return LabeledField(label: kind == "epic" ? "Epic" : "Release") {
       FeedbackSelect(
-        options: [FeedbackOption(value: "", label: none)] + others.map { other in FeedbackOption(value: other.id, label: other.number.map { "#\($0) \(other.title)" } ?? other.title) } + missing,
+        options: [FeedbackOption(value: "", label: none)] + others.map { FeedbackOption(value: $0.id, label: $0.label) } + missing,
         selection: selection,
         create: (kind == "epic" ? "New epic…" : "New release…", { parentName = ""; namingParent = kind })
       )
     }
   }
 
-  /// An epic or release named from its picker is created now, and this item takes it (the item's own Save keeps that).
+  /// An epic named from its picker is created now, a release is found or created by its version, and this item takes it
+  /// (the item's own Save keeps that).
   private func createParent(_ kind: String) async {
     let title = String(parentName.trimmed.prefix(BoardTitle.maxLength))
     parentName = ""
     guard !title.isEmpty else { return }
     do {
-      let parent = try await store.create(["title": .string(title), "kind": .string(kind)])
-      if kind == "epic" { draft.epicId = parent.id } else { draft.releaseId = parent.id }
+      if kind == "epic" {
+        draft.epicId = try await store.create(["title": .string(title), "kind": .string(kind)]).id
+      } else {
+        draft.releaseId = try await store.releaseNamed(title).id
+      }
     } catch {
       self.error = error.localizedDescription
     }
@@ -775,7 +782,8 @@ struct BoardItemEditor: View {
       if field == "status", let status = store.config?.status(key) { return status.label }
       if field == "assignee", let agent = store.agent(key) { return agent.name }
       if field == "kind" { return BoardKind.name(key) }
-      if field == "epicId" || field == "releaseId", let parent = store.item(key) { return parent.title }
+      if field == "epicId", let epic = store.item(key) { return epic.title }
+      if field == "releaseId", let release = store.release(key) { return release.pickerLabel }
     }
     if field == "labels", case .array(let values) = value {
       return values.map { value in

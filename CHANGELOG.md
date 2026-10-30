@@ -5,6 +5,8 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 ## Unreleased
 
+- **Releases on the planning board are changelog releases** (web, native, API, MCP): a card's Release picker lists the project's changelog releases, and typing a name there creates a draft release that the changelog shows too. A board *release* card is gone: `kind` is `task` or `epic`, and `releaseId` is a changelog release's id (a `kind: release` is refused). Boards that planned releases as cards run `bun scripts/backfill-board-releases.mjs` once (a dry run first, then `--apply`): it creates the changelog releases and moves their cards; the old release cards stay as plain cards to delete.
+
 ## 0.2.1 — 2026-10-29
 
 - **`schema:apply` checks and hardens security** (self-hosters): on every run it makes every class Parse holds master-only, including Parse's own (`_Role`, `_Session`, `_Installation`, …) and strays that `ensure-schema.mjs` does not declare, prints what was open, then asks each class for a row without any key and fails the run (exit `1`) if one answers. `bun run schema:acls` counts rows whose ACL is open to everyone, and `bun run schema:acls:apply` closes them (each closed row's `updatedAt` moves to now). Set `PARSE_CLIENT_KEY` for the script if your Parse requires a client key. No schema change.

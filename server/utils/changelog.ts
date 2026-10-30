@@ -36,6 +36,7 @@ import type { ItemAttachment } from '#shared/itemAttachments'
 import { deriveChangelogExcerpt, nextChangelogSlug, renderChangelogBody } from './changelogRender'
 import { emitDomainEventLater } from './domainEvents'
 import { assertOwnAttachments, itemAttachments } from './itemAttachments'
+import { freeReleaseCards } from './board'
 import { styleOf } from './projects'
 
 // The changelog: entries (what shipped, in the project's own words) grouped
@@ -990,6 +991,8 @@ export async function deleteChangelogRelease(project: ParseObject, row: ParseObj
   const entries = await new Parse.Query('ChangelogEntry').equalTo('project', project).equalTo('release', row).limit(1000).find(MASTER)
   for (const entry of entries) entry.unset('release')
   if (entries.length) await Parse.Object.saveAll(entries, MASTER)
+  // The board's cards that ship it stay on the board, with no release.
+  await freeReleaseCards(project, row.id || '')
   await row.destroy(MASTER)
 }
 

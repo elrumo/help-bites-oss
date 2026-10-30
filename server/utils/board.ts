@@ -121,10 +121,31 @@ function byRank(a: ParseObject, b: ParseObject): number {
   return compare('rank') || compare('number')
 }
 
-/** Rows saved before epics and releases are cards. */
+/** Rows saved before epics were kinds, and the release kind this replaced, are cards. */
 function kindOf(row: ParseObject): BoardItemKind {
-  const kind = row.get('kind')
-  return kind === 'epic' || kind === 'release' ? kind : 'task'
+  return row.get('kind') === 'epic' ? 'epic' : 'task'
+}
+
+export const EMPTY_PROGRESS: BoardProgress = { total: 0, done: 0, estimateTotal: 0, estimateDone: 0 }
+
+/**
+ * How far each changelog release is: its cards, and those in a done status, by count and by points.
+ * A release is not a board item, so its progress is worked out from the cards that name it.
+ */
+export async function releaseProgress(project: ParseObject, releaseIds: string[]): Promise<Map<string, BoardProgress>> {
+  const progress = new Map<string, BoardProgress>()
+  if (!releaseIds.length) return progress
+  const board = getBoardConfig(project)
+  const cards = await collectAll(() => new (useParse()).Query('BoardItem').equalTo('project', project).containedIn('releaseId', releaseIds), { max: BOARD_ITEMS_MAX, keys: ['status', 'releaseId', 'estimate'] })
+  for (const card of cards) {
+    const entry = progress.get(String(card.get('releaseId') || '')) || { ...EMPTY_PROGRESS }
+    const points = Number(card.get('estimate')) || 0
+    entry.total++
+    entry.estimateTotal += points
+    if (feedbackStatusCategory(board, String(card.get('status') || '')) === 'done') { entry.done++; entry.estimateDone += points }
+    progress.set(String(card.get('releaseId') || ''), entry)
+  }
+  return progress
 }
 
 /** An item by object id, or by its number when the operator names the project. */
@@ -151,33 +172,35 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
   const postIds = unique(rows.flatMap(row => stringList(row.get('feedbackPostIds'))))
   const conversationIds = options.conversations === false ? [] : unique(rows.flatMap(row => stringList(row.get('conversationIds'))))
   const relatedIds = unique(rows.flatMap(row => stringList(row.get('relatedItemIds'))))
-  const parentIds = unique(rows.flatMap(row => [String(row.get('epicId') || ''), String(row.get('releaseId') || '')]))
-  const groupIds = rows.filter(row => kindOf(row) !== 'task').map(row => row.id || '')
+  const parentIds = unique(rows.map(row => String(row.get('epicId') || '')))
+  const releaseIds = unique(rows.map(row => String(row.get('releaseId') || '')))
+  const groupIds = rows.filter(row => kindOf(row) === 'epic').map(row => row.id || '')
 
   // A whole board links more posts than one read returns: in batches, never more than were asked for.
-  const [postRows, conversationRows, relatedRows, parentRows, ...childPages] = await Promise.all([
+  const [postRows, conversationRows, relatedRows, parentRows, releaseRows, childCards] = await Promise.all([
     postIds.length ? collectAll(() => new Parse.Query('FeedbackPost').equalTo('project', project).containedIn('objectId', postIds), { max: postIds.length, keys: ['title', 'status', 'number', 'voteCount', 'hidden'] }) : [],
     conversationIds.length ? collectAll(() => new Parse.Query('Conversation').equalTo('project', project).containedIn('objectId', conversationIds).include('endUser'), { max: conversationIds.length }) : [],
     relatedIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn('objectId', relatedIds), { max: relatedIds.length, keys: ['number', 'title', 'status'] }) : [],
     parentIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn('objectId', parentIds), { max: parentIds.length, keys: ['number', 'title', 'status'] }) : [],
-    ...(['epicId', 'releaseId'] as const).map(field => groupIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn(field, groupIds), { max: BOARD_ITEMS_MAX, keys: ['status', 'epicId', 'releaseId', 'estimate'] }) : [])
+    releaseIds.some(Boolean) ? collectAll(() => new Parse.Query('ChangelogRelease').equalTo('project', project).containedIn('objectId', releaseIds.filter(Boolean)), { max: releaseIds.length, keys: ['version', 'status'] }) : [],
+    groupIds.length ? collectAll(() => new Parse.Query('BoardItem').equalTo('project', project).containedIn('epicId', groupIds), { max: BOARD_ITEMS_MAX, keys: ['status', 'epicId', 'estimate'] }) : []
   ])
   const ref = (row: ParseObject): [string, BoardRelatedItem] => [row.id || '', { id: row.id || '', number: typeof row.get('number') === 'number' ? row.get('number') : null, title: String(row.get('title') || ''), status: String(row.get('status') || '') }]
   const related = new Map<string, BoardRelatedItem>(relatedRows.map(ref))
   const parents = new Map<string, BoardRelatedItem>(parentRows.map(ref))
+  // A release is named by its version, and its status is the changelog's (draft or published).
+  const releases = new Map<string, BoardRelatedItem>(releaseRows.map(row => [row.id || '', { id: row.id || '', number: null, title: String(row.get('version') || ''), status: String(row.get('status') || '') }]))
   const progress = new Map<string, BoardProgress>()
-  // A card under both an epic and a release turns up in both reads: once per card.
-  for (const child of new Map(childPages.flat().map(card => [card.id, card])).values()) {
+  // A card under an epic counts for it, once per card.
+  for (const child of new Map(childCards.flat().map(card => [card.id, card])).values()) {
     const done = feedbackStatusCategory(board, String(child.get('status') || '')) === 'done'
-    // A card under an epic and a release counts for both; a card is never counted twice for the same parent.
-    for (const parent of unique([String(child.get('epicId') || ''), String(child.get('releaseId') || '')])) {
-      const entry = progress.get(parent) || { total: 0, done: 0, estimateTotal: 0, estimateDone: 0 }
-      const points = Number(child.get('estimate')) || 0
-      entry.total++
-      entry.estimateTotal += points
-      if (done) { entry.done++; entry.estimateDone += points }
-      progress.set(parent, entry)
-    }
+    const parent = String(child.get('epicId') || '')
+    const entry = progress.get(parent) || { ...EMPTY_PROGRESS }
+    const points = Number(child.get('estimate')) || 0
+    entry.total++
+    entry.estimateTotal += points
+    if (done) { entry.done++; entry.estimateDone += points }
+    progress.set(parent, entry)
   }
   const posts = new Map<string, BoardLinkedPost>(postRows.map(row => [row.id || '', { ...feedbackPostRef(row, feedback), voteCount: Number(row.get('voteCount') || 0), hidden: row.get('hidden') === true }]))
   const conversations = new Map<string, BoardLinkedConversation>(conversationRows.map((row) => {
@@ -215,8 +238,8 @@ export async function serializeBoardItems(project: ParseObject, rows: ParseObjec
       epicId: String(row.get('epicId') || ''),
       releaseId: String(row.get('releaseId') || ''),
       epic: parents.get(String(row.get('epicId') || '')) || null,
-      release: parents.get(String(row.get('releaseId') || '')) || null,
-      progress: kindOf(row) === 'task' ? null : progress.get(row.id || '') || { total: 0, done: 0, estimateTotal: 0, estimateDone: 0 },
+      release: releases.get(String(row.get('releaseId') || '')) || null,
+      progress: kindOf(row) === 'task' ? null : progress.get(row.id || '') || { ...EMPTY_PROGRESS },
       errorRefs: readErrorRefs(row.get('errorRefs')),
       voteCount: linkedPosts.filter(post => !post.hidden).reduce((sum, post) => sum + post.voteCount, 0),
       lastModifiedBy: String(row.get('lastModifiedBy') || ''),
@@ -241,7 +264,7 @@ export async function listBoardItems(project: ParseObject, filter: { conversatio
     if (filter.conversation) query.equalTo('conversationIds', filter.conversation)
     if (filter.feedbackPost) query.equalTo('feedbackPostIds', filter.feedbackPost)
     // Rows from before epics and releases have no kind: they are cards.
-    if (filter.kind === 'task') query.notContainedIn('kind', ['epic', 'release'])
+    if (filter.kind === 'task') query.notEqualTo('kind', 'epic')
     else if (filter.kind) query.equalTo('kind', filter.kind)
     if (filter.epicId) query.equalTo('epicId', filter.epicId)
     if (filter.releaseId) query.equalTo('releaseId', filter.releaseId)
@@ -277,22 +300,34 @@ function applyValues(row: ParseObject, values: BoardItemValues): void {
  */
 async function setParents(project: ParseObject, row: ParseObject, values: BoardItemValues, before: BoardItemKind): Promise<void> {
   const kind = kindOf(row)
-  if (values.kind !== undefined && values.kind !== before && before !== 'task' && row.id) {
-    const Parse = useParse()
-    const field = before === 'epic' ? 'epicId' : 'releaseId'
-    if (await new Parse.Query('BoardItem').equalTo('project', project).equalTo(field, row.id).first(MASTER)) badRequest([`Move the cards out of this ${before} before changing its kind`])
+  if (values.kind !== undefined && values.kind !== before && before === 'epic' && row.id) {
+    if (await new (useParse()).Query('BoardItem').equalTo('project', project).equalTo('epicId', row.id).first(MASTER)) badRequest([`Move the cards out of this ${before} before changing its kind`])
   }
-  for (const [field, parent] of [['epicId', 'epic'], ['releaseId', 'release']] as const) {
-    const wanted = values[field]
-    if (wanted) {
-      if (!kindCanHave(kind, parent)) badRequest([`A ${kind} cannot belong to a ${parent}`])
-      const target = await findBoardItem(project, wanted)
-      if (!target || kindOf(target) !== parent) throw createError({ statusCode: 404, statusMessage: `${parent === 'epic' ? 'Epic' : 'Release'} not found` })
-      row.set(field, target.id)
-    } else if (wanted === '' || (values.kind !== undefined && !kindCanHave(kind, parent))) {
-      row.unset(field)
-    }
+  if (values.epicId) {
+    if (!kindCanHave(kind, 'epic')) badRequest([`A ${kind} cannot belong to an epic`])
+    const target = await findBoardItem(project, values.epicId)
+    if (!target || kindOf(target) !== 'epic') throw createError({ statusCode: 404, statusMessage: 'Epic not found' })
+    row.set('epicId', target.id)
+  } else if (values.epicId === '' || (values.kind !== undefined && !kindCanHave(kind, 'epic'))) {
+    row.unset('epicId')
   }
+  // A release is a changelog release of this project: the board's cards point at it, nothing else.
+  if (values.releaseId) {
+    const target = await new (useParse()).Query('ChangelogRelease').equalTo('project', project).get(values.releaseId, MASTER).catch(() => undefined)
+    if (!target) throw createError({ statusCode: 404, statusMessage: 'Release not found' })
+    row.set('releaseId', target.id)
+  } else if (values.releaseId === '') {
+    row.unset('releaseId')
+  }
+}
+
+/** Frees the cards of a release that is being deleted: they stay on the board, with no release. */
+export async function freeReleaseCards(project: ParseObject, releaseId: string): Promise<void> {
+  const Parse = useParse()
+  await eachBatch(() => new Parse.Query('BoardItem').equalTo('project', project).equalTo('releaseId', releaseId), (cards) => {
+    for (const card of cards) card.unset('releaseId')
+    return Parse.Object.saveAll(cards, MASTER)
+  }, { keys: ['releaseId'] })
 }
 
 type LinkTarget = { kind: 'feedback', id: string, row: ParseObject } | { kind: 'conversation', id: string, row: ParseObject } | { kind: 'item', id: string, row: ParseObject }
@@ -501,13 +536,11 @@ export function readLinkInput(payload: unknown): { kind: BoardLinkKind, id: stri
 export async function deleteBoardItem(row: ParseObject): Promise<void> {
   const Parse = useParse()
   await eachBatch(() => new Parse.Query('BoardItemComment').equalTo('item', row), comments => Parse.Object.destroyAll(comments, MASTER), { keys: ['objectId'] })
-  // Deleting an epic or release frees its cards; it never deletes them.
-  for (const field of ['epicId', 'releaseId'] as const) {
-    await eachBatch(() => new Parse.Query('BoardItem').equalTo(field, row.id || ''), (cards) => {
-      for (const card of cards) card.unset(field)
-      return Parse.Object.saveAll(cards, MASTER)
-    }, { keys: [field] })
-  }
+  // Deleting an epic frees its cards; it never deletes them.
+  await eachBatch(() => new Parse.Query('BoardItem').equalTo('epicId', row.id || ''), (cards) => {
+    for (const card of cards) card.unset('epicId')
+    return Parse.Object.saveAll(cards, MASTER)
+  }, { keys: ['epicId'] })
   await row.destroy(MASTER)
 }
 

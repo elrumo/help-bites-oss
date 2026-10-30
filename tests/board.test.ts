@@ -231,19 +231,19 @@ describe('roadmap', () => {
 
 describe('epics and releases', () => {
   test('kind, epicId and releaseId are read; an empty id clears the parent', () => {
-    const { values, errors } = readBoardItemInput({ title: 'Export', kind: 'epic', releaseId: ' #4 ', epicId: null }, config, { create: true })
+    const { values, errors } = readBoardItemInput({ title: 'Export', kind: 'epic', releaseId: ' rel_1 ', epicId: null }, config, { create: true })
     expect(errors).toEqual([])
-    expect(values).toMatchObject({ kind: 'epic', releaseId: '#4', epicId: '' })
-    expect(readBoardItemInput({ kind: 'sprint' }, config, { create: false }).errors[0]).toContain('kind must be one of')
+    expect(values).toMatchObject({ kind: 'epic', releaseId: 'rel_1', epicId: '' })
+    expect(readBoardItemInput({ kind: 'sprint' }, config, { create: false }).errors[0]).toContain('kind must be one of task, epic')
+    // A release is a changelog release now, not a kind of card.
+    expect(readBoardItemInput({ kind: 'release' }, config, { create: false }).errors[0]).toContain('kind must be one of task, epic')
     expect(readBoardItemInput({ epicId: 3 }, config, { create: false }).errors).toContain('epicId must be a string')
   })
 
-  test('only a card has an epic; a release is held by nothing', () => {
+  test('only a card has an epic; a changelog release holds cards and epics', () => {
     expect(kindCanHave('task', 'epic')).toBe(true)
     expect(kindCanHave('epic', 'epic')).toBe(false)
-    expect(kindCanHave('release', 'epic')).toBe(false)
     expect(kindCanHave('task', 'release')).toBe(true)
     expect(kindCanHave('epic', 'release')).toBe(true)
-    expect(kindCanHave('release', 'release')).toBe(false)
   })
 })

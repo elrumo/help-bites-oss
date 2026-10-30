@@ -534,13 +534,13 @@ boardItem(3, 'Dark mode on receipts', 'planned', 'planned', ['web'], '', 'normal
 boardItem(4, 'Slack notifications', 'planned', 'planned', ['api'], 'agent_demo', 'normal', [16], [], true, 60 * 30)
 boardItem(5, 'Offline mode for iPad', 'backlog', 'open', ['ios'], '', 'normal', [19], [], false, 60 * 6)
 boardItem(6, 'Rename the workspace URL', 'done', 'done', ['web'], 'agent_sam', 'normal', [18], [], true, 60 * 24 * 2)
-// An epic and a release over the cards above; the panel counts their progress from the cards.
+// An epic over the cards above, and a release (a changelog release, below) that ships some of them; the panel counts their progress from the cards.
 boardItem(7, 'Sharing and export', 'in-progress', 'active', [], '', 'normal', [], [], false, 60 * 8)
-boardItem(8, '2.5.0', 'planned', 'planned', [], '', 'normal', [], [], true, 60 * 10)
-Object.assign(boardItems[6]!, { kind: 'epic', releaseId: 'item_demo8' })
-Object.assign(boardItems[7]!, { kind: 'release', targetDate: '2026-11-30T00:00:00.000Z' })
+boardItem(8, 'Write the 2.5.0 release notes', 'planned', 'planned', [], '', 'normal', [], [], true, 60 * 10)
+Object.assign(boardItems[6]!, { kind: 'epic', releaseId: 'rel_demo2' })
 for (const number of [1, 4]) boardItems[number - 1]!.epicId = 'item_demo7'
-for (const number of [1, 3, 4]) boardItems[number - 1]!.releaseId = 'item_demo8'
+for (const number of [1, 3, 4]) boardItems[number - 1]!.releaseId = 'rel_demo2'
+for (const item of boardItems) if (item.releaseId) item.release = { id: 'rel_demo2', number: null, title: '2.5.0', status: 'draft' }
 
 const changelogEntries: ChangelogEntry[] = []
 function changelogEntry(number: number, title: string, summary: string, tag: ChangelogEntry['tag'], status: 'draft' | 'published', version: string, minutesAgo: number, ai = false) {
@@ -560,7 +560,8 @@ changelogEntry(4, 'Export notebooks to Markdown', 'One zip per notebook with a f
 changelogEntry(5, 'Calendar dates no longer shift in Safari', 'Tasks showed up a day early in the calendar grid. They now land on their due date.', 'fix', 'draft', '', 60 * 3, true)
 
 const changelogReleases: ChangelogRelease[] = [
-  { id: 'rel_demo1', projectId: 'acme', version: '2.4.0', title: 'Workspace URLs and faster search', summary: '', status: 'published', publishedAt: ago(60 * 24 * 2), createdAt: ago(60 * 24 * 3), updatedAt: ago(60 * 24 * 2) }
+  { id: 'rel_demo1', projectId: 'acme', version: '2.4.0', title: 'Workspace URLs and faster search', summary: '', status: 'published', publishedAt: ago(60 * 24 * 2), createdAt: ago(60 * 24 * 3), updatedAt: ago(60 * 24 * 2) },
+  { id: 'rel_demo2', projectId: 'acme', version: '2.5.0', title: '', summary: '', status: 'draft', publishedAt: null, createdAt: ago(60 * 10), updatedAt: ago(60 * 10) }
 ]
 
 // Acme's blog: a published story about the release, and a draft in progress.

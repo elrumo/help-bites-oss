@@ -152,8 +152,8 @@
                 <span class="truncate text-sm font-semibold">{{ g.label }}</span>
                 <span class="text-xs tabular-nums text-muted">{{ g.items.length }}</span>
               </button>
-              <BoardProgress v-if="g.parent" :done="progressOf(g.parent).done" :total="progressOf(g.parent).total" :points="progressOf(g.parent).estimateTotal" :points-done="progressOf(g.parent).estimateDone" class="w-48" />
-              <UButton v-if="g.parent" icon="i-lucide-arrow-up-right" size="xs" color="neutral" variant="ghost" square :aria-label="$t('board.openItem')" @click="openItem(g.parent.id)" />
+              <BoardProgress v-if="g.parent" :done="progressFor(g.parent.id).done" :total="progressFor(g.parent.id).total" :points="progressFor(g.parent.id).estimateTotal" :points-done="progressFor(g.parent.id).estimateDone" class="w-48" />
+              <UButton v-if="g.parent && groupBy === 'epic'" icon="i-lucide-arrow-up-right" size="xs" color="neutral" variant="ghost" square :aria-label="$t('board.openItem')" @click="openItem(g.parent.id)" />
             </div>
             <div v-if="!isCollapsed(g.key)" class="overflow-hidden rounded-lg border border-default bg-default">
               <div :class="[LIST_GRID, 'border-b border-default bg-elevated/60 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted']">
@@ -174,7 +174,7 @@
                 <span v-else />
                 <select v-if="kindCanHave(item.kind, 'release')" :value="item.releaseId" :class="CELL" :aria-label="$t('board.release')" @change="quickPatch(item, { releaseId: ($event.target as HTMLSelectElement).value })">
                   <option value="">—</option>
-                  <option v-for="release in releases" :key="release.id" :value="release.id">{{ parentLabel(release.id) }}</option>
+                  <option v-for="release in releases" :key="release.id" :value="release.id">{{ release.version }}</option>
                 </select>
                 <span v-else />
                 <select :value="item.assigneeId" :class="CELL" :aria-label="$t('board.assignee')" @change="quickPatch(item, { assigneeId: ($event.target as HTMLSelectElement).value })">
@@ -505,6 +505,7 @@ import { isImageMime, type ItemAttachment } from '#shared/itemAttachments'
 import { can } from '#shared/roles'
 import { BOARD_TITLE_DEBOUNCE_MS, fallbackBoardTitle } from '#shared/boardTitle'
 import { BOARD_ITEM_KINDS, BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, kindCanHave, rankBetween, type BoardConfig, type BoardItem, type BoardItemHistory, type BoardItemKind, type BoardItemPriority, type BoardRoadmapLayout, type BoardSavedView } from '#shared/board'
+import { CHANGELOG_VERSION_MAX_LENGTH, type ChangelogRelease } from '#shared/changelog'
 import type { ConversationPriority } from '#shared/support'
 import type { AdminProject } from '~~/server/utils/projects'
 
@@ -528,6 +529,8 @@ const appUrl = useAppUrl()
 const project = computed<AdminProject | null>(() => projects.value.find(p => p.id === id) || null)
 const board = computed<BoardConfig | null>(() => project.value?.board || null)
 const items = ref<BoardItem[]>([])
+// The project's changelog releases: a card's release is one of them, and a release made here is one in the changelog too.
+const releaseRows = ref<ChangelogRelease[]>([])
 const agents = ref<HumanAgent[]>([])
 const loading = ref(true)
 const error = ref('')
@@ -556,7 +559,8 @@ function cardPills(item: BoardItem) {
 /** Target dates are calendar days at UTC midnight. */
 const dayLabel = (value: string) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
-const KIND_ICONS: Record<BoardItemKind, string> = { task: 'i-lucide-square', epic: 'i-lucide-zap', release: 'i-lucide-rocket' }
+const KIND_ICONS: Record<BoardItemKind, string> = { task: 'i-lucide-square', epic: 'i-lucide-zap' }
+const RELEASE_ICON = 'i-lucide-rocket'
 const kindItems = computed(() => BOARD_ITEM_KINDS.map(value => ({ label: t(`board.kinds.${value}`), value })))
 const PRIORITIES = ['urgent', 'high', 'normal', 'low'] as const
 const PRIORITY_KEYS: Record<ConversationPriority, string> = { low: 'board.low', normal: 'board.normal', high: 'board.high', urgent: 'board.urgent' }
@@ -613,7 +617,7 @@ const epicFilter = ref('__all__')
 const releaseFilter = ref('__all__')
 const kindFilterItems = computed(() => [{ label: t('board.anyKind'), value: '__all__' }, ...kindItems.value])
 const epicFilterItems = computed(() => [{ label: t('board.anyEpic'), value: '__all__' }, ...epics.value.map(epic => ({ label: parentLabel(epic.id), value: epic.id }))])
-const releaseFilterItems = computed(() => [{ label: t('board.anyRelease'), value: '__all__' }, ...releases.value.map(release => ({ label: parentLabel(release.id), value: release.id }))])
+const releaseFilterItems = computed(() => [{ label: t('board.anyRelease'), value: '__all__' }, ...releases.value.map(release => ({ label: release.version, value: release.id }))])
 const filtering = computed(() => Boolean(search.value.trim() || labelFilter.value.length || assigneeFilter.value !== '__all__' || priorityFilter.value !== '__all__' || roadmapOnly.value || kindFilter.value !== '__all__' || epicFilter.value !== '__all__' || releaseFilter.value !== '__all__'))
 function clearFilters() {
   search.value = ''
@@ -692,9 +696,9 @@ const defaultStatus = computed(() => (board.value ? defaultFeedbackStatus(board.
 /** A status the board no longer knows sits in the default column. */
 const columnOf = (item: BoardItem) => (statusOf(item.status) ? item.status : defaultStatus.value)
 const sorted = computed(() => [...items.value].sort((a, b) => a.rank - b.rank || (a.number ?? 0) - (b.number ?? 0)))
-// Epics and releases are items too. Their cards and progress are read from the loaded items, so every edit moves them at once.
+// Epics are items; releases are changelog releases. Their cards and progress are read from the loaded items, so every edit moves them at once.
 const epics = computed(() => sorted.value.filter(i => i.kind === 'epic'))
-const releases = computed(() => sorted.value.filter(i => i.kind === 'release'))
+const releases = computed(() => releaseRows.value)
 const itemById = computed(() => new Map(items.value.map(i => [i.id, i])))
 type BoardProgressTotals = { total: number, done: number, estimateTotal: number, estimateDone: number }
 const progressById = computed(() => {
@@ -711,8 +715,10 @@ const progressById = computed(() => {
   }
   return progress
 })
-const progressOf = (item: BoardItem): BoardProgressTotals => progressById.value.get(item.id) || { total: 0, done: 0, estimateTotal: 0, estimateDone: 0 }
-const childrenOf = (parent: BoardItem) => items.value.filter(i => i.id !== parent.id && (i.epicId === parent.id || i.releaseId === parent.id))
+const progressFor = (id: string): BoardProgressTotals => progressById.value.get(id) || { total: 0, done: 0, estimateTotal: 0, estimateDone: 0 }
+const progressOf = (item: BoardItem): BoardProgressTotals => progressFor(item.id)
+const childrenOf = (parent: BoardItem) => items.value.filter(i => i.id !== parent.id && i.epicId === parent.id)
+const releaseLabel = (id: string) => releaseRows.value.find(release => release.id === id)?.version || ''
 function parentLabel(itemId: string) {
   const parent = itemById.value.get(itemId)
   return parent ? `${parent.number ? `#${parent.number} ` : ''}${parent.title}` : ''
@@ -721,7 +727,7 @@ function parentLabel(itemId: string) {
 function parentChips(item: BoardItem) {
   return [
     ...(item.epicId && itemById.value.get(item.epicId) ? [{ key: 'epic', icon: KIND_ICONS.epic, label: itemById.value.get(item.epicId)!.title, title: `${t('board.epic')}: ${parentLabel(item.epicId)}` }] : []),
-    ...(item.releaseId && itemById.value.get(item.releaseId) ? [{ key: 'release', icon: KIND_ICONS.release, label: itemById.value.get(item.releaseId)!.title, title: `${t('board.release')}: ${parentLabel(item.releaseId)}` }] : [])
+    ...(item.release ? [{ key: 'release', icon: RELEASE_ICON, label: item.release.title, title: `${t('board.release')}: ${item.release.title}` }] : [])
   ]
 }
 const ordered = computed(() => {
@@ -793,9 +799,11 @@ const listGroups = computed<ListGroup[]>(() => {
     groups = (board.value?.statuses || []).map(status => ({ key: `status:${status.key}`, label: status.label, color: status.color, items: list.filter(item => columnOf(item) === status.key), create: { status: status.key } }))
   } else {
     const field = groupBy.value === 'epic' ? 'epicId' : 'releaseId'
-    const parents = groupBy.value === 'epic' ? epics.value : releases.value
+    const parents = groupBy.value === 'epic'
+      ? epics.value.map(epic => ({ id: epic.id, label: parentLabel(epic.id) }))
+      : releases.value.map(release => ({ id: release.id, label: release.version }))
     groups = [
-      ...parents.map(parent => ({ key: `${groupBy.value}:${parent.id}`, label: parentLabel(parent.id), color: 'primary' as FeedbackColor, parent, items: list.filter(item => item[field] === parent.id), create: { [field]: parent.id } })),
+      ...parents.map(parent => ({ key: `${groupBy.value}:${parent.id}`, label: parent.label, color: 'primary' as FeedbackColor, parent, items: list.filter(item => item[field] === parent.id), create: { [field]: parent.id } })),
       { key: `${groupBy.value}:none`, label: t(groupBy.value === 'epic' ? 'board.noEpic' : 'board.noRelease'), color: 'neutral' as FeedbackColor, items: list.filter(item => !item[field]), create: {} }
     ]
   }
@@ -842,7 +850,12 @@ async function quickAdd(group: ListGroup) {
 }
 
 async function loadItems() {
-  items.value = (await api<{ items: BoardItem[] }>('/admin/board-items', { query: { project: id } })).items
+  const [list, releaseList] = await Promise.all([
+    api<{ items: BoardItem[] }>('/admin/board-items', { query: { project: id } }),
+    api<{ releases: ChangelogRelease[] }>('/admin/changelog/releases', { query: { project: id } })
+  ])
+  items.value = list.items
+  releaseRows.value = releaseList.releases
 }
 
 async function loadHistory(reset = true) {
@@ -877,7 +890,8 @@ function toggleHistory(event: Event) {
 function historyValue(field: string, value: unknown): string {
   if (value === null || value === undefined || value === '') return '—'
   if (field === 'status' && typeof value === 'string') return statusOf(value)?.label || value
-  if ((field === 'epicId' || field === 'releaseId') && typeof value === 'string') return itemById.value.get(value)?.title || value
+  if (field === 'epicId' && typeof value === 'string') return itemById.value.get(value)?.title || value
+  if (field === 'releaseId' && typeof value === 'string') return releaseLabel(value) || value
   if (field === 'kind' && typeof value === 'string') return t(`board.kinds.${value}`)
   if (field === 'assignee' && typeof value === 'string') return agents.value.find(agent => agent.id === value)?.name || value
   if (field === 'labels' && Array.isArray(value)) return value.map(label => typeof label === 'string' ? labelOf(label)?.label || label : historyValue('', label)).join(', ') || '—'
@@ -992,7 +1006,7 @@ const current = computed(() => (editingId.value ? items.value.find(i => i.id ===
 const draft = reactive({ title: '', kind: 'task' as BoardItemKind, epicId: 'none', releaseId: 'none', description: '', publicDescription: '', status: '', priority: 'none' as BoardItemPriority | 'none', assigneeId: 'unassigned', labels: [] as string[], attachments: [] as ItemAttachment[], targetDate: '', estimate: '' as number | '', public: false, posts: [] as { id: string, number: number | null, title: string, voteCount: number }[] })
 const draftAssignee = computed(() => agents.value.find(agent => agent.id === draft.assigneeId) || null)
 const epicItems = computed(() => [{ label: t('board.noEpic'), value: 'none' }, ...epics.value.map(epic => ({ label: parentLabel(epic.id), value: epic.id }))])
-const releaseItems = computed(() => [{ label: t('board.noRelease'), value: 'none' }, ...releases.value.map(release => ({ label: parentLabel(release.id), value: release.id }))])
+const releaseItems = computed(() => [{ label: t('board.noRelease'), value: 'none' }, ...releases.value.map(release => ({ label: release.version, value: release.id }))])
 /** The open epic's or release's cards, and the items it can still take. */
 const cards = computed(() => (current.value && current.value.kind !== 'task' ? childrenOf(current.value) : []))
 const addableCards = computed(() => {
@@ -1165,9 +1179,8 @@ function resetParents() {
 }
 
 async function changeKind() {
-  // Only a card has an epic, and a release is in nothing: the server clears them too.
+  // Only a card has an epic: the server clears it too.
   if (!kindCanHave(draft.kind, 'epic')) draft.epicId = 'none'
-  if (!kindCanHave(draft.kind, 'release')) draft.releaseId = 'none'
   if (!current.value) return
   await patch({ kind: draft.kind })
   resetParents()
@@ -1179,16 +1192,26 @@ async function setParent(field: 'epicId' | 'releaseId') {
   resetParents()
 }
 
-/** An epic or release named in its picker is created now, and the item takes it. */
+/**
+ * An epic named in its picker is created now, and the item takes it. A release is a changelog release: the
+ * name picks the release with that version, or creates a draft one, which the changelog lists at once.
+ */
 async function createParent(kind: 'epic' | 'release', name: string) {
-  const title = name.trim().slice(0, 200)
+  const title = name.trim().slice(0, kind === 'release' ? CHANGELOG_VERSION_MAX_LENGTH : 200)
   if (!title) return
   try {
+    if (kind === 'release') {
+      const same = releaseRows.value.find(release => release.version.trim().toLowerCase() === title.toLowerCase())
+      const release = same || (await api<{ release: ChangelogRelease }>('/admin/changelog/releases', { method: 'POST', query: { project: id }, body: { version: title } })).release
+      if (!same) releaseRows.value = [release, ...releaseRows.value]
+      draft.releaseId = release.id
+      await setParent('releaseId')
+      return
+    }
     const { item } = await api<{ item: BoardItem }>('/admin/board-items', { method: 'POST', query: { project: id }, body: { kind, title } })
     replaceItem(item)
-    const field = kind === 'epic' ? 'epicId' : 'releaseId'
-    draft[field] = item.id
-    await setParent(field)
+    draft.epicId = item.id
+    await setParent('epicId')
   } catch (e: any) {
     editorError.value = e?.message || t('board.createError')
   }
