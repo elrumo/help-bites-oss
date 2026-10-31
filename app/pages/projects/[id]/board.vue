@@ -84,7 +84,7 @@
               </div>
               <span class="text-xs tabular-nums text-muted">{{ (visibleByColumn[status.key] || []).length }}</span>
             </header>
-            <div class="flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto px-2 pb-2">
+            <div class="flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto px-2 pb-2 pt-1">
               <div v-for="(item, index) in visibleByColumn[status.key] || []" :key="item.id" class="relative">
                 <div v-if="dragging && dragOver === status.key && dropBefore === item.id" class="pointer-events-none absolute inset-x-1 -top-[5px] h-0.5 rounded-full bg-primary" aria-hidden="true" />
                 <button
@@ -396,38 +396,41 @@
               <ChangelogLinks :project-id="id" kind="board" :target-id="current.id" :source="{ title: current.title, publicDescription: current.publicDescription }" />
             </section>
 
-            <BoardItemComments :key="current.id" :project-id="id" :item-id="current.id" />
+            <BoardItemComments :key="current.id" :project-id="id" :item-id="current.id" class="col-span-2" />
 
-            <details :open="historyExpanded" class="rounded-xl border border-default" @toggle="toggleHistory">
-              <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-semibold">
+            <UCollapsible :open="historyExpanded" class="col-span-2 rounded-xl border border-default" @update:open="toggleHistory">
+              <button type="button" class="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm font-semibold">
                 <UIcon name="i-lucide-history" class="size-4 text-muted" />
                 <span>{{ $t('board.editHistory') }}</span>
                 <span class="ml-auto max-w-[70%] truncate text-right text-xs font-normal text-muted" :title="current.updatedAt ? new Date(current.updatedAt).toLocaleString() : ''">
                   <template v-if="current.lastModifiedBy">{{ $t('board.historyActor', { name: current.lastModifiedBy, source: $t(`board.historySource.${current.lastModifiedSource || 'api'}`) }) }} · {{ timeAgo(current.updatedAt) }}</template>
                   <template v-else>{{ $t('board.lastModifiedUnknown', { time: timeAgo(current.updatedAt) }) }}</template>
                 </span>
-              </summary>
-              <div class="space-y-3 border-t border-default px-3 py-3">
-                <p v-if="historyLoading" class="text-xs text-muted">{{ $t('board.historyLoading') }}</p>
-                <p v-else-if="historyError" class="text-xs text-error">{{ $t('board.historyFailed') }}</p>
-                <p v-else-if="!itemHistory.length" class="text-xs text-muted">{{ $t('board.historyNotAvailable') }}</p>
-                <ol v-else class="space-y-4">
-                  <li v-for="entry in itemHistory" :key="entry.id" class="border-l border-default pl-3">
-                    <div class="flex flex-wrap items-baseline gap-x-2 text-xs">
-                      <span class="font-medium text-highlighted">{{ entry.action === 'created' ? $t('board.historyCreated') : $t('board.historyUpdated') }} · {{ $t('board.historyActor', { name: entry.actorName, source: $t(`board.historySource.${entry.source}`) }) }}</span>
-                      <time class="text-muted" :datetime="entry.createdAt" :title="new Date(entry.createdAt).toLocaleString()">{{ timeAgo(entry.createdAt) }}</time>
-                    </div>
-                    <ul v-if="entry.changes.length" class="mt-2 space-y-2 text-xs">
-                      <li v-for="(change, index) in entry.changes" :key="`${entry.id}-${index}`" class="space-y-0.5">
-                        <span v-if="change.field !== 'rank'" class="font-medium text-toned">{{ $t(`board.historyField.${change.field}`) }}</span>
-                        <div class="whitespace-pre-wrap break-words text-muted">{{ change.field === 'rank' ? $t('board.historyPositionChanged') : `${historyValue(change.field, change.from)} → ${historyValue(change.field, change.to)}` }}</div>
-                      </li>
-                    </ul>
-                  </li>
-                </ol>
-                <UButton v-if="historyHasMore" size="xs" color="neutral" variant="ghost" :loading="historyLoading" :label="$t('board.historyOlder')" @click="loadHistory(false)" />
-              </div>
-            </details>
+                <UIcon name="i-lucide-chevron-down" class="size-4 shrink-0 text-muted transition-transform" :class="historyExpanded ? 'rotate-180' : ''" />
+              </button>
+              <template #content>
+                <div class="max-h-80 space-y-3 overflow-auto border-t border-default px-3 py-3">
+                  <p v-if="historyLoading" class="text-xs text-muted">{{ $t('board.historyLoading') }}</p>
+                  <p v-else-if="historyError" class="text-xs text-error">{{ $t('board.historyFailed') }}</p>
+                  <p v-else-if="!itemHistory.length" class="text-xs text-muted">{{ $t('board.historyNotAvailable') }}</p>
+                  <ol v-else class="space-y-4">
+                    <li v-for="entry in itemHistory" :key="entry.id" class="border-l border-default pl-3">
+                      <div class="flex flex-wrap items-baseline gap-x-2 text-xs">
+                        <span class="font-medium text-highlighted">{{ entry.action === 'created' ? $t('board.historyCreated') : $t('board.historyUpdated') }} · {{ $t('board.historyActor', { name: entry.actorName, source: $t(`board.historySource.${entry.source}`) }) }}</span>
+                        <time class="text-muted" :datetime="entry.createdAt" :title="new Date(entry.createdAt).toLocaleString()">{{ timeAgo(entry.createdAt) }}</time>
+                      </div>
+                      <ul v-if="entry.changes.length" class="mt-2 space-y-2 text-xs">
+                        <li v-for="(change, index) in entry.changes" :key="`${entry.id}-${index}`" class="space-y-0.5">
+                          <span v-if="change.field !== 'rank'" class="font-medium text-toned">{{ $t(`board.historyField.${change.field}`) }}</span>
+                          <div class="whitespace-pre-wrap break-words text-muted">{{ change.field === 'rank' ? $t('board.historyPositionChanged') : `${historyValue(change.field, change.from)} → ${historyValue(change.field, change.to)}` }}</div>
+                        </li>
+                      </ul>
+                    </li>
+                  </ol>
+                  <UButton v-if="historyHasMore" size="xs" color="neutral" variant="ghost" :loading="historyLoading" :label="$t('board.historyOlder')" @click="loadHistory(false)" />
+                </div>
+              </template>
+            </UCollapsible>
           </div>
 
           <p v-if="editorError" class="text-sm text-error">{{ editorError }}</p>
@@ -882,9 +885,9 @@ async function loadHistory(reset = true) {
   }
 }
 
-function toggleHistory(event: Event) {
-  historyExpanded.value = (event.currentTarget as HTMLDetailsElement).open
-  if (historyExpanded.value && (!itemHistory.value.length || historyItemId.value !== current.value?.id || historyError.value)) void loadHistory(true)
+function toggleHistory(open: boolean) {
+  historyExpanded.value = open
+  if (open && (!itemHistory.value.length || historyItemId.value !== current.value?.id || historyError.value)) void loadHistory(true)
 }
 
 function historyValue(field: string, value: unknown): string {

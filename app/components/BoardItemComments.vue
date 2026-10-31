@@ -1,51 +1,54 @@
 <template>
-  <details class="rounded-xl border border-default" @toggle="toggle">
-    <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-semibold">
+  <UCollapsible :open="open" :unmount-on-hide="false" class="rounded-xl border border-default" @update:open="toggle">
+    <button type="button" class="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm font-semibold">
       <UIcon name="i-lucide-message-square" class="size-4 text-muted" />
       <span>{{ $t('board.comments') }}</span>
       <span v-if="loaded" class="text-xs font-normal text-muted">{{ comments.length }}</span>
-    </summary>
-    <div class="space-y-4 border-t border-default px-3 py-3">
-      <p v-if="loading && !comments.length" class="text-xs text-muted">{{ $t('board.commentsLoading') }}</p>
-      <p v-else-if="error && !comments.length" class="text-xs text-error">{{ $t('board.commentsFailed') }}</p>
-      <p v-else-if="!comments.length" class="text-xs text-muted">{{ $t('board.noComments') }}</p>
+      <UIcon name="i-lucide-chevron-down" class="ml-auto size-4 shrink-0 text-muted transition-transform" :class="open ? 'rotate-180' : ''" />
+    </button>
+    <template #content>
+      <div class="max-h-80 space-y-4 overflow-auto border-t border-default px-3 py-3">
+        <p v-if="loading && !comments.length" class="text-xs text-muted">{{ $t('board.commentsLoading') }}</p>
+        <p v-else-if="error && !comments.length" class="text-xs text-error">{{ $t('board.commentsFailed') }}</p>
+        <p v-else-if="!comments.length" class="text-xs text-muted">{{ $t('board.noComments') }}</p>
 
-      <ol v-if="comments.length" class="space-y-3">
-        <li v-for="comment in comments" :key="comment.id" :class="comment.parentId ? 'ml-4 border-l border-default pl-3' : ''" class="space-y-1.5">
-          <div class="flex items-baseline gap-2 text-xs">
-            <span class="font-medium text-highlighted">{{ comment.authorName }}</span>
-            <span class="text-muted">{{ $t(`board.historySource.${comment.source}`) }}</span>
-            <time class="ml-auto text-muted" :datetime="comment.createdAt" :title="new Date(comment.createdAt).toLocaleString()">{{ new Date(comment.createdAt).toLocaleString() }}</time>
+        <ol v-if="comments.length" class="space-y-3">
+          <li v-for="comment in comments" :key="comment.id" :class="comment.parentId ? 'ml-4 border-l border-default pl-3' : ''" class="space-y-1.5">
+            <div class="flex items-baseline gap-2 text-xs">
+              <span class="font-medium text-highlighted">{{ comment.authorName }}</span>
+              <span class="text-muted">{{ $t(`board.historySource.${comment.source}`) }}</span>
+              <time class="ml-auto text-muted" :datetime="comment.createdAt" :title="new Date(comment.createdAt).toLocaleString()">{{ new Date(comment.createdAt).toLocaleString() }}</time>
+            </div>
+            <p class="whitespace-pre-wrap break-words text-[13px] text-toned">{{ comment.body }}</p>
+            <div v-if="comment.attachments.length" class="flex flex-wrap gap-2 pt-1">
+              <a v-for="file in comment.attachments" :key="file.url" :href="file.url" target="_blank" rel="noopener" class="flex max-w-full items-center gap-2 rounded-lg border border-default px-2 py-1.5 text-xs text-toned">
+                <img v-if="file.mime.startsWith('image/')" :src="file.url" :alt="file.name" class="size-9 rounded object-cover" loading="lazy">
+                <UIcon v-else name="i-lucide-file" class="size-4 shrink-0 text-muted" />
+                <span class="max-w-52 truncate">{{ file.name }}</span>
+                <UIcon name="i-lucide-download" class="size-3.5 shrink-0 text-muted" />
+              </a>
+            </div>
+            <UButton size="xs" color="neutral" variant="ghost" :label="$t('board.reply')" @click="replyTo(comment)" />
+          </li>
+        </ol>
+
+        <UButton v-if="hasMore" size="xs" color="neutral" variant="ghost" :loading="loading" :label="$t('board.moreComments')" @click="loadMore" />
+
+        <form class="space-y-2" @submit.prevent="submit">
+          <p v-if="replyTarget" class="text-xs text-muted">
+            {{ $t('board.replyingTo', { name: replyTarget.authorName }) }}
+            <button type="button" class="ml-1 underline" @click="cancelReply">{{ $t('common.cancel') }}</button>
+          </p>
+          <UTextarea v-model="draft" :rows="3" :maxlength="8000" :placeholder="$t('board.writeComment')" class="w-full" />
+          <AttachmentsField v-model="draftAttachments" :project-id="projectId" />
+          <p v-if="error" class="text-xs text-error">{{ error }}</p>
+          <div class="flex justify-end">
+            <UButton type="submit" size="sm" :label="replyTarget ? $t('board.reply') : $t('board.postComment')" :loading="saving" :disabled="!draft.trim() && !draftAttachments.length" />
           </div>
-          <p class="whitespace-pre-wrap break-words text-[13px] text-toned">{{ comment.body }}</p>
-          <div v-if="comment.attachments.length" class="flex flex-wrap gap-2 pt-1">
-            <a v-for="file in comment.attachments" :key="file.url" :href="file.url" target="_blank" rel="noopener" class="flex max-w-full items-center gap-2 rounded-lg border border-default px-2 py-1.5 text-xs text-toned">
-              <img v-if="file.mime.startsWith('image/')" :src="file.url" :alt="file.name" class="size-9 rounded object-cover" loading="lazy">
-              <UIcon v-else name="i-lucide-file" class="size-4 shrink-0 text-muted" />
-              <span class="max-w-52 truncate">{{ file.name }}</span>
-              <UIcon name="i-lucide-download" class="size-3.5 shrink-0 text-muted" />
-            </a>
-          </div>
-          <UButton size="xs" color="neutral" variant="ghost" :label="$t('board.reply')" @click="replyTo(comment)" />
-        </li>
-      </ol>
-
-      <UButton v-if="hasMore" size="xs" color="neutral" variant="ghost" :loading="loading" :label="$t('board.moreComments')" @click="loadMore" />
-
-      <form class="space-y-2" @submit.prevent="submit">
-        <p v-if="replyTarget" class="text-xs text-muted">
-          {{ $t('board.replyingTo', { name: replyTarget.authorName }) }}
-          <button type="button" class="ml-1 underline" @click="cancelReply">{{ $t('common.cancel') }}</button>
-        </p>
-        <UTextarea v-model="draft" :rows="3" :maxlength="8000" :placeholder="$t('board.writeComment')" class="w-full" />
-        <AttachmentsField v-model="draftAttachments" :project-id="projectId" />
-        <p v-if="error" class="text-xs text-error">{{ error }}</p>
-        <div class="flex justify-end">
-          <UButton type="submit" size="sm" :label="replyTarget ? $t('board.reply') : $t('board.postComment')" :loading="saving" :disabled="!draft.trim() && !draftAttachments.length" />
-        </div>
-      </form>
-    </div>
-  </details>
+        </form>
+      </div>
+    </template>
+  </UCollapsible>
 </template>
 
 <script setup lang="ts">
@@ -59,6 +62,7 @@ const comments = ref<BoardItemComment[]>([])
 const draft = ref('')
 const draftAttachments = ref<BoardItemComment['attachments']>([])
 const replyTarget = ref<BoardItemComment | null>(null)
+const open = ref(false)
 const loaded = ref(false)
 const loading = ref(false)
 const saving = ref(false)
@@ -66,8 +70,9 @@ const hasMore = ref(false)
 const offset = ref(0)
 const error = ref('')
 
-function toggle(event: Event) {
-  if ((event.currentTarget as HTMLDetailsElement).open && !loaded.value) void load(true)
+function toggle(isOpen: boolean) {
+  open.value = isOpen
+  if (isOpen && !loaded.value) void load(true)
 }
 
 async function load(reset: boolean) {
