@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// Sign in, first-run setup and password reset, in Linear's onboarding shape:
+/// Sign in, sign-up (HelpBites Cloud), first-run setup and password reset, in Linear's onboarding shape:
 /// a mark, a short title, quiet labels and a pill on the right.
 struct AuthView: View {
   @Environment(SessionStore.self) private var session
-  private enum Mode { case signIn, forgot, reset }
+  @Environment(\.openURL) private var openURL
+  private enum Mode { case signIn, signUp, forgot, reset }
   @State private var mode = Mode.signIn
   @State private var username = ""
   @State private var password = ""
@@ -35,6 +36,10 @@ struct AuthView: View {
 
         if !notice.isEmpty { Label(notice, systemImage: "checkmark.circle").font(.lnMeta).foregroundStyle(Theme.success).padding(.top, 16) }
         ErrorText(message: error.isEmpty ? session.error : error).padding(.top, 16)
+        // The cloud may ask for a human check the app can't show: the web sign-up page can.
+        if mode == .signUp && !(error.isEmpty && session.error.isEmpty), let url = URL(string: session.endpoint + "/signup") {
+          Button("Sign up on the web") { openURL(url) }.buttonStyle(.lnGhost).padding(.top, 8)
+        }
 
         HStack(spacing: 8) {
           Spacer(minLength: 0)
@@ -42,11 +47,14 @@ struct AuthView: View {
             if mode == .forgot {
               Button("I have a link") { mode = .reset; notice = ""; error = "" }.buttonStyle(.lnGhost)
             }
-            Button(mode == .signIn ? String(localized: "Forgot password?") : String(localized: "Back to sign in")) {
-              mode = mode == .signIn ? .forgot : .signIn
-              notice = ""; error = ""
+            if mode == .signIn {
+              if session.signupOpen {
+                Button("Create account") { mode = .signUp; notice = ""; error = ""; session.error = "" }.buttonStyle(.lnGhost)
+              }
+              Button("Forgot password?") { mode = .forgot; notice = ""; error = "" }.buttonStyle(.lnGhost)
+            } else {
+              Button("Back to sign in") { mode = .signIn; notice = ""; error = ""; session.error = "" }.buttonStyle(.lnGhost)
             }
-            .buttonStyle(.lnGhost)
           }
           Button(action: submit) {
             HStack(spacing: 6) {
@@ -70,6 +78,8 @@ struct AuthView: View {
     .background(Theme.panel.ignoresSafeArea())
     .onAppear { endpoint = session.endpoint; takeResetLink() }
     .onChange(of: session.pendingResetLink) { _, _ in takeResetLink() }
+    // Another server may not take sign-ups.
+    .onChange(of: session.signupOpen) { _, open in if !open && mode == .signUp { mode = .signIn } }
   }
 
   /// A reset link opened into the app (web: /login?reset=…) lands on the reset form.
@@ -92,6 +102,10 @@ struct AuthView: View {
       LabeledField(label: "Email", hint: "For notifications") { TextField("", text: $email).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).textContentType(.emailAddress) }
       LabeledField(label: "Username") { TextField("", text: $username).textFieldStyle(.linear).textInputAutocapitalization(.never).autocorrectionDisabled().textContentType(.username) }
       LabeledField(label: "Password", hint: "At least 8 characters") { SecureField("", text: $password).textFieldStyle(.linear).textContentType(.newPassword) }
+    } else if mode == .signUp {
+      LabeledField(label: "Name") { TextField("", text: $name).textFieldStyle(.linear).textContentType(.name) }
+      LabeledField(label: "Email") { TextField("", text: $email).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled().textContentType(.username) }
+      LabeledField(label: "Password", hint: "At least 10 characters") { SecureField("", text: $password).textFieldStyle(.linear).textContentType(.newPassword).onSubmit(submit) }
     } else if mode == .forgot {
       LabeledField(label: "Email") { TextField("", text: $email).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).textContentType(.emailAddress) }
     } else if mode == .reset {
@@ -132,16 +146,18 @@ struct AuthView: View {
   }
 
   private var title: String {
-    session.needsSetup ? String(localized: "Create your account") : mode == .forgot ? String(localized: "Reset your password") : mode == .reset ? String(localized: "Choose a new password") : String(localized: "Sign in to HelpBites")
+    session.needsSetup || mode == .signUp ? String(localized: "Create your account") : mode == .forgot ? String(localized: "Reset your password") : mode == .reset ? String(localized: "Choose a new password") : String(localized: "Sign in to HelpBites")
   }
   private var subtitle: String {
     session.needsSetup ? String(localized: "This is a fresh install. The first account becomes the operator; you can add teammates later.")
+      : mode == .signUp ? String(localized: "Your own workspace for support, feedback and planning. We'll email you a link to confirm your address.")
       : mode == .forgot ? String(localized: "Enter your account email and we'll send you a reset link.")
       : mode == .reset ? String(localized: "The link in the email works for 30 minutes.")
       : String(localized: "Your support inbox and every app you've connected.")
   }
-  private var primaryLabel: String { session.needsSetup ? String(localized: "Create account") : mode == .forgot ? String(localized: "Send reset link") : mode == .reset ? String(localized: "Set password") : String(localized: "Sign in") }
+  private var primaryLabel: String { session.needsSetup || mode == .signUp ? String(localized: "Create account") : mode == .forgot ? String(localized: "Send reset link") : mode == .reset ? String(localized: "Set password") : String(localized: "Sign in") }
   private var canSubmit: Bool {
+    if mode == .signUp && !session.needsSetup { return !name.trimmingCharacters(in: .whitespaces).isEmpty && email.contains("@") && password.count >= 10 }
     if mode == .forgot && !session.needsSetup { return email.contains("@") }
     if mode == .reset && !session.needsSetup { return !resetToken.isEmpty && password.count >= 8 }
     return !username.trimmingCharacters(in: .whitespaces).isEmpty && password.count >= (session.needsSetup ? 8 : 1)
@@ -154,6 +170,8 @@ struct AuthView: View {
       defer { working = false }
       if session.needsSetup {
         await session.setup(username: username.trimmingCharacters(in: .whitespaces), password: password, name: name, email: email)
+      } else if mode == .signUp {
+        await session.signUp(name: name.trimmingCharacters(in: .whitespaces), email: email.trimmingCharacters(in: .whitespaces), password: password)
       } else if mode == .forgot {
         struct Input: Encodable, Sendable { let email: String }
         struct Output: Decodable, Sendable {}

@@ -94,6 +94,7 @@ Every admin capability maps to an existing endpoint. Nothing here is new API wor
 |---|---|---|
 | First-run signup | Onboarding (only when setup needed) | `GET /v1/admin/setup` (is it needed) · `POST /v1/admin/setup` → `{sessionToken, agent}` |
 | Sign in | Login | `POST /v1/admin/login` → `{sessionToken, agent}` |
+| Create an account (HelpBites Cloud, the default server) | Sign in → Create account; shown only when `GET /v1/admin/setup` says `signup: "open"`. Change server under the server line | `POST /v1/cloud/signup` → `{sessionToken, agent}` |
 | Session / who am I | app boot + 401 recovery | `GET /v1/admin/me` |
 | Sign out | Settings | `POST /v1/admin/logout` |
 | Inbox (filter by project/status/unread, search, paginate, unread total) | Inbox list | `GET /v1/admin/conversations?project&status&unread&q&before&limit` → `{conversations, endUsers, hasMore, totalUnread}` |

@@ -31,6 +31,7 @@
     "smoke:isolation": "bun scripts/smoke-isolation.mjs",
     "backfill:contacts": "bun scripts/backfill-contacts.mjs",
     "release": "bun scripts/release.mjs",
+    "testflight": "bun scripts/testflight.mjs",
     "release:bump": "bun scripts/bump-version.mjs",
     "release:changelog": "bun scripts/publish-changelog.mjs"
   },

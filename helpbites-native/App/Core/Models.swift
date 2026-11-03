@@ -108,7 +108,8 @@ struct MeResponse: Codable, Sendable {
   /// Plan feature flags by key (`teammatePasswords`, …); absent keys mean "included".
   var features: [String: Bool]?
 }
-struct SetupStatus: Codable, Sendable { let needsSetup: Bool }
+/// `signup` is "open" on HelpBites Cloud (anyone can create an account) and "setup" on a self-hosted server.
+struct SetupStatus: Codable, Sendable { let needsSetup: Bool; let signup: String? }
 
 struct SupportEvent: Codable, Sendable {
   let type: String

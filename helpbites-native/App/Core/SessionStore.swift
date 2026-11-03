@@ -13,6 +13,8 @@ enum SessionPhase { case loading, signedOut, signedIn }
   private(set) var token = ""
   private(set) var endpoint: String
   var needsSetup = false
+  /// The server lets anyone create an account (HelpBites Cloud), not just the first operator.
+  private(set) var signupOpen = false
   var error = ""
   /// A password-reset link opened into the app, picked up by the sign-in screen.
   var pendingResetLink = ""
@@ -32,7 +34,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
 
   init() {
     workspaceId = UserDefaults.standard.string(forKey: "helpbites.workspace") ?? ""
-    let configured = Bundle.main.object(forInfoDictionaryKey: "APP_BASE_URL") as? String ?? "https://help.example.com"
+    let configured = Bundle.main.object(forInfoDictionaryKey: "APP_BASE_URL") as? String ?? "https://helpbites.app"
     let saved = UserDefaults.standard.string(forKey: "helpbites.apiBaseURL") ?? configured
     endpoint = saved
     api = APIClient(baseURL: saved)
@@ -103,7 +105,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
   private(set) var generation = 0
 
   func checkSetup() async {
-    do { let setup: SetupStatus = try await api.get("/v1/admin/setup"); needsSetup = setup.needsSetup }
+    do { let setup: SetupStatus = try await api.get("/v1/admin/setup"); needsSetup = setup.needsSetup; signupOpen = setup.signup == "open" }
     catch { self.error = error.localizedDescription }
     phase = .signedOut
   }
@@ -114,6 +116,10 @@ enum SessionPhase { case loading, signedOut, signedIn }
 
   func setup(username: String, password: String, name: String, email: String) async {
     await authenticate("/v1/admin/setup", body: SetupInput(username: username, password: password, name: name, email: email))
+  }
+
+  func signUp(name: String, email: String, password: String) async {
+    await authenticate("/v1/cloud/signup", body: SignUpInput(name: name, email: email, password: password))
   }
 
   func signOut() async {
@@ -214,6 +220,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
 }
 
 private struct Credentials: Codable, Sendable { let username, password: String }
+private struct SignUpInput: Codable, Sendable { let name, email, password: String }
 private struct SetupInput: Codable, Sendable { let username, password, name, email: String }
 struct EmptyBody: Codable, Sendable {}
 private struct DeviceInput: Codable, Sendable { let token, platform, env: String }
