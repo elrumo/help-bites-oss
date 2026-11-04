@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   const project = await changelogWriterProject(event, writer)
   const body = (await readBody(event).catch(() => ({}))) as { refs?: unknown }
   const ids = Array.isArray(body?.refs) ? [...new Set(body.refs.filter((r): r is string => typeof r === 'string'))] : []
-  if (ids.length < 2 || ids.length > MERGE_SUGGEST_MAX) throw createError({ statusCode: 400, statusMessage: `refs is a list of 2 to ${MERGE_SUGGEST_MAX} entry ids` })
+  if (ids.length < 2 || ids.length > MERGE_SUGGEST_MAX) throw createError({ statusCode: 400, statusMessage: ids.length > MERGE_SUGGEST_MAX ? `Too many entries: select at most ${MERGE_SUGGEST_MAX} to suggest merges` : `refs is a list of 2 to ${MERGE_SUGGEST_MAX} entry ids` })
   const route = await resolveAi(await workspaceOfRow(project))
   if (!route) throw createError({ statusCode: 501, statusMessage: 'No AI provider is configured. Add one in the workspace AI settings, or set LITELLM_API_BASE_URL on the server.' })
   const rows = await new (useParse()).Query('ChangelogEntry').equalTo('project', project).notEqualTo('status', 'archived').containedIn('objectId', ids).limit(MERGE_SUGGEST_MAX).find(MASTER)
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
   const entries: MergeEntryInfo[] = rows.map(row => ({ id: row.id || '', title: String(row.get('title') || ''), tag: String(row.get('tag') || 'improved'), summary: String(row.get('summary') || ''), body: String(row.get('body') || ''), area: String(row.get('area') || '') }))
   await rateLimit(`sb:rl:clmrgai:${project.id}`, LIMITS.changelogMergeAiPerProject.limit, LIMITS.changelogMergeAiPerProject.window)
   try {
-    const { text } = await chatCompletion(route, { messages: [{ role: 'system', content: MERGE_GROUNDING }, { role: 'user', content: mergePrompt(entries) }], temperature: 0.2, max_tokens: 3000 }, { timeoutMs: 90_000 })
+    const { text } = await chatCompletion(route, { messages: [{ role: 'system', content: MERGE_GROUNDING }, { role: 'user', content: mergePrompt(entries) }], temperature: 0.2, max_tokens: 4000 }, { timeoutMs: 90_000 })
     // A reply that parses to no merges is a valid "nothing to merge"; one that is not JSON at all is a failure.
     if (!/[[{]/.test(text)) throw new Error('not JSON')
     return { merges: readMergeSuggestions(text, entries) }

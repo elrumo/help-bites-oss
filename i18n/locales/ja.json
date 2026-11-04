@@ -575,6 +575,7 @@
     "confirmMerge": "もう一度クリック：公開済みのエントリーは非公開になります",
     "mergeOne": "1つの下書きに統合",
     "aiMerge": "統合を提案",
+    "aiMergeTooMany": "統合を提案できるのは最大 {max} 件までです",
     "aiMergeTitle": "統合の提案",
     "aiMergeDescription": "AI が同じ内容のエントリを探しました。統合するまで何も変わらず、元のエントリはアーカイブされます。",
     "aiMergeReading": "{count} 件のエントリを読んでいます…",

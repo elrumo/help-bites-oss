@@ -575,6 +575,7 @@
     "confirmMerge": "Torna a fer clic: les entrades publicades passaran a privades",
     "mergeOne": "Fusiona en un esborrany",
     "aiMerge": "Suggereix fusions",
+    "aiMergeTooMany": "Selecciona com a màxim {max} entrades per suggerir fusions",
     "aiMergeTitle": "Fusions suggerides",
     "aiMergeDescription": "La IA ha buscat entrades que diuen el mateix. No canvia res fins que fusionis; les originals s'arxiven.",
     "aiMergeReading": "Llegint {count} entrades…",

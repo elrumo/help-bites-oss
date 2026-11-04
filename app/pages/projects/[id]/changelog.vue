@@ -37,7 +37,7 @@
           <span class="tabular-nums text-muted">{{ $t('changelog.selected', { count: selected.size }) }}</span>
           <UButton :label="$t('changelog.approvePublish')" icon="i-lucide-check" size="xs" color="primary" variant="soft" :disabled="!selectedDrafts.length" :loading="bulk === 'approve'" @click="approveSelected" />
           <UButton :label="confirmMerge ? $t('changelog.confirmMerge') : $t('changelog.mergeOne')" icon="i-lucide-merge" size="xs" :color="confirmMerge ? 'warning' : 'neutral'" variant="soft" :disabled="selected.size < 2 || selected.size > 10" :loading="bulk === 'merge'" @click="mergeSelected" />
-          <UButton :label="$t('changelog.aiMerge')" icon="i-lucide-sparkles" size="xs" color="primary" variant="soft" :disabled="selected.size < 2" :loading="mergeAi.loading" @click="suggestMerges" />
+          <UButton :label="$t('changelog.aiMerge')" icon="i-lucide-sparkles" size="xs" color="primary" variant="soft" :disabled="selected.size < 2 || selected.size > MERGE_SUGGEST_MAX" :title="selected.size > MERGE_SUGGEST_MAX ? $t('changelog.aiMergeTooMany', { max: MERGE_SUGGEST_MAX }) : undefined" :loading="mergeAi.loading" @click="suggestMerges" />
           <UDropdownMenu :items="moveItems">
             <UButton :label="$t('changelog.moveTo')" icon="i-lucide-package" trailing-icon="i-lucide-chevron-down" size="xs" color="neutral" variant="soft" :loading="bulk === 'move'" />
           </UDropdownMenu>
@@ -329,6 +329,7 @@
 <script setup lang="ts">
 const { openProjectSettings } = useProjectSettings()
 import { CHANGELOG_IMAGE_WIDTHS, CHANGELOG_TAGS, CHANGELOG_TAG_LABELS, isEntryPublic, type ChangelogEntry, type ChangelogImageWidth, type ChangelogLinkKind, type ChangelogRelease, type ChangelogSource, type ChangelogStatus, type ChangelogTag } from '#shared/changelog'
+import { MERGE_SUGGEST_MAX } from '#shared/changelogMerge'
 import type { ChangelogLinkedConversations } from '#shared/changelogReply'
 import type { ItemAttachment } from '#shared/itemAttachments'
 import type { AdminProject } from '~~/server/utils/projects'

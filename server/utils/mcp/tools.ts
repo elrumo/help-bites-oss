@@ -1344,10 +1344,10 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'suggest_changelog_merges', title: 'Suggest changelog entries to merge with AI', method: 'POST', path: '/v1/admin/changelog/entries/suggest-merges',
-    description: 'Has the AI read 2 to 40 entries and propose which describe the same change, with the title, Markdown body and tag of each merged entry. It may propose none: `merges` is empty when nothing should be merged. Saves nothing: show the proposals to the user, then apply a chosen one with merge_changelog_entries (its `refs`, and `entry` from its title, body and tag). Fails with 400 when a ref is not an active entry of the project, 501 without an AI provider and 429 past 20 a minute per project. Counts toward the workspace\'s AI use. Returns `{ merges: [{ refs, title, body, tag, reason }] }`.',
+    description: 'Has the AI read 2 to 100 entries and propose which describe the same change, with the title, Markdown body and tag of each merged entry. It may propose none: `merges` is empty when nothing should be merged. Saves nothing: show the proposals to the user, then apply a chosen one with merge_changelog_entries (its `refs`, and `entry` from its title, body and tag). Fails with 400 when a ref is not an active entry of the project, 501 without an AI provider and 429 past 20 a minute per project. Counts toward the workspace\'s AI use. Returns `{ merges: [{ refs, title, body, tag, reason }] }`.',
     params: {
       project: { ...projectId, in: 'query' },
-      refs: { type: 'array', required: true, description: '2 to 40 entry ids (from list_changelog_entries); none may be archived.' }
+      refs: { type: 'array', required: true, description: '2 to 100 entry ids (from list_changelog_entries); none may be archived.' }
     }
   },
   {

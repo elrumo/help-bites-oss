@@ -235,7 +235,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `reply_to_changelog_conversations` | Tell all of them it shipped. |
 | `create_changelog_entries` | Write up to 50 entries at once, skipping commits already written up. |
 | `merge_changelog_entries` | Fold 2 to 10 entries into one and archive the sources: asks first. |
-| `suggest_changelog_merges` | The AI proposes which of 2 to 40 entries to merge, and the merged text (possibly none). Saves nothing. |
+| `suggest_changelog_merges` | The AI proposes which of 2 to 100 entries to merge, and the merged text (possibly none). Saves nothing. |
 | `delete_changelog_entry` | Delete an entry: asks first. |
 | `link_changelog_entry` | Link or unlink a feedback post, board item or conversation an entry ships. |
 | `review_changelog_entry` | Approve (publish) or reject a draft entry: asks first before approving. |

@@ -578,6 +578,7 @@
     "confirmMerge": "Vuelve a hacer clic: las entradas publicadas pasarán a privadas",
     "mergeOne": "Fusionar en un borrador",
     "aiMerge": "Sugerir fusiones",
+    "aiMergeTooMany": "Selecciona como máximo {max} entradas para sugerir fusiones",
     "aiMergeTitle": "Fusiones sugeridas",
     "aiMergeDescription": "La IA buscó entradas que dicen lo mismo. Nada cambia hasta que fusiones; las originales se archivan.",
     "aiMergeReading": "Leyendo {count} entradas…",

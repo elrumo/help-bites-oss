@@ -678,6 +678,7 @@
     "confirmMerge": "Click again: published entries go private",
     "mergeOne": "Merge into one draft",
     "aiMerge": "Suggest merges",
+    "aiMergeTooMany": "Select at most {max} entries to suggest merges",
     "aiMergeTitle": "Suggested merges",
     "aiMergeDescription": "The AI looked for entries that say the same thing. Nothing changes until you merge; the originals are archived.",
     "aiMergeReading": "Reading {count} entries…",

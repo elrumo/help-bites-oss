@@ -7,7 +7,7 @@ import { extractJson } from './legal/compose'
 // the operator applies a merge with POST /v1/admin/changelog/entries/merge.
 
 /** Entries sent to the model. */
-export const MERGE_SUGGEST_MAX = 40
+export const MERGE_SUGGEST_MAX = 100
 /** Entries one merge may fold (the merge endpoint's own limit). */
 export const MERGE_GROUP_MAX = 10
 
