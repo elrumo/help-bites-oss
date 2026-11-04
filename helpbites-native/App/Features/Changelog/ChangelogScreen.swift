@@ -13,7 +13,7 @@ struct ChangelogScreen: View {
 }
 
 private enum ChangelogSheet: Identifiable {
-  case entry(String?), release(String?), settings, style, generate, subscribers, importer
+  case entry(String?), release(String?), settings, style, generate, subscribers, importer, mergeSuggestions
   var id: String {
     switch self {
     case .entry(let id): "entry-\(id ?? "new")"
@@ -23,6 +23,7 @@ private enum ChangelogSheet: Identifiable {
     case .generate: "generate"
     case .subscribers: "subscribers"
     case .importer: "import"
+    case .mergeSuggestions: "merge-suggestions"
     }
   }
 }
@@ -53,6 +54,7 @@ private struct ChangelogView: View {
         case .generate: ChangelogGenerateSheet(store: store)
         case .subscribers: ChangelogSubscribersSheet(store: store)
         case .importer: ChangelogImportSheet(store: store)
+        case .mergeSuggestions: ChangelogMergeSuggestSheet(store: store)
         }
       }
       .feedbackErrorAlert($store.alert)
@@ -372,6 +374,8 @@ private struct ChangelogView: View {
           .buttonStyle(.lnSecondaryCompact).disabled(drafts == 0)
         Button { if store.selectedEntries.contains(where: { $0.status == .published }) { bulk = .merge } else { Task { await merge() } } } label: { Label("Merge", systemImage: "arrow.triangle.merge") }
           .buttonStyle(.lnSecondaryCompact).disabled(count < 2 || count > 10)
+        Button { sheet = .mergeSuggestions } label: { Label("Suggest merges", systemImage: "sparkles") }
+          .buttonStyle(.lnSecondaryCompact).disabled(count < 2)
         Menu {
           Button("No release") { Task { await store.moveSelected(toRelease: "") } }
           ForEach(store.releases) { release in Button(release.pickerLabel) { Task { await store.moveSelected(toRelease: release.id) } } }

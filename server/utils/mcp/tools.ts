@@ -1343,6 +1343,14 @@ export const MCP_TOOLS: readonly McpTool[] = [
     }
   },
   {
+    name: 'suggest_changelog_merges', title: 'Suggest changelog entries to merge with AI', method: 'POST', path: '/v1/admin/changelog/entries/suggest-merges',
+    description: 'Has the AI read 2 to 40 entries and propose which describe the same change, with the title, Markdown body and tag of each merged entry. It may propose none: `merges` is empty when nothing should be merged. Saves nothing: show the proposals to the user, then apply a chosen one with merge_changelog_entries (its `refs`, and `entry` from its title, body and tag). Fails with 400 when a ref is not an active entry of the project, 501 without an AI provider and 429 past 20 a minute per project. Counts toward the workspace\'s AI use. Returns `{ merges: [{ refs, title, body, tag, reason }] }`.',
+    params: {
+      project: { ...projectId, in: 'query' },
+      refs: { type: 'array', required: true, description: '2 to 40 entry ids (from list_changelog_entries); none may be archived.' }
+    }
+  },
+  {
     name: 'delete_changelog_entry', title: 'Delete a changelog entry', destructive: true, method: 'DELETE', path: '/v1/admin/changelog/entries/{id}',
     description: 'Permanently removes the entry and its links; the posts, board items and conversations it linked stay. To only take it off the public changelog, use update_changelog_entry with status archived. Returns `{ deleted: true }`. Confirm with the user first.',
     params: { id: id('changelog entry'), project: { type: 'string', description: 'Project id, needed when `id` is a slug or entry number rather than the entry\'s id.' } }
@@ -2827,7 +2835,7 @@ export type McpRequest = { method: McpTool['method'], url: string, body?: Record
 export const RESERVED_PATH_WORDS = new Set([
   'alerts', 'analyses', 'analyze', 'attachments', 'batch', 'bulk', 'comments', 'config', 'connect', 'deliveries', 'events', 'export',
   'from-feedback', 'import', 'links', 'merge', 'preferences', 'preview', 'providers', 'render', 'reports', 'roadmap', 'schedule', 'send',
-  'servers', 'starters', 'stats', 'subscribe', 'subscription', 'suggest-title', 'test', 'upload'
+  'servers', 'starters', 'stats', 'subscribe', 'subscription', 'suggest-merges', 'suggest-title', 'test', 'upload'
 ])
 
 /** What may stand in a URL path: ids, slugs and keys are letters, digits, dashes and underscores, and never a word that names a sibling route. */

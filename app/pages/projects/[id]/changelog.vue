@@ -37,6 +37,7 @@
           <span class="tabular-nums text-muted">{{ $t('changelog.selected', { count: selected.size }) }}</span>
           <UButton :label="$t('changelog.approvePublish')" icon="i-lucide-check" size="xs" color="primary" variant="soft" :disabled="!selectedDrafts.length" :loading="bulk === 'approve'" @click="approveSelected" />
           <UButton :label="confirmMerge ? $t('changelog.confirmMerge') : $t('changelog.mergeOne')" icon="i-lucide-merge" size="xs" :color="confirmMerge ? 'warning' : 'neutral'" variant="soft" :disabled="selected.size < 2 || selected.size > 10" :loading="bulk === 'merge'" @click="mergeSelected" />
+          <UButton :label="$t('changelog.aiMerge')" icon="i-lucide-sparkles" size="xs" color="primary" variant="soft" :disabled="selected.size < 2" :loading="mergeAi.loading" @click="suggestMerges" />
           <UDropdownMenu :items="moveItems">
             <UButton :label="$t('changelog.moveTo')" icon="i-lucide-package" trailing-icon="i-lucide-chevron-down" size="xs" color="neutral" variant="soft" :loading="bulk === 'move'" />
           </UDropdownMenu>
@@ -254,6 +255,48 @@
         </div>
       </template>
     </USlideover>
+
+    <!-- AI merge suggestions -->
+    <UModal v-model:open="mergeAi.open" :title="$t('changelog.aiMergeTitle')" :description="$t('changelog.aiMergeDescription')" :ui="{ content: 'sm:max-w-3xl' }">
+      <template #body>
+        <div v-if="mergeAi.loading" class="flex items-center gap-2 py-8 text-sm text-muted"><UIcon name="i-lucide-loader-circle" class="size-4 animate-spin" />{{ $t('changelog.aiMergeReading', { count: selected.size }) }}</div>
+        <p v-else-if="mergeAi.error" class="text-sm text-error">{{ mergeAi.error }}</p>
+        <p v-else-if="!mergeAi.merges.length" class="py-6 text-center text-sm text-muted">{{ $t('changelog.aiMergeNone') }}</p>
+        <ul v-else class="space-y-3">
+          <li v-for="(m, i) in mergeAi.merges" :key="i" class="rounded-lg border border-default p-3" :class="mergeAi.chosen.has(i) ? '' : 'opacity-60'">
+            <label class="flex cursor-pointer items-start gap-2.5">
+              <UCheckbox :model-value="mergeAi.chosen.has(i)" class="mt-0.5" @update:model-value="toggleMergeChoice(i)" />
+              <span class="min-w-0 flex-1 space-y-2">
+                <span v-if="m.reason" class="block text-xs text-muted">{{ m.reason }}</span>
+                <span class="block space-y-1 rounded-md bg-elevated px-2.5 py-2">
+                  <span v-for="src in mergeSources(m)" :key="src.id" class="flex items-center gap-2 text-[13px] text-muted">
+                    <span class="w-16 shrink-0 rounded-full px-1.5 text-center text-[11px] font-semibold" :class="CHANGELOG_TAG_CLASS[src.tag]">{{ $t(TAG_KEYS[src.tag]) }}</span>
+                    <span v-if="src.number" class="shrink-0 tabular-nums">#{{ src.number }}</span>
+                    <span class="min-w-0 flex-1 truncate">{{ src.title }}</span>
+                    <span v-if="src.status === 'published'" class="shrink-0 rounded-full bg-success/10 px-1.5 text-[11px] text-success">{{ $t('changelog.published') }}</span>
+                  </span>
+                </span>
+                <span class="flex items-center gap-1.5 text-xs font-medium text-primary"><UIcon name="i-lucide-arrow-down" class="size-3.5" />{{ $t('changelog.aiMergeInto') }}</span>
+                <span class="block space-y-1 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-2">
+                  <span class="flex items-center gap-2">
+                    <span class="w-16 shrink-0 rounded-full px-1.5 text-center text-[11px] font-semibold" :class="CHANGELOG_TAG_CLASS[m.tag]">{{ $t(TAG_KEYS[m.tag]) }}</span>
+                    <span class="min-w-0 flex-1 text-sm font-medium">{{ m.title }}</span>
+                  </span>
+                  <span v-if="m.body" class="block whitespace-pre-wrap text-[13px] text-toned">{{ m.body }}</span>
+                </span>
+              </span>
+            </label>
+          </li>
+        </ul>
+      </template>
+      <template #footer>
+        <div class="flex w-full items-center gap-2">
+          <span v-if="mergeAi.merges.some(m => mergeSources(m).some(e => e.status === 'published'))" class="text-xs text-muted">{{ $t('changelog.aiMergePublishedNote') }}</span>
+          <UButton class="ml-auto" :label="$t('common.cancel')" color="neutral" variant="ghost" @click="mergeAi.open = false" />
+          <UButton v-if="mergeAi.merges.length" :label="$t('changelog.aiMergeApply', mergeAi.chosen.size)" icon="i-lucide-merge" color="primary" :loading="mergeAi.applying" :disabled="!mergeAi.chosen.size" @click="applyMerges" />
+        </div>
+      </template>
+    </UModal>
 
     <!-- Release editor -->
     <USlideover v-model:open="releaseOpen" :title="releaseDraft.id ? $t('changelog.releaseTitle', { version: releaseDraft.version }) : $t('changelog.newRelease')" :description="$t('changelog.releaseDescription')" :ui="{ content: 'sm:max-w-lg' }">
@@ -817,6 +860,53 @@ async function mergeSelected() {
     bulkError.value = e?.message || t('changelog.mergeError')
   } finally {
     bulk.value = ''
+  }
+}
+
+// ---- AI: which of the selected entries to merge ----
+type MergeSuggestion = { refs: string[], title: string, body: string, tag: ChangelogTag, reason: string }
+const mergeAi = reactive({ open: false, loading: false, applying: false, error: '', merges: [] as MergeSuggestion[], chosen: new Set<number>() })
+
+const mergeSources = (m: MergeSuggestion) => m.refs.map(ref => entries.value.find(e => e.id === ref)).filter((e): e is ChangelogEntry => !!e)
+
+function toggleMergeChoice(i: number) {
+  const next = new Set(mergeAi.chosen)
+  if (!next.delete(i)) next.add(i)
+  mergeAi.chosen = next
+}
+
+/** The AI reads the selection and may propose merges (or none); nothing changes until Merge is pressed in the modal. */
+async function suggestMerges() {
+  Object.assign(mergeAi, { open: true, loading: true, error: '', merges: [], chosen: new Set<number>() })
+  try {
+    const { merges } = await api<{ merges: MergeSuggestion[] }>('/admin/changelog/entries/suggest-merges', { method: 'POST', query: { project: id }, body: { refs: [...selected.value] } })
+    Object.assign(mergeAi, { merges, chosen: new Set(merges.map((_, i) => i)) })
+  } catch (e: any) {
+    mergeAi.error = e?.message || t('changelog.aiMergeError')
+  } finally {
+    mergeAi.loading = false
+  }
+}
+
+/** Each chosen suggestion becomes one draft; the originals are archived, as with Merge into one draft. */
+async function applyMerges() {
+  mergeAi.applying = true
+  mergeAi.error = ''
+  let done = 0
+  try {
+    for (const [i, m] of mergeAi.merges.entries()) {
+      if (!mergeAi.chosen.has(i)) continue
+      await api('/admin/changelog/entries/merge', { method: 'POST', query: { project: id }, body: { refs: m.refs, entry: { title: m.title, body: m.body, tag: m.tag, status: 'draft' } } })
+      done++
+    }
+    mergeAi.open = false
+    clearSelection()
+    toast.add({ title: t('changelog.aiMerged', done), icon: 'i-lucide-merge', color: 'success' })
+  } catch (e: any) {
+    mergeAi.error = e?.message || t('changelog.mergeError')
+  } finally {
+    mergeAi.applying = false
+    await loadAll().catch(() => {})
   }
 }
 

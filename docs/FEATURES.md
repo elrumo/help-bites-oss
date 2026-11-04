@@ -366,6 +366,11 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   Breaking, and group into versioned releases.
 - **Review before publishing.** Approve or reject a draft. Nothing is public until
   it is published. Archive or merge entries.
+- **AI merge suggestions.** With two or more entries selected, **Suggest merges**
+  (panel and native app) has the AI look for entries that describe the same change
+  and shows a preview: the entries it would fold and the new title, text and tag.
+  It may suggest nothing. Nothing changes until you press Merge; each chosen
+  suggestion becomes one draft and its originals are archived.
 - **AI release copy.** A release's editor (panel and native app) has an AI button
   that reads the release's entries and fills in its title and summary. Nothing is
   saved until you press Save.

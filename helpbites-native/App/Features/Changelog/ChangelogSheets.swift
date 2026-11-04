@@ -130,6 +130,109 @@ struct ChangelogReleaseSheet: View {
   }
 }
 
+// MARK: - Suggested merges
+
+/// The AI reads the selected entries and proposes which to fold together, with the merged text. It may
+/// propose none. Nothing changes until Merge; the originals are archived.
+struct ChangelogMergeSuggestSheet: View {
+  let store: ChangelogStore
+  @State private var merges: [ChangelogStore.MergeSuggestion] = []
+  @State private var chosen: Set<String> = []
+  @State private var loading = true
+  @State private var applying = false
+  @State private var error = ""
+  @Environment(\.dismiss) private var dismiss
+
+  var body: some View {
+    ChangelogSheetFrame(title: "Suggested merges") {
+      hint("The AI looked for entries that say the same thing. Nothing changes until you merge; the originals are archived.")
+      if loading {
+        HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Reading \(store.selected.count) entries…") }
+          .font(.lnMeta).foregroundStyle(Theme.textMuted)
+      } else if !error.isEmpty {
+        Text(verbatim: error).font(.lnMeta).foregroundStyle(Theme.error)
+      } else if merges.isEmpty {
+        hint("The AI found nothing worth merging. These entries each stand on their own.")
+      }
+      ForEach(merges) { merge in card(merge) }
+      if merges.contains(where: { sources($0).contains { $0.status == .published } }) {
+        hint("Published originals go private until you publish the merged draft.")
+      }
+    } trailing: {
+      if !merges.isEmpty {
+        Button(applying ? "Merging…" : "Merge \(chosen.count)") { Task { await apply() } }
+          .disabled(chosen.isEmpty || applying)
+      }
+    }
+    .task { await load() }
+  }
+
+  private func sources(_ merge: ChangelogStore.MergeSuggestion) -> [ChangelogEntry] {
+    merge.refs.compactMap { ref in store.entries.first { $0.id == ref } }
+  }
+
+  private func card(_ merge: ChangelogStore.MergeSuggestion) -> some View {
+    let on = chosen.contains(merge.id)
+    return Button {
+      if on { chosen.remove(merge.id) } else { chosen.insert(merge.id) }
+    } label: {
+      HStack(alignment: .top, spacing: 10) {
+        Image(systemName: on ? "checkmark.square.fill" : "square").foregroundStyle(on ? Theme.accent : Theme.textMuted).padding(.top, 2)
+        VStack(alignment: .leading, spacing: 8) {
+          if !merge.reason.isEmpty { Text(verbatim: merge.reason).font(.lnCaption).foregroundStyle(Theme.textMuted) }
+          VStack(alignment: .leading, spacing: 4) {
+            ForEach(sources(merge)) { entry in
+              HStack(spacing: 6) {
+                Text(entry.tag.label).font(.lnCaption).foregroundStyle(entry.tag.tint)
+                if let number = entry.number { Text("#\(number)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted) }
+                Text(verbatim: entry.title).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
+              }
+            }
+          }
+          .padding(8).frame(maxWidth: .infinity, alignment: .leading)
+          .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
+          Label("Becomes one draft", systemImage: "arrow.down").font(.lnCaption).foregroundStyle(Theme.accent)
+          VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+              Text(merge.tag.label).font(.lnCaption).foregroundStyle(merge.tag.tint)
+              Text(verbatim: merge.title).font(.lnBody).fontWeight(.medium)
+            }
+            if !merge.body.isEmpty { Text(verbatim: merge.body).font(.lnMeta).foregroundStyle(Theme.text) }
+          }
+          .padding(8).frame(maxWidth: .infinity, alignment: .leading)
+          .overlay(RoundedRectangle(cornerRadius: Metrics.radius).stroke(Theme.accent.opacity(0.4)))
+        }
+      }
+      .opacity(on ? 1 : 0.6)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+  }
+
+  private func load() async {
+    do {
+      merges = try await store.suggestMerges()
+      chosen = Set(merges.map(\.id))
+    } catch {
+      self.error = error.localizedDescription
+    }
+    loading = false
+  }
+
+  private func apply() async {
+    applying = true
+    defer { applying = false }
+    do {
+      try await store.applyMerges(merges.filter { chosen.contains($0.id) })
+      dismiss()
+    } catch {
+      self.error = error.localizedDescription
+      // Merges already applied archived their sources: show what is left.
+      await store.refresh()
+    }
+  }
+}
+
 // MARK: - Options
 
 struct ChangelogSettingsSheet: View {

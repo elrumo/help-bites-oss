@@ -284,6 +284,36 @@ enum ChangelogFilter: String, CaseIterable, Identifiable {
     }
   }
 
+  /// One merge the AI proposes for the selection (`POST …/entries/suggest-merges`): the entries to fold and the text of the result.
+  struct MergeSuggestion: Decodable, Identifiable, Sendable {
+    let refs: [String]
+    let title, body, reason: String
+    let tag: ChangelogTag
+    var id: String { refs.joined(separator: ",") }
+  }
+
+  /// The AI reads the selection and may propose merges, or none. Nothing is saved.
+  func suggestMerges() async throws -> [MergeSuggestion] {
+    struct Reply: Decodable, Sendable { let merges: [MergeSuggestion] }
+    let body: [String: JSONValue] = ["refs": .array(selectedEntries.map { .string($0.id) })]
+    let reply: Reply = try await session.send("/v1/admin/changelog/entries/suggest-merges?project=\(projectId)", body: body)
+    return reply.merges
+  }
+
+  /// Each chosen suggestion becomes one draft; the originals are archived, as with `mergeSelected`.
+  func applyMerges(_ merges: [MergeSuggestion]) async throws {
+    struct Merged: Decodable, Sendable { let entry: ChangelogEntry }
+    bulkBusy = "merge"
+    defer { bulkBusy = "" }
+    for merge in merges {
+      let entry: [String: JSONValue] = ["title": .string(merge.title), "body": .string(merge.body), "tag": .string(merge.tag.rawValue), "status": .string("draft")]
+      let body: [String: JSONValue] = ["refs": .array(merge.refs.map { .string($0) }), "entry": .object(entry)]
+      let _: Merged = try await session.send("/v1/admin/changelog/entries/merge?project=\(projectId)", body: body)
+    }
+    endSelecting()
+    try await fetch()
+  }
+
   func moveSelected(toRelease releaseId: String) async {
     bulkBusy = "move"
     defer { bulkBusy = "" }
