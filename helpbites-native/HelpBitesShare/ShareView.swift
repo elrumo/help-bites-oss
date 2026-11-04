@@ -1,3 +1,5 @@
+import AVKit
+import ImageIO
 import PhotosUI
 import SwiftUI
 
@@ -8,6 +10,7 @@ struct ShareView: View {
   let finish: () -> Void
   @State private var photos: [PhotosPickerItem] = []
   @State private var pickingPost = false
+  @State private var viewing: SharedImage?
 
   private static let accent = Color(red: 0x5e / 255, green: 0x6a / 255, blue: 0xd2 / 255)
 
@@ -31,6 +34,7 @@ struct ShareView: View {
     .sheet(isPresented: $pickingPost) {
       SharePostPicker(model: model) { model.posts.append($0) }
     }
+    .fullScreenCover(item: $viewing) { SharePreview(media: $0) }
   }
 
   // MARK: Header
@@ -164,8 +168,8 @@ struct ShareView: View {
 
   private var images: some View {
     VStack(alignment: .leading, spacing: 16) {
-      PhotosPicker(selection: $photos, maxSelectionCount: max(1, ShareModel.maxImages - model.images.count), matching: .images) {
-        Text("Add images").font(.title3).foregroundStyle(Self.accent).frame(maxWidth: .infinity, alignment: .leading)
+      PhotosPicker(selection: $photos, maxSelectionCount: max(1, ShareModel.maxImages - model.images.count), matching: .any(of: [.images, .videos])) {
+        Text("Add photos and videos").font(.title3).foregroundStyle(Self.accent).frame(maxWidth: .infinity, alignment: .leading)
       }
       .disabled(model.images.count >= ShareModel.maxImages)
       .onChange(of: photos) { _, items in
@@ -173,7 +177,10 @@ struct ShareView: View {
         photos = []
         Task {
           for item in items {
-            if let data = try? await item.loadTransferable(type: Data.self) { model.addImage(data: data) }
+            if item.supportedContentTypes.contains(where: { $0.conforms(to: .movie) }) {
+              if let movie = try? await item.loadTransferable(type: PickedMovie.self) { await model.addVideo(at: movie.url) }
+              else { model.error = String(localized: "Could not read that video.") }
+            } else if let data = try? await item.loadTransferable(type: Data.self) { model.addImage(data: data) }
             else { model.error = String(localized: "Could not read that image.") }
           }
         }
@@ -188,13 +195,18 @@ struct ShareView: View {
                 .scaledToFill()
                 .frame(width: 110, height: 150)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay { if image.isVideo { Image(systemName: "play.circle.fill").font(.largeTitle).foregroundStyle(.white.opacity(0.9)).shadow(radius: 3) } }
+                .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .onTapGesture { viewing = image }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityLabel(image.isVideo ? "Video" : "Image")
                 .overlay(alignment: .topTrailing) {
                   Button { model.removeImage(image.id) } label: {
                     Image(systemName: "xmark.circle.fill").font(.title2).symbolRenderingMode(.palette).foregroundStyle(.white, .gray)
                   }
                   .buttonStyle(.plain)
                   .offset(x: 6, y: -6)
-                  .accessibilityLabel("Remove image")
+                  .accessibilityLabel(image.isVideo ? "Remove video" : "Remove image")
                 }
             }
           }
@@ -445,5 +457,46 @@ private struct ShareFlowLayout: Layout {
       x += size.width + spacing
       rowHeight = max(rowHeight, size.height)
     }
+  }
+}
+
+/// The full-screen view of an attached picture (pinch to zoom, double-tap to reset) or video (plays).
+private struct SharePreview: View {
+  let media: SharedImage
+  @Environment(\.dismiss) private var dismiss
+  @State private var picture: UIImage?
+  @State private var player: AVPlayer?
+  @State private var steady: CGFloat = 1
+  @GestureState private var pinch: CGFloat = 1
+
+  var body: some View {
+    ZStack {
+      Color.black.ignoresSafeArea()
+      if media.isVideo {
+        VideoPlayer(player: player).ignoresSafeArea()
+      } else if let picture {
+        Image(uiImage: picture).resizable().scaledToFit()
+          .scaleEffect(steady * pinch)
+          .gesture(MagnifyGesture().updating($pinch) { value, state, _ in state = value.magnification }.onEnded { value in steady = min(max(steady * value.magnification, 1), 5) })
+          .onTapGesture(count: 2) { withAnimation { steady = 1 } }
+      } else {
+        ProgressView().tint(.white)
+      }
+    }
+    .overlay(alignment: .topTrailing) {
+      Button { dismiss() } label: { Image(systemName: "xmark.circle.fill").font(.title).foregroundStyle(.white, .white.opacity(0.25)) }.padding().accessibilityLabel("Close")
+    }
+    .statusBarHidden()
+    .task {
+      if let file = media.fileURL {
+        player = AVPlayer(url: file)
+        player?.play()
+      } else if let source = CGImageSourceCreateWithData(media.data as CFData, nil) {
+        // Decoded at screen size, so a 48 MP picture stays inside the extension's memory.
+        let options: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true, kCGImageSourceThumbnailMaxPixelSize: 2400]
+        picture = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary).map { UIImage(cgImage: $0) } ?? media.preview
+      }
+    }
+    .onDisappear { player?.pause() }
   }
 }

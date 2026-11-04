@@ -52,9 +52,10 @@ App/
 Every screen calls the API through `SessionStore.get/send/delete/upload`, which
 add the bearer and send you back to sign in on a 401.
 
-**Share sheet.** `HelpBitesShare/` is an iPhone/iPad share extension, *Add to Planning*: share a screenshot, photo, link
-or text from any app and it opens the board's New item form (title, description, status, priority, assignee, target
-date, labels, images, feedback, public roadmap), with the shared image uploaded and attached. It is its own target
+**Share sheet.** `HelpBitesShare/` is an iPhone/iPad share extension, *Add to Planning*: share a screenshot, photo,
+video, link or text from any app and it opens the board's New item form (title, description, status, priority, assignee, target
+date, labels, images and videos, feedback, public roadmap), with the shared image or video uploaded and attached (videos up to 100 MB are
+streamed from a temporary file, never held in memory); tap a thumbnail to view it full screen. It is its own target
 (SwiftUI over the same `/v1/admin/*` API, in Swift 5 mode because `NSItemProvider` is not `Sendable`) and shares
 `Core/SharedCredentials.swift` with the app. The app publishes its server and workspace to the App Group
 `group.com.helpbites.operator` and keeps the session token in the keychain group of the same name; enable the **App

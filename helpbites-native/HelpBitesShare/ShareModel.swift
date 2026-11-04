@@ -1,16 +1,20 @@
+import AVFoundation
 import ImageIO
 import Observation
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-/// One image on its way to the item: the bytes the server accepts, and a small preview.
+/// One image or video on its way to the item: the bytes the server accepts, and a small preview.
+/// A video keeps its bytes in a temporary file (`fileURL`, `data` is empty) so it is never held in memory.
 struct SharedImage: Identifiable {
   let id = UUID()
   let data: Data
+  var fileURL: URL?
   let filename: String
   let mime: String
   let preview: UIImage
+  var isVideo: Bool { fileURL != nil }
 }
 
 /// The share sheet's state: what was shared, the project's board, and the fields of "New item" in the app
@@ -47,6 +51,8 @@ struct SharedImage: Identifiable {
   static let maxImages = 10
   /// The server takes images up to 8 MB (POST /v1/feedback/attachments).
   private static let maxImageBytes = 8 * 1024 * 1024
+  /// MP4 and MOV videos may be up to 100 MB (ITEM_VIDEO_MAX_BYTES).
+  private static let maxVideoBytes = 100 * 1024 * 1024
 
   private var client: ShareClient?
   /// Which title request counts: a newer one makes an older answer stale.
@@ -103,14 +109,16 @@ struct SharedImage: Identifiable {
 
   // MARK: What was shared
 
-  /// Images become attachments, a link or text becomes the description, a page's title the title.
+  /// Images and videos become attachments, a link or text becomes the description, a page's title the title.
   private func read(_ extensionItems: [NSExtensionItem]) async {
     var lines: [String] = []
     for item in extensionItems {
       let heading = firstLine(item.attributedTitle?.string) ?? firstLine(item.attributedContentText?.string)
       var gotLink = false
       for provider in item.attachments ?? [] {
-        if let image = imageType(of: provider) {
+        if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
+          if let file = try? await loadMovie(of: provider) { await addVideo(at: file) } else { error = String(localized: "Could not read that video.") }
+        } else if let image = imageType(of: provider) {
           if let data = try? await loadData(of: provider, type: image) { addImage(data: data) }
         } else if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier), let url = try? await loadURL(of: provider) {
           if url.isFileURL {
@@ -145,6 +153,22 @@ struct SharedImage: Identifiable {
     try await withCheckedThrowingContinuation { continuation in
       _ = provider.loadDataRepresentation(forTypeIdentifier: type.identifier) { data, error in
         if let data { continuation.resume(returning: data) } else { continuation.resume(throwing: error ?? ShareError.unreadable) }
+      }
+    }
+  }
+
+  /// A temporary copy of the video (the provider's own file goes away when its callback returns).
+  private func loadMovie(of provider: NSItemProvider) async throws -> URL {
+    try await withCheckedThrowingContinuation { continuation in
+      _ = provider.loadFileRepresentation(forTypeIdentifier: UTType.movie.identifier) { url, error in
+        guard let url else { continuation.resume(throwing: error ?? ShareError.unreadable); return }
+        let copy = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).\(url.pathExtension)")
+        do {
+          try FileManager.default.copyItem(at: url, to: copy)
+          continuation.resume(returning: copy)
+        } catch {
+          continuation.resume(throwing: error)
+        }
       }
     }
   }
@@ -193,7 +217,24 @@ struct SharedImage: Identifiable {
     images.append(SharedImage(data: bytes, filename: "Image \(number).\(ext)", mime: mime, preview: preview))
   }
 
+  /// Takes a video in a temporary file this model now owns (deleted when it is removed). Over 100 MB it is refused.
+  func addVideo(at file: URL) async {
+    func refuse(_ message: String) { error = message; try? FileManager.default.removeItem(at: file) }
+    guard images.count < Self.maxImages else { return refuse(String(localized: "An item takes up to 10 images and files.")) }
+    let bytes = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+    guard bytes > 0, bytes <= Self.maxVideoBytes else { return refuse(bytes > 0 ? String(localized: "A video can be up to 100 MB.") : String(localized: "Could not read that video.")) }
+    let generator = AVAssetImageGenerator(asset: AVURLAsset(url: file))
+    generator.appliesPreferredTrackTransform = true
+    generator.maximumSize = CGSize(width: 480, height: 480)
+    guard let frame = try? await generator.image(at: .zero).image else { return refuse(String(localized: "Could not read that video.")) }
+    // The server takes .mov and .mp4; the Photos library's other containers are MPEG-4 as well.
+    let mov = file.pathExtension.lowercased() == "mov"
+    let number = images.count + 1
+    images.append(SharedImage(data: Data(), fileURL: file, filename: "Video \(number).\(mov ? "mov" : "mp4")", mime: mov ? "video/quicktime" : "video/mp4", preview: UIImage(cgImage: frame)))
+  }
+
   func removeImage(_ id: UUID) {
+    images.first { $0.id == id }?.fileURL.map { try? FileManager.default.removeItem(at: $0) }
     images.removeAll { $0.id == id }
     uploaded[id] = nil
   }
@@ -309,7 +350,7 @@ struct SharedImage: Identifiable {
     }
   }
 
-  /// Uploads the images, then creates the item; true once the server has it.
+  /// Uploads the images and videos, then creates the item; true once the server has it.
   func send() async -> Bool {
     guard canSend, let client, let project else { return false }
     sending = true
@@ -322,7 +363,11 @@ struct SharedImage: Identifiable {
     }
     do {
       for image in images where uploaded[image.id] == nil {
-        uploaded[image.id] = try await client.upload("/v1/feedback/attachments", query: ["project": project.id], file: image.data, filename: image.filename, mimeType: image.mime)
+        if let file = image.fileURL {
+          uploaded[image.id] = try await client.upload("/v1/feedback/attachments", query: ["project": project.id], fileURL: file, filename: image.filename, mimeType: image.mime)
+        } else {
+          uploaded[image.id] = try await client.upload("/v1/feedback/attachments", query: ["project": project.id], file: image.data, filename: image.filename, mimeType: image.mime)
+        }
       }
       let item = NewItem(
         title: String(title.trimmed.prefix(BoardTitle.maxLength)),
