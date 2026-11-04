@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
   const entries: MergeEntryInfo[] = rows.map(row => ({ id: row.id || '', title: String(row.get('title') || ''), tag: String(row.get('tag') || 'improved'), summary: String(row.get('summary') || ''), body: String(row.get('body') || ''), area: String(row.get('area') || '') }))
   await rateLimit(`sb:rl:clmrgai:${project.id}`, LIMITS.changelogMergeAiPerProject.limit, LIMITS.changelogMergeAiPerProject.window)
   try {
-    const { text } = await chatCompletion(route, { messages: [{ role: 'system', content: MERGE_GROUNDING }, { role: 'user', content: mergePrompt(entries) }], temperature: 0.2, max_tokens: 4000 }, { timeoutMs: 90_000 })
+    const { text } = await chatCompletion(route, { messages: [{ role: 'system', content: MERGE_GROUNDING }, { role: 'user', content: mergePrompt(entries) }], temperature: 0.2, max_tokens: 12_000 }, { timeoutMs: 120_000 })
     // A reply that parses to no merges is a valid "nothing to merge"; one that is not JSON at all is a failure.
     if (!/[[{]/.test(text)) throw new Error('the reply was not JSON, it may have been cut off')
     return { merges: readMergeSuggestions(text, entries) }
