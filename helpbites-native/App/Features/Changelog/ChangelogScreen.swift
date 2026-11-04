@@ -311,6 +311,8 @@ private struct ChangelogView: View {
           HStack(spacing: 6) {
             entry.tag.chip
             if let number = entry.number { Text("#\(number)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted) }
+            // When it goes public, else when it was written.
+            Text(DateText.day(entry.publishedAt ?? entry.createdAt)).font(.lnCaption).foregroundStyle(Theme.textMuted)
             if !entry.sources.isEmpty {
               Label("\(entry.doneSources)/\(entry.sources.count)", systemImage: "link").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
                 .help("\(entry.doneSources) of \(entry.sources.count) linked items are done")

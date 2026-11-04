@@ -149,9 +149,13 @@ struct ChangelogEntryEditor: View {
 
   // MARK: Form
 
+  private func createdOn(_ entry: ChangelogEntry) -> String {
+    DateText.date(entry.createdAt)?.formatted(date: .abbreviated, time: .shortened) ?? ""
+  }
+
   @ViewBuilder private var form: some View {
     if current == nil { Text("A draft until you publish it").font(.lnMeta).foregroundStyle(Theme.textMuted) }
-    else if let current { Text(current.authorName.isEmpty ? "Created \(FeedbackFormat.timeAgo(current.createdAt))" : "Created \(FeedbackFormat.timeAgo(current.createdAt)) by \(current.authorName)").font(.lnMeta).foregroundStyle(Theme.textMuted) }
+    else if let current { Text(current.authorName.isEmpty ? "Created \(createdOn(current)) (\(FeedbackFormat.timeAgo(current.createdAt)))" : "Created \(createdOn(current)) (\(FeedbackFormat.timeAgo(current.createdAt))) by \(current.authorName)").font(.lnMeta).foregroundStyle(Theme.textMuted) }
 
     LabeledField(label: "Title") {
       TextField("What changed", text: $draft.title)

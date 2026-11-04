@@ -370,7 +370,12 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   that reads the release's entries and fills in its title and summary. Nothing is
   saved until you press Save.
 - **Move between releases.** In the panel, drag an entry onto a release (or onto
-  *No release*). The native app moves it with the entry's Release field.
+  *No release*); dragging a selected entry takes the whole selection, and the
+  selection bar's **Move to** menu does the same. The native app moves entries
+  with the Release field and its Move to release menu.
+- **Ordered and dated.** Releases list highest version first (0.8.1 above 0.8.0)
+  and collapse in the panel. Every entry shows its date (when it goes public, else
+  when it was written); the editor shows the exact time it was created.
 - **Drafts from shipped work.** With auto-draft on, a done post or planning item
   drafts an entry for you. Entries keep links to their sources in the panel, and
   the public changelog never shows those links.

@@ -110,7 +110,7 @@ enum ChangelogFilter: String, CaseIterable, Identifiable {
     return [entry.title, entry.summary, entry.body, entry.slug, entry.area].contains { $0.localizedStandardContains(needle) }
   }
 
-  /// Release-less entries first (where new drafts land), then draft releases, then published ones, newest first.
+  /// Release-less entries first (where new drafts land), then the releases, highest version first.
   var groups: [ChangelogGroup] {
     if filter == .archived {
       let rows = archived.filter(matches)
@@ -120,8 +120,10 @@ enum ChangelogFilter: String, CaseIterable, Identifiable {
     var out: [ChangelogGroup] = []
     let loose = visible.filter { release($0.releaseId) == nil }
     if !loose.isEmpty { out.append(ChangelogGroup(release: nil, entries: loose)) }
+    // Highest version first (0.8.1 above 0.8.0, 0.8.10 above 0.8.9), the newer date breaking a tie.
     let ordered = releases.sorted {
-      if ($0.status == .draft) != ($1.status == .draft) { return $0.status == .draft }
+      let order = $0.version.compare($1.version, options: .numeric)
+      if order != .orderedSame { return order == .orderedDescending }
       return ($0.publishedAt ?? $0.createdAt) > ($1.publishedAt ?? $1.createdAt)
     }
     for release in ordered {

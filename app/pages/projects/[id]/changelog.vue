@@ -37,44 +37,57 @@
           <span class="tabular-nums text-muted">{{ $t('changelog.selected', { count: selected.size }) }}</span>
           <UButton :label="$t('changelog.approvePublish')" icon="i-lucide-check" size="xs" color="primary" variant="soft" :disabled="!selectedDrafts.length" :loading="bulk === 'approve'" @click="approveSelected" />
           <UButton :label="confirmMerge ? $t('changelog.confirmMerge') : $t('changelog.mergeOne')" icon="i-lucide-merge" size="xs" :color="confirmMerge ? 'warning' : 'neutral'" variant="soft" :disabled="selected.size < 2 || selected.size > 10" :loading="bulk === 'merge'" @click="mergeSelected" />
+          <UDropdownMenu :items="moveItems">
+            <UButton :label="$t('changelog.moveTo')" icon="i-lucide-package" trailing-icon="i-lucide-chevron-down" size="xs" color="neutral" variant="soft" :loading="bulk === 'move'" />
+          </UDropdownMenu>
           <UButton :label="$t('changelog.clear')" size="xs" color="neutral" variant="ghost" class="ml-auto" @click="clearSelection" />
           <p v-if="bulkError" class="w-full text-sm text-error">{{ bulkError }}</p>
         </div>
 
-        <section v-for="group in groups" :key="group.key" class="space-y-2 rounded-xl transition-shadow" :class="dropKey === group.key ? 'ring-2 ring-primary/60 bg-primary/5' : ''" @dragover="dragOver(group, $event)" @drop.prevent="dropOn(group)">
-          <header class="group/release flex flex-wrap items-center gap-2">
-            <template v-if="group.release">
-              <UCheckbox v-if="group.entries.length" :model-value="releaseState(group.entries)" class="transition-opacity" :class="releaseState(group.entries) === false ? 'opacity-0 group-hover/release:opacity-100 focus-within:opacity-100' : ''" :aria-label="$t('changelog.selectRelease', { version: group.release.version })" @update:model-value="toggleRelease(group.entries)" />
-              <h2 class="text-sm font-semibold">{{ group.release.version }}<span v-if="group.release.title" class="font-normal text-muted"> · {{ group.release.title }}</span></h2>
-              <span class="rounded-full px-1.5 text-[11px]" :class="group.release.status === 'published' ? 'bg-success/10 text-success' : 'bg-elevated text-toned'">{{ group.release.status === 'published' ? $t('changelog.published') : $t('changelog.draft') }}</span>
-              <time v-if="group.release.publishedAt" class="text-xs text-muted" :datetime="group.release.publishedAt">{{ shortDate(group.release.publishedAt) }}</time>
-              <span class="ml-auto flex items-center gap-1">
-                <UButton v-if="group.release.status === 'draft'" :label="$t('changelog.publishRelease')" icon="i-lucide-rocket" size="xs" color="primary" variant="soft" :loading="publishing === group.release.id" @click="publishRelease(group.release)" />
-                <UButton icon="i-lucide-pencil" size="xs" color="neutral" variant="ghost" square :aria-label="$t('changelog.editRelease', { version: group.release.version })" @click="openRelease(group.release)" />
-              </span>
+        <section v-for="group in groups" :key="group.key" class="rounded-xl transition-shadow" :class="dropKey === group.key ? 'ring-2 ring-primary/60 bg-primary/5' : ''" @dragover="dragOver(group, $event)" @drop.prevent="dropOn(group)">
+          <UCollapsible :open="!collapsed.has(group.key)" @update:open="toggleGroup(group.key)">
+            <header class="group/release flex cursor-pointer flex-wrap items-center gap-2">
+              <UIcon name="i-lucide-chevron-down" class="size-4 shrink-0 text-muted transition-transform" :class="collapsed.has(group.key) ? '-rotate-90' : ''" aria-hidden="true" />
+              <template v-if="group.release">
+                <UCheckbox v-if="group.entries.length" :model-value="releaseState(group.entries)" class="transition-opacity" :class="releaseState(group.entries) === false ? 'opacity-0 group-hover/release:opacity-100 focus-within:opacity-100' : ''" :aria-label="$t('changelog.selectRelease', { version: group.release.version })" @click.stop @update:model-value="toggleRelease(group.entries)" />
+                <h2 class="text-sm font-semibold">{{ group.release.version }}<span v-if="group.release.title" class="font-normal text-muted"> · {{ group.release.title }}</span></h2>
+                <span class="rounded-full px-1.5 text-[11px]" :class="group.release.status === 'published' ? 'bg-success/10 text-success' : 'bg-elevated text-toned'">{{ group.release.status === 'published' ? $t('changelog.published') : $t('changelog.draft') }}</span>
+                <time v-if="group.release.publishedAt" class="text-xs text-muted" :datetime="group.release.publishedAt">{{ shortDate(group.release.publishedAt) }}</time>
+                <span class="text-xs tabular-nums text-muted">{{ $t('changelog.entryCount', group.entries.length) }}</span>
+                <span class="ml-auto flex items-center gap-1" @click.stop>
+                  <UButton v-if="group.release.status === 'draft'" :label="$t('changelog.publishRelease')" icon="i-lucide-rocket" size="xs" color="primary" variant="soft" :loading="publishing === group.release.id" @click="publishRelease(group.release)" />
+                  <UButton icon="i-lucide-pencil" size="xs" color="neutral" variant="ghost" square :aria-label="$t('changelog.editRelease', { version: group.release.version })" @click="openRelease(group.release)" />
+                </span>
+              </template>
+              <template v-else>
+                <h2 class="text-sm font-semibold">{{ $t('changelog.noRelease') }}</h2>
+                <span class="text-xs tabular-nums text-muted">{{ $t('changelog.entryCount', group.entries.length) }}</span>
+              </template>
+            </header>
+            <template #content>
+              <ul class="mt-2 divide-y divide-default rounded-lg border border-default">
+                <li v-for="entry in group.entries" :key="entry.id" draggable="true" :title="$t('changelog.dragToMove')" class="flex items-center transition-colors hover:bg-elevated cursor-grab active:cursor-grabbing" :class="moving.includes(entry.id) || dragIds.includes(entry.id) ? 'opacity-50' : ''" @dragstart="startDrag(entry, $event)" @dragend="endDrag">
+                  <UCheckbox :model-value="selected.has(entry.id)" class="pl-3" :aria-label="$t('changelog.selectEntry', { title: entry.title })" @click.capture="shiftHeld = $event.shiftKey" @update:model-value="toggleSelected(entry.id)" />
+                  <button type="button" class="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left text-[13px]" @click="openEntry(entry.id)">
+                    <span class="w-16 shrink-0 rounded-full px-1.5 text-center text-[11px] font-semibold" :class="CHANGELOG_TAG_CLASS[entry.tag]">{{ $t(TAG_KEYS[entry.tag]) }}</span>
+                    <span v-if="entry.number" class="shrink-0 tabular-nums text-muted">#{{ entry.number }}</span>
+                    <span class="min-w-0 flex-1 truncate">{{ entry.title }}</span>
+                    <time class="shrink-0 text-xs tabular-nums text-muted" :datetime="entryDate(entry)" :title="exactDate(entryDate(entry))">{{ shortDate(entryDate(entry)) }}</time>
+                    <span v-if="entry.sources.length" class="inline-flex shrink-0 items-center gap-1 text-xs text-muted" :title="$t('changelog.linkedDone', { done: entry.sources.filter(s => s.done).length, total: entry.sources.length })"><UIcon name="i-lucide-link" class="size-3" />{{ entry.sources.filter(s => s.done).length }}/{{ entry.sources.length }}</span>
+                    <span v-if="entry.aiGenerated" class="shrink-0 rounded-full bg-primary/10 px-1.5 text-[11px] text-primary" :title="$t('changelog.aiTitle')">AI</span>
+                    <span class="shrink-0 rounded-full px-1.5 text-[11px]" :class="STATE_CLASS[stateOf(entry).key]">{{ stateOf(entry).label }}</span>
+                  </button>
+                </li>
+                <li v-if="!group.entries.length" class="px-3 py-2.5 text-xs text-muted">{{ $t('changelog.noEntries') }}</li>
+              </ul>
             </template>
-            <h2 v-else class="text-sm font-semibold">{{ $t('changelog.noRelease') }}</h2>
-          </header>
-          <ul class="divide-y divide-default rounded-lg border border-default">
-            <li v-for="entry in group.entries" :key="entry.id" draggable="true" :title="$t('changelog.dragToMove')" class="flex items-center transition-colors hover:bg-elevated cursor-grab active:cursor-grabbing" :class="moving === entry.id ? 'opacity-50' : ''" @dragstart="startDrag(entry, $event)" @dragend="endDrag">
-              <UCheckbox :model-value="selected.has(entry.id)" class="pl-3" :aria-label="$t('changelog.selectEntry', { title: entry.title })" @click.capture="shiftHeld = $event.shiftKey" @update:model-value="toggleSelected(entry.id)" />
-              <button type="button" class="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left text-[13px]" @click="openEntry(entry.id)">
-                <span class="w-16 shrink-0 rounded-full px-1.5 text-center text-[11px] font-semibold" :class="CHANGELOG_TAG_CLASS[entry.tag]">{{ $t(TAG_KEYS[entry.tag]) }}</span>
-                <span v-if="entry.number" class="shrink-0 tabular-nums text-muted">#{{ entry.number }}</span>
-                <span class="min-w-0 flex-1 truncate">{{ entry.title }}</span>
-                <span v-if="entry.sources.length" class="inline-flex shrink-0 items-center gap-1 text-xs text-muted" :title="$t('changelog.linkedDone', { done: entry.sources.filter(s => s.done).length, total: entry.sources.length })"><UIcon name="i-lucide-link" class="size-3" />{{ entry.sources.filter(s => s.done).length }}/{{ entry.sources.length }}</span>
-                <span v-if="entry.aiGenerated" class="shrink-0 rounded-full bg-primary/10 px-1.5 text-[11px] text-primary" :title="$t('changelog.aiTitle')">AI</span>
-                <span class="shrink-0 rounded-full px-1.5 text-[11px]" :class="STATE_CLASS[stateOf(entry).key]">{{ stateOf(entry).label }}</span>
-              </button>
-            </li>
-            <li v-if="!group.entries.length" class="px-3 py-2.5 text-xs text-muted">{{ $t('changelog.noEntries') }}</li>
-          </ul>
+          </UCollapsible>
         </section>
       </div>
     </div>
 
     <!-- Entry editor -->
-    <USlideover v-model:open="entryOpen" :title="current ? (current.number ? $t('changelog.entryNumber', { number: current.number }) : $t('changelog.entry')) : $t('changelog.newEntry')" :description="current ? $t('changelog.created', { time: timeAgo(current.createdAt) }) : $t('changelog.draftUntilPublish')" :ui="{ content: 'sm:max-w-2xl' }">
+    <USlideover v-model:open="entryOpen" :title="current ? (current.number ? $t('changelog.entryNumber', { number: current.number }) : $t('changelog.entry')) : $t('changelog.newEntry')" :description="current ? $t('changelog.created', { time: `${exactDate(current.createdAt)} (${timeAgo(current.createdAt)})` }) : $t('changelog.draftUntilPublish')" :ui="{ content: 'sm:max-w-2xl' }">
       <template #body>
         <div class="space-y-6" @keydown.meta.enter.prevent="submitShortcut" @keydown.ctrl.enter.prevent="submitShortcut">
           <p v-if="!current && restored" class="flex items-center gap-2 rounded-lg border border-default bg-elevated px-3 py-2 text-xs text-muted">
@@ -112,7 +125,7 @@
             </USelect>
             <label class="group" :class="[propertyBox, current ? '' : 'pointer-events-none opacity-50']">
               <UIcon name="i-lucide-calendar" class="absolute left-2.5 size-3.5 text-dimmed" />
-              <input v-model="draft.date" type="date" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.date ? '' : 'text-dimmed'" :aria-label="$t('changelog.date')" :disabled="!current" @change="patch({ publishedAt: draft.date ? `${draft.date}T12:00:00.000Z` : null })">
+              <input v-model="draft.date" type="date" :title="current && !current.publishedAt ? $t('changelog.dateFallback', { date: exactDate(current.createdAt) }) : undefined" class="w-full bg-transparent outline-none [color-scheme:light] dark:[color-scheme:dark]" :class="draft.date ? '' : 'text-dimmed'" :aria-label="$t('changelog.date')" :disabled="!current" @change="patch({ publishedAt: draft.date ? `${draft.date}T12:00:00.000Z` : null })">
             </label>
           </section>
 
@@ -309,7 +322,14 @@ const imageWidthItems = computed(() => CHANGELOG_IMAGE_WIDTHS.map(value => ({ la
 const sourceKindItems = computed(() => [{ label: t('changelog.feedbackPost'), value: 'feedback' }, { label: t('changelog.boardItem'), value: 'board' }])
 
 const releaseOf = (releaseId: string) => releases.value.find(r => r.id === releaseId) || null
-const releaseItems = computed(() => [{ label: t('changelog.noRelease'), value: NO_RELEASE }, ...releases.value.map(r => ({ label: `${r.version}${r.title ? ` · ${r.title}` : ''}${r.status === 'draft' ? ` ${t('changelog.draftSuffix')}` : ''}`, value: r.id }))])
+/** Highest version first (0.8.1 above 0.8.0, 0.8.10 above 0.8.9), the newer date breaking a tie. */
+const orderedReleases = computed(() => [...releases.value].sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }) || String(b.publishedAt || b.createdAt).localeCompare(String(a.publishedAt || a.createdAt))))
+const releaseLabel = (r: ChangelogRelease) => `${r.version}${r.title ? ` · ${r.title}` : ''}${r.status === 'draft' ? ` ${t('changelog.draftSuffix')}` : ''}`
+const releaseItems = computed(() => [{ label: t('changelog.noRelease'), value: NO_RELEASE }, ...orderedReleases.value.map(r => ({ label: releaseLabel(r), value: r.id }))])
+
+/** The date an entry carries: when it went (or is set to go) public, else when it was written. */
+const entryDate = (entry: ChangelogEntry) => entry.publishedAt || entry.createdAt
+const exactDate = (value: string) => new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 
 /** Where an entry stands: public, a published entry still waiting on its draft release, or a draft. */
 function stateOf(entry: ChangelogEntry): { key: 'public' | 'waiting' | 'draft', label: string } {
@@ -321,14 +341,13 @@ const aiPending = computed(() => entries.value.filter(e => e.aiGenerated && e.st
 const publicCount = computed(() => entries.value.filter(e => stateOf(e).key === 'public').length)
 const draftCount = computed(() => entries.value.filter(e => stateOf(e).key !== 'public').length)
 
-/** Release-less entries first (where new drafts land), then draft releases, then published ones, newest first. */
+/** Release-less entries first (where new drafts land), then the releases, highest version first. */
 const groups = computed(() => {
   const loose = entries.value.filter(e => !e.releaseId || !releaseOf(e.releaseId))
   const out: { key: string, release: ChangelogRelease | null, entries: ChangelogEntry[] }[] = []
   // While an entry is dragged, "No release" is always there to drop it on, even when empty.
-  if (loose.length || dragId.value) out.push({ key: 'none', release: null, entries: loose })
-  const ordered = [...releases.value].sort((a, b) => Number(b.status === 'draft') - Number(a.status === 'draft') || String(b.publishedAt || b.createdAt).localeCompare(String(a.publishedAt || a.createdAt)))
-  for (const release of ordered) out.push({ key: release.id, release, entries: entries.value.filter(e => e.releaseId === release.id) })
+  if (loose.length || dragIds.value.length) out.push({ key: 'none', release: null, entries: loose })
+  for (const release of orderedReleases.value) out.push({ key: release.id, release, entries: entries.value.filter(e => e.releaseId === release.id) })
   return out
 })
 
@@ -512,47 +531,56 @@ watch(entryOpen, (open) => {
   if (route.query.entry) void router.replace({ query: { ...route.query, entry: undefined } })
 })
 
-// ---- moving an entry to another release: drag it onto a release, or onto "No release" ----
-const dragId = ref('')
+// ---- moving entries to another release: drag them onto a release (or "No release"), or use "Move to" ----
+// Dragging a selected entry takes the whole selection along; dragging an unselected one moves just that one.
+const dragIds = ref<string[]>([])
 const dropKey = ref('')
-const moving = ref('')
+const moving = ref<string[]>([])
 type ChangelogGroup = (typeof groups.value)[number]
 
 const groupKeyOf = (entry: ChangelogEntry) => (entry.releaseId && releaseOf(entry.releaseId) ? entry.releaseId : 'none')
 
 function startDrag(entry: ChangelogEntry, event: DragEvent) {
-  dragId.value = entry.id
+  dragIds.value = selected.value.has(entry.id) ? [...selected.value] : [entry.id]
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', entry.id)
+    event.dataTransfer.setData('text/plain', dragIds.value.join(','))
   }
 }
 
 function endDrag() {
-  dragId.value = ''
+  dragIds.value = []
   dropKey.value = ''
 }
 
-/** Allowed only onto a different group; the drop is taken (and the group lit) only then. */
+/** The dragged entries that are not already in this group. */
+const movable = (key: string) => entries.value.filter(e => dragIds.value.includes(e.id) && groupKeyOf(e) !== key)
+
+/** Allowed only when something would change; the drop is taken (and the group lit) only then. */
 function dragOver(group: ChangelogGroup, event: DragEvent) {
-  const entry = entries.value.find(e => e.id === dragId.value)
-  if (!entry || groupKeyOf(entry) === group.key) return
+  if (!movable(group.key).length) return
   event.preventDefault()
   if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
   dropKey.value = group.key
 }
 
 async function dropOn(group: ChangelogGroup) {
-  const entry = entries.value.find(e => e.id === dragId.value)
+  const list = movable(group.key)
   endDrag()
-  if (!entry || groupKeyOf(entry) === group.key) return
-  moving.value = entry.id
+  await moveEntries(list, group.release?.id ?? null)
+}
+
+/** One request per entry; stops at the first failure and leaves the selection so it can be retried. */
+async function moveEntries(list: ChangelogEntry[], releaseId: string | null) {
+  if (!list.length) return
+  moving.value = list.map(e => e.id)
   try {
-    replaceEntry((await api<{ entry: ChangelogEntry }>(`/admin/changelog/entries/${entry.id}`, { method: 'PATCH', body: { releaseId: group.release?.id ?? null } })).entry)
+    for (const entry of list) replaceEntry((await api<{ entry: ChangelogEntry }>(`/admin/changelog/entries/${entry.id}`, { method: 'PATCH', body: { releaseId } })).entry)
+    clearSelection()
   } catch (e: any) {
     toast.add({ title: e?.message || t('changelog.moveError'), icon: 'i-lucide-alert-circle', color: 'error' })
   } finally {
-    moving.value = ''
+    moving.value = []
   }
 }
 
@@ -685,9 +713,18 @@ async function addSource() {
   if (value && await setLink(sourceKind.value, value, true)) sourceRef.value = ''
 }
 
-// ---- selecting: approve or merge several at once ----
+// ---- collapsing a release ----
+const collapsed = ref(new Set<string>())
+
+function toggleGroup(key: string) {
+  const next = new Set(collapsed.value)
+  if (!next.delete(key)) next.add(key)
+  collapsed.value = next
+}
+
+// ---- selecting: approve, merge or move several at once ----
 const selected = ref(new Set<string>())
-const bulk = ref<'' | 'approve' | 'merge'>('')
+const bulk = ref<'' | 'approve' | 'merge' | 'move'>('')
 const bulkError = ref('')
 const confirmMerge = ref(false)
 const selectedEntries = computed(() => entries.value.filter(e => selected.value.has(e.id)))
@@ -700,7 +737,7 @@ let anchorId = ''
 function toggleSelected(entryId: string) {
   const next = new Set(selected.value)
   const add = !next.has(entryId)
-  const shown = groups.value.flatMap(g => g.entries.map(e => e.id))
+  const shown = groups.value.filter(g => !collapsed.value.has(g.key)).flatMap(g => g.entries.map(e => e.id))
   const from = shown.indexOf(anchorId)
   const to = shown.indexOf(entryId)
   const span = shiftHeld.value && from >= 0 ? shown.slice(Math.min(from, to), Math.max(from, to) + 1) : [entryId]
@@ -728,6 +765,18 @@ function clearSelection() {
   selected.value = new Set()
   bulkError.value = ''
   confirmMerge.value = false
+}
+
+/** The "Move to" menu: no release, then each release, highest version first. */
+const moveItems = computed(() => [
+  [{ label: t('changelog.noRelease'), icon: 'i-lucide-package-x', onSelect: () => moveSelected(null) }],
+  orderedReleases.value.map(r => ({ label: releaseLabel(r), icon: 'i-lucide-package', onSelect: () => moveSelected(r.id) }))
+])
+
+async function moveSelected(releaseId: string | null) {
+  bulk.value = 'move'
+  await moveEntries(selectedEntries.value.filter(e => groupKeyOf(e) !== (releaseId ?? 'none')), releaseId)
+  bulk.value = ''
 }
 
 async function approveSelected() {
