@@ -1094,7 +1094,7 @@
       "id": "error-tracking",
       "name": "Error tracking",
       "category": "dev",
-      "summary": "Connect GlitchTip or Bugsink, browse and triage issues, alert rules, AI cause-and-fix, saved and scheduled AI reports that read the GitHub repos, Telegram alerts, file an error on the project board.",
+      "summary": "Connect GlitchTip or Bugsink, browse and triage issues, alert rules, AI cause-and-fix, saved and scheduled AI reports that read the GitHub repos, Telegram alerts, file an error on the project board, copy a whole error (or chosen parts: summary, stack trace, details, breadcrumbs, tags, AI analysis) as text, on web and native.",
       "editions": [
         "community",
         "cloud"

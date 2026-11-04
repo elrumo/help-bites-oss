@@ -624,7 +624,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   and DSN for you, and wires the alerts.
 - **Browse and triage.** The Errors page lists issues; open one for its stack trace,
   event details, breadcrumbs and tags, and resolve or ignore it. Errors don't create
-  inbox conversations.
+  inbox conversations. **Copy all** puts the whole error (summary, stack trace, event
+  details, breadcrumbs, tags and the saved AI analysis) on the clipboard as text, or
+  just the parts ticked in its dropdown.
 - **Alert rules.** Email the team when an error is new, passes a total, or happens
   N times within a time window.
 - **Fix with AI.** Analyze an error for cause and fix (reading the stack-trace files

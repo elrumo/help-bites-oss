@@ -21,6 +21,9 @@ struct ErrorIssueCard: View {
   @State private var analyzing = false
   @State private var copying = false
   @State private var copied = false
+  /// The parts the Copy menu has ticked; kept while the card is open.
+  @State private var picked = Set(ErrorCopyPart.allCases)
+  @State private var detailCopied = false
   @State private var aiError = ""
   /// The board item this error was filed as, if any; filing needs the project board on.
   @State private var filed: ErrorBoardState.Item?
@@ -133,9 +136,13 @@ struct ErrorIssueCard: View {
           }
         }
       }
-      VStack(alignment: .leading, spacing: 2) {
-        Text(detail.exception.type).font(.lnRow).foregroundStyle(Theme.textHighlighted)
-        if !detail.exception.value.isEmpty { Text(detail.exception.value).font(.lnMeta).foregroundStyle(Theme.textMuted).textSelection(.enabled) }
+      HStack(alignment: .top, spacing: 8) {
+        VStack(alignment: .leading, spacing: 2) {
+          Text(detail.exception.type).font(.lnRow).foregroundStyle(Theme.textHighlighted)
+          if !detail.exception.value.isEmpty { Text(detail.exception.value).font(.lnMeta).foregroundStyle(Theme.textMuted).textSelection(.enabled) }
+        }
+        Spacer(minLength: 0)
+        copyMenu(detail)
       }
       Picker("Event", selection: $tab) { ForEach(Tab.allCases) { Text($0.label).tag($0) } }
         .pickerStyle(.segmented).labelsHidden()
@@ -147,6 +154,32 @@ struct ErrorIssueCard: View {
       }
       latestEventNote(detail).font(.lnCaption).foregroundStyle(Theme.textMuted)
     }
+  }
+
+  /// Copies the whole error, or just the parts ticked in the menu (web: the Copy all button and its dropdown in ErrorDrawer.vue).
+  private func copyMenu(_ detail: ErrorDetail) -> some View {
+    let parts = ErrorCopyPart.allCases.filter { $0 != .analysis || analysis != nil }
+    let chosen = Set(parts).intersection(picked)
+    return Menu {
+      Button { copyDetail(detail, Set(parts)) } label: { Label("Copy all", systemImage: "doc.on.doc") }
+      Divider()
+      ForEach(parts) { part in
+        Toggle(part.label, isOn: Binding(get: { picked.contains(part) }, set: { on in if on { picked.insert(part) } else { picked.remove(part) } }))
+      }
+      .menuActionDismissBehavior(.disabled)
+      Divider()
+      Button { copyDetail(detail, chosen) } label: { Label("Copy selected", systemImage: "checklist") }.disabled(chosen.isEmpty)
+    } label: {
+      Label(detailCopied ? "Copied" : "Copy all", systemImage: detailCopied ? "checkmark" : "doc.on.doc")
+    } primaryAction: { copyDetail(detail, Set(parts)) }
+      .menuStyle(.button).buttonStyle(.lnSecondaryCompact).fixedSize()
+      .accessibilityLabel("Choose what to copy")
+  }
+
+  private func copyDetail(_ detail: ErrorDetail, _ parts: Set<ErrorCopyPart>) {
+    Clipboard.copy(detail.text(parts, title: issue.title, culprit: issue.culprit, url: issue.url, provider: issue.providerName, analysis: analysis?.text))
+    detailCopied = true
+    Task { try? await Task.sleep(for: .seconds(2)); detailCopied = false }
   }
 
   private func latestEventNote(_ detail: ErrorDetail) -> Text {

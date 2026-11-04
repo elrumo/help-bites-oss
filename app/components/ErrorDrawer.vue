@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /** One error in a side panel: the latest event (stack trace, details, breadcrumbs, tags) and its saved AI write-up. */
 import type { BoardItem } from '#shared/board'
-import type { ErrorDetail } from '#shared/errors'
+import { ERROR_COPY_SECTIONS, errorDetailText, type ErrorCopySection, type ErrorDetail } from '#shared/errors'
+import type { DropdownMenuItem } from '@nuxt/ui'
 import type { SavedAnalysis } from '~~/server/utils/errorAi'
 
 const props = defineProps<{ projectId: string, saved?: SavedAnalysis }>()
@@ -17,6 +18,7 @@ const detail = ref<ErrorDetail | null>(null)
 const tab = ref('stack')
 const showAll = ref(false)
 const aiError = ref('')
+const copyError = ref('')
 const analysis = ref<SavedAnalysis | null>(null)
 const analysisOpen = ref(true)
 const cached = ref(false)
@@ -56,7 +58,7 @@ async function fileOnBoard() {
 
 watch(issue, async (row) => {
   detail.value = null; loadError.value = ''; aiError.value = ''; tab.value = 'stack'; showAll.value = false
-  board.value = null; boardError.value = ''
+  board.value = null; boardError.value = ''; copyError.value = ''
   analysis.value = props.saved || null
   cached.value = Boolean(props.saved)
   if (!row) return
@@ -84,6 +86,32 @@ async function analyze(refresh: boolean) {
   } catch (cause: any) { aiError.value = cause.message || t('errors.drawer.analyzeFailed') } finally { analyzing.value = false }
 }
 
+// Copy the error as text: everything, or the parts ticked in the menu (the choice is kept between errors).
+const copyParts = computed(() => ERROR_COPY_SECTIONS.filter(part => part !== 'analysis' || analysis.value))
+const picked = ref<ErrorCopySection[]>([...ERROR_COPY_SECTIONS])
+const detailCopied = ref(false)
+const copyLabels = computed<Record<ErrorCopySection, string>>(() => ({ summary: t('errors.drawer.copySummary'), stack: t('errors.drawer.tabs.stack'), details: t('errors.drawer.tabs.details'), breadcrumbs: t('errors.drawer.tabs.breadcrumbs'), tags: t('errors.drawer.tabs.tags'), analysis: t('errors.drawer.copyAnalysis') }))
+async function copyDetail(parts: readonly ErrorCopySection[]) {
+  if (!detail.value) return
+  copyError.value = ''
+  try {
+    const row = issue.value
+    await navigator.clipboard.writeText(errorDetailText(detail.value, parts, { title: row.title, culprit: row.culprit, url: row.url, provider: row.providerName, analysis: analysis.value?.text }))
+    detailCopied.value = true
+    setTimeout(() => { detailCopied.value = false }, 2000)
+  } catch { copyError.value = t('errors.drawer.copyFailed') }
+}
+const copyItems = computed<DropdownMenuItem[][]>(() => [
+  [{ label: t('errors.drawer.copyAll'), icon: 'i-lucide-copy-check', onSelect: () => copyDetail(copyParts.value) }],
+  [{ type: 'label', label: t('errors.drawer.copyChoose') }, ...copyParts.value.map((part): DropdownMenuItem => ({
+    label: copyLabels.value[part],
+    type: 'checkbox',
+    checked: picked.value.includes(part),
+    onSelect: (e: Event) => { e.preventDefault(); picked.value = picked.value.includes(part) ? picked.value.filter(p => p !== part) : [...picked.value, part] }
+  }))],
+  [{ label: t('errors.drawer.copySelected'), icon: 'i-lucide-clipboard-list', disabled: !copyParts.value.some(part => picked.value.includes(part)), onSelect: () => copyDetail(copyParts.value.filter(part => picked.value.includes(part))) }]
+])
+
 const copying = ref(false)
 const copied = ref(false)
 async function copyPrompt() {
@@ -107,9 +135,18 @@ async function copyPrompt() {
           <!-- Filed once, as a board item; pressing it again only opens that item. -->
           <UButton v-if="filed" :to="`/projects/${projectId}/board?item=${filed.id}`" color="neutral" variant="soft" size="xs" icon="i-lucide-square-kanban" :label="$t('errors.board.onBoard', { number: filed.number ?? '', title: filed.title })" class="max-w-64" :ui="{ label: 'truncate' }" />
           <UButton v-else-if="board?.boardEnabled" color="neutral" variant="soft" size="xs" icon="i-lucide-square-kanban" :label="$t('errors.board.file')" :loading="filing" @click="fileOnBoard" />
-          <UButton :to="issue.url" target="_blank" color="neutral" variant="ghost" size="xs" icon="i-lucide-arrow-up-right" :label="$t('errors.openIn', { provider: issue.providerName })" class="ml-auto" />
+          <div class="ml-auto flex items-center gap-2">
+            <UFieldGroup size="xs">
+              <UButton color="neutral" variant="soft" :icon="detailCopied ? 'i-lucide-check' : 'i-lucide-copy'" :label="detailCopied ? $t('errors.drawer.copied') : $t('errors.drawer.copyAll')" :disabled="!detail" @click="copyDetail(copyParts)" />
+              <UDropdownMenu :items="copyItems" :content="{ align: 'end' }">
+                <UButton color="neutral" variant="soft" icon="i-lucide-chevron-down" :aria-label="$t('errors.drawer.copyOptions')" :disabled="!detail" />
+              </UDropdownMenu>
+            </UFieldGroup>
+            <UButton :to="issue.url" target="_blank" color="neutral" variant="ghost" size="xs" icon="i-lucide-arrow-up-right" :label="$t('errors.openIn', { provider: issue.providerName })" />
+          </div>
         </div>
         <p v-if="boardError" class="text-sm text-error">{{ boardError }}</p>
+        <p v-if="copyError" class="text-sm text-error">{{ copyError }}</p>
 
         <section class="space-y-3 rounded-lg border border-default bg-default p-3">
           <div class="flex flex-wrap items-center gap-2">

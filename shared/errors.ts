@@ -180,6 +180,38 @@ export function errorDetailOf(rawIssue: unknown, rawEvent: unknown): ErrorDetail
   }
 }
 
+/** The parts of an error the drawer can copy, in the order they are written. `analysis` is the saved AI write-up, when there is one. */
+export const ERROR_COPY_SECTIONS = ['summary', 'stack', 'details', 'breadcrumbs', 'tags', 'analysis'] as const
+export type ErrorCopySection = (typeof ERROR_COPY_SECTIONS)[number]
+export type ErrorCopyMeta = { title: string, culprit?: string, url?: string, provider?: string, analysis?: string }
+
+/** The error as plain text for a ticket, a chat or a coding agent: any of its parts, always in the same order. Nothing is trimmed. */
+export function errorDetailText(detail: ErrorDetail, sections: readonly ErrorCopySection[], meta: ErrorCopyMeta): string {
+  const want = new Set(sections)
+  const lines = (rows: Array<[string, string]>) => rows.filter(([, value]) => value).map(([label, value]) => `${label}: ${value}`)
+  const part = (heading: string, body: string[]) => `## ${heading}\n${body.length ? body.join('\n') : '(none)'}`
+  const out: string[] = []
+  if (want.has('summary')) {
+    const { issue, exception } = detail
+    out.push([`# ${meta.title}`, '', ...lines([
+      ['Exception', [exception.type, exception.value].filter(Boolean).join(': ')], ['Where', meta.culprit || ''], ['Issue', issue.shortId], ['State', issue.status],
+      ['Events', String(issue.count)], ['First seen', issue.firstSeen], ['Last seen', issue.lastSeen], ['Latest event', [detail.eventId, detail.at].filter(Boolean).join(' at ')],
+      ['Tracker', meta.provider || ''], ['Link', meta.url || '']
+    ])].join('\n'))
+  }
+  if (want.has('stack')) {
+    out.push(part('Stack trace', detail.frames.map(frame => [
+      `${frame.file}${frame.line ? `:${frame.line}` : ''} in ${frame.function}${frame.inApp ? '' : ' (library)'}`,
+      ...frame.before.map(line => `    ${line}`), ...(frame.context ? [`>   ${frame.context}`] : []), ...frame.after.map(line => `    ${line}`)
+    ].join('\n'))))
+  }
+  if (want.has('details')) out.push(part('Event details', lines(detail.details)))
+  if (want.has('breadcrumbs')) out.push(part('Breadcrumbs', detail.breadcrumbs.map(crumb => [crumb.at, crumb.category, crumb.level && `[${crumb.level}]`, crumb.message].filter(Boolean).join(' '))))
+  if (want.has('tags')) out.push(part('Tags', lines(detail.tags)))
+  if (want.has('analysis') && meta.analysis) out.push(`## AI analysis\n${meta.analysis}`)
+  return out.join('\n\n')
+}
+
 /** GlitchTip returns events as `entries` (exception, breadcrumbs, request) with tags as {key, value}; give it the Sentry shape Bugsink stores. */
 export function flattenEvent(event: unknown): unknown {
   const data = event as Record<string, any> | null

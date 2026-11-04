@@ -7,6 +7,15 @@ expand its stack trace, event details, breadcrumbs and tags (from the latest eve
 or ignore it in the tracker. Errors don't create inbox conversations (earlier ones stay, and
 resolving one still resolves the issue).
 
+**Copy the error.** An open error has a **Copy all** button (web and native) that puts everything
+the panel shows on the clipboard as plain text: a summary (title, exception, culprit, state, counts,
+dates, tracker link), the full stack trace with its source lines (library frames marked), the event
+details, the breadcrumbs, the tags and, when one is saved, the AI analysis. Its dropdown ticks which
+of those parts to copy, then **Copy selected** writes just them, always in that order. It is text from
+the latest event as the panel loads it (the same limits apply: the last 60 frames, 30 breadcrumbs,
+60 tags); the tracker has the rest. There is no API for it: the text is built from
+`GET /v1/admin/errors/:id`.
+
 **Alerts.** The **Alerts** button sets rules that email the team (the addresses typed there,
 else the project's notify emails): *a new error appears*, *an error totals N events*, or *an
 error happens N times within M minutes*, each for all tracker projects or one, with a

@@ -58,6 +58,53 @@ struct ErrorDetail: Decodable, Sendable {
   let tags, details: [[String]]
   let breadcrumbs: [Crumb]
   let at: String
+  let eventId: String?
+}
+
+/// What the Copy menu can put on the clipboard, in the order it is written (shared/errors.ts `ERROR_COPY_SECTIONS`).
+enum ErrorCopyPart: String, CaseIterable, Identifiable {
+  case summary, stack, details, breadcrumbs, tags, analysis
+  var id: String { rawValue }
+  var label: String {
+    switch self {
+    case .summary: String(localized: "Summary")
+    case .stack: String(localized: "Stacktrace")
+    case .details: String(localized: "Details")
+    case .breadcrumbs: String(localized: "Breadcrumbs")
+    case .tags: String(localized: "Tags")
+    case .analysis: String(localized: "AI analysis")
+    }
+  }
+}
+
+extension ErrorDetail {
+  /// The error as plain text for a ticket, a chat or a coding agent; nothing is trimmed (shared/errors.ts `errorDetailText`).
+  func text(_ parts: Set<ErrorCopyPart>, title: String, culprit: String, url: String?, provider: String, analysis: String?) -> String {
+    func lines(_ rows: [(String, String)]) -> [String] { rows.filter { !$0.1.isEmpty }.map { "\($0.0): \($0.1)" } }
+    func pairs(_ rows: [[String]]) -> [String] { lines(rows.filter { $0.count > 1 }.map { ($0[0], $0[1]) }) }
+    func part(_ heading: String, _ body: [String]) -> String { "## \(heading)\n" + (body.isEmpty ? "(none)" : body.joined(separator: "\n")) }
+    var out: [String] = []
+    if parts.contains(.summary) {
+      out.append((["# \(title)", ""] + lines([
+        ("Exception", [exception.type, exception.value].filter { !$0.isEmpty }.joined(separator: ": ")), ("Where", culprit), ("Issue", issue.shortId), ("State", issue.status),
+        ("Events", String(issue.count)), ("First seen", issue.firstSeen), ("Last seen", issue.lastSeen), ("Latest event", [eventId ?? "", at].filter { !$0.isEmpty }.joined(separator: " at ")),
+        ("Tracker", provider), ("Link", url ?? "")
+      ])).joined(separator: "\n"))
+    }
+    if parts.contains(.stack) {
+      out.append(part("Stack trace", frames.map { frame in
+        (["\(frame.file)\(frame.line != 0 ? ":\(frame.line)" : "") in \(frame.function)\(frame.inApp ? "" : " (library)")"]
+          + frame.before.map { "    \($0)" } + (frame.context.isEmpty ? [] : [">   \(frame.context)"]) + frame.after.map { "    \($0)" }).joined(separator: "\n")
+      }))
+    }
+    if parts.contains(.details) { out.append(part("Event details", pairs(details))) }
+    if parts.contains(.breadcrumbs) {
+      out.append(part("Breadcrumbs", breadcrumbs.map { [$0.at, $0.category, $0.level.isEmpty ? "" : "[\($0.level)]", $0.message].filter { !$0.isEmpty }.joined(separator: " ") }))
+    }
+    if parts.contains(.tags) { out.append(part("Tags", pairs(tags))) }
+    if parts.contains(.analysis), let analysis, !analysis.isEmpty { out.append("## AI analysis\n\(analysis)") }
+    return out.joined(separator: "\n\n")
+  }
 }
 
 /// `GET` and `POST /v1/admin/errors/:id/board`: the board item an error was filed as. `boardEnabled` is

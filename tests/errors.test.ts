@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { applyTrackerSettings, bugsinkActionsFor, bugsinkIssueRow, buildErrorPrompt, errorFramePaths, matchRepoPath, issueQuery, pickTrackerSettings } from '#shared/errors'
+import { ERROR_COPY_SECTIONS, applyTrackerSettings, bugsinkActionsFor, bugsinkIssueRow, buildErrorPrompt, errorDetailOf, errorDetailText, errorFramePaths, matchRepoPath, issueQuery, pickTrackerSettings } from '#shared/errors'
 import { errorLinkOf, errorLinksOf, removeErrorLink, updateErrorLink, verifyErrorWebhook } from '../server/utils/errorTracking'
 
 test('error helpers parse, quote and trim safely', () => {
@@ -104,4 +104,28 @@ test('renaming and removing tracker projects keeps the first one as main', async
   await removeErrorLink(project, 'main')
   expect(errorLinksOf(project)).toEqual([])
   await expect(removeErrorLink(project, 'main')).rejects.toMatchObject({ statusCode: 404 })
+})
+
+test('errorDetailText copies the whole error, or just the parts asked for, in a fixed order', () => {
+  const detail = errorDetailOf(
+    { friendly_id: 'HB-3', is_resolved: false, digested_event_count: 4, first_seen: '2026-11-01', last_seen: '2026-11-02' },
+    {
+      event_id: 'e1', timestamp: '2026-11-02T10:00:00Z', environment: 'production', request: { method: 'GET', url: '/checkout' },
+      exception: { values: [{ type: 'TypeError', value: 'x is undefined', stacktrace: { frames: [{ filename: 'node_modules/lib.js', lineno: 3, function: 'lib', in_app: false }, { filename: 'app/pay.ts', lineno: 9, function: 'pay', in_app: true, context_line: 'x.y()', pre_context: ['const x = a()'], post_context: ['}'] }] } }] },
+      breadcrumbs: { values: [{ timestamp: 't1', category: 'ui.click', level: 'info', message: 'Pay' }] },
+      tags: [['browser', 'Safari']]
+    }
+  )
+  const meta = { title: 'TypeError: x is undefined', culprit: 'app/pay.ts', url: 'https://gt.example/1', provider: 'GlitchTip', analysis: 'Guard x.' }
+  const all = errorDetailText(detail, ERROR_COPY_SECTIONS, meta)
+  expect(all.split('\n').filter(line => line.startsWith('## '))).toEqual(['## Stack trace', '## Event details', '## Breadcrumbs', '## Tags', '## AI analysis'])
+  expect(all).toContain('# TypeError: x is undefined\n\nException: TypeError: x is undefined\nWhere: app/pay.ts\nIssue: HB-3')
+  expect(all).toContain('app/pay.ts:9 in pay\n    const x = a()\n>   x.y()\n    }\nnode_modules/lib.js:3 in lib (library)')
+  expect(all).toContain('node_modules/lib.js:3 in lib (library)')
+  expect(all).toContain('t1 ui.click [info] Pay')
+  expect(all).toContain('## Tags\nbrowser: Safari')
+  // Parts are written in a fixed order whatever order they are asked in; unknown parts of an empty event say so.
+  expect(errorDetailText(detail, ['tags', 'summary'], meta).indexOf('# TypeError')).toBe(0)
+  expect(errorDetailText(detail, ['tags'], meta)).toBe('## Tags\nbrowser: Safari')
+  expect(errorDetailText(errorDetailOf({}, {}), ['stack', 'analysis'], { title: 'Error' })).toBe('## Stack trace\n(none)')
 })
