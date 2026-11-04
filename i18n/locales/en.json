@@ -589,6 +589,7 @@
     "pillDescription": "Has a description",
     "pillImages": "{count} image | {count} images",
     "pillFiles": "{count} file | {count} files",
+    "pillVideos": "{count} video | {count} videos",
     "pillRelated": "{count} related item | {count} related items",
     "pillError": "Filed from an error",
     "saveLists": "Save statuses and labels"
@@ -2428,11 +2429,13 @@
     }
   },
   "attachments": {
-    "title": "Images and files",
+    "title": "Images, files and videos",
     "add": "Add files",
     "remove": "Remove {name}",
-    "tooLarge": "{name} is larger than 25 MB.",
-    "dropHint": "Drop or paste images and files here.",
+    "tooLarge": "{name} is larger than {limit}.",
+    "dropHint": "Drop or paste images, files and videos here.",
+    "download": "Download",
+    "viewerDescription": "Preview of the attachment.",
     "uploadError": "Could not upload that file."
   },
   "aiCards": {

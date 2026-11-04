@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ITEM_ATTACHMENTS_MAX, readItemAttachments } from '../shared/itemAttachments'
+import { ITEM_ATTACHMENTS_MAX, ITEM_FILE_MAX_BYTES, ITEM_VIDEO_MAX_BYTES, isMediaMime, itemFileMaxBytes, readItemAttachments } from '../shared/itemAttachments'
 import { readFeedbackPostInput, DEFAULT_FEEDBACK_CONFIG } from '../shared/feedback'
 import { DEFAULT_BOARD_CONFIG, readBoardItemInput } from '../shared/board'
 
@@ -33,5 +33,18 @@ describe('posts and board items accept attachments', () => {
     const { values, errors } = readBoardItemInput({ title: 'Fix', attachments: [file] }, DEFAULT_BOARD_CONFIG, { create: true })
     expect(errors).toEqual([])
     expect(values.attachments).toEqual([file])
+  })
+})
+
+describe('videos', () => {
+  test('MP4 and MOV get the larger limit, by type or by name; other files keep 25 MB', () => {
+    expect(itemFileMaxBytes('video/mp4')).toBe(ITEM_VIDEO_MAX_BYTES)
+    expect(itemFileMaxBytes('Screen Recording.MOV')).toBe(ITEM_VIDEO_MAX_BYTES)
+    expect(itemFileMaxBytes('spec.pdf')).toBe(ITEM_FILE_MAX_BYTES)
+    expect(itemFileMaxBytes('application/pdf')).toBe(ITEM_FILE_MAX_BYTES)
+  })
+
+  test('images and videos open in the viewer, files do not', () => {
+    expect([isMediaMime('image/png'), isMediaMime('video/quicktime'), isMediaMime('application/pdf')]).toEqual([true, true, false])
   })
 })

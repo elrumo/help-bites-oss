@@ -486,6 +486,7 @@
     "pillDescription": "설명 있음",
     "pillImages": "이미지 {count}개 | 이미지 {count}개",
     "pillFiles": "파일 {count}개 | 파일 {count}개",
+    "pillVideos": "동영상 {count}개 | 동영상 {count}개",
     "pillRelated": "관련 항목 {count}개 | 관련 항목 {count}개",
     "pillError": "오류에서 생성됨",
     "saveLists": "상태 및 라벨 저장"

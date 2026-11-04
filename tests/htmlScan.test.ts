@@ -47,7 +47,9 @@ describe('hostile markup is read in linear time', () => {
   }
 
   test('blog excerpt', () => {
-    for (const opener of ['<h1>', '<h1 ', '<figcaption>', '<figcaption']) within(1500, () => deriveBlogExcerpt(opener.repeat(N), 200, 'html'))
+    // Unclosed `<h1>` / `<figcaption>` reach sanitize-html as 50,000 open elements: linear, but 0.3 to 1.5 s (more on a busy machine).
+    // A quadratic scan would take minutes, so the bound is loose on purpose.
+    for (const opener of ['<h1>', '<h1 ', '<figcaption>', '<figcaption']) within(6000, () => deriveBlogExcerpt(opener.repeat(N), 200, 'html'))
   })
 
   test('legal import', () => {

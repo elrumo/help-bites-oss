@@ -1268,12 +1268,14 @@ private struct BoardCard: View {
       }
       let attachments = item.attachments ?? []
       let images = attachments.filter(\.isImage).count
-      let files = attachments.count - images
+      let videos = attachments.filter(\.isVideo).count
+      let files = attachments.count - images - videos
       let hasDescription = !item.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
       if hasDescription || !attachments.isEmpty || !(item.related ?? []).isEmpty || !(item.errorRefs ?? []).isEmpty {
         HStack(spacing: 4) {
           if hasDescription { BoardPill(systemImage: "text.alignleft", count: nil, label: "Has a description") }
           if images > 0 { BoardPill(systemImage: "photo", count: images, label: "\(images) images") }
+          if videos > 0 { BoardPill(systemImage: "video", count: videos, label: "\(videos) videos") }
           if files > 0 { BoardPill(systemImage: "paperclip", count: files, label: "\(files) files") }
           if let related = item.related?.count, related > 0 { BoardPill(systemImage: "link", count: related, label: "\(related) related items") }
           if !(item.errorRefs ?? []).isEmpty { BoardPill(systemImage: "ladybug", count: nil, label: "Filed from an error") }

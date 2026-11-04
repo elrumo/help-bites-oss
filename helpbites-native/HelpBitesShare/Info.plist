@@ -30,10 +30,12 @@
 	<dict>
 		<key>NSExtensionAttributes</key>
 		<dict>
-			<!-- Images (a screenshot, a photo), a link or some text; never a catch-all rule, which App Review refuses. -->
+			<!-- Images (a screenshot, a photo), videos, a link or some text; never a catch-all rule, which App Review refuses. -->
 			<key>NSExtensionActivationRule</key>
 			<dict>
 				<key>NSExtensionActivationSupportsImageWithMaxCount</key>
+				<integer>10</integer>
+				<key>NSExtensionActivationSupportsMovieWithMaxCount</key>
 				<integer>10</integer>
 				<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
 				<integer>1</integer>

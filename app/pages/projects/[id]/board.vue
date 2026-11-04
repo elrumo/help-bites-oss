@@ -504,7 +504,7 @@
 import Fuse from 'fuse.js'
 import { useLocalStorage, watchDebounced } from '@vueuse/core'
 import { DEFAULT_FEEDBACK_CONFIG, FEEDBACK_STATUS_CATEGORIES, defaultFeedbackStatus, feedbackStatusCategory, normalizeFeedbackKey, type FeedbackBoardConfig, type FeedbackColor, type FeedbackStatusCategory } from '#shared/feedback'
-import { isImageMime, type ItemAttachment } from '#shared/itemAttachments'
+import { isImageMime, isVideoMime, type ItemAttachment } from '#shared/itemAttachments'
 import { can } from '#shared/roles'
 import { BOARD_TITLE_DEBOUNCE_MS, fallbackBoardTitle } from '#shared/boardTitle'
 import { BOARD_ITEM_KINDS, BOARD_ROADMAP_LAYOUTS, ROADMAP_CATEGORIES, kindCanHave, rankBetween, type BoardConfig, type BoardItem, type BoardItemHistory, type BoardItemKind, type BoardItemPriority, type BoardRoadmapLayout, type BoardSavedView } from '#shared/board'
@@ -550,10 +550,12 @@ const assigneeOf = (item: BoardItem) => agents.value.find(agent => agent.id === 
 /** The small facts a card shows as pills: a description, images and files. */
 function cardPills(item: BoardItem) {
   const images = item.attachments.filter(file => isImageMime(file.mime)).length
-  const files = item.attachments.length - images
+  const videos = item.attachments.filter(file => isVideoMime(file.mime)).length
+  const files = item.attachments.length - images - videos
   return [
     ...(item.description.trim() ? [{ key: 'description', icon: 'i-lucide-text', count: 0, title: t('board.pillDescription') }] : []),
     ...(images ? [{ key: 'images', icon: 'i-lucide-image', count: images, title: t('board.pillImages', images) }] : []),
+    ...(videos ? [{ key: 'videos', icon: 'i-lucide-video', count: videos, title: t('board.pillVideos', videos) }] : []),
     ...(files ? [{ key: 'files', icon: 'i-lucide-paperclip', count: files, title: t('board.pillFiles', files) }] : []),
     ...(item.related.length ? [{ key: 'related', icon: 'i-lucide-link-2', count: item.related.length, title: t('board.pillRelated', item.related.length) }] : []),
     ...(item.errorRefs.length ? [{ key: 'error', icon: 'i-lucide-bug', count: 0, title: t('board.pillError') }] : [])

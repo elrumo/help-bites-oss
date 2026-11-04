@@ -208,13 +208,14 @@ curl -X POST https://helpbites.example/v1/admin/projects/$PROJECT_ID/ai-cards \
 
 `kind` is `feedback` or `board`; `messages` is the conversation so far (`user` and `assistant` turns, the last 12 are read, the last must be the user's).
 
-## Images and files
+## Images, files and videos
 
-Posts and Planning items can carry up to 10 images and files. Upload each with `POST /v1/feedback/attachments` (multipart field `file`), then pass what it returns as `attachments` when you create or edit the post (`POST`/`PATCH /v1/feedback`) or the board item (`POST`/`PATCH /v1/admin/board-items`). Changelog entries take up to 10 images the same way, as `images` ([Images](#images) under Changelog).
+Posts and Planning items can carry up to 10 images, files and videos. Upload each with `POST /v1/feedback/attachments` (multipart field `file`), then pass what it returns as `attachments` when you create or edit the post (`POST`/`PATCH /v1/feedback`) or the board item (`POST`/`PATCH /v1/admin/board-items`). Changelog entries take up to 10 images the same way, as `images` ([Images](#images) under Changelog).
 
-- **Types and sizes.** Images (PNG, JPEG, GIF, WebP) up to 8 MB; PDF, TXT, MD, CSV, LOG, JSON, ZIP, DOC(X), XLS(X), PPT(X), MP4 and MOV up to 25 MB. Files are stored and served as downloads under the type their extension implies, never as HTML. Uploads count against the workspace's storage (`402` when it is full).
+- **Types and sizes.** Images (PNG, JPEG, GIF, WebP) up to 8 MB; PDF, TXT, MD, CSV, LOG, JSON, ZIP, DOC(X), XLS(X) and PPT(X) up to 25 MB; MP4 and MOV videos up to 100 MB. Files are stored and served as downloads under the type their extension implies, never as HTML. Uploads count against the workspace's storage (`402` when it is full).
 - **Who.** Operators (session or `ak_` key, with `?project=<id>`) upload for posts and board items. End users upload with their identity token once their address is verified, and only where the project allows attachments (`403` otherwise); they can attach to their own posts. Each attachment must be one of the project's own uploads (`400` otherwise).
-- **Where they show.** In the panel and native editors, and on the post in the public board. Board item attachments are private: the roadmap shows only the public description.
+- **Where they show.** In the panel and native editors, and on the post in the public board. Tapping or clicking an image or video opens it in a viewer (a modal on the web, a full-screen sheet in the apps; videos play there); other files download.
+- **Videos.** Attach an MP4 or MOV from the panel, the app, the iOS share sheet, the API or MCP like any file. To download one, read the item (`GET /v1/admin/board-items`, or `list_board_items` over MCP): its `attachments` entry has `mime: "video/mp4"` (or `video/quicktime`) and a `url` that serves the file as a download. Board item attachments are private: the roadmap shows only the public description.
 - **Paste and drop.** In the panel, paste an image anywhere while the editor is open, or drop files on the *Images and files* box, and they upload and attach. Changelog entries take images only. Native: the *Paste* button attaches the image on the clipboard, and so does pasting it into a Planning item's description (the text is left as it was; the image is saved with the item).
 - **Your own UI.** `attachments` is `[{ url, name, mime, size }]` on every post and item; `PATCH` with the list you want to keep removes the rest.
 

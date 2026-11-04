@@ -77,6 +77,7 @@ targets:
       # The session and shared-defaults plumbing the app also compiles.
       - App/Core/SharedCredentials.swift
       - App/Core/BoardTitle.swift
+      - App/Core/PickedMovie.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.helpbites.operator.share

@@ -3,7 +3,7 @@ import { Client } from 'minio'
 import { ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_TYPES, type Attachment } from '#shared/support'
 import { compressImage, imageVariants, type ImageVariant, type ModernFormat } from './imageCompress'
 import { KNOWLEDGE_DOC_MAX_BYTES, KNOWLEDGE_DOC_EXTENSIONS } from '#shared/knowledge'
-import { ITEM_FILE_MAX_BYTES, ITEM_FILE_TYPES, type ItemAttachment } from '#shared/itemAttachments'
+import { formatLimit, itemFileMaxBytes, ITEM_FILE_TYPES, type ItemAttachment } from '#shared/itemAttachments'
 
 // Attachments go straight to any S3-compatible bucket; Parse never sees them.
 // Keys are unguessable and prefixed by project, so the message POST can check
@@ -128,7 +128,7 @@ export async function storeItemFile(file: { filename: string, data: Buffer }, pr
   const ext = (name.split('.').pop() || '').toLowerCase()
   const mime = ITEM_FILE_TYPES[ext]
   if (!mime) throw createError({ statusCode: 415, statusMessage: `Only images and ${Object.keys(ITEM_FILE_TYPES).join(', ')} files are accepted` })
-  if (file.data.length > ITEM_FILE_MAX_BYTES) throw createError({ statusCode: 413, statusMessage: `File is larger than ${ITEM_FILE_MAX_BYTES / 1024 / 1024} MB` })
+  if (file.data.length > itemFileMaxBytes(mime)) throw createError({ statusCode: 413, statusMessage: `File is larger than ${formatLimit(itemFileMaxBytes(mime))}` })
   const workspace = await workspaceIdOfProject(projectId)
   await reserveUsage(workspace, 'storageBytes', file.data.length)
   const key = `${projectId}/${ownerId}/${randomUUID()}.${ext}`

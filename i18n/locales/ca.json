@@ -486,6 +486,7 @@
     "pillDescription": "Té descripció",
     "pillImages": "{count} imatge | {count} imatges",
     "pillFiles": "{count} fitxer | {count} fitxers",
+    "pillVideos": "{count} vídeo | {count} vídeos",
     "pillRelated": "{count} element relacionat | {count} elements relacionats",
     "pillError": "Creat des d'un error",
     "saveLists": "Desa estats i etiquetes"

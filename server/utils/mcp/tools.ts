@@ -200,7 +200,7 @@ export const MCP_TOOLS: readonly McpTool[] = [
   // ---- planning board --------------------------------------------------------------------------------,
   {
     name: 'list_board_items', title: 'List board items', readOnly: true, method: 'GET', path: '/v1/admin/board-items',
-    description: 'A project\'s internal work board (the roadmap\'s source): items with status, priority, assignee and linked feedback, in rank order. An item is a card (`kind` task) or an epic that groups cards. A card ships in a changelog release (`release`, the releases list_changelog_releases shows); epics carry `progress` ({ total, done }) and cards carry their `epic` and `release`. Returns 50 at a time; the reply has `total`, so page with `offset` or narrow with `status`, `kind`, `epic` or `release`.',
+    description: 'A project\'s internal work board (the roadmap\'s source): items with status, priority, assignee and linked feedback, in rank order. Each carries its `attachments` (images, files and MP4/MOV videos): every `url` downloads the file. An item is a card (`kind` task) or an epic that groups cards. A card ships in a changelog release (`release`, the releases list_changelog_releases shows); epics carry `progress` ({ total, done }) and cards carry their `epic` and `release`. Returns 50 at a time; the reply has `total`, so page with `offset` or narrow with `status`, `kind`, `epic` or `release`.',
     params: {
       project: projectId,
       status: { type: 'string', description: 'Only items in this status key.' },
@@ -308,11 +308,11 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'upload_board_comment_attachment', title: 'Upload a planning attachment', method: 'POST', path: '/v1/feedback/attachments',
-    description: 'Uploads one image or file for a planning comment or item (screenshots, logs, documents) and returns its attachment object and download URL. Send the file bytes as base64, then pass the returned object in the `attachments` of comment_on_board_item, create_board_item or update_board_item.',
+    description: 'Uploads one image, file or MP4/MOV video for a planning comment or item (screenshots, screen recordings, logs, documents) and returns its attachment object and download URL. Send the file bytes as base64, then pass the returned object in the `attachments` of comment_on_board_item, create_board_item or update_board_item.',
     params: {
       project: { ...projectId, in: 'query' },
       filename: { type: 'string', required: true, description: 'Filename with an accepted extension.' },
-      contentBase64: { type: 'string', required: true, description: 'The file bytes encoded as standard base64 (up to 25 MB decoded).' }
+      contentBase64: { type: 'string', required: true, description: 'The file bytes encoded as standard base64 (decoded: up to 25 MB, or 100 MB for an MP4/MOV video).' }
     }
   },
   {

@@ -5,6 +5,8 @@ export type ItemAttachment = { url: string, name: string, mime: string, size: nu
 
 export const ITEM_ATTACHMENTS_MAX = 10
 export const ITEM_FILE_MAX_BYTES = 25 * 1024 * 1024
+/** Screen recordings run long: MP4 and MOV videos take up to 100 MB. */
+export const ITEM_VIDEO_MAX_BYTES = 100 * 1024 * 1024
 
 /** Files besides images (PNG, JPEG, GIF, WebP) that can be attached, with the type they are served as. Never HTML, SVG or scripts. */
 export const ITEM_FILE_TYPES: Record<string, string> = {
@@ -30,6 +32,13 @@ export const ITEM_IMAGE_ACCEPT = ['image/png', 'image/jpeg', 'image/gif', 'image
 export const ITEM_ATTACHMENT_ACCEPT = [ITEM_IMAGE_ACCEPT, ...Object.keys(ITEM_FILE_TYPES).map(ext => `.${ext}`)].join(',')
 
 export const isImageMime = (mime: string) => mime.startsWith('image/')
+export const isVideoMime = (mime: string) => mime.startsWith('video/')
+/** Images and videos open in the viewer; anything else is a download. */
+export const isMediaMime = (mime: string) => isImageMime(mime) || isVideoMime(mime)
+
+/** The largest upload for a file of this type (a MIME type or a filename's extension): video, else the file limit. */
+export const itemFileMaxBytes = (mimeOrName: string) => (isVideoMime(mimeOrName) || /\.(mp4|mov)$/i.test(mimeOrName) ? ITEM_VIDEO_MAX_BYTES : ITEM_FILE_MAX_BYTES)
+export const formatLimit = (bytes: number) => `${Math.round(bytes / 1024 / 1024)} MB`
 
 /** The attachments in a request body. Only the four known fields are kept; anything malformed is reported. */
 export function readItemAttachments(raw: unknown, errors: string[]): ItemAttachment[] | undefined {

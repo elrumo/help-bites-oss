@@ -198,10 +198,11 @@
             <MarkdownBlock v-if="activePost.body" :text="activePost.body" class="mt-4 !text-[15px] leading-relaxed" />
             <ul v-if="activePost.attachments?.length" class="mt-4 flex flex-wrap gap-2">
               <li v-for="file in activePost.attachments" :key="file.url">
-                <a :href="file.url" target="_blank" rel="noopener" class="block overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 text-[13px] hover:border-stone-400">
+                <component :is="isMediaMime(file.mime) ? 'button' : 'a'" v-bind="isMediaMime(file.mime) ? { type: 'button', onClick: () => (viewing = file) } : { href: file.url, target: '_blank', rel: 'noopener' }" class="block overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 text-[13px] hover:border-stone-400" :class="isMediaMime(file.mime) ? 'cursor-zoom-in' : ''">
                   <img v-if="isImageMime(file.mime)" :src="file.url" :alt="file.name" class="max-h-48 max-w-full object-contain" loading="lazy">
+                  <span v-else-if="isVideoMime(file.mime)" class="flex items-center gap-1.5 px-2.5 py-1.5"><UIcon name="i-lucide-play" class="size-4 text-stone-500" />{{ file.name }}</span>
                   <span v-else class="flex items-center gap-1.5 px-2.5 py-1.5"><UIcon name="i-lucide-file" class="size-4 text-stone-500" />{{ file.name }}</span>
-                </a>
+                </component>
               </li>
             </ul>
 
@@ -352,7 +353,7 @@
               <ul v-if="form.attachments.length" class="flex flex-wrap gap-2">
                 <li v-for="(file, i) in form.attachments" :key="file.url" class="flex items-center gap-1.5 rounded-lg border border-stone-200 dark:border-stone-800 py-1 pl-2 pr-1 text-[13px]">
                   <img v-if="isImageMime(file.mime)" :src="file.url" :alt="file.name" class="size-6 rounded object-cover">
-                  <UIcon v-else name="i-lucide-file" class="size-4 text-stone-500" />
+                  <UIcon v-else :name="isVideoMime(file.mime) ? 'i-lucide-play' : 'i-lucide-file'" class="size-4 text-stone-500" />
                   <span class="max-w-40 truncate">{{ file.name }}</span>
                   <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square :aria-label="$t('attachments.remove', { name: file.name })" @click="form.attachments.splice(i, 1)" />
                 </li>
@@ -374,12 +375,13 @@
     <p v-if="projectInfo?.poweredBy" class="shrink-0 py-3 text-center text-[11px] leading-tight">
       <a :href="projectInfo.poweredBy.url" target="_blank" rel="noopener" class="text-dimmed transition-colors hover:text-muted">{{ $t('embed.poweredBy') }}</a>
     </p>
+    <AttachmentViewer v-model="viewing" />
   </div>
 </template>
 
 <script setup lang="ts">
 import Fuse from 'fuse.js'
-import { isImageMime, ITEM_ATTACHMENT_ACCEPT, ITEM_ATTACHMENTS_MAX, ITEM_FILE_MAX_BYTES, type ItemAttachment } from '#shared/itemAttachments'
+import { formatLimit, isImageMime, isMediaMime, isVideoMime, ITEM_ATTACHMENT_ACCEPT, ITEM_ATTACHMENTS_MAX, itemFileMaxBytes, type ItemAttachment } from '#shared/itemAttachments'
 import {
   ACTIVE_FEEDBACK_CATEGORIES,
   feedbackPlainText,
@@ -908,13 +910,14 @@ async function removeComment(comment: FeedbackComment) {
 const editingId = ref('')
 const form = reactive({ title: '', body: '', type: '', platform: '', attachments: [] as ItemAttachment[] })
 const fileInput = ref<HTMLInputElement | null>(null)
+const viewing = ref<ItemAttachment | null>(null)
 const uploading = ref(0)
 
 async function attachFiles(files: FileList | null) {
   formError.value = ''
   for (const file of [...(files || [])]) {
     if (form.attachments.length >= ITEM_ATTACHMENTS_MAX) break
-    if (file.size > ITEM_FILE_MAX_BYTES) { formError.value = t('attachments.tooLarge', { name: file.name }); continue }
+    if (file.size > itemFileMaxBytes(file.type || file.name)) { formError.value = t('attachments.tooLarge', { name: file.name, limit: formatLimit(itemFileMaxBytes(file.type || file.name)) }); continue }
     uploading.value++
     try {
       const data = new FormData()

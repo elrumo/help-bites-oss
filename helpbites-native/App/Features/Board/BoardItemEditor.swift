@@ -642,16 +642,7 @@ struct BoardItemEditor: View {
               }
               Text(comment.body).font(.lnMeta).foregroundStyle(Theme.textToned).fixedSize(horizontal: false, vertical: true)
               ForEach(comment.attachments, id: \.url) { file in
-                HStack(spacing: 8) {
-                  if file.isImage, let url = URL(string: file.url) {
-                    AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
-                      .frame(width: 36, height: 36).clipShape(RoundedRectangle(cornerRadius: 6))
-                  } else {
-                    Image(systemName: "doc").frame(width: 36, height: 36).background(Theme.elevated, in: RoundedRectangle(cornerRadius: 6))
-                  }
-                  if let url = URL(string: file.url) { Link(file.name, destination: url).lineLimit(1) } else { Text(file.name).lineLimit(1) }
-                }
-                .font(.lnMeta)
+                AttachmentOpener(file: file).font(.lnMeta)
               }
               Button("Reply") { replyTarget = comment; commentDraft = "" }
                 .buttonStyle(.lnGhost)

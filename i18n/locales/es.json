@@ -489,6 +489,7 @@
     "pillDescription": "Tiene descripción",
     "pillImages": "{count} imagen | {count} imágenes",
     "pillFiles": "{count} archivo | {count} archivos",
+    "pillVideos": "{count} vídeo | {count} vídeos",
     "pillRelated": "{count} elemento relacionado | {count} elementos relacionados",
     "pillError": "Creado desde un error",
     "saveLists": "Guardar estados y etiquetas"
@@ -2244,11 +2245,13 @@
     }
   },
   "attachments": {
-    "title": "Imágenes y archivos",
+    "title": "Imágenes, archivos y vídeos",
     "add": "Añadir archivos",
     "remove": "Quitar {name}",
-    "tooLarge": "{name} supera los 25 MB.",
-    "dropHint": "Arrastra o pega aquí imágenes y archivos.",
+    "tooLarge": "{name} supera {limit}.",
+    "dropHint": "Arrastra o pega aquí imágenes, archivos y vídeos.",
+    "download": "Descargar",
+    "viewerDescription": "Vista previa del adjunto.",
     "uploadError": "No se pudo subir ese archivo."
   },
   "aiCards": {

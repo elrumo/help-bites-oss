@@ -19,11 +19,12 @@
     <div class="space-y-2 rounded-lg transition-shadow" :class="dragging ? 'ring-2 ring-primary/60 ring-offset-2 ring-offset-default' : ''" @dragenter="onDragEnter" @dragleave="onDragLeave" @dragover="onDragOver" @drop="onDrop">
       <ul v-if="model.length" class="grid gap-2 sm:grid-cols-2">
         <li v-for="(file, i) in model" :key="file.url" class="group flex items-center gap-2 rounded-lg border border-default p-1.5 text-[13px]">
-          <a :href="file.url" target="_blank" rel="noopener" class="flex min-w-0 flex-1 items-center gap-2">
+          <component :is="isMediaMime(file.mime) ? 'button' : 'a'" v-bind="isMediaMime(file.mime) ? { type: 'button', onClick: () => (viewing = file) } : { href: file.url, target: '_blank', rel: 'noopener' }" class="flex min-w-0 flex-1 items-center gap-2 text-left">
             <img v-if="isImageMime(file.mime)" :src="file.url" :alt="file.name" class="size-10 shrink-0 rounded object-cover" loading="lazy">
+            <span v-else-if="isVideoMime(file.mime)" class="grid size-10 shrink-0 place-items-center rounded bg-elevated text-muted"><UIcon name="i-lucide-play" class="size-4" /></span>
             <span v-else class="grid size-10 shrink-0 place-items-center rounded bg-elevated text-muted"><UIcon name="i-lucide-file" class="size-4" /></span>
             <span class="min-w-0"><span class="block truncate">{{ file.name }}</span><span class="block text-[11px] text-muted">{{ size(file.size) }}</span></span>
-          </a>
+          </component>
           <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square :aria-label="$t('attachments.remove', { name: file.name })" @click="model = model.filter((_, n) => n !== i)" />
         </li>
       </ul>
@@ -31,13 +32,14 @@
       <p v-if="!model.length" class="text-xs text-muted">{{ $t('attachments.dropHint') }}</p>
       <p v-if="error" class="text-xs text-error">{{ error }}</p>
     </div>
+    <AttachmentViewer v-model="viewing" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { isImageMime, ITEM_ATTACHMENT_ACCEPT, ITEM_ATTACHMENTS_MAX, ITEM_FILE_MAX_BYTES, ITEM_IMAGE_ACCEPT, type ItemAttachment } from '#shared/itemAttachments'
+import { formatLimit, isImageMime, isMediaMime, isVideoMime, ITEM_ATTACHMENT_ACCEPT, ITEM_ATTACHMENTS_MAX, ITEM_IMAGE_ACCEPT, itemFileMaxBytes, type ItemAttachment } from '#shared/itemAttachments'
 
-// Images and files on a post or board item, or only images on a changelog entry (`imagesOnly`). Uploads go to
+// Images, files and videos on a post or board item, or only images on a changelog entry (`imagesOnly`). Uploads go to
 // POST /v1/feedback/attachments; the page saves the list with the post or item, so this only edits it.
 
 const props = defineProps<{ projectId: string, imagesOnly?: boolean, addLabel?: string }>()
@@ -49,6 +51,8 @@ const uploading = ref(0)
 // Files being dragged over the panel: the count of enter events less leave events, so moving over children does not flicker.
 const dragging = ref(0)
 const error = ref('')
+// The image or video open in the viewer.
+const viewing = ref<ItemAttachment | null>(null)
 
 const size = (bytes: number) => (bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`)
 
@@ -56,7 +60,7 @@ async function upload(files: File[]) {
   error.value = ''
   for (const file of files) {
     if (model.value.length >= ITEM_ATTACHMENTS_MAX) break
-    if (file.size > ITEM_FILE_MAX_BYTES) { error.value = t('attachments.tooLarge', { name: file.name }); continue }
+    if (file.size > itemFileMaxBytes(file.type || file.name)) { error.value = t('attachments.tooLarge', { name: file.name, limit: formatLimit(itemFileMaxBytes(file.type || file.name)) }); continue }
     uploading.value++
     try {
       const body = new FormData()

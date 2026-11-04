@@ -5,6 +5,8 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 ## Unreleased
 
+- **Videos on planning cards, and a viewer for images and videos** (web, native, share sheet, API, MCP): MP4 and MOV videos attach to board items, posts and planning comments up to 100 MB (other files stay at 25 MB; the upload route is unchanged). Images and videos open in a viewer instead of a new tab or browser, and the iOS share sheet accepts videos and opens attachments on tap. No schema change.
+
 - **Native app defaults to helpbites.app and can sign up there** (native): Release builds point at `https://helpbites.app` instead of a placeholder, and when the server's `/v1/admin/setup` answers `signup: "open"` (HelpBites Cloud) the sign-in screen offers *Create account* (`POST /v1/cloud/signup`). A self-hosted server is still one tap away under the server line, and keeps its first-run setup. `bun run testflight` archives and uploads the iOS and Mac builds (see the header of `scripts/testflight.mjs`).
 
 - **Releases on the planning board are changelog releases** (web, native, API, MCP): a card's Release picker lists the project's changelog releases, and typing a name there creates a draft release that the changelog shows too. A board *release* card is gone: `kind` is `task` or `epic`, and `releaseId` is a changelog release's id (a `kind: release` is refused). Boards that planned releases as cards run `bun scripts/backfill-board-releases.mjs` once (a dry run first, then `--apply`): it creates the changelog releases and moves their cards; the old release cards stay as plain cards to delete.

@@ -486,6 +486,7 @@
     "pillDescription": "説明あり",
     "pillImages": "画像 {count} 件 | 画像 {count} 件",
     "pillFiles": "ファイル {count} 件 | ファイル {count} 件",
+    "pillVideos": "動画 {count} 件 | 動画 {count} 件",
     "pillRelated": "関連項目 {count} 件 | 関連項目 {count} 件",
     "pillError": "エラーから作成",
     "saveLists": "ステータスとラベルを保存"

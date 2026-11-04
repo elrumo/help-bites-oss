@@ -4,7 +4,7 @@ import Foundation
 //   GET   /v1/admin/projects          every project with its Planning board (statuses, labels)
 //   GET   /v1/admin/agents            who an item can be assigned to
 //   GET   /v1/feedback                the posts an item can answer
-//   POST  /v1/feedback/attachments    one image
+//   POST  /v1/feedback/attachments    one image or video
 //   POST  /v1/admin/board-items       the item
 //   PATCH /v1/admin/projects/:id      a new label (the board's lists, saved whole as in BoardStore.saveLists)
 
@@ -101,6 +101,26 @@ struct ShareClient {
     return try await run(request)
   }
 
+  /// A multipart POST whose `file` part is read from disk, for a video: the body is written to a temporary file in
+  /// chunks and sent from there, so a 100 MB video never sits in memory (an extension is killed at about 120 MB).
+  func upload(_ path: String, query: [String: String], fileURL: URL, filename: String, mimeType: String) async throws -> ShareAttachment {
+    let boundary = "HelpBites-\(UUID().uuidString)"
+    let body = FileManager.default.temporaryDirectory.appending(path: "upload-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: body) }
+    FileManager.default.createFile(atPath: body.path, contents: nil)
+    let output = try FileHandle(forWritingTo: body)
+    let input = try FileHandle(forReadingFrom: fileURL)
+    defer { try? input.close() }
+    try output.write(contentsOf: Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\nContent-Type: \(mimeType)\r\n\r\n".utf8))
+    while let chunk = try input.read(upToCount: 1 << 20), !chunk.isEmpty { try output.write(contentsOf: chunk) }
+    try output.write(contentsOf: Data("\r\n--\(boundary)--\r\n".utf8))
+    try output.close()
+    var request = try makeRequest(path, method: "POST", query: query)
+    request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+    let (data, response) = try await Self.session.upload(for: request, fromFile: body)
+    return try Self.decode(data, response)
+  }
+
   /// A multipart POST with the one `file` part, as `APIClient.upload` sends it.
   func upload(_ path: String, query: [String: String], file: Data, filename: String, mimeType: String) async throws -> ShareAttachment {
     let boundary = "HelpBites-\(UUID().uuidString)"
@@ -130,6 +150,10 @@ struct ShareClient {
 
   private func run<Value: Decodable>(_ request: URLRequest) async throws -> Value {
     let (data, response) = try await Self.session.data(for: request)
+    return try Self.decode(data, response)
+  }
+
+  private static func decode<Value: Decodable>(_ data: Data, _ response: URLResponse) throws -> Value {
     guard let http = response as? HTTPURLResponse else { throw ShareError.server(String(localized: "Invalid server response.")) }
     guard (200..<300).contains(http.statusCode) else {
       if http.statusCode == 401 { throw ShareError.signedOut }

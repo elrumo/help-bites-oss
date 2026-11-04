@@ -11,17 +11,25 @@ struct ItemAttachment: Codable, Equatable, Sendable, Hashable {
   var size: Int
 
   var isImage: Bool { mime.hasPrefix("image/") }
+  var isVideo: Bool { mime.hasPrefix("video/") }
   var asJSON: JSONValue { .object(["url": .string(url), "name": .string(name), "mime": .string(mime), "size": .number(Double(size))]) }
 
   static let maxCount = 10
   static let maxBytes = 25 * 1024 * 1024
+  /// MP4 and MOV videos may be larger (ITEM_VIDEO_MAX_BYTES).
+  static let maxVideoBytes = 100 * 1024 * 1024
   /// The extensions the server accepts besides images (ITEM_FILE_TYPES).
   static let fileExtensions = ["pdf", "txt", "md", "csv", "log", "json", "zip", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "mp4", "mov"]
 
   /// Uploads one file to `POST /v1/feedback/attachments` for the caller to add to its list. A file over the limit is not sent.
   /// Whatever fails throws a line fit to show, with the file's name in it.
   static func upload(_ data: Data, filename: String, session: SessionStore, projectId: String) async throws -> ItemAttachment {
-    guard data.count <= maxBytes else { throw APIError.server(String(localized: "\(filename) is larger than 25 MB.")) }
+    let ext = (filename as NSString).pathExtension.lowercased()
+    if ["mp4", "mov"].contains(ext) {
+      guard data.count <= maxVideoBytes else { throw APIError.server(String(localized: "\(filename) is larger than 100 MB.")) }
+    } else {
+      guard data.count <= maxBytes else { throw APIError.server(String(localized: "\(filename) is larger than 25 MB.")) }
+    }
     let mime = UTType(filenameExtension: (filename as NSString).pathExtension)?.preferredMIMEType ?? "application/octet-stream"
     do {
       return try await session.upload("/v1/feedback/attachments?project=\(projectId)", file: data, filename: filename, mimeType: mime)
@@ -52,13 +60,7 @@ struct AttachmentsSection: View {
       VStack(alignment: .leading, spacing: 8) {
         ForEach(attachments, id: \.url) { file in
           HStack(spacing: 8) {
-            if file.isImage, let url = URL(string: file.url) {
-              AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
-                .frame(width: 36, height: 36).clipShape(RoundedRectangle(cornerRadius: 6))
-            } else {
-              Image(systemName: "doc").frame(width: 36, height: 36).background(Theme.elevated, in: RoundedRectangle(cornerRadius: 6))
-            }
-            if let url = URL(string: file.url) { Link(file.name, destination: url).lineLimit(1) } else { Text(file.name).lineLimit(1) }
+            AttachmentOpener(file: file)
             Spacer()
             Button { attachments.removeAll { $0.url == file.url } } label: { Image(systemName: "xmark") }
               .buttonStyle(.plain).foregroundStyle(Theme.textMuted).accessibilityLabel("Remove \(file.name)")
@@ -66,7 +68,7 @@ struct AttachmentsSection: View {
           .font(.lnMeta)
         }
         HStack(spacing: 8) {
-          PhotosPicker(selection: $photos, maxSelectionCount: max(1, ItemAttachment.maxCount - attachments.count), matching: .images, preferredItemEncoding: .compatible) {
+          PhotosPicker(selection: $photos, maxSelectionCount: max(1, ItemAttachment.maxCount - attachments.count), matching: imagesOnly ? .images : .any(of: [.images, .videos]), preferredItemEncoding: .compatible) {
             Label("Photos", systemImage: "photo")
           }
           if !imagesOnly { Button { importing = true } label: { Label("Files", systemImage: "paperclip") } }
@@ -83,6 +85,14 @@ struct AttachmentsSection: View {
       photos = []
       Task {
         for item in items {
+          if item.supportedContentTypes.contains(where: { $0.conforms(to: .movie) }) {
+            guard let movie = try? await item.loadTransferable(type: PickedMovie.self) else { error = String(localized: "Could not read that video."); continue }
+            defer { try? FileManager.default.removeItem(at: movie.url) }
+            // Mapped, so the 100 MB sits on disk rather than in memory until the upload reads it.
+            guard let data = try? Data(contentsOf: movie.url, options: .mappedIfSafe) else { error = String(localized: "Could not read that video."); continue }
+            await upload(data, filename: "Video.\(movie.serverName.ext)")
+            continue
+          }
           guard let data = try? await item.loadTransferable(type: Data.self) else { error = String(localized: "Could not read that photo."); continue }
           await upload(data, filename: "Photo.\(item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg")")
         }
@@ -119,6 +129,42 @@ struct AttachmentsSection: View {
       attachments.append(file)
     } catch {
       self.error = error.localizedDescription
+    }
+  }
+}
+
+/// An attachment's tile: a picture, a play badge for a video or a document icon.
+struct AttachmentThumb: View {
+  let file: ItemAttachment
+
+  var body: some View {
+    if file.isImage, let url = URL(string: file.url) {
+      AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
+        .frame(width: 36, height: 36).clipShape(RoundedRectangle(cornerRadius: 6))
+    } else {
+      Image(systemName: file.isVideo ? "play.fill" : "doc").frame(width: 36, height: 36).background(Theme.elevated, in: RoundedRectangle(cornerRadius: 6))
+    }
+  }
+}
+
+/// An attachment's tile and name. An image or a video opens in a full-screen viewer in the app; any other file opens in the browser.
+struct AttachmentOpener: View {
+  let file: ItemAttachment
+  @State private var preview: PreviewItem?
+
+  var body: some View {
+    if let url = URL(string: file.url), file.isImage || file.isVideo {
+      Button { preview = PreviewItem(url: url, isVideo: file.isVideo) } label: {
+        HStack(spacing: 8) { AttachmentThumb(file: file); Text(file.name).foregroundStyle(Theme.accentText).lineLimit(1) }
+      }
+      .buttonStyle(.plain)
+      .accessibilityHint(file.isVideo ? "Plays it full screen" : "Opens it full screen")
+      .fullScreenCover(item: $preview) { ImagePreview(url: $0.url, isVideo: $0.isVideo) }
+    } else {
+      HStack(spacing: 8) {
+        AttachmentThumb(file: file)
+        if let url = URL(string: file.url) { Link(file.name, destination: url).lineLimit(1) } else { Text(file.name).lineLimit(1) }
+      }
     }
   }
 }

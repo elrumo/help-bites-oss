@@ -476,6 +476,7 @@
     "pillDescription": "有描述",
     "pillImages": "{count} 张图片 | {count} 张图片",
     "pillFiles": "{count} 个文件 | {count} 个文件",
+    "pillVideos": "{count} 个视频 | {count} 个视频",
     "pillRelated": "{count} 个相关条目 | {count} 个相关条目",
     "pillError": "由错误创建",
     "saveLists": "保存状态和标签"

@@ -21,12 +21,13 @@
             </div>
             <p class="whitespace-pre-wrap break-words text-[13px] text-toned">{{ comment.body }}</p>
             <div v-if="comment.attachments.length" class="flex flex-wrap gap-2 pt-1">
-              <a v-for="file in comment.attachments" :key="file.url" :href="file.url" target="_blank" rel="noopener" class="flex max-w-full items-center gap-2 rounded-lg border border-default px-2 py-1.5 text-xs text-toned">
-                <img v-if="file.mime.startsWith('image/')" :src="file.url" :alt="file.name" class="size-9 rounded object-cover" loading="lazy">
+              <component :is="isMediaMime(file.mime) ? 'button' : 'a'" v-for="file in comment.attachments" :key="file.url" v-bind="isMediaMime(file.mime) ? { type: 'button', onClick: () => (viewing = file) } : { href: file.url, target: '_blank', rel: 'noopener' }" class="flex max-w-full items-center gap-2 rounded-lg border border-default px-2 py-1.5 text-xs text-toned">
+                <img v-if="isImageMime(file.mime)" :src="file.url" :alt="file.name" class="size-9 rounded object-cover" loading="lazy">
+                <UIcon v-else-if="isVideoMime(file.mime)" name="i-lucide-play" class="size-4 shrink-0 text-muted" />
                 <UIcon v-else name="i-lucide-file" class="size-4 shrink-0 text-muted" />
                 <span class="max-w-52 truncate">{{ file.name }}</span>
-                <UIcon name="i-lucide-download" class="size-3.5 shrink-0 text-muted" />
-              </a>
+                <UIcon v-if="!isMediaMime(file.mime)" name="i-lucide-download" class="size-3.5 shrink-0 text-muted" />
+              </component>
             </div>
             <UButton size="xs" color="neutral" variant="ghost" :label="$t('board.reply')" @click="replyTo(comment)" />
           </li>
@@ -46,6 +47,7 @@
             <UButton type="submit" size="sm" :label="replyTarget ? $t('board.reply') : $t('board.postComment')" :loading="saving" :disabled="!draft.trim() && !draftAttachments.length" />
           </div>
         </form>
+        <AttachmentViewer v-model="viewing" />
       </div>
     </template>
   </UCollapsible>
@@ -53,12 +55,14 @@
 
 <script setup lang="ts">
 import type { BoardItemComment } from '#shared/board'
+import { isImageMime, isMediaMime, isVideoMime, type ItemAttachment } from '#shared/itemAttachments'
 
 const props = defineProps<{ projectId: string, itemId: string }>()
 const { api } = useAgent()
 const { t } = useI18n()
 
 const comments = ref<BoardItemComment[]>([])
+const viewing = ref<ItemAttachment | null>(null)
 const draft = ref('')
 const draftAttachments = ref<BoardItemComment['attachments']>([])
 const replyTarget = ref<BoardItemComment | null>(null)

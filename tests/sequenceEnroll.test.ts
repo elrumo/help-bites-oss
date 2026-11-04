@@ -16,6 +16,11 @@ const db = new Map<string, Map<string, Fields>>()
 const table = (className: string) => db.get(className) || db.set(className, new Map()).get(className)!
 let serial = 0
 
+// Enrollments are only ever written by save(), and createEnrollment looks each contact up by (sequence, contact): without an index
+// that is a scan of every enrollment per contact, 12 million row tests for a 5000-person segment.
+const byPointer = new Map<string, Set<string>>()
+const indexKey = (className: string, key: string, id: string) => `${className}|${key}|${id}`
+
 const same = (stored: unknown, wanted: unknown) => wanted && typeof wanted === 'object' ? pointerId(stored) === pointerId(wanted) : stored === wanted
 const holds = (stored: unknown, wanted: unknown) => Array.isArray(stored) ? stored.some(v => same(v, wanted)) : same(stored, wanted)
 
@@ -35,11 +40,20 @@ class Row {
   get(key: string) { return this.fields[key] }
   set(key: string, value: unknown) { this.fields[key] = value }
   increment(key: string, by: number) { this.fields[key] = (this.fields[key] || 0) + by }
-  async save() { table(this.className).set(this.id, this.fields) }
+  async save() {
+    table(this.className).set(this.id, this.fields)
+    if (this.className === 'SequenceEnrollment') {
+      for (const key of ['sequence', 'contact']) {
+        const k = indexKey(this.className, key, pointerId(this.fields[key]))
+        byPointer.set(k, (byPointer.get(k) || new Set()).add(this.id))
+      }
+    }
+  }
 }
 
 class FakeQuery {
   tests: ((fields: Fields, id: string) => boolean)[] = []
+  pointers: [string, string][] = []
   max = 100
   constructor(public className: string) {}
   static fromJSON(className: string, json: { where: Record<string, any> }) {
@@ -48,17 +62,38 @@ class FakeQuery {
     return query
   }
 
-  equalTo(key: string, value: unknown) { this.tests.push((f, id) => (key === 'objectId' ? id === value : holds(f[key], value))); return this }
+  equalTo(key: string, value: unknown) {
+    // The wanted pointer's id is read once, not per row: the enroll tests scan thousands of rows thousands of times.
+    const wanted = value && typeof value === 'object' ? pointerId(value) : value
+    if (wanted !== value) this.pointers.push([key, String(wanted)])
+    const is = (stored: unknown) => (wanted !== value ? pointerId(stored) === wanted : stored === wanted)
+    this.tests.push((f, id) => (key === 'objectId' ? id === value : Array.isArray(f[key]) ? f[key].some(is) : is(f[key])))
+    return this
+  }
   notEqualTo(key: string, value: unknown) { this.tests.push(f => !holds(f[key], value)); return this }
-  containedIn(key: string, values: unknown[]) { this.tests.push((f, id) => values.some(v => (key === 'objectId' ? id === v : same(f[key], v)))); return this }
+  // A Set, not values.some per row: a page of 200 against thousands of enrollments is otherwise millions of comparisons.
+  containedIn(key: string, values: unknown[]) {
+    const wanted = new Set(values.map(v => (v && typeof v === 'object' ? pointerId(v) : v)))
+    this.tests.push((f, id) => (key === 'objectId' ? wanted.has(id) : wanted.has(f[key] && typeof f[key] === 'object' ? pointerId(f[key]) : f[key])))
+    return this
+  }
   notContainedIn(key: string, values: unknown[]) { this.tests.push(f => !values.some(v => same(f[key], v))); return this }
   greaterThan(_key: string, value: string) { this.tests.push((_f, id) => id > value); return this }
   select() { return this }
   ascending() { return this }
   limit(n: number) { this.max = n; return this }
-  private rows() { return [...table(this.className)].filter(([id, f]) => this.tests.every(t => t(f, id))).sort(([a], [b]) => a.localeCompare(b)).map(([id, f]) => new Row(this.className, id, f)) }
+  /** The rows to test: those holding every wanted pointer when the class is indexed, else all of them. */
+  private candidates(): [string, Fields][] {
+    if (this.className !== 'SequenceEnrollment' || !this.pointers.length) return [...table(this.className)]
+    const sets = this.pointers.map(([key, id]) => byPointer.get(indexKey(this.className, key, id)) || new Set<string>())
+    const smallest = sets.reduce((a, b) => (b.size < a.size ? b : a))
+    return [...smallest].map(id => [id, table(this.className).get(id)!])
+  }
+
+  private rows() { return this.candidates().filter(([id, f]) => this.tests.every(t => t(f, id))).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([id, f]) => new Row(this.className, id, f)) }
   async find() { return this.rows().slice(0, this.max) }
-  async first() { return this.rows()[0] }
+  // Existence is all the callers ask of first(), so it stops at the first match instead of sorting every row.
+  async first() { for (const [id, f] of this.candidates()) if (this.tests.every(t => t(f, id))) return new Row(this.className, id, f) }
   async count() { return this.rows().length }
 }
 
@@ -88,6 +123,7 @@ const enrolled = () => [...table('SequenceEnrollment').values()].map(f => pointe
 
 beforeEach(() => {
   db.clear()
+  byPointer.clear()
   serial = 0
   sequence = new Row('Sequence', 'S1', { project: ptr('Project', 'P1'), status: 'active', steps: [{ id: 'a', template: 't', delayMinutes: 0 }], trigger: { type: 'manual' } })
   table('Sequence').set('S1', sequence.fields)

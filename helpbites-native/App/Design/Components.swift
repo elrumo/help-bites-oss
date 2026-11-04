@@ -1,3 +1,4 @@
+import AVKit
 import SwiftUI
 
 // The panel's building blocks, shared by every screen. Shapes follow Linear:
@@ -535,21 +536,30 @@ struct FlowLayout: Layout {
   }
 }
 
-/// Full-screen image preview with pinch-to-zoom and double-tap to reset.
+/// Full-screen preview of an image (pinch-to-zoom, double-tap to reset) or, with `isVideo`, a video player.
 struct ImagePreview: View {
   let url: URL
+  var isVideo = false
   @Environment(\.dismiss) private var dismiss
+  @State private var player: AVPlayer?
   @State private var steady: CGFloat = 1
   @GestureState private var pinch: CGFloat = 1
   var body: some View {
     ZStack {
       Color.black.ignoresSafeArea()
-      CachedAsyncImage(url: url) { image in
-        image.resizable().scaledToFit()
-          .scaleEffect(steady * pinch)
-          .gesture(MagnifyGesture().updating($pinch) { value, state, _ in state = value.magnification }.onEnded { value in steady = min(max(steady * value.magnification, 1), 5) })
-          .onTapGesture(count: 2) { withAnimation { steady = 1 } }
-      } placeholder: { ProgressView().tint(.white) }
+      if isVideo {
+        VideoPlayer(player: player)
+          .ignoresSafeArea()
+          .onAppear { player = AVPlayer(url: url); player?.play() }
+          .onDisappear { player?.pause() }
+      } else {
+        CachedAsyncImage(url: url) { image in
+          image.resizable().scaledToFit()
+            .scaleEffect(steady * pinch)
+            .gesture(MagnifyGesture().updating($pinch) { value, state, _ in state = value.magnification }.onEnded { value in steady = min(max(steady * value.magnification, 1), 5) })
+            .onTapGesture(count: 2) { withAnimation { steady = 1 } }
+        } placeholder: { ProgressView().tint(.white) }
+      }
     }
     .overlay(alignment: .topTrailing) {
       Button { dismiss() } label: { Image(systemName: "xmark.circle.fill").font(.title).foregroundStyle(.white, .white.opacity(0.25)) }.padding().accessibilityLabel("Close")
@@ -558,4 +568,4 @@ struct ImagePreview: View {
   }
 }
 
-struct PreviewItem: Identifiable { let id = UUID(); let url: URL }
+struct PreviewItem: Identifiable { let id = UUID(); let url: URL; var isVideo = false }
