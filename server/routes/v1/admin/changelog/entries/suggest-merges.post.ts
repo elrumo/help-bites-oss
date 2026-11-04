@@ -31,10 +31,13 @@ export default defineEventHandler(async (event) => {
   try {
     const { text } = await chatCompletion(route, { messages: [{ role: 'system', content: MERGE_GROUNDING }, { role: 'user', content: mergePrompt(entries) }], temperature: 0.2, max_tokens: 4000 }, { timeoutMs: 90_000 })
     // A reply that parses to no merges is a valid "nothing to merge"; one that is not JSON at all is a failure.
-    if (!/[[{]/.test(text)) throw new Error('not JSON')
+    if (!/[[{]/.test(text)) throw new Error('the reply was not JSON, it may have been cut off')
     return { merges: readMergeSuggestions(text, entries) }
   } catch (error) {
-    console.error('[changelog] merge AI failed', (error as Error).message)
-    throw createError({ statusCode: 502, statusMessage: 'The AI could not review these entries. Try again.' })
+    // A spent AI budget (402) will not fix itself on a retry: keep its status. Anything else is a 502 that says why.
+    if ((error as { statusCode?: number }).statusCode) throw error
+    const cause = (error as Error).message.replace(/\s+/g, ' ').slice(0, 200)
+    console.error('[changelog] merge AI failed', cause)
+    throw createError({ statusCode: 502, statusMessage: `The AI could not review these entries (${cause}). Try again, or select fewer entries.` })
   }
 })
