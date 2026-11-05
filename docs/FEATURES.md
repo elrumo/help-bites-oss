@@ -836,7 +836,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 ## 13. Hosted edition only
 
 HelpBites Cloud, the paid hosted service, adds open sign-up, a pricing page, Free and Pro plans, Stripe billing,
-verified sending domains and a staff console on top of everything above. The code for it is not part of this
+verified sending domains and a staff console (`/admin`: every account and workspace, plans given by hand, suspension)
+on top of everything above. The code for it is not part of this
 repository. See [EDITIONS.md](EDITIONS.md).
 
 - **Plan locks.** On a plan that leaves a feature out, the panel says so before anyone fills in a form: a lock on
@@ -884,6 +885,8 @@ repository. See [EDITIONS.md](EDITIONS.md).
   counts twice in that item's total. [FEEDBACK.md](FEEDBACK.md)
 - **Bugsink.** Its issues cannot be searched by customer, so a customer's errors do
   not appear in their conversation. [ERRORS.md](ERRORS.md)
+- **Staff console.** The hosted edition's `/admin` (accounts and workspaces) is web only; the native app has no
+  super-admin screens.
 - **GitHub links.** The Pull requests permission and event are new: a GitHub App
   registered before them must add both (and each installation accept them) before
   merged pull requests link; pushes link without it. Only merged pull requests and

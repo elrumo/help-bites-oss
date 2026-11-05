@@ -1927,7 +1927,7 @@
       "id": "cloud-accounts-billing",
       "name": "Cloud sign-up, plans and billing",
       "category": "cloud",
-      "summary": "Open sign-up, a public pricing page, Free and Pro plans with usage limits, locks on the features a plan leaves out (web and native), Stripe billing with optional Stripe Tax, email verification, verified sending domains, super-admin console, AI credits, 'Powered by HelpBites' branding on Free.",
+      "summary": "Open sign-up, a public pricing page, Free and Pro plans with usage limits, locks on the features a plan leaves out (web and native), Stripe billing with optional Stripe Tax, email verification, verified sending domains, a staff console at /admin (every account and workspace: plans given by hand, suspension, signing an account out, confirming its email), AI credits, 'Powered by HelpBites' branding on Free.",
       "editions": [
         "cloud"
       ],
@@ -1937,7 +1937,7 @@
       "web": {
         "panel": [
           "../help-bites-cloud/ee/app/pages/signup.vue",
-          "../help-bites-cloud/ee/app/pages/superadmin/index.vue"
+          "../help-bites-cloud/ee/app/pages/admin/index.vue"
         ],
         "public": [
           "/pricing"
@@ -2109,6 +2109,7 @@
     "Revenue sources: RevenueCat's history starts when its webhook does (it cannot replay events, and HelpBites does not read RevenueCat's REST API to backfill; earlier months go in through POST /v1/admin/revenue/payments). The App Store source reads proceeds from the Sales and Trends reports, which name no customers, so it has no top customers, subscribers or MRR. There are no direct Google Play, PayPal, Gumroad or Polar sources: send them to the custom API, or read Google Play through RevenueCat.",
     "Only Stripe customers are written onto contacts as stripe_* attributes, so the People billing filters, segments and campaigns do not see the customers of the other revenue sources (a contact's page and the report's customer rows do list and open them). The Paddle, Lemon Squeezy and App Store sources were written from those services' documentation and unit tests, not run against live accounts.",
     "Custom domains: a verified host is not re-checked, so a moved domain keeps serving until it is removed; unsubscribe, confirmation and email legal links still use APP_URL; the host's \"/\" for the hub, feedback, blog, roadmap and changelog redirects to the page's path on the same host rather than showing it at \"/\"; the reverse proxy gets the certificate (the bundled Caddyfile does it on demand, other proxies need the same /v1/internal/domain-check hook); DNS behind a proxying CDN (Cloudflare orange cloud) cannot be verified.",
-    "Inbound email: only Mailgun receives mail (through one Route for the account); attachments other than PNG, JPEG, GIF and WebP images are listed as not shown, not kept; a mail that carries neither In-Reply-To nor the conversation tag starts a new conversation; there is no per-address signature stripping beyond Mailgun's quoted-text removal; replies to an email conversation are plain messages, not designed emails."
+    "Inbound email: only Mailgun receives mail (through one Route for the account); attachments other than PNG, JPEG, GIF and WebP images are listed as not shown, not kept; a mail that carries neither In-Reply-To nor the conversation tag starts a new conversation; there is no per-address signature stripping beyond Mailgun's quoted-text removal; replies to an email conversation are plain messages, not designed emails.",
+    "The hosted edition's staff console (/admin) is web only: the native app has no super-admin screens."
   ]
 }
