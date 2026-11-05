@@ -10,6 +10,10 @@ export const GAUGES = ['projects', 'seats', 'apiKeys', 'knowledgeModels', 'assis
 export const COUNTERS = ['conversations', 'emails', 'emailsPerDay', 'aiCredits'] as const
 export const FEATURES = ['campaigns', 'sequences', 'contactSources', 'eventWebhooks', 'customSendingDomain', 'removeBranding', 'byoLlm', 'emailAiUltra', 'multiWorkspace', 'legalDocs', 'customPublicDomain', 'inboundEmail'] as const
 
+/** What stored files are, for the storage breakdown (server/utils/usage.ts `storageType`). */
+export const STORAGE_TYPES = ['conversations', 'feedback', 'team', 'branding', 'cms', 'forms', 'emails', 'blog', 'onboarding', 'knowledge', 'other'] as const
+export type StorageType = typeof STORAGE_TYPES[number]
+
 export type Gauge = typeof GAUGES[number]
 export type Counter = typeof COUNTERS[number]
 export type Metric = Gauge | Counter

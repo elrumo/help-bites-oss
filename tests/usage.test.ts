@@ -18,6 +18,9 @@ let redis: Redis
 // Persisted counters (WorkspaceUsage) and what flushUsage writes.
 let persisted: Record<string, number> = {}
 const saved: Record<string, unknown>[] = []
+// What `find` returns per class, and the bucket, for the storage breakdown.
+let rows: Record<string, { id: string, get: (key: string) => unknown }[]> = {}
+let bucket: { name: string, size: number }[] = []
 
 class Query {
   private filters: Record<string, unknown> = {}
@@ -26,6 +29,11 @@ class Query {
     this.filters[key] = value
     return this
   }
+
+  select() { return this }
+  limit() { return this }
+  doesNotExist() { return this }
+  async find() { return rows[this.className] || [] }
 
   async first() {
     if (this.className !== 'WorkspaceUsage') return undefined
@@ -49,6 +57,8 @@ Object.assign(g, editionModule)
 g.pointerId = pointerId
 g.MASTER = {}
 g.useRedis = () => redis
+g.s3Configured = () => true
+g.listStoredObjects = async function* (prefix: string) { for (const item of bucket) if (item.name.startsWith(prefix)) yield item }
 g.getWorkspace = async (id: string) => ({ id, get: () => undefined })
 g.useParse = () => ({ Query, Object: { extend: (name: string) => (name === 'WorkspaceUsage' ? UsageRow : { createWithoutData: (id: string) => ({ id }) }) } })
 
@@ -167,5 +177,55 @@ describe('usage keys', () => {
     expect(usagePeriod('emails', now)).toBe('2026-10')
     expect(usagePeriod('emailsPerDay', now)).toBe('2026-10-31')
     expect(usagePeriod('storageBytes', now)).toBe('all')
+  })
+})
+
+describe('storage breakdown', () => {
+  test('a key says what the file is', () => {
+    const cases: Record<string, string> = {
+      'P1/Eu12ab34cd/x.png': 'conversations',
+      'P1/email-Eu12ab34cd/x.pdf': 'conversations',
+      'P1/u-0123456789abcdef/x.pdf': 'feedback',
+      'P1/agent-Ag1/x.png': 'team',
+      'P1/brand/x.svg': 'branding',
+      'P1/cms/x.webp': 'cms',
+      'P1/forms/F1/x.pdf': 'forms',
+      'P1/emails/x.png': 'emails',
+      'emails/T1/x.png': 'emails',
+      'P1/blog/x.avif': 'blog',
+      'P1/onboarding/x.png': 'onboarding',
+      'knowledge/K1/x.md': 'knowledge',
+      'imports/W1/abc123/P0/brand/x.png': 'branding',
+      'imports/W1/abc123/knowledge/K0/x.md': 'knowledge',
+      'P1/x.png': 'other'
+    }
+    expect(Object.fromEntries(Object.keys(cases).map(key => [key, usage.storageType(key)]))).toEqual(cases)
+  })
+
+  test('adds up by type and project, with workspace-wide files last', async () => {
+    rows = {
+      Project: [{ id: 'P1', get: () => 'Small' }, { id: 'P2', get: () => 'Big' }, { id: 'P3', get: () => 'Empty' }],
+      KnowledgeModel: [{ id: 'K1', get: () => undefined }, { id: 'K2', get: () => ({ id: 'P1' }) }],
+      EmailTemplate: []
+    }
+    bucket = [
+      { name: 'P1/brand/a.png', size: 100 },
+      { name: 'P2/Eu1/b.png', size: 3000 },
+      { name: 'P2/Eu2/c.png', size: 1000 },
+      { name: 'P2/brand/d.png', size: 50 },
+      { name: 'knowledge/K1/e.md', size: 500 },
+      { name: 'knowledge/K2/g.md', size: 200 },
+      { name: 'POTHER/brand/f.png', size: 9999 }
+    ]
+    const result = await usage.storageBreakdown('W1')
+    expect(result).toMatchObject({ used: 0, limit: null, bytes: 4850, files: 6 })
+    expect(result.types).toEqual([
+      { type: 'conversations', bytes: 4000, files: 2 },
+      { type: 'knowledge', bytes: 700, files: 2 },
+      { type: 'branding', bytes: 150, files: 2 }
+    ])
+    // P1's own knowledge model counts there; the shared one is the workspace's.
+    expect(result.projects.map(p => [p.id, p.bytes])).toEqual([['P2', 4050], ['P1', 300], ['P3', 0], [null, 500]])
+    expect(result.projects[0]!.types).toEqual({ conversations: 4000, branding: 50 })
   })
 })

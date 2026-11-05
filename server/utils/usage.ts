@@ -1,5 +1,5 @@
 import { createError } from 'h3'
-import { COUNTER_PERIODS, describeLimit, FEATURE_LABELS, GAUGES, COUNTERS, isUnlimited, UNLIMITED_PLAN, withinLimit, type Counter, type Feature, type Gauge, type Metric, type Plan } from '#shared/entitlements'
+import { COUNTER_PERIODS, describeLimit, FEATURE_LABELS, GAUGES, COUNTERS, isUnlimited, UNLIMITED_PLAN, withinLimit, type Counter, type Feature, type Gauge, type Metric, type Plan, type StorageType } from '#shared/entitlements'
 
 // What a workspace has used against its plan (shared/entitlements.ts).
 //
@@ -226,6 +226,90 @@ export async function usageSnapshot(ref: WorkspaceRef): Promise<UsageSnapshot> {
     apiPerMinute: plan.apiPerMinute,
     emailLogDays: plan.emailLogDays,
     usage: Object.fromEntries([...gauges, ...counters]) as Record<Metric, number>
+  }
+}
+
+/**
+ * What a stored file is, from where its upload put it (s3.ts and its callers): `<project>/<owner>/<file>`, where
+ * the owner is a folder (brand, cms, forms, emails, blog, onboarding), a teammate (`agent-…`), a board's end user
+ * (`u-…`), an inbound email (`email-…`) or a widget end user (their id); or `knowledge/<model>/…` and
+ * `emails/<master template>/…`. An imported file keeps its old key under `imports/<workspace>/<run>/`.
+ */
+export function storageType(key: string): StorageType {
+  const parts = key.split('/')
+  if (parts[0] === 'imports') parts.splice(0, 3)
+  const [first = '', owner = ''] = parts
+  if (first === 'knowledge') return 'knowledge'
+  if (first === 'emails') return 'emails'
+  if (owner === 'brand') return 'branding'
+  if (['cms', 'forms', 'emails', 'blog', 'onboarding'].includes(owner)) return owner as StorageType
+  if (owner.startsWith('agent-')) return 'team'
+  if (owner.startsWith('u-')) return 'feedback'
+  if (parts.length > 2 && /^[\w-]+$/.test(owner)) return 'conversations'
+  return 'other'
+}
+
+type StorageTally = { bytes: number, files: number }
+
+export type StorageBreakdown = {
+  /** What the plan counts, and its limit (null: none). */
+  used: number
+  limit: number | null
+  /** The files in the bucket: these can differ a little from `used` (an upload in flight, a file whose delete never gave its bytes back). */
+  bytes: number
+  files: number
+  types: ({ type: StorageType } & StorageTally)[]
+  /** Each project, then (id null) what belongs to the whole workspace: shared knowledge models and email templates, imported files. */
+  projects: ({ id: string | null, name: string, types: Partial<Record<StorageType, number>> } & StorageTally)[]
+}
+
+/**
+ * Where a workspace's storage goes, by kind of file and by project, read from the bucket.
+ * ponytail: lists every object on each call; cache it, or keep a counter per type, when a workspace holds ~100k files.
+ */
+export async function storageBreakdown(ref: WorkspaceRef): Promise<StorageBreakdown> {
+  const workspaceId = idOf(ref)
+  const Parse = useParse()
+  const workspace = Parse.Object.extend('Workspace').createWithoutData(workspaceId)
+  const rowsOf = (className: string) => new Parse.Query(className).equalTo('workspace', workspace).select('project').limit(1000)
+  const [plan, used, projects, models, masters] = await Promise.all([
+    workspacePlan(ref),
+    readUsage(workspaceId, 'storageBytes'),
+    new Parse.Query('Project').equalTo('workspace', workspace).select('name').limit(1000).find(MASTER),
+    rowsOf('KnowledgeModel').find(MASTER),
+    rowsOf('EmailTemplate').doesNotExist('project').find(MASTER)
+  ])
+  // A knowledge model of one project counts there; a shared one, with the master templates and imports, is the workspace's.
+  const modelsOf = (projectId: string) => models.filter(row => pointerId(row.get('project')) === projectId).map(row => `knowledge/${row.id}/`)
+  const projectIds = new Set(projects.map(row => row.id))
+  const groups = [
+    ...projects.map(row => ({ id: row.id || null, name: String(row.get('name') || ''), prefixes: [`${row.id}/`, ...modelsOf(row.id || '')] })),
+    { id: null, name: '', prefixes: [...models.filter(row => !projectIds.has(pointerId(row.get('project')))).map(row => `knowledge/${row.id}/`), ...masters.map(row => `emails/${row.id}/`), `imports/${workspaceId}/`] }
+  ]
+  const types = new Map<StorageType, StorageTally>()
+  const tallied = s3Configured()
+    ? await Promise.all(groups.map(async ({ id, name, prefixes }) => {
+        const row = { id, name, bytes: 0, files: 0, types: {} as Partial<Record<StorageType, number>> }
+        for (const prefix of prefixes) {
+          for await (const item of listStoredObjects(prefix)) {
+            const type = storageType(item.name)
+            const tally = types.get(type) || { bytes: 0, files: 0 }
+            types.set(type, { bytes: tally.bytes + item.size, files: tally.files + 1 })
+            row.bytes += item.size
+            row.files++
+            row.types[type] = (row.types[type] || 0) + item.size
+          }
+        }
+        return row
+      }))
+    : []
+  return {
+    used,
+    limit: plan.limits.storageBytes,
+    bytes: tallied.reduce((sum, row) => sum + row.bytes, 0),
+    files: tallied.reduce((sum, row) => sum + row.files, 0),
+    types: [...types].map(([type, tally]) => ({ type, ...tally })).sort((a, b) => b.bytes - a.bytes),
+    projects: tallied.filter(row => row.id || row.files).sort((a, b) => (a.id ? 0 : 1) - (b.id ? 0 : 1) || b.bytes - a.bytes)
   }
 }
 

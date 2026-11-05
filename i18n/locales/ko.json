@@ -204,7 +204,8 @@
       "team": "팀",
       "ai": "AI",
       "connections": "연결",
-      "apiKeys": "API 키"
+      "apiKeys": "API 키",
+      "usageOnly": "사용량"
     },
     "theme": "테마",
     "themeNote": "시스템은 기기 설정을 따릅니다. 패널만 바뀌며, 각 프로젝트 위젯의 색상은 프로젝트 설정에서 정합니다.",
@@ -5215,7 +5216,31 @@
       "storage": "저장 공간",
       "apiPerMinute": "관리자 API: 분당 {count}회 요청",
       "emailLog": "이메일 로그 {count}일 보관",
-      "loadFailed": "플랜 사용량을 불러올 수 없습니다"
+      "loadFailed": "플랜 사용량을 불러올 수 없습니다",
+      "left": "{amount} 남음",
+      "limitReached": "한도 도달",
+      "over": "{amount} 초과, 계속 집계됨",
+      "storageSummary": "파일 {count}개, {size}",
+      "storageEmpty": "아직 저장된 파일이 없습니다.",
+      "byType": "유형별",
+      "byProject": "프로젝트별",
+      "shared": "워크스페이스 전체",
+      "sharedHint": "공유 지식 모델과 이메일 템플릿, 가져온 파일",
+      "storageLoadFailed": "저장 공간을 읽지 못했습니다",
+      "storageNote": "버킷에서 읽어 오므로 요금제 집계와 조금 다를 수 있습니다.",
+      "types": {
+        "conversations": "대화 첨부 파일",
+        "feedback": "피드백 및 보드 파일",
+        "team": "팀 업로드",
+        "branding": "로고 및 브랜드 키트",
+        "cms": "CMS 파일",
+        "forms": "양식 업로드",
+        "emails": "이메일 이미지",
+        "blog": "블로그 이미지",
+        "onboarding": "온보딩 이미지",
+        "knowledge": "지식 문서",
+        "other": "기타"
+      }
     },
     "ai": {
       "intro": "OpenAI, Anthropic, Gemini 또는 기타 OpenAI 호환 프로바이더의 키를 추가하고 사용할 프로바이더를 고르세요. 자체 엔드포인트가 없는 어시스턴트, 이메일 디자이너, 오류 메모는 이를{insteadOfServer}{noCredits} 사용합니다.",

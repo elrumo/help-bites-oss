@@ -204,7 +204,8 @@
       "team": "Team",
       "ai": "AI",
       "connections": "Connections",
-      "apiKeys": "API keys"
+      "apiKeys": "API keys",
+      "usageOnly": "Usage"
     },
     "theme": "Theme",
     "themeNote": "System follows your device. This only changes the panel; each project's widget sets its own colour in the project's settings.",
@@ -5514,7 +5515,31 @@
       "storage": "Storage",
       "apiPerMinute": "Admin API: {count} requests a minute",
       "emailLog": "Email log kept for {count} days",
-      "loadFailed": "Could not load the plan's usage"
+      "loadFailed": "Could not load the plan's usage",
+      "left": "{amount} left",
+      "limitReached": "Limit reached",
+      "over": "{amount} over, still counted",
+      "storageSummary": "{size} in {count} files",
+      "storageEmpty": "No files stored yet.",
+      "byType": "By type",
+      "byProject": "By project",
+      "shared": "Whole workspace",
+      "sharedHint": "Shared knowledge models and email templates, and imported files",
+      "storageLoadFailed": "Could not read the storage",
+      "storageNote": "Read from the bucket, so it can differ a little from what the plan counts.",
+      "types": {
+        "conversations": "Conversation attachments",
+        "feedback": "Feedback and board files",
+        "team": "Your team's uploads",
+        "branding": "Logos and brand kit",
+        "cms": "CMS files",
+        "forms": "Form uploads",
+        "emails": "Email images",
+        "blog": "Blog images",
+        "onboarding": "Onboarding images",
+        "knowledge": "Knowledge documents",
+        "other": "Other"
+      }
     },
     "ai": {
       "intro": "Add keys for OpenAI, Anthropic, Gemini or any other OpenAI-compatible provider, and pick the one to use. Assistants without an endpoint of their own, the email designer and error notes then use it{insteadOfServer}{noCredits}.",

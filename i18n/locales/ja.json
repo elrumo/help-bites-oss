@@ -204,7 +204,8 @@
       "team": "チーム",
       "ai": "AI",
       "connections": "接続",
-      "apiKeys": "APIキー"
+      "apiKeys": "APIキー",
+      "usageOnly": "使用量"
     },
     "theme": "テーマ",
     "themeNote": "「システム」はお使いのデバイスの設定に従います。変更されるのはパネルのみで、各プロジェクトのウィジェットの色はプロジェクト設定で決まります。",
@@ -5215,7 +5216,31 @@
       "storage": "ストレージ",
       "apiPerMinute": "管理 API：毎分 {count} リクエスト",
       "emailLog": "メールログは {count} 日間保存されます",
-      "loadFailed": "プランの使用状況を読み込めませんでした"
+      "loadFailed": "プランの使用状況を読み込めませんでした",
+      "left": "残り {amount}",
+      "limitReached": "上限に達しました",
+      "over": "{amount} 超過（集計は継続）",
+      "storageSummary": "{count} ファイル、{size}",
+      "storageEmpty": "まだファイルは保存されていません。",
+      "byType": "種類別",
+      "byProject": "プロジェクト別",
+      "shared": "ワークスペース全体",
+      "sharedHint": "共有のナレッジモデルとメールテンプレート、インポートしたファイル",
+      "storageLoadFailed": "ストレージを読み込めませんでした",
+      "storageNote": "バケットから読み取るため、プランの集計と少し異なる場合があります。",
+      "types": {
+        "conversations": "会話の添付ファイル",
+        "feedback": "フィードバックとボードのファイル",
+        "team": "チームのアップロード",
+        "branding": "ロゴとブランドキット",
+        "cms": "CMS ファイル",
+        "forms": "フォームのアップロード",
+        "emails": "メールの画像",
+        "blog": "ブログの画像",
+        "onboarding": "オンボーディングの画像",
+        "knowledge": "ナレッジドキュメント",
+        "other": "その他"
+      }
     },
     "ai": {
       "intro": "OpenAI、Anthropic、Gemini などのキー、または他の OpenAI 互換プロバイダーのキーを追加し、使うものを選んでください。独自のエンドポイントを持たないアシスタント、メールデザイナー、エラーメモは、それを使います{insteadOfServer}{noCredits}。",

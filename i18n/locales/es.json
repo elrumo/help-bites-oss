@@ -204,7 +204,8 @@
       "team": "Equipo",
       "ai": "IA",
       "connections": "Conexiones",
-      "apiKeys": "Claves de API"
+      "apiKeys": "Claves de API",
+      "usageOnly": "Uso"
     },
     "theme": "Tema",
     "themeNote": "Sistema sigue tu dispositivo. Solo cambia el panel; el widget de cada proyecto define su propio color en los ajustes del proyecto.",
@@ -5264,7 +5265,31 @@
       "storage": "Almacenamiento",
       "apiPerMinute": "API de administración: {count} solicitudes por minuto",
       "emailLog": "Registro de correo guardado durante {count} días",
-      "loadFailed": "No se pudo cargar el uso del plan"
+      "loadFailed": "No se pudo cargar el uso del plan",
+      "left": "Quedan {amount}",
+      "limitReached": "Límite alcanzado",
+      "over": "{amount} por encima, se sigue contando",
+      "storageSummary": "{size} en {count} archivos",
+      "storageEmpty": "Todavía no hay archivos guardados.",
+      "byType": "Por tipo",
+      "byProject": "Por proyecto",
+      "shared": "Todo el espacio de trabajo",
+      "sharedHint": "Modelos de conocimiento y plantillas de correo compartidos, y archivos importados",
+      "storageLoadFailed": "No se pudo leer el almacenamiento",
+      "storageNote": "Se lee del bucket, así que puede diferir un poco de lo que cuenta el plan.",
+      "types": {
+        "conversations": "Adjuntos de conversaciones",
+        "feedback": "Archivos de feedback y tablero",
+        "team": "Subidas de tu equipo",
+        "branding": "Logos y kit de marca",
+        "cms": "Archivos del CMS",
+        "forms": "Subidas de formularios",
+        "emails": "Imágenes de correos",
+        "blog": "Imágenes del blog",
+        "onboarding": "Imágenes de onboarding",
+        "knowledge": "Documentos de conocimiento",
+        "other": "Otros"
+      }
     },
     "ai": {
       "intro": "Añade claves de OpenAI, Anthropic, Gemini o cualquier otro proveedor compatible con OpenAI, y elige el que usar. Los asistentes sin endpoint propio, el diseñador de correo y las notas de error lo usarán{insteadOfServer}{noCredits}.",

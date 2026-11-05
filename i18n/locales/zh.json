@@ -204,7 +204,8 @@
       "team": "团队",
       "ai": "AI",
       "connections": "连接",
-      "apiKeys": "API 密钥"
+      "apiKeys": "API 密钥",
+      "usageOnly": "用量"
     },
     "theme": "主题",
     "themeNote": "“跟随系统”会使用你设备的设置。这只会改变面板；每个项目的小组件在项目设置中有自己的颜色。",
@@ -5205,7 +5206,31 @@
       "storage": "存储",
       "apiPerMinute": "管理 API：每分钟 {count} 次请求",
       "emailLog": "邮件日志保留 {count} 天",
-      "loadFailed": "无法加载方案用量"
+      "loadFailed": "无法加载方案用量",
+      "left": "剩余 {amount}",
+      "limitReached": "已达上限",
+      "over": "超出 {amount}，仍在计入",
+      "storageSummary": "{count} 个文件，共 {size}",
+      "storageEmpty": "还没有存储任何文件。",
+      "byType": "按类型",
+      "byProject": "按项目",
+      "shared": "整个工作区",
+      "sharedHint": "共享的知识模型和邮件模板，以及导入的文件",
+      "storageLoadFailed": "无法读取存储用量",
+      "storageNote": "数据读取自存储桶，可能与方案的计数略有差异。",
+      "types": {
+        "conversations": "对话附件",
+        "feedback": "反馈与看板文件",
+        "team": "团队上传",
+        "branding": "Logo 与品牌套件",
+        "cms": "CMS 文件",
+        "forms": "表单上传",
+        "emails": "邮件图片",
+        "blog": "博客图片",
+        "onboarding": "引导流程图片",
+        "knowledge": "知识文档",
+        "other": "其他"
+      }
     },
     "ai": {
       "intro": "添加 OpenAI、Anthropic、Gemini 或其他兼容 OpenAI 的提供商的密钥，并选择要使用的一个。没有自有端点的助手、邮件设计器和错误备注会改用它{insteadOfServer}{noCredits}。",

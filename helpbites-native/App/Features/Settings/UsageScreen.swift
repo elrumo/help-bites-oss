@@ -1,19 +1,23 @@
 import SwiftUI
 
-/// Plan and usage (web: Settings → Plan & usage, `GET /v1/admin/usage`): what the
-/// workspace has used against each limit, and which features the plan includes.
+/// Plan and usage (web: Settings → Usage, `GET /v1/admin/usage` and `/v1/admin/usage/storage`): on a plan with
+/// limits, what the workspace has used against each, what is left and which features it includes; on every
+/// edition, where its storage goes, by kind of file and by project.
 struct UsageScreen: View {
   @Environment(SessionStore.self) private var session
+  @Environment(Workspace.self) private var workspace
   @State private var snapshot: UsageSnapshot?
   @State private var loading = true
   @State private var error = ""
+  @State private var storage: StorageBreakdown?
+  @State private var storageError = ""
 
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 28) {
         if loading {
           SkeletonRows(count: 4).padding(-Metrics.gutter)
-        } else if let snapshot {
+        } else if let snapshot, !snapshot.unlimited {
           VStack(alignment: .leading, spacing: 4) {
             Text("\(snapshot.plan.name) plan").font(.lnHeading).foregroundStyle(Theme.textHighlighted)
             Text("Monthly counts start over on the 1st, and daily ones at midnight (UTC).").font(.lnMeta).foregroundStyle(Theme.textMuted)
@@ -33,7 +37,8 @@ struct UsageScreen: View {
                         Spacer(minLength: 8)
                         Text("\(row.used) / \(row.limit)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
                       }
-                      UsageBar(percent: row.percent, tint: row.percent >= 100 && !row.soft ? Theme.error : row.percent >= 80 ? Theme.warning : Theme.accent)
+                      UsageBar(percent: row.percent, tint: row.full && !row.soft ? Theme.error : row.percent >= 80 ? Theme.warning : Theme.accent)
+                      Text(row.note).font(.lnCaption).monospacedDigit().foregroundStyle(row.full && !row.soft ? Theme.error : Theme.textMuted)
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityValue("\(row.percent) percent")
@@ -57,21 +62,133 @@ struct UsageScreen: View {
             }
           }
         }
+        storageSection
         BillingSection()
         ErrorText(message: error)
       }
       .settingsColumn()
     }
-    .panelScreen("Plan & usage")
+    .panelScreen(session.plan?.unlimited == false ? "Plan & usage" : "Usage")
     .refreshable { await load() }
     .task(id: session.workspace?.id) { await load() }
   }
 
+  /// The bucket is listed, so storage loads on its own and the plan shows first.
+  @ViewBuilder private var storageSection: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      HStack(alignment: .firstTextBaseline) {
+        SectionLabel("Storage")
+        Spacer(minLength: 8)
+        if let storage, storage.files > 0 {
+          Text("\(UsageSnapshot.bytes(storage.bytes)) in \(storage.files.formatted()) files").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
+        }
+      }
+      if let storage {
+        if storage.files == 0 {
+          EmptyState(systemImage: "internaldrive", title: "No files stored yet.") { EmptyView() }
+        } else {
+          VStack(alignment: .leading, spacing: 8) {
+            Text("By type").font(.lnRow).foregroundStyle(Theme.textHighlighted)
+            Card {
+              ForEach(storage.types, id: \.type) { item in
+                CardRow(divider: item.type != storage.types.last?.type) {
+                  share(StorageKind.label(item.type), bytes: item.bytes, of: storage)
+                }
+              }
+            }
+          }
+          VStack(alignment: .leading, spacing: 8) {
+            Text("By project").font(.lnRow).foregroundStyle(Theme.textHighlighted)
+            Card {
+              ForEach(storage.projects, id: \.key) { row in
+                CardRow(divider: row.key != storage.projects.last?.key) {
+                  VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 10) {
+                      if let id = row.id {
+                        let project = workspace.projects.first { $0.id == id }
+                        ProjectTile(id: id, name: row.name, accent: project?.theme.accent, icon: project?.iconUrl, size: 20)
+                      } else {
+                        Image(systemName: "building.2").font(.system(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 20)
+                      }
+                      share(row.id == nil ? String(localized: "Whole workspace") : row.name, bytes: row.bytes, of: storage)
+                    }
+                    Text(row.id == nil ? String(localized: "Shared knowledge models and email templates, and imported files") : row.topTypes)
+                      .font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
+                  }
+                }
+              }
+            }
+            Text("Read from the bucket, so it can differ a little from what the plan counts.").font(.lnCaption).foregroundStyle(Theme.textMuted)
+          }
+        }
+      } else if storageError.isEmpty {
+        SkeletonRows(count: 3).padding(-Metrics.gutter)
+      }
+      ErrorText(message: storageError)
+    }
+  }
+
+  private func share(_ label: String, bytes: Double, of storage: StorageBreakdown) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 8) {
+        Text(label).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+        Spacer(minLength: 8)
+        Text("\(UsageSnapshot.bytes(bytes)) · \(storage.share(bytes))%").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
+      }
+      UsageBar(percent: max(1, storage.share(bytes)), tint: Theme.accent)
+    }
+    .accessibilityElement(children: .combine)
+  }
+
   private func load() async {
+    async let storageLoad: Void = loadStorage()
     do { snapshot = try await session.get("/v1/admin/usage"); error = "" }
     catch { if !Task.isCancelled { self.error = error.localizedDescription } }
     loading = false
+    await storageLoad
   }
+
+  private func loadStorage() async {
+    do { storage = try await session.get("/v1/admin/usage/storage"); storageError = "" }
+    catch { if !Task.isCancelled { storageError = error.localizedDescription } }
+  }
+}
+
+/// What stored files are, with their labels (shared/entitlements.ts STORAGE_TYPES, the web's
+/// workspaceSettings.usage.types). Literal pairs, so a parity test can read them.
+enum StorageKind {
+  static let labels: [(key: String, label: String)] = [
+    ("conversations", "Conversation attachments"), ("feedback", "Feedback and board files"), ("team", "Your team's uploads"),
+    ("branding", "Logos and brand kit"), ("cms", "CMS files"), ("forms", "Form uploads"), ("emails", "Email images"),
+    ("blog", "Blog images"), ("onboarding", "Onboarding images"), ("knowledge", "Knowledge documents"), ("other", "Other")
+  ]
+  static func label(_ key: String) -> String { labels.first { $0.key == key }.map { PlanFeature.localized($0.label) } ?? key }
+}
+
+/// `GET /v1/admin/usage/storage` (server/utils/usage.ts `storageBreakdown`). A project with no id is the whole workspace.
+struct StorageBreakdown: Decodable, Sendable {
+  struct Kind: Decodable, Sendable { let type: String; let bytes: Double; let files: Int }
+  struct ProjectShare: Decodable, Sendable {
+    let id: String?
+    let name: String
+    let bytes: Double
+    let files: Int
+    let types: [String: Double]
+    var key: String { id ?? "" }
+    /// Its three biggest kinds, as the web shows them.
+    var topTypes: String {
+      let top = types.sorted { $0.value > $1.value }.prefix(3).map { "\(StorageKind.label($0.key)) \(UsageSnapshot.bytes($0.value))" }
+      return top.isEmpty ? "—" : top.joined(separator: " · ")
+    }
+  }
+  let used: Double
+  let limit: Double?
+  let bytes: Double
+  let files: Int
+  let types: [Kind]
+  let projects: [ProjectShare]
+
+  func share(_ value: Double) -> Int { bytes > 0 ? Int((value / bytes * 100).rounded()) : 0 }
 }
 
 /// The features a plan can include, with their labels (shared/entitlements.ts FEATURES and FEATURE_LABELS).
@@ -114,7 +231,7 @@ struct UsageSnapshot: Decodable, Sendable {
   let emailLogDays: Int?
   let usage: [String: Double]
 
-  struct Row: Identifiable, Equatable { let id, label, used, limit: String; let percent: Int; let soft: Bool }
+  struct Row: Identifiable, Equatable { let id, label, used, limit, note: String; let percent: Int; let soft, full: Bool }
   struct Included { let label: String; let on: Bool }
 
   // shared/entitlements.ts: counters then gauges, the features in plan order.
@@ -127,7 +244,12 @@ struct UsageSnapshot: Decodable, Sendable {
     Self.metrics.compactMap { key, label in
       guard let entry = limits[key], let limit = entry else { return nil }
       let used = usage[key] ?? 0
-      return Row(id: key, label: label, used: Self.amount(key, used), limit: Self.amount(key, limit), percent: limit > 0 ? min(100, Int((used / limit * 100).rounded())) : 100, soft: soft[key] ?? false)
+      let isSoft = soft[key] ?? false
+      let full = used >= limit
+      // The web's Usage.vue: what is left, or how far past a soft limit.
+      let note = used > limit && isSoft ? String(localized: "\(Self.amount(key, used - limit)) over, still counted")
+        : full ? String(localized: "Limit reached") : String(localized: "\(Self.amount(key, limit - used)) left")
+      return Row(id: key, label: label, used: Self.amount(key, used), limit: Self.amount(key, limit), note: note, percent: limit > 0 ? min(100, Int((used / limit * 100).rounded())) : 100, soft: isSoft, full: full)
     }
   }
 

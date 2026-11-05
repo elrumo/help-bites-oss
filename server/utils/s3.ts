@@ -275,13 +275,19 @@ export async function readObjectStream(key: string): Promise<NodeJS.ReadableStre
 export async function removeObjectsUnder(prefix: string, olderThan?: Date): Promise<number> {
   // An empty or odd prefix could match the whole bucket.
   if (!/^[\w-]+\/(?:[\w-]+\/)?$/.test(prefix)) throw new Error(`Refusing to remove objects under "${prefix}"`)
-  const s3 = useS3()
   const keys: string[] = []
-  for await (const item of s3.listObjectsV2(bucket(), prefix, true)) {
-    if (item.name && (!olderThan || (item.lastModified && item.lastModified < olderThan))) keys.push(item.name)
+  for await (const item of listStoredObjects(prefix)) {
+    if (!olderThan || (item.lastModified && item.lastModified < olderThan)) keys.push(item.name)
   }
-  for (let i = 0; i < keys.length; i += 1000) await s3.removeObjects(bucket(), keys.slice(i, i + 1000))
+  for (let i = 0; i < keys.length; i += 1000) await useS3().removeObjects(bucket(), keys.slice(i, i + 1000))
   return keys.length
+}
+
+/** Every object under a prefix: its key, size and when it was written. */
+export async function* listStoredObjects(prefix: string): AsyncGenerator<{ name: string, size: number, lastModified?: Date }> {
+  for await (const item of useS3().listObjectsV2(bucket(), prefix, true)) {
+    if (item.name) yield { name: item.name, size: Number(item.size) || 0, lastModified: item.lastModified }
+  }
 }
 
 /** A stored object's headers worth keeping, or null when it is not there. */

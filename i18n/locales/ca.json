@@ -204,7 +204,8 @@
       "team": "Equip",
       "ai": "IA",
       "connections": "Connexions",
-      "apiKeys": "Claus d'API"
+      "apiKeys": "Claus d'API",
+      "usageOnly": "Ús"
     },
     "theme": "Tema",
     "themeNote": "Sistema segueix el teu dispositiu. Només canvia el panell; el widget de cada projecte defineix el seu propi color a la configuració del projecte.",
@@ -5215,7 +5216,31 @@
       "storage": "Emmagatzematge",
       "apiPerMinute": "API d'administració: {count} sol·licituds per minut",
       "emailLog": "Registre de correu conservat durant {count} dies",
-      "loadFailed": "No s'ha pogut carregar l'ús del pla"
+      "loadFailed": "No s'ha pogut carregar l'ús del pla",
+      "left": "Queden {amount}",
+      "limitReached": "Límit assolit",
+      "over": "{amount} per sobre, es continua comptant",
+      "storageSummary": "{size} en {count} fitxers",
+      "storageEmpty": "Encara no hi ha fitxers desats.",
+      "byType": "Per tipus",
+      "byProject": "Per projecte",
+      "shared": "Tot l'espai de treball",
+      "sharedHint": "Models de coneixement i plantilles de correu compartits, i fitxers importats",
+      "storageLoadFailed": "No s'ha pogut llegir l'emmagatzematge",
+      "storageNote": "Es llegeix del bucket, així que pot diferir una mica del que compta el pla.",
+      "types": {
+        "conversations": "Adjunts de converses",
+        "feedback": "Fitxers de feedback i tauler",
+        "team": "Pujades del teu equip",
+        "branding": "Logos i kit de marca",
+        "cms": "Fitxers del CMS",
+        "forms": "Pujades de formularis",
+        "emails": "Imatges de correus",
+        "blog": "Imatges del blog",
+        "onboarding": "Imatges d'onboarding",
+        "knowledge": "Documents de coneixement",
+        "other": "Altres"
+      }
     },
     "ai": {
       "intro": "Afegeix claus d'OpenAI, Anthropic, Gemini o qualsevol altre proveïdor compatible amb OpenAI, i tria el que usar. Els assistents sense endpoint propi, el dissenyador de correu i les notes d'error l'usaran{insteadOfServer}{noCredits}.",

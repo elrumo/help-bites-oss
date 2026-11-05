@@ -673,6 +673,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Workspaces.** Several per account, switchable from the sidebar.
 - **Workspace settings.** AI provider, export and import (one Export card: download now or have a link
   emailed, with the same file and options either way), and workspace deletion for owners.
+- **Usage and storage.** Settings → Usage shows where the workspace's storage goes, by kind of file (conversation
+  attachments, feedback and board files, team uploads, branding, CMS files, form uploads, email, blog and onboarding
+  images, knowledge documents) and by project, read from the bucket. On a plan with limits it is Plan & usage and
+  also shows what is used and left against each limit. Web and native. [USAGE.md](USAGE.md)
 - **Moving between instances.** Download a workspace, or one project, as a portable
   file; import a file; or pull straight from another HelpBites (self-hosted or
   cloud) with an API key or a login. Runs in the background, adds new projects,

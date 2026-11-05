@@ -594,6 +594,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `list_github_connection_repos` | The repos one connection can read, to pick from for a project. |
 | `get_workspace` | The workspace's name, status and your role in it. |
 | `get_usage` | The plan, its limits and features, and what the workspace has used. |
+| `get_storage_usage` | Where the workspace's storage goes, by kind of file and by project. |
 | `rename_workspace` | Change the workspace's name. |
 
 Try: *"Which conversations are unread? Draft a reply to the one about the failed

@@ -2386,6 +2386,11 @@ export const MCP_TOOLS: readonly McpTool[] = [
     params: {}
   },
   {
+    name: 'get_storage_usage', title: 'Storage by type and project', readOnly: true, method: 'GET', path: '/v1/admin/usage/storage',
+    description: 'Where the workspace\'s storage goes: bytes and files per kind (conversations, feedback, team, branding, cms, forms, emails, blog, onboarding, knowledge, other) and per project (id null: workspace-wide files), with what the plan counts (`used`) and its limit (null means none). Needs a key that is not limited to some projects.',
+    params: {}
+  },
+  {
     name: 'rename_workspace', title: 'Rename the workspace', method: 'PATCH', path: '/v1/admin/workspace',
     description: 'Changes the workspace\'s name (up to 80 characters). Needs a role that can change workspace settings. Returns `{ workspace }`.',
     params: { name: { type: 'string', required: true, description: 'The new name.' } }

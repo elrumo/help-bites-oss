@@ -107,8 +107,8 @@ answer at boot.
   own AI provider, the Ultra designer, and more workspaces. Sending a blog post as a newsletter is a campaign, so it follows
   `campaigns`; the blog itself, its comments, reactions and RSS feed are on every plan.
 
-The community edition puts every workspace on `UNLIMITED_PLAN`, so none of this is visible there. The Plan & usage tab
-hides itself, and nothing answers 402.
+The community edition puts every workspace on `UNLIMITED_PLAN`, so none of this is visible there: the Usage tab shows
+only where storage goes ([USAGE.md](USAGE.md)), and nothing answers 402.
 
 **Plan locks**: on a plan without a feature, the panel marks it before anyone meets the 402 (`usePlanLocks`,
 `PlanLock.vue`; native `PlanLockNotice`). A project section names the feature it needs in `app/utils/projectSections.ts`

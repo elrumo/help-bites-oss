@@ -149,12 +149,12 @@ const localeItems = computed(() => locales.value.map(l => ({ label: l.name || l.
 // GitHub's install callback lands on /projects?github=…, which reopens the connections tab.
 if (useRoute().query.github) tab.value = 'connections'
 
-// Plan & usage only shows when the plan has limits, so never on a self-hosted install.
+// Usage is on every edition (where storage goes); "Plan & usage" when the plan has limits.
 const coreTabs = computed(() => [
   { key: 'account', label: t('settings.tabs.account'), icon: 'i-lucide-circle-user' },
   { key: 'appearance', label: t('settings.tabs.appearance'), icon: 'i-lucide-sun-moon' },
   { key: 'workspace', label: t('settings.tabs.workspace'), icon: 'i-lucide-building-2' },
-  ...(context.value?.plan && !context.value.plan.unlimited ? [{ key: 'usage', label: t('settings.tabs.usage'), icon: 'i-lucide-gauge' }] : []),
+  { key: 'usage', label: context.value?.plan && !context.value.plan.unlimited ? t('settings.tabs.usage') : t('settings.tabs.usageOnly'), icon: 'i-lucide-gauge' },
   { key: 'projects', label: t('settings.tabs.projects'), icon: 'i-lucide-boxes' },
   { key: 'team', label: t('settings.tabs.team'), icon: 'i-lucide-users-round' },
   { key: 'ai', label: t('settings.tabs.ai'), icon: 'i-lucide-sparkles' },

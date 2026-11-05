@@ -1676,6 +1676,41 @@
       }
     },
     {
+      "id": "usage-storage",
+      "name": "Usage and storage",
+      "category": "platform",
+      "summary": "Settings → Usage: where the workspace's storage goes, by kind of file and by project, read from the bucket. On a plan with limits (cloud), what is used and left against each limit and which features the plan includes.",
+      "editions": [
+        "community",
+        "cloud"
+      ],
+      "plan": "all",
+      "entitlement": null,
+      "status": "stable",
+      "web": {
+        "panel": [
+          "app/components/settings/Usage.vue"
+        ]
+      },
+      "native": {
+        "folders": [
+          "helpbites-native/App/Features/Settings"
+        ],
+        "parity": "tests/planNativeParity.test.ts"
+      },
+      "api": {
+        "prefixes": [
+          "/v1/admin/usage/storage"
+        ],
+        "docs": "docs/USAGE.md"
+      },
+      "embed": null,
+      "landing": {
+        "listed": false,
+        "key": null
+      }
+    },
+    {
       "id": "projects",
       "name": "Projects",
       "category": "platform",

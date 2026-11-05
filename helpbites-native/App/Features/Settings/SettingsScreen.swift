@@ -56,7 +56,7 @@ struct SettingsScreen: View {
 
         Card {
           link(.workspace, "Workspace settings", "building.2")
-          if session.plan?.unlimited == false { link(.usage, "Plan & usage", "gauge") }
+          link(.usage, session.plan?.unlimited == false ? "Plan & usage" : "Usage", "gauge")
           link(.team, "Team", "person.2")
           link(.ai, "AI", "sparkles")
           link(.connections, "Connections", "powerplug")
