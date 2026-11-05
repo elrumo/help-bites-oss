@@ -9,12 +9,12 @@
         </NuxtLink>
         <AppVersion class="-ml-3 text-[12px]" />
         <nav class="hidden items-center gap-5 text-[13px] sm:flex" :aria-label="$t('landing.nav.sections')">
-          <a href="#connect" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.connect') }}</a>
-          <a href="#tour" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.tour') }}</a>
+          <!-- <a href="#connect" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.connect') }}</a> -->
+          <!-- <a href="#tour" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.tour') }}</a> -->
           <a href="#features" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.features') }}</a>
           <NuxtLink to="/docs" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.docs') }}</NuxtLink>
           <a :href="CHANGELOG_URL" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('common.changelog') }}</a>
-          <a :href="README_URL" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('common.readme') }}</a>
+          <!-- <a :href="README_URL" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('common.readme') }}</a> -->
           <a :href="repo" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-highlighted">{{ $t('landing.nav.source') }}</a>
           <!-- Registered by the edition's client plugins, which the prerendered page never ran. -->
           <ClientOnly>
