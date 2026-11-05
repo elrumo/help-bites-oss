@@ -5,6 +5,8 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 ## Unreleased
 
+- **`/` opens the panel** (self-hosters): the marketing landing page belongs to HelpBites Cloud now and has moved to its repository, with its `landing.*` words and screenshots. On a self-hosted server `/` goes to sign-in (or first-run setup), and a signed-in operator goes on to the overview. `/` is no longer prerendered, and the `registerLandingLink` edition seam is gone. No schema or env change.
+
 - **AI merge suggestions for the changelog** (web, native, API, MCP): with 2 or more entries selected, *Suggest merges* asks the AI which of them say the same thing and previews the merged text; it may suggest nothing, and nothing is saved until you merge. New route `POST /v1/admin/changelog/entries/suggest-merges` and MCP tool `suggest_changelog_merges`. No schema change.
 
 - **Videos on planning cards, and a viewer for images and videos** (web, native, share sheet, API, MCP): MP4 and MOV videos attach to board items, posts and planning comments up to 100 MB (other files stay at 25 MB; the upload route is unchanged). Images and videos open in a viewer instead of a new tab or browser, and the iOS share sheet accepts videos and opens attachments on tap. No schema change.

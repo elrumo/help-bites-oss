@@ -819,7 +819,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   requires (`SOURCE_CODE_URL`).
 - **Demo.** `/demo` runs the real panel on sample data. Nothing is saved.
 - **Version and beta.** The release number lives in `package.json` and shows,
-  with a Beta tag, on the landing page and docs, in the panel (sidebar and
+  with a Beta tag, on the docs, in the panel (sidebar and
   Settings → Account), in the native app's Settings and in `GET /v1/meta`. It
   links to the project's public changelog. [RELEASING.md](RELEASING.md)
 - **Releases.** A tag `vX.Y.Z` builds the community image for Docker Hub
@@ -835,9 +835,13 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 ## 13. Hosted edition only
 
-HelpBites Cloud, the paid hosted service, adds open sign-up, a pricing page, Free and Pro plans, Stripe billing,
-verified sending domains and a staff console on top of everything above. The code for it is not part of this
-repository. See [EDITIONS.md](EDITIONS.md).
+HelpBites Cloud, the paid hosted service, adds open sign-up, the public landing page with its plans and prices, Free
+and Pro plans, Stripe billing, verified sending domains and a staff console on top of everything above. The code for
+it is not part of this repository; a self-hosted server's `/` goes straight to the panel. See [EDITIONS.md](EDITIONS.md).
+
+- **Billing.** Settings → Billing (web and native) makes the case for Pro on the Free plan: the price, monthly or
+  yearly, what Pro unlocks, Free and Pro limit by limit, and the limits a workspace is close to. On Pro it shows the
+  subscription and opens Stripe's portal.
 
 - **Plan locks.** On a plan that leaves a feature out, the panel says so before anyone fills in a form: a lock on
   Campaigns and Legal in the sidebar, and a note on the pages for campaigns, sequences, database sync, event webhooks
