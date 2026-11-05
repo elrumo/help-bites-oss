@@ -859,7 +859,7 @@ bun test
 
 Quick manual checks:
 
-- `APP_URL/` loads the landing page.
+- `APP_URL/` opens the panel's sign-in (or first-run setup).
 - `APP_URL/_docs/scalar` renders the API docs.
 - Sign-up creates an operator; the panel loads at `/inbox`.
 - Send a widget/API message and confirm it appears live in the panel (SSE works).

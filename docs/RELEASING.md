@@ -71,7 +71,7 @@ an admin key limited to that project, and add three more secrets:
 Admin keys expire (90 days unless you choose otherwise), so renew the secret when the changelog job starts failing with
 `401`. Without the three secrets the job logs that it did nothing and passes, which is what a fork's release does.
 
-The panel, the landing page and the docs show `vX.Y.Z` with a Beta tag, linking to that page (`CHANGELOG_URL` in
+The panel, the docs and HelpBites Cloud's landing page show `vX.Y.Z` with a Beta tag, linking to that page (`CHANGELOG_URL` in
 `shared/version.ts`; change it if the page ever moves).
 
 ## How the changelog is published
