@@ -77,7 +77,7 @@ by default). Over the API it is off unless asked, with `POST /v1/admin/blog/imag
 | Field (or query parameter) | |
 |---|---|
 | `compress=true` | One file: WebP at quality 80, scaled down to 2560 px when larger. A GIF is kept as sent, and so is any file that would not come out smaller. |
-| `formats=avif,webp` | A set for a `<picture>`: the formats asked for that came out smaller than the fallback (AVIF, then WebP), and the **fallback** every browser, app and mail client reads: a JPEG for a JPEG, a PNG for anything else (so transparency survives). Implies `compress`. |
+| `formats=avif,webp` | A set for a `<picture>`: the formats asked for that this server can encode and that came out smaller than the fallback (AVIF, then WebP; Bun's Linux builds, the Docker image included, have no AV1 encoder, so there the set is WebP and the fallback), and the **fallback** every browser, app and mail client reads: a JPEG for a JPEG, a PNG for anything else (so transparency survives). Implies `compress`. |
 
 The answer adds `compressed` and `originalSize`; with `formats`, `url` is the
 fallback, `variants` lists every stored file (most efficient first, the fallback

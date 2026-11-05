@@ -5,6 +5,8 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 ## Unreleased
 
+- **`formats=avif,webp` uploads work on Linux** (self-hosters): Bun's Linux builds (the Docker image included) can't encode AVIF, and that used to fail the whole set, so a blog image fell back to a single WebP and a file-library asset was stored as sent. Now a format the server can't encode is left out: on Linux the set is WebP plus the JPEG or PNG fallback, and macOS still adds AVIF. No schema or env change.
+
 - **`/` opens the panel** (self-hosters): the marketing landing page belongs to HelpBites Cloud now and has moved to its repository, with its `landing.*` words and screenshots. On a self-hosted server `/` goes to sign-in (or first-run setup), and a signed-in operator goes on to the overview. `/` is no longer prerendered, and the `registerLandingLink` edition seam is gone. No schema or env change.
 
 - **AI merge suggestions for the changelog** (web, native, API, MCP): with 2 or more entries selected, *Suggest merges* asks the AI which of them say the same thing and previews the merged text; it may suggest nothing, and nothing is saved until you merge. New route `POST /v1/admin/changelog/entries/suggest-merges` and MCP tool `suggest_changelog_merges`. No schema change.

@@ -54,15 +54,35 @@ describe('compressed uploads', () => {
     for (const no of ['false', '0', '', undefined, null]) expect(isTruthy(no)).toBe(false)
   })
 
-  test('formats: AVIF and WebP come first, smaller than the PNG fallback that ends the set', async () => {
+  test('formats: AVIF (where the runtime encodes it) and WebP come first, smaller than the PNG fallback that ends the set', async () => {
     const source = png(1200, 300)
+    // Bun's Linux builds have no AV1 encoder; macOS has one.
+    const avif = await new Bun.Image(source).avif({ quality: 55 }).toBuffer().then(() => true, () => false)
     const set = await imageVariants(source, 'image/png', ['webp', 'avif'])
-    expect(set?.map(v => v.format)).toEqual(['avif', 'webp', 'png'])
-    expect(set?.map(v => v.mime)).toEqual(['image/avif', 'image/webp', 'image/png'])
-    const sizes = set!.map(v => v.data.length)
-    expect(sizes[0]).toBeLessThan(sizes[2]!)
-    expect(sizes[1]).toBeLessThan(sizes[2]!)
-    expect(set!.at(-1)!.data.length).toBeLessThanOrEqual(source.length)
+    const formats = avif ? ['avif', 'webp', 'png'] : ['webp', 'png']
+    expect(set?.map(v => v.format)).toEqual(formats)
+    expect(set?.map(v => v.mime)).toEqual(formats.map(f => `image/${f}`))
+    const fallback = set!.at(-1)!.data.length
+    for (const v of set!.slice(0, -1)) expect(v.data.length).toBeLessThan(fallback)
+    expect(fallback).toBeLessThanOrEqual(source.length)
+  })
+
+  test('formats: one the runtime cannot encode is left out, the rest of the set is kept', async () => {
+    const Real = Bun.Image
+    Bun.Image = class extends Real {
+      resize(...args: Parameters<InstanceType<typeof Real>['resize']>) {
+        const pipeline = super.resize(...args)
+        pipeline.avif = () => { throw new Error('Image: format not supported on this machine') }
+        return pipeline
+      }
+    } as typeof Real
+    try {
+      const set = await imageVariants(png(1200, 300), 'image/png', ['avif', 'webp'])
+      expect(set?.map(v => v.format)).toEqual(['webp', 'png'])
+      expect(await imageVariants(png(1200, 300), 'image/png', ['avif'])).toEqual([expect.objectContaining({ format: 'png' })])
+    } finally {
+      Bun.Image = Real
+    }
   })
 
   test('formats: a GIF, an unreadable file or no format asked for is stored as sent', async () => {

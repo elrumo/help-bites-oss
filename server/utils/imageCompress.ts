@@ -7,7 +7,8 @@ import { getQuery, readMultipartFormData, type H3Event } from 'h3'
 //                       app and mail client reads (JPEG for a JPEG, PNG for anything else, so transparency
 //                       and sharp edges survive) (`imageVariants`).
 // Neither makes a file bigger or breaks an upload: a GIF (it may be animated), a file the codec can't read, a
-// runtime without the codec, or a result that is not smaller is stored as it was sent.
+// runtime without the codec, or a result that is not smaller is stored as it was sent. A modern format the runtime
+// can't encode (AVIF on Linux) is left out of the set.
 export const COMPRESS_MAX_EDGE = 2560
 export const COMPRESS_QUALITY = 80
 const QUALITY = { avif: 55, webp: COMPRESS_QUALITY, jpeg: 82 } as const
@@ -46,8 +47,8 @@ export async function compressImage(data: Buffer, mime: string): Promise<Compres
 
 /**
  * The files of a <picture>: the modern `formats` that came out smaller than the fallback, most efficient first
- * (AVIF, then WebP), then the fallback last. `null` when the image can't be processed (a GIF, an unreadable
- * file, no codec): store it as sent.
+ * (AVIF, then WebP), then the fallback last; a format the runtime can't encode is left out. `null` when the image
+ * can't be processed (a GIF, an unreadable file, no codec): store it as sent.
  */
 export async function imageVariants(data: Buffer, mime: string, formats: readonly ModernFormat[]): Promise<ImageVariant[] | null> {
   const Image = codec()
@@ -59,8 +60,10 @@ export async function imageVariants(data: Buffer, mime: string, formats: readonl
     const fallback: ImageVariant = encoded.length && encoded.length < data.length ? { format, mime: FORMAT_MIME[format], data: encoded } : { format, mime, data }
     const modern: ImageVariant[] = []
     for (const f of MODERN_FORMATS.filter(f => formats.includes(f))) {
-      const out = await encode(Image, data, f)
-      if (out.length && out.length < fallback.data.length) modern.push({ format: f, mime: FORMAT_MIME[f], data: out })
+      // A format this runtime can't encode is left out, not the whole set: Bun's Linux builds have no AV1 encoder,
+      // so there an upload asking for avif,webp gets WebP and the fallback.
+      const out = await encode(Image, data, f).catch(() => null)
+      if (out?.length && out.length < fallback.data.length) modern.push({ format: f, mime: FORMAT_MIME[f], data: out })
     }
     return [...modern, fallback]
   } catch {
