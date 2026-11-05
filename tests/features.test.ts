@@ -10,7 +10,6 @@ import { projectSections } from '../app/utils/projectSections'
 const root = join(import.meta.dir, '..')
 const read = (path: string) => JSON.parse(readFileSync(join(root, path), 'utf8'))
 const { features } = read('features.json') as { features: Array<Record<string, any>> }
-const en = read('i18n/locales/en.json')
 const has = (path: string) => existsSync(join(root, path))
 const panelPaths = features.flatMap(f => f.web?.panel ?? []) as string[]
 // The cloud repo sits next to this one and is not always checked out.
@@ -46,8 +45,13 @@ describe('features.json', () => {
     expect(missing).toEqual([])
   })
 
-  test('every landing key is in en.json', () => {
-    const get = (key: string) => key.split('.').reduce((o: any, k) => o?.[k], en)
+  // The landing page is the hosted edition's (ee/app/pages/index.vue), with its words in ee/i18n/locales: assembled
+  // (ee/ laid over this checkout) or in the cloud repo next to it. With neither there is nothing to check against.
+  test('every landing key is in the landing page\'s en.json', () => {
+    const source = ['ee/i18n/locales/en.json', '../help-bites-cloud/ee/i18n/locales/en.json'].find(has)
+    if (!source) return
+    const words = read(source)
+    const get = (key: string) => key.split('.').reduce((o: any, k) => o?.[k], words)
     const missing = features.filter(f => f.landing?.listed).filter(f => get(f.landing.key) === undefined).map(f => `${f.id}: ${f.landing.key}`)
     expect(missing).toEqual([])
   })

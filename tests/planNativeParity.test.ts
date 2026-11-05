@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { FEATURE_LABELS, FEATURES, STORAGE_TYPES } from '../shared/entitlements'
+import { COUNTERS, FEATURE_LABELS, FEATURES, GAUGES, STORAGE_TYPES } from '../shared/entitlements'
 import { projectSections } from '../app/utils/projectSections'
 
 // The native app hand-ports the plan's feature keys and labels (Plan & usage,
@@ -26,6 +26,19 @@ describe('native plan parity', () => {
     const gated = projectSections.filter(section => section.feature)
     expect(gated.map(section => section.path).sort()).toEqual(Object.keys(screens).sort())
     for (const section of gated) expect(swift(screens[section.path]!)).toContain(JSON.stringify(section.feature))
+  })
+
+  // The Billing section's side-by-side table copies the hosted edition's short limit names (ee/app/utils/cloudPlanCards.ts),
+  // in the order the web lists them. ee/ is laid over this checkout in a cloud build, or sits in the cloud repo next to it.
+  test('the Billing section names every limit as the web\'s Billing tab does', () => {
+    const web = ['ee/app/utils/cloudPlanCards.ts', '../help-bites-cloud/ee/app/utils/cloudPlanCards.ts'].map(path => join(import.meta.dir, '..', path)).find(existsSync)
+    const src = swift('Features/Settings/BillingSection.swift')
+    const native = [...src.matchAll(/\("(\w+)", "([^"]+)"\)/g)].filter(m => (COUNTERS as readonly string[]).includes(m[1]!) || (GAUGES as readonly string[]).includes(m[1]!)).map(m => m[1])
+    expect(native).toEqual([...COUNTERS, ...GAUGES])
+    if (!web) return
+    const block = readFileSync(web, 'utf8').split('const SHORT_LABELS')[1]!.split('}')[0]!
+    const labels = Object.fromEntries([...block.matchAll(/(\w+): '([^']+)'/g)].map(m => [m[1], m[2]]))
+    expect([...COUNTERS, ...GAUGES].filter(metric => !src.includes(`(${JSON.stringify(metric)}, ${JSON.stringify(labels[metric])})`))).toEqual([])
   })
 
   // Campaigns and sequences are tabs of Email now, so the lock sits on those tabs in both apps.

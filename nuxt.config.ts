@@ -40,9 +40,9 @@ export default defineNuxtConfig({
   },
   css: ['~/assets/css/main.css'],
   // Rendered on the server, but only where it buys something: the route rules
-  // below keep the panel a client-side SPA and leave the landing page and the
-  // docs — the pages crawlers and link previews ever see — as real prerendered
-  // HTML.
+  // below keep the panel a client-side SPA and leave the docs — the pages
+  // crawlers and link previews ever see — as real prerendered HTML (the hosted
+  // edition's ee/ layer adds its landing page at "/").
   ssr: true,
   devtools: { enabled: false },
 
@@ -73,7 +73,6 @@ export default defineNuxtConfig({
     '/**': { ssr: false },
     // Prerendered, so served as a static file before server middleware runs:
     // they get the baseline headers here instead (see server/middleware/securityHeaders.ts).
-    '/': { ssr: true, prerender: true, headers: baselineHeaders },
     '/docs': { ssr: true, prerender: true, headers: baselineHeaders },
     '/docs/**': { ssr: true, prerender: true, headers: baselineHeaders },
 

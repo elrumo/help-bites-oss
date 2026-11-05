@@ -47,7 +47,7 @@ A bot asks on the first pull request (`.github/workflows/cla.yml`).
 
 ## What the commercial layer adds
 
-Open sign-up with abuse checks, plans and Stripe billing, sending from a shared domain, verified sending domains and a
+The public landing page with the plans and their prices (a self-hosted server's `/` opens the panel instead), open sign-up with abuse checks, plans and Stripe billing, sending from a shared domain, verified sending domains and a
 staff console. Custom domains for public pages and support email addresses are in both editions; the cloud edition limits them to Pro. It is a [Nuxt layer](https://nuxt.com/docs/getting-started/layers) called `ee/`.
 
 ## How the two builds differ
@@ -94,7 +94,6 @@ answer at boot.
 - `registerBanner` for a strip above every panel page;
 - `setUpgradeAction` for what the plan-limit dialog's and plan locks' Upgrade button does (no action: no button);
 - `registerSidebarItem` for a link in the sidebar;
-- `registerLandingLink` for a link in the landing page's header (the cloud edition's pricing page).
 
 ## Plans and limits
 

@@ -77,11 +77,12 @@ Every new feature, removal, rename, edition change, or a change to what a featur
 1. Add or edit its entry in `features.json` (fields: `id`, `name`, `category`, `summary`, `editions`, `plan`,
    `entitlement`, `status`, `web`, `native`, `api`, `embed`, `landing`). Keep `notBuilt` honest.
 2. Update the prose in `docs/FEATURES.md` (same facts, grouped by where users meet them).
-3. **Landing page** (`app/pages/index.vue`): decide whether it earns a place and record the answer in
-   `landing.listed`.
+3. **Landing page**: it is HelpBites Cloud's, so it lives in the cloud repo (`../help-bites-cloud/ee/app/pages/index.vue`,
+   with the plans in `ee/app/components/CloudPricingPlans.vue`); a self-hosted server's `/` goes to the panel. Decide
+   whether the feature earns a place and record the answer in `landing.listed`.
    - A new feature that a visitor would choose HelpBites for: add a term/desc to the right group in the `features`
-     computed (or a `showcase` entry plus a screenshot in `public/screens/` for a headline feature) with keys under
-     `landing.*` in `i18n/locales/en.json`, and set `landing.key`.
+     computed (or a `showcase` entry plus a screenshot in `ee/public/screens/` for a headline feature) with keys under
+     `landing.*` in the cloud repo's `ee/i18n/locales/en.json`, and set `landing.key`.
    - Small additions to an existing feature: update that feature's `desc` text instead of adding a row.
    - Internal plumbing (a setting, a refactor): `listed: false`.
    - Do not claim anything the code does not do yet; unfinished features stay out of the landing page.

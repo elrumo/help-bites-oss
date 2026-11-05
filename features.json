@@ -1927,7 +1927,7 @@
       "id": "cloud-accounts-billing",
       "name": "Cloud sign-up, plans and billing",
       "category": "cloud",
-      "summary": "Open sign-up, a public pricing page, Free and Pro plans with usage limits, locks on the features a plan leaves out (web and native), Stripe billing with optional Stripe Tax, email verification, verified sending domains, a staff console at /admin (every account and workspace: plans given by hand, suspension, signing an account out, confirming its email), AI credits, 'Powered by HelpBites' branding on Free.",
+      "summary": "Open sign-up, the public landing page with Free and Pro side by side and their Stripe prices (monthly or yearly), Free and Pro plans with usage limits, locks on the features a plan leaves out (web and native), a Billing tab that makes the case for Pro (price, what it unlocks, limits side by side, what is close to running out), Stripe billing with optional Stripe Tax, email verification, verified sending domains, super-admin console, AI credits, 'Powered by HelpBites' branding on Free.",
       "editions": [
         "cloud"
       ],
@@ -1937,10 +1937,12 @@
       "web": {
         "panel": [
           "../help-bites-cloud/ee/app/pages/signup.vue",
-          "../help-bites-cloud/ee/app/pages/admin/index.vue"
+          "../help-bites-cloud/ee/app/pages/superadmin/index.vue",
+          "../help-bites-cloud/ee/app/components/CloudBillingSettings.vue"
         ],
         "public": [
-          "/pricing"
+          "/",
+          "/#pricing"
         ]
       },
       "native": {

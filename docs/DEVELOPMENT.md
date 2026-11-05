@@ -102,7 +102,7 @@ feature is done when it has:
    drop-in `<script>` in `public/` and a Swift snippet.
 5. **Strings** through `$t()` in `i18n/locales/en.json` (add the other five when you can).
 6. **Its entry in `features.json`**, `docs/FEATURES.md`, a line under *Unreleased* in `CHANGELOG.md`, and a decision on the
-   landing page (`landing.listed`).
+   landing page (`landing.listed`; the page and its `landing.*` words are in the cloud repo).
 
 `tests/features.test.ts` fails when `features.json` names a file, route, doc or key that does not exist.
 
