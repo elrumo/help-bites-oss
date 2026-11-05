@@ -1937,7 +1937,7 @@
       "web": {
         "panel": [
           "../help-bites-cloud/ee/app/pages/signup.vue",
-          "../help-bites-cloud/ee/app/pages/superadmin/index.vue",
+          "../help-bites-cloud/ee/app/pages/admin/index.vue",
           "../help-bites-cloud/ee/app/components/CloudBillingSettings.vue"
         ],
         "public": [
