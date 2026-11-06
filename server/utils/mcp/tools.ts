@@ -308,11 +308,12 @@ export const MCP_TOOLS: readonly McpTool[] = [
   },
   {
     name: 'upload_board_comment_attachment', title: 'Upload a planning attachment', method: 'POST', path: '/v1/feedback/attachments',
-    description: 'Uploads one image, file or MP4/MOV video for a planning comment or item (screenshots, screen recordings, logs, documents) and returns its attachment object and download URL. Send the file bytes as base64, then pass the returned object in the `attachments` of comment_on_board_item, create_board_item or update_board_item.',
+    description: 'Uploads one image, file or MP4/MOV video for a planning comment or item (screenshots, screen recordings, logs, documents) and returns its attachment object and download URL. Send either `url`, a public http(s) address HelpBites downloads (no redirects: use the final address; the way to send anything large, such as full-size screenshots or recordings), or the bytes as `contentBase64` with `filename`. Then pass the returned object in the `attachments` of comment_on_board_item, create_board_item or update_board_item.',
     params: {
       project: { ...projectId, in: 'query' },
-      filename: { type: 'string', required: true, description: 'Filename with its extension. Any file type, except programs and scripts (.exe, .sh, .jar, .app…), which are refused.' },
-      contentBase64: { type: 'string', required: true, description: 'The file bytes encoded as standard base64 (decoded: up to 25 MB, or 100 MB for an MP4/MOV video).' }
+      url: { type: 'string', description: 'A public http(s) address of the file. Send this or contentBase64.' },
+      filename: { type: 'string', description: 'Filename with its extension (taken from the url when left out; required with contentBase64). Any file type, except programs and scripts (.exe, .sh, .jar, .app…), which are refused.' },
+      contentBase64: { type: 'string', description: 'The file bytes encoded as standard base64 (decoded: up to 25 MB, or 100 MB for an MP4/MOV video). Send this or url; prefer url for anything over a few hundred KB.' }
     }
   },
   {

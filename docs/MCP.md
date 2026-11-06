@@ -219,7 +219,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `link_board_item` | Link or unlink a feedback post, conversation or related item. |
 | `list_board_item_history` | An item's edit history: what changed, who changed it and from where. |
 | `suggest_board_item_title` | The AI writes a title from a description. Saves nothing. |
-| `upload_board_comment_attachment` | Upload an image, file or MP4/MOV video as base64 and get its download URL, to attach to a comment or an item. |
+| `upload_board_comment_attachment` | Upload an image, file or MP4/MOV video from a public `url` (HelpBites downloads it; use this for large screenshots and recordings) or as base64, and get its download URL, to attach to a comment or an item. |
 | `list_board_item_comments` | Read an item's private comments, threaded replies and attachment URLs. |
 | `comment_on_board_item` | Add a private comment or threaded reply, optionally with uploaded files. |
 | `list_github_refs` | Commits and merged pull requests that mention an item as #12. |
