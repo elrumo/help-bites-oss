@@ -10,7 +10,7 @@ import SwiftUI
   init() { URLCache.shared = URLCache(memoryCapacity: 16 << 20, diskCapacity: 128 << 20) }
   var body: some Scene {
     WindowGroup { RootView(session: session).task { await session.bootstrap() } }
-      .commands { AppCommands() }
+      .commands { AppCommands(); TextSizeCommands() }
       #if os(macOS)
       .defaultSize(width: 1200, height: 800)
       #endif

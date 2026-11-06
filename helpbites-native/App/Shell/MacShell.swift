@@ -17,10 +17,17 @@ struct MacShell: View {
     } detail: {
       NavigationStack(path: $workspace.macPath) {
         RouteView(route: workspace.macSelection).id(workspace.macSelection).routes()
+          // The web's breadcrumb (PageHeader): the section is the title, its project sits under it.
+          .navigationSubtitle(subtitle)
       }
     }
     .navigationSplitViewStyle(.balanced)
     .frame(minWidth: 900, minHeight: 600)
+  }
+
+  private var subtitle: String {
+    if case .project(let id, _) = workspace.macSelection { return workspace.project(id)?.name ?? "" }
+    return session.workspace?.name ?? ""
   }
 
   private var openedSet: Binding<Set<String>> {
@@ -75,6 +82,9 @@ private struct MacSidebar: View {
       }
     }
     .listStyle(.sidebar)
+    // Grows with View › Make Text Bigger, like the rest of the window.
+    .font(.app(size: 13))
+    .environment(\.sidebarRowSize, TextScale.shared.sidebarRowSize)
     .safeAreaInset(edge: .top, spacing: 0) { header }
     .tint(Theme.accent)
   }
@@ -92,9 +102,9 @@ private struct MacSidebar: View {
         Button("Settings…") { workspace.go(.account) }
       } label: {
         HStack(spacing: 6) {
-          Image(systemName: "message.badge.filled.fill").font(.system(size: 11)).foregroundStyle(.white).frame(width: 20, height: 20).background(Theme.accent, in: RoundedRectangle(cornerRadius: 5))
-          Text(session.workspace?.name ?? "HelpBites").font(.system(size: 13, weight: .semibold)).lineLimit(1)
-          Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold)).foregroundStyle(Theme.textMuted)
+          Image(systemName: "message.badge.filled.fill").font(.app(size: 11)).foregroundStyle(.white).frame(width: Metrics.scaled(20), height: Metrics.scaled(20)).background(Theme.accent, in: RoundedRectangle(cornerRadius: 5))
+          Text(session.workspace?.name ?? "HelpBites").font(.app(size: 13, weight: .semibold)).lineLimit(1)
+          Image(systemName: "chevron.down").font(.app(size: 9, weight: .semibold)).foregroundStyle(Theme.textMuted)
         }
       }
       .menuStyle(.borderlessButton)

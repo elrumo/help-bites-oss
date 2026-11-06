@@ -112,12 +112,15 @@ struct ProjectTile: View {
   var icon: String? = nil
   var size: CGFloat = 18
 
+  /// The tile at the current text size, so it keeps pace with the name beside it.
+  private var side: CGFloat { Metrics.scaled(size) }
+
   var body: some View {
     Group {
       if let url = ProjectIcon.url(icon) {
         CachedAsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { initial }
-          .frame(width: size, height: size)
-          .clipShape(RoundedRectangle(cornerRadius: size * 0.28))
+          .frame(width: side, height: side)
+          .clipShape(RoundedRectangle(cornerRadius: side * 0.28))
       } else {
         initial
       }
@@ -127,11 +130,11 @@ struct ProjectTile: View {
 
   private var initial: some View {
     Text(String(name.prefix(1)).uppercased())
-      .font(.system(size: size * 0.56, weight: .semibold))
+      .font(.system(size: side * 0.56, weight: .semibold))
       .foregroundStyle(.white)
-      .frame(width: size, height: size)
-      .background(Theme.projectColor(id: id, accent: accent), in: RoundedRectangle(cornerRadius: size * 0.28))
-      .overlay(RoundedRectangle(cornerRadius: size * 0.28).strokeBorder(.white.opacity(0.12)))
+      .frame(width: side, height: side)
+      .background(Theme.projectColor(id: id, accent: accent), in: RoundedRectangle(cornerRadius: side * 0.28))
+      .overlay(RoundedRectangle(cornerRadius: side * 0.28).strokeBorder(.white.opacity(0.12)))
   }
 }
 

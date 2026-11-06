@@ -233,7 +233,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
   private func rowButton(_ systemImage: String, _ label: LocalizedStringKey, active: Bool = false, enabled: Bool = true, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Image(systemName: systemImage)
-        .font(.system(size: 13, weight: .medium))
+        .font(.app(size: 13, weight: .medium))
         .foregroundStyle(active ? Theme.accentText : Theme.textMuted)
         .frame(width: 30, height: 36)
         .contentShape(Rectangle())
@@ -251,7 +251,7 @@ struct FeedbackBoardSettingsSheet<Header: View>: View {
   /// A row's grip: drag it onto another row of the same list to take that row's place.
   private func grip(_ id: UUID) -> some View {
     Image(systemName: "line.3.horizontal")
-      .font(.system(size: 13, weight: .medium))
+      .font(.app(size: 13, weight: .medium))
       .foregroundStyle(Theme.textDimmed)
       .frame(width: 22, height: 36)
       .contentShape(Rectangle())

@@ -33,6 +33,7 @@
 		1801796081B7AD8042DA1EA6 /* ProjectConversationsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40176AC267ECC00A49544BD /* ProjectConversationsScreen.swift */; };
 		184F2EA125AFD5E0137DFAF9 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 306B85E2B452BB9FD20C380F /* Platform.swift */; };
 		199829F4D330CA5CF981103B /* GithubRefsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A08E70683EC778C2D1CC5E /* GithubRefsSection.swift */; };
+		1A81B46E6D9F3D843D138BDE /* TextScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = C921CCB38F50C462418CCBF3 /* TextScale.swift */; };
 		1B2A678B377B11BC44500765 /* PagesModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8A51F2C508C688A0646E36 /* PagesModels.swift */; };
 		1B3CF4CD22D3C353B7EFBD12 /* Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DBB4A69ADAEAC123BC84F3 /* Push.swift */; };
 		1D246F02996C616ED1FB9E26 /* BlogModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7119627BEEC60A69B83402E5 /* BlogModels.swift */; };
@@ -411,6 +412,7 @@
 		C27728425445C8CB7F0CFE3F /* CampaignsSequences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampaignsSequences.swift; sourceTree = "<group>"; };
 		C54EEEA57049744249352AB9 /* KnowledgeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeScreen.swift; sourceTree = "<group>"; };
 		C754D3FB3FC3D6CE76452776 /* AttachmentsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentsSection.swift; sourceTree = "<group>"; };
+		C921CCB38F50C462418CCBF3 /* TextScale.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextScale.swift; sourceTree = "<group>"; };
 		C9C046F32D80D62F9701168D /* KnowledgeModelScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeModelScreen.swift; sourceTree = "<group>"; };
 		CA3EE44191096B0DA543A539 /* RevenueConnect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueConnect.swift; sourceTree = "<group>"; };
 		CB34A5FCAC463A62FA1A2C45 /* PageFieldInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageFieldInput.swift; sourceTree = "<group>"; };
@@ -484,6 +486,7 @@
 				EADCA1EE05A71ED71E674DB5 /* LanguageControls.swift */,
 				5820CC493D5E44627FF2DDE6 /* PasteTextView.swift */,
 				5D85E56A5924EFCF147316F6 /* ProjectChrome.swift */,
+				C921CCB38F50C462418CCBF3 /* TextScale.swift */,
 				5487CCF1A07C447444712523 /* Theme.swift */,
 			);
 			path = Design;
@@ -1246,6 +1249,7 @@
 				741F75DC9DBF70BDBABAB4F0 /* TeamInvite.swift in Sources */,
 				01C093A3256DD469F2321DCD /* TeamScreen.swift in Sources */,
 				B5E1FAB3CDDE780424D95CA5 /* TestflightSection.swift in Sources */,
+				1A81B46E6D9F3D843D138BDE /* TextScale.swift in Sources */,
 				3007F5A5D41727F257769438 /* Theme.swift in Sources */,
 				225E89A3EA05823FE6FCBBA3 /* TicketTypesScreen.swift in Sources */,
 				B17B5CBDA2CD9865109C5836 /* TransferSection.swift in Sources */,

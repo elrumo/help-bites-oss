@@ -59,7 +59,7 @@ struct EmailColorField: View {
       if clearable, color != nil {
         Button { color = nil } label: {
           Image(systemName: "xmark.circle.fill")
-            .font(.system(size: 16))
+            .font(.app(size: 16))
             .foregroundStyle(Theme.textDimmed)
             .frame(width: 36, height: 40)
             .contentShape(Rectangle())
@@ -147,7 +147,7 @@ struct EmailShadowField: View {
         }
       } label: {
         Image(systemName: "chevron.down")
-          .font(.system(size: 13, weight: .semibold))
+          .font(.app(size: 13, weight: .semibold))
           .foregroundStyle(Theme.textToned)
           .frame(width: 40, height: 40)
           .background(Theme.field, in: RoundedRectangle(cornerRadius: Metrics.radius))
@@ -313,7 +313,7 @@ struct EmailSegmentedPicker<Value: Hashable>: View {
     return Button { selection = option } label: {
       Group {
         if let systemImage {
-          Image(systemName: systemImage(option)).font(.system(size: 15, weight: .medium))
+          Image(systemName: systemImage(option)).font(.app(size: 15, weight: .medium))
         } else {
           Text(title(option)).font(.lnMetaMedium)
         }
@@ -389,14 +389,14 @@ struct EmailPaddingField: View {
       } label: {
         HStack(spacing: 6) {
           Image(systemName: "chevron.right")
-            .font(.system(size: 11, weight: .semibold))
+            .font(.app(size: 11, weight: .semibold))
             .rotationEffect(.degrees(showsSides ? 90 : 0))
           Text("Sides")
           Spacer(minLength: 0)
         }
         .font(.lnMetaMedium)
         .foregroundStyle(Theme.textToned)
-        .frame(minHeight: 36)
+        .frame(minHeight: Metrics.scaled(36))
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
@@ -494,7 +494,7 @@ struct EmailRichTextField: View {
         toolbar
         Rectangle().fill(Theme.border).frame(height: 1)
         TextEditor(text: $html, selection: $selection)
-          .font(.system(size: 14, design: .monospaced))
+          .font(.app(size: 14, design: .monospaced))
           .scrollContentBackground(.hidden)
           .autocorrectionDisabled()
           .padding(.horizontal, 7)
@@ -548,7 +548,7 @@ struct EmailRichTextField: View {
   private func tool(_ systemImage: String, _ label: String, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Image(systemName: systemImage)
-        .font(.system(size: 15, weight: .medium))
+        .font(.app(size: 15, weight: .medium))
         .foregroundStyle(Theme.textToned)
         .frame(maxWidth: .infinity, minHeight: 40)
         .contentShape(Rectangle())
@@ -569,7 +569,7 @@ struct EmailRichTextField: View {
       }
     } label: {
       Text(verbatim: "{{ }}")
-        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+        .font(.app(size: 13, weight: .semibold, design: .monospaced))
         .foregroundStyle(Theme.textToned)
         .frame(maxWidth: .infinity, minHeight: 40)
         .contentShape(Rectangle())
@@ -694,7 +694,7 @@ struct EmailImageSourceField: View {
           CachedAsyncImage(url: url) { image in
             image.resizable().scaledToFill()
           } placeholder: {
-            Image(systemName: "photo").font(.system(size: 16)).foregroundStyle(Theme.textDimmed)
+            Image(systemName: "photo").font(.app(size: 16)).foregroundStyle(Theme.textDimmed)
           }
           .frame(width: 40, height: 40)
           .background(Theme.elevated)

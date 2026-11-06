@@ -32,7 +32,7 @@ struct WelcomeTourSheet: View {
   var body: some View {
     NavigationStack {
       VStack(spacing: 20) {
-        Image(systemName: card.icon).font(.system(size: 28)).foregroundStyle(Theme.accentText)
+        Image(systemName: card.icon).font(.app(size: 28)).foregroundStyle(Theme.accentText)
           .frame(width: 56, height: 56)
           .background(Theme.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 16))
           .accessibilityHidden(true)
@@ -43,7 +43,7 @@ struct WelcomeTourSheet: View {
         VStack(spacing: 8) {
           ForEach(Array(card.points.enumerated()), id: \.offset) { _, point in
             HStack(alignment: .top, spacing: 10) {
-              Image(systemName: "checkmark").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.accentText).padding(.top, 3)
+              Image(systemName: "checkmark").font(.app(size: 12, weight: .semibold)).foregroundStyle(Theme.accentText).padding(.top, 3)
               Text(point).font(.lnMeta).foregroundStyle(Theme.text)
               Spacer(minLength: 0)
             }

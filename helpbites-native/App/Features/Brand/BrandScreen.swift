@@ -175,7 +175,7 @@ struct BrandScreen: View {
         }
         Spacer(minLength: 0)
         Menu { actions(asset) } label: {
-          Image(systemName: "ellipsis").font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 28, height: 28).contentShape(Rectangle())
+          Image(systemName: "ellipsis").font(.app(size: 14, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 28, height: 28).contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
         .accessibilityLabel("Actions for \(asset.name)")
@@ -546,7 +546,7 @@ private struct BrandThumbnail: View {
 
   private var typeLabel: some View {
     Text(asset.typeLabel)
-      .font(.system(size: 12, weight: .semibold, design: .monospaced))
+      .font(.app(size: 12, weight: .semibold, design: .monospaced))
       .foregroundStyle(asset.background == "dark" ? Color.white.opacity(0.75) : Theme.textMuted)
       .padding(.horizontal, 10).padding(.vertical, 6)
       .overlay(RoundedRectangle(cornerRadius: Metrics.radiusSmall).strokeBorder(asset.background == "dark" ? Color.white.opacity(0.25) : Theme.borderAccented))

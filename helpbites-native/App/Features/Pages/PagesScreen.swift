@@ -146,13 +146,13 @@ struct PagesEntriesView: View {
             .padding(.top, 4)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
-          Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+          Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
         }
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       Menu { actions(entry) } label: {
-        Image(systemName: "ellipsis").font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
+        Image(systemName: "ellipsis").font(.app(size: 14, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
       }
       .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
       .disabled(busy == entry.id)
@@ -240,7 +240,7 @@ private struct PagesNewSheet: View {
                 Text("Answer a few questions and it builds the page for you.").font(.lnCaption).foregroundStyle(Theme.textMuted)
               }
               Spacer(minLength: 0)
-              Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+              Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
             }
             .padding(12)
             .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.borderAccented))

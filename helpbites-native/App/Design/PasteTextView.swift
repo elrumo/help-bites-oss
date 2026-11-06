@@ -29,7 +29,7 @@ struct PasteTextView: UIViewRepresentable {
   func updateUIView(_ view: PasteUITextView, context: Context) {
     context.coordinator.parent = self
     view.onPasteImage = onPasteImage
-    view.font = monospaced ? .monospacedSystemFont(ofSize: 12, weight: .regular) : .systemFont(ofSize: 15)
+    view.font = monospaced ? .monospacedSystemFont(ofSize: TextScale.shared.points(12), weight: .regular) : .systemFont(ofSize: TextScale.shared.points(15))
     view.textColor = PlatformColor(Theme.text)
     if view.text != text { view.text = text }
   }
@@ -89,7 +89,7 @@ struct PasteTextView: NSViewRepresentable {
     context.coordinator.parent = self
     guard let view = scroll.documentView as? PasteNSTextView else { return }
     view.onPasteImage = onPasteImage
-    view.font = monospaced ? .monospacedSystemFont(ofSize: 12, weight: .regular) : .systemFont(ofSize: 15)
+    view.font = monospaced ? .monospacedSystemFont(ofSize: TextScale.shared.points(12), weight: .regular) : .systemFont(ofSize: TextScale.shared.points(15))
     view.textColor = PlatformColor(Theme.text)
     if view.string != text { view.string = text }
   }

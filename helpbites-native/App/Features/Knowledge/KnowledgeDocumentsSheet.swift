@@ -72,7 +72,7 @@ struct KnowledgeDocumentsSheet: View {
 
   private func row(_ document: KnowledgeDocumentItem) -> some View {
     HStack(spacing: 12) {
-      Image(systemName: "doc.text").font(.system(size: 16)).foregroundStyle(Theme.textDimmed)
+      Image(systemName: "doc.text").font(.app(size: 16)).foregroundStyle(Theme.textDimmed)
       VStack(alignment: .leading, spacing: 2) {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
           Text(document.originalFilename).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
@@ -89,7 +89,7 @@ struct KnowledgeDocumentsSheet: View {
         ProgressView().frame(width: 32, height: 32)
       } else {
         Menu { actions(for: document) } label: {
-          Image(systemName: "ellipsis").font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
+          Image(systemName: "ellipsis").font(.app(size: 13, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
         }
         .accessibilityLabel("Actions for \(document.originalFilename)")
       }
@@ -247,7 +247,7 @@ struct KnowledgeImportSheet: View {
         }
       }
       VStack(spacing: 10) {
-        Image(systemName: "arrow.up.doc").font(.system(size: 26)).foregroundStyle(Theme.textDimmed)
+        Image(systemName: "arrow.up.doc").font(.app(size: 26)).foregroundStyle(Theme.textDimmed)
         Text("A .md or .txt file, up to 4 MB").font(.lnMeta).foregroundStyle(Theme.textMuted)
         Button("Choose a file") { picking = true }.buttonStyle(.lnSecondaryCompact)
         if let file {
@@ -305,7 +305,7 @@ struct KnowledgeImportSheet: View {
           CardRow(divider: entry.id != entries.last?.id) {
             HStack(alignment: .top, spacing: 10) {
               Button { entry.include.toggle() } label: {
-                Image(systemName: entry.include ? "checkmark.square.fill" : "square").font(.system(size: 17))
+                Image(systemName: entry.include ? "checkmark.square.fill" : "square").font(.app(size: 17))
                   .foregroundStyle(entry.include ? Theme.accent : Theme.textDimmed)
               }
               .buttonStyle(.plain)
@@ -336,8 +336,8 @@ struct KnowledgeImportSheet: View {
           ProgressView().controlSize(.large)
         }
       }
-      .font(.system(size: 30))
-      .frame(height: 40)
+      .font(.app(size: 30))
+      .frame(height: Metrics.scaled(40))
       Text(documentStatus == "failed" ? "Import failed while indexing. The FAQs were saved; you can reindex from the model page." : documentStatus == "processed" ? "Imported and indexed." : "Importing and indexing…")
         .font(.lnCallout).foregroundStyle(Theme.text).multilineTextAlignment(.center)
       if let stats {

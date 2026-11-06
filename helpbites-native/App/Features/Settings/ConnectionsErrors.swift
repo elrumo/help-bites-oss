@@ -46,7 +46,7 @@ struct ErrorServersSection: View {
         } else {
           ForEach(servers) { server in
             HStack(spacing: 12) {
-              Image(systemName: "ladybug").font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
+              Image(systemName: "ladybug").font(.app(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
               VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) { Text(server.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1); Tag(text: server.providerName) }
                 Text(server.builtIn ? String(localized: "Set in this server's environment") : server.url).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
@@ -57,7 +57,7 @@ struct ErrorServersSection: View {
                 IconButton(systemImage: "trash", label: "Remove \(server.name)") { removing = server }
               }
             }
-            .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 48)
+            .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: Metrics.scaled(48))
             .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
           }
         }

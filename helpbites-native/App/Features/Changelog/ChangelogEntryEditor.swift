@@ -219,7 +219,7 @@ struct ChangelogEntryEditor: View {
             .buttonStyle(.plain).accessibilityLabel("Clear the date")
           Spacer(minLength: 0)
         }
-        .frame(minHeight: 40)
+        .frame(minHeight: Metrics.scaled(40))
       } else {
         Button { draft.day = FeedbackFormat.day(Date()) } label: {
           HStack {
@@ -256,7 +256,7 @@ struct ChangelogEntryEditor: View {
 
   private func notice(_ symbol: String, _ text: LocalizedStringKey) -> some View {
     HStack(alignment: .top, spacing: 8) {
-      Image(systemName: symbol).font(.system(size: 12)).foregroundStyle(Theme.accentText).padding(.top, 2)
+      Image(systemName: symbol).font(.app(size: 12)).foregroundStyle(Theme.accentText).padding(.top, 2)
       Text(text).font(.lnCaption).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
     }
     .padding(.horizontal, 12).padding(.vertical, 8)
@@ -339,7 +339,7 @@ struct ChangelogEntryEditor: View {
 
   private func sourceRow(_ source: ChangelogSource, _ entry: ChangelogEntry) -> some View {
     HStack(spacing: 8) {
-      Image(systemName: source.symbol).font(.system(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 16).accessibilityLabel(source.kindLabel)
+      Image(systemName: source.symbol).font(.app(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 16).accessibilityLabel(source.kindLabel)
       Button {
         if source.kind == "board" {
           if board == nil { board = BoardStore(projectId: store.projectId, workspace: workspace) }
@@ -358,7 +358,7 @@ struct ChangelogEntryEditor: View {
       .disabled(source.kind != "board")
       ChangelogChip(text: source.done ? String(localized: "Done") : (source.status.isEmpty ? String(localized: "Open") : source.status), tint: source.done ? Theme.success : Theme.textToned)
       Button { Task { await setLink(entry, source.kind, source.id, false) } } label: {
-        Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textDimmed).frame(width: 24, height: 24).contentShape(Rectangle())
+        Image(systemName: "xmark").font(.app(size: 10, weight: .bold)).foregroundStyle(Theme.textDimmed).frame(width: 24, height: 24).contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .disabled(!busy.isEmpty)
@@ -409,7 +409,7 @@ struct ChangelogEntryEditor: View {
   @ViewBuilder private func replySection(_ entry: ChangelogEntry) -> some View {
     if store.state(entry) == .live, let linked = linkedConversations, linked.count > 0 {
       HStack(spacing: 10) {
-        Image(systemName: "bubble.left.and.bubble.right").font(.system(size: 14)).foregroundStyle(Theme.accentText)
+        Image(systemName: "bubble.left.and.bubble.right").font(.app(size: 14)).foregroundStyle(Theme.accentText)
         Text(linked.count == 1 ? "This entry answers 1 conversation. You can tell them it shipped." : "This entry answers \(linked.count) conversations. You can tell them it shipped.")
           .font(.lnMeta).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
         Spacer(minLength: 4)

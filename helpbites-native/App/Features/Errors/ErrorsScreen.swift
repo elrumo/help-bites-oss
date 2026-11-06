@@ -222,6 +222,7 @@ struct ErrorsScreen: View {
       if !search.isEmpty { query["q"] = search }
       if !cursor.isEmpty { query["cursor"] = cursor }
       if !linkFilter.isEmpty { query["link"] = linkFilter }
+      if issues.isEmpty, cursor.isEmpty, let last: ErrorIssuePage = session.peek("/v1/admin/errors", query: query) { issues = last.issues; loading = false }
       let page: ErrorIssuePage = try await session.get("/v1/admin/errors", query: query)
       guard mine == latest else { return }
       issues = cursor.isEmpty ? page.issues : issues + page.issues

@@ -59,6 +59,7 @@ private struct BlogView: View {
   var body: some View {
     content
       .panelScreen("Blog")
+      .projectHeader(store.projectId, "Blog", detail: store.loaded ? (store.draftCount == 1 ? String(localized: "\(store.liveCount) live, 1 draft") : String(localized: "\(store.liveCount) live, \(store.draftCount) drafts")) : nil)
       .toolbar { toolbar }
       .sheet(item: $sheet) { route in
         switch route {
@@ -133,15 +134,6 @@ private struct BlogView: View {
   }
 
   @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-    ToolbarItem(placement: .principal) {
-      VStack(spacing: 1) {
-        ProjectBreadcrumb(projectId: store.projectId, title: "Blog")
-        if store.loaded {
-          Text(store.draftCount == 1 ? String(localized: "\(store.liveCount) live, 1 draft") : String(localized: "\(store.liveCount) live, \(store.draftCount) drafts"))
-            .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
-        }
-      }
-    }
     if store.loaded {
       ToolbarItemGroup(placement: .topBarTrailing) {
         Menu {
@@ -203,7 +195,7 @@ private struct BlogView: View {
         }
         ForEach(store.shown) { post in row(post) }
         if store.shown.isEmpty {
-          Text("No posts match.").font(.lnCaption).foregroundStyle(Theme.textMuted).linearRow().frame(minHeight: 36)
+          Text("No posts match.").font(.lnCaption).foregroundStyle(Theme.textMuted).linearRow().frame(minHeight: Metrics.scaled(36))
         }
       }
       .linearList()
@@ -238,14 +230,14 @@ private struct BlogView: View {
         VStack(alignment: .leading, spacing: 5) {
           HStack(alignment: .firstTextBaseline, spacing: 5) {
             Text(post.title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(2).multilineTextAlignment(.leading)
-            if post.featured { Image(systemName: "star.fill").font(.system(size: 11)).foregroundStyle(Theme.warning).accessibilityLabel("Featured") }
-            if post.membersOnly { Image(systemName: "lock.fill").font(.system(size: 11)).foregroundStyle(Theme.textMuted).accessibilityLabel("Members only") }
+            if post.featured { Image(systemName: "star.fill").font(.app(size: 11)).foregroundStyle(Theme.warning).accessibilityLabel("Featured") }
+            if post.membersOnly { Image(systemName: "lock.fill").font(.app(size: 11)).foregroundStyle(Theme.textMuted).accessibilityLabel("Members only") }
           }
           HStack(spacing: 6) {
             BlogChip(text: post.state.label, tint: post.state.tint)
             if post.publishedAt != nil { Text(DateText.day(post.publishedAt)).font(.lnCaption).foregroundStyle(Theme.textMuted) }
             if let tag = post.tags.first { Text("#\(tag)").font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1) }
-            if post.newsletter != nil { Image(systemName: "envelope").font(.system(size: 11)).foregroundStyle(Theme.textMuted).accessibilityLabel("Sent as a newsletter") }
+            if post.newsletter != nil { Image(systemName: "envelope").font(.app(size: 11)).foregroundStyle(Theme.textMuted).accessibilityLabel("Sent as a newsletter") }
           }
         }
         Spacer(minLength: 0)
@@ -322,7 +314,7 @@ private struct BlogView: View {
           Divider()
           Button(role: .destructive) { deletingComment = comment } label: { Label("Delete comment", systemImage: "trash") }
         } label: {
-          Image(systemName: "ellipsis").font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 28, height: 22).contentShape(Rectangle())
+          Image(systemName: "ellipsis").font(.app(size: 13, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 28, height: 22).contentShape(Rectangle())
         }
         .accessibilityLabel("Comment actions")
       }

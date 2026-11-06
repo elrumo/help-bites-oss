@@ -29,7 +29,7 @@ struct TestflightSection: View {
           ForEach(tiles(report.totals), id: \.label) { tile in
             VStack(alignment: .leading, spacing: 4) {
               Text(tile.label).font(.lnCaption).foregroundStyle(Theme.textMuted)
-              Text(tile.value.formatted()).font(.system(size: 24, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted).lineLimit(1).minimumScaleFactor(0.6)
+              Text(tile.value.formatted()).font(.app(size: 24, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted).lineLimit(1).minimumScaleFactor(0.6)
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading)
             .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))

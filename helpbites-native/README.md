@@ -11,11 +11,19 @@ address for a physical device, then run the `HelpBitesNative` scheme on a
 simulator, a device, or My Mac.
 
 Launch speed: the signed-in shell paints from `SnapshotCache` (last `/me`,
-projects and inbox page) before the network answers, startup requests run in
+projects, inbox page and Overview) before the network answers, startup requests run in
 parallel, notification permission waits until after sign-in, and remote images
-go through `CachedAsyncImage`. Release builds use whole-module optimisation and
+go through `CachedAsyncImage` (decoded off the main thread). `SessionStore` keeps the
+last answer to each GET for the session: a screen fills an empty page from
+`session.peek(path, query:)` and then loads as usual. Release builds use whole-module optimisation and
 thin LTO. The simulator default is
 `http://localhost:3100`.
+
+Text size: every font goes through `Font.app(size:)` or the `ln*` styles in `Design/Theme.swift`, which multiply
+by `TextScale` (Settings › Text size, View › Make Text Bigger/Smaller on the Mac). Never write `.system(size:)` in a
+screen, and size a box that holds text with `Metrics.scaled(_:)` so it grows with it. The Mac starts at 110%.
+On the Mac the session token's keychain service is the bundle id, so a dev build under another bundle id keeps its
+own session.
 
 The companion server changes live outside this directory: `Device` schema,
 device registration routes, and the event-bus APNs fan-out. Push stays disabled

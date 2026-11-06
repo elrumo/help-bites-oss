@@ -143,19 +143,15 @@ struct KnowledgeModelScreen: View {
       }
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 8) {
-          Menu {
+          FilterMenu(value: query.status.isEmpty ? String(localized: "All statuses") : knowledgeStatusLabel(query.status), active: !query.status.isEmpty) {
             Button("All statuses") { query.status = ""; query.skip = 0 }
             Divider()
             statusChoices { query.status = $0; query.skip = 0 }
-          } label: {
-            KnowledgeMenuPill(label: query.status.isEmpty ? String(localized: "All statuses") : knowledgeStatusLabel(query.status), isActive: !query.status.isEmpty)
           }
-          Menu {
+          FilterMenu(value: themes.first { $0.id == query.theme }?.pathCache ?? String(localized: "All themes"), active: !query.theme.isEmpty) {
             Button("All themes") { query.theme = ""; query.skip = 0 }
             Divider()
             ForEach(themes) { theme in Button(theme.pathCache) { query.theme = theme.id; query.skip = 0 } }
-          } label: {
-            KnowledgeMenuPill(label: themes.first { $0.id == query.theme }?.pathCache ?? String(localized: "All themes"), isActive: !query.theme.isEmpty)
           }
         }
       }
@@ -217,7 +213,7 @@ struct KnowledgeModelScreen: View {
       HStack(spacing: 10) {
         if selecting {
           Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 17))
+            .font(.app(size: 17))
             .foregroundStyle(selected ? Theme.accent : Theme.textDimmed)
         }
         VStack(alignment: .leading, spacing: 3) {
@@ -292,7 +288,7 @@ struct KnowledgeModelScreen: View {
 
   private func barLabel(_ title: String, _ systemImage: String, _ labelled: Bool, tint: Color = Theme.text) -> some View {
     HStack(spacing: 6) {
-      Image(systemName: systemImage).font(.system(size: 13, weight: .medium))
+      Image(systemName: systemImage).font(.app(size: 13, weight: .medium))
       if labelled { Text(LocalizedStringKey(title)) }
     }
     .font(.lnMetaMedium)
@@ -401,6 +397,6 @@ struct KnowledgeModelScreen: View {
 /// Icon and count, tight, for the row's assistants count.
 private struct KnowledgeCompactLabel: LabelStyle {
   func makeBody(configuration: Configuration) -> some View {
-    HStack(spacing: 3) { configuration.icon.font(.system(size: 10)); configuration.title }
+    HStack(spacing: 3) { configuration.icon.font(.app(size: 10)); configuration.title }
   }
 }

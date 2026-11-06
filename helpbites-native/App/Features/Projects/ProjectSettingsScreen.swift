@@ -158,7 +158,7 @@ struct ProjectSettingsScreen: View {
             ForEach(Self.swatches, id: \.self) { swatch in
               Button { form.accent = swatch } label: {
                 Circle().fill(Color(hexString: swatch) ?? Theme.accent).frame(width: 26, height: 26)
-                  .overlay { if form.accent.lowercased() == swatch { Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(.white) } }
+                  .overlay { if form.accent.lowercased() == swatch { Image(systemName: "checkmark").font(.app(size: 11, weight: .bold)).foregroundStyle(.white) } }
                   .padding(2)
                   .overlay { if form.accent.lowercased() == swatch { Circle().strokeBorder(Theme.textHighlighted, lineWidth: 2) } }
               }
@@ -340,13 +340,13 @@ struct ProjectSettingsScreen: View {
             CachedAsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
               .frame(width: 24, height: 24).clipShape(RoundedRectangle(cornerRadius: 6))
           } else {
-            Text(String((form.name.isEmpty ? "?" : form.name).prefix(1)).uppercased()).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white)
+            Text(String((form.name.isEmpty ? "?" : form.name).prefix(1)).uppercased()).font(.app(size: 11, weight: .semibold)).foregroundStyle(.white)
               .frame(width: 24, height: 24).background(accent, in: RoundedRectangle(cornerRadius: 6))
           }
-          Text(form.name.isEmpty ? String(localized: "Your project") : form.name).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+          Text(form.name.isEmpty ? String(localized: "Your project") : form.name).font(.app(size: 13, weight: .semibold)).foregroundStyle(Theme.textHighlighted).lineLimit(1)
           Spacer(minLength: 0)
         }
-        .padding(.horizontal, 12).frame(height: 44)
+        .padding(.horizontal, 12).frame(height: Metrics.scaled(44))
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.border).frame(height: 0.5) }
         VStack(alignment: .leading, spacing: 10) {
           if !form.chatNotice.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -357,13 +357,13 @@ struct ProjectSettingsScreen: View {
               CachedAsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
                 .frame(width: 24, height: 24).clipShape(Circle())
             } else {
-              Image(systemName: "sparkles").font(.system(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).background(Theme.elevated, in: Circle())
+              Image(systemName: "sparkles").font(.app(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).background(Theme.elevated, in: Circle())
             }
-            Text("Hi! How can we help?").font(.system(size: 13)).foregroundStyle(Theme.text)
+            Text("Hi! How can we help?").font(.app(size: 13)).foregroundStyle(Theme.text)
               .padding(.horizontal, 12).padding(.vertical, 7).background(Theme.elevated, in: RoundedRectangle(cornerRadius: 16))
             Spacer(minLength: 0)
           }
-          Text("My export is stuck").font(.system(size: 13)).foregroundStyle(.white)
+          Text("My export is stuck").font(.app(size: 13)).foregroundStyle(.white)
             .padding(.horizontal, 12).padding(.vertical, 7).background(accent, in: RoundedRectangle(cornerRadius: 16))
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
@@ -417,7 +417,7 @@ struct ProjectSettingsScreen: View {
       if let url = ProjectIcon.url(url(of: image)) {
         CachedAsyncImage(url: url) { $0.resizable().scaledToFit() } placeholder: { ProgressView() }
       } else {
-        Image(systemName: image.placeholder).font(.system(size: 18)).foregroundStyle(Theme.textDimmed)
+        Image(systemName: image.placeholder).font(.app(size: 18)).foregroundStyle(Theme.textDimmed)
       }
     }
     .frame(width: 48, height: 48)

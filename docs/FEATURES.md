@@ -723,7 +723,15 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 
 [helpbites-native/README.md](../helpbites-native/README.md)
 
-- **One SwiftUI app.** Tabs on iPhone, a sidebar on iPad, and Mac via Catalyst.
+- **One SwiftUI app.** Tabs on iPhone, a sidebar on iPad, and a native Mac window (not Catalyst): the sidebar beside
+  the page, the section as the window title with its project and counts under it (the web's breadcrumb: *Planning*,
+  *LightBites · 243 items, 41 on the roadmap*), filters as the system's pull-down buttons, ⌘[ to go back, and a ⌘K
+  palette driven from the keyboard (↑ ↓, Return, Esc).
+- **Text size.** *Settings → Text size* makes every screen's text, rows and controls larger or smaller (85% to 150%),
+  kept on the device. On the Mac, *View → Make Text Bigger / Make Text Smaller* (⌘+ and ⌘−) and *Actual Size* (⌥⌘0) do
+  the same, and the sidebar follows. The Mac starts at 110%; iPhone and iPad at 100%.
+- **Fast to open.** The shell, the Overview and the inbox paint from what the last launch showed, then refresh; a
+  page you come back to shows its last contents at once while it reloads (Overview, feedback, errors, contacts).
 - **Project settings in pages.** A project's Settings open on a list like Apple's Settings: who the project is, then
   groups (*Project*: General, Branding, Company, Sidebar; *Chat and people*: Chat widget, Notifications, Collaborators;
   *Publishing and code*: Public hub, Custom domains, GitHub repos; *Advanced*: Data, Keys and webhooks), each opening
@@ -750,7 +758,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Push notifications.** A new customer message can notify the device. This needs
   Apple push (APNs) credentials on the server.
 - **Keyboard shortcuts** on iPad and Mac, and a ⌘K palette that also searches
-  conversations and knowledge.
+  conversations and knowledge. In a planning item, ⇧⌘C (or *Copy link* in its toolbar) copies the item's web
+  address, `/projects/<id>/board?item=<id>`.
 - **The same navigation and prerequisites.** Sections grouped and hideable per
   project, the setup checklist and needs-attention list, the assistant readiness
   strip with test answer, the email setup strip and the one Email section.

@@ -69,7 +69,7 @@ struct AIScreen: View {
       return ("circle.slash", String(localized: "No AI set up"), String(localized: "Connect a provider to use the assistants, the email designer and error notes."))
     }()
     return HStack(spacing: 12) {
-      Image(systemName: icon).font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
+      Image(systemName: icon).font(.app(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
       VStack(alignment: .leading, spacing: 2) {
         Text(title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
         Text(detail).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
@@ -85,7 +85,7 @@ struct AIScreen: View {
     HStack(spacing: 12) {
       Button { use(provider) } label: {
         Image(systemName: provider.id == state.ai.active ? "largecircle.fill.circle" : "circle")
-          .font(.system(size: 16)).foregroundStyle(provider.id == state.ai.active ? Theme.accent : Theme.textDimmed)
+          .font(.app(size: 16)).foregroundStyle(provider.id == state.ai.active ? Theme.accent : Theme.textDimmed)
           .frame(width: 28, height: 28).contentShape(Rectangle())
       }
       .buttonStyle(.plain).disabled(!editable || saving)
@@ -231,7 +231,7 @@ private struct AIFormView: View {
       if let models = preset?.models, !models.isEmpty {
         Menu {
           ForEach(models, id: \.self) { model in Button(model) { text.wrappedValue = model } }
-        } label: { Image(systemName: "chevron.up.chevron.down").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 40) }
+        } label: { Image(systemName: "chevron.up.chevron.down").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 40) }
           .menuIndicator(.hidden).fixedSize()
           #if os(macOS)
           .menuStyle(.borderlessButton)

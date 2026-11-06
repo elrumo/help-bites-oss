@@ -448,7 +448,7 @@ struct PagesChatPanel: View {
   private func starterButton(_ starter: EmailChatSuggestion) -> some View {
     Button { _ = chat.send(starter.prompt) } label: {
       HStack(alignment: .top, spacing: 10) {
-        Image(systemName: starter.systemImage).font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.accentText).frame(width: 16).padding(.top, 1)
+        Image(systemName: starter.systemImage).font(.app(size: 13, weight: .medium)).foregroundStyle(Theme.accentText).frame(width: 16).padding(.top, 1)
         VStack(alignment: .leading, spacing: 2) {
           Text(starter.label).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
           Text(starter.prompt).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(2).multilineTextAlignment(.leading)
@@ -502,7 +502,7 @@ struct PagesChatPanel: View {
   }
 
   private var avatar: some View {
-    Image(systemName: "sparkles").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.accentText)
+    Image(systemName: "sparkles").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.accentText)
       .frame(width: 22, height: 22).background(Theme.elevated, in: Circle())
   }
 
@@ -588,7 +588,7 @@ struct PagesChatPanel: View {
 
   private var errorLine: some View {
     HStack(spacing: 8) {
-      Image(systemName: "exclamationmark.circle").font(.system(size: 12, weight: .medium))
+      Image(systemName: "exclamationmark.circle").font(.app(size: 12, weight: .medium))
       Text(chat.error).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
       Button("Retry") { chat.retry() }.buttonStyle(GhostButtonStyle(tint: Theme.error)).disabled(chat.busy)
     }
@@ -599,15 +599,15 @@ struct PagesChatPanel: View {
 
   private func selectionPill(_ block: CmsBlock) -> some View {
     HStack(spacing: 6) {
-      Image(systemName: "cube").font(.system(size: 11, weight: .semibold))
+      Image(systemName: "cube").font(.app(size: 11, weight: .semibold))
       Text(library[block.component]?.name ?? block.component).lineLimit(1)
       Button { onSelect(nil) } label: {
-        Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 20, height: 20).contentShape(Circle())
+        Image(systemName: "xmark").font(.app(size: 9, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 20, height: 20).contentShape(Circle())
       }
       .buttonStyle(.plain).accessibilityLabel("Clear selection")
     }
     .font(.lnCaptionMedium).foregroundStyle(Theme.textToned)
-    .padding(.leading, 10).padding(.trailing, 3).frame(height: 26)
+    .padding(.leading, 10).padding(.trailing, 3).frame(height: Metrics.scaled(26))
     .background(Theme.elevated, in: Capsule())
     .overlay(Capsule().strokeBorder(Theme.border))
   }
@@ -637,12 +637,12 @@ struct PagesChatPanel: View {
         .font(.lnBody).lineLimit(1...6).focused($focused).padding(.vertical, 6).padding(.leading, 8)
       if chat.busy {
         Button { chat.stop() } label: {
-          Image(systemName: "stop.circle.fill").font(.system(size: 26)).foregroundStyle(Theme.textHighlighted).frame(width: 32, height: 32).contentShape(Circle())
+          Image(systemName: "stop.circle.fill").font(.app(size: 26)).foregroundStyle(Theme.textHighlighted).frame(width: 32, height: 32).contentShape(Circle())
         }
         .buttonStyle(.plain).accessibilityLabel("Stop")
       } else {
         Button(action: submit) {
-          Image(systemName: "arrow.up.circle.fill").font(.system(size: 26)).foregroundStyle(canSend ? Theme.accent : Theme.textDimmed).frame(width: 32, height: 32).contentShape(Circle())
+          Image(systemName: "arrow.up.circle.fill").font(.app(size: 26)).foregroundStyle(canSend ? Theme.accent : Theme.textDimmed).frame(width: 32, height: 32).contentShape(Circle())
         }
         .buttonStyle(.plain).disabled(!canSend).keyboardShortcut(.return, modifiers: .command).accessibilityLabel("Send")
       }

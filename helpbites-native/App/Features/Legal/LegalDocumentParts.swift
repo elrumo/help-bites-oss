@@ -130,7 +130,7 @@ struct LegalSectionCard: View {
       HStack(spacing: 8) {
         TextField("Heading", text: $section.heading)
           .font(.lnRow).textFieldStyle(.plain)
-          .padding(.horizontal, 10).frame(minHeight: 36)
+          .padding(.horizontal, 10).frame(minHeight: Metrics.scaled(36))
           .background(Theme.field, in: RoundedRectangle(cornerRadius: Metrics.radius))
           .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
           .accessibilityLabel("Heading of section \(index + 1)")

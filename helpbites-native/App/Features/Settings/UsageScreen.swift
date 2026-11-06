@@ -54,7 +54,7 @@ struct UsageScreen: View {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), alignment: .leading)], alignment: .leading, spacing: 8) {
               ForEach(snapshot.included, id: \.label) { item in
                 HStack(spacing: 8) {
-                  Image(systemName: item.on ? "checkmark" : "xmark").font(.system(size: 11, weight: .semibold)).foregroundStyle(item.on ? Theme.accentText : Theme.textDimmed).frame(width: 16)
+                  Image(systemName: item.on ? "checkmark" : "xmark").font(.app(size: 11, weight: .semibold)).foregroundStyle(item.on ? Theme.accentText : Theme.textDimmed).frame(width: 16)
                   Text(item.label).font(.lnMeta).foregroundStyle(item.on ? Theme.text : Theme.textMuted)
                   Spacer(minLength: 0)
                 }
@@ -108,7 +108,7 @@ struct UsageScreen: View {
                         let project = workspace.projects.first { $0.id == id }
                         ProjectTile(id: id, name: row.name, accent: project?.theme.accent, icon: project?.iconUrl, size: 20)
                       } else {
-                        Image(systemName: "building.2").font(.system(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 20)
+                        Image(systemName: "building.2").font(.app(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 20)
                       }
                       share(row.id == nil ? String(localized: "Whole workspace") : row.name, bytes: row.bytes, of: storage)
                     }

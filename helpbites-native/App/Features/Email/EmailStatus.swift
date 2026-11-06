@@ -135,13 +135,13 @@ struct EmailToneBadge: View {
   let tone: EmailTone
   var body: some View {
     HStack(spacing: 4) {
-      if let systemImage { Image(systemName: systemImage).font(.system(size: 10, weight: .semibold)) }
+      if let systemImage { Image(systemName: systemImage).font(.app(size: 10, weight: .semibold)) }
       Text(label).lineLimit(1)
     }
     .font(.lnCaptionMedium)
     .foregroundStyle(tone == .neutral ? Theme.textToned : tone.color)
     .padding(.horizontal, 8)
-    .frame(height: 22)
+    .frame(height: Metrics.scaled(22))
     .background((tone == .neutral ? Theme.textMuted : tone.color).opacity(0.12), in: Capsule())
   }
 }
@@ -154,7 +154,7 @@ struct EmailNotice: View {
   var tone: EmailTone = .neutral
   var body: some View {
     HStack(alignment: .top, spacing: 10) {
-      Image(systemName: systemImage).font(.system(size: 14, weight: .medium)).foregroundStyle(tone == .neutral ? Theme.textMuted : tone.color)
+      Image(systemName: systemImage).font(.app(size: 14, weight: .medium)).foregroundStyle(tone == .neutral ? Theme.textMuted : tone.color)
       VStack(alignment: .leading, spacing: 2) {
         Text(title).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
         if let message, !message.isEmpty { Text(message).font(.lnCaption).foregroundStyle(Theme.textMuted).textSelection(.enabled) }
@@ -190,7 +190,7 @@ struct EmailSetupStrip: View {
       VStack(alignment: .leading, spacing: 6) {
         HStack(spacing: 8) {
           Image(systemName: blocking ? "exclamationmark.triangle" : "info.circle")
-            .font(.system(size: 14, weight: .medium))
+            .font(.app(size: 14, weight: .medium))
             .foregroundStyle(blocking ? Theme.warning : Theme.textMuted)
           Text(blocking ? "Email cannot go out yet" : "Email works; one thing is worth fixing").font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
           Spacer(minLength: 8)

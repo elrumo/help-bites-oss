@@ -66,26 +66,30 @@ enum Theme {
 }
 
 // Type scale: Linear sets UI at 13pt with 12pt metadata; iOS reads better a
-// step up, so body copy is 15pt and lists use 14pt titles.
+// step up, so body copy is 15pt and lists use 14pt titles. Every size is
+// multiplied by the text size picked in Settings (TextScale).
 extension Font {
-  static let lnTitle = Font.system(size: 20, weight: .semibold)
-  static let lnHeading = Font.system(size: 15, weight: .semibold)
-  static let lnBody = Font.system(size: 15)
-  static let lnRow = Font.system(size: 14, weight: .medium)
-  static let lnCallout = Font.system(size: 14)
-  static let lnMeta = Font.system(size: 13)
-  static let lnMetaMedium = Font.system(size: 13, weight: .medium)
-  static let lnCaption = Font.system(size: 12)
-  static let lnCaptionMedium = Font.system(size: 12, weight: .medium)
-  static let lnMono = Font.system(size: 12, design: .monospaced)
+  static var lnTitle: Font { .app(size: 20, weight: .semibold) }
+  static var lnHeading: Font { .app(size: 15, weight: .semibold) }
+  static var lnBody: Font { .app(size: 15) }
+  static var lnRow: Font { .app(size: 14, weight: .medium) }
+  static var lnCallout: Font { .app(size: 14) }
+  static var lnMeta: Font { .app(size: 13) }
+  static var lnMetaMedium: Font { .app(size: 13, weight: .medium) }
+  static var lnCaption: Font { .app(size: 12) }
+  static var lnCaptionMedium: Font { .app(size: 12, weight: .medium) }
+  static var lnMono: Font { .app(size: 12, design: .monospaced) }
 }
 
 enum Metrics {
+  /// A control height or tile size at the current text size, so taller text never clips.
+  static func scaled(_ value: CGFloat) -> CGFloat { (value * MainActor.assumeIsolated { TextScale.shared.factor }).rounded() }
   static let radiusSmall: CGFloat = 6
   static let radius: CGFloat = 8
   static let radiusLarge: CGFloat = 12
   static let radiusXL: CGFloat = 16
-  static let rowHeight: CGFloat = 44
+  /// A list row, at the current text size.
+  static var rowHeight: CGFloat { scaled(44) }
   static let gutter: CGFloat = 16
 }
 

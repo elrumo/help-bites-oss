@@ -69,7 +69,7 @@ struct KnowledgeScreen: View {
 
   private func row(_ model: KnowledgeModel) -> some View {
     HStack(spacing: 12) {
-      Image(systemName: "book.closed").font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 18)
+      Image(systemName: "book.closed").font(.app(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 18)
       Text(model.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1).layoutPriority(1)
       Text(model.description).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
       Spacer(minLength: 8)

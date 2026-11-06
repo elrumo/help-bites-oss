@@ -401,7 +401,7 @@ struct AssistantReadinessStrip: View {
     VStack(alignment: .leading, spacing: 12) {
       HStack(spacing: 8) {
         Image(systemName: readiness.live ? "checkmark.circle" : "exclamationmark.triangle")
-          .font(.system(size: 14, weight: .medium)).foregroundStyle(tint)
+          .font(.app(size: 14, weight: .medium)).foregroundStyle(tint)
         Text(readiness.live ? "Answering customers by itself" : "Not answering customers by itself yet")
           .font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
       }
@@ -420,7 +420,7 @@ struct AssistantReadinessStrip: View {
   private func line(_ check: AssistantReadiness.Check) -> some View {
     HStack(alignment: .top, spacing: 6) {
       Image(systemName: check.ok ? "checkmark" : "xmark")
-        .font(.system(size: 11, weight: .semibold)).foregroundStyle(check.ok ? Theme.success : Theme.warning)
+        .font(.app(size: 11, weight: .semibold)).foregroundStyle(check.ok ? Theme.success : Theme.warning)
         .frame(width: 14, height: 18)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 2) {
@@ -452,11 +452,11 @@ struct AssistantSelectField: View {
           .foregroundStyle(current == nil ? Theme.textDimmed : Theme.text)
           .lineLimit(1)
         Spacer(minLength: 0)
-        Image(systemName: "chevron.up.chevron.down").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textMuted)
+        Image(systemName: "chevron.up.chevron.down").font(.app(size: 11, weight: .medium)).foregroundStyle(Theme.textMuted)
       }
       .font(.lnBody)
       .padding(.horizontal, 12)
-      .frame(minHeight: 40)
+      .frame(minHeight: Metrics.scaled(40))
       .background(Theme.field, in: RoundedRectangle(cornerRadius: Metrics.radius))
       .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
       .contentShape(RoundedRectangle(cornerRadius: Metrics.radius))

@@ -28,6 +28,9 @@ struct BoardScreen: View {
   /// The feedback page's statuses, for a linked post's badge.
   var feedbackStatuses: [FeedbackStatusDefinition] = []
   var items: [BoardItem] = []
+  /// The item whose editor is open. Kept here rather than in the board view: opening a card then redraws
+  /// only the sheet, not every column and card first.
+  fileprivate var editor: BoardEditorRoute?
   var agents: [Agent] = []
   var loading = true
   var error = ""
@@ -517,12 +520,19 @@ private struct BoardEditorRoute: Identifiable {
   let itemId: String?
 }
 
+/// Presents the item editor; the only view that reads `store.editor`.
+private struct BoardEditorPresenter: View {
+  @Bindable var store: BoardStore
+  var body: some View {
+    Color.clear.sheet(item: $store.editor) { route in BoardItemEditor(store: store, itemId: route.itemId) }
+  }
+}
+
 private struct BoardView: View {
   @State var store: BoardStore
   @State private var showSettings = false
   @State private var addingColumn = false
   @State private var showAi = false
-  @State private var editor: BoardEditorRoute?
   @State private var roadmapHelp = false
   @State private var namingView = false
   @State private var viewName = ""
@@ -531,8 +541,9 @@ private struct BoardView: View {
   var body: some View {
     content
       .panelScreen("Planning")
+      .projectHeader(store.projectId, "Planning", detail: countLine, warning: store.config?.enabled == false)
       .toolbar { toolbar }
-      .sheet(item: $editor) { route in BoardItemEditor(store: store, itemId: route.itemId) }
+      .background { BoardEditorPresenter(store: store) }
       .sheet(isPresented: $showAi) { AiCardsSheet(session: store.session, projectId: store.projectId, kind: .board) { try? await store.loadItems() } }
       .sheet(isPresented: $showSettings) { BoardSettingsSheet(store: store) }
       .sheet(isPresented: $addingColumn) { AddColumnSheet(store: store) }
@@ -563,7 +574,7 @@ private struct BoardView: View {
           filterBar(config)
           Rectangle().fill(Theme.border).frame(height: 1)
           if store.view == "list" {
-            BoardList(store: store) { item in editor = BoardEditorRoute(itemId: item.id) }
+            BoardList(store: store) { item in store.editor = BoardEditorRoute(itemId: item.id) }
           } else {
             board(config)
           }
@@ -581,27 +592,20 @@ private struct BoardView: View {
     }
   }
 
+  private var countLine: String? {
+    guard let config = store.config else { return nil }
+    guard config.enabled else { return String(localized: "Planning is off") }
+    let items = store.items.count == 1 ? String(localized: "1 item") : String(localized: "\(store.items.count) items")
+    return String(localized: "\(items), \(store.publicCount) on the roadmap")
+  }
+
   @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-    ToolbarItem(placement: .principal) {
-      VStack(spacing: 1) {
-        ProjectBreadcrumb(projectId: store.projectId, title: "Planning")
-        if let config = store.config {
-          if config.enabled {
-            let items = store.items.count == 1 ? String(localized: "1 item") : String(localized: "\(store.items.count) items")
-            Text("\(items), \(store.publicCount) on the roadmap")
-              .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
-          } else {
-            Text("Planning is off").font(.lnCaption).foregroundStyle(Theme.warning)
-          }
-        }
-      }
-    }
     if store.config?.enabled == true {
       ToolbarItemGroup(placement: .topBarTrailing) {
         roadmapMenu
         Button { showSettings = true } label: { Label("Settings", systemImage: "slider.horizontal.3") }
         Button { showAi = true } label: { Label("File with AI", systemImage: "sparkles") }
-        Button { editor = BoardEditorRoute(itemId: nil) } label: { Label("New item", systemImage: "plus") }
+        Button { store.editor = BoardEditorRoute(itemId: nil) } label: { Label("New item", systemImage: "plus") }
       }
     }
   }
@@ -790,22 +794,7 @@ private struct BoardView: View {
 
   private func filterMenu<Content: View>(_ title: String, value: String, active: Bool, @ViewBuilder content: () -> Content) -> some View {
     let items = content()
-    return Menu {
-      items
-    } label: {
-      HStack(spacing: 6) {
-        Text(value).lineLimit(1)
-        Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
-      }
-      .font(.lnMetaMedium)
-      .foregroundStyle(active ? Theme.textHighlighted : Theme.textMuted)
-      .padding(.horizontal, 12)
-      .frame(height: 30)
-      .background(active ? Theme.elevated : Color.clear, in: Capsule())
-      .overlay(Capsule().strokeBorder(active ? Theme.borderAccented : Theme.border))
-      .contentShape(Capsule())
-    }
-    .accessibilityLabel(title)
+    return FilterMenu(value: value, active: active) { items }.accessibilityLabel(title)
   }
 
   // MARK: Kanban
@@ -815,7 +804,7 @@ private struct BoardView: View {
       HStack(alignment: .top, spacing: 12) {
         ForEach(config.statuses) { status in
           BoardColumn(status: status, items: store.visible(status.key), store: store, filtering: store.filtering) { item in
-            editor = BoardEditorRoute(itemId: item.id)
+            store.editor = BoardEditorRoute(itemId: item.id)
           }
         }
         Button { addingColumn = true } label: {
@@ -860,13 +849,13 @@ private struct BoardList: View {
         if isCollapsed { collapsed.remove(group.id) } else { collapsed.insert(group.id) }
       } label: {
         HStack(spacing: 8) {
-          Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).rotationEffect(.degrees(isCollapsed ? 0 : 90)).foregroundStyle(group.tint)
+          Image(systemName: "chevron.right").font(.app(size: 10, weight: .bold)).rotationEffect(.degrees(isCollapsed ? 0 : 90)).foregroundStyle(group.tint)
           Text(group.title).font(.lnMetaMedium).foregroundStyle(group.tint).lineLimit(1)
           Text("\(group.items.count)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
           if let progress = group.progress, progress.total > 0 { BoardProgressBar(progress: progress).frame(width: 110) }
           Spacer(minLength: 0)
         }
-        .frame(minHeight: 36)
+        .frame(minHeight: Metrics.scaled(36))
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
@@ -896,7 +885,7 @@ private struct BoardList: View {
           HStack(spacing: 6) {
             if let number = item.number { Text("#\(number)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted) }
             if let icon = BoardKind.icon(item.itemKind) {
-              Image(systemName: icon).font(.system(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel(BoardKind.name(item.itemKind))
+              Image(systemName: icon).font(.app(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel(BoardKind.name(item.itemKind))
             }
             Text(item.title).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).lineLimit(2).multilineTextAlignment(.leading)
           }
@@ -928,7 +917,7 @@ private struct BoardList: View {
         if let agent = store.agent(item.assigneeId) { Avatar(name: agent.inboxName, size: 18) }
         if let day { Label(day, systemImage: "calendar").labelStyle(BoardCompactLabelStyle()).accessibilityLabel("Target \(day)") }
         if let estimate = item.estimate { Label(BoardEstimate.text(estimate), systemImage: "gauge.with.needle").labelStyle(BoardCompactLabelStyle()).accessibilityLabel("Estimate \(BoardEstimate.text(estimate)) points") }
-        if item.isPublic { Image(systemName: "globe").font(.system(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel("On the public roadmap") }
+        if item.isPublic { Image(systemName: "globe").font(.app(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel("On the public roadmap") }
       }
     }
   }
@@ -966,7 +955,7 @@ private struct BoardQuickAdd: View {
         Button("Add") { Task { await submit() } }
           .buttonStyle(GhostButtonStyle(tint: Theme.accentText))
           .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        Button { adding = false; title = "" } label: { Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24) }
+        Button { adding = false; title = "" } label: { Image(systemName: "xmark").font(.app(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24) }
           .buttonStyle(.plain)
           .accessibilityLabel("Cancel")
       }
@@ -1034,7 +1023,7 @@ struct BoardParentChip: View {
 
   var body: some View {
     HStack(spacing: 3) {
-      Image(systemName: symbol).font(.system(size: 10))
+      Image(systemName: symbol).font(.app(size: 10))
       Text(title).font(.lnCaption).lineLimit(1)
     }
     .foregroundStyle(Theme.textToned)
@@ -1241,12 +1230,12 @@ private struct BoardCard: View {
       HStack(spacing: 6) {
         if let number = item.number { Text("#\(number)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted) }
         if let icon = BoardKind.icon(item.itemKind) {
-          Image(systemName: icon).font(.system(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel(BoardKind.name(item.itemKind))
+          Image(systemName: icon).font(.app(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel(BoardKind.name(item.itemKind))
         }
         if !item.priority.isEmpty { PriorityIcon(priority: item.priority, size: 12) }
         Spacer(minLength: 0)
         if item.isPublic {
-          Image(systemName: "globe").font(.system(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel("On the public roadmap")
+          Image(systemName: "globe").font(.app(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel("On the public roadmap")
         }
         if let agent = store.agent(item.assigneeId) { Avatar(name: agent.inboxName, size: 18) }
       }
@@ -1313,7 +1302,7 @@ private struct BoardPill: View {
 
   var body: some View {
     HStack(spacing: 3) {
-      Image(systemName: systemImage).font(.system(size: 10))
+      Image(systemName: systemImage).font(.app(size: 10))
       if let count { Text("\(count)").font(.lnCaption).monospacedDigit() }
     }
     .foregroundStyle(Theme.textToned)
@@ -1329,13 +1318,13 @@ private struct BoardPill: View {
 struct BoardCompactLabelStyle: LabelStyle {
   func makeBody(configuration: Configuration) -> some View {
     HStack(spacing: 4) {
-      configuration.icon.font(.system(size: 11))
+      configuration.icon.font(.app(size: 11))
       configuration.title
     }
     .font(.lnCaption)
     .foregroundStyle(Theme.textMuted)
     .lineLimit(1)
-    .frame(height: 20)
+    .frame(height: Metrics.scaled(20))
   }
 }
 

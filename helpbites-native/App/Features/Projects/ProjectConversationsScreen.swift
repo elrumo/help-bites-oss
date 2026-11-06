@@ -67,7 +67,7 @@ struct ProjectConversationsScreen: View {
       Spacer(minLength: 0)
       if conversation.unreadByAgent > 0 {
         Text("\(conversation.unreadByAgent)")
-          .font(.system(size: 11, weight: .semibold)).monospacedDigit().foregroundStyle(.white)
+          .font(.app(size: 11, weight: .semibold)).monospacedDigit().foregroundStyle(.white)
           .padding(.horizontal, 6).frame(minWidth: 16, minHeight: 16)
           .background(Theme.accent, in: Capsule())
           .accessibilityLabel("\(conversation.unreadByAgent) unread")

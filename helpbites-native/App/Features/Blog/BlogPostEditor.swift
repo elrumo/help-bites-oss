@@ -333,7 +333,7 @@ struct BlogPostEditor: View {
         }
         Spacer(minLength: 0)
       }
-      .frame(minHeight: 40)
+      .frame(minHeight: Metrics.scaled(40))
     }
   }
 
@@ -421,7 +421,7 @@ struct BlogPostEditor: View {
     let description = draft.metaDescription.isEmpty ? descriptionFallback : draft.metaDescription
     return VStack(alignment: .leading, spacing: 2) {
       Text("\(store.blogAddress)/\(slug)").font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1).truncationMode(.middle)
-      Text(title.isEmpty ? String(localized: "Untitled post") : title).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.info).lineLimit(1)
+      Text(title.isEmpty ? String(localized: "Untitled post") : title).font(.app(size: 15, weight: .medium)).foregroundStyle(Theme.info).lineLimit(1)
       Text(description.isEmpty ? String(localized: "The excerpt shows here when there is no description.") : description).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(2)
     }
     .padding(12)

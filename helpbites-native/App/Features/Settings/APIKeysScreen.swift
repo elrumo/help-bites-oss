@@ -177,7 +177,7 @@ struct APIKeysScreen: View {
       }
     } else {
       HStack(spacing: 12) {
-        Image(systemName: "key").font(.system(size: 14)).foregroundStyle(Theme.textMuted)
+        Image(systemName: "key").font(.app(size: 14)).foregroundStyle(Theme.textMuted)
         VStack(alignment: .leading, spacing: 2) {
           Text(key.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
           Text("\(key.prefix)…").font(.lnMono).foregroundStyle(Theme.textMuted)

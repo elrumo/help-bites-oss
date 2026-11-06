@@ -57,7 +57,7 @@ struct GithubSection: View {
               Spacer(minLength: 8)
               if session.canManage { IconButton(systemImage: "bolt.slash", label: "Disconnect \(item.account)") { removing = item } }
             }
-            .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 48)
+            .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: Metrics.scaled(48))
             .overlay(RoundedRectangle(cornerRadius: Metrics.radiusLarge).strokeBorder(Theme.border))
           }
           Text("To change which repos are visible, or to revoke access, use the app's settings on GitHub.").font(.lnCaption).foregroundStyle(Theme.textMuted)
@@ -73,7 +73,7 @@ struct GithubSection: View {
                         ProjectTile(id: project.id, name: project.name, accent: project.theme.accent, icon: project.iconUrl, size: 20)
                         Text(project.name).font(.lnRow).foregroundStyle(Theme.text)
                         Spacer(minLength: 0)
-                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+                        Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
                       }
                       .contentShape(Rectangle())
                     }
@@ -172,7 +172,7 @@ struct ProjectReposSection: View {
             ForEach(repos) { repo in
               CardRow(divider: repo.id != repos.last?.id) {
                 HStack(spacing: 10) {
-                  Image(systemName: "arrow.triangle.branch").font(.system(size: 13)).foregroundStyle(Theme.textMuted)
+                  Image(systemName: "arrow.triangle.branch").font(.app(size: 13)).foregroundStyle(Theme.textMuted)
                   Text(repo.fullName).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
                   Spacer(minLength: 8)
                   Text(repo.defaultBranch).font(.lnCaption).foregroundStyle(Theme.textMuted)
@@ -269,13 +269,13 @@ private struct GithubRepoPickerSheet: View {
               dismiss()
             } label: {
               HStack(spacing: 8) {
-                Image(systemName: item.private ? "lock" : "arrow.triangle.branch").font(.system(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 18)
+                Image(systemName: item.private ? "lock" : "arrow.triangle.branch").font(.app(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 18)
                 Text(item.fullName).foregroundStyle(Theme.text).lineLimit(1)
                 Spacer(minLength: 8)
                 Text(item.defaultBranch).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
               }
               .font(.lnMeta)
-              .frame(minHeight: 36)
+              .frame(minHeight: Metrics.scaled(36))
               .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

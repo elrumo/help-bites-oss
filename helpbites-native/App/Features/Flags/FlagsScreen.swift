@@ -185,10 +185,10 @@ private struct FlagsCard: View {
         HStack(alignment: .top, spacing: 8) {
           stack(spacing: 8) {
             TextField("flag_key", text: $draft.flag.key)
-              .font(.system(size: 14, design: .monospaced))
+              .font(.app(size: 14, design: .monospaced))
               .foregroundStyle(draft.isNew ? Theme.textHighlighted : Theme.textMuted)
               .textInputAutocapitalization(.never).autocorrectionDisabled()
-              .padding(.horizontal, 12).frame(minHeight: 40)
+              .padding(.horizontal, 12).frame(minHeight: Metrics.scaled(40))
               .background(draft.isNew ? Theme.field : Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
               .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
               .frame(maxWidth: wide ? 224 : .infinity)
@@ -234,7 +234,7 @@ private struct FlagsCard: View {
         Circle().fill(FlagsState.tint(draft.flag.fallback)).frame(width: 6, height: 6)
         Text(FlagsState.label(draft.flag.fallback)).font(.lnMeta).foregroundStyle(Theme.text)
         Spacer(minLength: 8)
-        Image(systemName: "chevron.up.chevron.down").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textMuted)
+        Image(systemName: "chevron.up.chevron.down").font(.app(size: 10, weight: .semibold)).foregroundStyle(Theme.textMuted)
       }
       .padding(.horizontal, 10)
       .frame(width: 150, height: 32)
@@ -267,7 +267,7 @@ private struct FlagsStatePicker: View {
           .font(.lnCaptionMedium)
           .foregroundStyle(selected ? Theme.textHighlighted : Theme.textMuted)
           .padding(.horizontal, 10)
-          .frame(height: 28)
+          .frame(height: Metrics.scaled(28))
           .background(selected ? Theme.panel : Color.clear, in: RoundedRectangle(cornerRadius: Metrics.radiusSmall))
           .shadow(color: .black.opacity(selected ? 0.08 : 0), radius: 1, y: 1)
           .contentShape(Rectangle())
@@ -296,7 +296,7 @@ private struct FlagsTagsField: View {
         HStack(spacing: 5) {
           Text(tag).lineLimit(1)
           Button { tags.removeAll { $0 == tag } } label: {
-            Image(systemName: "xmark").font(.system(size: 8, weight: .bold))
+            Image(systemName: "xmark").font(.app(size: 8, weight: .bold))
           }
           .buttonStyle(.plain)
           .accessibilityLabel("Remove \(tag)")
@@ -304,7 +304,7 @@ private struct FlagsTagsField: View {
         .font(.lnCaptionMedium)
         .foregroundStyle(Theme.textToned)
         .padding(.horizontal, 8)
-        .frame(height: 24)
+        .frame(height: Metrics.scaled(24))
         .background(Theme.elevated, in: Capsule())
       }
       TextField(tags.isEmpty ? placeholder : "", text: $text)

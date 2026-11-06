@@ -30,15 +30,31 @@ extension View {
 }
 
 // A Mac sheet sizes to its content, and a ScrollView has none: give every sheet that asked for
-// detents a window-like size (taller when it asked for .large).
+// detents a window-like size (wider and taller when it asked for .large), grown with the text size
+// so a row of fields still fits. Its controls get the same look as everywhere else in the window.
 extension View {
   func presentationDetents(_ detents: [PresentationDetent]) -> some View {
     let tall = detents.contains(.large)
-    return frame(minWidth: 480, idealWidth: 580, minHeight: tall ? 520 : 360, idealHeight: tall ? 680 : 440)
+    let scale = { (value: CGFloat) in Metrics.scaled(value) }
+    return frame(minWidth: scale(tall ? 640 : 500), idealWidth: scale(tall ? 760 : 580), minHeight: tall ? 560 : 380, idealHeight: scale(tall ? 720 : 460))
+      .panelControls()
   }
   func presentationDetents(_ detents: [PresentationDetent], selection: Binding<PresentationDetent>) -> some View {
     presentationDetents(detents)
   }
+}
+
+/// The panel's controls draw themselves (a bordered field, a menu whose label is a field or a chip), as they do
+/// on iPhone and iPad. The Mac's defaults would wrap each one in its own bezel and add a second chevron.
+struct LabelMenuStyle: MenuStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    Menu(configuration).menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden)
+  }
+}
+
+extension View {
+  /// Applied to the window and to every sheet; a control's own `.menuStyle` or `.textFieldStyle` still wins.
+  func panelControls() -> some View { menuStyle(LabelMenuStyle()).textFieldStyle(.plain) }
 }
 
 extension ToolbarItemPlacement {

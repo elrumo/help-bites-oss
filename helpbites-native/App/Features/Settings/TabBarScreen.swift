@@ -27,7 +27,7 @@ struct TabBarScreen: View {
                   IconButton(systemImage: "arrow.up", label: "Move up") { move(item, by: -1) }.disabled(index == 0).opacity(index == 0 ? 0.35 : 1)
                   IconButton(systemImage: "arrow.down", label: "Move down") { move(item, by: 1) }.disabled(index >= bar.count - 1).opacity(index >= bar.count - 1 ? 0.35 : 1)
                   if item.isRequired {
-                    Image(systemName: "lock").font(.system(size: 13)).foregroundStyle(Theme.textDimmed).frame(width: 32, height: 32).accessibilityLabel("Always on the bar")
+                    Image(systemName: "lock").font(.app(size: 13)).foregroundStyle(Theme.textDimmed).frame(width: 32, height: 32).accessibilityLabel("Always on the bar")
                   } else {
                     IconButton(systemImage: "minus.circle", label: "Remove \(item.localizedLabel)") { remove(item) }
                   }
@@ -68,7 +68,7 @@ struct TabBarScreen: View {
   }
 
   private func icon(_ item: TabShortcut) -> some View {
-    Image(systemName: item.systemImage).font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
+    Image(systemName: item.systemImage).font(.app(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
   }
 
   private func move(_ item: TabShortcut, by offset: Int) {

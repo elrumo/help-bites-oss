@@ -23,7 +23,7 @@ struct AuthView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 0) {
         Image(systemName: "bubble.left.and.text.bubble.right.fill")
-          .font(.system(size: 15, weight: .semibold))
+          .font(.app(size: 15, weight: .semibold))
           .foregroundStyle(.white)
           .frame(width: 34, height: 34)
           .background(Theme.accent, in: RoundedRectangle(cornerRadius: 9))
@@ -123,9 +123,9 @@ struct AuthView: View {
         withAnimation(.snappy) { showServer.toggle() }
       } label: {
         HStack(spacing: 6) {
-          Image(systemName: "server.rack").font(.system(size: 11))
+          Image(systemName: "server.rack").font(.app(size: 11))
           Text(session.endpoint).lineLimit(1)
-          Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold)).rotationEffect(.degrees(showServer ? 0 : -90))
+          Image(systemName: "chevron.down").font(.app(size: 9, weight: .semibold)).rotationEffect(.degrees(showServer ? 0 : -90))
         }
         .font(.lnCaption)
         .foregroundStyle(Theme.textMuted)

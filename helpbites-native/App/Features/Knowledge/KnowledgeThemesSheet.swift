@@ -92,16 +92,16 @@ struct KnowledgeThemesSheet: View {
 
   private func row(_ theme: KnowledgeTheme) -> some View {
     HStack(spacing: 8) {
-      Image(systemName: "folder").font(.system(size: 13)).foregroundStyle(Theme.textDimmed)
+      Image(systemName: "folder").font(.app(size: 13)).foregroundStyle(Theme.textDimmed)
       Text(theme.name).font(.lnCallout).foregroundStyle(Theme.textHighlighted).lineLimit(1)
       Spacer(minLength: 4)
       Menu { actions(for: theme) } label: {
-        Image(systemName: "ellipsis").font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
+        Image(systemName: "ellipsis").font(.app(size: 13, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
       }
       .accessibilityLabel("Actions for \(theme.name)")
     }
     .padding(.leading, 8 + CGFloat(theme.depth) * 18)
-    .frame(minHeight: 36)
+    .frame(minHeight: Metrics.scaled(36))
     .background(selectedId == theme.id ? Theme.accented : Color.clear, in: RoundedRectangle(cornerRadius: Metrics.radius))
     .contentShape(Rectangle())
     .onTapGesture { select(theme.id) }

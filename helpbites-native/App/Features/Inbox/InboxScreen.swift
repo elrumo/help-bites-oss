@@ -112,7 +112,7 @@ private struct InboxQueueColumn: View {
       }
       if store.hasMore {
         Button { Task { await store.refresh(more: true) } } label: {
-          Text("Load older conversations").font(.lnMetaMedium).foregroundStyle(Theme.textMuted).frame(maxWidth: .infinity).frame(height: 40).contentShape(Rectangle())
+          Text("Load older conversations").font(.lnMetaMedium).foregroundStyle(Theme.textMuted).frame(maxWidth: .infinity).frame(height: Metrics.scaled(40)).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .linearRow()
@@ -200,11 +200,11 @@ private struct InboxRow: View {
       VStack(alignment: .leading, spacing: 3) {
         HStack(spacing: 6) {
           Text(title)
-            .font(.system(size: 14, weight: unread ? .semibold : .medium))
+            .font(.app(size: 14, weight: unread ? .semibold : .medium))
             .foregroundStyle(Theme.textHighlighted)
             .lineLimit(1)
           Spacer(minLength: 4)
-          if conversation.channel == "email" { Image(systemName: "envelope").font(.system(size: 12)).foregroundStyle(Theme.textMuted).accessibilityLabel("Started as an email") }
+          if conversation.channel == "email" { Image(systemName: "envelope").font(.app(size: 12)).foregroundStyle(Theme.textMuted).accessibilityLabel("Started as an email") }
           if let priority = conversation.priority, priority == "high" || priority == "urgent" { PriorityIcon(priority: priority, size: 13) }
           if done { StatusIcon(category: "resolved", size: 13) }
           Text(DateText.short(conversation.lastMessageAt ?? conversation.createdAt))
@@ -349,10 +349,10 @@ struct InboxFieldBox<Content: View>: View {
     HStack(spacing: 8) {
       label().font(.lnBody).foregroundStyle(Theme.text).lineLimit(1)
       Spacer(minLength: 0)
-      Image(systemName: "chevron.up.chevron.down").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+      Image(systemName: "chevron.up.chevron.down").font(.app(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
     }
     .padding(.horizontal, 12)
-    .frame(minHeight: 40)
+    .frame(minHeight: Metrics.scaled(40))
     .background(Theme.field, in: RoundedRectangle(cornerRadius: Metrics.radius))
     .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
     .contentShape(Rectangle())

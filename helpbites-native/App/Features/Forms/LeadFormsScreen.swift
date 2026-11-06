@@ -76,7 +76,7 @@ struct LeadFormsScreen: View {
           .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+        Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
       }
       .contentShape(Rectangle())
     }

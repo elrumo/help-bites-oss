@@ -131,7 +131,7 @@ struct RevenueScreen: View {
   private func statusLine(_ connection: RevenueConnection) -> some View {
     let kind = connection.catalog?.kind
     return FlowLayout(spacing: 8) {
-      Image(systemName: connection.catalog?.icon ?? "dollarsign.circle").font(.system(size: 12)).foregroundStyle(Theme.textMuted)
+      Image(systemName: connection.catalog?.icon ?? "dollarsign.circle").font(.app(size: 12)).foregroundStyle(Theme.textMuted)
       Text(connection.title).font(.lnCaptionMedium).foregroundStyle(Theme.text)
       if kind == .pull { Tag(text: connection.livemode ? "Live" : "Test mode", tint: connection.livemode ? Theme.success : Theme.warning) }
       if !connection.accountName.isEmpty, connection.accountName != connection.title { Text(connection.accountName).font(.lnCaption).foregroundStyle(Theme.textMuted) }
@@ -229,7 +229,7 @@ private struct RevenueReportView: View {
       ForEach(kpis, id: \.label) { kpi in
         VStack(alignment: .leading, spacing: 4) {
           Text(kpi.label).font(.lnCaption).foregroundStyle(Theme.textMuted)
-          Text(kpi.value).font(.system(size: 24, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted).lineLimit(1).minimumScaleFactor(0.6)
+          Text(kpi.value).font(.app(size: 24, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted).lineLimit(1).minimumScaleFactor(0.6)
           Text(kpi.hint).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(2)
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
@@ -270,7 +270,7 @@ private struct RevenueReportView: View {
       .chartXSelection(value: $selected)
       .chartYAxis(.hidden)
       .chartXAxis {
-        AxisMarks { value in AxisValueLabel { Text(String((value.as(String.self) ?? "").suffix(2))).font(.system(size: 10)).foregroundStyle(Theme.textMuted) } }
+        AxisMarks { value in AxisValueLabel { Text(String((value.as(String.self) ?? "").suffix(2))).font(.app(size: 10)).foregroundStyle(Theme.textMuted) } }
       }
       .frame(height: 176)
     }
@@ -328,7 +328,7 @@ private struct RevenueReportView: View {
         ForEach(report.sources) { row in
           CardRow(divider: row.id != report.sources.last?.id) {
             HStack(spacing: 10) {
-              Image(systemName: RevenueSource.named(row.source)?.icon ?? "dollarsign.circle").font(.system(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 16)
+              Image(systemName: RevenueSource.named(row.source)?.icon ?? "dollarsign.circle").font(.app(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 16)
               Text(RevenueSource.title(of: row.source)).font(.lnCallout).foregroundStyle(Theme.text).lineLimit(1)
               Spacer(minLength: 8)
               Text(row.payments == 1 ? "1 payment" : "\(row.payments) payments").font(.lnCaption).foregroundStyle(Theme.textMuted)

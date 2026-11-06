@@ -34,7 +34,7 @@ struct FeedbackChangelogLinks: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      if !loaded { RoundedRectangle(cornerRadius: Metrics.radiusSmall).fill(Theme.elevated).frame(height: 28) }
+      if !loaded { RoundedRectangle(cornerRadius: Metrics.radiusSmall).fill(Theme.elevated).frame(height: Metrics.scaled(28)) }
       ForEach(linked) { entry in row(entry) }
       if composing {
         HStack(spacing: 8) {
@@ -78,7 +78,7 @@ struct FeedbackChangelogLinks: View {
       .buttonStyle(.plain)
       Button { Task { await link(entry.id, false) } } label: {
         Group {
-          if busy == entry.id { ProgressView().controlSize(.mini) } else { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.textDimmed) }
+          if busy == entry.id { ProgressView().controlSize(.mini) } else { Image(systemName: "xmark").font(.app(size: 9, weight: .bold)).foregroundStyle(Theme.textDimmed) }
         }
         .frame(width: 24, height: 24)
         .contentShape(Rectangle())
@@ -87,7 +87,7 @@ struct FeedbackChangelogLinks: View {
       .disabled(!busy.isEmpty)
       .accessibilityLabel("Unlink \(entry.label)")
     }
-    .frame(minHeight: 32)
+    .frame(minHeight: Metrics.scaled(32))
   }
 
   /// `changelogPrefill("feedback", …)`: what is already public, nothing else.

@@ -96,7 +96,7 @@ struct LegalScreen: View {
         Button { openURL(url) } label: { Image(systemName: "arrow.up.right.square").foregroundStyle(Theme.textMuted) }
           .buttonStyle(.plain).help("Open the public page").accessibilityLabel("Open the public page")
       }
-      Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+      Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
     }
   }
 

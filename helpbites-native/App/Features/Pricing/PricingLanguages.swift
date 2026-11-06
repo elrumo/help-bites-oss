@@ -36,7 +36,7 @@ struct PricingLanguagesPanel: View {
                   Text(translationProgress(filled, of: texts.count)).font(.lnCaption).foregroundStyle(filled < texts.count ? Theme.warning : Theme.textMuted)
                 }
                 Spacer(minLength: 4)
-                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+                Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
               }
               .padding(.vertical, 8)
               .contentShape(Rectangle())

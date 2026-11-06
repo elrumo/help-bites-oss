@@ -75,7 +75,7 @@ private struct AssistantRow: View {
   var body: some View {
     HStack(spacing: 12) {
       Image(systemName: "sparkles")
-        .font(.system(size: 11, weight: .semibold))
+        .font(.app(size: 11, weight: .semibold))
         .foregroundStyle(Theme.accentText)
         .frame(width: 20, height: 20)
         .background(Theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: Metrics.radiusSmall))
@@ -88,7 +88,7 @@ private struct AssistantRow: View {
       if assistant.autoReply && assistant.status == "active" {
         // The web drops the word on narrow screens and keeps the glyph.
         if sizeClass == .compact {
-          Image(systemName: "bolt").font(.system(size: 12)).foregroundStyle(Theme.textMuted).accessibilityLabel("Auto-reply")
+          Image(systemName: "bolt").font(.app(size: 12)).foregroundStyle(Theme.textMuted).accessibilityLabel("Auto-reply")
         } else {
           Label("Auto-reply", systemImage: "bolt").font(.lnCaption).foregroundStyle(Theme.textMuted)
         }

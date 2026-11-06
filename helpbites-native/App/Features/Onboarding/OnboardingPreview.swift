@@ -86,7 +86,7 @@ struct OnboardingPreview: View {
         Spacer(minLength: 12)
         if options.skippable && !last { Button("Skip") { self.index = 0 }.buttonStyle(.plain).foregroundStyle(.secondary) }
       }
-      .frame(minHeight: 28)
+      .frame(minHeight: Metrics.scaled(28))
       ScrollView {
         VStack(alignment: .leading, spacing: 16) {
           if let url = URL(string: step.imageUrl), !step.imageUrl.isEmpty {

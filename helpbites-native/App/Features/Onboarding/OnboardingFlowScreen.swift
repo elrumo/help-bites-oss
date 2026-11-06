@@ -383,7 +383,7 @@ private struct OnboardingStepCard: View {
         }
         .buttonStyle(.lnSecondaryCompact)
         Button("Files…") { importing = true }.buttonStyle(.lnSecondaryCompact)
-        if uploading { ProgressView().controlSize(.small).frame(height: 30) }
+        if uploading { ProgressView().controlSize(.small).frame(height: Metrics.scaled(30)) }
         if !brandImages.isEmpty {
           Menu {
             ForEach(brandImages) { asset in

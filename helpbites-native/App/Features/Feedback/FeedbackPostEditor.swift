@@ -196,7 +196,7 @@ struct FeedbackPostEditor: View {
           .accessibilityLabel("Clear the date")
         Spacer(minLength: 0)
       }
-      .frame(minHeight: 40)
+      .frame(minHeight: Metrics.scaled(40))
     } else {
       Button { draft.shippedOn = FeedbackFormat.day(Date()) } label: {
         HStack {
@@ -220,7 +220,7 @@ struct FeedbackPostEditor: View {
   private func meta(_ post: FeedbackPost) -> some View {
     FlowLayout(spacing: 12) {
       HStack(spacing: 3) {
-        Image(systemName: "chevron.up").font(.system(size: 10, weight: .bold))
+        Image(systemName: "chevron.up").font(.app(size: 10, weight: .bold))
         Text("\(post.voteCount) votes").fontWeight(.semibold)
       }
       .foregroundStyle(Theme.text)
@@ -300,7 +300,7 @@ struct FeedbackPostEditor: View {
     return HStack(alignment: .top, spacing: 10) {
       if team {
         Image(systemName: "checkmark.seal.fill")
-          .font(.system(size: 13))
+          .font(.app(size: 13))
           .foregroundStyle(.white)
           .frame(width: 28, height: 28)
           .background(Theme.accent, in: Circle())
@@ -316,7 +316,7 @@ struct FeedbackPostEditor: View {
             if let email = comment.author?.email, !email.isEmpty { Text(email).font(.lnCaption).foregroundStyle(Theme.textMuted) }
             Text(FeedbackFormat.timeAgo(comment.createdAt) + (comment.editedAt == nil ? "" : String(localized: " · edited"))).font(.lnCaption).foregroundStyle(Theme.textMuted)
             if comment.visibility != "public" { chip(visibilityLabel(comment.visibility), foreground: Theme.textToned, background: Theme.elevated) }
-            if pinned { Image(systemName: "pin.fill").font(.system(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel("Pinned") }
+            if pinned { Image(systemName: "pin.fill").font(.app(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel("Pinned") }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           commentMenu(comment, pinned: pinned)
@@ -344,7 +344,7 @@ struct FeedbackPostEditor: View {
 
   private func chip(_ text: String, foreground: Color, background: Color) -> some View {
     Text(verbatim: text)
-      .font(.system(size: 10, weight: .semibold))
+      .font(.app(size: 10, weight: .semibold))
       .foregroundStyle(foreground)
       .padding(.horizontal, 6)
       .frame(height: 16)
@@ -367,7 +367,7 @@ struct FeedbackPostEditor: View {
       Button(role: .destructive) { deletingComment = comment } label: { Label("Delete comment", systemImage: "trash") }
     } label: {
       Image(systemName: "ellipsis")
-        .font(.system(size: 13, weight: .medium))
+        .font(.app(size: 13, weight: .medium))
         .foregroundStyle(Theme.textMuted)
         .frame(width: 28, height: 22)
         .contentShape(Rectangle())
@@ -389,7 +389,7 @@ struct FeedbackPostEditor: View {
           .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(internalNote ? Theme.warning.opacity(0.5) : Theme.border))
         Button { internalNote.toggle() } label: {
           Image(systemName: internalNote ? "lock.fill" : "lock")
-            .font(.system(size: 14, weight: .medium))
+            .font(.app(size: 14, weight: .medium))
             .foregroundStyle(internalNote ? Theme.warning : Theme.textMuted)
             .frame(width: 36, height: 40)
             .background(internalNote ? Theme.warning.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: Metrics.radius))
@@ -400,7 +400,7 @@ struct FeedbackPostEditor: View {
         .accessibilityValue(internalNote ? "On" : "Off")
         Button(internalNote ? "Add note" : "Reply") { Task { await sendComment() } }
           .buttonStyle(.lnPrimaryCompact)
-          .frame(height: 40)
+          .frame(height: Metrics.scaled(40))
           .disabled(empty || commenting)
           .keyboardShortcut(.return, modifiers: .command)
       }

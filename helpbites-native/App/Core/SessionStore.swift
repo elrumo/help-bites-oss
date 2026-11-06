@@ -96,6 +96,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
     SharedStore.publish(endpoint: endpoint, workspaceId: id)
     await api.setWorkspace(id)
     SnapshotCache.clear()
+    memo.removeAll()
     struct Input: Encodable, Sendable { let defaultWorkspaceId: String }
     let _: EmptyBody? = try? await send("/v1/admin/me", method: "PATCH", body: Input(defaultWorkspaceId: id))
     await refreshContext()
@@ -135,7 +136,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
     else { self.error = error.localizedDescription }
   }
 
-  func clear() { KeychainStore.remove(); SnapshotCache.clear(); token = ""; agent = nil; context = nil; phase = .signedOut }
+  func clear() { KeychainStore.remove(); SnapshotCache.clear(); memo.removeAll(); token = ""; agent = nil; context = nil; phase = .signedOut }
 
   func setEndpoint(_ value: String) async {
     let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
@@ -160,7 +161,30 @@ enum SessionPhase { case loading, signedOut, signedIn }
 
   func get<Value: Decodable & Sendable>(_ path: String, query: [String: String] = [:]) async throws -> Value {
     let items = query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) }
-    return try await guarded { try await api.get(path, token: token, query: items) }
+    let value: Value = try await guarded { try await api.get(path, token: token, query: items) }
+    remember(value, Self.memoKey(path, query))
+    return value
+  }
+
+  // MARK: Last answers
+  // A page you come back to paints straight away from what it showed last time (`peek`), then
+  // its own load refreshes it, the way the web keeps a page's data while it refetches.
+
+  private var memo: [String: any Sendable] = [:]
+
+  /// The last answer to this GET in this session, if any. Read it only to fill an empty page.
+  func peek<Value: Sendable>(_ path: String, query: [String: String] = [:]) -> Value? {
+    memo[Self.memoKey(path, query)] as? Value
+  }
+
+  private func remember(_ value: some Sendable, _ key: String) {
+    // ponytail: drops everything past 300 answers; an LRU if long sessions ever need more.
+    if memo.count > 300 { memo.removeAll(keepingCapacity: true) }
+    memo[key] = value
+  }
+
+  private static func memoKey(_ path: String, _ query: [String: String]) -> String {
+    query.isEmpty ? path : path + "?" + query.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
   }
 
   func send<Value: Decodable & Sendable, Body: Encodable & Sendable>(_ path: String, method: String = "POST", body: Body) async throws -> Value {

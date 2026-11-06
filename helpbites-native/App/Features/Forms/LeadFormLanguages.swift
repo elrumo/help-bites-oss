@@ -34,7 +34,7 @@ struct LeadFormLanguagesPanel: View {
                   Text(translationProgress(progress.filled, of: progress.total)).font(.lnCaption).foregroundStyle(progress.filled < progress.total ? Theme.warning : Theme.textMuted)
                 }
                 Spacer(minLength: 4)
-                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+                Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
               }
               .padding(.vertical, 8)
               .contentShape(Rectangle())

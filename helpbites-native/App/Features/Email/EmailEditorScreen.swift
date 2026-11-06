@@ -179,8 +179,8 @@ private struct EmailEditorRoot: View {
 
   private func barLabel(_ title: String, _ symbol: String, tint: Color = Theme.textMuted) -> some View {
     VStack(spacing: 3) {
-      Image(systemName: symbol).font(.system(size: 18)).foregroundStyle(tint)
-      Text(title).font(.system(size: 10, weight: .medium)).foregroundStyle(Theme.textMuted)
+      Image(systemName: symbol).font(.app(size: 18)).foregroundStyle(tint)
+      Text(title).font(.app(size: 10, weight: .medium)).foregroundStyle(Theme.textMuted)
     }
     .frame(maxWidth: .infinity, minHeight: 44)
     .contentShape(Rectangle())
@@ -294,7 +294,7 @@ private struct EmailEditorRoot: View {
       Label(count > 0 ? "\(count)" : "Checks", systemImage: errors > 0 ? "exclamationmark.circle" : count > 0 ? "exclamationmark.triangle" : "checkmark.circle")
         .font(.lnMetaMedium)
         .foregroundStyle(tint)
-        .frame(minHeight: 32)
+        .frame(minHeight: Metrics.scaled(32))
     }
     .buttonStyle(.plain)
     .accessibilityLabel(count > 0 ? "\(count) checks failing" : "All checks pass")
@@ -346,7 +346,7 @@ private struct EmailEditorRoot: View {
       ProgressView().controlSize(.mini).accessibilityLabel("Saving")
     case .failed:
       Button { Task { await store.save() } } label: {
-        Image(systemName: "exclamationmark.circle.fill").font(.system(size: 12)).foregroundStyle(Theme.error)
+        Image(systemName: "exclamationmark.circle.fill").font(.app(size: 12)).foregroundStyle(Theme.error)
       }
       .buttonStyle(.plain)
       .accessibilityLabel("Not saved. Retry")

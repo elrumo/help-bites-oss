@@ -60,7 +60,7 @@ struct EmailStarterPicker: View {
             RoundedRectangle(cornerRadius: 3).fill(line)
             RoundedRectangle(cornerRadius: 3).fill(line)
           }
-          .frame(height: 24)
+          .frame(height: Metrics.scaled(24))
         }
         .padding(10)
         .frame(maxWidth: 180, maxHeight: .infinity, alignment: .topLeading)
@@ -73,7 +73,7 @@ struct EmailStarterPicker: View {
 
         VStack(alignment: .leading, spacing: 10) {
           HStack(spacing: 8) {
-            Image(systemName: starter.systemImage).font(.system(size: 13, weight: .medium)).foregroundStyle(accent)
+            Image(systemName: starter.systemImage).font(.app(size: 13, weight: .medium)).foregroundStyle(accent)
             Text(starter.name).font(.lnHeading).foregroundStyle(Theme.textHighlighted).lineLimit(1)
           }
           Text(starter.description).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(2, reservesSpace: true)
@@ -81,7 +81,7 @@ struct EmailStarterPicker: View {
             Tag(text: starter.type)
             Tag(text: starter.style)
             Spacer(minLength: 0)
-            Image(systemName: "arrow.right").font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textDimmed)
+            Image(systemName: "arrow.right").font(.app(size: 12, weight: .medium)).foregroundStyle(Theme.textDimmed)
           }
         }
         .padding(14)
@@ -229,7 +229,7 @@ struct EmailShareSheet: View {
                 Button { Task { await apply(option.value, days: nil) } } label: {
                   HStack(alignment: .top, spacing: 10) {
                     Image(systemName: mode == option.value ? "largecircle.fill.circle" : "circle")
-                      .font(.system(size: 16))
+                      .font(.app(size: 16))
                       .foregroundStyle(mode == option.value ? Theme.accent : Theme.textDimmed)
                     VStack(alignment: .leading, spacing: 2) {
                       Text(option.label).font(.lnRow).foregroundStyle(Theme.textHighlighted)
@@ -264,7 +264,7 @@ struct EmailShareSheet: View {
               }
               if let url = URL(string: link) {
                 ShareLink(item: url) {
-                  Image(systemName: "square.and.arrow.up").font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).overlay(Circle().strokeBorder(Theme.border))
+                  Image(systemName: "square.and.arrow.up").font(.app(size: 14, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).overlay(Circle().strokeBorder(Theme.border))
                 }
                 .accessibilityLabel("Share link")
               }

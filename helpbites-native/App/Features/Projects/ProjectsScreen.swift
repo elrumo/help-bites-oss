@@ -20,7 +20,7 @@ struct ProjectsScreen: View {
           if wide {
             columns(Text("Name"), Text("Site"), Text("Public key"))
               .font(.lnCaptionMedium).foregroundStyle(Theme.textMuted)
-              .frame(height: 32)
+              .frame(height: Metrics.scaled(32))
               .linearRow()
           }
           ForEach(workspace.projects) { project in

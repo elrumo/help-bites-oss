@@ -92,7 +92,7 @@ struct ProjectSettingsHub<Destination: View>: View {
   private func row(_ page: ProjectSettingsPage, title: String, caption: String?, divider: Bool) -> some View {
     CardRow(divider: divider) {
       HStack(spacing: 12) {
-        Image(systemName: page.systemImage).font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+        Image(systemName: page.systemImage).font(.app(size: 14, weight: .semibold)).foregroundStyle(.white)
           .frame(width: 28, height: 28)
           .background(Color(hexString: page.tintHex) ?? Theme.accent, in: RoundedRectangle(cornerRadius: 7))
         VStack(alignment: .leading, spacing: 1) {
@@ -101,7 +101,7 @@ struct ProjectSettingsHub<Destination: View>: View {
         }
         Spacer(minLength: 8)
         accessory(page)
-        Image(systemName: page == .keys ? "arrow.up.right" : "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+        Image(systemName: page == .keys ? "arrow.up.right" : "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
       }
     }
     .contentShape(Rectangle())

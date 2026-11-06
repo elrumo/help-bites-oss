@@ -36,7 +36,13 @@ enum SharedStore {
 }
 
 enum KeychainStore {
+  #if os(macOS)
+  /// The Mac has no extension to share with: a build under another bundle id (a dev copy) keeps its own session
+  /// instead of reading or clearing the installed app's.
+  private static let service = Bundle.main.bundleIdentifier ?? "com.helpbites.operator"
+  #else
   private static let service = "com.helpbites.operator"
+  #endif
   private static let account = "session"
 
   private static func query(shared: Bool) -> [CFString: Any] {

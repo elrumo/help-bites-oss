@@ -305,13 +305,13 @@ struct PageEntryScreen: View {
 
   private var searchField: some View {
     HStack(spacing: 8) {
-      Image(systemName: "magnifyingglass").font(.system(size: 13)).foregroundStyle(Theme.textMuted)
+      Image(systemName: "magnifyingglass").font(.app(size: 13)).foregroundStyle(Theme.textMuted)
       TextField("Search the text on the page", text: $query).textFieldStyle(.plain).font(.lnRow).autocorrectionDisabled().textInputAutocapitalization(.never)
       if !query.isEmpty {
         Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.textDimmed) }.buttonStyle(.plain).accessibilityLabel("Clear search")
       }
     }
-    .padding(.horizontal, 10).frame(minHeight: 36)
+    .padding(.horizontal, 10).frame(minHeight: Metrics.scaled(36))
     .overlay(RoundedRectangle(cornerRadius: Metrics.radius).stroke(Theme.border, lineWidth: Hairline.width))
   }
 
@@ -339,7 +339,7 @@ struct PageEntryScreen: View {
       if !root {
         if lists {
           Button { if collapsed.contains(block.uid) { collapsed.remove(block.uid) } else { collapsed.insert(block.uid) } } label: {
-            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted).rotationEffect(.degrees(folded ? 0 : 90)).frame(width: 20, height: 28).contentShape(Rectangle())
+            Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted).rotationEffect(.degrees(folded ? 0 : 90)).frame(width: 20, height: 28).contentShape(Rectangle())
           }
           .buttonStyle(.plain).accessibilityLabel(folded ? "Expand" : "Collapse")
         } else {
@@ -352,13 +352,13 @@ struct PageEntryScreen: View {
       } label: {
         HStack(spacing: 8) {
           Image(systemName: root ? "doc" : def == nil ? "questionmark.circle" : def?.isBuiltin == true ? "cube" : "puzzlepiece")
-            .font(.system(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 18)
+            .font(.app(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 18)
           Text(def?.name ?? String(localized: "Missing: \(block.component)")).font(.lnRow).foregroundStyle(def == nil ? Theme.warning : Theme.textHighlighted).lineLimit(1).layoutPriority(1)
           if !block.title.isEmpty { Text(block.title).font(.lnCaption).foregroundStyle(Theme.textDimmed).lineLimit(1) }
           Spacer(minLength: 0)
           if folded { Text("\(block.childFields(library).reduce(0) { $0 + block.children($1.key).count })").font(.lnCaption).foregroundStyle(Theme.textMuted) }
-          if block.isHidden { Image(systemName: "eye.slash").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Hidden") }
-          if block.animation != nil { Image(systemName: "sparkles").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Animated") }
+          if block.isHidden { Image(systemName: "eye.slash").font(.app(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Hidden") }
+          if block.animation != nil { Image(systemName: "sparkles").font(.app(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Animated") }
         }
         .contentShape(Rectangle())
       }
@@ -374,14 +374,14 @@ struct PageEntryScreen: View {
           Divider()
           Button(role: .destructive) { remove(block.uid) } label: { Label("Delete", systemImage: "trash") }
         } label: {
-          Image(systemName: "ellipsis").font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 28, height: 28).contentShape(Rectangle())
+          Image(systemName: "ellipsis").font(.app(size: 13, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 28, height: 28).contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
         .accessibilityLabel("Actions for \(def?.name ?? block.component)")
       }
     }
     .padding(.leading, 4 + CGFloat(depth) * 14).padding(.trailing, 4)
-    .frame(minHeight: 36)
+    .frame(minHeight: Metrics.scaled(36))
     .background(selected ? Theme.accented : Color.clear, in: RoundedRectangle(cornerRadius: Metrics.radius))
     .overlay { if searching && found.matches.contains(block.uid) { RoundedRectangle(cornerRadius: Metrics.radius).stroke(Theme.accent.opacity(0.5), lineWidth: 1) } }
   }

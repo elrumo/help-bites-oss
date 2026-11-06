@@ -134,7 +134,7 @@ struct InboxPropertiesPanel: View {
         if let assignee {
           Avatar(name: assignee.inboxName, size: 16)
         } else {
-          Image(systemName: "person.crop.circle").font(.system(size: 14)).foregroundStyle(Theme.textDimmed)
+          Image(systemName: "person.crop.circle").font(.app(size: 14)).foregroundStyle(Theme.textDimmed)
         }
       }
     }
@@ -176,13 +176,13 @@ struct InboxPropertiesPanel: View {
       if let contact = hub(store)?.contact {
         Button { openContact = InboxOpenContact(id: contact.id) } label: {
           HStack(spacing: 8) {
-            Image(systemName: "person.crop.circle").font(.system(size: 13)).foregroundStyle(Theme.textMuted)
+            Image(systemName: "person.crop.circle").font(.app(size: 13)).foregroundStyle(Theme.textMuted)
             Text("Open contact").foregroundStyle(Theme.text)
             Spacer(minLength: 0)
-            Image(systemName: "arrow.up.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+            Image(systemName: "arrow.up.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
           }
           .font(.lnMeta)
-          .frame(height: 32)
+          .frame(height: Metrics.scaled(32))
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -224,7 +224,7 @@ struct InboxPropertiesPanel: View {
         Text(DateText.short(past.lastMessageAt ?? past.createdAt)).font(.lnCaption).foregroundStyle(Theme.textDimmed)
       }
       .padding(.horizontal, 8)
-      .frame(height: 32)
+      .frame(height: Metrics.scaled(32))
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
@@ -239,16 +239,16 @@ struct InboxPropertiesPanel: View {
           .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
           .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Theme.border))
       } else {
-        Image(systemName: "link").font(.system(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 24)
+        Image(systemName: "link").font(.app(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 24)
       }
       Text(ref.label).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
       Spacer(minLength: 0)
       if ref.url?.isEmpty == false {
-        Image(systemName: "arrow.up.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+        Image(systemName: "arrow.up.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
       }
     }
     .padding(.horizontal, 8)
-    .frame(height: 36)
+    .frame(height: Metrics.scaled(36))
     .contentShape(Rectangle())
     if let raw = ref.url, let url = URL(string: raw) { Link(destination: url) { row } } else { row }
   }
@@ -276,13 +276,13 @@ private struct InboxRecentErrors: View {
           ForEach(issues) { issue in
             Button { open(issue) } label: {
               HStack(spacing: 8) {
-                Image(systemName: "ladybug").font(.system(size: 12)).foregroundStyle(Theme.error)
+                Image(systemName: "ladybug").font(.app(size: 12)).foregroundStyle(Theme.error)
                 Text(issue.title).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
                 Spacer(minLength: 0)
-                Image(systemName: "arrow.up.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+                Image(systemName: "arrow.up.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
               }
               .padding(.horizontal, 8)
-              .frame(height: 32)
+              .frame(height: Metrics.scaled(32))
               .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -321,10 +321,10 @@ private struct InboxPropertyRow<Icon: View>: View {
       icon().frame(width: 16, height: 16)
       Text(value).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
       Spacer(minLength: 0)
-      Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+      Image(systemName: "chevron.up.chevron.down").font(.app(size: 9, weight: .semibold)).foregroundStyle(Theme.textDimmed)
     }
     .padding(.horizontal, 8)
-    .frame(height: 32)
+    .frame(height: Metrics.scaled(32))
     .contentShape(Rectangle())
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("\(label): \(value)")
@@ -346,7 +346,7 @@ private struct InboxLabels: View {
             HStack(spacing: 4) {
               Text(tag).lineLimit(1)
               Button { save(tags.filter { $0 != tag }) } label: {
-                Image(systemName: "xmark").font(.system(size: 8, weight: .bold)).frame(width: 14, height: 14).contentShape(Rectangle())
+                Image(systemName: "xmark").font(.app(size: 8, weight: .bold)).frame(width: 14, height: 14).contentShape(Rectangle())
               }
               .buttonStyle(.plain)
               .accessibilityLabel("Remove \(tag)")
@@ -355,14 +355,14 @@ private struct InboxLabels: View {
             .foregroundStyle(Theme.textToned)
             .padding(.leading, 9)
             .padding(.trailing, 5)
-            .frame(height: 24)
+            .frame(height: Metrics.scaled(24))
             .overlay(Capsule().strokeBorder(Theme.border))
           }
         }
         .padding(.horizontal, 8)
       }
       HStack(spacing: 10) {
-        Image(systemName: "tag").font(.system(size: 12)).foregroundStyle(Theme.textDimmed).frame(width: 16)
+        Image(systemName: "tag").font(.app(size: 12)).foregroundStyle(Theme.textDimmed).frame(width: 16)
         TextField("Add label", text: $draft)
           .font(.lnMeta)
           .textInputAutocapitalization(.never)
@@ -371,7 +371,7 @@ private struct InboxLabels: View {
           .onSubmit(add)
       }
       .padding(.horizontal, 8)
-      .frame(height: 32)
+      .frame(height: Metrics.scaled(32))
     }
   }
 
@@ -517,7 +517,7 @@ private struct InboxActions: View {
 
   private var noWebhookWarning: some View {
     HStack(alignment: .top, spacing: 6) {
-      Image(systemName: "exclamationmark.triangle").font(.system(size: 11, weight: .medium)).padding(.top, 2)
+      Image(systemName: "exclamationmark.triangle").font(.app(size: 11, weight: .medium)).padding(.top, 2)
       VStack(alignment: .leading, spacing: 2) {
         Text("This project has no action webhook, so these will fail.")
         Button("Set it up") { workspace.go(.project(projectId, .dev)) }.buttonStyle(.plain).font(.lnCaptionMedium)
@@ -557,7 +557,7 @@ private struct InboxActionStyle: ButtonStyle {
       .font(.lnMetaMedium)
       .foregroundStyle(destructive ? Theme.error : Theme.text)
       .padding(.horizontal, 12)
-      .frame(minHeight: 30)
+      .frame(minHeight: Metrics.scaled(30))
       .background(destructive ? Theme.error.opacity(configuration.isPressed ? 0.18 : 0.1) : configuration.isPressed ? Theme.elevated : Color.clear, in: Capsule())
       .overlay { if !destructive { Capsule().strokeBorder(Theme.border) } }
       .opacity(isEnabled ? 1 : 0.5)

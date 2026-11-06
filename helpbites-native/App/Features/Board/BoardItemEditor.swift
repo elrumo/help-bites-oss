@@ -48,6 +48,9 @@ struct BoardItemEditor: View {
   @State private var historyHasMore = false
   @State private var historyOffset = 0
   @State private var history: [BoardItemHistory] = []
+  @State private var copiedLink = false
+  /// Links, comments and history come a frame after the form, so the sheet opens without waiting on them.
+  @State private var showsMore = false
   @Environment(Workspace.self) private var workspace
   @Environment(\.dismiss) private var dismiss
   @Environment(\.openURL) private var openURL
@@ -78,7 +81,9 @@ struct BoardItemEditor: View {
         if let config = store.config {
           VStack(alignment: .leading, spacing: 20) {
             form(config)
-            if let current {
+            if !showsMore {
+              EmptyView()
+            } else if let current {
               links(current)
               commentsSection(current)
               historySection(current)
@@ -99,6 +104,14 @@ struct BoardItemEditor: View {
       .panelScreen(title)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+        if let current, let url = store.itemURL(current) {
+          // The item's address on the web panel, the same link the board's "Copy link" gives.
+          ToolbarItem(placement: .primaryAction) {
+            Button { copyLink(url) } label: { Label(copiedLink ? "Copied" : "Copy link", systemImage: copiedLink ? "checkmark" : "link") }
+              .keyboardShortcut("c", modifiers: [.command, .shift])
+              .help("Copy link (⇧⌘C)")
+          }
+        }
         ToolbarItem(placement: .confirmationAction) {
           Button(justSaved ? "Saved" : itemId == nil ? "Create" : "Save") { Task { await save() } }
             .keyboardShortcut(.return, modifiers: .command)
@@ -117,6 +130,7 @@ struct BoardItemEditor: View {
       } message: {
         Text("Its links go with it; the posts and conversations stay.")
       }
+      .task { showsMore = true }
       .task { await load() }
       // A new item with no title gets one a second after the description stops changing.
       .task(id: draft.description) {
@@ -171,7 +185,10 @@ struct BoardItemEditor: View {
     }
 
     if sizeClass == .regular {
-      HStack(alignment: .top, spacing: 12) { pickers(config) }
+      ViewThatFits(in: .horizontal) {
+        HStack(alignment: .top, spacing: 12) { pickers(config) }
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: Metrics.scaled(170)), spacing: 12, alignment: .top)], alignment: .leading, spacing: 16) { pickers(config) }
+      }
     } else {
       pickers(config)
     }
@@ -227,7 +244,7 @@ struct BoardItemEditor: View {
         ProgressView().controlSize(.small).frame(width: 32, height: 32).accessibilityLabel("Writing the title…")
       } else {
         Button { Task { await writeTitle(manual: true) } } label: {
-          Image(systemName: "sparkles").font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.accentText).frame(width: 32, height: 32).contentShape(Rectangle())
+          Image(systemName: "sparkles").font(.app(size: 13, weight: .medium)).foregroundStyle(Theme.accentText).frame(width: 32, height: 32).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Write the title with AI")
@@ -292,7 +309,7 @@ struct BoardItemEditor: View {
           .accessibilityLabel("Clear the date")
         Spacer(minLength: 0)
       }
-      .frame(minHeight: 40)
+      .frame(minHeight: Metrics.scaled(40))
     } else {
       Button { draft.targetDay = FeedbackFormat.day(Date()) } label: {
         HStack {
@@ -379,7 +396,7 @@ struct BoardItemEditor: View {
     FlowLayout(spacing: 12) {
       if !item.posts.isEmpty {
         HStack(spacing: 3) {
-          Image(systemName: "chevron.up").font(.system(size: 10, weight: .bold))
+          Image(systemName: "chevron.up").font(.app(size: 10, weight: .bold))
           Text("\(item.voteCount) votes").fontWeight(.semibold)
         }
         .foregroundStyle(Theme.text)
@@ -411,7 +428,7 @@ struct BoardItemEditor: View {
                 Text(post.number.map { "#\($0) \(post.title)" } ?? post.title).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
                 Spacer(minLength: 0)
                 Button { newPosts.removeAll { $0.id == post.id } } label: {
-                  Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
+                  Image(systemName: "xmark").font(.app(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Remove \(post.title)")
@@ -525,7 +542,7 @@ struct BoardItemEditor: View {
               HStack(spacing: 8) {
                 Button { openedCard = CardRoute(id: child.id) } label: {
                   HStack(spacing: 8) {
-                    if let icon = BoardKind.icon(child.itemKind) { Image(systemName: icon).font(.system(size: 11)).foregroundStyle(Theme.accentText) }
+                    if let icon = BoardKind.icon(child.itemKind) { Image(systemName: icon).font(.app(size: 11)).foregroundStyle(Theme.accentText) }
                     Text(child.number.map { "#\($0) \(child.title)" } ?? child.title).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
                     Spacer(minLength: 4)
                     if let status = store.config?.status(child.status) { Text(status.label).font(.lnCaption).foregroundStyle(Theme.textToned) }
@@ -534,7 +551,7 @@ struct BoardItemEditor: View {
                 }
                 .buttonStyle(.plain)
                 Button { Task { await setCard(child.id, in: false) } } label: {
-                  Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
+                  Image(systemName: "xmark").font(.app(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .disabled(linking)
@@ -792,7 +809,7 @@ struct BoardItemEditor: View {
   /// An error this item was filed from, with the way back to the tracker.
   private func errorRow(_ ref: BoardErrorRef) -> some View {
     HStack(spacing: 8) {
-      Image(systemName: "ladybug").font(.system(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 16)
+      Image(systemName: "ladybug").font(.app(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 16)
       Text(ref.title.isEmpty ? ref.issueId : ref.title).font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
       Spacer(minLength: 4)
       if let url = URL(string: ref.url), !ref.url.isEmpty {
@@ -805,7 +822,7 @@ struct BoardItemEditor: View {
   private func postRow(_ post: BoardLinkedPost) -> some View {
     HStack(spacing: 10) {
       HStack(spacing: 2) {
-        Image(systemName: "chevron.up").font(.system(size: 9, weight: .bold))
+        Image(systemName: "chevron.up").font(.app(size: 9, weight: .bold))
         Text("\(post.voteCount)").monospacedDigit()
       }
       .font(.lnCaptionMedium)
@@ -820,7 +837,7 @@ struct BoardItemEditor: View {
       }
       FeedbackStatusBadge(status: feedbackStatus(post))
       Button { Task { await setLink("feedback", post.id, false) } } label: {
-        Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
+        Image(systemName: "xmark").font(.app(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .disabled(linking)
@@ -847,7 +864,7 @@ struct BoardItemEditor: View {
         Text(status.label).font(.lnCaption).foregroundStyle(Theme.textToned)
       }
       Button { Task { await setLink("item", other.id, false) } } label: {
-        Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
+        Image(systemName: "xmark").font(.app(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .disabled(linking)
@@ -859,7 +876,7 @@ struct BoardItemEditor: View {
     HStack(spacing: 8) {
       Button { openConversation(conversation.id) } label: {
         HStack(spacing: 8) {
-          Image(systemName: "text.bubble").font(.system(size: 12)).foregroundStyle(Theme.textMuted)
+          Image(systemName: "text.bubble").font(.app(size: 12)).foregroundStyle(Theme.textMuted)
           Text(conversation.subject.isEmpty ? String(localized: "Conversation") : conversation.subject).foregroundStyle(Theme.text).lineLimit(1)
           if !conversation.endUserName.isEmpty { Text("· \(conversation.endUserName)").foregroundStyle(Theme.textMuted).lineLimit(1) }
           Spacer(minLength: 4)
@@ -871,7 +888,7 @@ struct BoardItemEditor: View {
       .buttonStyle(.plain)
       .accessibilityHint("Opens it in the inbox")
       Button { Task { await setLink("conversation", conversation.id, false) } } label: {
-        Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
+        Image(systemName: "xmark").font(.app(size: 10, weight: .bold)).foregroundStyle(Theme.textMuted).frame(width: 24, height: 24).contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .disabled(linking)
@@ -882,6 +899,12 @@ struct BoardItemEditor: View {
   // MARK: Actions
 
   /// Opened from the inbox or a post, the store starts empty: load the board first.
+  private func copyLink(_ url: URL) {
+    Clipboard.copy(url.absoluteString)
+    copiedLink = true
+    Task { try? await Task.sleep(for: .seconds(1.5)); copiedLink = false }
+  }
+
   private func load() async {
     guard store.config == nil else { return }
     let before = draft
@@ -1129,10 +1152,10 @@ struct BoardItemPicker: View {
                 if let number = item.number { Text("#\(number)").monospacedDigit().foregroundStyle(Theme.textMuted) }
                 Text(item.title).foregroundStyle(Theme.text).lineLimit(1)
                 Spacer(minLength: 0)
-                if item.isPublic { Image(systemName: "globe").font(.system(size: 11)).foregroundStyle(Theme.textDimmed) }
+                if item.isPublic { Image(systemName: "globe").font(.app(size: 11)).foregroundStyle(Theme.textDimmed) }
               }
               .font(.lnMeta)
-              .frame(minHeight: 36)
+              .frame(minHeight: Metrics.scaled(36))
               .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

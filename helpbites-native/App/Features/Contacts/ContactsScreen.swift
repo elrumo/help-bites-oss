@@ -59,7 +59,9 @@ struct ContactsScreen: View {
     let run = generation
     loading = true
     do {
-      let page: ContactPage = try await session.get("/v1/contacts", query: query(projectId))
+      let params = query(projectId)
+      if contacts.isEmpty, let last: ContactPage = session.peek("/v1/contacts", query: params) { contacts = last.contacts; loading = false }
+      let page: ContactPage = try await session.get("/v1/contacts", query: params)
       guard run == generation else { return }
       contacts = page.contacts
       next = page.nextCursor ?? ""

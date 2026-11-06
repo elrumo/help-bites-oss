@@ -40,14 +40,14 @@ struct FeedbackAttachSheet: View {
               dismiss()
             } label: {
               HStack(spacing: 8) {
-                HStack(spacing: 2) { Image(systemName: "chevron.up").font(.system(size: 9, weight: .bold)); Text("\(post.voteCount)").monospacedDigit() }
+                HStack(spacing: 2) { Image(systemName: "chevron.up").font(.app(size: 9, weight: .bold)); Text("\(post.voteCount)").monospacedDigit() }
                   .font(.lnCaptionMedium).foregroundStyle(Theme.textMuted).frame(width: 36, alignment: .leading)
                 if let number = post.number { Text("#\(number)").monospacedDigit().foregroundStyle(Theme.textMuted) }
                 Text(post.title).foregroundStyle(Theme.text).lineLimit(1)
                 Spacer(minLength: 0)
               }
               .font(.lnMeta)
-              .frame(minHeight: 36)
+              .frame(minHeight: Metrics.scaled(36))
               .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

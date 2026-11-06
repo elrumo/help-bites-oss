@@ -114,7 +114,7 @@ struct ChangelogReplySheet: View {
       if picked { chosen.remove(conversation.id) } else { chosen.insert(conversation.id) }
     } label: {
       HStack(spacing: 10) {
-        Image(systemName: picked ? "checkmark.circle.fill" : "circle").font(.system(size: 18)).foregroundStyle(picked ? Theme.accent : Theme.textDimmed)
+        Image(systemName: picked ? "checkmark.circle.fill" : "circle").font(.app(size: 18)).foregroundStyle(picked ? Theme.accent : Theme.textDimmed)
         Text(conversation.subject.isEmpty ? String(localized: "Conversation") : conversation.subject).foregroundStyle(Theme.text).lineLimit(1)
         if !conversation.endUserName.isEmpty { Text("· \(conversation.endUserName)").foregroundStyle(Theme.textMuted).lineLimit(1) }
         Spacer(minLength: 4)

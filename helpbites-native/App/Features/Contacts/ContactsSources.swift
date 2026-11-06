@@ -74,7 +74,7 @@ struct SourcesList: View {
           Divider()
           Button(role: .destructive) { deleting = source } label: { Label("Delete", systemImage: "trash") }
         } label: {
-          Image(systemName: "ellipsis").font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
+          Image(systemName: "ellipsis").font(.app(size: 14, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
         .accessibilityLabel("Source actions")

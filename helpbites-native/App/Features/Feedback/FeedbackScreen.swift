@@ -91,7 +91,9 @@ struct FeedbackScreen: View {
   }
 
   func loadPosts() async throws {
-    let result: PostsResponse = try await session.get("/v1/feedback", query: ["project": projectId, "includeHidden": "1", "limit": "500", "sort": "new"])
+    let query = ["project": projectId, "includeHidden": "1", "limit": "500", "sort": "new"]
+    if posts.isEmpty, let last: PostsResponse = session.peek("/v1/feedback", query: query) { posts = last.posts }
+    let result: PostsResponse = try await session.get("/v1/feedback", query: query)
     posts = result.posts
   }
 
@@ -346,6 +348,7 @@ private struct FeedbackBoardView: View {
         PlanningAddSheet(projectId: store.projectId, post: post) { notify($0) }
       }
       .panelScreen("Feedback")
+      .projectHeader(store.projectId, "Feedback", detail: countLine, warning: store.config?.enabled == false)
       .toolbar { toolbar }
       .sheet(item: $editor) { route in FeedbackPostEditor(store: store, postId: route.postId) }
       .sheet(isPresented: $showAi) { AiCardsSheet(session: store.session, projectId: store.projectId, kind: .feedback) { try? await store.loadPosts() } }
@@ -378,22 +381,15 @@ private struct FeedbackBoardView: View {
     }
   }
 
+  private var countLine: String? {
+    guard let config = store.config else { return nil }
+    guard config.enabled else { return String(localized: "Feedback is off") }
+    let posts = store.posts.count == 1 ? String(localized: "1 post") : String(localized: "\(store.posts.count) posts")
+    let votes = store.totalVotes == 1 ? String(localized: "1 vote") : String(localized: "\(store.totalVotes) votes")
+    return String(localized: "\(posts), \(votes)")
+  }
+
   @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-    ToolbarItem(placement: .principal) {
-      VStack(spacing: 1) {
-        ProjectBreadcrumb(projectId: store.projectId, title: "Feedback")
-        if let config = store.config {
-          if config.enabled {
-            let posts = store.posts.count == 1 ? String(localized: "1 post") : String(localized: "\(store.posts.count) posts")
-            let votes = store.totalVotes == 1 ? String(localized: "1 vote") : String(localized: "\(store.totalVotes) votes")
-            Text("\(posts), \(votes)")
-              .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
-          } else {
-            Text("Feedback is off").font(.lnCaption).foregroundStyle(Theme.warning)
-          }
-        }
-      }
-    }
     if store.config?.enabled == true {
       ToolbarItemGroup(placement: .topBarTrailing) {
         changelogMenu
@@ -468,22 +464,11 @@ private struct FeedbackBoardView: View {
   }
 
   private func typeMenu(_ config: FeedbackBoardConfig) -> some View {
-    Menu {
+    FilterMenu(value: store.typeFilter.isEmpty ? String(localized: "All types") : config.type(store.typeFilter)?.label ?? store.typeFilter, active: !store.typeFilter.isEmpty) {
       Picker("Type", selection: $store.typeFilter) {
         Text("All types").tag("")
         ForEach(config.types) { type in Text(type.label).tag(type.key) }
       }
-    } label: {
-      HStack(spacing: 6) {
-        Text(store.typeFilter.isEmpty ? String(localized: "All types") : config.type(store.typeFilter)?.label ?? store.typeFilter).lineLimit(1)
-        Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
-      }
-      .font(.lnMetaMedium)
-      .foregroundStyle(store.typeFilter.isEmpty ? Theme.textMuted : Theme.textHighlighted)
-      .padding(.horizontal, 10)
-      .frame(maxWidth: 130)
-      .frame(height: 34)
-      .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
     }
     .accessibilityLabel("Type")
   }
@@ -602,8 +587,8 @@ private struct FeedbackPostRow: View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
           title.font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(2).multilineTextAlignment(.leading)
           Spacer(minLength: 0)
-          if post.locked { Image(systemName: "lock").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Locked") }
-          if post.hidden { Image(systemName: "eye.slash").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Hidden from the public feedback page") }
+          if post.locked { Image(systemName: "lock").font(.app(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Locked") }
+          if post.hidden { Image(systemName: "eye.slash").font(.app(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Hidden from the public feedback page") }
         }
         let excerpt = FeedbackFormat.plainText(post.body, limit: 220)
         if !excerpt.isEmpty {
@@ -650,13 +635,13 @@ private struct FeedbackPostRow: View {
 private struct FeedbackCompactLabelStyle: LabelStyle {
   func makeBody(configuration: Configuration) -> some View {
     HStack(spacing: 4) {
-      configuration.icon.font(.system(size: 11))
+      configuration.icon.font(.app(size: 11))
       configuration.title
     }
     .font(.lnCaption)
     .foregroundStyle(Theme.textMuted)
     .lineLimit(1)
-    .frame(height: 20)
+    .frame(height: Metrics.scaled(20))
   }
 }
 
@@ -711,7 +696,7 @@ private struct FeedbackBoardColumn<Actions: View>: View {
       HStack(alignment: .top, spacing: 6) {
         Text(post.title).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).lineLimit(3).multilineTextAlignment(.leading)
         Spacer(minLength: 0)
-        if post.hidden { Image(systemName: "eye.slash").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Hidden") }
+        if post.hidden { Image(systemName: "eye.slash").font(.app(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Hidden") }
       }
       HStack(spacing: 10) {
         Label { Text("\(post.voteCount)").fontWeight(.semibold) } icon: { Image(systemName: "chevron.up") }.accessibilityLabel("\(post.voteCount) votes")

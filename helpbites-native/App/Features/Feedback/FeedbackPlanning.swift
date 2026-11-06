@@ -104,7 +104,7 @@ struct PlanningAddSheet: View {
                 else if busy == item.id { ProgressView().controlSize(.mini) }
               }
               .font(.lnMeta)
-              .frame(minHeight: 36)
+              .frame(minHeight: Metrics.scaled(36))
               .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

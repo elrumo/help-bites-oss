@@ -12,10 +12,10 @@ struct PrimaryButtonStyle: ButtonStyle {
   @Environment(\.isEnabled) private var isEnabled
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
-      .font(compact ? .lnMetaMedium : .system(size: 15, weight: .medium))
+      .font(compact ? .lnMetaMedium : .app(size: 15, weight: .medium))
       .foregroundStyle(.white)
       .padding(.horizontal, compact ? 12 : 16)
-      .frame(minHeight: compact ? 30 : 40)
+      .frame(minHeight: Metrics.scaled(compact ? 30 : 40))
       .background(Theme.accent.opacity(configuration.isPressed ? 0.85 : 1), in: Capsule())
       .opacity(isEnabled ? 1 : 0.5)
       .contentShape(Capsule())
@@ -28,11 +28,12 @@ struct SecondaryButtonStyle: ButtonStyle {
   @Environment(\.isEnabled) private var isEnabled
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
-      .font(compact ? .lnMetaMedium : .system(size: 15, weight: .medium))
+      .font(compact ? .lnMetaMedium : .app(size: 15, weight: .medium))
       .foregroundStyle(Theme.text)
       .padding(.horizontal, compact ? 12 : 16)
-      .frame(minHeight: compact ? 30 : 40)
+      .frame(minHeight: Metrics.scaled(compact ? 30 : 40))
       .background(configuration.isPressed ? Theme.elevated : Color.clear, in: Capsule())
+      .hoverFill(Capsule())
       .overlay(Capsule().strokeBorder(Theme.border))
       .opacity(isEnabled ? 1 : 0.5)
       .contentShape(Capsule())
@@ -48,8 +49,9 @@ struct GhostButtonStyle: ButtonStyle {
       .font(.lnMetaMedium)
       .foregroundStyle(tint)
       .padding(.horizontal, 10)
-      .frame(minHeight: 30)
+      .frame(minHeight: Metrics.scaled(30))
       .background(configuration.isPressed ? Theme.elevated : Color.clear, in: Capsule())
+      .hoverFill(Capsule())
       .opacity(isEnabled ? 1 : 0.5)
       .contentShape(Capsule())
   }
@@ -83,9 +85,10 @@ struct IconButton: View {
   var body: some View {
     Button(action: action) {
       Image(systemName: systemImage)
-        .font(.system(size: 14, weight: .medium))
+        .font(.app(size: 14, weight: .medium))
         .foregroundStyle(Theme.textMuted)
-        .frame(width: 32, height: 32)
+        .frame(width: Metrics.scaled(32), height: Metrics.scaled(32))
+        .hoverFill(Circle())
         .overlay { if bordered { Circle().strokeBorder(Theme.border) } }
         .contentShape(Circle())
     }
@@ -112,20 +115,55 @@ struct Pill: View {
   var body: some View {
     Button(action: action) {
       HStack(spacing: 6) {
-        if let systemImage { Image(systemName: systemImage).font(.system(size: 11, weight: .semibold)) }
+        if let systemImage { Image(systemName: systemImage).font(.app(size: 11, weight: .semibold)) }
         Text(label)
         if let count { Text("\(count)").monospacedDigit().foregroundStyle(Theme.textDimmed) }
       }
       .font(.lnMetaMedium)
       .foregroundStyle(isActive ? Theme.textHighlighted : Theme.textMuted)
       .padding(.horizontal, 12)
-      .frame(height: 30)
+      .frame(minHeight: Metrics.scaled(30))
       .background(isActive ? Theme.elevated : Color.clear, in: Capsule())
+      .hoverFill(Capsule())
       .overlay(Capsule().strokeBorder(isActive ? Theme.borderAccented : Theme.border))
       .contentShape(Capsule())
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(isActive ? .isSelected : [])
+  }
+}
+
+/// A filter that opens a menu ("Any epic", "Manual"). On the Mac it is the system's pull-down button, sized
+/// to what it says and filled with the accent while it narrows the list; on iPhone and iPad, the panel's pill.
+struct FilterMenu<Content: View>: View {
+  let value: String
+  var active = false
+  @ViewBuilder let content: () -> Content
+
+  var body: some View {
+    #if os(macOS)
+    let menu = Menu { content() } label: { Text(value).lineLimit(1) }
+      .menuStyle(.button)
+      .menuIndicator(.visible)
+      .controlSize(TextScale.shared.percent >= 110 ? .large : .regular)
+      .font(.lnMeta)
+      .fixedSize()
+    if active { menu.buttonStyle(.borderedProminent) } else { menu.buttonStyle(.bordered) }
+    #else
+    Menu { content() } label: {
+      HStack(spacing: 6) {
+        Text(value).lineLimit(1)
+        Image(systemName: "chevron.down").font(.app(size: 9, weight: .semibold))
+      }
+      .font(.lnMetaMedium)
+      .foregroundStyle(active ? Theme.textHighlighted : Theme.textMuted)
+      .padding(.horizontal, 12)
+      .frame(height: Metrics.scaled(30))
+      .background(active ? Theme.elevated : Color.clear, in: Capsule())
+      .overlay(Capsule().strokeBorder(active ? Theme.borderAccented : Theme.border))
+      .contentShape(Capsule())
+    }
+    #endif
   }
 }
 
@@ -143,7 +181,7 @@ struct Tag: View {
     .font(.lnCaptionMedium)
     .foregroundStyle(Theme.textToned)
     .padding(.horizontal, 8)
-    .frame(height: 22)
+    .frame(minHeight: Metrics.scaled(22))
     .overlay(Capsule().strokeBorder(Theme.border))
   }
 }
@@ -154,9 +192,12 @@ struct Tag: View {
 struct LinearFieldStyle: TextFieldStyle {
   func _body(configuration: TextField<Self._Label>) -> some View {
     configuration
+      #if os(macOS)
+      .textFieldStyle(.plain)  // the Mac's own bezel would sit inside this border
+      #endif
       .font(.lnBody)
       .padding(.horizontal, 12)
-      .frame(minHeight: 40)
+      .frame(minHeight: Metrics.scaled(40))
       .background(Theme.field, in: RoundedRectangle(cornerRadius: Metrics.radius))
       .overlay(RoundedRectangle(cornerRadius: Metrics.radius).strokeBorder(Theme.border))
   }
@@ -227,14 +268,14 @@ struct SearchField: View {
   }
   var body: some View {
     HStack(spacing: 8) {
-      Image(systemName: "magnifyingglass").font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.textDimmed)
-      TextField(prompt, text: $text).font(.lnCallout).submitLabel(.search).onSubmit(onSubmit).autocorrectionDisabled()
+      Image(systemName: "magnifyingglass").font(.app(size: 13, weight: .medium)).foregroundStyle(Theme.textDimmed)
+      TextField(prompt, text: $text).textFieldStyle(.plain).font(.lnCallout).submitLabel(.search).onSubmit(onSubmit).autocorrectionDisabled()
       if !text.isEmpty {
         Button { text = ""; onSubmit() } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.textDimmed) }.buttonStyle(.plain).accessibilityLabel("Clear search")
       }
     }
     .padding(.horizontal, 10)
-    .frame(height: 34)
+    .frame(minHeight: Metrics.scaled(34))
     .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
   }
 }
@@ -288,7 +329,7 @@ struct GroupHeader: View {
       Spacer(minLength: 0)
     }
     .padding(.horizontal, 12)
-    .frame(height: 34)
+    .frame(minHeight: Metrics.scaled(34))
     .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
   }
 }
@@ -308,7 +349,7 @@ struct EmptyState<Actions: View>: View {
   var body: some View {
     VStack(spacing: 0) {
       Image(systemName: systemImage)
-        .font(.system(size: 18, weight: .regular))
+        .font(.app(size: 18, weight: .regular))
         .foregroundStyle(Theme.textMuted)
         .frame(width: 48, height: 48)
         .background(Theme.panel, in: RoundedRectangle(cornerRadius: Metrics.radiusLarge))
@@ -361,7 +402,7 @@ struct SkeletonRows: View {
   var body: some View {
     VStack(spacing: 8) {
       ForEach(0..<count, id: \.self) { _ in
-        RoundedRectangle(cornerRadius: Metrics.radius).fill(Theme.elevated).frame(height: 36)
+        RoundedRectangle(cornerRadius: Metrics.radius).fill(Theme.elevated).frame(height: Metrics.scaled(36))
       }
     }
     .padding(Metrics.gutter)
@@ -378,7 +419,7 @@ struct CodeBlock: View {
     }
     .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radius))
     .overlay(alignment: .topTrailing) {
-      Button { Clipboard.copy(code) } label: { Image(systemName: "doc.on.doc").font(.system(size: 12)).foregroundStyle(Theme.textMuted).padding(8) }
+      Button { Clipboard.copy(code) } label: { Image(systemName: "doc.on.doc").font(.app(size: 12)).foregroundStyle(Theme.textMuted).padding(8) }
         .buttonStyle(.plain).accessibilityLabel("Copy code")
     }
   }
@@ -433,6 +474,19 @@ extension Array {
 }
 
 // MARK: - Screen chrome
+
+/// The quiet fill a control takes under the pointer (Mac, and iPad with a trackpad), as on the web.
+private struct HoverFill<S: Shape>: ViewModifier {
+  let shape: S
+  @State private var hovering = false
+  func body(content: Content) -> some View {
+    content.background(hovering ? Theme.elevated : Color.clear, in: shape).onHover { hovering = $0 }
+  }
+}
+
+extension View {
+  func hoverFill(_ shape: some Shape) -> some View { modifier(HoverFill(shape: shape)) }
+}
 
 extension View {
   /// The raised panel every screen sits on, with a quiet inline navigation bar.

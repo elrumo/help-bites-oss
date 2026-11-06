@@ -22,7 +22,7 @@ struct SettingsScreen: View {
               Text(session.agent?.email.isEmpty == false ? session.agent!.email : "@\(session.agent?.username ?? "")").font(.lnMeta).foregroundStyle(Theme.textMuted)
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+            Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
           }
           .contentShape(Rectangle())
         }
@@ -41,10 +41,10 @@ struct SettingsScreen: View {
             Button { joinOpen = true } label: { Label("Join with an invitation…", systemImage: "envelope.open") }
           } label: {
             HStack(spacing: 10) {
-              Image(systemName: "building.2").font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
+              Image(systemName: "building.2").font(.app(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
               Text(session.workspace?.name ?? String(localized: "Workspace")).font(.lnRow).foregroundStyle(Theme.text)
               Spacer(minLength: 0)
-              Image(systemName: "chevron.up.chevron.down").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+              Image(systemName: "chevron.up.chevron.down").font(.app(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
             }
             .padding(.horizontal, 14)
             .frame(minHeight: Metrics.rowHeight)
@@ -69,10 +69,10 @@ struct SettingsScreen: View {
           NavigationLink { TabBarScreen() } label: {
             CardRow {
               HStack(spacing: 10) {
-                Image(systemName: "dock.rectangle").font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
+                Image(systemName: "dock.rectangle").font(.app(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
                 Text("Tab bar").font(.lnRow).foregroundStyle(Theme.text)
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+                Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
               }
             }
             .contentShape(Rectangle())
@@ -82,7 +82,7 @@ struct SettingsScreen: View {
           Button { workspace.tourOpen = true } label: {
             CardRow(divider: false) {
               HStack(spacing: 10) {
-                Image(systemName: "play.circle").font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
+                Image(systemName: "play.circle").font(.app(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
                 Text("Replay the welcome tour").font(.lnRow).foregroundStyle(Theme.text)
                 Spacer(minLength: 0)
               }
@@ -98,6 +98,11 @@ struct SettingsScreen: View {
             ForEach(ThemePreference.allCases) { option in Text(option.label).tag(option) }
           }
           .pickerStyle(.segmented)
+        }
+
+        VStack(alignment: .leading, spacing: 8) {
+          SectionLabel("Text size")
+          TextSizePicker()
         }
 
         VStack(alignment: .leading, spacing: 8) {
@@ -136,10 +141,10 @@ struct SettingsScreen: View {
     NavigationLink(value: route) {
       CardRow(divider: divider) {
         HStack(spacing: 10) {
-          Image(systemName: systemImage).font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
+          Image(systemName: systemImage).font(.app(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
           Text(title).font(.lnRow).foregroundStyle(Theme.text)
           Spacer(minLength: 0)
-          Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+          Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
         }
       }
       .contentShape(Rectangle())

@@ -32,19 +32,19 @@ struct BoardLinksSection: View {
       if config?.enabled == false {
         Button { workspace.go(.project(projectId, .board)) } label: {
           HStack(spacing: 8) {
-            Image(systemName: "rectangle.split.3x1").font(.system(size: 12)).foregroundStyle(Theme.textDimmed)
+            Image(systemName: "rectangle.split.3x1").font(.app(size: 12)).foregroundStyle(Theme.textDimmed)
             Text("Set up Planning").foregroundStyle(Theme.textMuted)
             Spacer(minLength: 0)
           }
           .font(.lnMeta)
           .padding(.horizontal, 8)
-          .frame(height: 32)
+          .frame(height: Metrics.scaled(32))
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
       } else {
         if !loaded {
-          RoundedRectangle(cornerRadius: Metrics.radiusSmall).fill(Theme.elevated).frame(height: 28).padding(.horizontal, 8)
+          RoundedRectangle(cornerRadius: Metrics.radiusSmall).fill(Theme.elevated).frame(height: Metrics.scaled(28)).padding(.horizontal, 8)
         }
         ForEach(linked) { item in row(item) }
         HStack(spacing: 6) {
@@ -92,7 +92,7 @@ struct BoardLinksSection: View {
           if let number = item.number { Text("#\(number)").monospacedDigit().foregroundStyle(Theme.textMuted) }
           Text(item.title).foregroundStyle(Theme.text).lineLimit(1)
           if item.isPublic {
-            Image(systemName: "globe").font(.system(size: 10)).foregroundStyle(Theme.textDimmed).accessibilityLabel("On the public roadmap")
+            Image(systemName: "globe").font(.app(size: 10)).foregroundStyle(Theme.textDimmed).accessibilityLabel("On the public roadmap")
           }
           Spacer(minLength: 0)
         }
@@ -102,7 +102,7 @@ struct BoardLinksSection: View {
       .buttonStyle(.plain)
       Button { Task { await link(item.id, false) } } label: {
         Group {
-          if busy == item.id { ProgressView().controlSize(.mini) } else { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.textDimmed) }
+          if busy == item.id { ProgressView().controlSize(.mini) } else { Image(systemName: "xmark").font(.app(size: 9, weight: .bold)).foregroundStyle(Theme.textDimmed) }
         }
         .frame(width: 24, height: 24)
         .contentShape(Rectangle())
@@ -112,7 +112,7 @@ struct BoardLinksSection: View {
       .accessibilityLabel("Unlink \(item.number.map { "#\($0) " } ?? "")\(item.title)")
     }
     .padding(.horizontal, 8)
-    .frame(height: 32)
+    .frame(height: Metrics.scaled(32))
   }
 
   /// Made on an action, never while the view updates.

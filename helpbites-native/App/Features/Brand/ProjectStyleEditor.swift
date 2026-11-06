@@ -111,11 +111,11 @@ struct ProjectStylePreview: View {
     return VStack(alignment: .leading, spacing: 6) {
       HStack(spacing: 8) {
         if let url = URL(string: logo), !logo.isEmpty { AsyncImage(url: url) { $0.resizable().scaledToFit() } placeholder: { Color.clear }.frame(width: 24, height: 24) }
-        Text("New").font(.system(size: 10, weight: .semibold)).padding(.horizontal, 6).padding(.vertical, 1)
+        Text("New").font(.app(size: 10, weight: .semibold)).padding(.horizontal, 6).padding(.vertical, 1)
           .background(color(palette.accent), in: Capsule()).foregroundStyle(OnboardingPreview.readable(on: palette.accent))
       }
-      Text("What shipped this week").font(.system(size: 14, weight: .semibold))
-      Text("A short line of what changed, set in your style.").font(.system(size: 12)).foregroundStyle(color(palette.muted))
+      Text("What shipped this week").font(.app(size: 14, weight: .semibold))
+      Text("A short line of what changed, set in your style.").font(.app(size: 12)).foregroundStyle(color(palette.muted))
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(12)

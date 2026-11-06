@@ -218,6 +218,9 @@ struct AppCommands: Commands {
         Button("Projects") { workspace?.go(.projects) }.keyboardShortcut("2")
         Button("Email Templates") { workspace?.go(.emailTemplates) }.keyboardShortcut("3")
         Divider()
+        #if os(macOS)
+        Button("Back") { if workspace?.macPath.isEmpty == false { workspace?.macPath.removeLast() } }.keyboardShortcut("[")
+        #endif
         Button("Jump To…") { workspace?.paletteOpen = true }.keyboardShortcut("k")
       }
       .disabled(workspace == nil)
@@ -260,6 +263,75 @@ struct CommandPalette: View {
   }
 
   var body: some View {
+    #if os(macOS)
+    macBody
+    #else
+    phoneBody
+    #endif
+  }
+
+  #if os(macOS)
+  @State private var highlighted = 0
+
+  /// The Mac's palette: a fixed panel you drive from the keyboard, ↑ ↓ to move, Return to open, Esc to close.
+  private var macBody: some View {
+    let list = entries
+    return VStack(spacing: 0) {
+      HStack(spacing: 10) {
+        Image(systemName: "magnifyingglass").font(.app(size: 15, weight: .medium)).foregroundStyle(Theme.textDimmed)
+        TextField("Go to a page or project…", text: $query)
+          .textFieldStyle(.plain).font(.app(size: 16)).focused($focused)
+          .onSubmit { open(list.indices.contains(highlighted) ? list[highlighted] : list.first) }
+          .onKeyPress(.downArrow) { highlighted = min(highlighted + 1, max(list.count - 1, 0)); return .handled }
+          .onKeyPress(.upArrow) { highlighted = max(highlighted - 1, 0); return .handled }
+      }
+      .padding(.horizontal, 16).frame(height: Metrics.scaled(52))
+      Rectangle().fill(Theme.border).frame(height: 1)
+      if query.trimmingCharacters(in: .whitespaces).count >= 2 { GlobalSearchResults(query: query) { dismiss() } }
+      ScrollViewReader { proxy in
+        ScrollView {
+          LazyVStack(spacing: 2) {
+            ForEach(Array(list.enumerated()), id: \.element.id) { index, entry in
+              Button { open(entry) } label: { paletteRow(entry, highlighted: index == highlighted) }
+                .buttonStyle(.plain)
+                .id(entry.id)
+                .onHover { if $0 { highlighted = index } }
+            }
+          }
+          .padding(8)
+        }
+        .onChange(of: highlighted) { _, index in if list.indices.contains(index) { proxy.scrollTo(list[index].id) } }
+      }
+    }
+    .frame(width: 620, height: 460)
+    .background(Theme.panel)
+    .onChange(of: query) { _, _ in highlighted = 0 }
+    .onExitCommand { dismiss() }
+    .onAppear { focused = true }
+  }
+
+  private func paletteRow(_ entry: Entry, highlighted: Bool) -> some View {
+    HStack(spacing: 10) {
+      Image(systemName: entry.systemImage).font(.app(size: 14)).foregroundStyle(highlighted ? Theme.textHighlighted : Theme.textMuted).frame(width: 22)
+      Text(entry.title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+      if let detail = entry.detail, !detail.isEmpty { Text(detail).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1) }
+      Spacer(minLength: 0)
+      if highlighted { Image(systemName: "return").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed) }
+    }
+    .padding(.horizontal, 10)
+    .frame(height: Metrics.scaled(36))
+    .background(highlighted ? Theme.accented : .clear, in: RoundedRectangle(cornerRadius: Metrics.radius))
+    .contentShape(Rectangle())
+  }
+
+  private func open(_ entry: Entry?) {
+    guard let entry else { return }
+    workspace.go(entry.route)
+    dismiss()
+  }
+  #endif
+
+  private var phoneBody: some View {
     NavigationStack {
       VStack(spacing: 0) {
         SearchField(text: $query, prompt: "Go to a page or project…").focused($focused).padding(12)
@@ -271,12 +343,12 @@ struct CommandPalette: View {
             dismiss()
           } label: {
             HStack(spacing: 10) {
-              Image(systemName: entry.systemImage).font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
+              Image(systemName: entry.systemImage).font(.app(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 20)
               Text(entry.title).font(.lnRow).foregroundStyle(Theme.textHighlighted)
               if let detail = entry.detail, !detail.isEmpty { Text(detail).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1) }
               Spacer(minLength: 0)
             }
-            .frame(height: 40)
+            .frame(height: Metrics.scaled(40))
             .contentShape(Rectangle())
           }
           .buttonStyle(.plain)

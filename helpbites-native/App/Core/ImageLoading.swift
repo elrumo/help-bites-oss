@@ -1,3 +1,4 @@
+import ImageIO
 import SwiftUI
 
 /// A memory-and-disk cached remote image. `AsyncImage` re-fetches and flashes its placeholder
@@ -14,6 +15,17 @@ import SwiftUI
     return URLSession(configuration: configuration)
   }()
 
+  nonisolated private static func decode(_ data: Data) -> PlatformImage? {
+    #if os(macOS)
+    guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+          let image = CGImageSourceCreateImageAtIndex(source, 0, [kCGImageSourceShouldCacheImmediately: true] as CFDictionary)
+    else { return NSImage(data: data) }
+    return NSImage(cgImage: image, size: .zero)
+    #else
+    return UIImage(data: data)?.preparingForDisplay()
+    #endif
+  }
+
   func cached(_ url: URL) -> PlatformImage? { cache.object(forKey: url as NSURL) }
 
   func image(for url: URL) async -> PlatformImage? {
@@ -22,7 +34,8 @@ import SwiftUI
     let session = session
     let task = Task<PlatformImage?, Never> {
       guard let (data, response) = try? await session.data(from: url), (response as? HTTPURLResponse)?.statusCode ?? 200 < 300 else { return nil }
-      return await Task.detached(priority: .userInitiated) { PlatformImage(data: data) }.value
+      // Decoded here, off the main thread: a lazily decoded image decodes on its first draw, mid-scroll.
+      return await Task.detached(priority: .userInitiated) { ImageCache.decode(data) }.value
     }
     inFlight[url] = task
     let image = await task.value

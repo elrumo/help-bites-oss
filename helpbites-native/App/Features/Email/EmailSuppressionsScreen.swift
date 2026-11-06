@@ -30,7 +30,7 @@ struct EmailSuppressionsScreen: View {
         if !notice.isEmpty {
           HStack(spacing: 8) {
             EmailNotice(systemImage: "checkmark.circle", title: notice, tone: .success)
-            Button { notice = "" } label: { Image(systemName: "xmark").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted) }
+            Button { notice = "" } label: { Image(systemName: "xmark").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted) }
               .buttonStyle(.plain)
               .accessibilityLabel("Dismiss")
           }
@@ -107,22 +107,11 @@ struct EmailSuppressionsScreen: View {
         SearchField(text: $search, prompt: "Address")
           .textInputAutocapitalization(.never)
           .keyboardType(.emailAddress)
-        Menu {
+        FilterMenu(value: reason.isEmpty ? String(localized: "Reason") : EmailStatusText.reason(reason), active: !reason.isEmpty) {
           Picker("Reason", selection: $reason) {
             Text("Any reason").tag("")
             ForEach(EmailStatusText.suppressionReasons, id: \.key) { item in Text(item.label).tag(item.key) }
           }
-        } label: {
-          HStack(spacing: 4) {
-            Text(reason.isEmpty ? String(localized: "Reason") : EmailStatusText.reason(reason)).lineLimit(1)
-            Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
-          }
-          .font(.lnMetaMedium)
-          .foregroundStyle(reason.isEmpty ? Theme.textMuted : Theme.textHighlighted)
-          .padding(.horizontal, 10)
-          .frame(height: 30)
-          .background(reason.isEmpty ? Color.clear : Theme.elevated, in: Capsule())
-          .overlay(Capsule().strokeBorder(reason.isEmpty ? Theme.border : Theme.borderAccented))
         }
       }
     }

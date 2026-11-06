@@ -198,7 +198,7 @@ struct EmailVariablesPanel: View {
   private var emptyState: some View {
     VStack(spacing: 8) {
       Image(systemName: "curlybraces")
-        .font(.system(size: 20))
+        .font(.app(size: 20))
         .foregroundStyle(Theme.textDimmed)
       emptyMessage
         .font(.lnMeta)
@@ -231,7 +231,7 @@ private struct EmailVariableRow: View {
     VStack(alignment: .leading, spacing: 12) {
       VStack(alignment: .leading, spacing: 2) {
         Text(verbatim: "{{ \(variable.key) }}")
-          .font(.system(size: 13, weight: .medium, design: .monospaced))
+          .font(.app(size: 13, weight: .medium, design: .monospaced))
           .foregroundStyle(Theme.accentText)
           .textSelection(.enabled)
         if variable.key.hasPrefix("project.") {

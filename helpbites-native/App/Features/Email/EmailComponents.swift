@@ -421,7 +421,7 @@ struct EmailComponentLibrary: View {
         Spacer(minLength: 0)
         Menu { actions(component) } label: {
           Image(systemName: "ellipsis")
-            .font(.system(size: 14, weight: .medium))
+            .font(.app(size: 14, weight: .medium))
             .foregroundStyle(Theme.textMuted)
             .frame(width: 32, height: 32)
             .contentShape(Rectangle())

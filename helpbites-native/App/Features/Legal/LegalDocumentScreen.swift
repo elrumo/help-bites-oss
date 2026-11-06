@@ -308,7 +308,7 @@ private struct LegalDocumentContent: View {
                   }
                   Spacer(minLength: 4)
                   Tag(text: other.isPublished ? "Published" : "Draft", tint: other.isPublished ? Theme.success : Theme.textDimmed)
-                  Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+                  Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
                 }
                 .padding(.vertical, 8)
                 .contentShape(Rectangle())

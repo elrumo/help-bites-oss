@@ -91,7 +91,7 @@ struct EmailChatPanel: View {
     Button { _ = store.chat.send(starter.prompt) } label: {
       HStack(alignment: .top, spacing: 10) {
         Image(systemName: starter.systemImage)
-          .font(.system(size: 13, weight: .medium))
+          .font(.app(size: 13, weight: .medium))
           .foregroundStyle(Theme.accentText)
           .frame(width: 16)
           .padding(.top, 1)
@@ -157,7 +157,7 @@ struct EmailChatPanel: View {
 
   private var avatar: some View {
     Image(systemName: "sparkles")
-      .font(.system(size: 11, weight: .semibold))
+      .font(.app(size: 11, weight: .semibold))
       .foregroundStyle(Theme.accentText)
       .frame(width: 22, height: 22)
       .background(Theme.elevated, in: Circle())
@@ -294,7 +294,7 @@ struct EmailChatPanel: View {
 
   private var errorLine: some View {
     HStack(spacing: 8) {
-      Image(systemName: "exclamationmark.circle").font(.system(size: 12, weight: .medium))
+      Image(systemName: "exclamationmark.circle").font(.app(size: 12, weight: .medium))
       Text(chat.error).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
       Button("Retry") { store.chat.retry() }
         .buttonStyle(GhostButtonStyle(tint: Theme.error))
@@ -310,11 +310,11 @@ struct EmailChatPanel: View {
   /// The block the next request is about; x points at the whole email again.
   private func selectionPill(_ block: EmailDesignBlock) -> some View {
     HStack(spacing: 6) {
-      Image(systemName: block.kind?.systemImage ?? "square.dashed").font(.system(size: 11, weight: .semibold))
+      Image(systemName: block.kind?.systemImage ?? "square.dashed").font(.app(size: 11, weight: .semibold))
       Text(block.displayName).lineLimit(1)
       Button { store.selectedId = nil } label: {
         Image(systemName: "xmark")
-          .font(.system(size: 9, weight: .bold))
+          .font(.app(size: 9, weight: .bold))
           .foregroundStyle(Theme.textMuted)
           .frame(width: 20, height: 20)
           .contentShape(Circle())
@@ -326,7 +326,7 @@ struct EmailChatPanel: View {
     .foregroundStyle(Theme.textToned)
     .padding(.leading, 10)
     .padding(.trailing, 3)
-    .frame(height: 26)
+    .frame(height: Metrics.scaled(26))
     .background(Theme.elevated, in: Capsule())
     .overlay(Capsule().strokeBorder(Theme.border))
   }
@@ -381,7 +381,7 @@ struct EmailChatPanel: View {
       if chat.busy {
         Button { store.chat.stop() } label: {
           Image(systemName: "stop.circle.fill")
-            .font(.system(size: 26))
+            .font(.app(size: 26))
             .foregroundStyle(Theme.textHighlighted)
             .frame(width: 32, height: 32)
             .contentShape(Circle())
@@ -391,7 +391,7 @@ struct EmailChatPanel: View {
       } else {
         Button(action: submit) {
           Image(systemName: "arrow.up.circle.fill")
-            .font(.system(size: 26))
+            .font(.app(size: 26))
             .foregroundStyle(canSend ? Theme.accent : Theme.textDimmed)
             .frame(width: 32, height: 32)
             .contentShape(Circle())
@@ -448,14 +448,14 @@ struct EmailChatChangeChip: View {
           ProgressView().controlSize(.mini)
         } else {
           Image(systemName: change.failed ? "exclamationmark.triangle" : change.systemImage)
-            .font(.system(size: 11, weight: .semibold))
+            .font(.app(size: 11, weight: .semibold))
         }
       }
       .frame(width: 14, height: 14)
       Text(change.text).lineLimit(1).truncationMode(.tail)
       Spacer(minLength: 0)
       if change.blockId != nil {
-        Image(systemName: "cursorarrow.rays").font(.system(size: 10, weight: .medium)).opacity(0.5)
+        Image(systemName: "cursorarrow.rays").font(.app(size: 10, weight: .medium)).opacity(0.5)
       }
     }
     .font(.lnCaption)
@@ -477,13 +477,13 @@ private struct EmailChatFixPill: View {
   var body: some View {
     Button(action: action) {
       HStack(spacing: 6) {
-        Image(systemName: "exclamationmark.triangle").font(.system(size: 11, weight: .semibold))
+        Image(systemName: "exclamationmark.triangle").font(.app(size: 11, weight: .semibold))
         Text(label)
       }
       .font(.lnMetaMedium)
       .foregroundStyle(Theme.warning)
       .padding(.horizontal, 12)
-      .frame(height: 30)
+      .frame(height: Metrics.scaled(30))
       .background(Theme.warning.opacity(0.08), in: Capsule())
       .overlay(Capsule().strokeBorder(Theme.warning.opacity(0.4)))
       .contentShape(Capsule())

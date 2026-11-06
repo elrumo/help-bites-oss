@@ -25,7 +25,7 @@ struct BillingSection: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), alignment: .leading)], alignment: .leading, spacing: 8) {
                   ForEach(unlocks, id: \.key) { item in
                     HStack(spacing: 10) {
-                      Image(systemName: BillingSnapshot.icon(item.key)).font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.accentText)
+                      Image(systemName: BillingSnapshot.icon(item.key)).font(.app(size: 12, weight: .semibold)).foregroundStyle(Theme.accentText)
                         .frame(width: 26, height: 26).background(Theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: Metrics.radius))
                       Text(LocalizedStringKey(item.label)).font(.lnMeta).foregroundStyle(Theme.text)
                       Spacer(minLength: 0)
@@ -53,7 +53,7 @@ struct BillingSection: View {
   private func offer(_ data: BillingSnapshot, pro: BillingSnapshot.Plan) -> some View {
     VStack(alignment: .leading, spacing: 14) {
       Label("HelpBites \(pro.name)", systemImage: "sparkles").font(.lnCaptionMedium).foregroundStyle(Theme.accentText)
-        .padding(.horizontal, 9).frame(height: 22).background(Theme.accent.opacity(0.12), in: Capsule())
+        .padding(.horizontal, 9).frame(height: Metrics.scaled(22)).background(Theme.accent.opacity(0.12), in: Capsule())
       VStack(alignment: .leading, spacing: 6) {
         Text("Give your app room to grow").font(.lnTitle).foregroundStyle(Theme.textHighlighted)
         Text(data.pitch).font(.lnCallout).foregroundStyle(Theme.textMuted).fixedSize(horizontal: false, vertical: true)
@@ -68,7 +68,7 @@ struct BillingSection: View {
       let headline = data.headline(interval)
       VStack(alignment: .leading, spacing: 4) {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
-          Text(headline.amount.isEmpty ? pro.name : headline.amount).font(.system(size: 32, weight: .semibold)).foregroundStyle(Theme.textHighlighted)
+          Text(headline.amount.isEmpty ? pro.name : headline.amount).font(.app(size: 32, weight: .semibold)).foregroundStyle(Theme.textHighlighted)
           if !headline.amount.isEmpty { Text("/ month").font(.lnMeta).foregroundStyle(Theme.textMuted) }
         }
         Text(headline.note).font(.lnCaption).foregroundStyle(Theme.textMuted)
@@ -92,7 +92,7 @@ struct BillingSection: View {
   /// Otherwise: the plan in force and the way to manage it.
   private func current(_ data: BillingSnapshot) -> some View {
     HStack(alignment: .center, spacing: 12) {
-      Image(systemName: data.onFree ? "leaf" : "sparkles").font(.system(size: 15, weight: .semibold))
+      Image(systemName: data.onFree ? "leaf" : "sparkles").font(.app(size: 15, weight: .semibold))
         .foregroundStyle(data.onFree ? Theme.textMuted : Theme.accentText)
         .frame(width: 36, height: 36).background(data.onFree ? Theme.elevated : Theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: Metrics.radiusLarge))
       VStack(alignment: .leading, spacing: 3) {

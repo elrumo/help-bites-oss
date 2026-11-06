@@ -144,7 +144,9 @@ struct EmailLibraryScreen: View {
     .onAppear(perform: takePendingTab)
     .onChange(of: workspace.pendingEmailTab) { takePendingTab() }
     .toolbar {
+      #if os(iOS)
       if let projectId { ToolbarItem(placement: .principal) { ProjectBreadcrumb(projectId: projectId, title: "Email") } }
+      #endif
       // Suppressed addresses sit behind the Log, as on the web.
       if projectId != nil && tab == .log {
         ToolbarItem(placement: .topBarTrailing) { IconButton(systemImage: "envelope.badge.shield.half.filled", label: "Suppressed") { tab = .suppressed } }
@@ -211,7 +213,7 @@ struct EmailLibraryScreen: View {
           Button { Task { await exportAll() } } label: { Label("Export all as JSON", systemImage: "square.and.arrow.up") }
         } label: {
           Image(systemName: "arrow.up.arrow.down.square")
-            .font(.system(size: 14, weight: .medium))
+            .font(.app(size: 14, weight: .medium))
             .foregroundStyle(Theme.textMuted)
             .frame(width: 32, height: 32)
             .contentShape(Rectangle())
@@ -294,7 +296,7 @@ struct EmailLibraryScreen: View {
           if let target = noticeTarget {
             Button("Open shared template") { editing = target; notice = ""; noticeTarget = nil }.buttonStyle(.lnGhost)
           }
-          Button { notice = ""; noticeTarget = nil } label: { Image(systemName: "xmark").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted) }
+          Button { notice = ""; noticeTarget = nil } label: { Image(systemName: "xmark").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted) }
             .buttonStyle(.plain)
             .accessibilityLabel("Dismiss")
         }
@@ -344,7 +346,7 @@ struct EmailLibraryScreen: View {
       HStack(spacing: 6) {
         Button("All") { folderId = nil }.foregroundStyle(Theme.textMuted)
         ForEach(crumbs) { crumb in
-          Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+          Image(systemName: "chevron.right").font(.app(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
           Button(crumb.name) { folderId = crumb.id }
             .fontWeight(crumb.id == folderId ? .medium : .regular)
             .foregroundStyle(crumb.id == folderId ? Theme.textHighlighted : Theme.textMuted)
@@ -353,14 +355,14 @@ struct EmailLibraryScreen: View {
       .font(.lnCallout)
       .buttonStyle(.plain)
     }
-    .frame(height: 36)
+    .frame(height: Metrics.scaled(36))
   }
 
   private func folderRow(_ folder: EmailFolderItem) -> some View {
     HStack(spacing: 8) {
       Button { folderId = folder.id } label: {
         HStack(spacing: 12) {
-          Image(systemName: "folder").font(.system(size: 15)).foregroundStyle(Theme.textMuted).frame(width: 32)
+          Image(systemName: "folder").font(.app(size: 15)).foregroundStyle(Theme.textMuted).frame(width: 32)
           Text(folder.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
           Spacer(minLength: 0)
         }
@@ -389,7 +391,7 @@ struct EmailLibraryScreen: View {
               Text(t.title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
               if t.isLinked { Tag(text: "Shared template", tint: Theme.accent).layoutPriority(1) }
               if t.shareMode != nil {
-                Image(systemName: "globe").font(.system(size: 11)).foregroundStyle(Theme.textMuted).accessibilityLabel("Shared")
+                Image(systemName: "globe").font(.app(size: 11)).foregroundStyle(Theme.textMuted).accessibilityLabel("Shared")
               }
             }
             HStack(spacing: 4) {
@@ -462,7 +464,7 @@ struct EmailLibraryScreen: View {
 
   private var ellipsis: some View {
     Image(systemName: "ellipsis")
-      .font(.system(size: 14, weight: .medium))
+      .font(.app(size: 14, weight: .medium))
       .foregroundStyle(Theme.textMuted)
       .frame(width: 32, height: 32)
       .contentShape(Rectangle())
@@ -476,7 +478,7 @@ struct EmailLibraryScreen: View {
     return ZStack {
       RoundedRectangle(cornerRadius: Metrics.radiusSmall).fill(Color(hexString: colors.background) ?? Theme.elevated)
       if doc == nil {
-        Image(systemName: "envelope").font(.system(size: 13)).foregroundStyle(Theme.textMuted)
+        Image(systemName: "envelope").font(.app(size: 13)).foregroundStyle(Theme.textMuted)
       } else {
         VStack(alignment: .leading, spacing: 2.5) {
           Capsule().fill(Color(hexString: colors.button) ?? Theme.textDimmed).frame(width: 9, height: 2.5)

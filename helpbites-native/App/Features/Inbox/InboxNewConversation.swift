@@ -132,7 +132,7 @@ struct InboxNewConversationSheet: View {
           }
           .lineLimit(1)
           .padding(.horizontal, 12)
-          .frame(height: 40)
+          .frame(height: Metrics.scaled(40))
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

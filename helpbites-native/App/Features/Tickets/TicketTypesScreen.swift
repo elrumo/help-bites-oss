@@ -110,7 +110,7 @@ struct TicketTypesScreen: View {
   /// An action is signed to the project's webhook; with none, running it fails.
   private var noWebhookWarning: some View {
     HStack(alignment: .top, spacing: 10) {
-      Image(systemName: "exclamationmark.triangle").font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.warning).padding(.top, 1)
+      Image(systemName: "exclamationmark.triangle").font(.app(size: 14, weight: .medium)).foregroundStyle(Theme.warning).padding(.top, 1)
       VStack(alignment: .leading, spacing: 4) {
         Text("These actions have nowhere to go").font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted)
         Text("An action is signed and sent to the project's action webhook. This project has no webhook URL and secret yet, so running an action will fail.")

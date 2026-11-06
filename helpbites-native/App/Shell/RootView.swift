@@ -17,6 +17,9 @@ struct RootView: View {
       }
     }
     .environment(session)
+    #if os(macOS)
+    .panelControls()
+    #endif
     .tint(Theme.accent)
     .preferredColorScheme(theme.scheme)
     .alert("HelpBites", isPresented: .init(get: { !session.error.isEmpty }, set: { if !$0 { session.error = "" } })) {

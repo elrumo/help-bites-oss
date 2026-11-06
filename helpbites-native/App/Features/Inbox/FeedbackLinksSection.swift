@@ -55,7 +55,7 @@ struct FeedbackLinksSection: View {
         }
         ErrorText(message: error).padding(.horizontal, 8).padding(.top, 4)
       } else {
-        RoundedRectangle(cornerRadius: Metrics.radiusSmall).fill(Theme.elevated).frame(height: 28).padding(.horizontal, 8)
+        RoundedRectangle(cornerRadius: Metrics.radiusSmall).fill(Theme.elevated).frame(height: Metrics.scaled(28)).padding(.horizontal, 8)
       }
     }
     .sheet(isPresented: $picking) {
@@ -71,7 +71,7 @@ struct FeedbackLinksSection: View {
         if let number = post.number { Text("#\(number)").monospacedDigit().foregroundStyle(Theme.textMuted) }
         Text(post.title).foregroundStyle(Theme.text).lineLimit(1)
         Image(systemName: post.following ? "bell.badge" : "bell.slash")
-          .font(.system(size: 10))
+          .font(.app(size: 10))
           .foregroundStyle(post.following ? Theme.accentText : Theme.textDimmed)
           .accessibilityLabel(post.following ? "Follows this post" : "Not following")
         Spacer(minLength: 0)
@@ -80,7 +80,7 @@ struct FeedbackLinksSection: View {
       .contentShape(Rectangle())
       Button { Task { await link(post.id, false) } } label: {
         Group {
-          if busy == post.id { ProgressView().controlSize(.mini) } else { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.textDimmed) }
+          if busy == post.id { ProgressView().controlSize(.mini) } else { Image(systemName: "xmark").font(.app(size: 9, weight: .bold)).foregroundStyle(Theme.textDimmed) }
         }
         .frame(width: 24, height: 24)
         .contentShape(Rectangle())
@@ -90,7 +90,7 @@ struct FeedbackLinksSection: View {
       .accessibilityLabel("Unlink \(post.number.map { "#\($0) " } ?? "")\(post.title)")
     }
     .padding(.horizontal, 8)
-    .frame(height: 32)
+    .frame(height: Metrics.scaled(32))
   }
 
   private func compose(_ context: ConversationHubContext) -> some View {
@@ -196,7 +196,7 @@ private struct FeedbackPostPicker: View {
                 Spacer(minLength: 0)
               }
               .font(.lnMeta)
-              .frame(minHeight: 36)
+              .frame(minHeight: Metrics.scaled(36))
               .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

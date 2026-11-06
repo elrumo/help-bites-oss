@@ -150,7 +150,7 @@ struct OverviewScreen: View {
       Text(label).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
       HStack(spacing: 5) {
         if dot { Circle().fill(Theme.accent).frame(width: 6, height: 6) }
-        Text(value).font(.system(size: 17, weight: .semibold)).monospacedDigit().foregroundStyle(dimmed ? Theme.textDimmed : Theme.textHighlighted).lineLimit(1).minimumScaleFactor(0.7)
+        Text(value).font(.app(size: 17, weight: .semibold)).monospacedDigit().foregroundStyle(dimmed ? Theme.textDimmed : Theme.textHighlighted).lineLimit(1).minimumScaleFactor(0.7)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -187,7 +187,7 @@ struct OverviewScreen: View {
           Button { if tile.opensInbox { workspace.go(.inbox) } } label: {
             VStack(alignment: .leading, spacing: 4) {
               Text(tile.label).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
-              Text(tile.value).font(.system(size: 22, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted).lineLimit(1).minimumScaleFactor(0.6)
+              Text(tile.value).font(.app(size: 22, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted).lineLimit(1).minimumScaleFactor(0.6)
               if let change = tile.change {
                 HStack(spacing: 4) {
                   Label(abs(change).formatted(.percent.precision(.fractionLength(0))), systemImage: change >= 0 ? "arrow.up.right" : "arrow.down.right")
@@ -257,7 +257,7 @@ struct OverviewScreen: View {
         }
       VStack(alignment: .leading, spacing: 3) {
         HStack(spacing: 6) {
-          Text(name).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.textHighlighted).lineLimit(1)
+          Text(name).font(.app(size: 14, weight: .semibold)).foregroundStyle(Theme.textHighlighted).lineLimit(1)
           Spacer(minLength: 4)
           Text(DateText.short(item.at)).font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
         }
@@ -266,7 +266,7 @@ struct OverviewScreen: View {
           .lineLimit(1)
       }
       Text("\(item.unread)")
-        .font(.system(size: 11, weight: .semibold)).monospacedDigit().foregroundStyle(.white)
+        .font(.app(size: 11, weight: .semibold)).monospacedDigit().foregroundStyle(.white)
         .padding(.horizontal, 6).frame(minWidth: 20, minHeight: 20)
         .background(Theme.accent, in: Capsule())
         .accessibilityLabel("\(item.unread) unread")
@@ -343,7 +343,7 @@ struct OverviewScreen: View {
       .chartXSelection(value: $selectedMonth)
       .chartYAxis(.hidden)
       .chartXAxis {
-        AxisMarks { value in AxisValueLabel { Text(monthLabel(value.as(String.self) ?? "")).font(.system(size: 10)).foregroundStyle(Theme.textMuted) } }
+        AxisMarks { value in AxisValueLabel { Text(monthLabel(value.as(String.self) ?? "")).font(.app(size: 10)).foregroundStyle(Theme.textMuted) } }
       }
       .frame(height: 140)
     }
@@ -394,9 +394,14 @@ struct OverviewScreen: View {
   }
 
   private func load() async {
+    let query = ["range": range.rawValue]
+    // The page the app opens on: paint last time's numbers (this session's, else the last launch's) at once.
+    if overview == nil { overview = session.peek("/v1/admin/overview", query: query) ?? SnapshotCache.load(WorkspaceOverview.self, "overview-\(range.rawValue)") }
     async let attention: Void = workspace.loadAttention()
     do {
-      overview = try await session.get("/v1/admin/overview", query: ["range": range.rawValue])
+      let loaded: WorkspaceOverview = try await session.get("/v1/admin/overview", query: query)
+      overview = loaded
+      SnapshotCache.save(loaded, "overview-\(range.rawValue)")
       error = ""
     } catch {
       if !Task.isCancelled { self.error = error.localizedDescription }
@@ -426,7 +431,7 @@ struct AttentionList: View {
   private func row(_ item: AttentionItem) -> some View {
     let project = withProject ? workspace.project(item.projectId) : nil
     return HStack(spacing: 10) {
-      Image(systemName: item.systemImage).font(.system(size: 13)).foregroundStyle(Theme.warning).frame(width: 18)
+      Image(systemName: item.systemImage).font(.app(size: 13)).foregroundStyle(Theme.warning).frame(width: 18)
       if let project { ProjectDot(id: project.id, accent: project.theme.accent, icon: project.iconUrl) }
       VStack(alignment: .leading, spacing: 2) {
         (Text(project.map { "\($0.name)  " } ?? "").font(.lnMetaMedium).foregroundStyle(Theme.textToned)
@@ -436,7 +441,7 @@ struct AttentionList: View {
       }
       Spacer(minLength: 8)
       if item.count > 1 { Text("\(item.count)").font(.lnMeta).monospacedDigit().foregroundStyle(Theme.textMuted) }
-      Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+      Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
     }
     .contentShape(Rectangle())
   }

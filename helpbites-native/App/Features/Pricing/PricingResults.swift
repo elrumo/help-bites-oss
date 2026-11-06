@@ -118,7 +118,7 @@ struct PricingResultsPanel: View {
   private func tile(_ label: String, _ value: String, _ hint: String) -> some View {
     VStack(alignment: .leading, spacing: 2) {
       Text(LocalizedStringKey(label)).font(.lnCaption).foregroundStyle(Theme.textMuted)
-      Text(value).font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.textHighlighted).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+      Text(value).font(.app(size: 20, weight: .semibold)).foregroundStyle(Theme.textHighlighted).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
       Text(hint.isEmpty ? " " : hint).font(.lnCaption).foregroundStyle(Theme.textDimmed).lineLimit(1)
     }
     .padding(12)

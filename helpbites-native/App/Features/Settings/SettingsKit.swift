@@ -73,7 +73,7 @@ struct SettingsSection<Content: View, Trailing: View>: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       HStack(spacing: 8) {
-        if let systemImage { Image(systemName: systemImage).font(.system(size: 13)).foregroundStyle(Theme.textMuted) }
+        if let systemImage { Image(systemName: systemImage).font(.app(size: 13)).foregroundStyle(Theme.textMuted) }
         Text(title).font(.lnHeading).foregroundStyle(Theme.textHighlighted)
         Spacer(minLength: 0)
         trailing()

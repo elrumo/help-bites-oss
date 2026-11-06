@@ -122,25 +122,25 @@ struct EmailLogScreen: View {
 
   @ViewBuilder private var filterMenus: some View {
     Group {
-      Menu {
+      FilterMenu(value: status.isEmpty ? String(localized: "Status") : EmailStatusText.style(status).label, active: !status.isEmpty) {
         Picker("Status", selection: $status) {
           Text("Any status").tag("")
           ForEach(EmailStatusText.statuses, id: \.key) { item in Label(item.style.label, systemImage: item.style.systemImage).tag(item.key) }
         }
-      } label: { filterLabel(status.isEmpty ? String(localized: "Status") : EmailStatusText.style(status).label, active: !status.isEmpty) }
-      Menu {
+      }
+      FilterMenu(value: source.isEmpty ? String(localized: "Source") : EmailStatusText.source(source), active: !source.isEmpty) {
         Picker("Source", selection: $source) {
           Text("Any source").tag("")
           ForEach(EmailStatusText.sources, id: \.key) { item in Text(item.label).tag(item.key) }
         }
-      } label: { filterLabel(source.isEmpty ? String(localized: "Source") : EmailStatusText.source(source), active: !source.isEmpty) }
+      }
       if !templateKeys.isEmpty {
-        Menu {
+        FilterMenu(value: template.isEmpty ? String(localized: "Template") : template, active: !template.isEmpty) {
           Picker("Template", selection: $template) {
             Text("Any template").tag("")
             ForEach(templateKeys, id: \.self) { key in Text(key).tag(key) }
           }
-        } label: { filterLabel(template.isEmpty ? String(localized: "Template") : template, active: !template.isEmpty) }
+        }
       }
     }
   }
@@ -152,19 +152,6 @@ struct EmailLogScreen: View {
     return keys
   }
 
-  private func filterLabel(_ text: String, active: Bool) -> some View {
-    HStack(spacing: 4) {
-      Text(text).lineLimit(1)
-      Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
-    }
-    .font(.lnMetaMedium)
-    .foregroundStyle(active ? Theme.textHighlighted : Theme.textMuted)
-    .padding(.horizontal, 10)
-    .frame(height: 30)
-    .background(active ? Theme.elevated : Color.clear, in: Capsule())
-    .overlay(Capsule().strokeBorder(active ? Theme.borderAccented : Theme.border))
-  }
-
   /// The last 30 days, and what's missing on the server.
   private var statsSection: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -173,8 +160,8 @@ struct EmailLogScreen: View {
           ForEach(tiles(stats), id: \.label) { tile in
             VStack(alignment: .leading, spacing: 4) {
               Text(tile.label).font(.lnCaption).foregroundStyle(Theme.textMuted)
-              Text(EmailStatusText.compactCount(tile.value)).font(.system(size: 22, weight: .semibold)).foregroundStyle(Theme.textHighlighted).monospacedDigit()
-              Text(tile.hint).font(.system(size: 11)).foregroundStyle(Theme.textDimmed).lineLimit(1)
+              Text(EmailStatusText.compactCount(tile.value)).font(.app(size: 22, weight: .semibold)).foregroundStyle(Theme.textHighlighted).monospacedDigit()
+              Text(tile.hint).font(.app(size: 11)).foregroundStyle(Theme.textDimmed).lineLimit(1)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
@@ -222,13 +209,13 @@ struct EmailLogScreen: View {
 
   private var batchBanner: some View {
     HStack(spacing: 8) {
-      Image(systemName: "square.stack.3d.up").font(.system(size: 13)).foregroundStyle(Theme.textMuted)
+      Image(systemName: "square.stack.3d.up").font(.app(size: 13)).foregroundStyle(Theme.textMuted)
       Text("Recipients of one send").font(.lnMeta).foregroundStyle(Theme.textMuted)
       Text(batch).font(.lnMono).foregroundStyle(Theme.text).lineLimit(1).truncationMode(.middle)
       Spacer(minLength: 0)
       Button("Show everything") { batch = "" }.buttonStyle(.lnGhost)
     }
-    .frame(minHeight: 36)
+    .frame(minHeight: Metrics.scaled(36))
   }
 
   private func row(_ entry: EmailLogEntry) -> some View {
@@ -254,7 +241,7 @@ struct EmailLogScreen: View {
           HStack(spacing: 6) {
             Text(entry.recipient).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
             if entry.testMode == true {
-              Image(systemName: "flask").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Test mode")
+              Image(systemName: "flask").font(.app(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Test mode")
             }
           }
           HStack(spacing: 4) {
@@ -464,7 +451,7 @@ struct EmailLogDetailSheet: View {
           VStack(alignment: .leading, spacing: 2) {
             ForEach(Array(files.enumerated()), id: \.offset) { _, file in
               HStack(spacing: 6) {
-                Image(systemName: "paperclip").font(.system(size: 11)).foregroundStyle(Theme.textMuted)
+                Image(systemName: "paperclip").font(.app(size: 11)).foregroundStyle(Theme.textMuted)
                 Text(file.filename ?? String(localized: "file"))
                 Text(EmailStatusText.kilobytes(file.size ?? 0) + (file.inline == true ? " · " + String(localized: "inline") : "")).font(.lnCaption).foregroundStyle(Theme.textMuted)
               }
@@ -584,7 +571,7 @@ struct EmailLogDetailSheet: View {
 
   private func timelineRow(systemImage: String, text: String, detail: String, at: String?) -> some View {
     HStack(alignment: .firstTextBaseline, spacing: 8) {
-      Image(systemName: systemImage).font(.system(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 16)
+      Image(systemName: systemImage).font(.app(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 16)
       (Text(text).foregroundStyle(Theme.text) + Text(detail.isEmpty ? "" : " · \(detail)").foregroundStyle(Theme.textMuted))
         .frame(maxWidth: .infinity, alignment: .leading)
       Text(EmailStatusText.fullDate(at)).font(.lnCaption).foregroundStyle(Theme.textMuted)

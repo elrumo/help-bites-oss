@@ -45,7 +45,7 @@ struct GithubRefsSection: View {
       if let url = URL(string: link.url), !link.url.isEmpty { openURL(url) }
     } label: {
       HStack(spacing: 8) {
-        Image(systemName: link.isPullRequest ? "arrow.triangle.pull" : "smallcircle.filled.circle").font(.system(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 16)
+        Image(systemName: link.isPullRequest ? "arrow.triangle.pull" : "smallcircle.filled.circle").font(.app(size: 12)).foregroundStyle(Theme.textMuted).frame(width: 16)
           .accessibilityLabel(link.isPullRequest ? "Pull request" : "Commit")
         Text(link.label).monospacedDigit().foregroundStyle(Theme.textMuted)
         Text(link.title).foregroundStyle(Theme.text).lineLimit(1)

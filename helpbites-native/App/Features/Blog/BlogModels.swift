@@ -307,7 +307,7 @@ struct BlogChip: View {
       .foregroundStyle(tint)
       .lineLimit(1)
       .padding(.horizontal, 7)
-      .frame(height: 20)
+      .frame(height: Metrics.scaled(20))
       .background(tint.opacity(0.14), in: Capsule())
   }
 }

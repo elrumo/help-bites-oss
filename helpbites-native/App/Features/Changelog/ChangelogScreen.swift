@@ -44,6 +44,7 @@ private struct ChangelogView: View {
   var body: some View {
     content
       .panelScreen("Changelog")
+      .projectHeader(store.projectId, "Changelog", detail: countLine)
       .toolbar { toolbar }
       .sheet(item: $sheet) { route in
         switch route {
@@ -137,17 +138,13 @@ private struct ChangelogView: View {
     }
   }
 
+  private var countLine: String? {
+    guard store.loaded else { return nil }
+    let drafts = store.draftCount == 1 ? String(localized: "1 draft") : String(localized: "\(store.draftCount) drafts")
+    return String(localized: "\(store.publicCount) public, \(drafts)")
+  }
+
   @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-    ToolbarItem(placement: .principal) {
-      VStack(spacing: 1) {
-        ProjectBreadcrumb(projectId: store.projectId, title: "Changelog")
-        if store.loaded {
-          let drafts = store.draftCount == 1 ? String(localized: "1 draft") : String(localized: "\(store.draftCount) drafts")
-          Text("\(store.publicCount) public, \(drafts)")
-            .font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted)
-        }
-      }
-    }
     if store.loaded {
       ToolbarItemGroup(placement: .topBarTrailing) {
         Button { withAnimation { store.selecting ? store.endSelecting() : (store.selecting = true) } } label: {
@@ -219,7 +216,7 @@ private struct ChangelogView: View {
             ForEach(group.entries) { entry in row(entry) }
             if group.entries.isEmpty {
               Text("No entries yet. Add one and choose this release.").font(.lnCaption).foregroundStyle(Theme.textMuted)
-                .linearRow().frame(minHeight: 36)
+                .linearRow().frame(minHeight: Metrics.scaled(36))
             }
           } header: { header(group) }
         }
@@ -306,7 +303,7 @@ private struct ChangelogView: View {
     } label: {
       HStack(spacing: 10) {
         if store.selecting {
-          Image(systemName: picked ? "checkmark.circle.fill" : "circle").font(.system(size: 18)).foregroundStyle(picked ? Theme.accent : Theme.textDimmed)
+          Image(systemName: picked ? "checkmark.circle.fill" : "circle").font(.app(size: 18)).foregroundStyle(picked ? Theme.accent : Theme.textDimmed)
         }
         VStack(alignment: .leading, spacing: 5) {
           Text(entry.title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(2).multilineTextAlignment(.leading)

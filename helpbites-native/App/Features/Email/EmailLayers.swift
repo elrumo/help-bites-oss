@@ -90,15 +90,15 @@ private struct EmailLayerRow: View {
     Button { store.selectedId = block.id } label: {
       HStack(spacing: 10) {
         Image(systemName: block.kind?.systemImage ?? "questionmark.square.dashed")
-          .font(.system(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 18)
+          .font(.app(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 18)
         Text(block.displayName).font(.lnCallout).foregroundStyle(Theme.text).lineLimit(1)
         Spacer(minLength: 0)
         if store.selectedId == block.id {
-          Image(systemName: "checkmark").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.accentText)
+          Image(systemName: "checkmark").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.accentText)
         }
       }
       .padding(.leading, indent)
-      .frame(minHeight: 36)
+      .frame(minHeight: Metrics.scaled(36))
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)

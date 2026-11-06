@@ -69,9 +69,9 @@ struct ErrorIssueCard: View {
     HStack(spacing: 8) {
       Button { toggle() } label: {
         HStack(spacing: 10) {
-          Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted)
+          Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted)
             .rotationEffect(.degrees(open ? 90 : 0)).frame(width: 12)
-          Image(systemName: "ladybug").font(.system(size: 13)).foregroundStyle(issue.isSevere ? Theme.error : Theme.warning)
+          Image(systemName: "ladybug").font(.app(size: 13)).foregroundStyle(issue.isSevere ? Theme.error : Theme.warning)
           VStack(alignment: .leading, spacing: 2) {
             Text(issue.title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(open ? 3 : 1)
             Text(subtitle).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1)
@@ -94,7 +94,7 @@ struct ErrorIssueCard: View {
         Button("Resolve") { onStatus("resolved") }
         Button("Ignore") { onStatus("closed") }
       } label: {
-        Image(systemName: "ellipsis").font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
+        Image(systemName: "ellipsis").font(.app(size: 14, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
       }
       .buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
       .accessibilityLabel("Change status")
@@ -254,10 +254,10 @@ struct ErrorIssueCard: View {
         boardItem = BoardRoute(id: filed.id)
       } label: {
         HStack(spacing: 8) {
-          Image(systemName: "rectangle.split.3x1").font(.system(size: 12)).foregroundStyle(Theme.accentText)
+          Image(systemName: "rectangle.split.3x1").font(.app(size: 12)).foregroundStyle(Theme.accentText)
           Text("On the board: \(filed.number.map { "#\($0) " } ?? "")\(filed.title)").font(.lnMeta).foregroundStyle(Theme.text).lineLimit(1)
           Spacer(minLength: 0)
-          Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textMuted)
+          Image(systemName: "chevron.right").font(.app(size: 10, weight: .semibold)).foregroundStyle(Theme.textMuted)
         }
         .contentShape(Rectangle())
       }
@@ -389,7 +389,7 @@ private struct ErrorFrameRow: View {
     VStack(alignment: .leading, spacing: 0) {
       Button { expanded.toggle() } label: {
         HStack(alignment: .top, spacing: 8) {
-          Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textMuted)
+          Image(systemName: "chevron.right").font(.app(size: 10, weight: .semibold)).foregroundStyle(Theme.textMuted)
             .rotationEffect(.degrees(expanded ? 90 : 0)).padding(.top, 3).opacity(frame.context.isEmpty ? 0.3 : 1)
           (Text(frame.file).foregroundStyle(frame.inApp ? Theme.textHighlighted : Theme.textMuted)
             + Text(frame.line > 0 ? ":\(frame.line)" : "").foregroundStyle(Theme.textMuted)

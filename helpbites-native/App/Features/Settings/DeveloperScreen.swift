@@ -64,7 +64,7 @@ struct DeveloperScreen: View {
             ForEach(links) { link in
               Button { follow(link.target, proxy) } label: {
                 HStack(alignment: .top, spacing: 12) {
-                  Image(systemName: link.systemImage).font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 18).padding(.top, 1)
+                  Image(systemName: link.systemImage).font(.app(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 18).padding(.top, 1)
                   VStack(alignment: .leading, spacing: 2) {
                     Text(link.label).font(.lnRow).foregroundStyle(Theme.textHighlighted)
                     Text(link.hint).font(.lnCaption).foregroundStyle(Theme.textMuted)
@@ -218,7 +218,7 @@ struct DeveloperScreen: View {
   private func section<Content: View>(_ title: String, _ subtitle: String, @ViewBuilder content: () -> Content) -> some View {
     VStack(alignment: .leading, spacing: 16) {
       VStack(alignment: .leading, spacing: 2) {
-        Text(title).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.textHighlighted)
+        Text(title).font(.app(size: 17, weight: .semibold)).foregroundStyle(Theme.textHighlighted)
         markdown(subtitle).font(.lnMeta).foregroundStyle(Theme.textMuted)
       }
       content()
@@ -229,7 +229,7 @@ struct DeveloperScreen: View {
     VStack(alignment: .leading, spacing: 8) {
       HStack(spacing: 8) {
         Text("\(number)")
-          .font(.system(size: 11, weight: .semibold))
+          .font(.app(size: 11, weight: .semibold))
           .monospacedDigit()
           .foregroundStyle(Theme.textToned)
           .frame(width: 20, height: 20)
@@ -249,7 +249,7 @@ struct DeveloperScreen: View {
   }
 
   @ViewBuilder private func endpointRow(_ method: String, _ path: String, _ description: String) -> some View {
-    let methodLabel = Text(method).font(.system(size: 11, weight: .semibold, design: .monospaced)).foregroundStyle(Theme.textMuted).frame(width: 52, alignment: .leading)
+    let methodLabel = Text(method).font(.app(size: 11, weight: .semibold, design: .monospaced)).foregroundStyle(Theme.textMuted).frame(width: 52, alignment: .leading)
     let pathLabel = Text(path).font(.lnMono).foregroundStyle(Theme.text)
     if sizeClass == .regular {
       HStack(alignment: .firstTextBaseline, spacing: 12) {

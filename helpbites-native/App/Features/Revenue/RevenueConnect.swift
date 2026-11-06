@@ -72,7 +72,7 @@ struct RevenueSourcePicker: View {
       ForEach(sources) { source in
         Button { onPick(source) } label: {
           HStack(alignment: .top, spacing: 12) {
-            Image(systemName: source.icon).font(.system(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 18).padding(.top, 1)
+            Image(systemName: source.icon).font(.app(size: 14)).foregroundStyle(Theme.textMuted).frame(width: 18).padding(.top, 1)
             VStack(alignment: .leading, spacing: 2) {
               Text(source.title).font(.lnRow).foregroundStyle(Theme.textHighlighted)
               Text(source.blurb).font(.lnCaption).foregroundStyle(Theme.textMuted).multilineTextAlignment(.leading)

@@ -20,7 +20,7 @@ struct ProjectBreadcrumb: View {
           }
         }
         .buttonStyle(.plain)
-        Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+        Image(systemName: "chevron.right").font(.app(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
       }
       Text(title).foregroundStyle(Theme.textHighlighted).lineLimit(1).layoutPriority(1)
     }
@@ -28,12 +28,45 @@ struct ProjectBreadcrumb: View {
   }
 }
 
+private struct ProjectHeader: ViewModifier {
+  let projectId: String
+  let title: LocalizedStringKey
+  let detail: String?
+  let warning: Bool
+  @Environment(Workspace.self) private var workspace
+
+  func body(content: Content) -> some View {
+    #if os(macOS)
+    let name = workspace.project(projectId)?.name ?? ""
+    content.navigationSubtitle([name, detail ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
+    #else
+    content.toolbar {
+      ToolbarItem(placement: .principal) {
+        VStack(spacing: 1) {
+          ProjectBreadcrumb(projectId: projectId, title: title)
+          if let detail { Text(detail).font(.lnCaption).monospacedDigit().foregroundStyle(warning ? Theme.warning : Theme.textMuted) }
+        }
+      }
+    }
+    #endif
+  }
+}
+
 extension View {
   /// `panelScreen` plus the project breadcrumb, for each section of a project.
+  /// On the Mac the window's own title and subtitle say it instead (MacShell names the project).
   func projectScreen(_ projectId: String, _ title: LocalizedStringKey) -> some View {
     panelScreen(title).toolbar {
+      #if os(iOS)
       ToolbarItem(placement: .principal) { ProjectBreadcrumb(projectId: projectId, title: title) }
+      #endif
     }
+  }
+
+  /// A project page's bar with a count line under the breadcrumb ("243 items, 41 on the roadmap"). On the Mac,
+  /// the window's title and subtitle carry them, the system's own place for both.
+  func projectHeader(_ projectId: String, _ title: LocalizedStringKey, detail: String?, warning: Bool = false) -> some View {
+    modifier(ProjectHeader(projectId: projectId, title: title, detail: detail, warning: warning))
   }
 
   @_disfavoredOverload func projectScreen(_ projectId: String, _ title: String) -> some View {

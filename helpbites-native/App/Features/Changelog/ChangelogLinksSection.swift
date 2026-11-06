@@ -33,7 +33,7 @@ struct ChangelogLinksSection: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       if !loaded {
-        RoundedRectangle(cornerRadius: Metrics.radiusSmall).fill(Theme.elevated).frame(height: 28).padding(.horizontal, 8)
+        RoundedRectangle(cornerRadius: Metrics.radiusSmall).fill(Theme.elevated).frame(height: Metrics.scaled(28)).padding(.horizontal, 8)
       }
       ForEach(linked) { entry in row(entry) }
       if composing {
@@ -81,7 +81,7 @@ struct ChangelogLinksSection: View {
       .buttonStyle(.plain)
       Button { Task { await link(entry, false) } } label: {
         Group {
-          if busy == entry.id { ProgressView().controlSize(.mini) } else { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.textDimmed) }
+          if busy == entry.id { ProgressView().controlSize(.mini) } else { Image(systemName: "xmark").font(.app(size: 9, weight: .bold)).foregroundStyle(Theme.textDimmed) }
         }
         .frame(width: 24, height: 24)
         .contentShape(Rectangle())
@@ -91,7 +91,7 @@ struct ChangelogLinksSection: View {
       .accessibilityLabel("Unlink \(entry.number.map { "#\($0) " } ?? "")\(entry.title)")
     }
     .padding(.horizontal, 8)
-    .frame(height: 32)
+    .frame(height: Metrics.scaled(32))
   }
 
   /// Made on an action, never while the view updates.
@@ -192,7 +192,7 @@ struct ChangelogEntryPicker: View {
                 Spacer(minLength: 0)
               }
               .font(.lnMeta)
-              .frame(minHeight: 36)
+              .frame(minHeight: Metrics.scaled(36))
               .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

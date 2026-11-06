@@ -342,7 +342,7 @@ struct FeedbackStatusBadge: View {
     .font(.lnCaptionMedium)
     .foregroundStyle(tint ?? Theme.textToned)
     .padding(.horizontal, 8)
-    .frame(height: 20)
+    .frame(height: Metrics.scaled(20))
     .background(tint?.opacity(0.12) ?? Theme.accented, in: Capsule())
   }
 }
@@ -365,7 +365,7 @@ struct FeedbackVoteTile: View {
   let count: Int
   var body: some View {
     VStack(spacing: 1) {
-      Image(systemName: "chevron.up").font(.system(size: 11, weight: .semibold))
+      Image(systemName: "chevron.up").font(.app(size: 11, weight: .semibold))
       Text("\(count)").font(.lnCaptionMedium).monospacedDigit()
     }
     .foregroundStyle(Theme.textToned)
@@ -408,7 +408,7 @@ struct FeedbackSelect: View {
         if let color = current?.color { Circle().fill(FeedbackFormat.tint(color) ?? Theme.textDimmed).frame(width: 7, height: 7) }
         Text(current?.label ?? selection).lineLimit(1)
         Spacer(minLength: 4)
-        Image(systemName: "chevron.up.chevron.down").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+        Image(systemName: "chevron.up.chevron.down").font(.app(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
       }
       .font(compact ? .lnMeta : .lnBody)
       .foregroundStyle(Theme.text)

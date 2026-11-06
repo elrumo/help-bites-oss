@@ -85,7 +85,7 @@ struct PricingScreen: View {
           .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+        Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
       }
       .contentShape(Rectangle())
     }
@@ -177,13 +177,13 @@ struct PricingTemplatePicker: View {
         ForEach(PricingLimits.templates, id: \.id) { item in
           Button { template = item.id } label: {
             HStack(spacing: 12) {
-              Image(systemName: item.systemImage).font(.system(size: 18)).frame(width: 28).foregroundStyle(template == item.id ? Theme.accentText : Theme.textMuted)
+              Image(systemName: item.systemImage).font(.app(size: 18)).frame(width: 28).foregroundStyle(template == item.id ? Theme.accentText : Theme.textMuted)
               VStack(alignment: .leading, spacing: 2) {
                 Text(item.label).font(.lnRow).foregroundStyle(Theme.textHighlighted)
                 Text(item.hint).font(.lnCaption).foregroundStyle(Theme.textMuted).multilineTextAlignment(.leading)
               }
               Spacer(minLength: 8)
-              if template == item.id { Image(systemName: "checkmark").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.accentText) }
+              if template == item.id { Image(systemName: "checkmark").font(.app(size: 13, weight: .semibold)).foregroundStyle(Theme.accentText) }
             }
             .padding(12)
             .background(template == item.id ? Theme.accent.opacity(0.08) : Theme.panel, in: RoundedRectangle(cornerRadius: Metrics.radius))

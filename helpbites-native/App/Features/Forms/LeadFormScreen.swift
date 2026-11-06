@@ -470,7 +470,7 @@ struct LeadFormPreview: View {
         } else {
           if !words.content.title.isEmpty { Text(words.content.title).font(.title3.weight(.semibold)).foregroundStyle(Theme.textHighlighted) }
           if !words.content.description.isEmpty { Text(words.content.description).font(.callout).foregroundStyle(Theme.textMuted) }
-          let button = Text(words.content.buttonLabel).fontWeight(.semibold).padding(.horizontal, 16).frame(minHeight: 42)
+          let button = Text(words.content.buttonLabel).fontWeight(.semibold).padding(.horizontal, 16).frame(minHeight: Metrics.scaled(42))
             .background(tint, in: RoundedRectangle(cornerRadius: radius * 0.75)).foregroundStyle(accent.count == 7 ? OnboardingPreview.readable(on: accent) : .white)
           if draft.style.layout == "inline" && words.fields.count == 1, let only = words.fields.first {
             HStack(spacing: 8) { input(only, radius); button }

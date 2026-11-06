@@ -227,7 +227,7 @@ struct ProjectDevScreen: View {
 
   private func step(_ number: Int, _ title: String, _ text: String? = nil, snippet: String? = nil) -> some View {
     HStack(alignment: .top, spacing: 12) {
-      Text("\(number)").font(.system(size: 11, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textToned)
+      Text("\(number)").font(.app(size: 11, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textToned)
         .frame(width: 24, height: 24).background(Theme.elevated, in: Circle()).overlay(Circle().strokeBorder(Theme.border))
       VStack(alignment: .leading, spacing: 8) {
         Text(title).font(.lnMetaMedium).foregroundStyle(Theme.textHighlighted).frame(minHeight: 24, alignment: .leading)
@@ -309,7 +309,7 @@ struct ProjectDevScreen: View {
         NavigationLink {
           EmailLibraryScreen(projectId: projectId, initialTab: .log)
         } label: {
-          HStack(spacing: 4) { Text("Log"); Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold)) }
+          HStack(spacing: 4) { Text("Log"); Image(systemName: "arrow.right").font(.app(size: 11, weight: .semibold)) }
         }
         .buttonStyle(.lnGhost)
       }
@@ -391,7 +391,7 @@ struct ProjectDevScreen: View {
 
   private func manage(_ section: ProjectSection, label: LocalizedStringKey = "Manage") -> some View {
     Button { workspace.go(.project(projectId, section)) } label: {
-      HStack(spacing: 4) { Text(label); Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold)) }
+      HStack(spacing: 4) { Text(label); Image(systemName: "arrow.right").font(.app(size: 11, weight: .semibold)) }
     }
     .buttonStyle(.lnGhost)
   }

@@ -100,7 +100,7 @@ struct EmailLinkedPanel: View {
             .font(.lnCaptionMedium)
             .foregroundStyle(Theme.textToned)
             .padding(.horizontal, 8)
-            .frame(height: 22)
+            .frame(height: Metrics.scaled(22))
             .overlay(Capsule().strokeBorder(Theme.border))
           }
           if let accent = brand.theme?.accent, !accent.isEmpty { Tag(text: accent, tint: Color(hexString: accent)) }

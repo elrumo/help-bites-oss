@@ -51,7 +51,7 @@ struct EmailBlockInspector: View {
     VStack(alignment: .leading, spacing: 6) {
       HStack(spacing: 10) {
         Image(systemName: block.kind?.systemImage ?? "square.dashed")
-          .font(.system(size: 14, weight: .semibold))
+          .font(.app(size: 14, weight: .semibold))
           .foregroundStyle(Theme.accentText)
           .frame(width: 30, height: 30)
           .background(Theme.elevated, in: RoundedRectangle(cornerRadius: Metrics.radiusSmall))
@@ -64,14 +64,14 @@ struct EmailBlockInspector: View {
       if case .column(let parentId, let column, _)? = store.design.location(of: blockId), let parent = store.design.block(parentId) {
         Button { store.selectedId = parentId } label: {
           HStack(spacing: 6) {
-            Image(systemName: parent.kind?.systemImage ?? "square.dashed").font(.system(size: 11, weight: .semibold))
+            Image(systemName: parent.kind?.systemImage ?? "square.dashed").font(.app(size: 11, weight: .semibold))
             Text(parent.kind == .columns ? "In column \(column + 1)" : "In \(parent.displayName.lowercased())")
             Text("·")
             Text("Select parent").foregroundStyle(Theme.accentText)
           }
           .font(.lnMetaMedium)
           .foregroundStyle(Theme.textMuted)
-          .frame(minHeight: 36)
+          .frame(minHeight: Metrics.scaled(36))
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -92,7 +92,7 @@ struct EmailBlockInspector: View {
   private func actionButton(_ title: String, systemImage: String, tint: Color = Theme.textToned, enabled: Bool = true, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       VStack(spacing: 4) {
-        Image(systemName: systemImage).font(.system(size: 15, weight: .medium))
+        Image(systemName: systemImage).font(.app(size: 15, weight: .medium))
         Text(title).font(.lnCaptionMedium).lineLimit(1).minimumScaleFactor(0.75)
       }
       .foregroundStyle(tint)
@@ -278,7 +278,7 @@ struct EmailBlockInspector: View {
             .font(.lnBody)
             .foregroundStyle(Theme.text)
         }
-        .frame(minHeight: 44)
+        .frame(minHeight: Metrics.scaled(44))
       }
       LabeledField(label: "Gap (px)") {
         EmailNumberField(label: String(localized: "Gap"), value: bind(\.gap, nil), placeholder: "16", range: 0...200)
@@ -321,7 +321,7 @@ struct EmailBlockInspector: View {
       Card {
         if children.isEmpty {
           CardRow(divider: false) {
-            Text("Empty").font(.lnMeta).foregroundStyle(Theme.textDimmed).frame(minHeight: 22)
+            Text("Empty").font(.lnMeta).foregroundStyle(Theme.textDimmed).frame(minHeight: Metrics.scaled(22))
           }
         } else {
           ForEach(children) { child in
@@ -336,7 +336,7 @@ struct EmailBlockInspector: View {
           .font(.lnMetaMedium)
           .foregroundStyle(Theme.text)
           .padding(.horizontal, 14)
-          .frame(minHeight: 40)
+          .frame(minHeight: Metrics.scaled(40))
           .overlay(Capsule().strokeBorder(Theme.border))
           .contentShape(Capsule())
       }
@@ -347,7 +347,7 @@ struct EmailBlockInspector: View {
     Button { store.selectedId = child.id } label: {
       HStack(spacing: 10) {
         Image(systemName: child.kind?.systemImage ?? "square.dashed")
-          .font(.system(size: 13, weight: .medium))
+          .font(.app(size: 13, weight: .medium))
           .foregroundStyle(Theme.textMuted)
           .frame(width: 18)
         Text(child.displayName)
@@ -356,10 +356,10 @@ struct EmailBlockInspector: View {
           .lineLimit(1)
         Spacer(minLength: 0)
         Image(systemName: "chevron.right")
-          .font(.system(size: 11, weight: .semibold))
+          .font(.app(size: 11, weight: .semibold))
           .foregroundStyle(Theme.textDimmed)
       }
-      .frame(minHeight: 22)
+      .frame(minHeight: Metrics.scaled(22))
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)

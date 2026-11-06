@@ -172,7 +172,7 @@ struct CampaignDetailSheet: View {
 
   private func tile(_ label: LocalizedStringKey, _ value: String) -> some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text(value).font(.system(size: 18, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted)
+      Text(value).font(.app(size: 18, weight: .semibold)).monospacedDigit().foregroundStyle(Theme.textHighlighted)
       Text(label).font(.lnCaption).foregroundStyle(Theme.textMuted)
     }
     .frame(maxWidth: .infinity, alignment: .leading)

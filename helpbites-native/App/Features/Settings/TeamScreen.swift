@@ -120,14 +120,14 @@ struct TeamScreen: View {
     HStack(spacing: 12) {
       if row.isAI {
         Image(systemName: "sparkles")
-          .font(.system(size: 12, weight: .semibold))
+          .font(.app(size: 12, weight: .semibold))
           .foregroundStyle(Theme.accentText)
           .frame(width: 28, height: 28)
           .background(Theme.accent.opacity(0.12), in: Circle())
           .accessibilityHidden(true)
       } else {
         if row.isInvite {
-          Image(systemName: "envelope").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.textMuted)
+          Image(systemName: "envelope").font(.app(size: 12, weight: .semibold)).foregroundStyle(Theme.textMuted)
             .frame(width: 28, height: 28).background(Theme.elevated, in: Circle()).accessibilityHidden(true)
         } else {
           Avatar(name: row.name, size: 28)
@@ -150,7 +150,7 @@ struct TeamScreen: View {
         }
       }
       if row.isAI {
-        if !row.projectId.isEmpty { Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textDimmed) }
+        if !row.projectId.isEmpty { Image(systemName: "arrow.up.right").font(.app(size: 12, weight: .medium)).foregroundStyle(Theme.textDimmed) }
       } else if row.isInvite {
         if session.canManage { IconButton(systemImage: "xmark", label: "Revoke the invitation to \(row.name)") { revoking = row } }
       } else if session.canManage && !row.isMe && canChange(row) {
@@ -169,7 +169,7 @@ struct TeamScreen: View {
           Button { Task { await setRole(row, option) } } label: { if option == role { Label(option.label, systemImage: "checkmark") } else { Text(option.label) } }
         }
       } label: {
-        HStack(spacing: 4) { Text(role.label); Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold)) }
+        HStack(spacing: 4) { Text(role.label); Image(systemName: "chevron.up.chevron.down").font(.app(size: 9, weight: .semibold)) }
           .font(.lnCaptionMedium).foregroundStyle(Theme.textToned)
       }
       .menuIndicator(.hidden).fixedSize()

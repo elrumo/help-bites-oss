@@ -13,25 +13,6 @@ struct KnowledgeStat: View {
   }
 }
 
-/// A filter pill that opens a menu: Pill's look plus a chevron.
-struct KnowledgeMenuPill: View {
-  let label: String
-  var isActive = false
-  var body: some View {
-    HStack(spacing: 6) {
-      Text(label).lineLimit(1)
-      Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
-    }
-    .font(.lnMetaMedium)
-    .foregroundStyle(isActive ? Theme.textHighlighted : Theme.textMuted)
-    .padding(.horizontal, 12)
-    .frame(height: 30)
-    .background(isActive ? Theme.elevated : Color.clear, in: Capsule())
-    .overlay(Capsule().strokeBorder(isActive ? Theme.borderAccented : Theme.border))
-    .contentShape(Capsule())
-  }
-}
-
 extension View {
   /// A menu Picker framed like a `.linear` text field.
   func knowledgeField() -> some View {

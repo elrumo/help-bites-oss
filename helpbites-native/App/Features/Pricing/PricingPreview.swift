@@ -219,7 +219,7 @@ struct PricingTableView: View {
         }
       }
       .padding(14)
-      .frame(minHeight: 56)
+      .frame(minHeight: Metrics.scaled(56))
       .background(selected ? tint.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: radius * 0.75, style: .continuous))
       .overlay(RoundedRectangle(cornerRadius: radius * 0.75, style: .continuous).strokeBorder(selected ? tint : Color.secondary.opacity(0.3), lineWidth: selected ? 2 : 1))
       .overlay(alignment: .topTrailing) {

@@ -27,7 +27,7 @@ struct PricingPlanCard: View {
       HStack(spacing: 8) {
         Button { withAnimation(.snappy) { open.toggle() } } label: {
           HStack(spacing: 8) {
-            Image(systemName: open ? "chevron.down" : "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted).frame(width: 12)
+            Image(systemName: open ? "chevron.down" : "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted).frame(width: 12)
             Text(plan.name.isEmpty ? (product?.name ?? String(localized: "Plan \(index + 1)")) : plan.name).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
             Text(plan.key).font(.lnMono).foregroundStyle(Theme.textDimmed).lineLimit(1)
             if !plan.badge.isEmpty { Tag(text: plan.badge) }

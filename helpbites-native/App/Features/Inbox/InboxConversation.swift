@@ -129,7 +129,7 @@ private struct InboxConversationHeader: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Open \(project.name)")
-        Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+        Image(systemName: "chevron.right").font(.app(size: 10, weight: .semibold)).foregroundStyle(Theme.textDimmed)
       }
       Text(name).foregroundStyle(Theme.textHighlighted).layoutPriority(1)
       if !subject.isEmpty { Text(subject).font(.lnMeta).foregroundStyle(Theme.textMuted) }
@@ -140,7 +140,7 @@ private struct InboxConversationHeader: View {
     .font(.lnMetaMedium)
     .lineLimit(1)
     .padding(.horizontal, 16)
-    .frame(height: 48)
+    .frame(height: Metrics.scaled(48))
     .overlay(alignment: .bottom) { Rectangle().fill(Theme.border).frame(height: 1) }
   }
 }
@@ -187,7 +187,7 @@ private struct InboxStatusMenu: View {
         Text(current?.label ?? conversation.status.capitalized).font(.lnMetaMedium).foregroundStyle(Theme.text)
       }
       .padding(.horizontal, 10)
-      .frame(height: 28)
+      .frame(height: Metrics.scaled(28))
       .overlay(Capsule().strokeBorder(Theme.border))
       .contentShape(Capsule())
     }
@@ -417,7 +417,7 @@ private struct InboxTranscript: View {
           .frame(width: 14, height: 14)
           .clipShape(Circle())
       } else {
-        Image(systemName: tag.ai ? "sparkles" : "person.fill").font(.system(size: 10, weight: .semibold))
+        Image(systemName: tag.ai ? "sparkles" : "person.fill").font(.app(size: 10, weight: .semibold))
       }
       Text(tag.text)
     }
@@ -436,7 +436,7 @@ private struct InboxTranscript: View {
           .frame(width: 36, height: 36)
           .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
       } else {
-        Image(systemName: "link").font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.textMuted)
+        Image(systemName: "link").font(.app(size: 13, weight: .medium)).foregroundStyle(Theme.textMuted)
       }
       VStack(alignment: .leading, spacing: 1) {
         Text(context.label).font(.lnCaptionMedium).foregroundStyle(Theme.textHighlighted)
@@ -472,12 +472,12 @@ private struct InboxTranscript: View {
       ForEach(InboxText.reactionGroups(message.reactions ?? [], mine: store.myReactionActor), id: \.emoji) { group in
         Button { Task { await store.react(group.emoji, on: message) } } label: {
           HStack(spacing: 3) {
-            Text(group.emoji).font(.system(size: 12))
+            Text(group.emoji).font(.app(size: 12))
             if group.count > 1 { Text("\(group.count)").font(.lnCaptionMedium).monospacedDigit() }
           }
           .foregroundStyle(group.mine ? Theme.accentText : Theme.textToned)
           .padding(.horizontal, 7)
-          .frame(height: 22)
+          .frame(height: Metrics.scaled(22))
           .background(group.mine ? Theme.accent.opacity(0.12) : Theme.panel, in: Capsule())
           .overlay(Capsule().strokeBorder(group.mine ? Theme.accent.opacity(0.55) : Theme.border))
         }
@@ -492,7 +492,7 @@ private struct InboxTranscript: View {
     Button { withAnimation(.snappy) { threadId = threadId == id ? "" : id } } label: {
       HStack(spacing: 2) {
         Text(count == 1 ? String(localized: "1 reply") : String(localized: "\(count) replies"))
-        Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold))
+        Image(systemName: "chevron.right").font(.app(size: 9, weight: .bold))
       }
       .font(.lnCaptionMedium)
       .foregroundStyle(Theme.accentText)
@@ -640,12 +640,12 @@ private struct InboxComposer: View {
 
   private func banner(_ target: InboxReplyTarget) -> some View {
     HStack(spacing: 6) {
-      Image(systemName: "arrowshape.turn.up.left").font(.system(size: 11, weight: .semibold))
+      Image(systemName: "arrowshape.turn.up.left").font(.app(size: 11, weight: .semibold))
       Text("Replying to \(Text(target.name).fontWeight(.semibold).foregroundStyle(Theme.textHighlighted))\(target.preview.isEmpty ? "" : ", “\(target.preview)”")")
         .lineLimit(1)
       Spacer(minLength: 4)
       Button { withAnimation(.snappy) { threadId = "" } } label: {
-        Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).frame(width: 22, height: 22).background(Theme.elevated, in: Circle())
+        Image(systemName: "xmark").font(.app(size: 9, weight: .bold)).frame(width: 22, height: 22).background(Theme.elevated, in: Circle())
       }
       .buttonStyle(.plain)
       .accessibilityLabel("Stop replying")
@@ -668,7 +668,7 @@ private struct InboxComposer: View {
             .overlay(RoundedRectangle(cornerRadius: Metrics.radius, style: .continuous).strokeBorder(Theme.border))
             .overlay(alignment: .topTrailing) {
               Button { images.removeAll { $0.id == image.id } } label: {
-                Image(systemName: "xmark.circle.fill").font(.system(size: 18)).symbolRenderingMode(.palette).foregroundStyle(.white, Color.black.opacity(0.65))
+                Image(systemName: "xmark.circle.fill").font(.app(size: 18)).symbolRenderingMode(.palette).foregroundStyle(.white, Color.black.opacity(0.65))
               }
               .buttonStyle(.plain)
               .offset(x: 6, y: -6)
@@ -685,19 +685,19 @@ private struct InboxComposer: View {
     HStack(alignment: .bottom, spacing: 4) {
       if allowsImages {
         PhotosPicker(selection: $picks, maxSelectionCount: max(1, 4 - images.count), matching: .images) {
-          Image(systemName: "photo").font(.system(size: 16)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Circle())
+          Image(systemName: "photo").font(.app(size: 16)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Circle())
         }
         .disabled(images.count >= 4)
         .accessibilityLabel("Attach images")
       }
       Button { picking = true } label: {
-        Image(systemName: "text.bubble").font(.system(size: 16)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Circle())
+        Image(systemName: "text.bubble").font(.app(size: 16)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Circle())
       }
       .buttonStyle(.plain)
       .accessibilityLabel("Insert a saved reply or FAQ")
       Button { Task { await writeDraft() } } label: {
         ZStack {
-          if drafting { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles").font(.system(size: 16)).foregroundStyle(Theme.textMuted) }
+          if drafting { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles").font(.app(size: 16)).foregroundStyle(Theme.textMuted) }
         }
         .frame(width: 32, height: 32)
         .contentShape(Circle())
@@ -714,7 +714,7 @@ private struct InboxComposer: View {
         .padding(.leading, allowsImages ? 0 : 8)
       Button(action: send) {
         ZStack {
-          if sending { ProgressView().tint(.white).controlSize(.small) } else { Image(systemName: "arrow.up").font(.system(size: 14, weight: .bold)) }
+          if sending { ProgressView().tint(.white).controlSize(.small) } else { Image(systemName: "arrow.up").font(.app(size: 14, weight: .bold)) }
         }
         .foregroundStyle(.white)
         .frame(width: 32, height: 32)
@@ -826,7 +826,7 @@ private struct InboxCheckToggleStyle: ToggleStyle {
     Button { configuration.isOn.toggle() } label: {
       HStack(spacing: 6) {
         Image(systemName: configuration.isOn ? "checkmark.circle.fill" : "circle")
-          .font(.system(size: 14))
+          .font(.app(size: 14))
           .foregroundStyle(configuration.isOn ? Theme.accent : Theme.textDimmed)
         configuration.label.font(.lnCaption).foregroundStyle(Theme.textMuted)
       }

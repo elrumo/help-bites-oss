@@ -173,7 +173,7 @@ struct PageInspector: View {
           Divider()
           ForEach(CmsOptions.fonts, id: \.self) { name in Button(name) { font.wrappedValue = name } }
         } label: {
-          Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
+          Image(systemName: "chevron.up.chevron.down").font(.app(size: 12, weight: .medium)).foregroundStyle(Theme.textMuted).frame(width: 32, height: 32).contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
         .accessibilityLabel("Suggested fonts")

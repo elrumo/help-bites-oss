@@ -116,7 +116,7 @@ struct EmailLanguagesPanel: View {
                         Text(translationProgress(progress.filled, of: progress.total)).font(.lnCaption).foregroundStyle(progress.filled < progress.total ? Theme.warning : Theme.textMuted)
                       }
                       Spacer(minLength: 4)
-                      Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+                      Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
                     }
                     .contentShape(Rectangle())
                   }
@@ -130,7 +130,7 @@ struct EmailLanguagesPanel: View {
               .disabled(busy || tags.count >= ContentLocale.emailTranslations)
             Button { translating = true } label: { Label("Translate with AI", systemImage: "sparkles") }
               .buttonStyle(.lnSecondaryCompact).disabled(busy || texts.isEmpty)
-            if busy { ProgressView().controlSize(.small).frame(height: 30) }
+            if busy { ProgressView().controlSize(.small).frame(height: Metrics.scaled(30)) }
           }
           Text("AI translations are drafts: read them before you send. They keep {{placeholders}}, links and tags.").font(.lnCaption).foregroundStyle(Theme.textMuted)
           ErrorText(message: error)

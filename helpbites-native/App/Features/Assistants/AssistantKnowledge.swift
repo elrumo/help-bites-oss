@@ -250,13 +250,13 @@ struct AssistantTestAnswer: View {
   private func outcomeBadge(_ outcome: String, _ label: String) -> some View {
     let (icon, tint) = outcomeStyle(outcome)
     return HStack(spacing: 5) {
-      Image(systemName: icon).font(.system(size: 10, weight: .semibold))
+      Image(systemName: icon).font(.app(size: 10, weight: .semibold))
       Text(label).lineLimit(1)
     }
     .font(.lnCaptionMedium)
     .foregroundStyle(tint)
     .padding(.horizontal, 8)
-    .frame(height: 22)
+    .frame(height: Metrics.scaled(22))
     .background(tint.opacity(0.12), in: Capsule())
   }
 

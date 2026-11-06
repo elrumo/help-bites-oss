@@ -24,6 +24,7 @@ struct ProjectScreen: View {
     .linearList()
     .panelScreen(project?.name ?? String(localized: "Project"))
     .toolbar {
+      #if os(iOS)
       if let project {
         ToolbarItem(placement: .principal) {
           HStack(spacing: 8) {
@@ -32,6 +33,7 @@ struct ProjectScreen: View {
           }
         }
       }
+      #endif
     }
   }
 
@@ -40,7 +42,7 @@ struct ProjectScreen: View {
       Label {
         Text(section.label).font(.lnRow).foregroundStyle(Theme.text)
       } icon: {
-        Image(systemName: section.systemImage).font(.system(size: 14)).foregroundStyle(Theme.textMuted)
+        Image(systemName: section.systemImage).font(.app(size: 14)).foregroundStyle(Theme.textMuted)
       }
       .frame(minHeight: Metrics.rowHeight)
     }
@@ -78,7 +80,7 @@ struct ProjectOverviewScreen: View {
               Button { open(stat.section) } label: {
                 VStack(alignment: .leading, spacing: 4) {
                   Text(LocalizedStringKey(stat.label)).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(1)
-                  Text(EmailStatusText.compactCount(stat.value)).font(.system(size: 22, weight: .semibold)).foregroundStyle(Theme.textHighlighted).monospacedDigit()
+                  Text(EmailStatusText.compactCount(stat.value)).font(.app(size: 22, weight: .semibold)).foregroundStyle(Theme.textHighlighted).monospacedDigit()
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
@@ -117,7 +119,7 @@ struct ProjectOverviewScreen: View {
                   CardRow(divider: item.id != overview.activity.last?.id) {
                     Button { if let id = item.conversationId, !id.isEmpty { openConversation(id) } else { open(item.section) } } label: {
                       HStack(spacing: 10) {
-                        Image(systemName: section(item.section).systemImage).font(.system(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 18)
+                        Image(systemName: section(item.section).systemImage).font(.app(size: 13)).foregroundStyle(Theme.textMuted).frame(width: 18)
                         VStack(alignment: .leading, spacing: 2) {
                           Text(item.title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
                           if !item.detail.isEmpty { Text(item.detail).font(.lnMeta).foregroundStyle(Theme.textMuted).lineLimit(1) }
@@ -195,7 +197,7 @@ struct SetupChecklist: View {
 
   private func row(_ item: SetupItem) -> some View {
     HStack(spacing: 10) {
-      Image(systemName: icon(item.state)).font(.system(size: 14)).foregroundStyle(tint(item.state)).frame(width: 18)
+      Image(systemName: icon(item.state)).font(.app(size: 14)).foregroundStyle(tint(item.state)).frame(width: 18)
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 8) {
           Text(item.title).font(.lnRow).foregroundStyle(Theme.textHighlighted).lineLimit(1)
@@ -204,7 +206,7 @@ struct SetupChecklist: View {
         Text(item.text).font(.lnCaption).foregroundStyle(Theme.textMuted).lineLimit(2).multilineTextAlignment(.leading)
       }
       Spacer(minLength: 8)
-      Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
+      Image(systemName: "chevron.right").font(.app(size: 11, weight: .semibold)).foregroundStyle(Theme.textDimmed)
     }
     .contentShape(Rectangle())
   }

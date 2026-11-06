@@ -58,7 +58,7 @@ struct ProjectConnectionRow<Trailing: View, Form: View>: View {
         Spacer(minLength: 8)
         trailing()
       }
-      .frame(minHeight: 32)
+      .frame(minHeight: Metrics.scaled(32))
       form()
     }
     .padding(.horizontal, 14).padding(.vertical, 8)
