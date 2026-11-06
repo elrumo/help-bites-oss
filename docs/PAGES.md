@@ -192,6 +192,65 @@ meta tags.
 The built-in **Email sign-up** block posts to the project's newsletter sign-up
 ([double opt-in and topics](MARKETING.md)), so a waitlist needs nothing else.
 
+### Your HelpBites content on a page
+
+Eight built-in blocks put what the project already has onto a page, with nothing
+to code. Each wears the page's style (`--hb-*` variables) and has fields for which
+parts show, how many, and the copy.
+
+| Block (`key`) | Shows | Main fields |
+|---|---|---|
+| **Blog posts** (`blog_list`) | The latest posts as cards that link to each post, and a button to the whole blog. | `count` (1 to 12), `tag`, `featuredOnly`, `layout` (`grid`, `list`), `showImage`, `showExcerpt`, `showDate`, `showAuthor`, `moreLabel` |
+| **Blog post** (`blog_post`) | One post in full: the latest, or the one whose `slug` you name. A members-only post shows its excerpt. | `slug`, `showTitle`, `showMeta`, `showCover` |
+| **Changelog** (`changelog`) | The newest entries with tag, version and date, as the summary or the whole text. | `count` (1 to 20), `tag`, `showTag`, `showVersion`, `showDate`, `showBody`, `moreLabel` |
+| **Pricing from HelpBites** (`pricing_table`) | The plans of a published pricing table, with live prices, badges, feature lists and checkout buttons. | `table` (a table's key; empty is the first), `interval` (`auto`, `week`, `month`, `year`, `once`), `showFeatures` |
+| **Feedback board** (`feedback`) | The live board, roadmap or changelog view: visitors post and vote on the page. | `view` (`board`, `roadmap`, `changelog`), `theme`, `height` |
+| **Support chat** (`chat`) | The support chat, open on the page. | `theme`, `height` |
+| **Lead form** (`form`) | One of the project's [forms](FORMS.md). | `form` (the form's key), `height` |
+| **Changelog sign-up** (`notify`) | An email field that subscribes to release emails (double opt-in; needs *Notify* on in the changelog's settings). | `askFrequency` (let them pick every release or weekly), `frequency`, `placeholder`, `buttonLabel`, `note` |
+
+Every one also has `title`, `eyebrow` (where it makes sense) and `intro`.
+
+**How the content gets there.** The first four are rendered on the server from the
+same public API that anyone can call (`GET /v1/blog`, `/v1/blog/{slug}`,
+`/v1/changelog`, `/v1/pricing/{pk}`), so a visitor, a crawler and the delivery API's
+`format=html` all get real text, with no script and no request from the visitor's
+browser. A hosted page shows what is published *now* (browsers keep it a minute), so a
+new post appears without republishing the page. The editor's preview reads the
+same API, so what you see is what the page shows. A block with nothing to show (the
+blog is off, no post is published, no table is published) leaves the page: the editor
+says why instead, and the Add menu previews it with sample content. Pricing buttons go
+to the table's own checkout with its live Stripe prices; views and clicks are tracked
+by the hosted pricing page and its scripts, not by a block.
+
+The last four are HelpBites' own embeds (`/embed`, `/embed/feedback`, `/f/…`) in a
+frame of the page's `height`, and the sign-up posts to HelpBites. The page's
+Content-Security-Policy lets frames load from exactly those paths of HelpBites'
+address (and still the YouTube and Vimeo players), nothing else. An embed wears the
+project's own look for that surface (Project → Feedback → Style and so on); `theme`
+sets its light or dark mode. A page has no signed-in user, so the chat and the
+board's posting and voting need guests switched on (Project → Settings → Chat widget → *Guest
+access*, `guestSurfaces`: [CONNECTING.md](CONNECTING.md#guest-access-no-account-no-email)); the page's script
+tells the frames "nobody is signed in" and they carry on as guests. Without it they
+wait for a sign-in that never comes, and the board is read-only.
+
+In the delivery API's JSON these blocks are just their fields: your own app reads
+the same data from the public API itself (`GET /v1/blog?pk=…`, see
+[BLOG.md](BLOG.md#in-a-swift-app), [PRICING.md](PRICING.md#plug-and-play-swift) and
+[FEEDBACK.md](FEEDBACK.md)), or `format=html` for the page as it is.
+
+```bash
+curl "$HOST/v1/blog?pk=pk_…&limit=3"
+curl "$HOST/v1/changelog?pk=pk_…&limit=5"
+curl "$HOST/v1/pricing/pk_…"
+curl -X POST -d 'email=ada@example.com&frequency=weekly' "$HOST/v1/changelog/subscribe?pk=pk_…"
+```
+
+The sign-up route answers JSON to a script and a small page to a browser form. These
+blocks keep working only as the built-ins: **Duplicate** copies the template without
+the data hookup (`{{$data}}` is filled for the built-in keys only), so style them with
+the page's variables or with CSS of your own on the page.
+
 ### Put it on your site
 
 ```html

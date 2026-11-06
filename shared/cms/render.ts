@@ -2,6 +2,7 @@ import { Marked } from 'marked'
 import { readableOn } from '../brand'
 import { DEFAULT_ACCENT } from '../projectLook'
 import { CMS_ICONS } from './icons'
+import { DYNAMIC, type CmsData } from './dynamic'
 import { DEFAULT_STYLE, SAFE_COLOR, normalizeAsset, type CmsBlock, type CmsComponentDef, type CmsField, type CmsLibrary, type CmsStyle } from './content'
 
 /**
@@ -17,6 +18,7 @@ import { DEFAULT_STYLE, SAFE_COLOR, normalizeAsset, type CmsBlock, type CmsCompo
  *   {{^key}}…{{/key}}      only when it is not
  *   {{$pk}} {{$host}}      the project's public key and the HelpBites host (forms)
  *   {{$uid}} {{$parent}}   this block's `_uid` and its parent's (radio groups, exclusive <details>)
+ *   {{$data}}              built-ins only (shared/cms/dynamic.ts): the HTML of the project's own blog, changelog or pricing
  * Each block's outer element gets `data-hb-uid` and `data-hb-component` (the
  * editor and the bridge select by them) and its animation as `data-hb-anim`.
  */
@@ -28,6 +30,10 @@ export type RenderContext = {
   pk: string
   /** The HelpBites origin, no trailing slash: forms post to it, the page runtime loads Motion from it. */
   host: string
+  /** What the data blocks show: the public API's answers by path (shared/cms/dynamic.ts). Left out, they show sample content. */
+  data?: CmsData
+  /** The editor's preview: a data block with nothing to show says why, where a hosted page leaves it out. */
+  editor?: boolean
 }
 
 export function esc(value: unknown): string {
@@ -77,11 +83,12 @@ function isSet(field: CmsField | undefined, block: CmsBlock): boolean {
 
 const SECTION = /\{\{([#^])\s*([A-Za-z][A-Za-z0-9_]*)\s*\}\}([\s\S]*?)\{\{\/\s*\2\s*\}\}/g
 const SLOT = /\{\{\s*@([A-Za-z][A-Za-z0-9_]*)(?:\.(alt|width|height|mime|url))?\s*\}\}/g
+const DATA = /\{\{\s*\$data\s*\}\}/g
 const CONTEXT = /\{\{\s*\$(pk|host|uid|parent)\s*\}\}/g
 
 type Walk = RenderContext & { used: Set<string> }
 
-function fill(def: CmsComponentDef, block: CmsBlock, ctx: Walk, parent: string): string {
+function fill(def: CmsComponentDef, block: CmsBlock, ctx: Walk, parent: string, inner: string | null = null): string {
   const fields = new Map(def.fields.map(f => [f.key, f]))
   let html = def.html
   // Repeated, so a section can sit inside another of a different key.
@@ -115,7 +122,9 @@ function fill(def: CmsComponentDef, block: CmsBlock, ctx: Walk, parent: string):
     }
   })
   const context: Record<string, string> = { pk: ctx.pk, host: ctx.host, uid: block._uid, parent }
-  return html.replace(CONTEXT, (_m, name: string) => esc(context[name]))
+  html = html.replace(CONTEXT, (_m, name: string) => esc(context[name]))
+  // Last, so a post's own `{{$data}}` is not filled a second time.
+  return inner === null ? html : html.replace(DATA, () => inner)
 }
 
 /** The block's outer tag carries its id, component and animation. */
@@ -129,8 +138,18 @@ function tag(html: string, block: CmsBlock): string {
 function renderBlock(block: CmsBlock, ctx: Walk, parent = ''): string {
   const def = ctx.library.get(block.component)
   if (!def || !def.html || block._hidden) return ''
+  const dynamic = def.builtin ? DYNAMIC[def.key] : undefined
+  let inner: string | null = null
+  if (dynamic) {
+    const read = (key: string) => (Object.hasOwn(block, key) ? block[key] : def.fields.find(f => f.key === key)?.default)
+    inner = dynamic.render(read, ctx.data || {}, ctx.pk, { esc, safeUrl, editor: !!ctx.editor })
+    if (inner === null) {
+      if (!ctx.editor) return ''
+      inner = `<p class="hb-muted hb-center hb-dynamic__empty">${esc(dynamic.empty)}</p>`
+    }
+  }
   ctx.used.add(def.key)
-  return tag(fill(def, block, ctx, parent), block)
+  return tag(fill(def, block, ctx, parent, inner), block)
 }
 
 function renderList(blocks: CmsBlock[], ctx: Walk, parent: string): string {
@@ -237,6 +256,8 @@ p { margin: 0 0 1em; text-wrap: pretty; }
  * `hb-js` at once (animated blocks start hidden), loads Motion from
  * `data-motion` and plays each `data-hb-anim`; if Motion is not there within
  * 3 s, everything shows as is. Reduced motion: nothing hides, nothing moves.
+ * It also answers the chat and feedback frames' "who is the visitor?" with
+ * "nobody signed in", so they continue as guests.
  */
 export const PAGE_RUNTIME = `(function () {
   var d = document, h = d.documentElement, script = d.currentScript, src = script && script.getAttribute('data-motion');
@@ -245,6 +266,12 @@ export const PAGE_RUNTIME = `(function () {
     addEventListener('load', post);
     d.addEventListener('DOMContentLoaded', function () { if (window.ResizeObserver) new ResizeObserver(post).observe(d.body); });
   }
+  // HelpBites' own chat and feedback frames ask the page who the visitor is; a page has no signed-in user, so they go on as guests.
+  addEventListener('message', function (e) {
+    var m = e.data;
+    if (e.origin !== location.origin || !m || m.source !== 'help-bites' || (m.type !== 'ready' && m.type !== 'token-needed')) return;
+    e.source.postMessage({ source: 'help-bites-host', type: 'no-token' }, e.origin);
+  });
   if (!src || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   h.classList.add('hb-js');
   var timer = setTimeout(show, 3000);
@@ -323,7 +350,8 @@ export async function pageCsp(host: string): Promise<string> {
     "style-src 'unsafe-inline' https://fonts.googleapis.com",
     'font-src https://fonts.gstatic.com',
     `script-src 'sha256-${await sha256Base64(PAGE_RUNTIME)}' ${host}${MOTION_PATH}`,
-    'frame-src https://www.youtube-nocookie.com https://player.vimeo.com',
+    // The players, and HelpBites' own embeds (chat, feedback, changelog, forms), which carry their own policy.
+    `frame-src https://www.youtube-nocookie.com https://player.vimeo.com ${host}/embed ${host}/embed/ ${host}/f/`,
     "form-action 'self'",
     "base-uri 'none'",
     'frame-ancestors *'

@@ -4,6 +4,7 @@ import {
   CMS_LIMITS, CMS_SLUG, DEFAULT_STYLE, contentTooLarge, newBlock, normalizeBrief, normalizeComponentInput, normalizeContent, normalizeSettings,
   normalizeStyle, validPreviewUrl, withoutHidden, type CmsBlock, type CmsComponentDef, type CmsLibrary, type CmsSettings, type CmsStyle
 } from '#shared/cms/content'
+import { loadCmsData, type CmsData } from '#shared/cms/dynamic'
 import { BUILTIN_COMPONENTS, BUILTIN_KEYS, libraryOf, templateContent } from '#shared/cms/library'
 import { pageCsp, renderBlocks, renderPage } from '#shared/cms/render'
 
@@ -432,9 +433,21 @@ export async function listPublishedCmsEntries(project: ParseObject, options: { t
   return { entries: rows.filter(r => publishedOf(r)).map(toPublicCmsEntry), total, page: options.page, perPage: options.perPage }
 }
 
+/**
+ * What the page's blog, changelog and pricing blocks show: the public API's answers, read in-process as the
+ * visitor (their address counts against the read limits, their language picks the pricing copy).
+ */
+async function cmsData(event: H3Event, project: ParseObject, content: CmsBlock, library: CmsLibrary): Promise<CmsData> {
+  const headers = { 'x-forwarded-for': clientIp(event), 'accept-language': String(getHeader(event, 'accept-language') || '') }
+  return await loadCmsData(content, library, String(project.get('publicKey') || ''), async (path) => {
+    const res = await useNitroApp().localFetch(path, { headers })
+    return res.ok ? await res.json() : null
+  })
+}
+
 /** A published entry's body as HTML and the CSS it needs, for a site that shows it as is. */
-export function cmsEntryHtml(project: ParseObject, entry: ReturnType<typeof toPublicCmsEntry>, library: CmsLibrary, host: string) {
-  return renderBlocks(entry.content, entry.style, entry.style.accent || projectAccent(project), { library, pk: String(project.get('publicKey') || ''), host })
+export async function cmsEntryHtml(event: H3Event, project: ParseObject, entry: ReturnType<typeof toPublicCmsEntry>, library: CmsLibrary) {
+  return renderBlocks(entry.content, entry.style, entry.style.accent || projectAccent(project), { library, pk: String(project.get('publicKey') || ''), host: cmsHost(event), data: await cmsData(event, project, entry.content, library) })
 }
 
 /** A hosted page: the whole HTML document and its CSP, or null for a 404. */
@@ -443,6 +456,7 @@ export async function hostedCmsPage(event: H3Event, project: ParseObject, slug: 
   if (!row) return null
   const entry = toPublicCmsEntry(row)
   const host = cmsHost(event)
+  const library = await cmsLibrary(project)
   const html = renderPage({
     name: entry.name,
     content: entry.content,
@@ -452,6 +466,6 @@ export async function hostedCmsPage(event: H3Event, project: ParseObject, slug: 
     url: host + cmsPagePath(project, entry.slug),
     poweredBy: poweredByHtml(await poweredByFor(project)),
     runtime: true
-  }, { library: await cmsLibrary(project), pk: String(project.get('publicKey') || ''), host })
+  }, { library, pk: String(project.get('publicKey') || ''), host, data: await cmsData(event, project, entry.content, library) })
   return { html, csp: await pageCsp(host) }
 }

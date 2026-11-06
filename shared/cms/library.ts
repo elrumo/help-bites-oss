@@ -289,6 +289,162 @@ export const BUILTIN_COMPONENTS: CmsComponentDef[] = [
 .hb-signup__trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .hb-signup__note { font-size: .85rem; margin-top: 14px; }`
   }),
+  // ---- the project's own HelpBites content ---------------------------------------------
+  // Data blocks (shared/cms/dynamic.ts) fill `{{$data}}` from the blog, changelog and pricing the project already
+  // has; embed blocks frame HelpBites' own /embed pages (the policy lets them in, see pageCsp).
+  def({
+    key: 'blog_list', name: 'Blog posts', description: 'The latest posts from the project\'s blog, as cards that link to each post. Shows nothing until a post is published.',
+    fields: [f('eyebrow', 'text'), f('title', 'text', { default: 'From the blog' }), f('intro', 'markdown'), f('count', 'number', { default: 3, description: 'How many posts, 1 to 12.' }), f('tag', 'text', { description: 'Only posts with this tag.' }), f('featuredOnly', 'boolean', { description: 'Only featured posts.' }), f('layout', 'select', { options: ['grid', 'list'], default: 'grid' }), f('showImage', 'boolean', { default: true, label: 'Cover image' }), f('showExcerpt', 'boolean', { default: true, label: 'Excerpt' }), f('showDate', 'boolean', { default: true, label: 'Date' }), f('showAuthor', 'boolean', { label: 'Author' }), f('moreLabel', 'text', { default: 'All posts', description: 'A button to the whole blog; empty hides it.' })],
+    html: `<section class="hb-section hb-blog" id="blog">
+  <div class="hb-container">
+    <div class="hb-center">{{#eyebrow}}<p class="hb-eyebrow">{{@eyebrow}}</p>{{/eyebrow}}{{#title}}<h2>{{@title}}</h2>{{/title}}{{#intro}}<div class="hb-lead hb-prose">{{@intro}}</div>{{/intro}}</div>
+    <div class="hb-blog__list hb-blog__list--{{@layout}}">{{$data}}</div>
+    {{#moreLabel}}<div class="hb-center"><div class="hb-actions"><a class="hb-btn hb-btn--ghost" href="{{$host}}/blog/{{$pk}}">{{@moreLabel}}</a></div></div>{{/moreLabel}}
+  </div>
+</section>`,
+    css: `.hb-blog__list { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 48px; }
+.hb-blog__list--list { flex-direction: column; }
+.hb-blog__list--grid .hb-blog__post { flex: 1 1 260px; max-width: 380px; }
+.hb-blog__post { display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: inherit; background: var(--hb-surface); border: 1px solid var(--hb-line); border-radius: var(--hb-radius); transition: transform .15s ease; }
+.hb-blog__post:hover { transform: translateY(-2px); }
+.hb-blog__post img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.hb-blog__body { display: grid; gap: 6px; padding: 20px; align-content: start; }
+.hb-blog__body strong { font: 600 1.15rem/1.3 var(--hb-heading-font); letter-spacing: -0.01em; }
+.hb-blog__body small { font-size: .8rem; }
+.hb-blog__list--list .hb-blog__post { flex-direction: row; align-items: stretch; }
+.hb-blog__list--list .hb-blog__post img { width: 220px; aspect-ratio: auto; flex: none; }
+@media (max-width: 640px) { .hb-blog__list--list .hb-blog__post { flex-direction: column; } .hb-blog__list--list .hb-blog__post img { width: 100%; aspect-ratio: 16 / 9; } }
+.hb-dynamic__empty { padding: 28px; margin-top: 24px; border: 1px dashed var(--hb-line); border-radius: var(--hb-radius); }`
+  }),
+  def({
+    key: 'blog_post', name: 'Blog post', description: 'One post from the project\'s blog, in full, in the look of the page: the latest, or the one whose slug you name.',
+    fields: [f('slug', 'text', { description: 'The post\'s slug. Empty shows the latest post.' }), f('showTitle', 'boolean', { default: true, label: 'Title' }), f('showMeta', 'boolean', { default: true, label: 'Date, author and reading time' }), f('showCover', 'boolean', { default: true, label: 'Cover image' })],
+    html: `<section class="hb-section hb-bpost">
+  <div class="hb-container hb-bpost__in">{{$data}}</div>
+</section>`,
+    css: `.hb-bpost__in { max-width: 760px; }
+.hb-bpost__meta { margin: -.2em 0 1.4em; font-size: .9rem; }
+.hb-bpost__cover { width: 100%; border-radius: var(--hb-radius); margin-bottom: 1.6em; }
+.hb-bpost__body { font-size: 1.05rem; line-height: 1.7; }
+.hb-bpost__body > :first-child { margin-top: 0; }
+.hb-bpost__body img { border-radius: var(--hb-radius-sm); margin: 1.4em 0; }
+.hb-bpost__body h2, .hb-bpost__body h3 { margin-top: 1.8em; }
+.hb-bpost__body a { color: var(--hb-accent); }
+.hb-bpost__body blockquote { margin: 1.4em 0; padding-left: 1em; border-left: 3px solid var(--hb-line); color: var(--hb-muted); }
+.hb-bpost__body pre { overflow-x: auto; padding: 16px; border-radius: var(--hb-radius-sm); background: var(--hb-surface); font-size: .9rem; }
+.hb-bpost__body code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
+.hb-bpost__body table { display: block; overflow-x: auto; border-collapse: collapse; }
+.hb-bpost__body th, .hb-bpost__body td { padding: 8px 12px; border: 1px solid var(--hb-line); }
+.hb-dynamic__empty { padding: 28px; border: 1px dashed var(--hb-line); border-radius: var(--hb-radius); }`
+  }),
+  def({
+    key: 'changelog', name: 'Changelog', description: 'The latest entries of the project\'s changelog, newest first, with their tag and version. Shows nothing until an entry is published.',
+    fields: [f('eyebrow', 'text'), f('title', 'text', { default: 'What\'s new' }), f('intro', 'markdown'), f('count', 'number', { default: 5, description: 'How many entries, 1 to 20.' }), f('tag', 'select', { options: ['all', 'new', 'improved', 'fix', 'removed', 'breaking'], default: 'all' }), f('showTag', 'boolean', { default: true, label: 'Tag' }), f('showVersion', 'boolean', { default: true, label: 'Version' }), f('showDate', 'boolean', { default: true, label: 'Date' }), f('showBody', 'boolean', { label: 'Full text', description: 'The whole entry instead of its summary.' }), f('moreLabel', 'text', { default: 'Full changelog', description: 'A button to the whole changelog; empty hides it.' })],
+    html: `<section class="hb-section hb-clog" id="changelog">
+  <div class="hb-container hb-clog__in">
+    <div class="hb-center">{{#eyebrow}}<p class="hb-eyebrow">{{@eyebrow}}</p>{{/eyebrow}}{{#title}}<h2>{{@title}}</h2>{{/title}}{{#intro}}<div class="hb-lead hb-prose">{{@intro}}</div>{{/intro}}</div>
+    <div class="hb-clog__list">{{$data}}</div>
+    {{#moreLabel}}<div class="hb-center"><div class="hb-actions"><a class="hb-btn hb-btn--ghost" href="{{$host}}/changelog/{{$pk}}">{{@moreLabel}}</a></div></div>{{/moreLabel}}
+  </div>
+</section>`,
+    css: `.hb-clog__in { max-width: 820px; }
+.hb-clog__list { margin-top: 40px; border-top: 1px solid var(--hb-line); }
+.hb-clog__entry { display: grid; grid-template-columns: 9rem 1fr; gap: 24px; padding: 28px 0; border-bottom: 1px solid var(--hb-line); }
+.hb-clog__meta { padding-top: .4em; line-height: 1.5; }
+.hb-clog__entry h3 { margin: 0 0 .4em; }
+.hb-clog__text { font-size: .98rem; margin: 0; }
+.hb-clog__text img { border-radius: var(--hb-radius-sm); }
+.hb-clog__text a { color: var(--hb-accent); }
+.hb-clog__tag { margin-right: 6px; font-size: 12px; padding: 4px 9px; vertical-align: .15em; }
+.hb-clog__tag--new { background: rgb(16 185 129 / .12); color: #047857; }
+.hb-clog__tag--improved { background: rgb(59 130 246 / .12); color: #2563eb; }
+.hb-clog__tag--fix { background: rgb(245 158 11 / .14); color: #b45309; }
+.hb-clog__tag--removed { background: rgb(107 114 128 / .15); color: var(--hb-muted); }
+.hb-clog__tag--breaking { background: rgb(239 68 68 / .12); color: #dc2626; }
+.hb-clog .hb-actions { margin-top: 32px; }
+@media (max-width: 640px) { .hb-clog__entry { grid-template-columns: 1fr; gap: 6px; } }
+.hb-dynamic__empty { padding: 28px; margin-top: 24px; border: 1px dashed var(--hb-line); border-radius: var(--hb-radius); }`
+  }),
+  def({
+    key: 'pricing_table', name: 'Pricing from HelpBites', description: 'The plans of one of the project\'s published pricing tables, as cards with their live prices and buttons. Shows nothing until a table is published.',
+    fields: [f('eyebrow', 'text'), f('title', 'text', { default: 'Pricing' }), f('intro', 'markdown'), f('table', 'text', { label: 'Pricing table', description: 'The key of a published table (Pricing). Empty: the first one.' }), f('interval', 'select', { options: ['auto', 'week', 'month', 'year', 'once'], default: 'auto', description: 'Auto follows the table\'s default.' }), f('showFeatures', 'boolean', { default: true, label: 'Feature lists' })],
+    html: `<section class="hb-section hb-ptable">
+  <div class="hb-container">
+    <div class="hb-center">{{#eyebrow}}<p class="hb-eyebrow">{{@eyebrow}}</p>{{/eyebrow}}{{#title}}<h2>{{@title}}</h2>{{/title}}{{#intro}}<div class="hb-lead hb-prose">{{@intro}}</div>{{/intro}}</div>
+    <div class="hb-ptable__row">{{$data}}</div>
+  </div>
+</section>`,
+    css: `.hb-ptable__row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; align-items: stretch; margin-top: 48px; }
+.hb-ptable__plan { display: flex; flex-direction: column; gap: 12px; position: relative; }
+.hb-ptable__plan--on { border-color: var(--hb-accent); box-shadow: 0 0 0 1px var(--hb-accent); }
+.hb-ptable__plan h3 { margin: 0; }
+.hb-ptable__plan p { margin: 0; }
+.hb-ptable__badge { align-self: flex-start; background: var(--hb-accent); color: var(--hb-on-accent); }
+.hb-ptable__price { font: 700 2.4rem/1 var(--hb-heading-font); letter-spacing: -0.03em; }
+.hb-ptable__price small { font: 400 1rem var(--hb-font); letter-spacing: 0; margin-left: 6px; }
+.hb-ptable__note { font-size: .85rem; }
+.hb-ptable__lines { list-style: none; padding: 0; margin: 8px 0 16px; display: grid; gap: 8px; }
+.hb-ptable__lines li::before { content: "✓"; color: var(--hb-accent); margin-right: 10px; font-weight: 700; }
+.hb-ptable__lines .hb-ptable__off { color: var(--hb-muted); text-decoration: line-through; }
+.hb-ptable__lines .hb-ptable__off::before { content: "–"; color: var(--hb-muted); }
+.hb-ptable .hb-btn { margin-top: auto; }
+.hb-dynamic__empty { padding: 28px; margin-top: 24px; border: 1px dashed var(--hb-line); border-radius: var(--hb-radius); }`
+  }),
+  def({
+    key: 'feedback', name: 'Feedback board', description: 'The project\'s feedback board, roadmap or changelog view, live, so visitors can post and vote without leaving the page.',
+    fields: [f('eyebrow', 'text'), f('title', 'text', { default: 'Tell us what to build next' }), f('intro', 'markdown'), f('view', 'select', { options: ['board', 'roadmap', 'changelog'], default: 'board' }), f('theme', 'select', { options: ['light', 'dark', 'system'], default: 'light', description: 'Match the page\'s mode.' }), f('height', 'number', { default: 640, description: 'In pixels.' })],
+    html: `<section class="hb-section hb-embed">
+  <div class="hb-container">
+    <div class="hb-center">{{#eyebrow}}<p class="hb-eyebrow">{{@eyebrow}}</p>{{/eyebrow}}{{#title}}<h2>{{@title}}</h2>{{/title}}{{#intro}}<div class="hb-lead hb-prose">{{@intro}}</div>{{/intro}}</div>
+    <iframe class="hb-embed__frame" src="{{$host}}/embed/feedback?inline=1&amp;pk={{$pk}}&amp;view={{@view}}&amp;theme={{@theme}}" title="Feedback" loading="lazy" style="height: {{@height}}px"></iframe>
+  </div>
+</section>`,
+    css: `.hb-embed__frame { width: 100%; margin-top: 40px; border: 1px solid var(--hb-line); border-radius: var(--hb-radius); background: var(--hb-bg); }`
+  }),
+  def({
+    key: 'chat', name: 'Support chat', description: 'The project\'s support chat, open on the page: visitors write to you and read your answers here.',
+    fields: [f('eyebrow', 'text'), f('title', 'text', { default: 'Talk to us' }), f('intro', 'markdown'), f('theme', 'select', { options: ['light', 'dark', 'system'], default: 'light', description: 'Match the page\'s mode.' }), f('height', 'number', { default: 560, description: 'In pixels.' })],
+    html: `<section class="hb-section hb-embed hb-embed--chat">
+  <div class="hb-container">
+    <div class="hb-center">{{#eyebrow}}<p class="hb-eyebrow">{{@eyebrow}}</p>{{/eyebrow}}{{#title}}<h2>{{@title}}</h2>{{/title}}{{#intro}}<div class="hb-lead hb-prose">{{@intro}}</div>{{/intro}}</div>
+    <iframe class="hb-embed__frame" src="{{$host}}/embed?inline=1&amp;pk={{$pk}}&amp;theme={{@theme}}" title="Support chat" loading="lazy" allow="clipboard-write" style="height: {{@height}}px"></iframe>
+  </div>
+</section>`,
+    css: `.hb-embed--chat .hb-embed__frame { max-width: 720px; margin-left: auto; margin-right: auto; }`
+  }),
+  def({
+    key: 'form', name: 'Lead form', description: 'One of the project\'s forms (Forms), live on the page. Submissions land in the project\'s contacts.',
+    fields: [f('eyebrow', 'text'), f('title', 'text', { default: 'Get in touch' }), f('intro', 'markdown'), f('form', 'text', { default: 'contact', label: 'Form key', description: 'The key of a published form, as in its link.' }), f('height', 'number', { default: 520, description: 'In pixels.' })],
+    html: `<section class="hb-section hb-embed hb-embed--form">
+  <div class="hb-container">
+    <div class="hb-center">{{#eyebrow}}<p class="hb-eyebrow">{{@eyebrow}}</p>{{/eyebrow}}{{#title}}<h2>{{@title}}</h2>{{/title}}{{#intro}}<div class="hb-lead hb-prose">{{@intro}}</div>{{/intro}}</div>
+    <iframe class="hb-embed__frame" src="{{$host}}/f/{{$pk}}/{{@form}}" title="Form" loading="lazy" style="height: {{@height}}px"></iframe>
+  </div>
+</section>`,
+    css: `.hb-embed--form .hb-embed__frame { max-width: 560px; margin-left: auto; margin-right: auto; }`
+  }),
+  def({
+    key: 'notify', name: 'Changelog sign-up', description: 'Visitors enter their email to be told about new releases (with double opt-in). Needs email notifications on in the changelog\'s settings.',
+    fields: [f('title', 'text', { default: 'Get notified of new releases' }), f('body', 'markdown', { default: 'One email when something ships. Unsubscribe any time.' }), f('placeholder', 'text', { default: 'you@example.com' }), f('buttonLabel', 'text', { default: 'Notify me' }), f('askFrequency', 'boolean', { label: 'Let them choose how often' }), f('frequency', 'select', { options: ['instant', 'weekly'], default: 'instant', description: 'When they cannot choose.' }), f('instantLabel', 'text', { default: 'Every release' }), f('weeklyLabel', 'text', { default: 'Weekly digest' })],
+    html: `<section class="hb-section hb-signup hb-notify" id="notify">
+  <div class="hb-container hb-center">
+    {{#title}}<h2>{{@title}}</h2>{{/title}}
+    {{#body}}<div class="hb-lead hb-prose">{{@body}}</div>{{/body}}
+    <form class="hb-signup__form" method="post" action="{{$host}}/v1/changelog/subscribe?pk={{$pk}}">
+      <input class="hb-signup__trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <input class="hb-input" type="email" name="email" required placeholder="{{@placeholder}}" aria-label="{{@placeholder}}" autocomplete="email">
+      {{#askFrequency}}<select class="hb-input" name="frequency" aria-label="How often"><option value="instant">{{@instantLabel}}</option><option value="weekly">{{@weeklyLabel}}</option></select>{{/askFrequency}}
+      {{^askFrequency}}<input type="hidden" name="frequency" value="{{@frequency}}">{{/askFrequency}}
+      <button class="hb-btn" type="submit">{{@buttonLabel}}</button>
+    </form>
+  </div>
+</section>`,
+    // The same form look as the email sign-up, so either works alone on a page.
+    css: `.hb-notify .hb-signup__form { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 28px; }
+.hb-notify .hb-input { min-height: 46px; padding: 0 16px; border-radius: var(--hb-radius-sm); border: 1px solid var(--hb-line); background: var(--hb-bg); color: var(--hb-text); font: 15px var(--hb-font); min-width: 0; flex: 1 1 220px; max-width: 320px; }
+.hb-notify .hb-input:focus { outline: 2px solid var(--hb-accent); outline-offset: 1px; }
+.hb-notify .hb-signup__trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }`
+  }),
   def({
     key: 'app_badges', name: 'App store buttons', description: 'Download buttons for the App Store and Google Play.',
     fields: [f('appStoreUrl', 'url', { label: 'App Store URL' }), f('appStoreCaption', 'text', { default: 'Download on the' }), f('appStoreLabel', 'text', { default: 'App Store' }), f('playStoreUrl', 'url', { label: 'Google Play URL' }), f('playStoreCaption', 'text', { default: 'Get it on' }), f('playStoreLabel', 'text', { default: 'Google Play' }), f('align', 'select', { options: ['center', 'left'], default: 'center' })],

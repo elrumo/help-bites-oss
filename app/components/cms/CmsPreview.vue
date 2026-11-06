@@ -13,6 +13,7 @@
  * edit, clicks on `data-hb-uid` elements come back as selections.
  */
 import { CMS_PREVIEW_RUNTIME } from '#shared/cms/previewRuntime'
+import { loadCmsData, type CmsData } from '#shared/cms/dynamic'
 import { renderPage } from '#shared/cms/render'
 import type { CmsBlock, CmsLibrary, CmsStyle } from '#shared/cms/content'
 
@@ -55,8 +56,19 @@ function updateScale() {
 
 const topIds = () => (Array.isArray(props.content.body) ? props.content.body as CmsBlock[] : []).map(b => b._uid)
 
+// What the blog, changelog and pricing blocks show: the public API's answers, as a visitor would get them.
+let data: CmsData = {}
+async function refreshData() {
+  if (props.siteUrl) return
+  const next = await loadCmsData(props.content, props.library, props.pk, path => $fetch(path), data)
+  if (Object.keys(next).length === Object.keys(data).length) return
+  data = next
+  if (ready && !playing.value) postContent()
+  else build()
+}
+
 function render(runtime = false): Document {
-  const html = renderPage({ name: props.name, content: props.content, style: props.pageStyle, projectAccent: props.projectAccent, runtime }, { library: props.library, pk: props.pk, host: window.location.origin })
+  const html = renderPage({ name: props.name, content: props.content, style: props.pageStyle, projectAccent: props.projectAccent, runtime }, { library: props.library, pk: props.pk, host: window.location.origin, data, editor: !runtime })
   const doc = new DOMParser().parseFromString(html, 'text/html')
   // A component being written may still hold a script or handler: it never runs next to the runtime.
   defangHtml(doc, { keep: runtime ? 'script[data-motion]' : undefined, frames: true })
@@ -136,6 +148,7 @@ let observer: ResizeObserver | null = null
 onMounted(() => {
   window.addEventListener('message', onMessage)
   if (!props.siteUrl) play()
+  refreshData()
   updateScale()
   if (viewport.value) {
     observer = new ResizeObserver(updateScale)
@@ -156,6 +169,7 @@ watch(() => [props.content, props.pageStyle, props.library, props.name, props.en
     if (!props.siteUrl) build()
   } else if (ready) postContent()
   else if (!props.siteUrl) build()
+  refreshData()
 }, { deep: true })
 watch(() => props.selectedId, id => post({ type: 'selected', id: id ?? null }))
 watch(() => props.hoverId, id => { if (!props.siteUrl) post({ type: 'hover', id: id ?? null }) })

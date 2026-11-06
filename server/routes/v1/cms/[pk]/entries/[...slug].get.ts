@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const row = await publishedCmsEntry(project, getRouterParam(event, 'slug') || '')
   if (!row) throw createError({ statusCode: 404, statusMessage: 'Entry not found' })
   const entry = toPublicCmsEntry(row)
-  const body = getQuery(event).format === 'html' ? { entry, ...cmsEntryHtml(project, entry, await cmsLibrary(project), cmsHost(event)) } : { entry }
+  const body = getQuery(event).format === 'html' ? { entry, ...await cmsEntryHtml(event, project, entry, await cmsLibrary(project)) } : { entry }
   const etag = `"${createHash('sha1').update(JSON.stringify(body)).digest('hex')}"`
   if (handleCacheHeaders(event, { etag, maxAge: 60, cacheControls: ['stale-while-revalidate=600'] })) return
   return body

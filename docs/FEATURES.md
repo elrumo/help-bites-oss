@@ -480,8 +480,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   layer lights the block on the page and the other way round (each scrolls the other
   into view), and the add button stays at the bottom. Its menu is narrow and shows
   what the hovered component looks like.
-- **Components, built in or your own.** Forty-seven built-ins (hero, gradient hero,
-  features, bento, pricing, FAQ, sign-up, Dock mockup, code window…), or write one
+- **Components, built in or your own.** Fifty-five built-ins (hero, gradient hero,
+  features, bento, pricing, FAQ, sign-up, Dock mockup, code window…, and the
+  project's own blog, changelog, pricing table, feedback board, chat, forms and
+  release sign-up), or write one
   as HTML and CSS with `{{@field}}` slots and a field schema. Components with no
   template are data for your own app. No scripts, ever: hosted pages share the
   HelpBites address.

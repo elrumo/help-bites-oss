@@ -1473,7 +1473,7 @@
       "id": "pages-cms",
       "name": "Pages and headless CMS",
       "category": "marketing",
-      "summary": "Landing pages built in a visual editor from templates and components (built-in or written in HTML and CSS), with files, scroll animations, an AI assistant and wizard that writes pages, copy and components from GitHub repos, hosting at /p/:pk, an embed, a delivery API for Vue, JS and Swift, and live editing of the developer's own site. Any block can be hidden (kept in the editor, left off the page and the delivery API); Layers fold, search the page's text and light up with the page under the pointer, the add menu previews each component, and the editor plays the page as it opens.",
+      "summary": "Landing pages built in a visual editor from templates and components (built-in or written in HTML and CSS), with files, scroll animations, an AI assistant and wizard that writes pages, copy and components from GitHub repos, hosting at /p/:pk, an embed, a delivery API for Vue, JS and Swift, and live editing of the developer's own site. Any block can be hidden (kept in the editor, left off the page and the delivery API); Layers fold, search the page's text and light up with the page under the pointer, the add menu previews each component, and the editor plays the page as it opens. Eight built-in blocks put the project's own HelpBites content on a page without code: its latest blog posts or one post, the changelog and the pricing table (rendered on the server from the public API), the feedback board, the support chat and a lead form (framed from HelpBites' own embeds under a narrow frame policy) and a release-email sign-up.",
       "editions": [
         "community",
         "cloud"
@@ -1515,6 +1515,7 @@
           "HelpBitesPages.push(['init', …])",
           "the page's own style (accent, mode, radius, fonts, width)",
           "CSS variables and .hb-* classes in components",
+          "the HelpBites content blocks' fields (count, tag, layout, which parts show, copy, theme, height)",
           "cms.mjs client, editable() and bridge() for your own UI",
           "Swift accent, titleFont and cornerRadius"
         ]
