@@ -128,7 +128,7 @@ function tag(html: string, block: CmsBlock): string {
 
 function renderBlock(block: CmsBlock, ctx: Walk, parent = ''): string {
   const def = ctx.library.get(block.component)
-  if (!def || !def.html) return ''
+  if (!def || !def.html || block._hidden) return ''
   ctx.used.add(def.key)
   return tag(fill(def, block, ctx, parent), block)
 }

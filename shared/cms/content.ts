@@ -72,7 +72,8 @@ export type CmsAnimation = {
 }
 export const DEFAULT_ANIMATION: CmsAnimation = { effect: 'fade-up', trigger: 'in-view', duration: 600, delay: 0, easing: 'ease-out', stagger: 0, once: true, distance: 32 }
 
-export type CmsBlock = { _uid: string, component: string, _anim?: CmsAnimation, [key: string]: unknown }
+/** `_hidden`: kept in the content and shown in the editor's layers, but left out of the page and the delivery API. */
+export type CmsBlock = { _uid: string, component: string, _anim?: CmsAnimation, _hidden?: boolean, [key: string]: unknown }
 
 export const CMS_WIDTHS = ['narrow', 'normal', 'wide'] as const
 export type CmsStyle = {
@@ -336,10 +337,11 @@ export function normalizeContent(raw: unknown, library: CmsLibrary, rootType: st
     const block: CmsBlock = { _uid: id, component }
     const anim = normalizeAnimation(input._anim)
     if (anim) block._anim = anim
+    if (input._hidden === true) block._hidden = true
     const def = library.get(component)
     const fields = new Map((def?.fields || []).map(f => [f.key, f]))
     for (const [key, v] of Object.entries(input)) {
-      if (key === '_uid' || key === 'component' || key === '_anim' || v === undefined) continue
+      if (key === '_uid' || key === 'component' || key === '_anim' || key === '_hidden' || v === undefined) continue
       const field = fields.get(key)
       if (!field) {
         if (/^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(key)) block[key] = plain(v)
@@ -468,7 +470,10 @@ export function updateBlock(root: CmsBlock, library: CmsLibrary, id: string, val
   for (const [k, v] of Object.entries(values || {})) {
     if (k === '_uid' || k === 'component') continue
     if (v === null && k === '_anim') delete at.block._anim
-    else at.block[k] = v
+    else if (k === '_hidden') {
+      if (v === true) at.block._hidden = true
+      else delete at.block._hidden
+    } else at.block[k] = v
   }
   return { ok: true, message: `Updated ${id}`, content }
 }
@@ -498,11 +503,40 @@ export function duplicateBlock(root: CmsBlock, library: CmsLibrary, id: string):
   return addBlock(root, library, at.parent._uid, at.field, reuid(clone(at.block)), at.index + 1)
 }
 
+/** The content as visitors get it: hidden blocks (and what is inside them) left out. */
+export function withoutHidden<T>(value: T): T {
+  if (Array.isArray(value)) return value.filter(v => !(v && typeof v === 'object' && (v as CmsBlock)._hidden === true)).map(withoutHidden) as T
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, withoutHidden(v)])) as T
+  return value
+}
+
+/**
+ * The editor's search: blocks whose own text (any string field, so titles, copy,
+ * labels, links) holds `query`, ignoring case, and `shown`, those plus every
+ * block above them, so a match keeps its place in the layers.
+ */
+export function searchBlocks(root: CmsBlock, library: CmsLibrary, query: string): { matches: Set<string>, shown: Set<string> } {
+  const needle = query.trim().toLowerCase()
+  const matches = new Set<string>()
+  const shown = new Set<string>()
+  if (!needle) return { matches, shown }
+  const walk = (block: CmsBlock): boolean => {
+    const kids = new Set(childFields(block, library))
+    let hit = Object.entries(block).some(([k, v]) => !k.startsWith('_') && k !== 'component' && !kids.has(k) && typeof v === 'string' && v.toLowerCase().includes(needle))
+    if (hit) matches.add(block._uid)
+    for (const key of kids) for (const child of Array.isArray(block[key]) ? block[key] as CmsBlock[] : []) if (walk(child)) hit = true
+    if (hit) shown.add(block._uid)
+    return hit
+  }
+  walk(root)
+  return { matches, shown }
+}
+
 /** One line per block, indented: the AI reads the page this way. */
 export function outline(root: CmsBlock, library: CmsLibrary, depth = 0): string {
   const def = library.get(root.component)
   const title = ['headline', 'title', 'name', 'label', 'text'].map(k => root[k]).find(v => typeof v === 'string' && v) as string | undefined
-  const line = `${'  '.repeat(depth)}- ${root.component} ${root._uid}${def ? '' : ' (missing component)'}${title ? `: "${title.slice(0, 60)}"` : ''}${root._anim ? ` [${root._anim.effect}]` : ''}`
+  const line = `${'  '.repeat(depth)}- ${root.component} ${root._uid}${def ? '' : ' (missing component)'}${title ? `: "${title.slice(0, 60)}"` : ''}${root._anim ? ` [${root._anim.effect}]` : ''}${root._hidden ? ' [hidden]' : ''}`
   return [line, ...childFields(root, library).flatMap(f => {
     const list = Array.isArray(root[f]) ? root[f] as CmsBlock[] : []
     return list.length ? [`${'  '.repeat(depth + 1)}${f}:`, ...list.map(b => outline(b, library, depth + 2))] : []

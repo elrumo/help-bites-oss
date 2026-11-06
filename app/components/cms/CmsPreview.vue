@@ -4,7 +4,9 @@
  * same renderer hosted pages use, into a sandboxed srcdoc frame whose runtime
  * (shared/cms/previewRuntime.ts) outlines and selects blocks and drags
  * top-level ones; later edits are posted in, so the frame keeps its scroll.
- * "Play" rebuilds the frame with the page runtime, so animations run once.
+ * "Play" rebuilds the frame with the page runtime, so animations run once; the
+ * editor plays the page as it opens, and an edit while it plays goes back to
+ * editing at once.
  *
  * In "site" mode it frames the developer's own site (the project's preview
  * URL) and talks to public/cms.mjs's bridge there: the draft goes in on every
@@ -27,10 +29,13 @@ const props = defineProps<{
   siteUrl?: string
   /** The entry as the bridge receives it. */
   entry?: Record<string, unknown>
+  /** A block the layers are pointing at: lit and scrolled into view here. */
+  hoverId?: string | null
 }>()
 
 const emit = defineEmits<{
   (e: 'select', id: string | null): void
+  (e: 'hover', id: string | null): void
   (e: 'move', payload: { id: string, to: number }): void
 }>()
 
@@ -102,6 +107,7 @@ function onMessage(e: MessageEvent) {
   } else if (!d || !d.__cms || d.nonce !== nonce) {
     return
   }
+  if (d.type === 'hover') emit('hover', typeof d.id === 'string' ? d.id : null)
   if (d.type === 'select') emit('select', typeof d.id === 'string' ? d.id : null)
   if (d.type === 'move' && typeof d.id === 'string' && typeof d.to === 'number') emit('move', { id: d.id, to: d.to })
   if (d.type === 'key' && typeof d.key === 'string') {
@@ -111,14 +117,17 @@ function onMessage(e: MessageEvent) {
     ready = true
     postContent()
     post({ type: 'selected', id: props.selectedId ?? null })
+    if (props.hoverId) post({ type: 'hover', id: props.hoverId })
   }
 }
 
+let playTimer: ReturnType<typeof setTimeout> | undefined
 function play() {
+  clearTimeout(playTimer)
   playing.value = true
   build()
   // Back to editing once they have had time to run.
-  setTimeout(() => {
+  playTimer = setTimeout(() => {
     playing.value = false
   }, 6000)
 }
@@ -126,7 +135,7 @@ function play() {
 let observer: ResizeObserver | null = null
 onMounted(() => {
   window.addEventListener('message', onMessage)
-  if (!props.siteUrl) build()
+  if (!props.siteUrl) play()
   updateScale()
   if (viewport.value) {
     observer = new ResizeObserver(updateScale)
@@ -135,14 +144,21 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('message', onMessage)
+  clearTimeout(playTimer)
   observer?.disconnect()
 })
 
 watch(() => [props.content, props.pageStyle, props.library, props.name, props.entry], () => {
-  if (ready && !playing.value) postContent()
-  else if (!props.siteUrl && !playing.value) build()
+  if (playing.value) {
+    // The frame is the playing page (no editing runtime to post into): stop and show the edit.
+    clearTimeout(playTimer)
+    playing.value = false
+    if (!props.siteUrl) build()
+  } else if (ready) postContent()
+  else if (!props.siteUrl) build()
 }, { deep: true })
 watch(() => props.selectedId, id => post({ type: 'selected', id: id ?? null }))
+watch(() => props.hoverId, id => { if (!props.siteUrl) post({ type: 'hover', id: id ?? null }) })
 watch(() => props.width, () => nextTick(updateScale))
 watch(() => props.siteUrl, () => {
   ready = false

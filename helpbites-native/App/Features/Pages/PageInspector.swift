@@ -56,6 +56,10 @@ struct PageInspector: View {
       Text("\(block.component) · \(block.uid)").font(.lnMono).foregroundStyle(Theme.textDimmed)
       if let description = def?.description, !description.isEmpty { Text(description).font(.lnCaption).foregroundStyle(Theme.textMuted).padding(.top, 2) }
     }
+    VStack(alignment: .leading, spacing: 2) {
+      Toggle("Hide from the page", isOn: Binding(get: { block.isHidden }, set: { setValue(block.uid, "_hidden", $0 ? .bool(true) : nil) })).toggleStyle(.switch).tint(Theme.accent).font(.lnRow)
+      if block.isHidden { Text("Kept here, left off the page and the delivery API.").font(.lnCaption).foregroundStyle(Theme.warning) }
+    }
     if let def {
       ForEach(def.fields.filter { $0.kind != .blocks }) { field in
         PageFieldInput(field: field, value: block.values[field.key], projectId: projectId) { setValue(block.uid, field.key, $0) }

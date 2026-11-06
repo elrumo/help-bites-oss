@@ -228,6 +228,8 @@ struct CmsBlock: Codable, Equatable, Sendable, Identifiable {
   var uid: String { text("_uid") }
   var component: String { text("component") }
   var animation: CmsAnimation? { CmsAnimation(values["_anim"]) }
+  /// `_hidden`: kept in the content but left off the page and out of the delivery API.
+  var isHidden: Bool { values["_hidden"] == .bool(true) }
 
   func text(_ key: String) -> String {
     if case .string(let value)? = values[key] { return value }
@@ -314,6 +316,27 @@ struct CmsBlock: Codable, Equatable, Sendable, Identifiable {
       for child in list { if let found = child.slot(of: id, library) { return found } }
     }
     return nil
+  }
+
+  /// The editor's search (web: `searchBlocks`): the blocks whose own text (any string field) holds `query`,
+  /// ignoring case, and `shown`, those plus every block above them.
+  func search(_ query: String, _ library: CmsLibrary) -> (matches: Set<String>, shown: Set<String>) {
+    let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    var matches = Set<String>(), shown = Set<String>()
+    guard !needle.isEmpty else { return (matches, shown) }
+    func walk(_ block: CmsBlock) -> Bool {
+      let kids = Set(block.childFields(library).map(\.key))
+      var hit = block.values.contains { key, value in
+        guard !key.hasPrefix("_"), key != "component", !kids.contains(key), case .string(let text) = value else { return false }
+        return text.lowercased().contains(needle)
+      }
+      if hit { matches.insert(block.uid) }
+      for key in kids { for child in block.children(key) where walk(child) { hit = true } }
+      if hit { shown.insert(block.uid) }
+      return hit
+    }
+    _ = walk(self)
+    return (matches, shown)
   }
 
   /// Every block in the tree with its depth, parents before children.

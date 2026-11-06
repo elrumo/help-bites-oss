@@ -106,4 +106,14 @@ describe('native pages parity', () => {
     for (const type of CMS_FIELD_TYPES) expect(editor, type).toContain(`"${type}"`)
     expect(editor).toContain(`.clipped(to: ${CMS_LIMITS.description})`)
   })
+
+  test('hiding and searching blocks follow the web rules', () => {
+    // `_hidden` is a true-or-absent flag on the block, and the search reads every own string field except `_…`, `component` and the blocks fields.
+    expect(swift).toContain('values["_hidden"] == .bool(true)')
+    const screen = readFileSync(join(feature, 'PageEntryScreen.swift'), 'utf8')
+    expect(screen).toContain('block.values["_hidden"] = .bool(true)')
+    expect(screen).toContain('block.values.removeValue(forKey: "_hidden")')
+    expect(swift).toContain('guard !key.hasPrefix("_"), key != "component", !kids.contains(key), case .string(let text) = value')
+    expect(swift).toContain('text.lowercased().contains(needle)')
+  })
 })

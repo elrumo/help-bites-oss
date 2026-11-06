@@ -13,7 +13,7 @@
  * every change is an undo step (a burst of typing is one) and autosaves the
  * working copy. Publishing freezes it for visitors.
  */
-import { addBlock, moveBlock, newBlock, removeBlock, type CmsBlock, type CmsLibrary, type CmsStyle } from '#shared/cms/content'
+import { addBlock, allBlocks, findBlock, moveBlock, newBlock, removeBlock, searchBlocks, updateBlock, type CmsBlock, type CmsLibrary, type CmsStyle } from '#shared/cms/content'
 import { previewUrlFor } from '#shared/cms/content'
 import { useDebounceFn } from '@vueuse/core'
 import type { CmsEntryView } from '~~/server/utils/cms'
@@ -41,6 +41,25 @@ const slug = ref(props.entry.slug)
 const status = ref({ status: props.entry.status, changed: props.entry.changed, version: props.entry.version, path: props.entry.path })
 const selectedId = ref<string | null>(null)
 const leftTab = ref<string | number>('layers')
+const query = ref('')
+/** The block under the pointer, in the layers or the page; the other side lights it and scrolls to it. */
+const hovered = ref<{ id: string, from: 'layers' | 'preview' } | null>(null)
+const layersEl = ref<HTMLElement | null>(null)
+const previewHover = ref<string | null>(null)
+const syncHover = useDebounceFn((h: typeof hovered.value) => {
+  previewHover.value = h?.from === 'layers' ? h.id : null
+  if (h?.from === 'preview') layersEl.value?.querySelector(`[data-layer-id="${CSS.escape(h.id)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+}, 120)
+watch(hovered, h => syncHover(h))
+/** Blocks folded shut in the layers. */
+const collapsed = reactive(new Set<string>())
+const found = computed(() => searchBlocks(content.value, props.library, query.value))
+const searching = computed(() => query.value.trim() !== '')
+/** Enter in the search box goes to the first block with the text. */
+function selectFirstMatch() {
+  const first = allBlocks(content.value, props.library).find(b => found.value.matches.has(b._uid))
+  if (first) selectedId.value = first._uid === content.value._uid ? null : first._uid
+}
 
 // ---- undo / redo -----------------------------------------------------------
 type Snapshot = { content: CmsBlock, style: CmsStyle, name: string }
@@ -152,6 +171,7 @@ provide('cmsLayers', {
     const res = addBlock(content.value, props.library, parentId, field, block)
     if (!res.ok) return toast.add({ title: res.message, color: 'warning' })
     content.value = res.content
+    query.value = ''
     selectedId.value = block._uid
   },
   move(id: string, parentId: string, field: string, index: number) {
@@ -159,6 +179,18 @@ provide('cmsLayers', {
     const res = moveBlock(content.value, props.library, id, parentId, field, index)
     if (!res.ok) return toast.add({ title: res.message, color: 'warning' })
     content.value = res.content
+  },
+  collapsed,
+  hovered: computed(() => hovered.value?.id ?? null),
+  hover: (id: string | null) => { hovered.value = id ? { id, from: 'layers' } : null },
+  pageStyle: style,
+  projectAccent: props.projectAccent,
+  pk: props.pk,
+  toggleCollapsed: (id: string) => { if (!collapsed.delete(id)) collapsed.add(id) },
+  toggleHidden(id: string) {
+    const at = findBlock(content.value, id, props.library)
+    const res = at && updateBlock(content.value, props.library, id, { _hidden: !at.block._hidden })
+    if (res?.ok) content.value = res.content
   },
   dragging
 })
@@ -171,6 +203,11 @@ function onPreviewMove({ id, to }: { id: string, to: number }) {
   const res = moveBlock(content.value, props.library, id, content.value._uid, 'body', to > from ? to + 1 : to)
   if (res.ok) content.value = res.content
 }
+
+// Selecting a block (in the page, by the assistant) unfolds the parents it sits in.
+watch(selectedId, (id) => {
+  for (let at = id ? findBlock(content.value, id, props.library) : null; at?.parent; at = findBlock(content.value, at.parent._uid, props.library)) collapsed.delete(at.parent._uid)
+})
 
 // ---- preview -------------------------------------------------------------------
 const devices = [
@@ -245,9 +282,15 @@ useHead({ title: () => name.value || t('sections.pages') })
         <div class="shrink-0 border-b border-default p-2">
           <UTabs v-model="leftTab" :items="[{ label: $t('projectTools.pages.assistant'), icon: 'i-lucide-sparkles', value: 'ai' }, { label: $t('projectTools.pages.layers'), icon: 'i-lucide-layers', value: 'layers' }]" :content="false" color="neutral" size="xs" class="w-full" />
         </div>
-        <div v-show="leftTab === 'layers'" data-cms-layers class="min-h-0 flex-1 overflow-y-auto p-2">
-          <UButton icon="i-lucide-file" :label="library.get(content.component)?.name || content.component" :color="!selectedId || selectedId === content._uid ? 'primary' : 'neutral'" :variant="!selectedId || selectedId === content._uid ? 'soft' : 'ghost'" size="sm" block class="mb-1 justify-start rounded-md" @click="selectedId = null" />
-          <CmsLayers :block="content" :library="library" :selected-id="selectedId" />
+        <div v-show="leftTab === 'layers'" ref="layersEl" data-cms-layers class="min-h-0 flex-1 overflow-y-auto p-2">
+          <UInput v-model="query" icon="i-lucide-search" size="sm" class="mb-2 w-full" :placeholder="$t('projectTools.pages.searchLayers')" :aria-label="$t('projectTools.pages.searchLayers')" @keydown.enter="selectFirstMatch" @keydown.esc="query = ''">
+            <template v-if="query" #trailing>
+              <UButton icon="i-lucide-x" color="neutral" variant="link" size="xs" :aria-label="$t('projectTools.pages.clearSearch')" @click="query = ''" />
+            </template>
+          </UInput>
+          <p v-if="searching && !found.shown.size" class="px-2 py-3 text-xs text-muted">{{ $t('projectTools.pages.noSearchResults', { query: query.trim() }) }}</p>
+          <UButton v-else icon="i-lucide-file" :label="library.get(content.component)?.name || content.component" :color="!selectedId || selectedId === content._uid ? 'primary' : 'neutral'" :variant="!selectedId || selectedId === content._uid ? 'soft' : 'ghost'" size="sm" block class="mb-1 justify-start rounded-md" :class="searching && found.matches.has(content._uid) && 'ring-1 ring-primary/50'" @click="selectedId = null" />
+          <CmsLayers v-if="!searching || found.shown.size" :block="content" :library="library" :selected-id="selectedId" :shown="searching ? found.shown : null" :matches="found.matches" :query="query" />
         </div>
         <div v-show="leftTab === 'ai'" class="flex min-h-0 flex-1 flex-col">
           <slot name="assistant" :content="content" :selected-id="selectedId" />
@@ -267,7 +310,9 @@ useHead({ title: () => name.value || t('sections.pages') })
           :width="width"
           :site-url="siteUrl || undefined"
           :entry="bridgeEntry"
+          :hover-id="previewHover"
           @select="selectedId = $event"
+          @hover="hovered = $event ? { id: $event, from: 'preview' } : null"
           @move="onPreviewMove"
         />
       </main>

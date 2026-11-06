@@ -9,7 +9,9 @@
  * handle; nested blocks move from the layers list. Links and forms do nothing
  * here. Dragging uses pointer events: a line marks the landing spot and
  * nothing moves until the drop; then the re-rendered blocks glide (FLIP) from
- * where they were to where they now sit.
+ * where they were to where they now sit. Edits after Play drop the page runtime's
+ * `hb-js` class, which would keep every re-rendered animated block invisible. Hovering a block tells the editor (its
+ * layer lights up) and the editor can light one here, scrolling it into view.
  */
 export const CMS_PREVIEW_RUNTIME = `
 (function () {
@@ -18,6 +20,8 @@ export const CMS_PREVIEW_RUNTIME = `
   var nonce = script.getAttribute('data-nonce');
   script.remove();
   var selectedId = null;
+  var hoverId = null;
+  var hovered = null;
   var drag = null;
   var line = null;
 
@@ -46,6 +50,15 @@ export const CMS_PREVIEW_RUNTIME = `
       el.toggleAttribute('data-hb-selected', on);
       if (on && reveal) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     });
+  }
+
+  function light(id, reveal) {
+    hoverId = id;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-hb-hover]'), function (el) { el.removeAttribute('data-hb-hover'); });
+    var el = id ? byId(id) : null;
+    if (!el) return;
+    el.setAttribute('data-hb-hover', '');
+    if (reveal) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
   function tops() {
@@ -130,6 +143,15 @@ export const CMS_PREVIEW_RUNTIME = `
     var el = e.target.closest('[data-hb-uid]');
     send({ type: 'select', id: el ? el.getAttribute('data-hb-uid') : null });
   }, true);
+  document.addEventListener('mouseover', function (e) {
+    if (drag) return;
+    var el = e.target.closest && e.target.closest('[data-hb-uid]');
+    var id = el ? el.getAttribute('data-hb-uid') : null;
+    if (id !== hovered) { hovered = id; send({ type: 'hover', id: id }); }
+  });
+  document.documentElement.addEventListener('mouseleave', function () {
+    if (hovered !== null) { hovered = null; send({ type: 'hover', id: null }); }
+  });
   document.addEventListener('submit', function (e) { e.preventDefault(); }, true);
 
   document.addEventListener('keydown', function (e) {
@@ -146,12 +168,15 @@ export const CMS_PREVIEW_RUNTIME = `
     var d = e.data;
     if (e.source !== parent || !d || !d.__cms) return;
     if (d.type === 'selected') apply(d.id, true);
+    if (d.type === 'hover') light(d.id, true);
     if (d.type === 'render') {
       end(false);
       var next = new DOMParser().parseFromString(d.html, 'text/html');
       document.title = next.title;
       Array.prototype.forEach.call(document.head.querySelectorAll('style:not([data-hb-editor]), link[rel="stylesheet"]'), function (el) { el.remove(); });
       Array.prototype.forEach.call(next.head.querySelectorAll('style, link[rel="stylesheet"]'), function (el) { document.head.appendChild(el); });
+      // After Play the page runtime left animated blocks hidden (hb-js) for Motion to reveal; the new blocks never get that, so edit mode shows them all.
+      document.documentElement.classList.remove('hb-js');
       var before = tops();
       var prev = ids;
       document.body.innerHTML = next.body.innerHTML;
@@ -159,6 +184,7 @@ export const CMS_PREVIEW_RUNTIME = `
       tag();
       glide(before, prev);
       apply(selectedId);
+      light(hoverId, false);
     }
   });
 
@@ -168,6 +194,7 @@ export const CMS_PREVIEW_RUNTIME = `
     '[data-hb-uid] { cursor: pointer; }',
     '[data-hb-uid]:hover:not(:has([data-hb-uid]:hover)) { outline: 1px dashed rgba(99, 102, 241, .75); outline-offset: -1px; }',
     '[data-hb-uid][data-hb-selected] { outline: 2px solid #6366f1 !important; outline-offset: -2px; }',
+    '[data-hb-uid][data-hb-hover]:not([data-hb-selected]) { outline: 2px solid rgba(99, 102, 241, .6) !important; outline-offset: -2px; background-image: linear-gradient(rgba(99, 102, 241, .07), rgba(99, 102, 241, .07)); }',
     '[data-hb-dragging] { opacity: .35; }',
     '.hb-drag-handle { all: unset; align-content: center; background: #fff; border: 1px solid rgba(24, 24, 27, .16); border-radius: 7px; box-shadow: 0 6px 18px rgba(24, 24, 27, .16); box-sizing: border-box; cursor: grab; display: flex; flex-wrap: wrap; gap: 2px; height: 26px; justify-content: center; left: 8px; opacity: 0; padding: 6px; position: absolute; top: 8px; touch-action: none; transition: opacity 140ms ease; width: 26px; z-index: 50; }',
     '.hb-drag-handle span { background: #71717a; border-radius: 999px; height: 3px; width: 3px; }',

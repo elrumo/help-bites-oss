@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The right pane. With a block selected: its fields, its animation, and the
- * moves (up, down, duplicate, delete, select its parent). With the page (or
+ * moves (up, down, hide, duplicate, delete, select its parent). With the page (or
  * nothing) selected: the entry's name and slug, the root's own fields (title,
  * description, link preview image) and the page style.
  */
@@ -52,6 +52,8 @@ function nudge(by: number) {
   if (res.ok) emit('update:content', res.content)
 }
 
+const hidden = computed(() => block.value._hidden === true)
+
 function duplicate() {
   const res = duplicateBlock(props.content, props.library, block.value._uid)
   if (!res.ok) return
@@ -100,9 +102,11 @@ const FONTS = ['Inter', 'Geist', 'DM Sans', 'Manrope', 'Plus Jakarta Sans', 'Spa
         <UButton icon="i-lucide-corner-left-up" size="xs" color="neutral" variant="ghost" square :aria-label="$t('projectTools.pages.selectParent')" @click="emit('select', at?.parent?._uid === content._uid ? null : at?.parent?._uid ?? null)" />
         <UButton icon="i-lucide-arrow-up" size="xs" color="neutral" variant="ghost" square :disabled="!at || at.index === 0" :aria-label="$t('projectTools.pages.moveUp')" @click="nudge(-1)" />
         <UButton icon="i-lucide-arrow-down" size="xs" color="neutral" variant="ghost" square :disabled="!at || at.index >= siblings - 1" :aria-label="$t('projectTools.pages.moveDown')" @click="nudge(1)" />
+        <UButton :icon="hidden ? 'i-lucide-eye-off' : 'i-lucide-eye'" size="xs" :color="hidden ? 'warning' : 'neutral'" :variant="hidden ? 'soft' : 'ghost'" square :aria-label="hidden ? $t('projectTools.pages.showBlock') : $t('projectTools.pages.hideBlock')" :aria-pressed="hidden" @click="setValue('_hidden', !hidden)" />
         <UButton icon="i-lucide-copy" size="xs" color="neutral" variant="ghost" square :aria-label="$t('projectTools.pages.duplicate')" @click="duplicate" />
         <UButton icon="i-lucide-trash-2" size="xs" color="neutral" variant="ghost" square :aria-label="$t('projectTools.pages.delete')" @click="remove" />
       </div>
+      <p v-if="hidden" class="-mt-3 flex items-center gap-1.5 text-xs text-warning"><UIcon name="i-lucide-eye-off" class="size-3.5 shrink-0" />{{ $t('projectTools.pages.hiddenNote') }}</p>
       <p v-if="def.description" class="-mt-3 text-xs text-muted">{{ def.description }}</p>
 
       <CmsFieldInput v-for="f in ownFields" :key="`${block._uid}-${f.key}`" :field="f" :model-value="block[f.key]" :project-id="projectId" @update:model-value="setValue(f.key, $event)" />

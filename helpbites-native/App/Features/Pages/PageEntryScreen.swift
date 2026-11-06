@@ -38,6 +38,9 @@ struct PageEntryScreen: View {
   @State private var assisting = false
   @State private var chat: PagesChatStore?
   @State private var assistantOpen = false
+  /// The outline's search text, and the blocks folded shut.
+  @State private var query = ""
+  @State private var collapsed: Set<String> = []
 
   private enum Confirm: String, Identifiable { case unpublish, delete; var id: String { rawValue } }
 
@@ -178,6 +181,7 @@ struct PageEntryScreen: View {
         status(entry)
         ErrorText(message: error)
         if !notice.isEmpty { Label(notice, systemImage: "wand.and.stars").font(.lnCaption).foregroundStyle(Theme.warning) }
+        searchField
         outlineRows(draft.wrappedValue.content)
       }
       .padding(wide ? 12 : 16)
@@ -185,6 +189,17 @@ struct PageEntryScreen: View {
       .frame(maxWidth: .infinity)
     }
     .scrollDismissesKeyboard(.interactively)
+    // The page's own add menu stays in reach however long the outline is.
+    .safeAreaInset(edge: .bottom, spacing: 0) {
+      let fields = draft.wrappedValue.content.childFields(library)
+      if !fields.isEmpty {
+        VStack(alignment: .leading, spacing: 0) {
+          Rectangle().fill(Theme.border).frame(height: Hairline.width)
+          ForEach(fields) { field in addRow(parent: draft.wrappedValue.content, field: field, depth: 0, labelled: fields.count > 1).padding(.horizontal, wide ? 12 : 16) }
+        }
+        .background(.bar)
+      }
+    }
     if wide {
       HStack(spacing: 0) {
         outline.frame(width: 340)
@@ -272,20 +287,39 @@ struct PageEntryScreen: View {
     }
   }
 
-  /// The tree flattened into rows, parents before children, each blocks field ending in its add row.
-  private func items(_ block: CmsBlock, depth: Int = 0) -> [OutlineItem] {
+  private var searching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
+  private var found: (matches: Set<String>, shown: Set<String>) { draft?.content.search(query, library) ?? ([], []) }
+
+  /// The tree flattened into rows, parents before children, each nested blocks field ending in its add row
+  /// (the page's own is the bar below). Folded blocks hide their children; a search keeps `shown` only, folds open.
+  private func items(_ block: CmsBlock, depth: Int = 0, shown: Set<String>? = nil) -> [OutlineItem] {
     var out: [OutlineItem] = [.block(block, depth: depth)]
+    guard shown != nil || !collapsed.contains(block.uid) else { return out }
     let fields = block.childFields(library)
     for field in fields {
-      for child in block.children(field.key) { out += items(child, depth: depth + 1) }
-      out.append(.add(parent: block, field: field, depth: depth + 1, labelled: fields.count > 1))
+      for child in block.children(field.key) where shown?.contains(child.uid) != false { out += items(child, depth: depth + 1, shown: shown) }
+      if shown == nil && depth > 0 { out.append(.add(parent: block, field: field, depth: depth + 1, labelled: fields.count > 1)) }
     }
     return out
   }
 
+  private var searchField: some View {
+    HStack(spacing: 8) {
+      Image(systemName: "magnifyingglass").font(.system(size: 13)).foregroundStyle(Theme.textMuted)
+      TextField("Search the text on the page", text: $query).textFieldStyle(.plain).font(.lnRow).autocorrectionDisabled().textInputAutocapitalization(.never)
+      if !query.isEmpty {
+        Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.textDimmed) }.buttonStyle(.plain).accessibilityLabel("Clear search")
+      }
+    }
+    .padding(.horizontal, 10).frame(minHeight: 36)
+    .overlay(RoundedRectangle(cornerRadius: Metrics.radius).stroke(Theme.border, lineWidth: Hairline.width))
+  }
+
   private func outlineRows(_ content: CmsBlock) -> some View {
-    VStack(alignment: .leading, spacing: 2) {
-      ForEach(items(content)) { item in
+    let shown: Set<String>? = searching ? found.shown : nil
+    return VStack(alignment: .leading, spacing: 2) {
+      if let shown, shown.isEmpty { Text("Nothing on this page says “\(query.trimmingCharacters(in: .whitespaces))”.").font(.lnCaption).foregroundStyle(Theme.textMuted).padding(8) }
+      ForEach(shown?.isEmpty == true ? [] : items(content, shown: shown)) { item in
         switch item {
         case .block(let block, let depth): blockRow(block, depth: depth)
         case .add(let parent, let field, let depth, let labelled): addRow(parent: parent, field: field, depth: depth, labelled: labelled)
@@ -299,7 +333,19 @@ struct PageEntryScreen: View {
     let def = library[block.component]
     let selected = root ? selection == nil : selection == block.uid
     let slot = root ? nil : draft?.content.slot(of: block.uid, library)
+    let lists = !root && !block.childFields(library).isEmpty
+    let folded = collapsed.contains(block.uid) && !searching
     return HStack(spacing: 4) {
+      if !root {
+        if lists {
+          Button { if collapsed.contains(block.uid) { collapsed.remove(block.uid) } else { collapsed.insert(block.uid) } } label: {
+            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textMuted).rotationEffect(.degrees(folded ? 0 : 90)).frame(width: 20, height: 28).contentShape(Rectangle())
+          }
+          .buttonStyle(.plain).accessibilityLabel(folded ? "Expand" : "Collapse")
+        } else {
+          Color.clear.frame(width: 20, height: 28)
+        }
+      }
       Button {
         selection = root ? nil : block.uid
         if !wide { inspecting = true }
@@ -310,13 +356,17 @@ struct PageEntryScreen: View {
           Text(def?.name ?? String(localized: "Missing: \(block.component)")).font(.lnRow).foregroundStyle(def == nil ? Theme.warning : Theme.textHighlighted).lineLimit(1).layoutPriority(1)
           if !block.title.isEmpty { Text(block.title).font(.lnCaption).foregroundStyle(Theme.textDimmed).lineLimit(1) }
           Spacer(minLength: 0)
+          if folded { Text("\(block.childFields(library).reduce(0) { $0 + block.children($1.key).count })").font(.lnCaption).foregroundStyle(Theme.textMuted) }
+          if block.isHidden { Image(systemName: "eye.slash").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Hidden") }
           if block.animation != nil { Image(systemName: "sparkles").font(.system(size: 11)).foregroundStyle(Theme.textDimmed).accessibilityLabel("Animated") }
         }
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
+      .opacity(block.isHidden ? 0.5 : 1)
       if !root {
         Menu {
+          Button { toggleHidden(block.uid) } label: { Label(block.isHidden ? "Show on the page" : "Hide from the page", systemImage: block.isHidden ? "eye" : "eye.slash") }
           Button { move(block.uid, by: -1) } label: { Label("Move up", systemImage: "arrow.up") }.disabled(slot.map { $0.index == 0 } ?? true)
           Button { move(block.uid, by: 1) } label: { Label("Move down", systemImage: "arrow.down") }.disabled(slot.map { $0.index >= $0.count - 1 } ?? true)
           Button { duplicate(block.uid) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
@@ -330,9 +380,10 @@ struct PageEntryScreen: View {
         .accessibilityLabel("Actions for \(def?.name ?? block.component)")
       }
     }
-    .padding(.leading, 8 + CGFloat(depth) * 14).padding(.trailing, 4)
+    .padding(.leading, 4 + CGFloat(depth) * 14).padding(.trailing, 4)
     .frame(minHeight: 36)
     .background(selected ? Theme.accented : Color.clear, in: RoundedRectangle(cornerRadius: Metrics.radius))
+    .overlay { if searching && found.matches.contains(block.uid) { RoundedRectangle(cornerRadius: Metrics.radius).stroke(Theme.accent.opacity(0.5), lineWidth: 1) } }
   }
 
   /// The end of a blocks field: a menu of the components it takes, the built-ins first.
@@ -363,6 +414,7 @@ struct PageEntryScreen: View {
     }
     error = ""
     draft = edited
+    query = ""
     selection = block.uid
   }
 
@@ -383,6 +435,12 @@ struct PageEntryScreen: View {
     if let why = edited.content.moveToList(id, parent: parent.uid, field: field.key, library) { error = why; return }
     error = ""
     draft = edited
+  }
+
+  private func toggleHidden(_ id: String) {
+    draft?.content.edit(id, library) { block in
+      if block.isHidden { block.values.removeValue(forKey: "_hidden") } else { block.values["_hidden"] = .bool(true) }
+    }
   }
 
   private func move(_ id: String, by offset: Int) {

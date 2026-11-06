@@ -37,7 +37,8 @@ content tree in the same shape as Storyblok's:
 ```
 
 A `blocks` field holds more blocks, to any depth (eight levels at most). Every
-block has a `_uid`; `_anim` holds its animation ([Animations](#animations)).
+block has a `_uid`; `_anim` holds its animation ([Animations](#animations)) and
+`_hidden: true` takes it off the page ([Hiding a block](#hiding-a-block)).
 
 **Drafts and versions.** Editing changes the working copy. Publishing freezes it
 into the next version, and visitors and the delivery API get that one until you
@@ -58,7 +59,32 @@ to move it, into any list that takes it), the live page in the middle (click a
 block to select it, drag a top-level block by its handle) and the **inspector**
 on the right: the selected block's fields and animation, or, with the page
 selected, its name, slug, link preview fields and style. Every change autosaves
-and is one undo step; **Play** runs the page's animations once.
+and is one undo step; **Play** runs the page's animations once, and the editor
+does it as it opens. An edit while it plays goes straight back to editing.
+
+**Layers** fold shut behind each block's chevron, and the search box above them
+finds blocks by the text in any of their fields (titles, copy, labels, links; Enter
+selects the first match). Pointing at a layer lights that block on the page and
+scrolls it into view, and pointing at a block on the page lights and scrolls to its
+layer. The add button stays at the bottom of Layers; its menu lists the components a
+list takes and shows the hovered one, drawn with the page's style.
+
+### Hiding a block
+
+The eye on a layer, or *Hide from the page* in the inspector, sets `_hidden: true`
+on a block and everything inside it. The content keeps it (Layers shows it dimmed
+with an eye-off icon), and show it again whenever you like; nothing is deleted. A
+hidden block is not rendered, not in a hosted page, not in `format=html`, and not
+in the `content` the delivery API returns. The admin API (`GET
+/v1/admin/cms/entries/{id}`) still has it, with `_hidden`.
+
+```bash
+curl -X PATCH -H "authorization: Bearer $KEY" -H 'content-type: application/json' \
+  -d '{"content": {"_uid": "…", "component": "page", "body": [{ "_uid": "f6e5d4c3b2a1", "component": "hero", "headline": "Soon", "_hidden": true }]}}' \
+  "$HOST/v1/admin/cms/entries/ENTRY_ID"
+```
+
+The assistant and MCP's `update_cms_entry` use the same flag.
 
 **Style** applies to the whole page: an accent (the project's when empty),
 light, dark or follow-the-visitor mode, corner radius, heading and body fonts

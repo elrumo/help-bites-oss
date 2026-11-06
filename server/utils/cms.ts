@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { createError, getQuery, getRequestURL, getRouterParam, type H3Event } from 'h3'
 import {
   CMS_LIMITS, CMS_SLUG, DEFAULT_STYLE, contentTooLarge, newBlock, normalizeBrief, normalizeComponentInput, normalizeContent, normalizeSettings,
-  normalizeStyle, validPreviewUrl, type CmsBlock, type CmsComponentDef, type CmsLibrary, type CmsSettings, type CmsStyle
+  normalizeStyle, validPreviewUrl, withoutHidden, type CmsBlock, type CmsComponentDef, type CmsLibrary, type CmsSettings, type CmsStyle
 } from '#shared/cms/content'
 import { BUILTIN_COMPONENTS, BUILTIN_KEYS, libraryOf, templateContent } from '#shared/cms/library'
 import { pageCsp, renderBlocks, renderPage } from '#shared/cms/render'
@@ -417,7 +417,7 @@ export function toPublicCmsEntry(row: ParseObject) {
     name: snapshot.name,
     type: String(row.get('type') || 'page'),
     version: Number(row.get('version') || 0),
-    content: snapshot.content,
+    content: withoutHidden(snapshot.content),
     style: snapshot.style,
     publishedAt: iso(row.get('publishedAt'))
   }

@@ -471,7 +471,15 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Landing pages in a visual editor.** Start from a template (SaaS launch, mobile
   app, waitlist, developer tool, design tool) or blank; drag blocks in Layers or on
   the page, edit fields in the inspector, set the accent, mode, fonts and width,
-  undo anything. Drafts and published versions, like onboarding flows.
+  undo anything. Drafts and published versions, like onboarding flows. The editor
+  plays the page as it opens.
+- **Hide, fold, search.** Any block (a section or a component inside it) has a *Hide
+  from the page* toggle: it stays in Layers, dimmed, and in the content, but visitors,
+  the hosted page and the delivery API never get it. Layers fold shut behind a
+  chevron, a search box finds blocks by the text in any of their fields, hovering a
+  layer lights the block on the page and the other way round (each scrolls the other
+  into view), and the add button stays at the bottom. Its menu is narrow and shows
+  what the hovered component looks like.
 - **Components, built in or your own.** Forty-seven built-ins (hero, gradient hero,
   features, bento, pricing, FAQ, sign-up, Dock mockup, code window…), or write one
   as HTML and CSS with `{{@field}}` slots and a field schema. Components with no
@@ -924,8 +932,8 @@ it is not part of this repository; a self-hosted server's `/` goes straight to t
   import until the next publish, and are blank while `APP_URL` is unset.
   [LEGAL.md](LEGAL.md)
 - **Pages and CMS.** The native app lists, creates, edits, publishes and deletes
-  entries (a block outline with each block's fields and animation, undo and redo, moving
-  a block between lists), writes components (fields, HTML and CSS), runs the assistant
+  entries (a block outline with each block's fields and animation, hide, fold and search,
+  undo and redo, moving a block between lists), writes components (fields, HTML and CSS), runs the assistant
   and the page wizard, and manages files and settings; the live previews are web-only
   (open the hosted page after publishing). No
   scripts in components, no per-field translations, scheduled publishing, version

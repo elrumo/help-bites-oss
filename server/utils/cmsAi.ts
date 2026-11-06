@@ -135,6 +135,7 @@ const HOW = [
   'Pictures: asset fields take { "url", "alt" } with an https URL; you cannot upload, so leave them empty unless the user gave a URL, and say which pictures they should add.',
   'When no component fits a part, write one with save_component (see "Writing components"), then use it. Prefer built-ins: they follow the page style and stay editable.',
   `Animations: any block may have "_anim": { "effect": ${CMS_ANIM_EFFECTS.join('|')}, "trigger": ${CMS_ANIM_TRIGGERS.join('|')}, "duration": ms, "delay": ms, "stagger": ms between its children (0 animates the block itself), "once": true, "distance": px }. Use them sparingly: a fade-up on sections as they scroll in, a stagger on grids, a load animation on the hero. Set "_anim": null to remove one.`,
+  'Hiding: "_hidden": true takes a block (and what is inside it) off the page without deleting it; set it back to false to show it again. Use it to set a draft section aside, never to delete.',
   'Facts: never invent numbers, customers, quotes, prices, free tiers, limits, trial lengths or features, not even in small print. Take them from the brief, the user, or the repositories (read_repo). Where a fact is missing, write a clearly marked placeholder such as [number of users] or [free plan limit] and say so.'
 ]
 
@@ -307,7 +308,7 @@ export function cmsAiTools(state: CmsAiState, writer: UIMessageStreamWriter, ctx
       }
     }),
     update_blocks: tool({
-      description: 'Change field values of one or more blocks by _uid; send only what changes (children are not changed here: add, move or remove them). "_anim" sets or (null) removes an animation.',
+      description: 'Change field values of one or more blocks by _uid; send only what changes (children are not changed here: add, move or remove them). "_anim" sets or (null) removes an animation; "_hidden" true hides the block from the page, false shows it.',
       inputSchema: jsonSchema<{ updates: { uid: string, values: Record<string, unknown> }[] }>({
         type: 'object', required: ['updates'],
         properties: { updates: { type: 'array', minItems: 1, items: { type: 'object', required: ['uid', 'values'], properties: { uid: { type: 'string' }, values: { type: 'object' } } } } }

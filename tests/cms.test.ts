@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { createHash } from 'node:crypto'
 import type { UIMessageStreamWriter } from 'ai'
 import {
-  EMPTY_BRIEF, addBlock, duplicateBlock, findBlock, moveBlock, newBlock, normalizeComponentInput, normalizeContent, normalizeStyle, removeBlock, type CmsBlock, type CmsComponentDef
+  EMPTY_BRIEF, addBlock, duplicateBlock, findBlock, moveBlock, newBlock, normalizeComponentInput, normalizeContent, normalizeStyle, outline, removeBlock, searchBlocks, updateBlock, withoutHidden, type CmsBlock, type CmsComponentDef
 } from '../shared/cms/content'
 import { BUILTIN_COMPONENTS, BUILTIN_KEYS, CMS_TEMPLATES, libraryOf, templateContent, wizardPrompt } from '../shared/cms/library'
 import { PAGE_RUNTIME, pageCsp, renderBlocks, renderMarkdown, renderPage } from '../shared/cms/render'
@@ -52,6 +52,54 @@ describe('components', () => {
     expect(normalizeComponentInput({ ...base, fields: [{ key: 'size', type: 'select' }] })).toMatchObject({ ok: false })
     // Data-only components (a dev's own app renders them) need no template.
     expect(normalizeComponentInput({ ...base, fields: [{ key: 'title', type: 'text' }] })).toMatchObject({ ok: true })
+  })
+})
+
+describe('hiding and searching blocks', () => {
+  const lib = libraryOf()
+  const page = () => normalizeContent({
+    component: 'page',
+    title: 'Acme',
+    body: [
+      { component: 'hero', headline: 'Invoices in one click', _hidden: true },
+      { component: 'features', items: [{ component: 'feature', title: 'Fast', body: 'Sent in seconds.' }] }
+    ]
+  }, lib, 'page').content
+  const [hero, features] = page().body as CmsBlock[]
+
+  test('a hidden block is kept by normalizing, hidden or shown through updateBlock, and flagged in the outline', () => {
+    const content = page()
+    expect((content.body as CmsBlock[])[0]).toMatchObject({ component: 'hero', _hidden: true })
+    expect(outline(content, lib)).toContain('[hidden]')
+    const id = (content.body as CmsBlock[])[0]!._uid
+    const shown = updateBlock(content, lib, id, { _hidden: false })
+    expect(findBlock(shown.content, id, lib)!.block).not.toHaveProperty('_hidden')
+    expect(findBlock(updateBlock(shown.content, lib, id, { _hidden: true }).content, id, lib)!.block._hidden).toBe(true)
+  })
+
+  test('hidden blocks are left off the page, the preview and the delivery content', () => {
+    const content = page()
+    const { html } = renderBlocks(content, normalizeStyle({}), '#5e6ad2', ctx(lib))
+    expect(html).not.toContain('Invoices in one click')
+    expect(html).toContain('Sent in seconds.')
+    const served = withoutHidden(content)
+    expect((served.body as CmsBlock[]).map(b => b.component)).toEqual(['features'])
+    // Inside a hidden block goes with it; the stored content is untouched.
+    const nested = withoutHidden({ ...content, body: [{ ...features!, _hidden: true }] })
+    expect(nested.body).toEqual([])
+    expect((content.body as CmsBlock[])).toHaveLength(2)
+    expect(hero!._uid).toBeTruthy()
+  })
+
+  test('search finds text in any field, with its parents, ignoring case and the structure keys', () => {
+    const content = page()
+    const found = searchBlocks(content, lib, 'SECONDS')
+    const feature = ((content.body as CmsBlock[])[1]!.items as CmsBlock[])[0]!
+    expect([...found.matches]).toEqual([feature._uid])
+    expect(found.shown).toEqual(new Set([content._uid, (content.body as CmsBlock[])[1]!._uid, feature._uid]))
+    expect(searchBlocks(content, lib, 'acme').matches).toEqual(new Set([content._uid]))
+    expect(searchBlocks(content, lib, 'hero').matches.size).toBe(0)
+    expect(searchBlocks(content, lib, '   ').shown.size).toBe(0)
   })
 })
 
