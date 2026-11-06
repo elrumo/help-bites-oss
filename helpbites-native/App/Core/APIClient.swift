@@ -146,6 +146,7 @@ actor APIClient {
       guard let http = response as? HTTPURLResponse else { throw APIError.server(String(localized: "Invalid server response.")) }
       guard (200..<300).contains(http.statusCode) else {
         if http.statusCode == 401 { throw APIError.unauthorized }
+        if http.statusCode == 429 { throw APIError.server(String(localized: "Too many attempts. Wait a moment and try again.")) }
         let error = try? JSONDecoder().decode(ErrorBody.self, from: data)
         throw APIError.server(error?.statusMessage ?? error?.message ?? error?.error ?? String(localized: "Request failed (\(http.statusCode))."))
       }

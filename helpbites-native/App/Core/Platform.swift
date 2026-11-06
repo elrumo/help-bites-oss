@@ -49,6 +49,15 @@ enum Clipboard {
     UIPasteboard.general.string = string
     #endif
   }
+  /// The image on the clipboard, as PNG bytes.
+  static func pngImage() -> Data? {
+    #if os(macOS)
+    guard let tiff = NSPasteboard.general.data(forType: .tiff), let rep = NSBitmapImageRep(data: tiff) else { return nil }
+    return rep.representation(using: .png, properties: [:])
+    #else
+    UIPasteboard.general.image?.pngData()
+    #endif
+  }
 }
 
 extension PlatformColor {

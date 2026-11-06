@@ -112,7 +112,7 @@ struct AuthView: View {
       LabeledField(label: "Reset link", hint: "Paste the link from the email") { TextField("", text: $resetLink).textFieldStyle(.linear).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled() }
       LabeledField(label: "New password", hint: "At least 8 characters") { SecureField("", text: $password).textFieldStyle(.linear).textContentType(.newPassword).onSubmit(submit) }
     } else {
-      LabeledField(label: "Username") { TextField("", text: $username).textFieldStyle(.linear).textInputAutocapitalization(.never).autocorrectionDisabled().textContentType(.username) }
+      LabeledField(label: "Email") { TextField("", text: $username).textFieldStyle(.linear).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled().textContentType(.username) }
       LabeledField(label: "Password") { SecureField("", text: $password).textFieldStyle(.linear).textContentType(.password).onSubmit(submit) }
     }
   }

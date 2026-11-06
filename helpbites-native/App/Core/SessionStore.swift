@@ -206,7 +206,11 @@ enum SessionPhase { case loading, signedOut, signedIn }
       await api.setWorkspace(workspaceId)
       await refreshContext()
       await registerPushDevice()
-    } catch { self.error = error.localizedDescription }
+    } catch {
+      // A 401 here is a bad login, not an expired session.
+      if case APIError.unauthorized = error { self.error = String(localized: "Wrong email or password.") }
+      else { self.error = error.localizedDescription }
+    }
   }
 
   func registerPushDevice() async {

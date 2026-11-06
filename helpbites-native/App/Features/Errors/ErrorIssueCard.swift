@@ -166,7 +166,9 @@ struct ErrorIssueCard: View {
       ForEach(parts) { part in
         Toggle(part.label, isOn: Binding(get: { picked.contains(part) }, set: { on in if on { picked.insert(part) } else { picked.remove(part) } }))
       }
+      #if os(iOS)
       .menuActionDismissBehavior(.disabled)
+      #endif
       Divider()
       Button { copyDetail(detail, chosen) } label: { Label("Copy selected", systemImage: "checklist") }.disabled(chosen.isEmpty)
     } label: {
