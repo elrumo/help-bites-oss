@@ -17,8 +17,8 @@ struct ItemAttachment: Codable, Equatable, Sendable, Hashable {
   static let maxBytes = 25 * 1024 * 1024
   /// MP4 and MOV videos may be larger (ITEM_VIDEO_MAX_BYTES).
   static let maxVideoBytes = 100 * 1024 * 1024
-  /// The extensions the server accepts besides images (ITEM_FILE_TYPES).
-  static let fileExtensions = ["pdf", "txt", "md", "csv", "log", "json", "zip", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "mp4", "mov"]
+  /// Programs and scripts the server refuses (ITEM_BLOCKED_EXTENSIONS); checked here so the file is never sent.
+  static let blockedExtensions: Set<String> = ["exe", "dll", "msi", "bat", "cmd", "com", "scr", "pif", "cpl", "lnk", "vbs", "vbe", "jse", "wsf", "wsh", "ps1", "msc", "reg", "hta", "jar", "sh", "command", "app", "apk", "dmg", "pkg"]
 
   /// Uploads one file to `POST /v1/feedback/attachments` for the caller to add to its list. A file over the limit is not sent.
   /// Whatever fails throws a line fit to show, with the file's name in it.
@@ -29,6 +29,7 @@ struct ItemAttachment: Codable, Equatable, Sendable, Hashable {
     } else {
       guard data.count <= maxBytes else { throw APIError.server(String(localized: "\(filename) is larger than 25 MB.")) }
     }
+    guard !blockedExtensions.contains(ext) else { throw APIError.server(String(localized: "\(filename): programs and scripts cannot be attached.")) }
     let mime = UTType(filenameExtension: (filename as NSString).pathExtension)?.preferredMIMEType ?? "application/octet-stream"
     do {
       return try await session.upload("/v1/feedback/attachments?project=\(projectId)", file: data, filename: filename, mimeType: mime)
@@ -52,7 +53,7 @@ struct AttachmentsSection: View {
   @State private var uploading = 0
   @State private var error = ""
 
-  private var fileTypes: [UTType] { imagesOnly ? [.image] : [.image] + ItemAttachment.fileExtensions.compactMap { UTType(filenameExtension: $0) } }
+  private var fileTypes: [UTType] { imagesOnly ? [.image] : [.item] }
 
   var body: some View {
     LabeledField(label: imagesOnly ? "Images" : "Images and files") {

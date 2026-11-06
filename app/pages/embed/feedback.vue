@@ -358,7 +358,7 @@
                   <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square :aria-label="$t('attachments.remove', { name: file.name })" @click="form.attachments.splice(i, 1)" />
                 </li>
               </ul>
-              <input ref="fileInput" type="file" multiple class="hidden" :accept="ITEM_ATTACHMENT_ACCEPT" @change="attachFiles(($event.target as HTMLInputElement).files)">
+              <input ref="fileInput" type="file" multiple class="hidden" @change="attachFiles(($event.target as HTMLInputElement).files)">
               <UButton icon="i-lucide-paperclip" :label="$t('attachments.add')" size="xs" color="neutral" variant="soft" :loading="uploading > 0" :disabled="form.attachments.length >= ITEM_ATTACHMENTS_MAX" @click="fileInput?.click()" />
             </div>
 
@@ -381,7 +381,7 @@
 
 <script setup lang="ts">
 import Fuse from 'fuse.js'
-import { formatLimit, isImageMime, isMediaMime, isVideoMime, ITEM_ATTACHMENT_ACCEPT, ITEM_ATTACHMENTS_MAX, itemFileMaxBytes, type ItemAttachment } from '#shared/itemAttachments'
+import { formatLimit, isImageMime, isMediaMime, isVideoMime, ITEM_ATTACHMENTS_MAX, itemFileMaxBytes, type ItemAttachment } from '#shared/itemAttachments'
 import {
   ACTIVE_FEEDBACK_CATEGORIES,
   feedbackPlainText,

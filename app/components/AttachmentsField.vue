@@ -28,7 +28,7 @@
           <UButton icon="i-lucide-x" size="xs" color="neutral" variant="ghost" square :aria-label="$t('attachments.remove', { name: file.name })" @click="model = model.filter((_, n) => n !== i)" />
         </li>
       </ul>
-      <input ref="input" type="file" multiple class="hidden" :accept="imagesOnly ? ITEM_IMAGE_ACCEPT : ITEM_ATTACHMENT_ACCEPT" @change="upload([...(($event.target as HTMLInputElement).files || [])])">
+      <input ref="input" type="file" multiple class="hidden" :accept="imagesOnly ? ITEM_IMAGE_ACCEPT : undefined" @change="upload([...(($event.target as HTMLInputElement).files || [])])">
       <p v-if="!model.length" class="text-xs text-muted">{{ $t('attachments.dropHint') }}</p>
       <p v-if="error" class="text-xs text-error">{{ error }}</p>
     </div>
@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { formatLimit, isImageMime, isMediaMime, isVideoMime, ITEM_ATTACHMENT_ACCEPT, ITEM_ATTACHMENTS_MAX, ITEM_IMAGE_ACCEPT, itemFileMaxBytes, type ItemAttachment } from '#shared/itemAttachments'
+import { formatLimit, isImageMime, isMediaMime, isVideoMime, ITEM_ATTACHMENTS_MAX, ITEM_IMAGE_ACCEPT, itemFileMaxBytes, type ItemAttachment } from '#shared/itemAttachments'
 
 // Images, files and videos on a post or board item, or only images on a changelog entry (`imagesOnly`). Uploads go to
 // POST /v1/feedback/attachments; the page saves the list with the post or item, so this only edits it.

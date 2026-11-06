@@ -311,7 +311,7 @@ export const MCP_TOOLS: readonly McpTool[] = [
     description: 'Uploads one image, file or MP4/MOV video for a planning comment or item (screenshots, screen recordings, logs, documents) and returns its attachment object and download URL. Send the file bytes as base64, then pass the returned object in the `attachments` of comment_on_board_item, create_board_item or update_board_item.',
     params: {
       project: { ...projectId, in: 'query' },
-      filename: { type: 'string', required: true, description: 'Filename with an accepted extension.' },
+      filename: { type: 'string', required: true, description: 'Filename with its extension. Any file type, except programs and scripts (.exe, .sh, .jar, .app…), which are refused.' },
       contentBase64: { type: 'string', required: true, description: 'The file bytes encoded as standard base64 (decoded: up to 25 MB, or 100 MB for an MP4/MOV video).' }
     }
   },

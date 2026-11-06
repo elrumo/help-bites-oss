@@ -3,7 +3,7 @@ import { Client } from 'minio'
 import { ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_TYPES, type Attachment } from '#shared/support'
 import { compressImage, imageVariants, type ImageVariant, type ModernFormat } from './imageCompress'
 import { KNOWLEDGE_DOC_MAX_BYTES, KNOWLEDGE_DOC_EXTENSIONS } from '#shared/knowledge'
-import { formatLimit, itemFileMaxBytes, ITEM_FILE_TYPES, type ItemAttachment } from '#shared/itemAttachments'
+import { formatLimit, itemFileExtension, itemFileMaxBytes, itemFileMime, ITEM_BLOCKED_EXTENSIONS, ITEM_FILE_TYPES, looksExecutable, type ItemAttachment } from '#shared/itemAttachments'
 
 // Attachments go straight to any S3-compatible bucket; Parse never sees them.
 // Keys are unguessable and prefixed by project, so the message POST can check
@@ -115,9 +115,11 @@ export async function storeAttachment(data: Buffer, projectId: string, ownerId: 
 }
 
 /**
- * Store an image or file for a feedback post or board item. Images go through storeAttachment; a file is
- * kept only if its extension is on the list (shared/itemAttachments.ts) and is served as the type that
- * list says, as a download, whatever the upload claimed to be. Counts against the workspace's storage.
+ * Store an image or file for a feedback post or board item. Images go through storeAttachment. Any other file is
+ * kept unless it is a program or script (a blocked extension, or executable bytes under any name). It is served as a
+ * download, as the type its extension is known by (shared/itemAttachments.ts) or else as opaque bytes, whatever the
+ * upload claimed to be, so it can never run as a page on the bucket's address. There is no virus scan: a zip is not opened.
+ * Counts against the workspace's storage.
  */
 export async function storeItemFile(file: { filename: string, data: Buffer }, projectId: string, ownerId: string): Promise<ItemAttachment> {
   const name = normalizeFilename(file.filename)
@@ -125,13 +127,13 @@ export async function storeItemFile(file: { filename: string, data: Buffer }, pr
     const stored = await storeAttachment(file.data, projectId, ownerId)
     return { url: stored.url, name, mime: stored.mime, size: stored.size }
   }
-  const ext = (name.split('.').pop() || '').toLowerCase()
-  const mime = ITEM_FILE_TYPES[ext]
-  if (!mime) throw createError({ statusCode: 415, statusMessage: `Only images and ${Object.keys(ITEM_FILE_TYPES).join(', ')} files are accepted` })
+  const ext = itemFileExtension(name)
+  if (ITEM_BLOCKED_EXTENSIONS.includes(ext) || looksExecutable(file.data.subarray(0, 4))) throw createError({ statusCode: 415, statusMessage: 'Programs and scripts cannot be attached; zip them or share a link' })
+  const mime = itemFileMime(name)
   if (file.data.length > itemFileMaxBytes(mime)) throw createError({ statusCode: 413, statusMessage: `File is larger than ${formatLimit(itemFileMaxBytes(mime))}` })
   const workspace = await workspaceIdOfProject(projectId)
   await reserveUsage(workspace, 'storageBytes', file.data.length)
-  const key = `${projectId}/${ownerId}/${randomUUID()}.${ext}`
+  const key = `${projectId}/${ownerId}/${randomUUID()}.${Object.hasOwn(ITEM_FILE_TYPES, ext) ? ext : 'bin'}`
   try {
     await ensureBucket()
     await useS3().putObject(bucket(), key, file.data, file.data.length, { 'Content-Type': mime, 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(name)}`, 'Cache-Control': 'public, max-age=31536000, immutable' })

@@ -5,6 +5,8 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 ## Unreleased
 
+- **Attach any file to planning cards and posts** (web, native, API, MCP): the upload route no longer limits files to a list of extensions. Other files are stored and served as downloads (`application/octet-stream` when the type is not known); programs and scripts (`.exe`, `.sh`, `.jar`, `.app`… or executable bytes under any name) are refused with `415`. Limits are unchanged (25 MB, 100 MB for MP4/MOV). No schema or env change.
+
 - **Your HelpBites content in Pages** (web, native, API): eight new built-in blocks in the Pages builder: *Blog posts*, *Blog post*, *Changelog* and *Pricing from HelpBites* (rendered on the server from the public API, so a published page and `format=html` show the latest content), *Feedback board*, *Support chat* and *Lead form* (framed from `/embed` and `/f/`), and *Changelog sign-up*. A hosted page's Content-Security-Policy now allows frames from `<host>/embed`, `<host>/embed/` and `<host>/f/` (still no scripts). `POST /v1/changelog/subscribe` also takes a browser form (`application/x-www-form-urlencoded`) and answers it with a small page. No schema or env change.
 
 - **`formats=avif,webp` uploads work on Linux** (self-hosters): Bun's Linux builds (the Docker image included) can't encode AVIF, and that used to fail the whole set, so a blog image fell back to a single WebP and a file-library asset was stored as sent. Now a format the server can't encode is left out: on Linux the set is WebP plus the JPEG or PNG fallback, and macOS still adds AVIF. No schema or env change.

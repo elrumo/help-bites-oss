@@ -286,7 +286,7 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Import an existing feedback page.** Up to 100 posts per call, keeping votes, comments
   and numbers.
 
-- **Images, files and videos.** Posts and Planning items take up to 10 attachments (images up to 8 MB, files up to 25 MB, MP4/MOV videos up to 100 MB), through the panel, the app, the iOS share sheet, the public board, the API and MCP. Images and videos open in a viewer. [FEEDBACK.md](FEEDBACK.md#images-and-files)
+- **Images, files and videos.** Posts and Planning items take up to 10 attachments (images up to 8 MB, any file but programs and scripts up to 25 MB, MP4/MOV videos up to 100 MB), through the panel, the app, the iOS share sheet, the public board, the API and MCP. Images and videos open in a viewer. [FEEDBACK.md](FEEDBACK.md#images-and-files)
 - **AI cards.** On Feedback and Planning, an AI chat turns pasted text into
   separate posts or board items, using only the types, tags and labels you
   defined. On Planning it can also change existing items and relate them to each
