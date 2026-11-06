@@ -398,6 +398,8 @@ curl -H "authorization: Bearer $KEY" -H 'content-type: application/json' \
   -d '{"project":"PROJECT_ID","template":"saas","slug":"launch"}' "$HOST/v1/admin/cms/entries"
 curl -X POST -H "authorization: Bearer $KEY" "$HOST/v1/admin/cms/entries/ENTRY_ID/publish"
 curl -H "authorization: Bearer $KEY" -F project=PROJECT_ID -F file=@hero.png -F alt="The dashboard" "$HOST/v1/admin/cms/assets"
+curl -H "authorization: Bearer $KEY" -H 'content-type: application/json' \
+  -d '{"project":"PROJECT_ID","url":"https://example.com/hero.png","alt":"The dashboard"}' "$HOST/v1/admin/cms/assets"
 ```
 
 | Route | Does |
@@ -407,7 +409,7 @@ curl -H "authorization: Bearer $KEY" -F project=PROJECT_ID -F file=@hero.png -F 
 | `GET` / `POST /v1/admin/cms/entries` | List (`type`) or create an entry (`template`, `content`, `slug`, `type`). |
 | `GET` / `PATCH` / `DELETE /v1/admin/cms/entries/{id}` | The working copy; changes report what was fixed in `issues`. |
 | `POST /v1/admin/cms/entries/{id}/publish`, `…/unpublish` | Publish the next version, or take it offline. |
-| `GET` / `POST /v1/admin/cms/assets`, `PATCH` / `DELETE …/{id}` | The file library (multipart upload). Add `compress=true` to store a PNG, JPEG or WebP smaller as WebP, or `formats=avif,webp` to store those modern formats next to the file, whose `url` is then a JPEG or PNG fallback every client reads; they come back as the asset's `variants`. See [BLOG.md](BLOG.md#smaller-images-and-modern-formats). |
+| `GET` / `POST /v1/admin/cms/assets`, `PATCH` / `DELETE …/{id}` | The file library: multipart upload, or JSON with the file as `contentBase64` or a public `url` HelpBites downloads (what the MCP tool `upload_cms_asset` sends). Add `compress=true` to store a PNG, JPEG or WebP smaller as WebP, or `formats=avif,webp` to store those modern formats next to the file, whose `url` is then a JPEG or PNG fallback every client reads; they come back as the asset's `variants`. See [BLOG.md](BLOG.md#smaller-images-and-modern-formats). |
 | `GET /v1/admin/cms/templates` | The page templates. |
 | `GET` / `PATCH /v1/admin/cms/settings` | The preview URL and the messaging brief. |
 | `POST /v1/admin/cms/chat` (and `GET`, `DELETE`, `…/chat/stream`) | The assistant, as an AI SDK UI message stream. |

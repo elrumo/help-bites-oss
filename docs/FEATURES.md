@@ -961,8 +961,9 @@ it is not part of this repository; a self-hosted server's `/` goes straight to t
   stay on the old site. [BLOG.md](BLOG.md)
 - **MCP.** The server offers tools only: no prompts, resources or live notifications.
   A connection has the operator's whole role: there is no read-only option or lower
-  role yet, only a project limit and an expiry. It cannot upload files, so knowledge
-  document uploads, images and brand files stay in the panel. OAuth connections use
+  role yet, only a project limit and an expiry. It uploads planning attachments and
+  Pages files (as base64 or from a URL); knowledge document uploads, blog and email
+  images and brand files stay in the panel. OAuth connections use
   rotating refresh tokens. [MCP.md](MCP.md)
 - **Native translations.** The legal screen cannot yet link an existing document as
   a translation of another (the API and web can); the email editor shows translation

@@ -2636,8 +2636,22 @@ export const MCP_TOOLS: readonly McpTool[] = [
   // ---- pages: files, settings, templates, repos, wizard -------------------------------
   {
     name: 'list_cms_assets', title: 'List page files', readOnly: true, method: 'GET', path: '/v1/admin/cms/assets',
-    description: 'The files (images, video, PDFs) uploaded for the project\'s pages, newest first: `{ assets }`, each `{ id, name, alt, url, mime, size, width, height }`. Put `{ id, url, alt }` in an asset field of a block. Uploading is not offered here: use the panel.',
+    description: 'The files (images, video, PDFs) uploaded for the project\'s pages, newest first: `{ assets }`, each `{ id, name, alt, url, mime, size, width, height }`. Put `{ id, url, alt }` in an asset field of a block. Add new ones with upload_cms_asset.',
     params: { project: projectId }
+  },
+  {
+    name: 'upload_cms_asset', title: 'Upload a page file', method: 'POST', path: '/v1/admin/cms/assets',
+    description: 'Adds one file to the project\'s file library for its pages: a PNG, JPEG, GIF, WebP, SVG, ICO, PDF, MP4 or WebM up to 20 MB (the type is read from the bytes; SVGs with scripts are refused). Send either `url`, a public http(s) address HelpBites downloads (no redirects: use the final address), or the bytes as `contentBase64`. Returns `{ asset }` with its public `url`: put `{ id, url, alt }` (or the whole asset) in a block\'s asset field. Counts against the workspace\'s storage.',
+    params: {
+      project: projectId,
+      url: { type: 'string', description: 'A public http(s) address of the file. Send this or contentBase64.' },
+      contentBase64: { type: 'string', description: 'The file bytes as standard base64 (decoded: up to 20 MB). Send this or url.' },
+      filename: { type: 'string', description: 'The file name, e.g. hero.png. Default: the last part of the URL.' },
+      name: { type: 'string', description: 'The name shown in the library. Default: the file name.' },
+      alt: { type: 'string', description: 'Alt text for people who cannot see it, up to 300 characters.' },
+      compress: { type: 'boolean', description: 'true stores a PNG, JPEG or WebP smaller, as WebP scaled to at most 2560 px. Default false.' },
+      formats: { type: 'string', description: 'avif, webp or avif,webp: also store those formats of a PNG, JPEG or WebP for a <picture>; the asset\'s own url becomes the fallback and the rest are its `variants`.' }
+    }
   },
   {
     name: 'update_cms_asset', title: 'Rename a page file', method: 'PATCH', path: '/v1/admin/cms/assets/{id}',

@@ -529,6 +529,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `update_cms_component` | Edit a component (`fields` is the whole list): asks first when pages use it. |
 | `delete_cms_component` | Remove a component: asks first. |
 | `list_cms_assets` | The files uploaded for pages, with their addresses and alt text. |
+| `upload_cms_asset` | Add an image, SVG, video or PDF to the pages' file library, from a public URL or as base64. |
 | `update_cms_asset` | Rename a file or change its alt text. |
 | `delete_cms_asset` | Remove a file: asks first. |
 | `get_cms_settings` | The Pages settings: the preview address and the messaging brief. |
