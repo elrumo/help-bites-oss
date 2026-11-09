@@ -7,6 +7,8 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 - **AI public descriptions for planning items** (web, native, the iOS share sheet, API, MCP): a sparkles button on an item's public description has the AI write the roadmap's text from its title and internal description, for your users, leaving out brand and product names, comparisons to other products ("like X does") and internal details. New `POST /v1/admin/board-items/suggest-public-description` and MCP tool `suggest_board_item_public_description` (`docs/FEEDBACK.md`). Needs an AI provider; no schema or env change.
 
+## 0.3.0 — 2026-11-09
+
 - **Planning works offline in the native app** (native, API, MCP): boards open from the device without a connection, and new items (from the app or the iOS share sheet, with their files) wait in an on-device outbox and upload by themselves when the server is back; offline, Apple Intelligence on the device writes their titles. `POST /v1/admin/board-items` (and the MCP tool `create_board_item`) takes an optional `clientId`: a repeat returns the item already created. **Schema:** `BoardItem.clientId` and the index `project_clientId`; run `scripts/ensure-schema.mjs --apply`. No env change.
 
 - **Large attachments over MCP** (API, MCP): `POST /v1/feedback/attachments` and the MCP tool `upload_board_comment_attachment` take a public `url` that HelpBites downloads (http(s) only, no redirects, private addresses refused), so full-size screenshots and recordings no longer have to fit in a tool call as base64. Limits unchanged. No schema or env change.
