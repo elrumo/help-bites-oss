@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROADMAP_CATEGORIES } from '../shared/board'
-import { BOARD_TITLE_DEBOUNCE_MS, BOARD_TITLE_MAX, fallbackBoardTitle } from '../shared/boardTitle'
+import { BOARD_TITLE_DEBOUNCE_MS, BOARD_TITLE_INPUT_MAX, BOARD_TITLE_MAX, BOARD_TITLE_RULES, fallbackBoardTitle } from '../shared/boardTitle'
 import { ITEM_ATTACHMENTS_MAX } from '../shared/itemAttachments'
 import { ATTACHMENT_MAX_BYTES, CONVERSATION_PRIORITIES } from '../shared/support'
 
@@ -55,4 +55,19 @@ test('the native title helpers match shared/boardTitle.ts', () => {
   const project = read('HelpBitesNative.xcodeproj/project.pbxproj')
   expect(project.match(/BoardTitle\.swift in Sources/g)?.length).toBe(4) // the app and the extension, each a build file and a phase entry
   expect(read('project.yml')).toContain('App/Core/BoardTitle.swift')
+})
+
+test('Apple Intelligence on the device writes titles by the server\'s rules', () => {
+  const swift = read('App/Core/BoardTitle.swift')
+  // Swift string literals escape quotes as JSON does.
+  for (const rule of BOARD_TITLE_RULES) expect(swift).toContain(JSON.stringify(rule))
+  expect(swift).toContain(`static let inputMax = ${BOARD_TITLE_INPUT_MAX}`)
+})
+
+test('the share sheet compiles the offline outbox and response cache the app reads', () => {
+  const project = read('HelpBitesNative.xcodeproj/project.pbxproj')
+  for (const file of ['JSONValue.swift', 'PlanningOutbox.swift', 'ResponseCache.swift']) {
+    expect(read('project.yml')).toContain(`App/Core/${file}`)
+    expect(project.match(new RegExp(`${file.replace('.', '\\.')} in Sources`, 'g'))?.length).toBe(4)
+  }
 })

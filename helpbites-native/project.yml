@@ -79,6 +79,10 @@ targets:
       - App/Core/SharedCredentials.swift
       - App/Core/BoardTitle.swift
       - App/Core/PickedMovie.swift
+      # The offline outbox and response cache the share sheet writes and the app reads.
+      - App/Core/JSONValue.swift
+      - App/Core/PlanningOutbox.swift
+      - App/Core/ResponseCache.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.helpbites.operator.share

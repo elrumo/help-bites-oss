@@ -8,6 +8,8 @@ struct BoardItemEditor: View {
   let store: BoardStore
   @State private var itemId: String?
   @State private var draft: BoardItemDraft
+  /// The item as last loaded or saved, so a waiting item that goes up while open keeps the changes made since.
+  @State private var baseline: BoardItemDraft?
   @State private var pickingPost = false
   @State private var pickingItem = false
   @State private var pickingCard = false
@@ -65,8 +67,13 @@ struct BoardItemEditor: View {
     if let status = restored?.status, store.config?.statuses.contains(where: { $0.key == status }) != true { restored?.status = defaultStatus }
     // A draft kept before releases stopped being items may still say "release"; it reads as a card.
     if let kind = restored?.kind, !BoardKind.all.contains(kind) { restored?.kind = "task" }
-    _draft = State(initialValue: restored ?? BoardItemDraft(item: itemId.flatMap { store.item($0) }, defaultStatus: defaultStatus))
+    let opened = BoardItemDraft(item: itemId.flatMap { store.item($0) }, defaultStatus: defaultStatus)
+    _draft = State(initialValue: restored ?? opened)
+    _baseline = State(initialValue: itemId == nil ? nil : opened)
   }
+
+  /// A new item, or one waiting to upload: a file attached without a connection waits on the device with it.
+  private var keepsFilesOffline: Bool { itemId.map(PendingItem.isLocal) ?? true }
 
   private var current: BoardItem? { itemId.flatMap { store.item($0) } }
 
@@ -83,6 +90,8 @@ struct BoardItemEditor: View {
             form(config)
             if !showsMore {
               EmptyView()
+            } else if let current, current.isPending {
+              pendingFooter
             } else if let current {
               links(current)
               commentsSection(current)
@@ -104,7 +113,7 @@ struct BoardItemEditor: View {
       .panelScreen(title)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
-        if let current, let url = store.itemURL(current) {
+        if let current, !current.isPending, let url = store.itemURL(current) {
           // The item's address on the web panel, the same link the board's "Copy link" gives.
           ToolbarItem(placement: .primaryAction) {
             Button { copyLink(url) } label: { Label(copiedLink ? "Copied" : "Copy link", systemImage: copiedLink ? "checkmark" : "link") }
@@ -125,6 +134,14 @@ struct BoardItemEditor: View {
         Button("Create") { if let kind = namingParent { Task { await createParent(kind) } } }
       }
       .onChange(of: draft) { _, value in if itemId == nil { value.store(for: store.projectId) } }
+      // A waiting item went up while open: carry on with the server's copy, keeping what was changed here since.
+      .onChange(of: current?.id) { _, id in
+        guard let id, let local = itemId, PendingItem.isLocal(local), id != local, let real = current else { return }
+        let next = BoardItemDraft(item: real, defaultStatus: store.config?.defaultStatusKey ?? "")
+        draft.rebase(from: baseline ?? next, to: next)
+        baseline = next
+        itemId = id
+      }
       .confirmationDialog("Delete this item?", isPresented: $confirmDelete, titleVisibility: .visible) {
         Button("Delete item", role: .destructive) { Task { await deleteItem() } }
       } message: {
@@ -160,7 +177,13 @@ struct BoardItemEditor: View {
   // MARK: Form
 
   @ViewBuilder private func form(_ config: BoardConfig) -> some View {
-    if let current { meta(current, config) } else { Text("Private until you put it on the roadmap").font(.lnMeta).foregroundStyle(Theme.textMuted) }
+    if let current, current.isPending {
+      pendingNotice(current)
+    } else if let current {
+      meta(current, config)
+    } else {
+      Text("Private until you put it on the roadmap").font(.lnMeta).foregroundStyle(Theme.textMuted)
+    }
 
     LabeledField(label: "Type") {
       FeedbackSelect(options: BoardKind.all.map { FeedbackOption(value: $0, label: BoardKind.name($0)) }, selection: $draft.kind)
@@ -197,7 +220,7 @@ struct BoardItemEditor: View {
       TextField("", text: Binding(get: { draft.estimate ?? "" }, set: { draft.estimate = $0 })).textFieldStyle(.linear).inputHints(.decimalPad)
     }
     labelPicker(config)
-    AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId)
+    AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId, keepOffline: keepsFilesOffline)
     roadmap(config)
   }
 
@@ -224,7 +247,7 @@ struct BoardItemEditor: View {
     pasting += 1
     let file: ItemAttachment
     do {
-      file = try await ItemAttachment.upload(data, filename: "Pasted image.png", session: store.session, projectId: store.projectId)
+      file = try await ItemAttachment.upload(data, filename: "Pasted image.png", session: store.session, projectId: store.projectId, keepOffline: keepsFilesOffline)
     } catch {
       pasting -= 1
       self.error = error.localizedDescription
@@ -409,6 +432,31 @@ struct BoardItemEditor: View {
     }
     .font(.lnCaption)
     .foregroundStyle(Theme.textMuted)
+  }
+
+  /// A waiting item: kept on this device until the server takes it, or refused and why.
+  private func pendingNotice(_ item: BoardItem) -> some View {
+    let refusal = store.pendingError(item.id)
+    return Label {
+      if let refusal {
+        Text("Not uploaded: \(refusal) Change it and save to try again, or delete it.")
+      } else {
+        Text("Saved on this device. It uploads by itself when HelpBites can reach the server again.")
+      }
+    } icon: {
+      Image(systemName: refusal == nil ? "icloud.and.arrow.up" : "exclamationmark.icloud")
+    }
+    .font(.lnMeta)
+    .foregroundStyle(refusal == nil ? Theme.textMuted : Theme.error)
+  }
+
+  /// Links, comments and history wait until the item is on the server; it can be deleted before it gets there.
+  private var pendingFooter: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Rectangle().fill(Theme.borderMuted).frame(height: 1).padding(.top, 12)
+      Text("Links, comments and history open once it is uploaded.").font(.lnMeta).foregroundStyle(Theme.textMuted)
+      Button { confirmDelete = true } label: { Label("Delete item", systemImage: "trash") }.buttonStyle(GhostButtonStyle(tint: Theme.error))
+    }
   }
 
   // MARK: Links
@@ -974,6 +1022,7 @@ struct BoardItemEditor: View {
       }
       saving = false
       draft = BoardItemDraft(item: item, defaultStatus: config.defaultStatusKey)
+      baseline = draft
       itemId = item.id
       BoardItemDraft.forget(for: store.projectId)
       if historyExpanded { await loadHistory(itemId: item.id, reset: true) }
@@ -1089,6 +1138,15 @@ private struct BoardItemDraft: Equatable, Codable {
     if !targetDay.isEmpty { fields["targetDate"] = .string(targetDay) }
     if let points = BoardEstimate.points(estimate) { fields["estimate"] = .number(points) }
     return fields
+  }
+
+  /// The draft over another copy of the same item: a field changed here since `base` stays, the rest comes from `next`.
+  mutating func rebase(from base: Self, to next: Self) {
+    func take<Value: Equatable>(_ field: WritableKeyPath<Self, Value>) {
+      if self[keyPath: field] == base[keyPath: field] { self[keyPath: field] = next[keyPath: field] }
+    }
+    take(\.title); take(\.description); take(\.publicDescription); take(\.status); take(\.priority); take(\.assigneeId)
+    take(\.kind); take(\.epicId); take(\.releaseId); take(\.labels); take(\.attachments); take(\.targetDay); take(\.estimate); take(\.isPublic)
   }
 
   /// Only what changed, so a label the board has dropped since never blocks a save.

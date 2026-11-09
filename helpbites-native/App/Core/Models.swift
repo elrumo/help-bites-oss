@@ -169,21 +169,3 @@ struct KnowledgeNode: Codable, Equatable, Sendable, Identifiable {
 struct Faq: Codable, Equatable, Sendable, Identifiable {
   let id, modelId, nodeId, question, answer, status, language, origin, pathCache: String
 }
-
-enum JSONValue: Codable, Equatable, Sendable {
-  case string(String), number(Double), bool(Bool), object([String: JSONValue]), array([JSONValue]), null
-  init(from decoder: Decoder) throws {
-    let c = try decoder.singleValueContainer()
-    if c.decodeNil() { self = .null }
-    else if let value = try? c.decode(Bool.self) { self = .bool(value) }
-    else if let value = try? c.decode(Double.self) { self = .number(value) }
-    else if let value = try? c.decode(String.self) { self = .string(value) }
-    else if let value = try? c.decode([String: JSONValue].self) { self = .object(value) }
-    else { self = .array(try c.decode([JSONValue].self)) }
-  }
-  func encode(to encoder: Encoder) throws {
-    var c = encoder.singleValueContainer()
-    switch self { case .string(let v): try c.encode(v); case .number(let v): try c.encode(v); case .bool(let v): try c.encode(v); case .object(let v): try c.encode(v); case .array(let v): try c.encode(v); case .null: try c.encodeNil() }
-  }
-  var display: String { switch self { case .string(let v): v; case .number(let v): String(v); case .bool(let v): String(v); case .null: "—"; case .array, .object: "…" } }
-}

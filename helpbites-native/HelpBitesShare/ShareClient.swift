@@ -7,6 +7,8 @@ import Foundation
 //   POST  /v1/feedback/attachments    one image or video
 //   POST  /v1/admin/board-items       the item
 //   PATCH /v1/admin/projects/:id      a new label (the board's lists, saved whole as in BoardStore.saveLists)
+// Offline, the boards are the ones the app last read (ResponseCache), and the item waits in the outbox
+// (PlanningOutbox) for the app to upload it.
 
 enum ShareError: LocalizedError {
   case signedOut, server(String), unreadable
@@ -90,8 +92,19 @@ struct ShareClient {
     return URLSession(configuration: configuration)
   }()
 
+  /// A GET; its answer is kept in the App Group's response cache, which the app writes too.
   func get<Value: Decodable>(_ path: String, query: [String: String] = [:]) async throws -> Value {
-    try await run(try makeRequest(path, method: "GET", query: query))
+    let request = try makeRequest(path, method: "GET", query: query)
+    let (data, response) = try await Self.session.data(for: request)
+    let value: Value = try Self.decode(data, response)
+    if let url = request.url { ResponseCache.save(data, for: url, workspaceId: workspaceId) }
+    return value
+  }
+
+  /// The last answer to that GET, from this sheet or the app, for when the server cannot be reached.
+  func cached<Value: Decodable>(_ path: String, query: [String: String] = [:]) -> Value? {
+    guard let url = try? makeRequest(path, method: "GET", query: query).url, let data = ResponseCache.load(url, workspaceId: workspaceId) else { return nil }
+    return try? JSONDecoder().decode(Value.self, from: data)
   }
 
   func send<Value: Decodable, Body: Encodable>(_ path: String, method: String = "POST", query: [String: String] = [:], body: Body) async throws -> Value {
@@ -119,19 +132,6 @@ struct ShareClient {
     request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
     let (data, response) = try await Self.session.upload(for: request, fromFile: body)
     return try Self.decode(data, response)
-  }
-
-  /// A multipart POST with the one `file` part, as `APIClient.upload` sends it.
-  func upload(_ path: String, query: [String: String], file: Data, filename: String, mimeType: String) async throws -> ShareAttachment {
-    let boundary = "HelpBites-\(UUID().uuidString)"
-    var body = Data()
-    body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\nContent-Type: \(mimeType)\r\n\r\n".utf8))
-    body.append(file)
-    body.append(Data("\r\n--\(boundary)--\r\n".utf8))
-    var request = try makeRequest(path, method: "POST", query: query)
-    request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-    request.httpBody = body
-    return try await run(request)
   }
 
   private func makeRequest(_ path: String, method: String, query: [String: String]) throws -> URLRequest {

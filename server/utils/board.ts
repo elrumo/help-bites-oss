@@ -403,6 +403,15 @@ async function applyLink(project: ParseObject, row: ParseObject, target: LinkTar
 export async function createBoardItem(project: ParseObject, agent: ParseObject, payload: unknown, source: ClientSource = 'api'): Promise<ParseObject> {
   const board = getBoardConfig(project)
   const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>
+  const Parse = useParse()
+  // An outbox (the native app sends what was made offline) retries until it gets an answer: the same
+  // `clientId` returns the item it already made instead of a second one.
+  // ponytail: two requests racing with one clientId can both create; the app sends one at a time.
+  const clientId = typeof raw.clientId === 'string' ? raw.clientId.trim().slice(0, 100) : ''
+  if (clientId) {
+    const existing = await new Parse.Query('BoardItem').equalTo('project', project).equalTo('clientId', clientId).first(MASTER)
+    if (existing) return existing as ParseObject
+  }
   const { values, errors } = readBoardItemInput(raw, board, { create: true })
   if (errors.length) badRequest(errors)
   assertOwnAttachments(project, values.attachments)
@@ -411,9 +420,9 @@ export async function createBoardItem(project: ParseObject, agent: ParseObject, 
   for (const id of readIdList(raw.feedbackPostIds, 'feedbackPostIds')) targets.push(await resolveLinkTarget(project, 'feedback', id))
   for (const id of readIdList(raw.conversationIds, 'conversationIds')) targets.push(await resolveLinkTarget(project, 'conversation', id))
 
-  const Parse = useParse()
   const row = new (Parse.Object.extend('BoardItem'))() as ParseObject
   row.set('project', project)
+  if (clientId) row.set('clientId', clientId)
   row.set('description', '')
   row.set('publicDescription', '')
   row.set('status', defaultFeedbackStatus(board).key)

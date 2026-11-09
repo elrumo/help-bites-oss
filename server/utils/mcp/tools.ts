@@ -238,7 +238,8 @@ export const MCP_TOOLS: readonly McpTool[] = [
       rank: { type: 'number', description: 'Sort key within its column; lower comes first. Default: the bottom.' },
       public: { type: 'boolean', description: 'Show on the public roadmap once planned, in progress or done.' },
       feedbackPostIds: { type: 'array', items: { type: 'string' }, description: 'Feedback posts to link (ids or `#12`), up to 50.' },
-      conversationIds: { type: 'array', items: { type: 'string' }, description: 'Conversations to link, up to 50.' }
+      conversationIds: { type: 'array', items: { type: 'string' }, description: 'Conversations to link, up to 50.' },
+      clientId: { type: 'string', description: 'An idempotency key of your own (up to 100 characters): calling again with the same one returns the item already created instead of a second one.' }
     }
   },
   {

@@ -46,6 +46,10 @@ struct SharedImage: Identifiable {
   var sending = false
   var sent = false
   var writingTitle = false
+  /// The server could not be reached: the boards are the ones last loaded, and the item will wait on the device.
+  var offline = false
+  /// Sent to the outbox rather than the server; the app uploads it once it is back online (or signed in again).
+  var queued = false
 
   static let priorities = ["urgent", "high", "normal", "low"]
   static let maxImages = 10
@@ -57,8 +61,6 @@ struct SharedImage: Identifiable {
   private var client: ShareClient?
   /// Which title request counts: a newer one makes an older answer stale.
   private var titleRun = 0
-  /// Uploads that went through, so a retry after a failed save does not send them twice.
-  private var uploaded: [UUID: ShareAttachment] = [:]
 
   var project: ShareProject? { projects.first { $0.id == projectId } }
   var board: ShareBoard? { project?.board }
@@ -78,10 +80,19 @@ struct SharedImage: Identifiable {
     struct Response: Decodable { let projects: [ShareProject] }
     struct Team: Decodable { let agents: [ShareAgent] }
     do {
-      let response: Response = try await client.get("/v1/admin/projects")
+      let response: Response
+      do {
+        response = try await client.get("/v1/admin/projects")
+      } catch let failure as URLError {
+        // Offline: the boards as the app last loaded them.
+        guard let cached: Response = client.cached("/v1/admin/projects") else { throw failure }
+        response = cached
+        offline = true
+      }
       projects = response.projects.filter { $0.board?.enabled == true }
       // The team is optional: without it an item is simply not assigned.
-      if let team: Team = try? await client.get("/v1/admin/agents") { agents = team.agents }
+      if offline { agents = (client.cached("/v1/admin/agents") as Team?)?.agents ?? [] }
+      else if let team: Team = try? await client.get("/v1/admin/agents") { agents = team.agents }
     } catch ShareError.signedOut {
       phase = .signedOut
       return
@@ -236,7 +247,6 @@ struct SharedImage: Identifiable {
   func removeImage(_ id: UUID) {
     images.first { $0.id == id }?.fileURL.map { try? FileManager.default.removeItem(at: $0) }
     images.removeAll { $0.id == id }
-    uploaded[id] = nil
   }
 
   private static func thumbnail(from source: CGImageSource) -> UIImage? {
@@ -318,13 +328,21 @@ struct SharedImage: Identifiable {
     let run = titleRun
     writingTitle = true
     defer { if run == titleRun { writingTitle = false } }
+    var written: String?
     do {
+      if offline { throw URLError(.notConnectedToInternet) }
       let reply: Reply = try await client.send("/v1/admin/board-items/suggest-title", query: ["project": projectId], body: Body(description: description))
-      guard run == titleRun, manual || title.trimmed.isEmpty else { return }
-      title = String(reply.title.prefix(BoardTitle.maxLength))
+      written = reply.title
+    } catch is URLError {
+      // Offline: Apple Intelligence on this device writes it, where there is one.
+      offline = true
+      written = await BoardTitle.onDevice(description)
+      if written == nil, manual, run == titleRun { self.error = String(localized: "The server can't be reached, and Apple Intelligence isn't available on this device to write the title.") }
     } catch {
       if manual, run == titleRun { self.error = error.localizedDescription }
     }
+    guard let written, run == titleRun, manual || title.trimmed.isEmpty else { return }
+    title = String(written.prefix(BoardTitle.maxLength))
   }
 
   /// A new item with no title gets one a second after the description stops changing.
@@ -337,20 +355,8 @@ struct SharedImage: Identifiable {
 
   // MARK: Send
 
-  private struct NewItem: Encodable {
-    var title, description, publicDescription: String
-    var labels: [String]
-    var attachments: [ShareAttachment]
-    var isPublic: Bool
-    var status, priority, assigneeId, targetDate: String?
-    var feedbackPostIds: [String]?
-    enum CodingKeys: String, CodingKey {
-      case title, description, publicDescription, labels, attachments, status, priority, assigneeId, targetDate, feedbackPostIds
-      case isPublic = "public"
-    }
-  }
-
-  /// Uploads the images and videos, then creates the item; true once the server has it.
+  /// Puts the item in the outbox (the App Group's, which the app uploads from), then sends it: true once the server
+  /// has it, or once it waits safely on the device because the server could not be reached.
   func send() async -> Bool {
     guard canSend, let client, let project else { return false }
     sending = true
@@ -361,38 +367,63 @@ struct SharedImage: Identifiable {
       await writeTitle()
       if title.trimmed.isEmpty { title = BoardTitle.fallback(details) }
     }
+    var entry: PendingItem
     do {
-      for image in images where uploaded[image.id] == nil {
-        if let file = image.fileURL {
-          uploaded[image.id] = try await client.upload("/v1/feedback/attachments", query: ["project": project.id], fileURL: file, filename: image.filename, mimeType: image.mime)
-        } else {
-          uploaded[image.id] = try await client.upload("/v1/feedback/attachments", query: ["project": project.id], file: image.data, filename: image.filename, mimeType: image.mime)
-        }
-      }
-      let item = NewItem(
-        title: String(title.trimmed.prefix(BoardTitle.maxLength)),
-        description: details,
-        publicDescription: publicDescription,
-        labels: labels,
-        attachments: images.compactMap { uploaded[$0.id] },
-        isPublic: isPublic,
-        status: status.isEmpty ? nil : status,
-        priority: priority.isEmpty ? nil : priority,
-        assigneeId: assigneeId.isEmpty ? nil : assigneeId,
-        targetDate: hasDate ? Self.day(targetDate) : nil,
-        feedbackPostIds: posts.isEmpty ? nil : posts.map(\.id)
-      )
-      struct Created: Decodable { let item: Item; struct Item: Decodable { let id: String } }
-      let _: Created = try await client.send("/v1/admin/board-items", query: ["project": project.id], body: item)
-      SharedStore.lastProjectId = project.id
-      sent = true
-      return true
-    } catch ShareError.signedOut {
-      phase = .signedOut
+      entry = try queue(in: project)
     } catch {
       self.error = error.localizedDescription
+      return false
     }
-    return false
+    SharedStore.lastProjectId = project.id
+    do {
+      struct Created: Decodable { let item: Item; struct Item: Decodable { let id: String } }
+      let _: Created = try await PlanningOutbox.deliver(&entry, upload: { file, name, mime in
+        let attachment = try await client.upload("/v1/feedback/attachments", query: ["project": project.id], fileURL: file, filename: name, mimeType: mime)
+        return .object(["url": .string(attachment.url), "name": .string(attachment.name), "mime": .string(attachment.mime), "size": .number(Double(attachment.size))])
+      }, create: { body in
+        try await client.send("/v1/admin/board-items", query: ["project": project.id], body: body)
+      })
+    } catch is URLError {
+      queued = true
+    } catch ShareError.signedOut {
+      // Kept: it goes up once HelpBites is signed in again.
+      queued = true
+    } catch {
+      // Refused: the sheet says why, and sending again starts over.
+      PlanningOutbox.remove(entry)
+      self.error = error.localizedDescription
+      return false
+    }
+    sent = true
+    return true
+  }
+
+  /// The item as the outbox keeps it: the fields of `POST /v1/admin/board-items`, with each image and video copied
+  /// into the outbox as a `local:` attachment.
+  private func queue(in project: ShareProject) throws -> PendingItem {
+    var attachments: [JSONValue] = []
+    for image in images {
+      let ext = (image.filename as NSString).pathExtension
+      let url = try image.fileURL.map { try PlanningOutbox.keep(copying: $0, ext: ext) } ?? PlanningOutbox.keep(image.data, ext: ext)
+      let size = image.fileURL.flatMap { try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize } ?? image.data.count
+      attachments.append(.object(["url": .string(url), "name": .string(image.filename), "mime": .string(image.mime), "size": .number(Double(size))]))
+    }
+    var fields: [String: JSONValue] = [
+      "title": .string(String(title.trimmed.prefix(BoardTitle.maxLength))),
+      "description": .string(details),
+      "publicDescription": .string(publicDescription),
+      "labels": .array(labels.map(JSONValue.string)),
+      "attachments": .array(attachments),
+      "public": .bool(isPublic)
+    ]
+    if !status.isEmpty { fields["status"] = .string(status) }
+    if !priority.isEmpty { fields["priority"] = .string(priority) }
+    if !assigneeId.isEmpty { fields["assigneeId"] = .string(assigneeId) }
+    if hasDate { fields["targetDate"] = .string(Self.day(targetDate)) }
+    if !posts.isEmpty { fields["feedbackPostIds"] = .array(posts.map { .string($0.id) }) }
+    let entry = PendingItem(endpoint: SharedStore.endpoint, workspaceId: SharedStore.workspaceId, projectId: project.id, fields: fields)
+    try PlanningOutbox.save(entry)
+    return entry
   }
 
   /// "2026-11-15", the day as the person picked it; a calendar day, so no time zone moves it.

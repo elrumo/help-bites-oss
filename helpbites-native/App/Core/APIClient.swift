@@ -33,8 +33,20 @@ actor APIClient {
 
   func setWorkspace(_ id: String) { workspaceId = id }
 
+  /// A GET whose answer is kept on disk: when the server cannot be reached at all, the last answer this device got
+  /// stands in, so a page opens offline as it was last seen (`Connectivity` says it is offline meanwhile).
   func get<Value: Decodable & Sendable>(_ path: String, token: String? = nil, query: [URLQueryItem] = []) async throws -> Value {
-    try await request(path, method: "GET", token: token, query: query, body: Optional<Empty>.none)
+    let request = try makeRequest(path, method: "GET", token: token, query: query)
+    let data: Data
+    do {
+      data = try await load(request)
+    } catch APIError.transport(let error) {
+      guard let url = request.url, let cached = ResponseCache.load(url, workspaceId: workspaceId), let value: Value = try? parse(cached) else { throw APIError.transport(error) }
+      return value
+    }
+    let value: Value = try parse(data)
+    if let url = request.url { ResponseCache.save(data, for: url, workspaceId: workspaceId) }
+    return value
   }
 
   func send<Value: Decodable & Sendable, Body: Encodable & Sendable>(_ path: String, method: String, token: String? = nil, body: Body) async throws -> Value {
@@ -141,20 +153,36 @@ actor APIClient {
   }
 
   private func decode<Value: Decodable & Sendable>(_ request: URLRequest) async throws -> Value {
+    try parse(try await load(request))
+  }
+
+  /// The body of a 2xx answer; any other answer throws its error, and no answer at all throws `.transport`
+  /// (and tells `Connectivity`).
+  private func load(_ request: URLRequest) async throws -> Data {
+    let data: Data, response: URLResponse
     do {
-      let (data, response) = try await session.data(for: request)
-      guard let http = response as? HTTPURLResponse else { throw APIError.server(String(localized: "Invalid server response.")) }
-      guard (200..<300).contains(http.statusCode) else {
-        if http.statusCode == 401 { throw APIError.unauthorized }
-        if http.statusCode == 429 { throw APIError.server(String(localized: "Too many attempts. Wait a moment and try again.")) }
-        let error = try? JSONDecoder().decode(ErrorBody.self, from: data)
-        throw APIError.server(error?.statusMessage ?? error?.message ?? error?.error ?? String(localized: "Request failed (\(http.statusCode))."))
-      }
-      if data.isEmpty, Value.self == Empty.self { return Empty() as! Value }
-      return try JSONDecoder().decode(Value.self, from: data)
-    } catch let error as APIError { throw error }
-    catch let error as URLError where error.code == .cancelled { throw APIError.cancelled }
-    catch is CancellationError { throw APIError.cancelled }
-    catch { throw APIError.transport(error) }
+      (data, response) = try await session.data(for: request)
+    } catch let error as URLError where error.code == .cancelled {
+      throw APIError.cancelled
+    } catch is CancellationError {
+      throw APIError.cancelled
+    } catch {
+      Connectivity.report(answered: false)
+      throw APIError.transport(error)
+    }
+    Connectivity.report(answered: true)
+    guard let http = response as? HTTPURLResponse else { throw APIError.server(String(localized: "Invalid server response.")) }
+    guard (200..<300).contains(http.statusCode) else {
+      if http.statusCode == 401 { throw APIError.unauthorized }
+      if http.statusCode == 429 { throw APIError.server(String(localized: "Too many attempts. Wait a moment and try again.")) }
+      let error = try? JSONDecoder().decode(ErrorBody.self, from: data)
+      throw APIError.server(error?.statusMessage ?? error?.message ?? error?.error ?? String(localized: "Request failed (\(http.statusCode))."))
+    }
+    return data
+  }
+
+  private func parse<Value: Decodable>(_ data: Data) throws -> Value {
+    if data.isEmpty, Value.self == Empty.self { return Empty() as! Value }
+    do { return try JSONDecoder().decode(Value.self, from: data) } catch { throw APIError.transport(error) }
   }
 }

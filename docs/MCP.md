@@ -212,7 +212,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | Tool | What it does |
 |---|---|
 | `list_board_items` | The work board behind the roadmap: cards and epics (filter with `kind`, `epic`, `release`, a changelog release). |
-| `create_board_item` | Add an item. |
+| `create_board_item` | Add an item. Pass your own `clientId` to make it safe to retry: the same one returns the item already created. |
 | `create_board_item_from_feedback` | Plan a feedback post: the AI writes the item, the post is linked. |
 | `update_board_item` | Edit or move an item. |
 | `delete_board_item` | Remove an item and its links: asks first. |

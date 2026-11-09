@@ -73,20 +73,25 @@ struct AppShell: View {
     }
     .task {
       if workspace.session.agent?.tourPending == true { workspace.tourOpen = true }
+      workspace.outbox.drain()
       async let projects: Void = workspace.loadProjects()
       async let inbox: Void = workspace.inbox.start()
       workspace.startAttention()
       _ = await (projects, inbox)
+      await workspace.warmPlanning()
     }
     .onChange(of: scenePhase) { _, phase in
       if phase == .active {
         Task { await workspace.inbox.start() }
         workspace.startAttention()
+        workspace.outbox.drain()
       } else {
         workspace.inbox.stop()
         workspace.stopAttention()
       }
     }
+    // Back online: what was made offline goes up.
+    .onChange(of: Connectivity.shared.offline) { _, offline in if !offline { workspace.outbox.drain() } }
     .onChange(of: PushRegistration.shared.pendingConversationID) { _, id in
       guard !id.isEmpty else { return }
       workspace.go(.inbox)

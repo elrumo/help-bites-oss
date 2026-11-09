@@ -52,7 +52,7 @@ struct ShareView: View {
       Spacer()
       if model.phase == .ready {
         Button {
-          Task { if await model.send() { try? await Task.sleep(for: .seconds(0.8)); finish() } }
+          Task { if await model.send() { try? await Task.sleep(for: .seconds(model.queued ? 2.5 : 0.8)); finish() } }
         } label: {
           ZStack {
             if model.sent { Image(systemName: "checkmark") }
@@ -81,6 +81,17 @@ struct ShareView: View {
       VStack(alignment: .leading, spacing: 6) {
         Text("Add to Planning").font(.largeTitle.bold())
         Text("Private until you put it on the roadmap.").font(.title3).foregroundStyle(.secondary)
+        if model.offline || model.queued {
+          Label {
+            if model.sent { Text("Saved on this device. HelpBites uploads it as soon as it can reach the server.") }
+            else { Text("Offline. The item is kept on this device and HelpBites uploads it when you're back online.") }
+          } icon: {
+            Image(systemName: "wifi.slash")
+          }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
       }
       .padding(.bottom, 4)
       switch model.phase {

@@ -136,7 +136,7 @@ enum SessionPhase { case loading, signedOut, signedIn }
     else { self.error = error.localizedDescription }
   }
 
-  func clear() { KeychainStore.remove(); SnapshotCache.clear(); memo.removeAll(); token = ""; agent = nil; context = nil; phase = .signedOut }
+  func clear() { KeychainStore.remove(); SnapshotCache.clear(); ResponseCache.clear(); memo.removeAll(); token = ""; agent = nil; context = nil; phase = .signedOut }
 
   func setEndpoint(_ value: String) async {
     let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))

@@ -1049,9 +1049,12 @@ const SCHEMAS = {
       attachments: { type: 'Array' },
       completedAt: { type: 'Date' },
       lastModifiedBy: { type: 'String' },
-      lastModifiedSource: { type: 'String' }
+      lastModifiedSource: { type: 'String' },
+      // The creating client's idempotency key (the native app's offline outbox); a repeat returns this row.
+      clientId: { type: 'String' }
     },
     indexes: {
+      project_clientId: { _p_project: 1, clientId: 1 },
       project_error_keys: { _p_project: 1, errorKeys: 1 },
       project_status_rank: { _p_project: 1, status: 1, rank: 1 },
       project_number: { _p_project: 1, number: 1 },

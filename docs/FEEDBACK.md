@@ -339,6 +339,31 @@ an App Group (`group.com.helpbites.operator`): sign in to the app once, and enab
 targets when you build it yourself. The web panel has no equivalent, since a browser has no share sheet; the panel's
 *New item* and the API cover the same ground.
 
+### Offline in the native app
+
+The iPhone, iPad and Mac app keep working without a connection, or when your server is down:
+
+- **Reading.** Every page the app has opened keeps its last answer on the device, and opens from it when the server
+  cannot be reached. Planning goes further: on launch the app reads every project's board (items, releases, the team),
+  so any board opens offline even if you never opened it before. A strip above the filters says the board is offline
+  and shows it as it was last loaded. Comments and edit history are kept once you open them.
+- **New items.** Every new item, from *New item*, a list's quick add or the share sheet, is written to an outbox on
+  the device before it is sent, and leaves it only once the server has it, so a dropped connection or a closed app
+  loses nothing. Offline, it appears on the board at once marked *Waiting to upload*, with its images, files and videos
+  kept on the device. You can open it, change it, move it between columns or delete it before it goes up. Links,
+  comments and history wait until it is uploaded.
+- **Uploading.** The app sends the outbox, oldest first, on launch, when you come back to it and when the server can
+  be reached again. Each item carries its outbox id as `clientId`, so an upload retried after a lost answer never makes a
+  second item, and an epic made offline goes up before the cards in it. An item the server refuses (a label or epic
+  deleted since) stays, marked *Not uploaded* with the reason; change it and save to try again, or delete it.
+- **Share sheet.** Offline, *Add to Planning* shows the boards as the app last loaded them and keeps the item in the
+  same outbox (in the App Group); the app uploads it the next time it is open and online.
+- **Titles.** With no server, a new item's title is written by Apple Intelligence on the device (iOS and macOS 26 or
+  later, on a device that has it turned on), with the same rules as the server's AI. Without it, the description's first
+  line stands in, as when the server has no AI.
+
+Editing an existing item still needs the server. The web panel has no offline mode.
+
 ### What goes public
 
 The roadmap is published through the feedback page's public pages and API, so
@@ -388,7 +413,9 @@ done status. From then on Planning's public items are the roadmap.
   `roadmapSource: "board" | "posts"` (`board` once the board has a public item
   in a roadmap status).
 - `GET|POST /v1/admin/board-items?project=<id>` (list, or create with optional
-  `feedbackPostIds` / `conversationIds`), `PATCH|DELETE
+  `feedbackPostIds` / `conversationIds`, and an optional `clientId` of up to 100
+  characters that makes the create safe to retry: the same `clientId` again returns
+  the item it already created), `PATCH|DELETE
   /v1/admin/board-items/:id`, `GET /v1/admin/board-items/:id/history`
   (newest first, `limit` 1–100 and `offset`), `POST /v1/admin/board-items/from-feedback`
   (below), and `POST /v1/admin/board-items/:id/links` with

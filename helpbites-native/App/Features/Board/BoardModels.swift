@@ -199,6 +199,8 @@ struct BoardItem: Codable, Equatable, Sendable, Identifiable {
 
   var itemKind: String { kind ?? "task" }
   var isGroup: Bool { itemKind != "task" }
+  /// Made on this device and not uploaded yet (it waits in the outbox, `PlanningSync`).
+  var isPending: Bool { PendingItem.isLocal(id) }
 
   /// "2026-11-15" from the stored date, as a date input holds it; '' for none.
   var targetDay: String { String((targetDate ?? "").prefix(10)) }

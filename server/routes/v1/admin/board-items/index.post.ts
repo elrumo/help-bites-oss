@@ -4,7 +4,7 @@ defineRouteMeta({
   openAPI: {
     tags: ['Board'], operationId: 'createBoardItem', security: [{ AgentSession: [] }, { AdminApiKey: [] }],
     summary: 'Create a board item',
-    description: 'Adds an item to the bottom of its status column with the board’s next `number`. `status` defaults to the board’s default status and `labels` must be keys the board defines. Items are private until `public` is set; a public item shows on the roadmap once its status is planned, in progress or done, with only its `publicDescription`. `kind` is `task` (default) or `epic` (groups cards). A card takes an `epicId` (id or `#N` of an epic of this project) and a `releaseId` (the id of a changelog release of this project, from GET /v1/admin/changelog/releases, which the release picker creates too); an epic takes a `releaseId` as well. Optional `feedbackPostIds` (ids or `#N`) and `conversationIds` link the item on creation; every one must belong to the project.',
+    description: 'Adds an item to the bottom of its status column with the board’s next `number`. `status` defaults to the board’s default status and `labels` must be keys the board defines. Items are private until `public` is set; a public item shows on the roadmap once its status is planned, in progress or done, with only its `publicDescription`. `kind` is `task` (default) or `epic` (groups cards). A card takes an `epicId` (id or `#N` of an epic of this project) and a `releaseId` (the id of a changelog release of this project, from GET /v1/admin/changelog/releases, which the release picker creates too); an epic takes a `releaseId` as well. Optional `feedbackPostIds` (ids or `#N`) and `conversationIds` link the item on creation; every one must belong to the project. A `clientId` makes the call safe to retry: sent again with the same one, it returns the item it already created (the native app uses it to upload items made offline).',
     parameters: [{ name: 'project', in: 'query', required: true, schema: { type: 'string' }, description: 'Project id' }],
     requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['title'], properties: {
       title: { type: 'string', description: 'Up to 200 characters', example: 'CSV export' },
@@ -23,7 +23,8 @@ defineRouteMeta({
       public: { type: 'boolean', default: false },
       rank: { type: 'number', description: 'Sort key within a column; lower comes first' },
       feedbackPostIds: { type: 'array', items: { type: 'string' }, maxItems: 50 },
-      conversationIds: { type: 'array', items: { type: 'string' }, maxItems: 50 }
+      conversationIds: { type: 'array', items: { type: 'string' }, maxItems: 50 },
+      clientId: { type: 'string', description: 'Idempotency key, up to 100 characters: a repeat returns the item already created with it', example: 'local-6F1C2A9E' }
     } } } } },
     responses: { 200: { description: 'The created item.', content: { 'application/json': { schema: { type: 'object', properties: { item: { '$ref': '#/components/schemas/BoardItem' } } } } } }, 400: { description: 'Missing title, or an unknown status, label, priority or assignee.' }, 401: { description: 'Admin session or API key required.' }, 404: { description: 'Project, post or conversation not found.' } }
   }

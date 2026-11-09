@@ -86,6 +86,8 @@ struct BoardScreen: View {
   }
 
   var session: SessionStore { workspace.session }
+  /// New items not uploaded yet: every create goes through it, and its cards sit on the board marked as waiting.
+  var outbox: PlanningSync { workspace.outbox }
 
   var publicCount: Int { items.filter(\.isPublic).count }
   var roadmapReady: Bool { feedbackRoadmap && config?.enabled == true }
@@ -172,7 +174,13 @@ struct BoardScreen: View {
     await saveBoard(["views": .array(savedViews.filter { $0.id != saved.id }.map(\.asJSON))])
   }
 
-  func item(_ id: String) -> BoardItem? { items.first { $0.id == id } }
+  /// An item by id. A waiting card's local id finds the server's item once it has gone up (an editor still open on it).
+  func item(_ id: String) -> BoardItem? {
+    items.first { $0.id == id } ?? outbox.serverId(id).flatMap { real in items.first { $0.id == real } }
+  }
+
+  /// Why the server refused a waiting card, when it did.
+  func pendingError(_ id: String) -> String? { outbox.entry(id)?.error }
   func agent(_ id: String) -> Agent? { id.isEmpty ? nil : agents.first { $0.id == id } }
 
   /// A column's items in board order; a status the board no longer knows sits in the default column.
@@ -270,7 +278,26 @@ struct BoardScreen: View {
     let (result, releaseList) = try await (rows, changelog)
     items = result.items
     releases = releaseList.releases
+    outbox.reload()
+    items += outbox.entries(projectId).map(placeholder)
     pruneParentFilters()
+  }
+
+  /// A waiting item as a card: its fields over an empty item's, at the bottom of its column as the server would put it.
+  func placeholder(_ entry: PendingItem) -> BoardItem {
+    let stamp = ISO8601DateFormatter().string(from: entry.createdAt)
+    let empty: [String: JSONValue] = [
+      "id": .string(entry.id), "projectId": .string(projectId), "title": .string(""), "description": .string(""), "publicDescription": .string(""),
+      "status": .string(config?.defaultStatusKey ?? ""), "statusCategory": .string("open"), "rank": .number(entry.createdAt.timeIntervalSince1970 * 1000),
+      "priority": .string(""), "assigneeId": .string(""), "labels": .array([]), "public": .bool(false), "feedbackPostIds": .array([]),
+      "conversationIds": .array([]), "voteCount": .number(0), "posts": .array([]), "conversations": .array([]), "createdAt": .string(stamp), "updatedAt": .string(stamp)
+    ]
+    // The empty item always decodes; the merged one fails only on a field of the wrong type, which then shows empty.
+    var item = JSONValue.object(empty.merging(entry.fields) { $1 }).decoded(BoardItem.self) ?? JSONValue.object(empty).decoded(BoardItem.self)!
+    item.statusCategory = config?.status(item.status)?.category ?? "open"
+    item.epic = item.epicId.flatMap { id in items.first { $0.id == id } }.map { BoardRelatedItem(id: $0.id, number: $0.number, title: $0.title, status: $0.status) }
+    item.release = item.releaseId.flatMap(release).map { BoardRelatedItem(id: $0.id, number: nil, title: $0.version, status: $0.status.rawValue) }
+    return item
   }
 
   private func apply(_ project: ProjectsAdminProject) {
@@ -349,10 +376,16 @@ struct BoardScreen: View {
 
   // MARK: Items
 
+  /// Through the outbox, so the item is on disk before it is sent: with no answer from the server it comes back as a
+  /// waiting card, which goes up when the server is back.
   func create(_ fields: [String: JSONValue]) async throws -> BoardItem {
-    let result: ItemResponse = try await session.send("/v1/admin/board-items?project=\(projectId)", body: fields)
-    upsert(result.item)
-    return result.item
+    let item: BoardItem
+    switch try await outbox.submit(projectId, fields) {
+    case .sent(let created): item = created
+    case .queued(let entry): item = placeholder(entry)
+    }
+    upsert(item)
+    return item
   }
 
   /// A list group's quick add: a title, filed into that group's status, epic or release.
@@ -374,17 +407,39 @@ struct BoardScreen: View {
     do { try await assign(itemId, field: field, to: parentId) } catch { alert = error.localizedDescription }
   }
 
-  /// The AI reads a description and proposes a title; nothing is saved.
+  /// The AI reads a description and proposes a title; nothing is saved. Out of reach of the server, Apple Intelligence on
+  /// this device writes it instead, where there is one.
   func suggestTitle(_ description: String) async throws -> String {
     struct Body: Encodable, Sendable { let description: String }
     struct Reply: Decodable, Sendable { let title: String }
-    let reply: Reply = try await session.send("/v1/admin/board-items/suggest-title?project=\(projectId)", body: Body(description: description))
-    return reply.title
+    do {
+      if Connectivity.shared.offline { throw APIError.transport(URLError(.notConnectedToInternet)) }
+      let reply: Reply = try await session.send("/v1/admin/board-items/suggest-title?project=\(projectId)", body: Body(description: description))
+      return reply.title
+    } catch APIError.transport {
+      if let title = await BoardTitle.onDevice(description) { return title }
+      throw APIError.server(String(localized: "The server can't be reached, and Apple Intelligence isn't available on this device to write the title."))
+    }
   }
 
-  /// Send only what changed; `.null` clears a value.
+  /// Send only what changed; `.null` clears a value. A waiting card's change goes into what will be uploaded.
   func update(_ itemId: String, _ fields: [String: JSONValue]) async throws -> BoardItem {
-    let result: ItemResponse = try await session.send("/v1/admin/board-items/\(itemId)", method: "PATCH", body: fields)
+    var id = itemId
+    var fields = fields
+    if PendingItem.isLocal(itemId) {
+      await outbox.settled()
+      if let entry = try outbox.amend(itemId, fields) {
+        let item = placeholder(entry)
+        upsert(item)
+        outbox.drain()
+        return item
+      }
+      // It went up meanwhile: the change goes to the server's item.
+      guard let uploaded = outbox.serverId(itemId) else { throw APIError.server(String(localized: "That item no longer exists.")) }
+      id = uploaded
+    }
+    fields = try await outbox.uploadingFiles(fields, projectId: projectId)
+    let result: ItemResponse = try await session.send("/v1/admin/board-items/\(id)", method: "PATCH", body: fields)
     upsert(result.item)
     return result.item
   }
@@ -418,8 +473,20 @@ struct BoardScreen: View {
 
   func delete(_ itemId: String) async throws {
     let groupsCards = item(itemId)?.itemKind == "epic"
-    try await session.delete("/v1/admin/board-items/\(itemId)")
-    items.removeAll { $0.id == itemId }
+    var id = itemId
+    if PendingItem.isLocal(itemId) {
+      await outbox.settled()
+      guard let uploaded = outbox.serverId(itemId) else {
+        // Never uploaded: it is simply not sent.
+        outbox.discard(itemId)
+        items.removeAll { $0.id == itemId }
+        return
+      }
+      items.removeAll { $0.id == itemId }
+      id = uploaded
+    }
+    try await session.delete("/v1/admin/board-items/\(id)")
+    items.removeAll { $0.id == id }
     // An epic leaves its cards free of it: read them again (the delete itself went through either way).
     if groupsCards { try? await loadItems() }
     pruneParentFilters()
@@ -446,8 +513,7 @@ struct BoardScreen: View {
     moved.statusCategory = config.status(status)?.category ?? "open"
     withAnimation(.snappy) { upsert(moved) }
     do {
-      let result: ItemResponse = try await session.send("/v1/admin/board-items/\(itemId)", method: "PATCH", body: ["status": JSONValue.string(status), "rank": .number(rank)])
-      upsert(result.item)
+      _ = try await update(itemId, ["status": .string(status), "rank": .number(rank)])
     } catch {
       withAnimation(.snappy) { upsert(previous) }
       alert = error.localizedDescription
@@ -565,12 +631,19 @@ private struct BoardView: View {
       .onChange(of: scenePhase) { _, phase in
         if phase == .active, store.config != nil { Task { try? await store.loadItems() } }
       }
+      // A waiting item went up (or was refused), or the server is back: read the board again.
+      .onChange(of: store.outbox.revision) { _, _ in Task { try? await store.loadItems() } }
+      .onChange(of: Connectivity.shared.offline) { _, offline in
+        guard !offline else { return }
+        Task { if store.config == nil { await store.load() } else { try? await store.loadItems() } }
+      }
   }
 
   @ViewBuilder private var content: some View {
     if let config = store.config {
       if config.enabled {
         VStack(spacing: 0) {
+          offlineStrip
           filterBar(config)
           Rectangle().fill(Theme.border).frame(height: 1)
           if store.view == "list" {
@@ -589,6 +662,33 @@ private struct BoardView: View {
       .frame(maxHeight: .infinity)
     } else {
       SkeletonRows(count: 4).frame(maxHeight: .infinity, alignment: .top)
+    }
+  }
+
+  /// Offline, or with items still to upload: what the board shows and what happens to new items.
+  @ViewBuilder private var offlineStrip: some View {
+    let offline = Connectivity.shared.offline
+    let waiting = store.outbox.entries(store.projectId).count
+    if offline || waiting > 0 {
+      HStack(spacing: 8) {
+        Image(systemName: offline ? "wifi.slash" : "icloud.and.arrow.up").font(.app(size: 12, weight: .medium))
+        Group {
+          if offline {
+            Text("Offline. This is the board as it was last loaded; new items stay on this device and upload when you're back online.")
+          } else if waiting == 1 {
+            Text("1 item waiting to upload")
+          } else {
+            Text("\(waiting) items waiting to upload")
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        Button("Try again") { Task { store.outbox.drain(); try? await store.loadItems() } }.buttonStyle(.lnGhost)
+      }
+      .font(.lnCaption)
+      .foregroundStyle(Theme.textMuted)
+      .padding(.horizontal, Metrics.gutter)
+      .padding(.vertical, 6)
+      .background(Theme.elevated)
     }
   }
 
@@ -883,6 +983,7 @@ private struct BoardList: View {
       Button { open(item) } label: {
         VStack(alignment: .leading, spacing: 5) {
           HStack(spacing: 6) {
+            if item.isPending { BoardPendingChip(refused: store.pendingError(item.id) != nil) }
             if let number = item.number { Text("#\(number)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted) }
             if let icon = BoardKind.icon(item.itemKind) {
               Image(systemName: icon).font(.app(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel(BoardKind.name(item.itemKind))
@@ -902,7 +1003,7 @@ private struct BoardList: View {
     .contextMenu {
       Button { open(item) } label: { Label("Open", systemImage: "square.and.pencil") }
       BoardParentMenus(item: item, store: store)
-      if let url = store.itemURL(item) { Button { Clipboard.copy(url.absoluteString) } label: { Label("Copy link", systemImage: "link") } }
+      if !item.isPending, let url = store.itemURL(item) { Button { Clipboard.copy(url.absoluteString) } label: { Label("Copy link", systemImage: "link") } }
     }
   }
 
@@ -1010,6 +1111,24 @@ private struct BoardParentMenus: View {
 
   private func pick(_ kind: String, _ parentId: String) {
     Task { await store.setParent(item.id, field: kind == "epic" ? "epicId" : "releaseId", to: parentId) }
+  }
+}
+
+/// A card made on this device that the server has not taken yet: waiting for a connection, or refused (its editor
+/// says why).
+struct BoardPendingChip: View {
+  let refused: Bool
+
+  var body: some View {
+    HStack(spacing: 3) {
+      Image(systemName: refused ? "exclamationmark.icloud" : "icloud.and.arrow.up").font(.app(size: 10))
+      Text(refused ? "Not uploaded" : "Waiting to upload").font(.lnCaption).lineLimit(1)
+    }
+    .foregroundStyle(refused ? Theme.error : Theme.textToned)
+    .padding(.horizontal, 6)
+    .frame(height: 18)
+    .background(Theme.elevated, in: Capsule())
+    .accessibilityElement(children: .combine)
   }
 }
 
@@ -1215,7 +1334,7 @@ private struct BoardColumn: View {
       }
     }
     BoardParentMenus(item: item, store: store)
-    if let url = store.itemURL(item) { Button { Clipboard.copy(url.absoluteString) } label: { Label("Copy link", systemImage: "link") } }
+    if !item.isPending, let url = store.itemURL(item) { Button { Clipboard.copy(url.absoluteString) } label: { Label("Copy link", systemImage: "link") } }
   }
 }
 
@@ -1228,6 +1347,7 @@ private struct BoardCard: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       HStack(spacing: 6) {
+        if item.isPending { BoardPendingChip(refused: store.pendingError(item.id) != nil) }
         if let number = item.number { Text("#\(number)").font(.lnCaption).monospacedDigit().foregroundStyle(Theme.textMuted) }
         if let icon = BoardKind.icon(item.itemKind) {
           Image(systemName: icon).font(.app(size: 11)).foregroundStyle(Theme.accentText).accessibilityLabel(BoardKind.name(item.itemKind))

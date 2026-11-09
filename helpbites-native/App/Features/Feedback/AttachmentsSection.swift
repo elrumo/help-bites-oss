@@ -10,6 +10,8 @@ struct ItemAttachment: Codable, Equatable, Sendable, Hashable {
   var size: Int
 
   var isImage: Bool { mime.hasPrefix("image/") }
+  /// Where to open it: the server's address, or the file on this device for one waiting to upload (`local:`).
+  var link: URL? { PlanningOutbox.fileURL(url) ?? URL(string: url) }
   var isVideo: Bool { mime.hasPrefix("video/") }
   var asJSON: JSONValue { .object(["url": .string(url), "name": .string(name), "mime": .string(mime), "size": .number(Double(size))]) }
 
@@ -21,8 +23,9 @@ struct ItemAttachment: Codable, Equatable, Sendable, Hashable {
   static let blockedExtensions: Set<String> = ["exe", "dll", "msi", "bat", "cmd", "com", "scr", "pif", "cpl", "lnk", "vbs", "vbe", "jse", "wsf", "wsh", "ps1", "msc", "reg", "hta", "jar", "sh", "command", "app", "apk", "dmg", "pkg"]
 
   /// Uploads one file to `POST /v1/feedback/attachments` for the caller to add to its list. A file over the limit is not sent.
-  /// Whatever fails throws a line fit to show, with the file's name in it.
-  static func upload(_ data: Data, filename: String, session: SessionStore, projectId: String) async throws -> ItemAttachment {
+  /// Whatever fails throws a line fit to show, with the file's name in it. With `keepOffline` (a planning item not on the
+  /// server yet), no answer from the server keeps the file on this device instead, and it goes up with the item.
+  @MainActor static func upload(_ data: Data, filename: String, session: SessionStore, projectId: String, keepOffline: Bool = false) async throws -> ItemAttachment {
     let ext = (filename as NSString).pathExtension.lowercased()
     if ["mp4", "mov"].contains(ext) {
       guard data.count <= maxVideoBytes else { throw APIError.server(String(localized: "\(filename) is larger than 100 MB.")) }
@@ -31,8 +34,14 @@ struct ItemAttachment: Codable, Equatable, Sendable, Hashable {
     }
     guard !blockedExtensions.contains(ext) else { throw APIError.server(String(localized: "\(filename): programs and scripts cannot be attached.")) }
     let mime = UTType(filenameExtension: (filename as NSString).pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+    func keep() throws -> ItemAttachment {
+      ItemAttachment(url: try PlanningOutbox.keep(data, ext: ext.isEmpty ? "bin" : ext), name: filename, mime: mime, size: data.count)
+    }
+    if keepOffline, Connectivity.shared.offline { return try keep() }
     do {
       return try await session.upload("/v1/feedback/attachments?project=\(projectId)", file: data, filename: filename, mimeType: mime)
+    } catch APIError.transport where keepOffline {
+      return try keep()
     } catch {
       throw APIError.server("\(filename): \(error.localizedDescription)")
     }
@@ -47,6 +56,8 @@ struct AttachmentsSection: View {
   let projectId: String
   /// Only images (a changelog entry's); no files, and the picker takes images alone.
   var imagesOnly = false
+  /// A planning item not on the server yet: offline, files wait on the device with it.
+  var keepOffline = false
 
   @State private var photos: [PhotosPickerItem] = []
   @State private var importing = false
@@ -125,7 +136,7 @@ struct AttachmentsSection: View {
     defer { uploading -= 1 }
     error = ""
     do {
-      let file = try await ItemAttachment.upload(data, filename: filename, session: session, projectId: projectId)
+      let file = try await ItemAttachment.upload(data, filename: filename, session: session, projectId: projectId, keepOffline: keepOffline)
       attachments.append(file)
     } catch {
       self.error = error.localizedDescription
@@ -138,8 +149,8 @@ struct AttachmentThumb: View {
   let file: ItemAttachment
 
   var body: some View {
-    if file.isImage, let url = URL(string: file.url) {
-      AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
+    if file.isImage, let url = file.link {
+      CachedAsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.elevated }
         .frame(width: 36, height: 36).clipShape(RoundedRectangle(cornerRadius: 6))
     } else {
       Image(systemName: file.isVideo ? "play.fill" : "doc").frame(width: 36, height: 36).background(Theme.elevated, in: RoundedRectangle(cornerRadius: 6))
@@ -153,7 +164,7 @@ struct AttachmentOpener: View {
   @State private var preview: PreviewItem?
 
   var body: some View {
-    if let url = URL(string: file.url), file.isImage || file.isVideo {
+    if let url = file.link, file.isImage || file.isVideo {
       Button { preview = PreviewItem(url: url, isVideo: file.isVideo) } label: {
         HStack(spacing: 8) { AttachmentThumb(file: file); Text(file.name).foregroundStyle(Theme.accentText).lineLimit(1) }
       }
@@ -163,7 +174,7 @@ struct AttachmentOpener: View {
     } else {
       HStack(spacing: 8) {
         AttachmentThumb(file: file)
-        if let url = URL(string: file.url) { Link(file.name, destination: url).lineLimit(1) } else { Text(file.name).lineLimit(1) }
+        if let url = file.link { Link(file.name, destination: url).lineLimit(1) } else { Text(file.name).lineLimit(1) }
       }
     }
   }

@@ -340,6 +340,11 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Add to Planning from the share sheet** (iPhone and iPad). Share a screenshot, photo, link or text from any
   app and file it as an item: a sheet with every field of *New item*, the shared image attached and uploaded, more
   images on request. [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)
+- **Planning offline** (native app). Every board opens without a connection as it was last loaded. New items, from the
+  app or the share sheet, with their images and videos, wait on the device marked *Waiting to upload* and go up by
+  themselves once the server can be reached; none is lost to a dropped connection or a closed app, and a retried upload
+  never makes a second item (`clientId` on `POST /v1/admin/board-items`). Offline, Apple Intelligence on the device
+  writes the title. [FEEDBACK.md](FEEDBACK.md#offline-in-the-native-app)
 - **Links.** Connect an item to up to 50 feedback posts, 50 conversations and 50 other items
   (related items link both ways). Votes add up across the linked posts. Search feedback to attach it to an item
   (or while creating one); right-click a post, or use its Planning button, to
@@ -753,6 +758,9 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   onboarding (with a live preview), pricing tables (with a live preview, results,
   A/B tests and AI suggestions), the brand kit, the email editor with its AI
   designer, email log and suppressions, campaigns, flags, and errors.
+- **Offline.** Every page the app has opened opens again from the device when the server can't be reached, and every
+  planning board is read ahead so it opens offline even if you never visited it. New planning items made offline (in the
+  app or the share sheet) wait on the device and upload by themselves; see Planning offline above.
 - **Share sheet.** *Add to Planning* in the system share sheet (iPhone and iPad): a screenshot, photo, link or text
   becomes a planning item without opening the app.
 - **Push notifications.** A new customer message can notify the device. This needs
@@ -881,6 +889,10 @@ it is not part of this repository; a self-hosted server's `/` goes straight to t
 - **Share sheet.** *Add to Planning* is an iPhone and iPad share extension only: the Mac app has none, and the web
   panel has no equivalent (a browser has no share sheet; use *New item* or the API).
   [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)
+- **Offline.** Only the native app works offline, and offline it only creates planning items (and changes them before
+  they upload): editing an existing item, comments and every other write still need the server. The app uploads what
+  waits while it is open, not in the background. The web panel has no offline mode. Apple Intelligence titles need iOS
+  or macOS 26 or later with Apple Intelligence on. [FEEDBACK.md](FEEDBACK.md#offline-in-the-native-app)
 - **Pricing preview.** On the web the preview can be edited in place (click a title,
   plan name, description, badge, button, feature or footnote and type); the native
   preview is read-only. [PRICING.md](PRICING.md)

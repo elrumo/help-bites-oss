@@ -176,6 +176,8 @@ struct SectionLayout {
 @MainActor @Observable final class Workspace {
   let session: SessionStore
   let inbox: InboxStore
+  /// New planning items waiting to be uploaded (made offline here or in the share sheet).
+  let outbox: PlanningSync
   var projects: [Project] = []
   var tab: AppTab = .overview
   var projectsPath: [AppRoute] = []
@@ -208,6 +210,7 @@ struct SectionLayout {
   init(session: SessionStore) {
     self.session = session
     self.inbox = InboxStore(session: session)
+    self.outbox = PlanningSync(session: session)
     projects = SnapshotCache.load([Project].self, "projects") ?? []
     tab = shortcuts.first?.tab ?? .settings
   }
@@ -259,6 +262,18 @@ struct SectionLayout {
       projects = response.projects
       SnapshotCache.save(response.projects, "projects")
     } catch {}
+  }
+
+  /// Reads every planning board once, so each one opens offline later as it was (the API client keeps the answers on
+  /// disk). Comments and history are kept as they are opened.
+  func warmPlanning() async {
+    struct Skim: Decodable, Sendable {}
+    guard !Connectivity.shared.offline else { return }
+    for project in planningProjects {
+      let _: Skim? = try? await session.get("/v1/admin/board-items", query: ["project": project.id])
+      let _: Skim? = try? await session.get("/v1/admin/changelog/releases", query: ["project": project.id])
+    }
+    let _: Skim? = try? await session.get("/v1/admin/agents")
   }
 
   /// `GET /v1/admin/attention`; the last list stays when a read fails.
