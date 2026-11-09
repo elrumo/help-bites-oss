@@ -26,6 +26,8 @@ struct BoardItemEditor: View {
   @State private var justSaved = false
   /// Images pasted into the description that are still uploading, and whether one has just been added to the list further down.
   @State private var pasting = 0
+  /// Files uploading from the Images and files section: each starts as it is added, and Save waits for them.
+  @State private var uploadingFiles = 0
   @State private var pasted = false
   @State private var writingTitle = false
   /// Which title request counts: a newer one makes an older answer stale.
@@ -126,7 +128,7 @@ struct BoardItemEditor: View {
         ToolbarItem(placement: .confirmationAction) {
           Button(justSaved ? "Saved" : itemId == nil ? "Create" : "Save") { Task { await save() } }
             .keyboardShortcut(.return, modifiers: .command)
-            .disabled((draft.title.trimmed.isEmpty && (itemId != nil || draft.description.trimmed.isEmpty)) || saving || pasting > 0 || store.config == nil)
+            .disabled((draft.title.trimmed.isEmpty && (itemId != nil || draft.description.trimmed.isEmpty)) || saving || store.config == nil)
         }
       }
       .feedbackErrorAlert($error)
@@ -222,7 +224,7 @@ struct BoardItemEditor: View {
       TextField("", text: Binding(get: { draft.estimate ?? "" }, set: { draft.estimate = $0 })).textFieldStyle(.linear).inputHints(.decimalPad)
     }
     labelPicker(config)
-    AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId, keepOffline: keepsFilesOffline)
+    AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId, keepOffline: keepsFilesOffline, busy: $uploadingFiles)
     roadmap(config)
   }
 
@@ -1038,6 +1040,9 @@ struct BoardItemEditor: View {
   private func save() async {
     guard let config = store.config else { return }
     saving = true
+    // Files still uploading (picked or pasted) finish first, so the item is saved with them.
+    // ponytail: polls every 0.2 s; fine for the seconds an upload takes.
+    while uploadingFiles > 0 || pasting > 0 { try? await Task.sleep(for: .milliseconds(200)) }
     // Create with no title: the AI writes it now; with no AI, the description's first line stands in.
     if itemId == nil, draft.title.trimmed.isEmpty {
       await writeTitle()

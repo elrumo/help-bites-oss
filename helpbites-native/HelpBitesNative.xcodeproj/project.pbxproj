@@ -95,6 +95,7 @@
 		59A6395B6EE19234CB7786C4 /* RevenueSources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 843921FF3A1A1DEF70413574 /* RevenueSources.swift */; };
 		5A42BD68D0E677281C83DF0F /* BlogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5418F2FA4617C422EDBDDF10 /* BlogStore.swift */; };
 		5B2EBF30CBCD4DAEE1974B05 /* EmailModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC19BAB63EA4C39D5933383F /* EmailModels.swift */; };
+		5BD8AAD0C71C5BD1E3E8169E /* ShareDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB7D6BD09C46507CB1F5E05 /* ShareDraft.swift */; };
 		5BEBE7249B90068BF8B60DAC /* BoardTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E731CAEA02D33030BDE9425 /* BoardTitle.swift */; };
 		5BFF9F797A0AC371AF45A64E /* TabBarScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6E1273ADC1239C9AF4C38A9 /* TabBarScreen.swift */; };
 		5CC00D257A4B3CD780405012 /* LegalModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA8D433FF9F026C9450913B /* LegalModels.swift */; };
@@ -323,6 +324,7 @@
 		5D5F0E3917C589E81B418ED1 /* TransferSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferSection.swift; sourceTree = "<group>"; };
 		5D85E56A5924EFCF147316F6 /* ProjectChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectChrome.swift; sourceTree = "<group>"; };
 		5F2469103F1ACA1FCEF5CAD7 /* WelcomeTourSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeTourSheet.swift; sourceTree = "<group>"; };
+		5FB7D6BD09C46507CB1F5E05 /* ShareDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareDraft.swift; sourceTree = "<group>"; };
 		601798B799E5F51D6D54DC67 /* ConnectionsErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionsErrors.swift; sourceTree = "<group>"; };
 		601EE5315E319C541FE5D323 /* EmailLinkedPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailLinkedPanel.swift; sourceTree = "<group>"; };
 		6286A8CE54C5D1233C199F9F /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -411,7 +413,7 @@
 		B40176AC267ECC00A49544BD /* ProjectConversationsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectConversationsScreen.swift; sourceTree = "<group>"; };
 		B44955BC52BAAEBB27B08CC6 /* LegalDocumentScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalDocumentScreen.swift; sourceTree = "<group>"; };
 		B6E1273ADC1239C9AF4C38A9 /* TabBarScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarScreen.swift; sourceTree = "<group>"; };
-		BAB80FCF80B18F81536B1302 /* HelpBitesShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HelpBitesShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BAB80FCF80B18F81536B1302 /* HelpBitesShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = HelpBitesShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BADACB880997F7EB8218141A /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		BB11DF49144E1A43E11C90A1 /* HelpBitesNativeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpBitesNativeApp.swift; sourceTree = "<group>"; };
 		BC1DB5618CE60998E9CFCC69 /* ChangelogLinksSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogLinksSection.swift; sourceTree = "<group>"; };
@@ -471,7 +473,7 @@
 		F3A8133AAF31EE866C4EB75F /* FlagsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlagsScreen.swift; sourceTree = "<group>"; };
 		F566C847DA17376021C6A1F5 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		F685F682E640A82AD6F5CF0D /* FeedbackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackModels.swift; sourceTree = "<group>"; };
-		F7FFC773425AFD980758F3B2 /* HelpBitesNative.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelpBitesNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F7FFC773425AFD980758F3B2 /* HelpBitesNative.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HelpBitesNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F913050CBAD078D07EAAD064 /* TestflightSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestflightSection.swift; sourceTree = "<group>"; };
 		FAC97D2281787653CEBB896D /* OnboardingFlowScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowScreen.swift; sourceTree = "<group>"; };
 		FACEE864352A0CFB92921C68 /* PagesSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagesSettingsView.swift; sourceTree = "<group>"; };
@@ -682,6 +684,7 @@
 				A19558236E2A2C8B1F466364 /* Info.plist */,
 				BADACB880997F7EB8218141A /* Localizable.xcstrings */,
 				799DC6EBBB3A3A4E63B7879E /* ShareClient.swift */,
+				5FB7D6BD09C46507CB1F5E05 /* ShareDraft.swift */,
 				712AD1B99B5397775077B1C0 /* ShareModel.swift */,
 				E721C7B0479F4A041B47C872 /* ShareView.swift */,
 				D56B37B8E29E876E823F9781 /* ShareViewController.swift */,
@@ -1065,6 +1068,7 @@
 				A130E1688592A6E125C81B9E /* PlanningOutbox.swift in Sources */,
 				4C9B6F8313CC76E202CEDA55 /* ResponseCache.swift in Sources */,
 				A9FF3EEF62FE9A5015B3AA4B /* ShareClient.swift in Sources */,
+				5BD8AAD0C71C5BD1E3E8169E /* ShareDraft.swift in Sources */,
 				2503DD0C2ACEF3140E93F07E /* ShareModel.swift in Sources */,
 				6570AFE13921280AA298B547 /* ShareView.swift in Sources */,
 				7B0B13D3C0A734219C51D3F1 /* ShareViewController.swift in Sources */,

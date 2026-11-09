@@ -1173,7 +1173,9 @@ async function patch(body: Record<string, unknown>) {
   savedItem.value = false
   editorError.value = ''
   try {
-    replaceItem((await api<{ item: BoardItem }>(`/admin/board-items/${current.value.id}`, { method: 'PATCH', body })).item)
+    const { item } = await api<{ item: BoardItem }>(`/admin/board-items/${current.value.id}`, { method: 'PATCH', body })
+    replaceItem(item)
+    takeMovedDescription(item, body.description)
     savedItem.value = true
     if (historyExpanded.value) await loadHistory(true)
   } catch (e: any) {
@@ -1181,6 +1183,11 @@ async function patch(body: Record<string, unknown>) {
   } finally {
     savingItem.value = false
   }
+}
+
+/** A description too long to keep comes back cut short, with the whole text attached as description.txt: show that, or the next save sends it again. */
+function takeMovedDescription(item: BoardItem, sent: unknown) {
+  if (typeof sent === 'string' && sent.trim() !== item.description) Object.assign(draft, { description: item.description, attachments: [...item.attachments] })
 }
 
 function saveText(key: 'title' | 'description' | 'publicDescription') {
@@ -1357,6 +1364,7 @@ async function createItem() {
       }
     })
     replaceItem(item)
+    takeMovedDescription(item, draft.description)
     saved.clear()
     restored.value = false
     editingId.value = item.id

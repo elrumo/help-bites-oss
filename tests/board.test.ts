@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  BOARD_DESCRIPTION_FILE,
   DEFAULT_BOARD_CONFIG,
   EMPTY_BOARD_VIEW_FILTERS,
   normalizeBoardConfig,
+  overflowedDescription,
   rankBetween,
   kindCanHave,
   readBoardItemInput,
@@ -246,4 +248,15 @@ describe('epics and releases', () => {
     expect(kindCanHave('task', 'release')).toBe(true)
     expect(kindCanHave('epic', 'release')).toBe(true)
   })
+})
+
+test('a description too long to keep leaves its start and a note, and never an open code block', () => {
+  const log = `Steps:\n\`\`\`\n${'15:12:50.824 put slot=thumb photo=9007194959865965 final=true\n'.repeat(400)}`
+  const kept = overflowedDescription(log)
+  expect(kept.length).toBeLessThan(2200)
+  expect(kept.startsWith('Steps:\n```\n15:12:50.824')).toBe(true)
+  expect((kept.match(/```/g) || []).length % 2).toBe(0)
+  expect(kept).toContain(`The full description (${log.length.toLocaleString('en')} characters) is attached as ${BOARD_DESCRIPTION_FILE}`)
+  // Cut at a line, not mid-line.
+  expect(kept.split('\n```')[1]?.trim().split('\n').every(line => line.endsWith('final=true'))).toBe(true)
 })

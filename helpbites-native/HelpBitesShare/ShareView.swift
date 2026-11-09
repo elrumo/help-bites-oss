@@ -11,6 +11,7 @@ struct ShareView: View {
   @State private var photos: [PhotosPickerItem] = []
   @State private var pickingPost = false
   @State private var viewing: SharedImage?
+  @State private var confirmingCancel = false
 
   private static let accent = Color(red: 0x5e / 255, green: 0x6a / 255, blue: 0xd2 / 255)
 
@@ -35,13 +36,17 @@ struct ShareView: View {
       SharePostPicker(model: model) { model.posts.append($0) }
     }
     .fullScreenCover(item: $viewing) { SharePreview(media: $0) }
+    // Kept as it changes, so a sheet closed by accident opens the same next time.
+    .onChange(of: model.draft) { model.saveDraft() }
   }
 
   // MARK: Header
 
   private var header: some View {
     HStack {
-      Button(action: cancel) {
+      Button {
+        if model.phase == .ready, !model.sent, !model.draft.isEmpty { confirmingCancel = true } else { cancel() }
+      } label: {
         Text("Cancel")
           .font(.title3.weight(.medium))
           .padding(.horizontal, 20)
@@ -49,6 +54,12 @@ struct ShareView: View {
           .background(.regularMaterial, in: Capsule())
       }
       .buttonStyle(.plain)
+      .confirmationDialog("Keep this item for later?", isPresented: $confirmingCancel, titleVisibility: .visible) {
+        Button("Delete Draft", role: .destructive) { model.discard(); cancel() }
+        Button("Save Draft") { cancel() }
+      } message: {
+        Text("A saved draft opens the next time you share to HelpBites.")
+      }
       Spacer()
       if model.phase == .ready {
         Button {
@@ -91,6 +102,16 @@ struct ShareView: View {
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
+        }
+        if model.restored, model.phase == .ready, !model.sent {
+          HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Label("Your unsent item is back, with what you shared now added.", systemImage: "arrow.uturn.backward")
+              .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Button("Start over") { model.startOver() }.fontWeight(.semibold)
+          }
+          .font(.callout)
+          .foregroundStyle(.secondary)
         }
       }
       .padding(.bottom, 4)
@@ -207,6 +228,12 @@ struct ShareView: View {
                 .frame(width: 110, height: 150)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay { if image.isVideo { Image(systemName: "play.circle.fill").font(.largeTitle).foregroundStyle(.white.opacity(0.9)).shadow(radius: 3) } }
+                // Uploading while the form is filled in.
+                .overlay(alignment: .bottomLeading) {
+                  if model.uploading.contains(image.id) {
+                    ProgressView().controlSize(.small).padding(6).background(.regularMaterial, in: Circle()).padding(6).accessibilityLabel("Uploading")
+                  }
+                }
                 .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .onTapGesture { viewing = image }
                 .accessibilityAddTraits(.isButton)
@@ -515,10 +542,10 @@ private struct SharePreview: View {
     }
     .statusBarHidden()
     .task {
-      if let file = media.fileURL {
-        player = AVPlayer(url: file)
+      if media.isVideo {
+        player = AVPlayer(url: media.file)
         player?.play()
-      } else if let source = CGImageSourceCreateWithData(media.data as CFData, nil) {
+      } else if let source = CGImageSourceCreateWithURL(media.file as CFURL, nil) {
         // Decoded at screen size, so a 48 MP picture stays inside the extension's memory.
         let options: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true, kCGImageSourceThumbnailMaxPixelSize: 2400]
         picture = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary).map { UIImage(cgImage: $0) } ?? media.preview

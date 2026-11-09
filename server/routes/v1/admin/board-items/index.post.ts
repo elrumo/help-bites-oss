@@ -11,7 +11,7 @@ defineRouteMeta({
       kind: { type: 'string', enum: ['task', 'epic'], default: 'task' },
       epicId: { type: 'string', description: 'The epic this card belongs to (id or #N); empty for none' },
       releaseId: { type: 'string', description: 'The changelog release this card or epic ships in (its id); empty for none' },
-      description: { type: 'string', description: 'Internal Markdown; never public' },
+      description: { type: 'string', description: 'Internal Markdown; never public. Over 20,000 characters the whole text is attached as description.txt and the field keeps its start and a note (it needs a free attachment slot).' },
       publicDescription: { type: 'string', description: 'What the roadmap shows' },
       status: { type: 'string', example: 'planned' },
       priority: { type: 'string', enum: ['', 'low', 'normal', 'high', 'urgent'] },

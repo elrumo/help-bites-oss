@@ -1,20 +1,23 @@
 import AVFoundation
+import CryptoKit
 import ImageIO
 import Observation
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-/// One image or video on its way to the item: the bytes the server accepts, and a small preview.
-/// A video keeps its bytes in a temporary file (`fileURL`, `data` is empty) so it is never held in memory.
+/// One image or video on its way to the item: a file in the draft's folder holding what the server accepts (never
+/// the bytes in memory), a small preview, and once uploaded, the server's attachment.
 struct SharedImage: Identifiable {
   let id = UUID()
-  let data: Data
-  var fileURL: URL?
-  let filename: String
-  let mime: String
+  var saved: ShareDraft.File
   let preview: UIImage
-  var isVideo: Bool { fileURL != nil }
+  /// Brought back from a sheet closed without sending (Start over drops it).
+  var restored = false
+  var file: URL { ShareDraft.files.appending(path: saved.name) }
+  var filename: String { saved.filename }
+  var mime: String { saved.mime }
+  var isVideo: Bool { saved.mime.hasPrefix("video/") }
 }
 
 /// The share sheet's state: what was shared, the project's board, and the fields of "New item" in the app
@@ -51,6 +54,16 @@ struct SharedImage: Identifiable {
   var offline = false
   /// Sent to the outbox rather than the server; the app uploads it once it is back online (or signed in again).
   var queued = false
+  /// The form came back from a sheet closed without sending.
+  var restored = false
+  /// Images and videos uploading now: each goes up as soon as it is added, so sending only creates the item.
+  private(set) var uploading: Set<UUID> = []
+  @ObservationIgnored private var uploads: [UUID: Task<Void, Never>] = [:]
+  /// What this share brought, so Start over keeps it and drops the rest.
+  @ObservationIgnored private var sharedTitle = ""
+  @ObservationIgnored private var sharedDetails = ""
+  /// Cancelled with Delete Draft: nothing more is written.
+  @ObservationIgnored private var discarded = false
 
   static let priorities = ["urgent", "high", "normal", "low"]
   static let maxImages = 10
@@ -73,6 +86,7 @@ struct SharedImage: Identifiable {
   func start(_ extensionItems: [NSExtensionItem]) async {
     guard let client = ShareClient.current() else { phase = .signedOut; return }
     self.client = client
+    await restore()
     async let shared: Void = read(extensionItems)
     await loadBoards(client)
     await shared
@@ -105,12 +119,18 @@ struct SharedImage: Identifiable {
       phase = error.isEmpty ? .noBoard : .failed
       return
     }
-    let last = SharedStore.lastProjectId
-    select(project: projects.contains { $0.id == last } ? last : projects[0].id)
+    // A restored draft keeps its project (and so its status, labels and feedback) while that project is still here.
+    let last = projectId.isEmpty ? SharedStore.lastProjectId : projectId
+    let start = projects.contains { $0.id == last } ? last : projects[0].id
+    if start != projectId { projectId = ""; select(project: start) }
     phase = .ready
+    // What was shared before the form was ready is kept now, so closing it at once loses nothing.
+    saveDraft()
+    images.forEach { startUpload($0.id) }
   }
 
-  /// Another project has its own statuses, labels and feedback: those start over.
+  /// Another project has its own statuses, labels and feedback: those start over. Files uploaded for the other
+  /// project go up again for this one, since an item takes only its own project's.
   func select(project id: String) {
     guard id != projectId else { return }
     projectId = id
@@ -118,6 +138,7 @@ struct SharedImage: Identifiable {
     labels = []
     posts = []
     assigneeId = ""
+    images.forEach { startUpload($0.id) }
   }
 
   // MARK: What was shared
@@ -125,17 +146,18 @@ struct SharedImage: Identifiable {
   /// Images and videos become attachments, a link or text becomes the description, a page's title the title.
   private func read(_ extensionItems: [NSExtensionItem]) async {
     var lines: [String] = []
+    var title = ""
     for item in extensionItems {
       let heading = firstLine(item.attributedTitle?.string) ?? firstLine(item.attributedContentText?.string)
       var gotLink = false
       for provider in item.attachments ?? [] {
         if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
-          if let file = try? await loadMovie(of: provider) { await addVideo(at: file) } else { error = String(localized: "Could not read that video.") }
+          if let file = try? await loadMovie(of: provider) { await addVideo(at: file, fresh: true) } else { error = String(localized: "Could not read that video.") }
         } else if let image = imageType(of: provider) {
-          if let data = try? await loadData(of: provider, type: image) { addImage(data: data) }
+          if let data = try? await loadData(of: provider, type: image) { addImage(data: data, fresh: true) }
         } else if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier), let url = try? await loadURL(of: provider) {
           if url.isFileURL {
-            if UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true, let data = try? Data(contentsOf: url) { addImage(data: data) }
+            if UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true, let data = try? Data(contentsOf: url) { addImage(data: data, fresh: true) }
           } else {
             gotLink = true
             lines.append(heading.map { "[\($0)](\(url.absoluteString))" } ?? url.absoluteString)
@@ -148,8 +170,12 @@ struct SharedImage: Identifiable {
       }
       if title.isEmpty, let heading, gotLink || !lines.isEmpty { title = String(heading.prefix(200)) }
     }
-    if details.isEmpty { details = lines.joined(separator: "\n\n") }
     if title.isEmpty, let first = lines.first.flatMap({ firstLine($0) }), !first.hasPrefix("http") { title = String(first.prefix(200)) }
+    sharedTitle = title
+    sharedDetails = lines.joined(separator: "\n\n")
+    // Into a restored draft, what was shared again is added, not doubled.
+    if self.title.isEmpty { self.title = sharedTitle }
+    if !sharedDetails.isEmpty, !details.contains(sharedDetails) { details = details.isEmpty ? sharedDetails : "\(details)\n\n\(sharedDetails)" }
   }
 
   private func firstLine(_ text: String?) -> String? {
@@ -209,8 +235,11 @@ struct SharedImage: Identifiable {
   // MARK: Images
 
   /// Keeps PNG, JPEG, GIF and WebP as they are; anything else (HEIC) or anything over 8 MB becomes a JPEG
-  /// that fits. A photo is decoded once, so a 48 MP picture stays inside the extension's memory.
-  func addImage(data: Data) {
+  /// that fits. A photo is decoded once, so a 48 MP picture stays inside the extension's memory. It is written to the
+  /// draft's folder and starts uploading. `fresh`: shared just now, so one already in a restored draft is skipped.
+  func addImage(data: Data, fresh: Bool = false) {
+    let fingerprint = Self.fingerprint(data.prefix(1 << 20), size: data.count)
+    if fresh, images.contains(where: { $0.saved.fingerprint == fingerprint }) { return }
     guard images.count < Self.maxImages else { error = String(localized: "An item takes up to 10 images and files."); return }
     guard let source = CGImageSourceCreateWithData(data as CFData, nil), let identifier = CGImageSourceGetType(source), let type = UTType(identifier as String) else {
       error = String(localized: "Could not read that image.")
@@ -227,28 +256,149 @@ struct SharedImage: Identifiable {
       ext = "jpg"
     }
     guard let preview = Self.thumbnail(from: source) else { error = String(localized: "Could not read that image."); return }
-    images.append(SharedImage(data: bytes, filename: "Image \(number).\(ext)", mime: mime, preview: preview))
+    let name = "\(UUID().uuidString.lowercased()).\(ext)"
+    do { try bytes.write(to: ShareDraft.files.appending(path: name), options: .atomic) } catch { self.error = error.localizedDescription; return }
+    add(SharedImage(saved: ShareDraft.File(name: name, filename: "Image \(number).\(ext)", mime: mime, fingerprint: fingerprint, uploadedTo: ""), preview: preview))
   }
 
-  /// Takes a video in a temporary file this model now owns (deleted when it is removed). Over 100 MB it is refused.
-  func addVideo(at file: URL) async {
+  /// Takes a video in a temporary file this model now owns: it moves into the draft's folder and starts uploading.
+  /// Over 100 MB it is refused. `fresh` as for an image.
+  func addVideo(at file: URL, fresh: Bool = false) async {
     func refuse(_ message: String) { error = message; try? FileManager.default.removeItem(at: file) }
-    guard images.count < Self.maxImages else { return refuse(String(localized: "An item takes up to 10 images and files.")) }
     let bytes = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+    let head = (try? FileHandle(forReadingFrom: file)).flatMap { handle in defer { try? handle.close() }; return try? handle.read(upToCount: 1 << 20) } ?? Data()
+    let fingerprint = Self.fingerprint(head, size: bytes)
+    if fresh, images.contains(where: { $0.saved.fingerprint == fingerprint }) { try? FileManager.default.removeItem(at: file); return }
+    guard images.count < Self.maxImages else { return refuse(String(localized: "An item takes up to 10 images and files.")) }
     guard bytes > 0, bytes <= Self.maxVideoBytes else { return refuse(bytes > 0 ? String(localized: "A video can be up to 100 MB.") : String(localized: "Could not read that video.")) }
-    let generator = AVAssetImageGenerator(asset: AVURLAsset(url: file))
-    generator.appliesPreferredTrackTransform = true
-    generator.maximumSize = CGSize(width: 480, height: 480)
-    guard let frame = try? await generator.image(at: .zero).image else { return refuse(String(localized: "Could not read that video.")) }
+    guard let frame = await Self.frame(of: file) else { return refuse(String(localized: "Could not read that video.")) }
     // The server takes .mov and .mp4; the Photos library's other containers are MPEG-4 as well.
     let mov = file.pathExtension.lowercased() == "mov"
     let number = images.count + 1
-    images.append(SharedImage(data: Data(), fileURL: file, filename: "Video \(number).\(mov ? "mov" : "mp4")", mime: mov ? "video/quicktime" : "video/mp4", preview: UIImage(cgImage: frame)))
+    let name = "\(UUID().uuidString.lowercased()).\(mov ? "mov" : "mp4")"
+    do { try FileManager.default.moveItem(at: file, to: ShareDraft.files.appending(path: name)) } catch { return refuse(error.localizedDescription) }
+    add(SharedImage(saved: ShareDraft.File(name: name, filename: "Video \(number).\(mov ? "mov" : "mp4")", mime: mov ? "video/quicktime" : "video/mp4", fingerprint: fingerprint, uploadedTo: ""), preview: UIImage(cgImage: frame)))
+  }
+
+  private func add(_ image: SharedImage) {
+    images.append(image)
+    saveDraft()
+    startUpload(image.id)
   }
 
   func removeImage(_ id: UUID) {
-    images.first { $0.id == id }?.fileURL.map { try? FileManager.default.removeItem(at: $0) }
+    uploads.removeValue(forKey: id)?.cancel()
+    uploading.remove(id)
+    images.first { $0.id == id }.map { try? FileManager.default.removeItem(at: $0.file) }
     images.removeAll { $0.id == id }
+    saveDraft()
+  }
+
+  /// A video's first frame, for its tile.
+  private static func frame(of file: URL) async -> CGImage? {
+    let generator = AVAssetImageGenerator(asset: AVURLAsset(url: file))
+    generator.appliesPreferredTrackTransform = true
+    generator.maximumSize = CGSize(width: 480, height: 480)
+    return try? await generator.image(at: .zero).image
+  }
+
+  /// The size and a hash of the first megabyte: enough to know the same picture or video shared twice.
+  private static func fingerprint(_ head: Data, size: Int) -> String {
+    "\(size)-" + SHA256.hash(data: head).prefix(12).map { String(format: "%02x", $0) }.joined()
+  }
+
+  // MARK: Uploading early
+
+  /// Uploads a file for the project picked now, while the rest of the form is filled in. With no server it waits:
+  /// sending puts it in the outbox like before. A file the server refuses says why at once, so it can be removed.
+  private func startUpload(_ id: UUID) {
+    guard phase == .ready, !offline, let client, !projectId.isEmpty, let image = images.first(where: { $0.id == id }), image.saved.uploadedTo != projectId else { return }
+    let project = projectId
+    uploads[id]?.cancel()
+    uploading.insert(id)
+    uploads[id] = Task {
+      var file: ShareAttachment?
+      do {
+        file = try await client.upload("/v1/feedback/attachments", query: ["project": project], fileURL: image.file, filename: image.filename, mimeType: image.mime)
+      } catch ShareError.server(let message) {
+        if !Task.isCancelled { error = "\(image.filename): \(message)" }
+      } catch {}
+      // Removed, or another project picked meanwhile: that run decides.
+      guard !Task.isCancelled else { return }
+      uploads[id] = nil
+      uploading.remove(id)
+      guard let file, project == projectId, let index = images.firstIndex(where: { $0.id == id }) else { return }
+      images[index].saved.uploaded = file
+      images[index].saved.uploadedTo = project
+      saveDraft()
+    }
+  }
+
+  // MARK: Draft
+
+  /// The form as it is now, as the draft keeps it.
+  var draft: ShareDraft {
+    ShareDraft(endpoint: SharedStore.endpoint, workspaceId: SharedStore.workspaceId, projectId: projectId, title: title, details: details,
+               status: status, priority: priority, assigneeId: assigneeId, targetDate: hasDate ? targetDate : nil, labels: labels, posts: posts,
+               isPublic: isPublic, publicDescription: publicDescription, files: images.map(\.saved))
+  }
+
+  /// Written as the form changes (the sheet calls it), until the item is sent.
+  func saveDraft() {
+    guard phase == .ready, !sent, !discarded else { return }
+    draft.save()
+  }
+
+  /// The form of a sheet closed without sending, with its files, before what was shared now is read.
+  private func restore() async {
+    guard let saved = ShareDraft.load(endpoint: SharedStore.endpoint, workspaceId: SharedStore.workspaceId) else {
+      ShareDraft.clear()
+      return
+    }
+    projectId = saved.projectId
+    title = saved.title
+    details = saved.details
+    status = saved.status
+    priority = saved.priority
+    assigneeId = saved.assigneeId
+    hasDate = saved.targetDate != nil
+    targetDate = saved.targetDate ?? Date()
+    labels = saved.labels
+    posts = saved.posts
+    isPublic = saved.isPublic
+    publicDescription = saved.publicDescription
+    for file in saved.files {
+      let url = ShareDraft.files.appending(path: file.name)
+      let preview: UIImage?
+      if file.mime.hasPrefix("video/") { preview = await Self.frame(of: url).map { UIImage(cgImage: $0) } }
+      else { preview = CGImageSourceCreateWithURL(url as CFURL, nil).flatMap { Self.thumbnail(from: $0) } }
+      if let preview { images.append(SharedImage(saved: file, preview: preview, restored: true)) }
+    }
+    restored = true
+  }
+
+  /// Drops what came back from the last sheet and keeps only what was shared now.
+  func startOver() {
+    for image in images where image.restored { removeImage(image.id) }
+    title = sharedTitle
+    details = sharedDetails
+    status = board?.defaultStatusKey ?? ""
+    priority = ""
+    assigneeId = ""
+    hasDate = false
+    labels = []
+    posts = []
+    isPublic = false
+    publicDescription = ""
+    restored = false
+    saveDraft()
+  }
+
+  /// Cancel with "Delete Draft": nothing is kept for next time.
+  func discard() {
+    uploads.values.forEach { $0.cancel() }
+    discarded = true
+    ShareDraft.clear()
   }
 
   private static func thumbnail(from source: CGImageSource) -> UIImage? {
@@ -393,6 +543,8 @@ struct SharedImage: Identifiable {
       await writeTitle()
       if title.trimmed.isEmpty { title = BoardTitle.fallback(details) }
     }
+    // Files still uploading finish first; the ones that could not go up wait in the outbox with the item.
+    for task in uploads.values { await task.value }
     var entry: PendingItem
     do {
       entry = try queue(in: project)
@@ -421,17 +573,21 @@ struct SharedImage: Identifiable {
       return false
     }
     sent = true
+    ShareDraft.clear()
     return true
   }
 
-  /// The item as the outbox keeps it: the fields of `POST /v1/admin/board-items`, with each image and video copied
-  /// into the outbox as a `local:` attachment.
+  /// The item as the outbox keeps it: the fields of `POST /v1/admin/board-items`, with each image and video already
+  /// uploaded as the server's attachment, and the rest copied into the outbox as a `local:` attachment.
   private func queue(in project: ShareProject) throws -> PendingItem {
     var attachments: [JSONValue] = []
     for image in images {
-      let ext = (image.filename as NSString).pathExtension
-      let url = try image.fileURL.map { try PlanningOutbox.keep(copying: $0, ext: ext) } ?? PlanningOutbox.keep(image.data, ext: ext)
-      let size = image.fileURL.flatMap { try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize } ?? image.data.count
+      if let file = image.saved.uploaded, image.saved.uploadedTo == project.id {
+        attachments.append(.object(["url": .string(file.url), "name": .string(file.name), "mime": .string(file.mime), "size": .number(Double(file.size))]))
+        continue
+      }
+      let url = try PlanningOutbox.keep(copying: image.file, ext: (image.filename as NSString).pathExtension)
+      let size = (try? image.file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
       attachments.append(.object(["url": .string(url), "name": .string(image.filename), "mime": .string(image.mime), "size": .number(Double(size))]))
     }
     var fields: [String: JSONValue] = [

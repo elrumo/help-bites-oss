@@ -1,9 +1,11 @@
 import { createError } from 'h3'
 import {
+  BOARD_DESCRIPTION_FILE,
   BOARD_LINKS_MAX,
   ROADMAP_CATEGORIES,
   kindCanHave,
   normalizeBoardConfig,
+  overflowedDescription,
   readBoardItemInput,
   readErrorRefs,
   toRoadmapItem,
@@ -19,7 +21,8 @@ import {
   type BoardRelatedItem,
   type RoadmapResponse
 } from '#shared/board'
-import { defaultFeedbackStatus, feedbackStatusCategory, parsePostRef, type FeedbackStatusCategory } from '#shared/feedback'
+import { defaultFeedbackStatus, FEEDBACK_BODY_MAX_LENGTH, feedbackStatusCategory, parsePostRef, type FeedbackStatusCategory } from '#shared/feedback'
+import { ITEM_ATTACHMENTS_MAX, type ItemAttachment } from '#shared/itemAttachments'
 import type { FeedbackContext } from './feedback'
 import { eachBatch } from './batches'
 import { emitDomainEventLater } from './domainEvents'
@@ -400,6 +403,24 @@ async function applyLink(project: ParseObject, row: ParseObject, target: LinkTar
   }
 }
 
+/**
+ * Reads a create or update body. A description over the limit (a pasted log, say) is kept rather than refused: the
+ * whole text is attached as description.txt and the field keeps its start and a note. The file is stored only once
+ * the rest of the body has passed, so a refused request stores nothing. `current` is the item's attachments.
+ */
+async function readItemBody(project: ParseObject, agent: ParseObject, payload: unknown, board: BoardConfig, options: { create: boolean }, current: ItemAttachment[]): Promise<BoardItemValues> {
+  const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>
+  const full = typeof raw.description === 'string' && raw.description.length > FEEDBACK_BODY_MAX_LENGTH ? raw.description : ''
+  const { values, errors } = readBoardItemInput(full ? { ...raw, description: overflowedDescription(full) } : raw, board, options)
+  const files = values.attachments ?? current
+  if (full && files.length >= ITEM_ATTACHMENTS_MAX) errors.push(`description is longer than ${FEEDBACK_BODY_MAX_LENGTH} characters, and the item has no room left to attach it as ${BOARD_DESCRIPTION_FILE}`)
+  if (errors.length) badRequest(errors)
+  assertOwnAttachments(project, values.attachments)
+  // The byte order mark keeps a text that starts with `#!` from reading as a script.
+  if (full) values.attachments = [...files, await storeItemFile({ filename: BOARD_DESCRIPTION_FILE, data: Buffer.from(`\uFEFF${full}`) }, project.id || '', `agent-${agent.id}`)]
+  return values
+}
+
 export async function createBoardItem(project: ParseObject, agent: ParseObject, payload: unknown, source: ClientSource = 'api'): Promise<ParseObject> {
   const board = getBoardConfig(project)
   const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>
@@ -412,9 +433,7 @@ export async function createBoardItem(project: ParseObject, agent: ParseObject, 
     const existing = await new Parse.Query('BoardItem').equalTo('project', project).equalTo('clientId', clientId).first(MASTER)
     if (existing) return existing as ParseObject
   }
-  const { values, errors } = readBoardItemInput(raw, board, { create: true })
-  if (errors.length) badRequest(errors)
-  assertOwnAttachments(project, values.attachments)
+  const values = await readItemBody(project, agent, raw, board, { create: true }, [])
   // Resolve the links first, so a bad one fails the request before anything is written.
   const targets: LinkTarget[] = []
   for (const id of readIdList(raw.feedbackPostIds, 'feedbackPostIds')) targets.push(await resolveLinkTarget(project, 'feedback', id))
@@ -460,9 +479,7 @@ export async function createBoardItem(project: ParseObject, agent: ParseObject, 
  */
 export async function updateBoardItem(project: ParseObject, agent: ParseObject, row: ParseObject, payload: unknown, source: ClientSource = 'api'): Promise<ParseObject> {
   const board = getBoardConfig(project)
-  const { values, errors } = readBoardItemInput(payload, board, { create: false })
-  if (errors.length) badRequest(errors)
-  assertOwnAttachments(project, values.attachments)
+  const values = await readItemBody(project, agent, payload, board, { create: false }, itemAttachments(row.get('attachments')))
   const before = historySnapshot(row)
   const from = String(row.get('status') || '')
   const kindBefore = kindOf(row)

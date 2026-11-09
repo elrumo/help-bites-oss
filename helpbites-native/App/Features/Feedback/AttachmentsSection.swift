@@ -58,6 +58,8 @@ struct AttachmentsSection: View {
   var imagesOnly = false
   /// A planning item not on the server yet: offline, files wait on the device with it.
   var keepOffline = false
+  /// How many files are uploading, for an editor whose Save waits for them.
+  var busy: Binding<Int>?
 
   @State private var photos: [PhotosPickerItem] = []
   @State private var importing = false
@@ -133,7 +135,8 @@ struct AttachmentsSection: View {
   private func upload(_ data: Data, filename: String) async {
     guard attachments.count < ItemAttachment.maxCount else { return }
     uploading += 1
-    defer { uploading -= 1 }
+    busy?.wrappedValue += 1
+    defer { uploading -= 1; busy?.wrappedValue -= 1 }
     error = ""
     do {
       let file = try await ItemAttachment.upload(data, filename: filename, session: session, projectId: projectId, keepOffline: keepOffline)

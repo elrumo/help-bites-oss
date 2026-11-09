@@ -218,6 +218,7 @@ Posts and Planning items can carry up to 10 images, files and videos. Upload eac
 - **Videos.** Attach an MP4 or MOV from the panel, the app, the iOS share sheet, the API or MCP like any file. To download one, read the item (`GET /v1/admin/board-items`, or `list_board_items` over MCP): its `attachments` entry has `mime: "video/mp4"` (or `video/quicktime`) and a `url` that serves the file as a download. Board item attachments are private: the roadmap shows only the public description.
 - **Large files over MCP.** An assistant can't push a full-size screenshot or a recording through a tool call as base64. `upload_board_comment_attachment` takes a public `url` instead (JSON `{ "url": "https://…", "filename": "…" }` on the route): HelpBites downloads it once (http(s) only, no redirects, private and metadata addresses refused, same size limits) and answers with the same attachment object. Host the file somewhere reachable first (a pre-signed link works).
 - **Paste and drop.** In the panel, paste an image anywhere while the editor is open, or drop files on the *Images and files* box, and they upload and attach. Changelog entries take images only. Native: the *Paste* button attaches the image on the clipboard, and so does pasting it into a Planning item's description (the text is left as it was; the image is saved with the item).
+- **Long descriptions.** A Planning item's `description` over 20,000 characters (a pasted log, say) is not refused on `POST` or `PATCH /v1/admin/board-items` (or `create_board_item` / `update_board_item` over MCP): the whole text is stored as a `description.txt` attachment (UTF-8, counted against storage) and the description keeps its first 2,000 or so characters, cut at a line, then a note naming the file. It needs a free attachment slot: an item that already has 10 gets `400`. The file is stored only once the rest of the request is valid. The response carries the shortened description and the new attachment; the panel shows them at once.
 - **Your own UI.** `attachments` is `[{ url, name, mime, size }]` on every post and item; `PATCH` with the list you want to keep removes the rest.
 
 ```bash
@@ -330,6 +331,16 @@ labels (type a new one to create it), images, feedback to attach, and whether it
 with its public description (the sparkles button beside it has the AI write it). The image you shared is attached and uploaded for you, and *Add images* picks more
 (up to 10). A shared link or text is put in the description, and a page's title in the title. The sheet starts on the
 project you used last. Only projects with Planning on are offered.
+
+- **Uploads start at once.** Each image and video starts uploading the moment it is added (a small spinner sits on its
+  tile), while you fill in the rest; sending then only waits for any still going and creates the item. Picking another
+  project uploads them again for it, since an item takes only its own project's files. With no server they wait and go
+  in the outbox with the item, as before. The app's *New item* works the same way: files upload as you add them, and
+  *Create* waits for any still uploading.
+- **Nothing lost on close.** The sheet keeps what you typed and attached on the device (in the App Group) as you go.
+  Closed without sending, by a swipe or by Cancel and *Save Draft*, it opens with all of it the next time, with what
+  you shared then added (the same picture or text is not added twice) and a *Start over* button that keeps only the new
+  share. Cancel and *Delete Draft* forgets it; sending forgets it too. Tap a tile to see it full screen.
 
 It is a native entry point to the same API, with nothing of its own to call: `GET /v1/admin/projects` (each
 project's board, statuses and labels), `GET /v1/admin/agents`, `GET /v1/feedback`, `POST /v1/feedback/attachments`

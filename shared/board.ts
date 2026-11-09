@@ -349,6 +349,25 @@ export type BoardItemValues = Partial<{
   public: boolean
 }>
 
+/** A description over FEEDBACK_BODY_MAX_LENGTH is attached whole under this name instead of being refused. */
+export const BOARD_DESCRIPTION_FILE = 'description.txt'
+/** How much of such a description stays in the field. */
+const OVERFLOW_EXCERPT = 2000
+
+/**
+ * What stays in a description whose whole text went into an attached description.txt: its start, cut at a line
+ * where one is near, and a note saying where the rest is.
+ */
+export function overflowedDescription(text: string): string {
+  let head = text.slice(0, OVERFLOW_EXCERPT)
+  const line = head.lastIndexOf('\n')
+  if (head.length < text.length && line > OVERFLOW_EXCERPT / 2) head = head.slice(0, line)
+  head = head.trimEnd()
+  // A code block cut open would swallow the note.
+  if ((head.match(/^\s*```/gm) || []).length % 2) head += '\n```'
+  return `${head}\n\n…\n\n_The full description (${text.length.toLocaleString('en')} characters) is attached as ${BOARD_DESCRIPTION_FILE}._`
+}
+
 function longText(raw: unknown, label: string, errors: string[]): string | undefined {
   if (raw === null) return ''
   if (typeof raw !== 'string') { errors.push(`${label} must be a string`); return undefined }

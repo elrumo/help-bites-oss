@@ -343,7 +343,12 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   [FEEDBACK.md](FEEDBACK.md#the-api)
 - **Add to Planning from the share sheet** (iPhone and iPad). Share a screenshot, photo, link or text from any
   app and file it as an item: a sheet with every field of *New item*, the shared image attached and uploaded, more
-  images on request. [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)
+  images on request. Images and videos start uploading as soon as they are added, so sending only creates the item.
+  A sheet closed without sending (a swipe, Cancel with *Save Draft*) opens with its text and files the next time,
+  with *Start over* to keep only what was just shared. [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)
+- **Long descriptions.** A description over 20,000 characters (a pasted log) is not refused: the whole text is attached
+  to the item as `description.txt` and the description keeps its start and a note. Panel, app, share sheet, API and MCP.
+  [FEEDBACK.md](FEEDBACK.md#images-files-and-videos)
 - **Planning offline** (native app). Every board opens without a connection as it was last loaded. New items, from the
   app or the share sheet, with their images and videos, wait on the device marked *Waiting to upload* and go up by
   themselves once the server can be reached; none is lost to a dropped connection or a closed app, and a retried upload
@@ -887,9 +892,8 @@ it is not part of this repository; a self-hosted server's `/` goes straight to t
 
 - **Read-only keys on native.** The native app lists API keys with their read-only state but cannot create a read-only
   key or switch one; Settings → API keys and the assistant approval page on the web do. The API takes `readOnly`.
-- **Planning on native.** Statuses and labels are reordered with arrow buttons (the web panel drags them), a new
-  item's unsaved draft is not kept when its sheet closes (the web panel keeps it), and the editor saves with its Save
-  button (Cmd and Return on a keyboard) instead of as you go.
+- **Planning on native.** Statuses and labels are reordered with arrow buttons (the web panel drags them), and the
+  editor saves with its Save button (Cmd and Return on a keyboard) instead of as you go.
 - **Share sheet.** *Add to Planning* is an iPhone and iPad share extension only: the Mac app has none, and the web
   panel has no equivalent (a browser has no share sheet; use *New item* or the API).
   [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)

@@ -62,14 +62,14 @@ struct ShareAgent: Decodable, Identifiable {
   var displayName: String { (name ?? "").isEmpty ? username : name ?? username }
 }
 
-struct SharePost: Decodable, Identifiable {
+struct SharePost: Codable, Identifiable, Equatable {
   let id, title: String
   let number: Int?
   let voteCount: Int?
 }
 
 /// An upload's answer, and what an item stores (shared/itemAttachments.ts).
-struct ShareAttachment: Codable {
+struct ShareAttachment: Codable, Equatable {
   let url, name, mime: String
   let size: Int
 }
