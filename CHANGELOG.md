@@ -5,6 +5,8 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 ## Unreleased
 
+- **AI public descriptions offline** (native, the iOS share sheet): with no server, the public description's AI button has Apple Intelligence on the device write it, by the same rules as the server (iOS and macOS 26 or later with Apple Intelligence on). The rules now ask for a rewrite using only facts the description states, which keeps the smaller on-device model from inventing features. No API, schema or env change.
+
 ## 0.3.1 — 2026-11-09
 
 - **AI public descriptions for planning items** (web, native, the iOS share sheet, API, MCP): a sparkles button on an item's public description has the AI write the roadmap's text from its title and internal description, for your users, leaving out brand and product names, comparisons to other products ("like X does") and internal details. New `POST /v1/admin/board-items/suggest-public-description` and MCP tool `suggest_board_item_public_description` (`docs/FEEDBACK.md`). Needs an AI provider; no schema or env change.

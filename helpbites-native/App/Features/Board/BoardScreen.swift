@@ -422,12 +422,19 @@ struct BoardScreen: View {
     }
   }
 
-  /// The AI writes the public roadmap's text from the title and internal description; nothing is saved. Needs the server.
+  /// The AI writes the public roadmap's text from the title and internal description; nothing is saved. Out of reach
+  /// of the server, Apple Intelligence on this device writes it instead, where there is one.
   func suggestPublicDescription(title: String, description: String) async throws -> String {
     struct Body: Encodable, Sendable { let title: String; let description: String }
     struct Reply: Decodable, Sendable { let publicDescription: String }
-    let reply: Reply = try await session.send("/v1/admin/board-items/suggest-public-description?project=\(projectId)", body: Body(title: title, description: description))
-    return reply.publicDescription
+    do {
+      if Connectivity.shared.offline { throw APIError.transport(URLError(.notConnectedToInternet)) }
+      let reply: Reply = try await session.send("/v1/admin/board-items/suggest-public-description?project=\(projectId)", body: Body(title: title, description: description))
+      return reply.publicDescription
+    } catch APIError.transport {
+      if let text = await BoardTitle.publicOnDevice(title: title, description: description) { return text }
+      throw APIError.server(String(localized: "The server can't be reached, and Apple Intelligence isn't available on this device to write the public description."))
+    }
   }
 
   /// Send only what changed; `.null` clears a value. A waiting card's change goes into what will be uploaded.

@@ -373,6 +373,9 @@ The iPhone, iPad and Mac app keep working without a connection, or when your ser
 - **Titles.** With no server, a new item's title is written by Apple Intelligence on the device (iOS and macOS 26 or
   later, on a device that has it turned on), with the same rules as the server's AI. Without it, the description's first
   line stands in, as when the server has no AI.
+- **Public descriptions.** The AI button on the public description works offline the same way: Apple Intelligence on
+  the device writes it from the title and description, by the server's rules (`BOARD_PUBLIC_RULES`). The on-device model
+  is smaller, so read what it writes; without it, the button says so and the field is left as it was.
 
 Editing an existing item still needs the server. The web panel has no offline mode.
 

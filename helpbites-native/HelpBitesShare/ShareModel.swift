@@ -508,7 +508,7 @@ struct SharedImage: Identifiable {
   // MARK: Public description
 
   /// The AI button on the public description: writes what the roadmap shows from the title and description, replacing
-  /// it. Needs the server (no on-device fallback, unlike the title).
+  /// it. Offline, Apple Intelligence on this device writes it, as it does the title.
   func writePublicDescription() async {
     let description = details.trimmed
     guard !description.isEmpty, let client, !projectId.isEmpty else { return }
@@ -518,15 +518,19 @@ struct SharedImage: Identifiable {
     let run = publicRun
     writingPublic = true
     defer { if run == publicRun { writingPublic = false } }
+    var written: String?
     do {
       if offline { throw URLError(.notConnectedToInternet) }
       let reply: Reply = try await client.send("/v1/admin/board-items/suggest-public-description", query: ["project": projectId], body: Body(title: title, description: description))
-      if run == publicRun { publicDescription = reply.publicDescription }
+      written = reply.publicDescription
     } catch is URLError {
-      if run == publicRun { self.error = String(localized: "The server can't be reached to write the public description.") }
+      offline = true
+      written = await BoardTitle.publicOnDevice(title: title, description: description)
+      if written == nil, run == publicRun { self.error = String(localized: "The server can't be reached, and Apple Intelligence isn't available on this device to write the public description.") }
     } catch {
       if run == publicRun { self.error = error.localizedDescription }
     }
+    if let written, run == publicRun { publicDescription = written }
   }
 
   // MARK: Send

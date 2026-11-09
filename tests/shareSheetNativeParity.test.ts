@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROADMAP_CATEGORIES } from '../shared/board'
-import { BOARD_TITLE_DEBOUNCE_MS, BOARD_TITLE_INPUT_MAX, BOARD_TITLE_MAX, BOARD_TITLE_RULES, fallbackBoardTitle } from '../shared/boardTitle'
+import { BOARD_PUBLIC_MAX, BOARD_PUBLIC_RULES, BOARD_TITLE_DEBOUNCE_MS, BOARD_TITLE_INPUT_MAX, BOARD_TITLE_MAX, BOARD_TITLE_RULES, boardPublicPrompt, fallbackBoardTitle } from '../shared/boardTitle'
 import { ITEM_ATTACHMENTS_MAX } from '../shared/itemAttachments'
 import { ATTACHMENT_MAX_BYTES, CONVERSATION_PRIORITIES } from '../shared/support'
 
@@ -64,10 +64,32 @@ test('Apple Intelligence on the device writes titles by the server\'s rules', ()
   expect(swift).toContain(`static let inputMax = ${BOARD_TITLE_INPUT_MAX}`)
 })
 
+test('Apple Intelligence on the device writes public descriptions by the server\'s rules and prompt', () => {
+  const swift = read('App/Core/BoardTitle.swift')
+  for (const rule of BOARD_PUBLIC_RULES) expect(swift).toContain(JSON.stringify(rule))
+  expect(swift).toContain(`static let publicMax = ${BOARD_PUBLIC_MAX}`)
+  // The prompt's shape: "Title: …\nDescription:\n…", as boardPublicPrompt writes it.
+  expect(boardPublicPrompt('T', 'D')).toBe('Title: T\nDescription:\nD')
+  expect(swift).toContain('"Title: \\(title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maxLength))\\nDescription:\\n"')
+})
+
 test('the share sheet compiles the offline outbox and response cache the app reads', () => {
   const project = read('HelpBitesNative.xcodeproj/project.pbxproj')
   for (const file of ['JSONValue.swift', 'PlanningOutbox.swift', 'ResponseCache.swift']) {
     expect(read('project.yml')).toContain(`App/Core/${file}`)
     expect(project.match(new RegExp(`${file.replace('.', '\\.')} in Sources`, 'g'))?.length).toBe(4)
+  }
+})
+
+test('the public description AI strings are in both string catalogs, translated', () => {
+  const sources = { 'App/Localizable.xcstrings': ['App/Features/Board/BoardItemEditor.swift', 'App/Features/Board/BoardScreen.swift'], 'HelpBitesShare/Localizable.xcstrings': ['HelpBitesShare/ShareView.swift', 'HelpBitesShare/ShareModel.swift'] }
+  const keys = ['Write the public description with AI', 'Writing the public description…', 'The server can\'t be reached, and Apple Intelligence isn\'t available on this device to write the public description.']
+  for (const [catalog, files] of Object.entries(sources)) {
+    const strings = JSON.parse(read(catalog)).strings
+    const code = files.map(read).join('\n')
+    for (const key of keys) {
+      expect(code, `${key} is no longer in ${files.join(', ')}`).toContain(`"${key}"`)
+      for (const locale of ['ca', 'es', 'ja', 'ko', 'zh-Hans']) expect(strings[key]?.localizations?.[locale]?.stringUnit?.value, `${catalog}: "${key}" has no ${locale}`).toBeTruthy()
+    }
   }
 })
