@@ -120,6 +120,7 @@ describe('buildRequest', () => {
     expect(buildRequest(tool('list_board_items'), { project: 'p1', feedbackPost: '#12' })).toMatchObject({ url: '/v1/admin/board-items?project=p1&feedbackPost=%2312&limit=50' })
     expect(buildRequest(tool('list_board_item_history'), { id: 'b1', project: 'p1', limit: 20 })).toEqual({ method: 'GET', url: '/v1/admin/board-items/b1/history?project=p1&limit=20' })
     expect(buildRequest(tool('suggest_board_item_title'), { project: 'p1', description: 'Export contacts' })).toEqual({ method: 'POST', url: '/v1/admin/board-items/suggest-title?project=p1', body: { description: 'Export contacts' } })
+    expect(buildRequest(tool('suggest_board_item_public_description'), { project: 'p1', title: 'Virtual copies', description: 'Like Lightroom' })).toEqual({ method: 'POST', url: '/v1/admin/board-items/suggest-public-description?project=p1', body: { title: 'Virtual copies', description: 'Like Lightroom' } })
     expect(tool('delete_board_item').destructive).toBe(true)
   })
 

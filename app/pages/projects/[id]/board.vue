@@ -290,7 +290,14 @@
             <USwitch v-model="draft.public" :label="$t('board.onPublicRoadmap')" :description="$t('board.onPublicRoadmapDescription')" @update:model-value="patch({ public: draft.public })" />
             <template v-if="draft.public">
               <UFormField :label="$t('board.publicDescription')" :hint="$t('board.publicDescriptionHint')">
-                <UTextarea v-model="draft.publicDescription" :rows="2" autoresize :maxrows="10" class="w-full" :placeholder="$t('board.publicDescriptionPlaceholder')" @blur="saveText('publicDescription')" />
+                <UTextarea v-model="draft.publicDescription" :rows="2" autoresize :maxrows="10" class="w-full" :placeholder="$t('board.publicDescriptionPlaceholder')" @blur="saveText('publicDescription')">
+                  <template v-if="draft.description.trim()" #trailing>
+                    <UIcon v-if="writingPublic" name="i-lucide-loader-circle" class="mt-1 size-4 animate-spin text-muted" :aria-label="$t('board.publicDescriptionWriting')" />
+                    <UTooltip v-else :text="$t('board.publicDescriptionWriteAi')">
+                      <UButton icon="i-lucide-sparkles" color="neutral" variant="ghost" size="xs" :aria-label="$t('board.publicDescriptionWriteAi')" @click="writePublicDescription" />
+                    </UTooltip>
+                  </template>
+                </UTextarea>
               </UFormField>
               <p v-if="!roadmapReady" class="text-xs text-warning">{{ $t('board.roadmapNeedsFeedback') }}</p>
               <p v-else-if="!roadmapStatus" class="text-xs text-muted">{{ $t('board.notOnRoadmap', { status: statusOf(draft.status)?.label || $t('board.thisStatus') }) }}</p>
@@ -1030,6 +1037,8 @@ const savedItem = ref(false)
 const writingTitle = ref(false)
 /** Which title request counts: a newer one, or closing the editor, makes an older answer stale. */
 let titleRun = 0
+const writingPublic = ref(false)
+let publicRun = 0
 const confirmDelete = ref(false)
 const linking = ref(false)
 const itemHistory = ref<BoardItemHistory[]>([])
@@ -1117,6 +1126,8 @@ function openItem(itemId: string) {
 function openNew() {
   titleRun++
   writingTitle.value = false
+  publicRun++
+  writingPublic.value = false
   editingId.value = ''
   const snapshot = saved.read()
   fill(null)
@@ -1149,6 +1160,8 @@ watch(editorOpen, (open) => {
   flushText()
   titleRun++
   writingTitle.value = false
+  publicRun++
+  writingPublic.value = false
   editingId.value = ''
   if (route.query.item) void router.replace({ query: { ...route.query, item: undefined } })
 })
@@ -1284,6 +1297,25 @@ async function writeTitle({ manual = false } = {}) {
     if (manual && run === titleRun) editorError.value = e?.message || t('board.titleWriteError')
   } finally {
     if (run === titleRun) writingTitle.value = false
+  }
+}
+
+/** The AI button on the public description: writes the roadmap's text from the title and internal description, replacing it. */
+async function writePublicDescription() {
+  const description = draft.description.trim()
+  if (!description) return
+  const run = ++publicRun
+  writingPublic.value = true
+  editorError.value = ''
+  try {
+    const { publicDescription } = await api<{ publicDescription: string }>('/admin/board-items/suggest-public-description', { method: 'POST', query: { project: id }, body: { title: draft.title, description } })
+    if (run !== publicRun) return
+    draft.publicDescription = publicDescription
+    if (current.value) saveText('publicDescription')
+  } catch (e: any) {
+    if (run === publicRun) editorError.value = e?.message || t('board.publicDescriptionWriteError')
+  } finally {
+    if (run === publicRun) writingPublic.value = false
   }
 }
 

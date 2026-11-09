@@ -30,6 +30,8 @@ struct BoardItemEditor: View {
   @State private var writingTitle = false
   /// Which title request counts: a newer one makes an older answer stale.
   @State private var titleRun = 0
+  @State private var writingPublic = false
+  @State private var publicRun = 0
   @State private var linking = false
   @State private var confirmDelete = false
   @State private var error = ""
@@ -275,6 +277,21 @@ struct BoardItemEditor: View {
     }
   }
 
+  /// The same for the public description: the AI writes it from the title and internal description.
+  @ViewBuilder private var publicAccessory: some View {
+    if !draft.description.trimmed.isEmpty {
+      if writingPublic {
+        ProgressView().controlSize(.small).frame(width: 32, height: 32).accessibilityLabel("Writing the public description…")
+      } else {
+        Button { Task { await writePublicDescription() } } label: {
+          Image(systemName: "sparkles").font(.app(size: 13, weight: .medium)).foregroundStyle(Theme.accentText).frame(width: 32, height: 32).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Write the public description with AI")
+      }
+    }
+  }
+
   @ViewBuilder private func pickers(_ config: BoardConfig) -> some View {
     LabeledField(label: "Status") {
       FeedbackSelect(options: config.statuses.map { FeedbackOption(value: $0.key, label: $0.label, color: $0.color) }, selection: $draft.status)
@@ -400,6 +417,7 @@ struct BoardItemEditor: View {
       if draft.isPublic {
         LabeledField(label: "Public description", hint: "Markdown. What the roadmap shows; never the internal description.") {
           LinearTextEditor(text: $draft.publicDescription, placeholder: "What this means for your users", minHeight: 72)
+            .overlay(alignment: .topTrailing) { publicAccessory }
         }
         if !store.roadmapReady {
           Text("The public roadmap is published through public feedback: turn it on, with its Roadmap view, under Feedback → Settings.")
@@ -997,6 +1015,23 @@ struct BoardItemEditor: View {
       draft.title = String(title.prefix(BoardTitle.maxLength))
     } catch {
       if manual, run == titleRun { self.error = error.localizedDescription }
+    }
+  }
+
+  /// The AI button on the public description: replaces it, and says why when it fails.
+  private func writePublicDescription() async {
+    let description = draft.description.trimmed
+    guard !description.isEmpty else { return }
+    publicRun += 1
+    let run = publicRun
+    writingPublic = true
+    defer { if run == publicRun { writingPublic = false } }
+    do {
+      let text = try await store.suggestPublicDescription(title: draft.title, description: description)
+      guard run == publicRun else { return }
+      draft.publicDescription = text
+    } catch {
+      if run == publicRun { self.error = error.localizedDescription }
     }
   }
 

@@ -46,6 +46,7 @@ struct SharedImage: Identifiable {
   var sending = false
   var sent = false
   var writingTitle = false
+  var writingPublic = false
   /// The server could not be reached: the boards are the ones last loaded, and the item will wait on the device.
   var offline = false
   /// Sent to the outbox rather than the server; the app uploads it once it is back online (or signed in again).
@@ -61,6 +62,7 @@ struct SharedImage: Identifiable {
   private var client: ShareClient?
   /// Which title request counts: a newer one makes an older answer stale.
   private var titleRun = 0
+  private var publicRun = 0
 
   var project: ShareProject? { projects.first { $0.id == projectId } }
   var board: ShareBoard? { project?.board }
@@ -351,6 +353,30 @@ struct SharedImage: Identifiable {
     try? await Task.sleep(for: .seconds(BoardTitle.debounce))
     guard !Task.isCancelled else { return }
     await writeTitle()
+  }
+
+  // MARK: Public description
+
+  /// The AI button on the public description: writes what the roadmap shows from the title and description, replacing
+  /// it. Needs the server (no on-device fallback, unlike the title).
+  func writePublicDescription() async {
+    let description = details.trimmed
+    guard !description.isEmpty, let client, !projectId.isEmpty else { return }
+    struct Body: Encodable { let title: String; let description: String }
+    struct Reply: Decodable { let publicDescription: String }
+    publicRun += 1
+    let run = publicRun
+    writingPublic = true
+    defer { if run == publicRun { writingPublic = false } }
+    do {
+      if offline { throw URLError(.notConnectedToInternet) }
+      let reply: Reply = try await client.send("/v1/admin/board-items/suggest-public-description", query: ["project": projectId], body: Body(title: title, description: description))
+      if run == publicRun { publicDescription = reply.publicDescription }
+    } catch is URLError {
+      if run == publicRun { self.error = String(localized: "The server can't be reached to write the public description.") }
+    } catch {
+      if run == publicRun { self.error = error.localizedDescription }
+    }
   }
 
   // MARK: Send

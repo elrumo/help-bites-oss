@@ -327,14 +327,15 @@ On iPhone and iPad, the app adds **Add to Planning** to the system share sheet. 
 (from Photos, the screenshot editor, Files or any app), a web page or some text, and a sheet opens with the
 same fields as *New item*: project, title, internal description, status, priority, assignee, target date,
 labels (type a new one to create it), images, feedback to attach, and whether it goes on the public roadmap
-with its public description. The image you shared is attached and uploaded for you, and *Add images* picks more
+with its public description (the sparkles button beside it has the AI write it). The image you shared is attached and uploaded for you, and *Add images* picks more
 (up to 10). A shared link or text is put in the description, and a page's title in the title. The sheet starts on the
 project you used last. Only projects with Planning on are offered.
 
 It is a native entry point to the same API, with nothing of its own to call: `GET /v1/admin/projects` (each
 project's board, statuses and labels), `GET /v1/admin/agents`, `GET /v1/feedback`, `POST /v1/feedback/attachments`
 (one call per image; HEIC and anything over 8 MB is sent as a JPEG that fits), `PATCH /v1/admin/projects/:id` (a new
-label) and `POST /v1/admin/board-items`. It signs in with the app's session, which the app shares with the sheet through
+label), the two AI buttons' `POST /v1/admin/board-items/suggest-title` and `…/suggest-public-description`, and
+`POST /v1/admin/board-items`. It signs in with the app's session, which the app shares with the sheet through
 an App Group (`group.com.helpbites.operator`): sign in to the app once, and enable the **App Groups** capability on both
 targets when you build it yourself. The web panel has no equivalent, since a browser has no share sheet; the panel's
 *New item* and the API cover the same ground.
@@ -442,6 +443,21 @@ done status. From then on Planning's public items are the roadmap.
 title (the first line of the description stands in when no AI is configured, so creating never stalls), a second after you
 stop typing the description of a new item, and from the sparkles button in the title field (which also replaces a title). `501` with no AI
 provider, `502` when the AI gives no usable answer, `429` past 30 a minute per project. Metered like every AI call.
+
+`POST /v1/admin/board-items/suggest-public-description?project=<id>` with `{ "title": "…", "description": "…" }` has the
+AI write what the public roadmap shows for an item and returns `{ publicDescription }`: one to three plain sentences, in
+the description's language, on what the product's users will be able to do. It leaves out brand, product and company
+names (the product's own included), comparisons to other products ("like X does", "make it more like X's feature") and
+internal details (people, customers, code, links, ticket numbers, dates). Nothing is saved: send it as
+`publicDescription`. It is the sparkles button on the public description in the panel, the app and the iOS share sheet
+(which replaces the text). Same errors as `suggest-title`, and the two share its 30 a minute per project. MCP:
+`suggest_board_item_public_description`.
+
+```sh
+curl -X POST -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{"title":"Virtual copies","description":"Let users make virtual copies of photos, stacked like Lightroom does"}' \
+  "https://YOUR-SUPPORT-HOST/v1/admin/board-items/suggest-public-description?project=PROJECT_ID"
+```
 
 `POST /v1/admin/board-items/from-feedback?project=<id>` with `{ "postId": "#12", "ai": true }` files items
 for a post and links it to each: `{ item, items, ai }` (`item` is the first; `ai` says whether the AI wrote

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { BOARD_TITLE_INPUT_MAX, BOARD_TITLE_MAX, boardTitlePrompt, fallbackBoardTitle, readBoardTitle } from '../shared/boardTitle'
+import { BOARD_PUBLIC_MAX, BOARD_TITLE_INPUT_MAX, BOARD_TITLE_MAX, boardPublicPrompt, boardTitlePrompt, fallbackBoardTitle, readBoardPublicDescription, readBoardTitle } from '../shared/boardTitle'
 
 describe('readBoardTitle', () => {
   test('reads a fenced reply on one line, without quotes, trimmed to the limit', () => {
@@ -32,5 +32,18 @@ describe('fallbackBoardTitle', () => {
   })
   test('is empty for an empty description', () => {
     expect(fallbackBoardTitle('  \n ')).toBe('')
+  })
+})
+
+describe('the public description', () => {
+  test('keeps its line breaks, trimmed to the limit', () => {
+    expect(readBoardPublicDescription(`\`\`\`json\n${JSON.stringify({ publicDescription: '  Make virtual copies.\n\n- Stacked together  ' })}\n\`\`\``)).toBe('Make virtual copies.\n\n- Stacked together')
+    expect(readBoardPublicDescription(JSON.stringify({ publicDescription: 'x'.repeat(5000) }))!.length).toBe(BOARD_PUBLIC_MAX)
+    expect(readBoardPublicDescription('{"publicDescription":" "}')).toBeNull()
+    expect(readBoardPublicDescription('{"title":"x"}')).toBeNull()
+  })
+  test('sends the title and the description, cut to the input limit', () => {
+    expect(boardPublicPrompt(' Copies ', ' Like Lightroom ')).toBe('Title: Copies\nDescription:\nLike Lightroom')
+    expect(boardPublicPrompt('', 'y'.repeat(BOARD_TITLE_INPUT_MAX + 50)).endsWith('y'.repeat(BOARD_TITLE_INPUT_MAX))).toBe(true)
   })
 })

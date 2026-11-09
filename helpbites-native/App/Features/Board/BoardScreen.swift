@@ -422,6 +422,14 @@ struct BoardScreen: View {
     }
   }
 
+  /// The AI writes the public roadmap's text from the title and internal description; nothing is saved. Needs the server.
+  func suggestPublicDescription(title: String, description: String) async throws -> String {
+    struct Body: Encodable, Sendable { let title: String; let description: String }
+    struct Reply: Decodable, Sendable { let publicDescription: String }
+    let reply: Reply = try await session.send("/v1/admin/board-items/suggest-public-description?project=\(projectId)", body: Body(title: title, description: description))
+    return reply.publicDescription
+  }
+
   /// Send only what changed; `.null` clears a value. A waiting card's change goes into what will be uploaded.
   func update(_ itemId: String, _ fields: [String: JSONValue]) async throws -> BoardItem {
     var id = itemId

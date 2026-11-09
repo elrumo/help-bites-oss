@@ -337,6 +337,10 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   typing, or when you press Create. A sparkles button in the title field writes (or rewrites) it on demand, with a spinner
   in the field while it works. Panel, native app and the iOS share sheet.
   [FEEDBACK.md](FEEDBACK.md#the-api)
+- **AI public descriptions.** A sparkles button on an item's public description has the AI write the roadmap's text from
+  the title and internal description, for your users: brand names, comparisons to other products ("like X does") and
+  internal details left out. Panel, native app and the iOS share sheet, which also puts an item on the roadmap.
+  [FEEDBACK.md](FEEDBACK.md#the-api)
 - **Add to Planning from the share sheet** (iPhone and iPad). Share a screenshot, photo, link or text from any
   app and file it as an item: a sheet with every field of *New item*, the shared image attached and uploaded, more
   images on request. [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)

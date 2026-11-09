@@ -308,6 +308,15 @@ export const MCP_TOOLS: readonly McpTool[] = [
     }
   },
   {
+    name: 'suggest_board_item_public_description', title: 'Write a board item\'s public description with AI', method: 'POST', path: '/v1/admin/board-items/suggest-public-description',
+    description: 'Has the workspace\'s AI write what the public roadmap shows for an item, for the product\'s users and in the same language, from its internal title and description: brand and product names, comparisons to other products and internal details are left out. Saves nothing: pass the text as `publicDescription` to update_board_item or create_board_item. Needs an AI provider; can take several seconds.',
+    params: {
+      project: { ...projectId, in: 'query' },
+      title: { type: 'string', description: 'The item\'s title.' },
+      description: { type: 'string', required: true, description: 'The item\'s internal description (the first 4,000 characters are read).' }
+    }
+  },
+  {
     name: 'upload_board_comment_attachment', title: 'Upload a planning attachment', method: 'POST', path: '/v1/feedback/attachments',
     description: 'Uploads one image, file or MP4/MOV video for a planning comment or item (screenshots, screen recordings, logs, documents) and returns its attachment object and download URL. Send either `url`, a public http(s) address HelpBites downloads (no redirects: use the final address; the way to send anything large, such as full-size screenshots or recordings), or the bytes as `contentBase64` with `filename`. Then pass the returned object in the `attachments` of comment_on_board_item, create_board_item or update_board_item.',
     params: {
@@ -2856,7 +2865,7 @@ export type McpRequest = { method: McpTool['method'], url: string, body?: Record
 export const RESERVED_PATH_WORDS = new Set([
   'alerts', 'analyses', 'analyze', 'attachments', 'batch', 'bulk', 'comments', 'config', 'connect', 'deliveries', 'events', 'export',
   'from-feedback', 'import', 'links', 'merge', 'preferences', 'preview', 'providers', 'render', 'reports', 'roadmap', 'schedule', 'send',
-  'servers', 'starters', 'stats', 'subscribe', 'subscription', 'suggest-merges', 'suggest-title', 'test', 'upload'
+  'servers', 'starters', 'stats', 'subscribe', 'subscription', 'suggest-merges', 'suggest-public-description', 'suggest-title', 'test', 'upload'
 ])
 
 /** What may stand in a URL path: ids, slugs and keys are letters, digits, dashes and underscores, and never a word that names a sibling route. */

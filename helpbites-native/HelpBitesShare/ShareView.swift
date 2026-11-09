@@ -343,9 +343,10 @@ struct ShareView: View {
           if model.publicDescription.isEmpty {
             Text("What this means for your users").foregroundStyle(.tertiary).padding(.horizontal, 5).padding(.top, 8).allowsHitTesting(false)
           }
-          TextEditor(text: $model.publicDescription).scrollContentBackground(.hidden).frame(minHeight: 90)
+          TextEditor(text: $model.publicDescription).scrollContentBackground(.hidden).frame(minHeight: 90).padding(.trailing, 28)
         }
         .padding(8)
+        .overlay(alignment: .topTrailing) { publicAccessory.padding(4) }
         .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         if model.project?.roadmapReady != true {
           Text("The public roadmap is published through public feedback: turn it on, with its Roadmap view, under Feedback → Settings.")
@@ -357,6 +358,21 @@ struct ShareView: View {
       }
     }
     .shareCard()
+  }
+
+  /// The same for the public description: the AI writes it from the title and description.
+  @ViewBuilder private var publicAccessory: some View {
+    if !model.details.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      if model.writingPublic {
+        ProgressView().frame(width: 32, height: 32).accessibilityLabel("Writing the public description…")
+      } else {
+        Button { Task { await model.writePublicDescription() } } label: {
+          Image(systemName: "sparkles").font(.title3).foregroundStyle(Self.accent).frame(width: 32, height: 32).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Write the public description with AI")
+      }
+    }
   }
 
   private static func priorityName(_ priority: String) -> String {
