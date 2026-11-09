@@ -5,6 +5,8 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 ## Unreleased
 
+## 0.3.1 — 2026-11-09
+
 - **AI public descriptions for planning items** (web, native, the iOS share sheet, API, MCP): a sparkles button on an item's public description has the AI write the roadmap's text from its title and internal description, for your users, leaving out brand and product names, comparisons to other products ("like X does") and internal details. New `POST /v1/admin/board-items/suggest-public-description` and MCP tool `suggest_board_item_public_description` (`docs/FEEDBACK.md`). Needs an AI provider; no schema or env change.
 
 - **Long planning descriptions are kept** (web, native, the iOS share sheet, API, MCP): a board item `description` over 20,000 characters is no longer refused on create or edit; the whole text is attached as `description.txt` (counted against storage) and the field keeps its start and a note. An item that already has 10 attachments still gets `400`. No schema or env change.
