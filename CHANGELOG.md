@@ -5,6 +5,12 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 ## Unreleased
 
+## 0.3.2 — 2026-11-11
+
+- **Merge planning items** (web, native, API, MCP): *Merge into…* in an item's editor, `POST /v1/admin/board-items/:id/merge` and the MCP tool `merge_board_item` fold a duplicate card or epic into another of the same kind. Its posts, conversations, labels and attachments (and an epic's cards) move to the target; the source is related, unpublished and closed, never deleted. No schema or env change.
+
+- **Upload files as raw bytes** (API, MCP): `POST /v1/feedback/attachments/ticket` returns a 15-minute URL to `PUT` a file's bytes to (`curl -T`), and the MCP tool `create_attachment_upload` hands one to an assistant, so large local files need neither base64 nor a public link. Same limits and storage accounting. No schema or env change.
+
 - **AI public descriptions offline** (native, the iOS share sheet): with no server, the public description's AI button has Apple Intelligence on the device write it, by the same rules as the server (iOS and macOS 26 or later with Apple Intelligence on). The rules now ask for a rewrite using only facts the description states, which keeps the smaller on-device model from inventing features. No API, schema or env change.
 
 ## 0.3.1 — 2026-11-09
