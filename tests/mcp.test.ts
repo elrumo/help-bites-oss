@@ -111,6 +111,7 @@ describe('buildRequest', () => {
     // The route reads the linked thing as `id` in the body, next to the item's `id` in the path.
     expect(buildRequest(tool('link_board_item'), { id: 'b1', kind: 'feedback', linkedId: '#12' })).toEqual({ method: 'POST', url: '/v1/admin/board-items/b1/links', body: { kind: 'feedback', id: '#12' } })
     expect(buildRequest(tool('merge_board_item'), { id: 'b1', into: '#12' })).toEqual({ method: 'POST', url: '/v1/admin/board-items/b1/merge', body: { into: '#12' } })
+    expect(buildRequest(tool('create_attachment_upload'), { project: 'p1', filename: 'icon.png' })).toEqual({ method: 'POST', url: '/v1/feedback/attachments/ticket?project=p1', body: { filename: 'icon.png' } })
     expect(buildRequest(tool('update_board_item'), { id: 'b1', project: 'p1', rank: 1759312345678.5, labels: ['ios'] })).toEqual({ method: 'PATCH', url: '/v1/admin/board-items/b1?project=p1', body: { rank: 1759312345678.5, labels: ['ios'] } })
     expect(buildRequest(tool('update_board_item'), { id: 'b1', project: 'p1', rank: '3' })).toEqual({ error: 'Argument "rank" must be a number.' })
   })

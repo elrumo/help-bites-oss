@@ -507,6 +507,18 @@ struct BoardScreen: View {
     pruneParentFilters()
   }
 
+  /// Folds `itemId` into `target` (same kind): the target takes its posts, conversations, labels, files and an epic's cards.
+  func merge(_ itemId: String, into target: String) async throws {
+    struct MergeResponse: Decodable, Sendable { let item: BoardItem; let into: BoardItem }
+    let groupsCards = item(itemId)?.itemKind == "epic"
+    let body: [String: JSONValue] = ["into": .string(target)]
+    let result: MergeResponse = try await session.send("/v1/admin/board-items/\(itemId)/merge", body: body)
+    upsert(result.item)
+    upsert(result.into)
+    // An epic's cards now belong to the target: read them again.
+    if groupsCards { try? await loadItems() }
+  }
+
   /// Link or unlink a feedback post (an id or `#N`) or a conversation.
   func link(_ itemId: String, kind: String, target: String, linked: Bool) async throws -> BoardItem {
     let body: [String: JSONValue] = ["kind": .string(kind), "id": .string(target), "linked": .bool(linked)]

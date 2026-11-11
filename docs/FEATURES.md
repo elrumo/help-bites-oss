@@ -349,6 +349,12 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
 - **Long descriptions.** A description over 20,000 characters (a pasted log) is not refused: the whole text is attached
   to the item as `description.txt` and the description keeps its start and a note. Panel, app, share sheet, API and MCP.
   [FEEDBACK.md](FEEDBACK.md#images-files-and-videos)
+- **Merge into another item.** An item's editor has **Merge into…** for a duplicate (same kind: card into card, epic into
+  epic): the target takes its posts, conversations, labels, files and an epic's cards, and the duplicate is closed and
+  taken off the roadmap, not deleted. Panel, native app, API and MCP. [FEEDBACK.md](FEEDBACK.md#the-api)
+- **Large files without base64.** An assistant or script asks for a 15-minute upload URL and `curl -T`s a local file to it
+  as raw bytes (`create_attachment_upload` over MCP), next to multipart and public-URL uploads.
+  [FEEDBACK.md](FEEDBACK.md#images-files-and-videos)
 - **Planning offline** (native app). Every board opens without a connection as it was last loaded. New items, from the
   app or the share sheet, with their images and videos, wait on the device marked *Waiting to upload* and go up by
   themselves once the server can be reached; none is lost to a dropped connection or a closed app, and a retried upload
@@ -892,7 +898,6 @@ it is not part of this repository; a self-hosted server's `/` goes straight to t
 
 - **Read-only keys on native.** The native app lists API keys with their read-only state but cannot create a read-only
   key or switch one; Settings → API keys and the assistant approval page on the web do. The API takes `readOnly`.
-- **Merging planning items.** Folding a duplicate item into another is in the API and MCP only (`POST /v1/admin/board-items/:id/merge`, `merge_board_item`); the web panel and the native app have no merge button yet.
 - **Planning on native.** Statuses and labels are reordered with arrow buttons (the web panel drags them), and the
   editor saves with its Save button (Cmd and Return on a keyboard) instead of as you go.
 - **Share sheet.** *Add to Planning* is an iPhone and iPad share extension only: the Mac app has none, and the web

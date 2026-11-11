@@ -222,6 +222,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `suggest_board_item_title` | The AI writes a title from a description. Saves nothing. |
 | `suggest_board_item_public_description` | The AI writes the public roadmap text from the title and description, without brand names or comparisons to other products. Saves nothing. |
 | `upload_board_comment_attachment` | Upload an image, file or MP4/MOV video from a public `url` (HelpBites downloads it; use this for large screenshots and recordings) or as base64, and get its download URL, to attach to a comment or an item. |
+| `create_attachment_upload` | Get a 15-minute URL to `curl -T` a local file to as raw bytes (no base64, no public link needed), for files too big to send inline; the PUT returns the attachment object. |
 | `list_board_item_comments` | Read an item's private comments, threaded replies and attachment URLs. |
 | `comment_on_board_item` | Add a private comment or threaded reply, optionally with uploaded files. |
 | `list_github_refs` | Commits and merged pull requests that mention an item as #12. |

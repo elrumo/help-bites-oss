@@ -326,8 +326,16 @@ export const MCP_TOOLS: readonly McpTool[] = [
     }
   },
   {
+    name: 'create_attachment_upload', title: 'Get a URL to upload a file to', method: 'POST', path: '/v1/feedback/attachments/ticket',
+    description: 'For a file on the machine you run commands on (screenshots, an icon set, a recording) that is too big to send inline as base64 and is not at a public address: returns a one-time `uploadUrl` valid for 15 minutes. Send the file there as raw bytes with a shell command, `curl -T ./file.png "<uploadUrl>"` (a PUT; no auth header, no encoding), once per file, and the reply is the attachment object `{ url, name, mime, size }`. Pass up to 10 of them in the `attachments` of comment_on_board_item, create_board_item or update_board_item. Same limits as upload_board_comment_attachment: 25 MB a file, 100 MB for MP4/MOV, programs and scripts refused. Without a shell, use upload_board_comment_attachment with a public `url` instead.',
+    params: {
+      project: { ...projectId, in: 'query' },
+      filename: { type: 'string', required: true, description: 'The file name with its extension, such as new-icon.png: it decides the type and the size limit.' }
+    }
+  },
+  {
     name: 'upload_board_comment_attachment', title: 'Upload a planning attachment', method: 'POST', path: '/v1/feedback/attachments',
-    description: 'Uploads one image, file or MP4/MOV video for a planning comment or item (screenshots, screen recordings, logs, documents) and returns its attachment object and download URL. Send either `url`, a public http(s) address HelpBites downloads (no redirects: use the final address; the way to send anything large, such as full-size screenshots or recordings), or the bytes as `contentBase64` with `filename`. Then pass the returned object in the `attachments` of comment_on_board_item, create_board_item or update_board_item.',
+    description: 'Uploads one image, file or MP4/MOV video for a planning comment or item (screenshots, screen recordings, logs, documents) and returns its attachment object and download URL. Send either `url`, a public http(s) address HelpBites downloads (no redirects: use the final address; the way to send anything large, such as full-size screenshots or recordings), or the bytes as `contentBase64` with `filename` (small files only: for a large local file use create_attachment_upload, which takes raw bytes). Then pass the returned object in the `attachments` of comment_on_board_item, create_board_item or update_board_item.',
     params: {
       project: { ...projectId, in: 'query' },
       url: { type: 'string', description: 'A public http(s) address of the file. Send this or contentBase64.' },

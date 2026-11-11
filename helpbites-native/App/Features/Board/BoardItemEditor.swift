@@ -36,6 +36,8 @@ struct BoardItemEditor: View {
   @State private var publicRun = 0
   @State private var linking = false
   @State private var confirmDelete = false
+  @State private var pickingMerge = false
+  @State private var mergeTarget: BoardItem?
   @State private var error = ""
   @State private var commentsExpanded = false
   @State private var commentsLoading = false
@@ -168,6 +170,14 @@ struct BoardItemEditor: View {
       .sheet(item: $openedCard) { route in BoardItemEditor(store: store, itemId: route.id) }
       .sheet(isPresented: $pickingCard) {
         BoardItemPicker(store: store, exclude: cardPickerExclusion) { card in Task { await setCard(card.id, in: true) } }
+      }
+      .sheet(isPresented: $pickingMerge) {
+        BoardItemPicker(store: store, exclude: mergeExclusion) { target in mergeTarget = target }
+      }
+      .confirmationDialog("Merge into this item?", isPresented: Binding(get: { mergeTarget != nil }, set: { if !$0 { mergeTarget = nil } }), titleVisibility: .visible, presenting: mergeTarget) { target in
+        Button("Merge into #\(target.number ?? 0)", role: .destructive) { Task { await mergeItem(into: target) } }
+      } message: { target in
+        Text("\(target.title) takes this item's posts, conversations, labels and files. This one is closed and taken off the roadmap, not deleted.")
       }
       .sheet(isPresented: $pickingItem) {
         BoardItemPicker(store: store, exclude: Set((itemId.map { [$0] } ?? []) + (current?.relatedItemIds ?? []))) { other in
@@ -590,6 +600,7 @@ struct BoardItemEditor: View {
         ChangelogLinksSection(projectId: store.projectId, kind: "board", targetId: item.id, source: ["title": item.title, "publicDescription": item.publicDescription])
       }
 
+      Button { pickingMerge = true } label: { Label("Merge into another item", systemImage: "arrow.triangle.merge") }.buttonStyle(GhostButtonStyle(tint: Theme.textMuted))
       Button { confirmDelete = true } label: { Label("Delete item", systemImage: "trash") }.buttonStyle(GhostButtonStyle(tint: Theme.error))
     }
   }
@@ -1071,6 +1082,21 @@ struct BoardItemEditor: View {
       justSaved = false
     } catch {
       saving = false
+      self.error = error.localizedDescription
+    }
+  }
+
+  /// Only an item of the same kind, already on the server, can be merged into.
+  private var mergeExclusion: Set<String> {
+    Set(store.items.filter { $0.id == itemId || $0.itemKind != current?.itemKind || $0.isPending }.map(\.id))
+  }
+
+  private func mergeItem(into target: BoardItem) async {
+    guard let itemId else { return }
+    do {
+      try await store.merge(itemId, into: target.id)
+      dismiss()
+    } catch {
       self.error = error.localizedDescription
     }
   }

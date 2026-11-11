@@ -446,6 +446,9 @@
       <template #footer>
         <div class="flex w-full items-center gap-2">
           <UButton v-if="current" :label="confirmDelete ? $t('board.clickAgainDelete') : $t('board.delete')" icon="i-lucide-trash-2" :color="confirmDelete ? 'error' : 'neutral'" :variant="confirmDelete ? 'solid' : 'ghost'" @click="deleteItem" />
+          <USelectMenu v-if="current && !mergeTarget && mergeCandidates.length" :items="mergeCandidates" value-key="value" class="w-48" :model-value="null" :placeholder="$t('board.mergeInto')" :aria-label="$t('board.mergeInto')" @update:model-value="id => { mergeTarget = id ? String(id) : null }" />
+          <UButton v-if="current && mergeTarget" :label="$t('board.clickAgainMerge', { item: mergeTargetLabel })" icon="i-lucide-merge" color="error" :loading="merging" @click="mergeItem" />
+          <UButton v-if="current && mergeTarget" icon="i-lucide-x" color="neutral" variant="ghost" square :aria-label="$t('common.cancel')" @click="mergeTarget = null" />
           <SaveStatus v-if="current" class="ml-auto" :saving="savingItem" :saved="savedItem" :idle="$t('board.changesSave')" />
           <template v-else>
             <UButton class="ml-auto" :label="$t('common.cancel')" color="neutral" variant="ghost" @click="editorOpen = false" />
@@ -585,6 +588,11 @@ const labelItems = computed(() => (board.value?.labels || []).map(l => ({ label:
 const relatable = computed(() => items.value
   .filter(item => item.id !== current.value?.id && !current.value?.relatedItemIds.includes(item.id))
   .map(item => ({ label: `${item.number ? `#${item.number} ` : ''}${item.title}`, value: item.id })))
+// Items the open one can be merged into: same kind, since a card merges into a card and an epic into an epic.
+const mergeCandidates = computed(() => items.value
+  .filter(item => item.id !== current.value?.id && item.kind === current.value?.kind)
+  .map(item => ({ label: `${item.number ? `#${item.number} ` : ''}${item.title}`, value: item.id })))
+const mergeTargetLabel = computed(() => mergeCandidates.value.find(c => c.value === mergeTarget.value)?.label || '')
 const assigneeItems = computed(() => [{ label: t('board.unassigned'), value: 'unassigned' }, ...agents.value.map(agent => ({ label: agent.name || agent.username, value: agent.id }))])
 const assigneeFilterItems = computed(() => [{ label: t('board.anyone'), value: '__all__' }, ...assigneeItems.value])
 const priorityFilterItems = computed(() => [{ label: t('board.anyPriority'), value: '__all__' }, ...priorityItems.value])
@@ -1040,6 +1048,8 @@ let titleRun = 0
 const writingPublic = ref(false)
 let publicRun = 0
 const confirmDelete = ref(false)
+const mergeTarget = ref<string | null>(null)
+const merging = ref(false)
 const linking = ref(false)
 const itemHistory = ref<BoardItemHistory[]>([])
 const historyLoading = ref(false)
@@ -1077,6 +1087,7 @@ function fill(item: BoardItem | null) {
   })
   editorError.value = ''
   confirmDelete.value = false
+  mergeTarget.value = null
   savedItem.value = false
   restored.value = false
 }
@@ -1393,6 +1404,23 @@ async function deleteItem() {
     editorOpen.value = false
   } catch (e: any) {
     editorError.value = e?.message || t('board.deleteError')
+  }
+}
+
+async function mergeItem() {
+  if (!current.value || !mergeTarget.value) return
+  merging.value = true
+  editorError.value = ''
+  try {
+    await api(`/admin/board-items/${current.value.id}/merge`, { method: 'POST', body: { into: mergeTarget.value } })
+    // The target took the source's links and (for an epic) cards: read the board again.
+    await loadItems()
+    editorOpen.value = false
+  } catch (e: any) {
+    editorError.value = e?.message || t('board.mergeError')
+  } finally {
+    merging.value = false
+    mergeTarget.value = null
   }
 }
 
