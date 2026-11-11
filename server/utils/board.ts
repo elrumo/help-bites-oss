@@ -559,6 +559,74 @@ export function readLinkInput(payload: unknown): { kind: BoardLinkKind, id: stri
   return { kind, id, linked: raw.linked !== false }
 }
 
+/**
+ * Fold `row` into another item of the board (`into`, an id or `#N`, of the same kind). The target takes the
+ * source's linked posts and conversations, labels, attachments and, for an epic, its cards. The source is then
+ * related to the target, unpublished and moved to the board's first closed status. Nothing is deleted: the source
+ * keeps its text, comments and history. Its links leave it first, so the board's feedback sync never closes the posts.
+ * Writing the merged title and description is the caller's job (update_board_item on the target).
+ */
+export async function mergeBoardItem(project: ParseObject, agent: ParseObject, row: ParseObject, payload: unknown, source: ClientSource = 'api'): Promise<{ item: ParseObject, into: ParseObject }> {
+  const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>
+  const into = await findBoardItem(project, String(raw.into ?? '').trim())
+  if (!into) throw createError({ statusCode: 404, statusMessage: 'The item to merge into was not found' })
+  if (into.id === row.id) badRequest(['An item cannot be merged into itself'])
+  if (kindOf(into) !== kindOf(row)) badRequest([`A ${kindOf(row)} merges only into another ${kindOf(row)}`])
+  const board = getBoardConfig(project)
+  const Parse = useParse()
+  const rowBefore = historySnapshot(row)
+  const intoBefore = historySnapshot(into)
+
+  // Work out everything first, so a refusal changes nothing.
+  const merged = {} as Record<'feedbackPostIds' | 'conversationIds', string[]>
+  for (const field of ['feedbackPostIds', 'conversationIds'] as const) {
+    merged[field] = unique([...stringList(into.get(field)), ...stringList(row.get(field))])
+    if (merged[field].length > BOARD_LINKS_MAX) badRequest([`The merged item would link more than ${BOARD_LINKS_MAX} ${LINK_NOUN[field === 'feedbackPostIds' ? 'feedback' : 'conversation']}`])
+  }
+  const files = itemAttachments(into.get('attachments'))
+  for (const file of itemAttachments(row.get('attachments'))) if (!files.some(have => have.url === file.url)) files.push(file)
+  if (files.length > ITEM_ATTACHMENTS_MAX) badRequest([`The merged item would have more than ${ITEM_ATTACHMENTS_MAX} attachments`])
+
+  const movedConversations = stringList(row.get('conversationIds'))
+  const newlyLinked = new Set(movedConversations.filter(id => !stringList(into.get('conversationIds')).includes(id)))
+  into.set('feedbackPostIds', merged.feedbackPostIds)
+  into.set('conversationIds', merged.conversationIds)
+  into.set('labels', unique([...stringList(into.get('labels')), ...stringList(row.get('labels'))]))
+  into.set('attachments', files)
+  row.set('feedbackPostIds', [])
+  row.set('conversationIds', [])
+  if (stringList(row.get('relatedItemIds')).length < BOARD_LINKS_MAX && stringList(into.get('relatedItemIds')).length < BOARD_LINKS_MAX) {
+    row.addUnique('relatedItemIds', into.id)
+    into.addUnique('relatedItemIds', row.id)
+  }
+  row.set('public', false)
+  const from = String(row.get('status') || '')
+  const closed = board.statuses.find(status => status.category === 'closed')?.key
+  if (closed) row.set('status', closed)
+
+  markBoardItem(into, agent, source)
+  markBoardItem(row, agent, source)
+  await into.save(null, MASTER)
+  await row.save(null, MASTER)
+  await recordBoardItemHistory(project, into, agent, source, 'updated', historyChanges(intoBefore, into))
+  await recordBoardItemHistory(project, row, agent, source, 'updated', historyChanges(rowBefore, row))
+  if (kindOf(row) === 'epic') {
+    await eachBatch(() => new Parse.Query('BoardItem').equalTo('project', project).equalTo('epicId', row.id || ''), (cards) => {
+      for (const card of cards) card.set('epicId', into.id)
+      return Parse.Object.saveAll(cards, MASTER)
+    }, { keys: ['epicId'] })
+  }
+  for (const id of movedConversations) {
+    const conversation = await getConversation(id).catch(() => null)
+    if (!conversation || pointerId(conversation.get('project')) !== project.id) continue
+    await appendEvent(conversation, { type: 'board.unlinked', itemId: row.id || '', number: row.get('number') ?? null, title: String(row.get('title') || '') }, agent)
+    if (newlyLinked.has(id)) await appendEvent(conversation, { type: 'board.linked', itemId: into.id || '', number: into.get('number') ?? null, title: String(into.get('title') || '') }, agent)
+  }
+  const to = String(row.get('status') || '')
+  if (to !== from) emitDomainEventLater(project, 'board.item.status_changed', { itemId: row.id, number: row.get('number') ?? null, ...eventActor(agent, source), from, to })
+  return { item: row, into }
+}
+
 export async function deleteBoardItem(row: ParseObject): Promise<void> {
   const Parse = useParse()
   await eachBatch(() => new Parse.Query('BoardItemComment').equalTo('item', row), comments => Parse.Object.destroyAll(comments, MASTER), { keys: ['objectId'] })

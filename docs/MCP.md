@@ -217,6 +217,7 @@ where you meet them in the panel; ask the server for the live list with `tools/l
 | `update_board_item` | Edit or move an item. |
 | `delete_board_item` | Remove an item and its links: asks first. |
 | `link_board_item` | Link or unlink a feedback post, conversation or related item. |
+| `merge_board_item` | Fold a duplicate item into another: its posts, conversations, labels and files move over, and the source is closed, not deleted: asks first. |
 | `list_board_item_history` | An item's edit history: what changed, who changed it and from where. |
 | `suggest_board_item_title` | The AI writes a title from a description. Saves nothing. |
 | `suggest_board_item_public_description` | The AI writes the public roadmap text from the title and description, without brand names or comparisons to other products. Saves nothing. |

@@ -290,6 +290,15 @@ export const MCP_TOOLS: readonly McpTool[] = [
     }
   },
   {
+    name: 'merge_board_item', title: 'Merge a board item into another', destructive: true, method: 'POST', path: '/v1/admin/board-items/{id}/merge',
+    description: 'Folds a duplicate item (`id`, the source) into `into`, an item of the same kind (card or epic): the target takes its linked feedback posts and conversations, labels, attachments and, for an epic, its cards; the two end up related. The source is unpublished from the roadmap and moved to the board\'s first closed status; nothing is deleted, so it keeps its text, comments and history. Refused, changing nothing, past 50 links of a kind or 10 attachments on the target. Write the merged title and description yourself with update_board_item on the target. Confirm with the user first. Returns `item` (the source) and `into` (the target).',
+    params: {
+      id: id('source item'),
+      project: { type: 'string', description: 'Project id, needed when an item is named by its number.', in: 'query' },
+      into: { type: 'string', required: true, description: 'The item to merge into: its id or `#12`.' }
+    }
+  },
+  {
     name: 'list_board_item_history', title: 'Read a board item\'s edit history', readOnly: true, method: 'GET', path: '/v1/admin/board-items/{id}/history',
     description: 'The item\'s edit history, newest first: each change with the field values before and after, who made it, where it came from (web, native app, API or MCP) and when. Page with `offset`; the reply has `hasMore` and `nextOffset`.',
     params: {

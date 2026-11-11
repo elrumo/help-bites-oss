@@ -892,6 +892,7 @@ it is not part of this repository; a self-hosted server's `/` goes straight to t
 
 - **Read-only keys on native.** The native app lists API keys with their read-only state but cannot create a read-only
   key or switch one; Settings → API keys and the assistant approval page on the web do. The API takes `readOnly`.
+- **Merging planning items.** Folding a duplicate item into another is in the API and MCP only (`POST /v1/admin/board-items/:id/merge`, `merge_board_item`); the web panel and the native app have no merge button yet.
 - **Planning on native.** Statuses and labels are reordered with arrow buttons (the web panel drags them), and the
   editor saves with its Save button (Cmd and Return on a keyboard) instead of as you go.
 - **Share sheet.** *Add to Planning* is an iPhone and iPad share extension only: the Mac app has none, and the web
