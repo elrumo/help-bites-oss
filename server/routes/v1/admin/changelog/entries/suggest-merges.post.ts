@@ -1,10 +1,10 @@
-import { MERGE_GROUNDING, MERGE_SUGGEST_MAX, mergePrompt, readMergeSuggestions, type MergeEntryInfo } from '#shared/changelogMerge'
+import { MERGE_SUGGEST_MAX, type MergeEntryInfo } from '#shared/changelogMerge'
 
 defineRouteMeta({
   openAPI: {
     tags: ['Changelog'], operationId: 'suggestChangelogMerges', security: [{ AgentSession: [] }, { AdminApiKey: [] }, { ProjectSecret: [] }],
     summary: 'Suggest which changelog entries to merge, with AI',
-    description: `Reads 2 to ${MERGE_SUGGEST_MAX} entries (archived ones are refused) and has the AI propose which of them describe the same change, with the title, Markdown body and tag of each merged entry. **The AI may suggest nothing**: \`merges\` is empty when no merge would serve readers. Nothing is saved: apply a suggestion with \`POST /v1/admin/changelog/entries/merge\` (\`refs\` and \`entry\` straight from it). Every ref in a suggestion is one you sent, an entry is in at most one suggestion, and each folds 2 to 10 entries. The entries are treated as data. The AI call can take several seconds. Metered like every AI call; rate limited to 20 a minute per project.`,
+    description: `Reads 2 to ${MERGE_SUGGEST_MAX} entries (archived ones are refused) and has the AI propose which of them describe the same change. With Jev configured on the server (\`JEV_API_BASE_URL\`) Jev judges pairs of entries and the chat model only writes the merged text, which is how a list of hundreds is read; without it the chat model reads the list in one go and takes at most 100, with the title, Markdown body and tag of each merged entry. **The AI may suggest nothing**: \`merges\` is empty when no merge would serve readers. Nothing is saved: apply a suggestion with \`POST /v1/admin/changelog/entries/merge\` (\`refs\` and \`entry\` straight from it). Every ref in a suggestion is one you sent, an entry is in at most one suggestion, and each folds 2 to 10 entries. The entries are treated as data. The AI call can take several seconds, a minute for hundreds of entries. Metered like every AI call; rate limited to 20 a minute per project.`,
     parameters: [{ name: 'project', in: 'query', schema: { type: 'string' }, description: 'Project id. An operator names it; the project secret acts on its own project' }],
     requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['refs'], properties: { refs: { type: 'array', minItems: 2, maxItems: MERGE_SUGGEST_MAX, items: { type: 'string' }, description: 'Entry ids' } } } } } },
     responses: {
@@ -29,10 +29,7 @@ export default defineEventHandler(async (event) => {
   const entries: MergeEntryInfo[] = rows.map(row => ({ id: row.id || '', title: String(row.get('title') || ''), tag: String(row.get('tag') || 'improved'), summary: String(row.get('summary') || ''), body: String(row.get('body') || ''), area: String(row.get('area') || '') }))
   await rateLimit(`sb:rl:clmrgai:${project.id}`, LIMITS.changelogMergeAiPerProject.limit, LIMITS.changelogMergeAiPerProject.window)
   try {
-    const { text } = await chatCompletion(route, { messages: [{ role: 'system', content: MERGE_GROUNDING }, { role: 'user', content: mergePrompt(entries) }], temperature: 0.2, max_tokens: 12_000 }, { timeoutMs: 120_000 })
-    // A reply that parses to no merges is a valid "nothing to merge"; one that is not JSON at all is a failure.
-    if (!/[[{]/.test(text)) throw new Error('the reply was not JSON, it may have been cut off')
-    return { merges: readMergeSuggestions(text, entries) }
+    return { merges: await suggestChangelogMerges(entries, route, resolveJev(route.workspaceId)) }
   } catch (error) {
     // A spent AI budget (402) will not fix itself on a retry: keep its status. Anything else is a 502 that says why.
     if ((error as { statusCode?: number }).statusCode) throw error

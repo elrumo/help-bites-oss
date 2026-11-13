@@ -5,6 +5,8 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 ## Unreleased
 
+- **Suggest merges reads hundreds of entries with Jev** (web, native, API, MCP): set `JEV_API_BASE_URL` (your LiteLLM gateway's `/typesafe` route, v1.103+ with `TYPESAFE_API_KEY` set on it, `docs/DEPLOYMENT.md`; `JEV_API_KEY` defaults to `LITELLM_API_KEY`, `JEV_MODEL` to `jev-latest`) and *Suggest merges* takes up to 300 entries instead of 100: Jev judges pairs, the chat model only writes the merged text. Without it nothing changes. No schema change.
+
 ## 0.3.2 — 2026-11-11
 
 - **Merge planning items** (web, native, API, MCP): *Merge into…* in an item's editor, `POST /v1/admin/board-items/:id/merge` and the MCP tool `merge_board_item` fold a duplicate card or epic into another of the same kind. Its posts, conversations, labels and attachments (and an epic's cards) move to the target; the source is related, unpublished and closed, never deleted. No schema or env change.

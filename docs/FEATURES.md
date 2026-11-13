@@ -390,7 +390,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   (panel and native app) has the AI look for entries that describe the same change
   and shows a preview: the entries it would fold and the new title, text and tag.
   It may suggest nothing. Nothing changes until you press Merge; each chosen
-  suggestion becomes one draft and its originals are archived.
+  suggestion becomes one draft and its originals are archived. With Jev (TypeSafe's
+  model, through the LiteLLM gateway) configured it reads up to 300 entries at once.
 - **AI release copy.** A release's editor (panel and native app) has an AI button
   that reads the release's entries and fills in its title and summary. Nothing is
   saved until you press Save.

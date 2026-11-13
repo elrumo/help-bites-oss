@@ -152,6 +152,18 @@ export async function resolveAi(workspace: ParseObject | null, options: { assist
   return { source: 'platform', endpoint: gateway, apiKey, model, metered: true, workspaceId }
 }
 
+/**
+ * Where Jev (TypeSafe's System One model) is reached, or null when `JEV_API_BASE_URL` is not set.
+ * Jev is not a chat model: it answers `POST {base}/v1/systemone`. Point the base at the LiteLLM
+ * gateway's `/typesafe` route (docs/DEPLOYMENT.md) so the gateway holds the TypeSafe key.
+ * Always the server's own endpoint, metered like the gateway.
+ */
+export function resolveJev(workspaceId: string): AiRoute | null {
+  const endpoint = String(process.env.JEV_API_BASE_URL || '').trim().replace(/\/+$/, '').replace(/\/v1\/systemone$/, '')
+  if (!endpoint) return null
+  return { source: 'platform', endpoint, apiKey: String(process.env.JEV_API_KEY || process.env.LITELLM_API_KEY || '').trim(), model: String(process.env.JEV_MODEL || '').trim() || 'jev-latest', metered: true, workspaceId }
+}
+
 /** Refuse (402) a metered call when the workspace has used this month's credits. */
 export async function assertAiBudget(route: AiRoute): Promise<void> {
   if (!route.metered || !route.workspaceId) return

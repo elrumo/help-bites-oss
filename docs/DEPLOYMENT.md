@@ -407,6 +407,15 @@ configured. OpenAI-compatible / LiteLLM style.
 | `LITELLM_API_BASE_URL` | Optional | _(off)_ | Default LLM endpoint. Per-agent settings can override it. |
 | `LITELLM_API_KEY` | Optional | _(off)_ | Auth for the endpoint. |
 | `LLM_DEFAULT_MODEL` | Optional | `openai/mimo-v2.6-flash` | Model used when an agent doesn't specify one. |
+| `JEV_API_BASE_URL` | Optional | _(off)_ | Where TypeSafe's Jev answers (`POST {base}/v1/systemone`): your LiteLLM gateway's `/typesafe` route (below). With it, **Suggest merges** reads up to 300 entries; without it the chat model reads up to 100. |
+| `JEV_API_KEY` | Optional | `LITELLM_API_KEY` | Auth for the Jev endpoint. |
+| `JEV_MODEL` | Optional | `jev-latest` | Jev model name sent in the request. |
+
+**Jev through LiteLLM** (v1.103.0 or later, [LiteLLM's guide](https://docs.litellm.ai/blog/typesafe_jev)). Jev is not a chat
+model: LiteLLM forwards its own System One endpoint at `/typesafe/v1/systemone`, with spend tracking. Set `TYPESAFE_API_KEY`
+in the proxy's environment (the app never holds the TypeSafe key), then `JEV_API_BASE_URL=https://llm.yourdomain.com/typesafe`
+and a LiteLLM virtual key as `JEV_API_KEY` (or `LITELLM_API_KEY`). A virtual key limited to a `models` list must allow
+`jev-latest` (or `typesafe/*`). Jev costs $0.042 per million input tokens; the chat model still writes the merged text.
 
 ### Error tracking (GlitchTip or Bugsink)
 
