@@ -122,7 +122,7 @@ Every admin capability maps to an existing endpoint. Nothing here is new API wor
 | Live updates | everywhere (foreground) | `GET /v1/admin/events?project` (SSE: `message.created`, `message.deleted`, `conversation.updated`) |
 | Developer page (embed snippet, identity-token contract, API docs) | Settings → Developer (mostly static + link to `/_docs/scalar`) | reference only |
 | Reset password from the emailed link | Sign in → Forgot password → I have a link (or open the link in the app) | `POST /v1/admin/reset-password` |
-| Project icon | Project › Dev → Project icon; drawn in the sidebar, lists and headers | `POST /v1/admin/projects/:id/logo` · `PATCH …/projects/:id {iconUrl}` |
+| Project icon | Project › Dev → Project icon; drawn in the sidebar, lists and headers. Project › Settings → Branding → Site favicon fills it from the site's favicon | `POST /v1/admin/projects/:id/logo` · `PATCH …/projects/:id {iconUrl}` or `{useFavicon}` |
 | Project email sender (from, domain, reply-to, keep content) | Project › Dev → Email sending | `GET /v1/admin/email-settings` · `PATCH …/projects/:id` |
 | Error tracking: issues, status, connect GlitchTip/Bugsink | Project › Errors, Dev → Error tracking | `GET /v1/admin/errors` · `PUT /v1/admin/errors/:id` · `GET /v1/admin/errors/providers` · `POST /v1/admin/errors/connect` |
 | A customer's recent errors | Conversation details | `GET /v1/admin/errors?project&user&limit=5` |

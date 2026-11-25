@@ -70,6 +70,10 @@ export type AdminProject = PublicProject & {
   inboxPath: string
   /** Admin-only: custom image shown for the project across the panel; '' falls back to the coloured initial. */
   iconUrl: string
+  /** Use the site's favicon as the icon while the icon is empty or still that favicon (server/utils/favicon.ts). */
+  useFavicon: boolean
+  /** The favicon last fetched from Site URL and stored by HelpBites; '' when there is none. */
+  faviconUrl: string
   fromName: string
   /** Email sending: this project's own sender; blank uses the server's MAILGUN_* defaults. */
   fromEmail: string
@@ -239,6 +243,7 @@ export async function applyProjectInput(project: ParseObject, input: Record<stri
   if ('chatNotice' in input) project.set('chatNotice', String(input.chatNotice || '').trim().slice(0, 500))
   if ('brandLogoUrl' in input) project.set('brandLogoUrl', safeHttpUrl(input.brandLogoUrl))
   if ('iconUrl' in input) project.set('iconUrl', safeHttpUrl(input.iconUrl))
+  if ('useFavicon' in input) project.set('useFavicon', Boolean(input.useFavicon))
   if ('assistantLogoUrl' in input) project.set('assistantLogoUrl', safeHttpUrl(input.assistantLogoUrl))
   if ('notifyEmails' in input) project.set('notifyEmails', parseRecipientList(input.notifyEmails))
   if ('allowAttachments' in input) project.set('allowAttachments', Boolean(input.allowAttachments))
@@ -431,6 +436,8 @@ export function serializeAdminProject(project: ParseObject): AdminProject {
     siteUrl: String(project.get('siteUrl') || ''),
     inboxPath: String(project.get('inboxPath') || ''),
     iconUrl: String(project.get('iconUrl') || ''),
+    useFavicon: project.get('useFavicon') === true,
+    faviconUrl: String(project.get('faviconUrl') || ''),
     fromName: String(project.get('fromName') || ''),
     fromEmail: String(project.get('fromEmail') || ''),
     replyTo: String(project.get('replyTo') || ''),

@@ -107,6 +107,7 @@ enum ProjectSettingsIndex {
       entry("general.site", .general, String(localized: "Site URL"), "website domain link email address"),
       entry("general.inbox", .general, String(localized: "Inbox path"), "widget path lives where"),
       entry("branding.logo", .branding, String(localized: "Logo"), "icon image upload tile picture"),
+      entry("branding.favicon", .branding, String(localized: "Site favicon"), "favicon icon site url logo fetch browser tab"),
       entry("branding.colour", .branding, String(localized: "Colour"), "color accent theme swatch hex brand"),
       entry("branding.images", .branding, String(localized: "Widget images"), "brand logo assistant avatar picture"),
       entry("branding.preview", .branding, String(localized: "Widget preview"), "chat look appearance"),

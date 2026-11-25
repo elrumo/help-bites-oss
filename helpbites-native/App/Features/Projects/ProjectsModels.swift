@@ -9,6 +9,8 @@ struct ProjectsAdminProject: Decodable, Sendable {
   let allowAttachments: Bool
   // Newer settings: optional so an older server still loads the screen.
   let chatNotice, brandLogoUrl, assistantLogoUrl, iconUrl, actionWebhookUrl: String?
+  /// Use the site's favicon as the icon while none is set; nil from an older server.
+  let useFavicon: Bool?
   let fromEmail, replyTo, mailDomain: String?
   let letUsersChooseType, allowOtherType, hasActionWebhookSecret, emailLogContent: Bool?
   let errors: ProjectErrors?

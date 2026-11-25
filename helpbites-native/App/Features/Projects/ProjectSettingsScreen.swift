@@ -146,6 +146,14 @@ struct ProjectSettingsScreen: View {
       }
       .id("branding.logo")
       divider
+      row("Site favicon", "Use the icon your site shows in browser tabs, fetched from Site URL, as the logo. An uploaded logo is kept.") {
+        VStack(alignment: .leading, spacing: 6) {
+          toggle("Fetch the favicon from Site URL", isOn: $form.useFavicon).disabled(form.siteUrl.trimmingCharacters(in: .whitespaces).isEmpty)
+          if form.siteUrl.trimmingCharacters(in: .whitespaces).isEmpty { Text("Add a Site URL first.").font(.lnCaption).foregroundStyle(Theme.textMuted) }
+        }
+      }
+      .id("branding.favicon")
+      divider
       row("Colour", "The sidebar tile, the widget's send button and your chat bubbles.") {
         VStack(alignment: .leading, spacing: 10) {
           Text("This is the accent of your Brand kit: widgets, boards, forms, legal, blog and hub pages and campaign mail all follow it.")
@@ -540,7 +548,7 @@ struct ProjectSettingsScreen: View {
       name: form.name, siteUrl: form.siteUrl, inboxPath: form.inboxPath,
       iconUrl: form.iconUrl, brandLogoUrl: form.brandLogoUrl, assistantLogoUrl: form.assistantLogoUrl,
       chatNotice: form.chatNotice, allowAttachments: form.allowAttachments, allowAnonymousUsers: form.allowAnonymousUsers,
-      letUsersChooseType: form.letUsersChooseType, allowOtherType: form.allowOtherType,
+      letUsersChooseType: form.letUsersChooseType, allowOtherType: form.allowOtherType, useFavicon: form.useFavicon,
       guestSurfaces: GuestSurfaces.all.filter { form.guestSurfaces.contains($0) },
       notifyEmails: form.notifyEmails,
       company: form.company, hub: form.hub.droppingBlankLinks,
@@ -623,6 +631,7 @@ private enum GuestSurfaces {
 private struct SettingsForm: Equatable {
   var name = "", siteUrl = "", inboxPath = "", iconUrl = "", brandLogoUrl = "", assistantLogoUrl = "", accent = "", chatNotice = ""
   var notifyEmails = ""
+  var useFavicon = false
   var allowAttachments = true, allowAnonymousUsers = false, letUsersChooseType = false, allowOtherType = false
   /// Which surfaces guests may use. A set, so ticking and unticking back reads as unchanged.
   var guestSurfaces: Set<String> = []
@@ -637,6 +646,7 @@ private struct SettingsForm: Equatable {
     siteUrl = project.siteUrl
     inboxPath = project.inboxPath
     iconUrl = project.iconUrl ?? ""
+    useFavicon = project.useFavicon ?? false
     brandLogoUrl = project.brandLogoUrl ?? ""
     assistantLogoUrl = project.assistantLogoUrl ?? ""
     accent = project.theme.accent ?? ""
@@ -657,6 +667,7 @@ private struct SettingsForm: Equatable {
 private struct SettingsInput: Encodable, Sendable {
   let name, siteUrl, inboxPath, iconUrl, brandLogoUrl, assistantLogoUrl, chatNotice: String
   let allowAttachments, allowAnonymousUsers, letUsersChooseType, allowOtherType: Bool
+  let useFavicon: Bool
   let guestSurfaces: [String]
   let notifyEmails: String
   let company: CompanyProfile

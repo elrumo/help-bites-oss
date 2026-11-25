@@ -30,6 +30,11 @@ export default defineEventHandler(async (event) => {
   project.set('workspace', ctx.workspace)
   await applyProjectInput(project, payload)
   await project.save(null, MASTER)
+  // The favicon is stored under the project, so it is fetched once the project has its id.
+  if (project.get('useFavicon') === true) {
+    await syncProjectFavicon(project, { siteUrl: '', useFavicon: false })
+    await project.save(null, MASTER)
+  }
   await forgetWorkspaceProjects(ctx.workspaceId)
   return { project: serializeAdminProject(project), secret }
 })

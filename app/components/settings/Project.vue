@@ -39,6 +39,14 @@
               </div>
 
               <div class="row">
+                <div class="row-label"><p class="row-title">{{ $t('projectPages.settings.favicon') }}</p><p class="section-hint">{{ $t('projectPages.settings.faviconHint') }}</p></div>
+                <div class="space-y-1.5">
+                  <USwitch v-model="form.useFavicon" :disabled="!form.siteUrl.trim()" :label="$t('projectPages.settings.faviconSwitch')" />
+                  <p v-if="!form.siteUrl.trim()" class="text-xs text-muted">{{ $t('projectPages.settings.faviconNeedsSite') }}</p>
+                </div>
+              </div>
+
+              <div class="row">
                 <div class="row-label">
                   <p class="row-title">{{ $t('projectPages.settings.colour') }}</p>
                   <p class="section-hint">{{ $t('projectPages.settings.colourHint') }}</p>
@@ -300,7 +308,7 @@ const widgetImages = computed(() => [
 // Linear's indigo, then the colours projects without one are given.
 const swatches = ['#5e6ad2', '#0f766e', '#0369a1', '#0e7490', '#4d7c0f', '#b45309', '#c2410c', '#be123c', '#7c3aed']
 
-const blank = () => ({ name: '', siteUrl: '', inboxPath: '', iconUrl: '', brandLogoUrl: '', assistantLogoUrl: '', accent: '', chatNotice: '', allowAttachments: true, allowAnonymousUsers: false, guestSurfaces: [] as GuestSurface[], letUsersChooseType: false, allowOtherType: false, company: normalizeCompany(null), hub: normalizeHubConfig(null), notifyEmailsText: '', hiddenSections: [] as string[] })
+const blank = () => ({ name: '', siteUrl: '', inboxPath: '', iconUrl: '', useFavicon: false, brandLogoUrl: '', assistantLogoUrl: '', accent: '', chatNotice: '', allowAttachments: true, allowAnonymousUsers: false, guestSurfaces: [] as GuestSurface[], letUsersChooseType: false, allowOtherType: false, company: normalizeCompany(null), hub: normalizeHubConfig(null), notifyEmailsText: '', hiddenSections: [] as string[] })
 const form = reactive(blank())
 const snapshot = ref('')
 const dirty = computed(() => !!snapshot.value && JSON.stringify(form) !== snapshot.value)
@@ -321,6 +329,7 @@ function fill(p: AdminProject) {
     siteUrl: p.siteUrl,
     inboxPath: p.inboxPath,
     iconUrl: p.iconUrl || '',
+    useFavicon: p.useFavicon === true,
     brandLogoUrl: p.brandLogoUrl || '',
     assistantLogoUrl: p.assistantLogoUrl || '',
     accent: p.theme?.accent || '',

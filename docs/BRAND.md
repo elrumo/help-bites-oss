@@ -240,3 +240,24 @@ in keep using the older Settings accent and logo until they do.
 In the panel, a logo or icon's menu has **Use as project logo** and **Use as
 project icon**, which the chat widget, feedback board, emails and legal pages
 already show. Onboarding steps can use any kit image as their picture.
+
+**No logo yet? Use the site's favicon.** Under a project's Settings → Branding,
+**Site favicon** fetches the icon your site shows in browser tabs and makes it the
+project's icon (the sidebar, lists and headers of the panel and the native app, and
+the public pages that wear the project's look). It needs a Site URL. The server asks
+the site for its `apple-touch-icon` first, then its largest `<link rel="icon">`,
+then `/favicon.ico`; it takes PNG, JPEG, GIF and WebP (an `.ico` only when it holds a
+PNG). An SVG-only site has no favicon here. A fetch runs when you turn the setting on
+or change the Site URL, not on every save, and a site that cannot be reached gives no
+icon rather than failing the save. An icon you upload is never replaced; turning the
+setting off clears only the favicon that was filling the icon.
+
+```bash
+# Turn it on (the site must already be set as siteUrl)
+curl -X PATCH https://your-helpbites.example.com/v1/admin/projects/PROJECT_ID \
+  -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{"useFavicon": true}'
+```
+
+The project's `iconUrl` then holds the stored favicon, and `faviconUrl` the copy HelpBites
+fetched.

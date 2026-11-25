@@ -213,6 +213,9 @@ const SCHEMAS = {
       chatNotice: { type: 'String' },
       brandLogoUrl: { type: 'String' },
       assistantLogoUrl: { type: 'String' },
+      // Fill the icon with the site's favicon (server/utils/favicon.ts); faviconUrl is the one last fetched, stored by HelpBites.
+      useFavicon: { type: 'Boolean' },
+      faviconUrl: { type: 'String' },
       actionWebhookUrl: { type: 'String' },
       actionWebhookSecret: { type: 'String' },
       feedback: { type: 'Object' },

@@ -727,7 +727,8 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   person: an API key gets `403 session_required`.
 - **Projects.** Create a project, then set its site URL, allowed widget origins,
   reply name, notification addresses, accent colour (the Brand kit's) and logo, and choose which
-  sections show in its sidebar. See and rotate its secret. An overview page
+  sections show in its sidebar. Or turn on **Site favicon** and the icon your site shows in browser tabs becomes the logo,
+  fetched from its site URL and stored by HelpBites, until you upload one of your own. See and rotate its secret. An overview page
   summarises it, with its setup checklist and what needs attention. [CONNECTING.md](CONNECTING.md)
 - **Company profile.** Who is behind the product (name, legal name, postal
   address, email, phone, website, data protection officer), written once in project

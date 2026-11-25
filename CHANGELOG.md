@@ -5,6 +5,8 @@ All notable changes to the community edition. HelpBites is in public beta. Versi
 
 ## Unreleased
 
+- **Site favicon as the project icon** (web, native, API, MCP): Settings → Branding → *Site favicon* (or `useFavicon` on `PATCH /v1/admin/projects/:id`, the MCP tool `update_project_settings`) fetches the icon your site shows in browser tabs from its Site URL and uses it as the project's logo, unless you upload your own. Fetched once when turned on or when the Site URL changes; a private or unreachable site gives no icon, never a failed save. The new `useFavicon` and `faviconUrl` project fields are added by `scripts/ensure-schema.mjs`.
+
 - **Suggest merges reads hundreds of entries with Jev** (web, native, API, MCP): set `JEV_API_BASE_URL` (your LiteLLM gateway's `/typesafe` route, v1.103+ with `TYPESAFE_API_KEY` set on it, `docs/DEPLOYMENT.md`; `JEV_API_KEY` defaults to `LITELLM_API_KEY`, `JEV_MODEL` to `jev-latest`) and *Suggest merges* takes up to 300 entries instead of 100: Jev judges pairs, the chat model only writes the merged text. Without it nothing changes. No schema change.
 
 ## 0.3.2 — 2026-11-11
