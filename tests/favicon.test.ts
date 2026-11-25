@@ -1,4 +1,6 @@
+import { inflateSync } from 'node:zlib'
 import { describe, expect, test } from 'bun:test'
+import { detectImageMime } from '../server/utils/s3'
 import { iconCandidates, pngFromIco, syncProjectFavicon } from '../server/utils/favicon'
 
 const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), Buffer.from('not really a picture')])
@@ -52,6 +54,22 @@ describe('an .ico file', () => {
     bitmapOnly.writeUInt16LE(1, 4)
     bitmapOnly.writeUInt32LE(0, 14)
     expect(pngFromIco(bitmapOnly)).toBeNull()
+  })
+})
+
+describe('an .ico with a 32-bit bitmap, as favicon.ico usually is', () => {
+  test('becomes a PNG with the same pixels, top row first', () => {
+    // 2x1 image: a red pixel and a half-transparent blue one, stored BGRA, bottom-up, plus the 1-bit AND mask rows
+    const dib = Buffer.alloc(40 + 8 + 8)
+    dib.writeUInt32LE(40, 0); dib.writeInt32LE(2, 4); dib.writeInt32LE(2, 8); dib.writeUInt16LE(1, 12); dib.writeUInt16LE(32, 14)
+    dib.set([0, 0, 255, 255, 255, 0, 0, 128], 40)
+    const header = Buffer.alloc(22)
+    header.writeUInt16LE(1, 2); header.writeUInt16LE(1, 4); header[6] = 2; header.writeUInt32LE(dib.length, 14); header.writeUInt32LE(22, 18)
+    const png = pngFromIco(Buffer.concat([header, dib]))!
+    expect(detectImageMime(png)).toBe('image/png')
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([2, 1])
+    const idat = png.indexOf('IDAT')
+    expect([...inflateSync(png.subarray(idat + 4, idat + 4 + png.readUInt32BE(idat - 4)))]).toEqual([0, 255, 0, 0, 255, 0, 0, 255, 128])
   })
 })
 

@@ -1,9 +1,10 @@
+import { deflateSync } from 'node:zlib'
 import { pinnedFetch } from './outbound'
 import { detectImageMime, storeAttachment } from './s3'
 
 // The site's favicon as the project's icon (`useFavicon`). Fetched once when the setting turns on or Site URL changes, through
 // pinnedFetch (no private or metadata addresses, a timeout, a size cap), and stored like any project image, so every client
-// loads it from HelpBites' own bucket. Only raster images: an SVG icon is skipped, and an .ico is used when it holds a PNG.
+// loads it from HelpBites' own bucket. Only raster images: an SVG icon is skipped, and an .ico is used through its PNG or 32-bit bitmap entry.
 // ponytail: an old favicon file stays in the bucket after a refetch; deleting it is the upgrade if storage ever matters.
 
 const PAGE_MAX_BYTES = 1024 * 1024
@@ -50,7 +51,49 @@ export function iconCandidates(html: string, pageUrl: string): string[] {
   return [...new Set(ordered)]
 }
 
-/** The largest PNG inside an .ico file (Windows Vista and later keep PNGs whole); null when it holds only bitmaps. */
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; return c >>> 0 })
+
+function pngChunk(type: string, data: Buffer): Buffer {
+  const body = Buffer.concat([Buffer.from(type, 'ascii'), data])
+  let crc = 0xFFFFFFFF
+  for (const byte of body) crc = CRC_TABLE[(crc ^ byte) & 255]! ^ (crc >>> 8)
+  const out = Buffer.alloc(body.length + 8)
+  out.writeUInt32BE(data.length, 0)
+  body.copy(out, 4)
+  out.writeUInt32BE((crc ^ 0xFFFFFFFF) >>> 0, body.length + 4)
+  return out
+}
+
+/**
+ * A 32-bit bitmap entry of an .ico (what most favicon.ico files hold: 16, 32 and 48 px BMPs) as a PNG; null for any other depth.
+ * ponytail: 32-bit only (alpha is in the pixels); 1/4/8/24-bit palettes and AND masks are old-Windows icons, add if one turns up.
+ */
+function pngFromDib(dib: Buffer): Buffer | null {
+  if (dib.length < 40 || dib.readUInt32LE(0) !== 40 || dib.readUInt16LE(14) !== 32 || dib.readUInt32LE(16) !== 0) return null
+  const width = dib.readInt32LE(4)
+  const height = Math.abs(dib.readInt32LE(8)) / 2 // the stored height counts the AND mask too
+  if (width < 1 || width > 256 || height < 1 || height > 256 || dib.length < 40 + width * height * 4) return null
+  const rows: Buffer[] = []
+  for (let y = height - 1; y >= 0; y--) { // bitmaps are stored bottom-up, BGRA
+    const row = Buffer.alloc(1 + width * 4)
+    for (let x = 0; x < width; x++) {
+      const at = 40 + (y * width + x) * 4
+      row[1 + x * 4] = dib[at + 2]!
+      row[2 + x * 4] = dib[at + 1]!
+      row[3 + x * 4] = dib[at]!
+      row[4 + x * 4] = dib[at + 3]!
+    }
+    rows.push(row)
+  }
+  const header = Buffer.alloc(13)
+  header.writeUInt32BE(width, 0)
+  header.writeUInt32BE(height, 4)
+  header[8] = 8 // bit depth
+  header[9] = 6 // RGBA
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), pngChunk('IHDR', header), pngChunk('IDAT', deflateSync(Buffer.concat(rows))), pngChunk('IEND', Buffer.alloc(0))])
+}
+
+/** The largest image inside an .ico file as a PNG: a PNG entry as it is, a 32-bit bitmap entry converted; null when it holds neither. */
 export function pngFromIco(data: Buffer): Buffer | null {
   if (data.length < 6 || data.readUInt16LE(0) !== 0 || data.readUInt16LE(2) !== 1) return null
   let best: Buffer | null = null
@@ -59,8 +102,10 @@ export function pngFromIco(data: Buffer): Buffer | null {
     const at = 6 + i * 16
     if (at + 16 > data.length) break
     const width = data[at] || 256
+    if (width <= bestWidth) continue
     const image = data.subarray(data.readUInt32LE(at + 12), data.readUInt32LE(at + 12) + data.readUInt32LE(at + 8))
-    if (width > bestWidth && detectImageMime(image) === 'image/png') { best = image; bestWidth = width }
+    const png = detectImageMime(image) === 'image/png' ? image : pngFromDib(image)
+    if (png) { best = png; bestWidth = width }
   }
   return best
 }
