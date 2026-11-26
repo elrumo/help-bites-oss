@@ -14,6 +14,10 @@ struct ShareDraft: Codable, Equatable {
   var isPublic: Bool
   var publicDescription: String
   var files: [File]
+  /// Labels made without a connection, which the board does not have yet, and what was typed in the new-label field.
+  /// Optional so a draft written before them still loads.
+  var pendingLabels: [PendingItem.NewLabel]?
+  var labelText: String?
 
   struct File: Codable, Equatable {
     /// Its name in `files/`.
@@ -27,7 +31,7 @@ struct ShareDraft: Codable, Equatable {
   }
 
   var isEmpty: Bool {
-    title.isEmpty && details.isEmpty && publicDescription.isEmpty && labels.isEmpty && posts.isEmpty && files.isEmpty
+    title.isEmpty && details.isEmpty && publicDescription.isEmpty && labels.isEmpty && posts.isEmpty && files.isEmpty && (labelText ?? "").isEmpty
   }
 
   /// Beside the outbox in the App Group, so the system never purges it.

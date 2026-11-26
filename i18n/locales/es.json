@@ -2267,7 +2267,16 @@
     "dropHint": "Arrastra o pega aquí imágenes, archivos y vídeos.",
     "download": "Descargar",
     "viewerDescription": "Vista previa del adjunto.",
-    "uploadError": "No se pudo subir ese archivo."
+    "uploadError": "No se pudo subir ese archivo.",
+    "markup": {
+      "open": "Anotar",
+      "size": "Grosor del lápiz",
+      "undo": "Deshacer",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "loading": "Cargando la imagen…",
+      "unreadable": "No se pudo abrir esta imagen para dibujar."
+    }
   },
   "aiCards": {
     "button": "Tarjetas con IA",

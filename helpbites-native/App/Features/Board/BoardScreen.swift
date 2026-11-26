@@ -271,6 +271,11 @@ struct BoardScreen: View {
     }
   }
 
+  /// The board's statuses and labels again, as a waiting item that made labels offline has added them.
+  func reloadConfig() async {
+    if let project = try? await ProjectsAdminProject.load(projectId, session: session) { apply(project) }
+  }
+
   /// The items and the project's changelog releases, read together: a release's cards and progress come with them.
   func loadItems() async throws {
     async let rows: ItemsResponse = session.get("/v1/admin/board-items", query: ["project": projectId])
@@ -378,9 +383,9 @@ struct BoardScreen: View {
 
   /// Through the outbox, so the item is on disk before it is sent: with no answer from the server it comes back as a
   /// waiting card, which goes up when the server is back.
-  func create(_ fields: [String: JSONValue]) async throws -> BoardItem {
+  func create(_ fields: [String: JSONValue], newLabels: [PendingItem.NewLabel] = []) async throws -> BoardItem {
     let item: BoardItem
-    switch try await outbox.submit(projectId, fields) {
+    switch try await outbox.submit(projectId, fields, newLabels: newLabels) {
     case .sent(let created): item = created
     case .queued(let entry): item = placeholder(entry)
     }
@@ -659,7 +664,7 @@ private struct BoardView: View {
         if phase == .active, store.config != nil { Task { try? await store.loadItems() } }
       }
       // A waiting item went up (or was refused), or the server is back: read the board again.
-      .onChange(of: store.outbox.revision) { _, _ in Task { try? await store.loadItems() } }
+      .onChange(of: store.outbox.revision) { _, _ in Task { try? await store.loadItems(); await store.reloadConfig() } }
       .onChange(of: Connectivity.shared.offline) { _, offline in
         guard !offline else { return }
         Task { if store.config == nil { await store.load() } else { try? await store.loadItems() } }

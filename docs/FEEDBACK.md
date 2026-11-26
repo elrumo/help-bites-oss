@@ -257,6 +257,13 @@ func upload(_ data: Data, name: String, token: String) async throws -> [String: 
 
 Pass the returned dictionary in `attachments` when you post.
 
+**Marking up an image.** In the web panel, open an image on a post or item and press *Mark up*: draw on it with the
+pointer or a finger (colours, pen size, Undo) and *Save* uploads the drawn-on PNG through the same upload call and swaps
+it for the original in the list (the original file stays in storage). It reads the image bytes in the browser, so the
+storage behind `S3_PUBLIC_URL` must allow cross-origin reads (`Access-Control-Allow-Origin`), as HelpBites Cloud's does.
+On iPhone and iPad the app uses Apple's Markup instead (the pencil beside an image). There is no API of its own: an
+edited picture is just a new upload that replaces the old one in `attachments`.
+
 ## Planning & roadmap
 
 Each project can also use **Planning**: Linear-style items on a kanban, for
@@ -342,7 +349,13 @@ project you used last. Only projects with Planning on are offered.
 - **Nothing lost on close.** The sheet keeps what you typed and attached on the device (in the App Group) as you go.
   Closed without sending, by a swipe or by Cancel and *Save Draft*, it opens with all of it the next time, with what
   you shared then added (the same picture or text is not added twice) and a *Start over* button that keeps only the new
-  share. Cancel and *Delete Draft* forgets it; sending forgets it too. Tap a tile to see it full screen.
+  share. Cancel and *Delete Draft* forgets it; sending forgets it too. Tap a tile to see it full screen. A new label you
+  typed but did not add yet comes back too, and a label made offline (below) stays with the draft.
+- **Markdown tools.** The description fields have *Undo* and *Redo* and format buttons above the keyboard (bold, italic,
+  strikethrough, code, link, heading, bulleted and numbered lists, checklist, quote), and selecting text adds a *Format*
+  menu to the edit menu with the same actions. The app's *New item* and an item's editor have them too (iPhone and iPad).
+- **Mark up a picture.** The pencil on the full-screen view of an image opens Apple's Markup (pen, shapes, text); *Done*
+  puts the drawn-on picture in place of the original and uploads it again.
 
 It is a native entry point to the same API, with nothing of its own to call: `GET /v1/admin/projects` (each
 project's board, statuses and labels), `GET /v1/admin/agents`, `GET /v1/feedback`, `POST /v1/feedback/attachments`
@@ -372,6 +385,10 @@ The iPhone, iPad and Mac app keep working without a connection, or when your ser
   deleted since) stays, marked *Not uploaded* with the reason; change it and save to try again, or delete it.
 - **Share sheet.** Offline, *Add to Planning* shows the boards as the app last loaded them and keeps the item in the
   same outbox (in the App Group); the app uploads it the next time it is open and online.
+- **Labels.** Typing a new label offline keeps it with the new item (in the app or the share sheet): it shows as a label
+  of the item at once, and joins the board's labels (`PATCH /v1/admin/projects/:id`, read afresh first so other changes to
+  the labels are kept) just before the item goes up. Switching it off again drops it. An existing item cannot get a new
+  label offline.
 - **Titles.** With no server, a new item's title is written by Apple Intelligence on the device (iOS and macOS 26 or
   later, on a device that has it turned on), with the same rules as the server's AI. Without it, the description's first
   line stands in, as when the server has no AI.

@@ -346,6 +346,13 @@ Sections 1–12 are in every build. Section 13 is the hosted edition only. See
   images on request. Images and videos start uploading as soon as they are added, so sending only creates the item.
   A sheet closed without sending (a swipe, Cancel with *Save Draft*) opens with its text and files the next time,
   with *Start over* to keep only what was just shared. [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)
+- **Markdown tools and image markup** (iPhone and iPad). The description fields have Undo and Redo and format buttons
+  above the keyboard, and selected text gets a Format menu (bold, italic, strikethrough, code, link, heading, lists,
+  checklist, quote), in the app and the share sheet. A label typed offline waits with its new item and joins the
+  board's labels when the item goes up, and unsent text in the new-label field comes back with a draft. An image on an
+  item can be drawn on: Apple's Markup on iPhone and iPad (the editor's pencil, the share sheet's preview) and a canvas
+  *Mark up* in the web viewer; saving replaces the original with the drawn-on copy.
+  [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)
 - **Long descriptions.** A description over 20,000 characters (a pasted log) is not refused: the whole text is attached
   to the item as `description.txt` and the description keeps its start and a note. Panel, app, share sheet, API and MCP.
   [FEEDBACK.md](FEEDBACK.md#images-files-and-videos)
@@ -902,6 +909,8 @@ it is not part of this repository; a self-hosted server's `/` goes straight to t
   key or switch one; Settings → API keys and the assistant approval page on the web do. The API takes `readOnly`.
 - **Planning on native.** Statuses and labels are reordered with arrow buttons (the web panel drags them), and the
   editor saves with its Save button (Cmd and Return on a keyboard) instead of as you go.
+- **Markdown tools and Markup on the Mac.** The format bar, the Format menu and Apple's Markup are iPhone and iPad
+  only; the Mac app's text view has the system's own undo. A label made offline is kept for a new item only.
 - **Share sheet.** *Add to Planning* is an iPhone and iPad share extension only: the Mac app has none, and the web
   panel has no equivalent (a browser has no share sheet; use *New item* or the API).
   [FEEDBACK.md](FEEDBACK.md#from-the-ios-share-sheet)

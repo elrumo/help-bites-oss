@@ -32,7 +32,7 @@
       <p v-if="!model.length" class="text-xs text-muted">{{ $t('attachments.dropHint') }}</p>
       <p v-if="error" class="text-xs text-error">{{ error }}</p>
     </div>
-    <AttachmentViewer v-model="viewing" />
+    <AttachmentViewer v-model="viewing" :project-id="projectId" @replace="(original, edited) => (model = model.map(f => (f.url === original.url ? edited : f)))" />
   </div>
 </template>
 

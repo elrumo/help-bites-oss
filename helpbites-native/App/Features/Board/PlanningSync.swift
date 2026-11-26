@@ -36,8 +36,9 @@ import Observation
 
   /// A new item: written to the outbox, then sent. With no answer from the server it stays there and goes up later;
   /// a refusal takes it out again and throws, so the editor says why and keeps the form (and its files).
-  func submit(_ projectId: String, _ fields: [String: JSONValue]) async throws -> Submitted {
+  func submit(_ projectId: String, _ fields: [String: JSONValue], newLabels: [PendingItem.NewLabel] = []) async throws -> Submitted {
     var entry = PendingItem(endpoint: session.endpoint, workspaceId: session.workspaceId, projectId: projectId, fields: fields)
+    entry.newLabels = newLabels.isEmpty ? nil : newLabels
     try PlanningOutbox.save(entry)
     await settled()
     do {
@@ -94,7 +95,9 @@ import Observation
     defer { sending.remove(entry.id) }
     let session = session
     let projectId = entry.projectId
-    let created: Created = try await PlanningOutbox.deliver(&entry, upload: { file, name, mime in
+    let created: Created = try await PlanningOutbox.deliver(&entry, ensureLabels: { labels in
+      try await Self.ensureLabels(labels, projectId: projectId, session: session)
+    }, upload: { file, name, mime in
       try await upload(file, name: name, mime: mime, projectId: projectId)
     }, create: { body in
       try await session.send("/v1/admin/board-items?project=\(projectId)", body: body)
@@ -103,6 +106,21 @@ import Observation
     PlanningOutbox.replace(entry.id, with: created.item.id)
     reload()
     return created.item
+  }
+
+  /// Labels typed while offline join the board's labels (the lists saved whole, as BoardStore.addLabel does); one that
+  /// is there already is left as it is.
+  private static func ensureLabels(_ wanted: [PendingItem.NewLabel], projectId: String, session: SessionStore) async throws {
+    struct Row: Decodable, Sendable { let id: String; let board: BoardConfig? }
+    struct Rows: Decodable, Sendable { let projects: [Row] }
+    struct Lists: Encodable, Sendable { let statuses: [FeedbackStatusDefinition]; let labels: [FeedbackTagDefinition] }
+    struct Patch: Encodable, Sendable { let board: Lists }
+    let rows: Rows = try await session.get("/v1/admin/projects")
+    guard let board = rows.projects.first(where: { $0.id == projectId })?.board else { return }
+    let missing = wanted.filter { new in !board.labels.contains { $0.key == new.key } }
+    guard !missing.isEmpty else { return }
+    let labels = board.labels + missing.map { FeedbackTagDefinition(key: $0.key, label: $0.label, color: "neutral") }
+    let _: EmptyBody = try await session.send("/v1/admin/projects/\(projectId)", method: "PATCH", body: Patch(board: Lists(statuses: board.statuses, labels: labels)))
   }
 
   private func upload(_ file: URL, name: String, mime: String, projectId: String) async throws -> JSONValue {

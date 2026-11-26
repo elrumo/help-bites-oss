@@ -2454,7 +2454,16 @@
     "dropHint": "Drop or paste images, files and videos here.",
     "download": "Download",
     "viewerDescription": "Preview of the attachment.",
-    "uploadError": "Could not upload that file."
+    "uploadError": "Could not upload that file.",
+    "markup": {
+      "open": "Mark up",
+      "size": "Pen size",
+      "undo": "Undo",
+      "cancel": "Cancel",
+      "save": "Save",
+      "loading": "Loading the image…",
+      "unreadable": "This image could not be opened for drawing."
+    }
   },
   "aiCards": {
     "button": "AI cards",

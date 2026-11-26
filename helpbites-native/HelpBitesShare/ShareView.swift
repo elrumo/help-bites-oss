@@ -35,7 +35,7 @@ struct ShareView: View {
     .sheet(isPresented: $pickingPost) {
       SharePostPicker(model: model) { model.posts.append($0) }
     }
-    .fullScreenCover(item: $viewing) { SharePreview(media: $0) }
+    .fullScreenCover(item: $viewing) { SharePreview(media: $0, model: model) }
     // Kept as it changes, so a sheet closed by accident opens the same next time.
     .onChange(of: model.draft) { model.saveDraft() }
   }
@@ -157,7 +157,7 @@ struct ShareView: View {
       if model.details.isEmpty {
         Text("Description (Markdown, internal: the roadmap never shows it)").foregroundStyle(.tertiary).padding(.horizontal, 5).padding(.top, 8).allowsHitTesting(false)
       }
-      TextEditor(text: $model.details).scrollContentBackground(.hidden).frame(minHeight: 130)
+      MarkdownEditorView(text: $model.details).frame(minHeight: 130)
     }
     .font(.body)
     .shareCard()
@@ -304,9 +304,11 @@ struct ShareView: View {
   private func labels(_ board: ShareBoard) -> some View {
     VStack(alignment: .leading, spacing: 12) {
       Text("Labels").font(.headline)
-      if !board.labels.isEmpty {
+      // Labels made offline show until the board has them.
+      let shown = board.labels + model.pendingLabels.filter { new in !board.labels.contains { $0.key == new.key } }.map { ShareLabel(key: $0.key, label: $0.label, color: "neutral") }
+      if !shown.isEmpty {
         ShareFlowLayout(spacing: 8) {
-          ForEach(board.labels) { label in
+          ForEach(shown) { label in
             let on = model.labels.contains(label.key)
             Button { model.toggle(label: label.key) } label: {
               HStack(spacing: 4) {
@@ -370,7 +372,7 @@ struct ShareView: View {
           if model.publicDescription.isEmpty {
             Text("What this means for your users").foregroundStyle(.tertiary).padding(.horizontal, 5).padding(.top, 8).allowsHitTesting(false)
           }
-          TextEditor(text: $model.publicDescription).scrollContentBackground(.hidden).frame(minHeight: 90).padding(.trailing, 28)
+          MarkdownEditorView(text: $model.publicDescription).frame(minHeight: 90).padding(.trailing, 28)
         }
         .padding(8)
         .overlay(alignment: .topTrailing) { publicAccessory.padding(4) }
@@ -517,6 +519,9 @@ private struct ShareFlowLayout: Layout {
 /// The full-screen view of an attached picture (pinch to zoom, double-tap to reset) or video (plays).
 private struct SharePreview: View {
   let media: SharedImage
+  let model: ShareModel
+  /// The picture open in Apple's Markup.
+  @State private var marking: MarkupJob?
   @Environment(\.dismiss) private var dismiss
   @State private var picture: UIImage?
   @State private var player: AVPlayer?
@@ -539,6 +544,18 @@ private struct SharePreview: View {
     }
     .overlay(alignment: .topTrailing) {
       Button { dismiss() } label: { Image(systemName: "xmark.circle.fill").font(.title).foregroundStyle(.white, .white.opacity(0.25)) }.padding().accessibilityLabel("Close")
+    }
+    .overlay(alignment: .topLeading) {
+      if !media.isVideo, !media.mime.hasSuffix("gif") {
+        Button {
+          Task { marking = try? await MarkupJob.make(from: media.file, ext: media.file.pathExtension) }
+        } label: { Image(systemName: "pencil.tip.crop.circle").font(.title).foregroundStyle(.white, .white.opacity(0.25)) }
+          .padding()
+          .accessibilityLabel("Mark up")
+      }
+    }
+    .fullScreenCover(item: $marking) { job in
+      ImageMarkupView(file: job.file, onSave: { url in model.replaceImage(media.id, with: url) }, onClose: { marking = nil; job.discard(); dismiss() }).ignoresSafeArea()
     }
     .statusBarHidden()
     .task {

@@ -13,13 +13,16 @@ import AppKit
 struct PasteTextView: UIViewRepresentable {
   @Binding var text: String
   var monospaced = false
-  var onPasteImage: (Data) -> Void
+  /// Undo/redo and format buttons above the keyboard, and a Format menu on a selection (`MarkdownUITextView`).
+  var markdown = false
+  var onPasteImage: ((Data) -> Void)?
 
   func makeCoordinator() -> Coordinator { Coordinator(self) }
 
   func makeUIView(context: Context) -> PasteUITextView {
     let view = PasteUITextView()
     view.delegate = context.coordinator
+    view.markdown = markdown
     view.backgroundColor = .clear
     view.textContainerInset = UIEdgeInsets(top: 2, left: 7, bottom: 2, right: 7)
     view.text = text
@@ -38,10 +41,13 @@ struct PasteTextView: UIViewRepresentable {
     var parent: PasteTextView
     init(_ parent: PasteTextView) { self.parent = parent }
     func textViewDidChange(_ view: UITextView) { parent.text = view.text }
+    func textView(_ view: UITextView, editMenuForTextIn range: NSRange, suggestedActions: [UIMenuElement]) -> UIMenu? {
+      (view as? MarkdownUITextView)?.editMenu(for: range, suggested: suggestedActions)
+    }
   }
 }
 
-final class PasteUITextView: UITextView {
+final class PasteUITextView: MarkdownUITextView {
   var onPasteImage: ((Data) -> Void)?
 
   // A plain text view offers Paste for text only, so with just an image on the clipboard it has to be told to.
@@ -62,7 +68,9 @@ final class PasteUITextView: UITextView {
 struct PasteTextView: NSViewRepresentable {
   @Binding var text: String
   var monospaced = false
-  var onPasteImage: (Data) -> Void
+  /// Only the iPhone and iPad editor has the format bar; the Mac's text view has its own undo and ⌘B-style menus.
+  var markdown = false
+  var onPasteImage: ((Data) -> Void)?
 
   func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -71,6 +79,7 @@ struct PasteTextView: NSViewRepresentable {
     view.delegate = context.coordinator
     view.drawsBackground = false
     view.isRichText = false
+    view.allowsUndo = true
     view.isVerticallyResizable = true
     view.isHorizontallyResizable = false
     view.autoresizingMask = [.width]

@@ -18,7 +18,6 @@ struct BoardItemEditor: View {
   /// The kind (epic or release) being named in the "New epic…" prompt, and the name so far.
   @State private var namingParent: String?
   @State private var parentName = ""
-  @State private var newLabel = ""
   @State private var addingLabel = false
   /// Feedback chosen for an item that does not exist yet; linked when it is created.
   @State private var newPosts: [FeedbackPost] = []
@@ -216,7 +215,7 @@ struct BoardItemEditor: View {
     }
     LabeledField(label: "Description", hint: "Markdown. Internal: the roadmap never shows it.") {
       VStack(alignment: .leading, spacing: 6) {
-        LinearTextEditor(text: $draft.description, minHeight: 120, onPasteImage: { data in Task { await attachPasted(data) } })
+        LinearTextEditor(text: $draft.description, minHeight: 120, onPasteImage: { data in Task { await attachPasted(data) } }, markdown: true)
         pasteStatus
       }
     }
@@ -234,7 +233,7 @@ struct BoardItemEditor: View {
       TextField("", text: Binding(get: { draft.estimate ?? "" }, set: { draft.estimate = $0 })).textFieldStyle(.linear).inputHints(.decimalPad)
     }
     labelPicker(config)
-    AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId, keepOffline: keepsFilesOffline, busy: $uploadingFiles)
+    AttachmentsSection(attachments: $draft.attachments, session: store.session, projectId: store.projectId, keepOffline: keepsFilesOffline, busy: $uploadingFiles, onMarkedUp: itemId == nil ? nil : { Task { await save() } })
     roadmap(config)
   }
 
@@ -382,42 +381,65 @@ struct BoardItemEditor: View {
   }
 
   private func labelPicker(_ config: BoardConfig) -> some View {
-    // A label the board no longer defines still shows while the item carries it, so it can be taken off.
-    let labels = config.labels + draft.labels.filter { key in !config.labels.contains { $0.key == key } }.map { config.label($0) }
+    // Labels made offline show too, until the board has them; and one the board no longer defines still shows while the
+    // item carries it, so it can be taken off.
+    let made = (draft.newLabels ?? []).filter { new in !config.labels.contains { $0.key == new.key } }.map { FeedbackTagDefinition(key: $0.key, label: $0.label, color: "neutral") }
+    let labels = config.labels + made + draft.labels.filter { key in !config.labels.contains { $0.key == key } && !made.contains { $0.key == key } }.map { config.label($0) }
     return LabeledField(label: "Labels") {
       VStack(alignment: .leading, spacing: 8) {
         FlowLayout(spacing: 6) {
           ForEach(labels) { label in
             let on = draft.labels.contains(label.key)
             Pill(label: label.label, systemImage: on ? "checkmark" : nil, isActive: on) {
-              if on { draft.labels.removeAll { $0 == label.key } } else { draft.labels.append(label.key) }
+              if on {
+                draft.labels.removeAll { $0 == label.key }
+                // A label made offline that is switched off again was never wanted.
+                draft.newLabels?.removeAll { $0.key == label.key }
+              } else {
+                draft.labels.append(label.key)
+              }
             }
           }
         }
         HStack(spacing: 8) {
-          TextField("New label", text: $newLabel)
+          TextField("New label", text: labelText)
             .textFieldStyle(.linear)
             .submitLabel(.done)
             .onSubmit { Task { await addLabel() } }
           Button("Add label") { Task { await addLabel() } }
             .buttonStyle(GhostButtonStyle(tint: Theme.accentText))
-            .disabled(newLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || addingLabel)
+            .disabled(labelText.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || addingLabel)
         }
       }
     }
   }
 
-  /// A label typed here joins the board's labels and this item takes it; the item's own Save keeps it.
+  /// The text in the new-label field, kept in the draft so it comes back with the rest of an unsaved item.
+  private var labelText: Binding<String> { Binding(get: { draft.labelText ?? "" }, set: { draft.labelText = $0.isEmpty ? nil : $0 }) }
+
+  /// A label typed here joins the board's labels and this item takes it; the item's own Save keeps it. A new item
+  /// with no connection keeps the label on the device instead: it joins the board's labels when the item goes up.
   private func addLabel() async {
-    let label = String(newLabel.trimmingCharacters(in: .whitespacesAndNewlines).prefix(60))
-    guard !label.isEmpty else { return }
+    let label = String(labelText.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).prefix(60))
+    let key = FeedbackFormat.normalizeKey(label)
+    guard !key.isEmpty else { return }
+    func take() {
+      if !draft.labels.contains(key) { draft.labels.append(key) }
+      draft.labelText = nil
+    }
+    func keep() {
+      if !(draft.newLabels ?? []).contains(where: { $0.key == key }) { draft.newLabels = (draft.newLabels ?? []) + [PendingItem.NewLabel(key: key, label: label)] }
+      take()
+    }
+    if store.config?.labels.contains(where: { $0.key == key }) == true { return take() }
+    if itemId == nil, Connectivity.shared.offline { return keep() }
     addingLabel = true
     defer { addingLabel = false }
     do {
       try await store.addLabel(label)
-      let key = FeedbackFormat.normalizeKey(label)
-      if !draft.labels.contains(key) { draft.labels.append(key) }
-      newLabel = ""
+      take()
+    } catch APIError.transport where itemId == nil {
+      keep()
     } catch let failure {
       error = failure.localizedDescription
     }
@@ -428,7 +450,7 @@ struct BoardItemEditor: View {
       FeedbackToggleRow(title: "On public roadmap", detail: "Shows once planned, in progress or done — with only the public description below.", isOn: $draft.isPublic)
       if draft.isPublic {
         LabeledField(label: "Public description", hint: "Markdown. What the roadmap shows; never the internal description.") {
-          LinearTextEditor(text: $draft.publicDescription, placeholder: "What this means for your users", minHeight: 72)
+          LinearTextEditor(text: $draft.publicDescription, placeholder: "What this means for your users", minHeight: 72, markdown: true)
             .overlay(alignment: .topTrailing) { publicAccessory }
         }
         if !store.roadmapReady {
@@ -1068,7 +1090,7 @@ struct BoardItemEditor: View {
       } else {
         var fields = draft.fields
         if !newPosts.isEmpty { fields["feedbackPostIds"] = .array(newPosts.map { .string($0.id) }) }
-        item = try await store.create(fields)
+        item = try await store.create(fields, newLabels: (draft.newLabels ?? []).filter { draft.labels.contains($0.key) })
         newPosts = []
       }
       saving = false
@@ -1148,6 +1170,10 @@ private struct BoardItemDraft: Equatable, Codable {
   var targetDay = ""
   /// Points as typed; optional so a draft saved before estimates still loads.
   var estimate: String?
+  /// Labels made while offline, which the board does not have yet; and the text typed in the new-label field. Both
+  /// optional for the same reason, and kept with the draft so nothing typed is lost.
+  var newLabels: [PendingItem.NewLabel]?
+  var labelText: String?
   var isPublic = false
 
   init(item: BoardItem?, defaultStatus: String) {
@@ -1181,7 +1207,7 @@ private struct BoardItemDraft: Equatable, Codable {
 
   /// Kept while it has content; an empty form forgets the draft.
   func store(for projectId: String) {
-    let hasContent = !title.trimmed.isEmpty || !description.trimmed.isEmpty || !publicDescription.trimmed.isEmpty || !labels.isEmpty || !attachments.isEmpty || !(estimate ?? "").trimmed.isEmpty
+    let hasContent = !title.trimmed.isEmpty || !description.trimmed.isEmpty || !publicDescription.trimmed.isEmpty || !labels.isEmpty || !attachments.isEmpty || !(estimate ?? "").trimmed.isEmpty || !(labelText ?? "").trimmed.isEmpty
     if hasContent, let data = try? JSONEncoder().encode(self) { UserDefaults.standard.set(data, forKey: Self.key(projectId)) } else { Self.forget(for: projectId) }
   }
 

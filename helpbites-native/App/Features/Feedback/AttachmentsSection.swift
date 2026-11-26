@@ -65,6 +65,13 @@ struct AttachmentsSection: View {
   @State private var importing = false
   @State private var uploading = 0
   @State private var error = ""
+  #if os(iOS)
+  /// The picture open in Apple's Markup, and what was drawn on it (the editor saves the item when `onMarkedUp` says so).
+  @State private var marking: MarkupJob?
+  @State private var markedOriginal: ItemAttachment?
+  #endif
+  /// Called once a marked-up picture has replaced the original in the list, so an item already on the server is saved with it.
+  var onMarkedUp: (() -> Void)?
 
   private var fileTypes: [UTType] { imagesOnly ? [.image] : [.item] }
 
@@ -75,6 +82,12 @@ struct AttachmentsSection: View {
           HStack(spacing: 8) {
             AttachmentOpener(file: file)
             Spacer()
+            #if os(iOS)
+            if file.isImage, !file.mime.hasSuffix("gif"), !file.mime.hasSuffix("svg+xml") {
+              Button { Task { await startMarkup(file) } } label: { Image(systemName: "pencil.tip.crop.circle") }
+                .buttonStyle(.plain).foregroundStyle(Theme.textMuted).accessibilityLabel("Mark up \(file.name)")
+            }
+            #endif
             Button { attachments.removeAll { $0.url == file.url } } label: { Image(systemName: "xmark") }
               .buttonStyle(.plain).foregroundStyle(Theme.textMuted).accessibilityLabel("Remove \(file.name)")
           }
@@ -111,6 +124,11 @@ struct AttachmentsSection: View {
         }
       }
     }
+    #if os(iOS)
+    .fullScreenCover(item: $marking, onDismiss: { markedOriginal = nil }) { job in
+      ImageMarkupView(file: job.file, onSave: { url in if let data = try? Data(contentsOf: url), let original = markedOriginal { Task { await saveMarkup(data, replacing: original) } } }, onClose: { marking = nil; job.discard() }).ignoresSafeArea()
+    }
+    #endif
     .fileImporter(isPresented: $importing, allowedContentTypes: fileTypes, allowsMultipleSelection: true) { result in
       switch result {
       case .failure(let failure): error = failure.localizedDescription
@@ -125,6 +143,34 @@ struct AttachmentsSection: View {
       }
     }
   }
+
+  #if os(iOS)
+  /// Opens the picture in Markup: a copy on this device that Markup draws on.
+  private func startMarkup(_ file: ItemAttachment) async {
+    guard let link = file.link else { return }
+    error = ""
+    do {
+      markedOriginal = file
+      marking = try await MarkupJob.make(from: link, ext: (file.name as NSString).pathExtension)
+    } catch {
+      self.error = String(localized: "Could not open that image for markup.")
+    }
+  }
+
+  /// Markup's Done: the drawn-on picture goes up as a new file and takes the original's place in the list.
+  private func saveMarkup(_ data: Data, replacing original: ItemAttachment) async {
+    uploading += 1
+    busy?.wrappedValue += 1
+    defer { uploading -= 1; busy?.wrappedValue -= 1 }
+    do {
+      let file = try await ItemAttachment.upload(data, filename: original.name, session: session, projectId: projectId, keepOffline: keepOffline)
+      if let index = attachments.firstIndex(where: { $0.url == original.url }) { attachments[index] = file }
+      onMarkedUp?()
+    } catch {
+      self.error = error.localizedDescription
+    }
+  }
+  #endif
 
   /// The image on the clipboard, as a PNG attachment (the Paste button; iOS asks first when another app copied it).
   private func pasteImage() async {

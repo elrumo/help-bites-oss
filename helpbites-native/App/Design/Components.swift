@@ -235,13 +235,15 @@ struct LinearTextEditor: View {
   var monospaced = false
   /// With this, an image on the clipboard is passed here (as PNG) instead of pasted as text.
   var onPasteImage: ((Data) -> Void)?
+  /// Undo/redo, a format bar and a Format menu on a selection, for a Markdown field (iPhone and iPad).
+  var markdown = false
   var body: some View {
     ZStack(alignment: .topLeading) {
       if text.isEmpty {
         Text(placeholder).font(monospaced ? .lnMono : .lnBody).foregroundStyle(Theme.textDimmed).padding(.horizontal, 12).padding(.vertical, 10)
       }
-      if let onPasteImage {
-        PasteTextView(text: $text, monospaced: monospaced, onPasteImage: onPasteImage)
+      if onPasteImage != nil || markdown {
+        PasteTextView(text: $text, monospaced: monospaced, markdown: markdown, onPasteImage: onPasteImage)
       } else {
         TextEditor(text: $text)
           .font(monospaced ? .lnMono : .lnBody)

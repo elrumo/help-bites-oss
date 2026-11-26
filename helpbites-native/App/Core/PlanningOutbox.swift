@@ -14,6 +14,13 @@ struct PendingItem: Codable, Identifiable, Sendable {
   let createdAt: Date
   /// Why the server refused it last time (a label or epic deleted since). It stays, and is tried again.
   var error: String?
+  /// Labels made offline that the board does not have yet: they are added to the project's labels before the item goes
+  /// up, since the item names them. Optional so an entry written by an older build still loads.
+  var newLabels: [NewLabel]?
+
+  struct NewLabel: Codable, Equatable, Sendable {
+    var key, label: String
+  }
 
   static let prefix = "local-"
   static func isLocal(_ id: String) -> Bool { id.hasPrefix(prefix) }
@@ -98,15 +105,22 @@ enum PlanningOutbox {
 
   // MARK: Sending
 
-  /// Uploads the files still on this device, then creates the item with its `clientId`; the entry leaves the outbox
+  /// Adds the labels made offline to the board, then uploads the files still on this device, then creates the item with its `clientId`; the entry leaves the outbox
   /// once the server has it. Each upload that goes through is saved at once, so a retry never sends it again. A file
   /// that has gone from the disk is dropped rather than holding the item back forever. Throws whatever the server or
   /// the network did; the entry then stays as it is.
   @MainActor static func deliver<Created>(
     _ entry: inout PendingItem,
+    ensureLabels: (_ labels: [PendingItem.NewLabel]) async throws -> Void,
     upload: (_ file: URL, _ name: String, _ mime: String) async throws -> JSONValue,
     create: (_ body: [String: JSONValue]) async throws -> Created
   ) async throws -> Created {
+    // The labels made offline join the board first, since the item names them; once they are there they are not sent again.
+    if let labels = entry.newLabels, !labels.isEmpty {
+      try await ensureLabels(labels)
+      entry.newLabels = nil
+      try save(entry)
+    }
     var attachments = entry.fields["attachments"]?.array ?? []
     var index = 0
     while index < attachments.count {

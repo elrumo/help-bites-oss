@@ -42,6 +42,8 @@ struct SharedImage: Identifiable {
   var labels: [String] = []
   var newLabel = ""
   var addingLabel = false
+  /// Labels made while offline: the board has no such label yet, so they join its labels when the item goes up.
+  var pendingLabels: [PendingItem.NewLabel] = []
   var images: [SharedImage] = []
   var posts: [SharePost] = []
   var isPublic = false
@@ -136,6 +138,7 @@ struct SharedImage: Identifiable {
     projectId = id
     status = board?.defaultStatusKey ?? ""
     labels = []
+    pendingLabels = []
     posts = []
     assigneeId = ""
     images.forEach { startUpload($0.id) }
@@ -286,6 +289,13 @@ struct SharedImage: Identifiable {
     startUpload(image.id)
   }
 
+  /// A picture drawn on in Markup: it replaces the one it was made from (and goes up again), at the end of the list.
+  func replaceImage(_ id: UUID, with edited: URL) {
+    guard let data = try? Data(contentsOf: edited) else { error = String(localized: "Could not read that image."); return }
+    removeImage(id)
+    addImage(data: data)
+  }
+
   func removeImage(_ id: UUID) {
     uploads.removeValue(forKey: id)?.cancel()
     uploading.remove(id)
@@ -340,7 +350,8 @@ struct SharedImage: Identifiable {
   var draft: ShareDraft {
     ShareDraft(endpoint: SharedStore.endpoint, workspaceId: SharedStore.workspaceId, projectId: projectId, title: title, details: details,
                status: status, priority: priority, assigneeId: assigneeId, targetDate: hasDate ? targetDate : nil, labels: labels, posts: posts,
-               isPublic: isPublic, publicDescription: publicDescription, files: images.map(\.saved))
+               isPublic: isPublic, publicDescription: publicDescription, files: images.map(\.saved),
+               pendingLabels: pendingLabels.isEmpty ? nil : pendingLabels, labelText: newLabel.isEmpty ? nil : newLabel)
   }
 
   /// Written as the form changes (the sheet calls it), until the item is sent.
@@ -364,6 +375,8 @@ struct SharedImage: Identifiable {
     hasDate = saved.targetDate != nil
     targetDate = saved.targetDate ?? Date()
     labels = saved.labels
+    pendingLabels = saved.pendingLabels ?? []
+    newLabel = saved.labelText ?? ""
     posts = saved.posts
     isPublic = saved.isPublic
     publicDescription = saved.publicDescription
@@ -387,6 +400,8 @@ struct SharedImage: Identifiable {
     assigneeId = ""
     hasDate = false
     labels = []
+    pendingLabels = []
+    newLabel = ""
     posts = []
     isPublic = false
     publicDescription = ""
@@ -423,31 +438,62 @@ struct SharedImage: Identifiable {
   // MARK: Labels
 
   func toggle(label key: String) {
-    if labels.contains(key) { labels.removeAll { $0 == key } } else { labels.append(key) }
+    if labels.contains(key) {
+      labels.removeAll { $0 == key }
+      // A label made offline that is switched off again was never wanted.
+      pendingLabels.removeAll { $0.key == key }
+    } else {
+      labels.append(key)
+    }
   }
 
   /// A label typed here joins the board's labels (the lists saved whole, as the app does) and this item takes it.
+  /// With no connection it is kept with the item instead, and joins the board's labels when the item goes up.
   func addLabel() async {
     let name = String(newLabel.trimmingCharacters(in: .whitespacesAndNewlines).prefix(60))
     let key = Self.normalizeKey(name)
-    guard !key.isEmpty, let client, let project, var board = project.board else { return }
+    guard !key.isEmpty, let client, let project, let board = project.board else { return }
+    func take() {
+      if !labels.contains(key) { labels.append(key) }
+      newLabel = ""
+    }
+    if board.labels.contains(where: { $0.key == key }) || pendingLabels.contains(where: { $0.key == key }) { return take() }
+    func keep() {
+      pendingLabels.append(PendingItem.NewLabel(key: key, label: name))
+      take()
+    }
+    if offline { return keep() }
     addingLabel = true
     defer { addingLabel = false }
-    if !board.labels.contains(where: { $0.key == key }) {
-      struct Lists: Encodable { let statuses: [ShareStatus]; let labels: [ShareLabel] }
-      struct Patch: Encodable { let board: Lists }
-      struct Saved: Decodable { let project: ShareProject }
-      board.labels.append(ShareLabel(key: key, label: name, color: "neutral"))
-      do {
-        let saved: Saved = try await client.send("/v1/admin/projects/\(project.id)", method: "PATCH", body: Patch(board: Lists(statuses: board.statuses, labels: board.labels)))
-        if let index = projects.firstIndex(where: { $0.id == project.id }) { projects[index] = saved.project }
-      } catch {
-        self.error = error.localizedDescription
-        return
-      }
+    do {
+      try await saveLabels(board.labels + [ShareLabel(key: key, label: name, color: "neutral")], of: project, client: client)
+      take()
+    } catch is URLError {
+      offline = true
+      keep()
+    } catch {
+      self.error = error.localizedDescription
     }
-    if !labels.contains(key) { labels.append(key) }
-    newLabel = ""
+  }
+
+  /// `PATCH /v1/admin/projects/:id` with the board's lists saved whole; the project it answers with replaces ours.
+  private func saveLabels(_ labels: [ShareLabel], of project: ShareProject, client: ShareClient) async throws {
+    struct Lists: Encodable { let statuses: [ShareStatus]; let labels: [ShareLabel] }
+    struct Patch: Encodable { let board: Lists }
+    struct Saved: Decodable { let project: ShareProject }
+    guard let board = project.board else { return }
+    let saved: Saved = try await client.send("/v1/admin/projects/\(project.id)", method: "PATCH", body: Patch(board: Lists(statuses: board.statuses, labels: labels)))
+    if let index = projects.firstIndex(where: { $0.id == project.id }) { projects[index] = saved.project }
+  }
+
+  /// The labels made offline join the project's labels, read afresh so another change to them is not undone.
+  private func ensureLabels(_ wanted: [PendingItem.NewLabel], in projectId: String, client: ShareClient) async throws {
+    struct Response: Decodable { let projects: [ShareProject] }
+    let response: Response = try await client.get("/v1/admin/projects")
+    guard let project = response.projects.first(where: { $0.id == projectId }), let board = project.board else { return }
+    let missing = wanted.filter { new in !board.labels.contains { $0.key == new.key } }
+    guard !missing.isEmpty else { return }
+    try await saveLabels(board.labels + missing.map { ShareLabel(key: $0.key, label: $0.label, color: "neutral") }, of: project, client: client)
   }
 
   /// FeedbackFormat.normalizeKey: lowercase letters, digits, `_` and `-`, at most 40.
@@ -559,7 +605,9 @@ struct SharedImage: Identifiable {
     SharedStore.lastProjectId = project.id
     do {
       struct Created: Decodable { let item: Item; struct Item: Decodable { let id: String } }
-      let _: Created = try await PlanningOutbox.deliver(&entry, upload: { file, name, mime in
+      let _: Created = try await PlanningOutbox.deliver(&entry, ensureLabels: { [self] labels in
+        try await ensureLabels(labels, in: project.id, client: client)
+      }, upload: { file, name, mime in
         let attachment = try await client.upload("/v1/feedback/attachments", query: ["project": project.id], fileURL: file, filename: name, mimeType: mime)
         return .object(["url": .string(attachment.url), "name": .string(attachment.name), "mime": .string(attachment.mime), "size": .number(Double(attachment.size))])
       }, create: { body in
@@ -607,7 +655,11 @@ struct SharedImage: Identifiable {
     if !assigneeId.isEmpty { fields["assigneeId"] = .string(assigneeId) }
     if hasDate { fields["targetDate"] = .string(Self.day(targetDate)) }
     if !posts.isEmpty { fields["feedbackPostIds"] = .array(posts.map { .string($0.id) }) }
-    let entry = PendingItem(endpoint: SharedStore.endpoint, workspaceId: SharedStore.workspaceId, projectId: project.id, fields: fields)
+    var entry = PendingItem(endpoint: SharedStore.endpoint, workspaceId: SharedStore.workspaceId, projectId: project.id, fields: fields)
+    // Only the labels the item still carries.
+    let known = Set((project.board?.labels ?? []).map(\.key))
+    let made = pendingLabels.filter { labels.contains($0.key) && !known.contains($0.key) }
+    entry.newLabels = made.isEmpty ? nil : made
     try PlanningOutbox.save(entry)
     return entry
   }

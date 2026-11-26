@@ -79,6 +79,11 @@ targets:
       - App/Core/SharedCredentials.swift
       - App/Core/BoardTitle.swift
       - App/Core/PickedMovie.swift
+      # The Markdown description field: undo/redo, the format bar and the selection's Format menu.
+      - App/Core/MarkdownFormatting.swift
+      - App/Core/MarkdownTextView.swift
+      # Apple's Markup for the pictures a share holds.
+      - App/Core/ImageMarkup.swift
       # The offline outbox and response cache the share sheet writes and the app reads.
       - App/Core/JSONValue.swift
       - App/Core/PlanningOutbox.swift
