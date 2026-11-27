@@ -139,12 +139,15 @@ describe('never writing a commit up twice', () => {
   })
 })
 
+// The temp repos must not pick up the machine's git config: a global pre-commit hook (a secret scanner, say) runs on every commit and can outlast the test's timeout.
+const HERMETIC_GIT = { GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null' }
+
 describe('git', () => {
   test('commits are listed oldest first within --since, and a root commit diffs against the empty tree', () => {
     const dir = mkdtempSync(join(tmpdir(), 'helpbites-cli-test-'))
     const cwd = process.cwd()
     const run = (args: string[], date?: string) => execFileSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@example.com', ...args], {
-      cwd: dir, encoding: 'utf8', env: { ...process.env, ...(date ? { GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } : {}) }
+      cwd: dir, encoding: 'utf8', env: { ...process.env, ...HERMETIC_GIT, ...(date ? { GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } : {}) }
     })
     try {
       run(['init', '-q'])
@@ -174,7 +177,7 @@ describe('git', () => {
   test('secrets never reach the diff or the new-file text, and are named so the commit can be refused', () => {
     const dir = mkdtempSync(join(tmpdir(), 'helpbites-cli-test-'))
     const cwd = process.cwd()
-    const run = (args: string[]) => execFileSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@example.com', ...args], { cwd: dir, encoding: 'utf8' })
+    const run = (args: string[]) => execFileSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@example.com', ...args], { cwd: dir, encoding: 'utf8', env: { ...process.env, ...HERMETIC_GIT } })
     try {
       run(['init', '-q'])
       writeFileSync(join(dir, '.env'), 'TOKEN=old-leaked-value\n')

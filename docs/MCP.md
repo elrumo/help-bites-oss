@@ -714,9 +714,10 @@ turn after it. Three things keep that small.
 
 - **Answers are compact.** Empty fields (`null`, `""`, `[]`, `{}`) are left out and the JSON is not pretty-printed; `false`
   and `0` stay. An answer is cut off past about 32,000 characters, with a hint to ask for less.
-- **The heaviest lists have a short view.** `list_projects`, `list_board_items`, `list_conversations` and `get_me` return
-  ids, keys, status and a clipped text by default (a card is ~500 characters instead of ~1,700, a project ~1 KB instead of
-  ~16 KB). Pass `detail: "full"` for every field of the route's answer: `list_board_items` with `q: "#54"` and
+- **The heaviest lists have a short view.** `list_projects`, `list_board_items`, `list_conversations`, `list_feedback`,
+  `list_changelog_entries`, `list_errors` and `get_me` return ids, keys, status and a clipped text by default (a card is
+  ~500 characters instead of ~1,700, a project ~1 KB instead of ~16 KB, a changelog entry about a third of its size: its
+  body is sent once, not as Markdown, HTML and an excerpt). Pass `detail: "full"` for every field of the route's answer: `list_board_items` with `q: "#54"` and
   `detail: "full"` is one card with its whole description and attachment URLs, and `list_projects` with `detail: "full"`
   carries each project's look and widget settings. Only the tools that list a `detail` argument take it.
 - **The lean toolset.** Listing all of the tools puts about 90,000 tokens of definitions into the assistant's context

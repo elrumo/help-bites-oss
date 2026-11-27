@@ -89,3 +89,29 @@ describe('the lean toolset', () => {
     expect((await rpc('tools/call', { name: 'list_projects' }, none, lean)).error.code).toBe(-32602)
   })
 })
+
+describe('more short views', () => {
+  test('a changelog entry keeps one clipped copy of its body, not three', () => {
+    const body = 'b'.repeat(900)
+    const out = shapeResult('list_changelog_entries', { entries: [{ id: 'E', number: 3, title: 'T', status: 'draft', body, bodyHtml: `<p>${body}</p>`, excerpt: body.slice(0, 200), images: [], sources: [{ id: 'x' }], bodyFormat: 'markdown' }] }) as any
+    expect(out.entries[0]).toMatchObject({ id: 'E', number: 3, title: 'T', status: 'draft' })
+    expect(out.entries[0].body.length).toBeLessThan(300)
+    expect(JSON.stringify(out)).not.toContain('<p>')
+    expect((shapeResult('list_changelog_entries', { entries: [{ id: 'E', body, bodyHtml: 'h' }] }, 'full') as any).entries[0].bodyHtml).toBe('h')
+  })
+
+  test('a feedback post keeps its words, votes and state, and drops the viewer flags', () => {
+    const post = { id: 'F', number: 12, slug: 's', title: 'Dark mode', body: 'x'.repeat(600), status: 'planned', voteCount: 5, commentCount: 2, tags: ['ui'], author: { name: 'Ann', isTeam: false, handle: 'ann', avatarUrl: 'u', email: 'a@x.co' }, reactions: [{ emoji: '+' }], hasVoted: true, canEdit: true, subscribed: false, refs: [1], changelogBody: 'c', duplicateOf: null, attachments: [{ url: 'u' }] }
+    const out = shapeResult('list_feedback', { posts: [post], total: 1, viewer: { signedIn: true } }) as any
+    expect(out.total).toBe(1)
+    expect(out.viewer).toBeUndefined()
+    expect(out.posts[0]).toMatchObject({ id: 'F', number: 12, title: 'Dark mode', status: 'planned', voteCount: 5, tags: ['ui'], author: { name: 'Ann', email: 'a@x.co' }, attachments: 1 })
+    expect(out.posts[0].body.length).toBeLessThan(400)
+    for (const gone of ['reactions', 'hasVoted', 'canEdit', 'subscribed', 'refs', 'changelogBody', 'slug']) expect(out.posts[0][gone]).toBeUndefined()
+  })
+
+  test('an error issue keeps what every tracker has, and the page cursor', () => {
+    const out = shapeResult('list_errors', { issues: [{ id: '1', shortId: 'APP-1', title: 'TypeError', level: 'error', count: 4, lastSeen: 't', status: 'unresolved', project: { id: 9, name: 'big' }, metadata: { a: 'b' }, stats: { '24h': [[1, 2]] } }], next: 'c2' }) as any
+    expect(out).toEqual({ next: 'c2', issues: [{ id: '1', shortId: 'APP-1', title: 'TypeError', level: 'error', count: 4, lastSeen: 't', status: 'unresolved' }] })
+  })
+})

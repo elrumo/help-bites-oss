@@ -54,7 +54,7 @@ export const BRIEFS: Record<string, Brief> = {
     }))
   }),
 
-  // The `endUsers` map, the per-status counts and the view counts repeat on every page: the first page carries them, later ones do not.
+  // Each row names its customer inline instead of pointing into an `endUsers` map; the unread, status and view counts stay.
   list_conversations: (data) => {
     const users = (isObject(data.endUsers) ? data.endUsers : {}) as Json
     return {
@@ -66,6 +66,33 @@ export const BRIEFS: Record<string, Brief> = {
       ...pick(data, ['hasMore', 'totalUnread', 'counts', 'viewCounts'])
     }
   },
+
+  // `body` and `bodyHtml` carry the same text twice, and `excerpt` a third time: a list needs the title, the state and a taste of the body.
+  list_changelog_entries: data => ({
+    entries: (data.entries as Json[] | undefined)?.map(entry => ({
+      ...pick(entry, ['id', 'number', 'slug', 'title', 'summary', 'tag', 'area', 'status', 'reviewStatus', 'publishedAt', 'releaseId', 'version', 'pinned', 'commentCount', 'feedbackPostIds', 'boardItemIds', 'conversationIds', 'updatedAt']),
+      body: clip(entry.body, 200)
+    }))
+  }),
+
+  // A post's reactions, permissions, subscription flags and changelog draft are the board's own; the words, the votes and where it stands are what an assistant works with.
+  list_feedback: data => ({
+    ...pick(data, ['total']),
+    posts: (data.posts as Json[] | undefined)?.map(post => ({
+      ...pick(post, ['id', 'number', 'title', 'type', 'platform', 'tags', 'status', 'voteCount', 'commentCount', 'hidden', 'featured', 'locked', 'showOnChangelog', 'completedAt', 'lastActivityAt', 'createdAt']),
+      body: clip(post.body, 240),
+      author: pick(post.author, ['name', 'isTeam', 'email']),
+      duplicateOf: post.duplicateOf ? pick(post.duplicateOf, ['id', 'number', 'title']) : undefined,
+      adminNote: clip(post.adminNote, 160),
+      attachments: Array.isArray(post.attachments) && post.attachments.length ? post.attachments.length : undefined
+    }))
+  }),
+
+  // GlitchTip and Sentry rows are the tracker's own issue JSON (project, metadata, stats...); these are the fields every provider has.
+  list_errors: data => ({
+    ...pick(data, ['next']),
+    issues: each(data.issues, ['id', 'shortId', 'title', 'culprit', 'level', 'status', 'count', 'userCount', 'firstSeen', 'lastSeen', 'url', 'permalink', 'linkId', 'linkLabel', 'provider'])
+  }),
 
   get_me: data => ({
     ...pick(data, ['role', 'edition']),
