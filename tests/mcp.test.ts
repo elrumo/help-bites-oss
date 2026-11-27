@@ -218,8 +218,8 @@ describe('MCP protocol', () => {
   })
 
   test('a huge result is cut off with a hint', async () => {
-    const answer = await send({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'list_projects' } }, async () => ({ status: 200, data: { text: 'x'.repeat(200_000) } }))
-    expect(answer.result.content[0].text.length).toBeLessThan(61_000)
+    const answer = await send({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'get_overview' } }, async () => ({ status: 200, data: { text: 'x'.repeat(200_000) } }))
+    expect(answer.result.content[0].text.length).toBeLessThan(33_000)
     expect(answer.result.content[0].text).toContain('cut off')
   })
 })

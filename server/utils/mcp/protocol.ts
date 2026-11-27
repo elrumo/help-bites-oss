@@ -7,6 +7,8 @@
 
 import { buildRequest, describeTool, MCP_TOOLS, type McpRequest } from './tools'
 import { redactSecrets } from './redact'
+import { shapeResult } from './shape'
+import { findTools, leanTools, LEAN_INSTRUCTIONS, LEAN_NAMES, resolveLeanCall } from './lean'
 
 /** Newest first. A client asking for one of these gets it; any other gets the newest. */
 export const MCP_PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05']
@@ -22,8 +24,10 @@ const INSTRUCTIONS = [
 export type McpCall = (request: McpRequest) => Promise<{ status: number, data: unknown }>
 
 /** `readOnly`: the connection's key only reads, so it is offered the tools that read and no others. */
-export type McpOptions = { readOnly?: boolean, timeoutMs?: number }
+/** `lean`: list three lookup-and-run tools instead of every definition (see lean.ts). */
+export type McpOptions = { readOnly?: boolean, lean?: boolean, timeoutMs?: number }
 const READ_ONLY_NOTE = 'This connection is read-only: tools that change anything are not offered.'
+const READ_ONLY_REFUSAL = 'This connection is read-only: it can look at things but not change them. Ask the user for a connection that may write.'
 
 type JsonRpcId = string | number | null
 export type JsonRpcResponse = { jsonrpc: '2.0', id: JsonRpcId } & ({ result: unknown } | { error: { code: number, message: string } })
@@ -33,8 +37,8 @@ const INVALID_REQUEST = -32600
 const METHOD_NOT_FOUND = -32601
 const INVALID_PARAMS = -32602
 
-// A tool result goes into the assistant's context, so a runaway list is cut off with a hint rather than sent whole.
-const MAX_RESULT_CHARS = 60_000
+// A tool result goes into the assistant's context, so a runaway list is cut off with a hint rather than sent whole (~8k tokens).
+const MAX_RESULT_CHARS = 32_000
 // One POST may batch messages, and each tools/call is a request into the app: a few at a time is plenty for an assistant.
 export const MAX_BATCH = 20
 // A route that does not answer must not hold the connection (and the work behind it) open for ever.
@@ -79,26 +83,40 @@ async function handleMcpMessage(message: unknown, call: McpCall, options: McpOpt
         protocolVersion: MCP_PROTOCOL_VERSIONS.includes(asked) ? asked : MCP_PROTOCOL_VERSIONS[0],
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: 'helpbites', title: 'HelpBites', version: '1.0.0' },
-        instructions: options.readOnly ? `${INSTRUCTIONS} ${READ_ONLY_NOTE}` : INSTRUCTIONS
+        instructions: [INSTRUCTIONS, options.lean ? LEAN_INSTRUCTIONS : '', options.readOnly ? READ_ONLY_NOTE : '', 'Answers leave out empty fields.'].filter(Boolean).join(' ')
       })
     }
     case 'ping': return reply(id, {})
-    case 'tools/list': return reply(id, { tools: (options.readOnly ? MCP_TOOLS.filter(tool => tool.readOnly) : MCP_TOOLS).map(describeTool) })
+    case 'tools/list': return reply(id, { tools: options.lean ? leanTools(options.readOnly === true) : (options.readOnly ? MCP_TOOLS.filter(tool => tool.readOnly) : MCP_TOOLS).map(describeTool) })
     case 'tools/call': return callTool(id, input, call, options)
     default: return fail(id, METHOD_NOT_FOUND, `Unsupported method: ${method}`)
   }
 }
 
 async function callTool(id: JsonRpcId, params: Record<string, unknown>, call: McpCall, options: McpOptions): Promise<JsonRpcResponse> {
-  const tool = MCP_TOOLS.find(candidate => candidate.name === params.name)
-  if (!tool) return fail(id, INVALID_PARAMS, `Unknown tool: ${String(params.name)}`)
+  let name = params.name
+  let args = params.arguments
+  if (options.lean) {
+    if (!LEAN_NAMES.has(String(name))) return fail(id, INVALID_PARAMS, `Unknown tool: ${String(name)}. This connection lists find_tools, call_read_tool and call_write_tool.`)
+    const input = (args && typeof args === 'object' && !Array.isArray(args) ? args : {}) as Record<string, unknown>
+    if (name === 'find_tools') return reply(id, toolText(findTools(input, options.readOnly === true), false))
+    if (name === 'call_write_tool' && options.readOnly) return reply(id, toolText(READ_ONLY_REFUSAL, true))
+    const resolved = resolveLeanCall(String(name), input)
+    if ('error' in resolved) return reply(id, toolText(resolved.error, true))
+    name = resolved.tool.name
+    args = resolved.arguments
+  }
+  const tool = MCP_TOOLS.find(candidate => candidate.name === name)
+  if (!tool) return fail(id, INVALID_PARAMS, `Unknown tool: ${String(name)}`)
   // Not offered, so not callable either: the key would refuse the route anyway, this says why.
-  if (options.readOnly && !tool.readOnly) return reply(id, toolText('This connection is read-only: it can look at things but not change them. Ask the user for a connection that may write.', true))
-  const request = buildRequest(tool, params.arguments)
+  if (options.readOnly && !tool.readOnly) return reply(id, toolText(READ_ONLY_REFUSAL, true))
+  const request = buildRequest(tool, args)
   if ('error' in request) return reply(id, toolText(request.error, true))
+  const detail = (args as { detail?: unknown } | null | undefined)?.detail === 'full' ? 'full' : 'brief'
   try {
     const { status, data } = await withTimeout(call(request), options.timeoutMs ?? CALL_TIMEOUT_MS)
-    return reply(id, status >= 200 && status < 300 ? toolText(JSON.stringify(redactSecrets(data ?? null), null, 2), false) : toolText(describeFailure(status, data), true))
+    // Compact JSON: the pretty-printing an assistant never needed was a third of every answer.
+    return reply(id, status >= 200 && status < 300 ? toolText(JSON.stringify(shapeResult(tool.name, redactSecrets(data ?? null), detail)), false) : toolText(describeFailure(status, data), true))
   } catch (error) {
     return reply(id, toolText(`The request could not be made: ${(error as Error).message}`, true))
   }

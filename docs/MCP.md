@@ -707,6 +707,27 @@ authorization code lives two minutes in Redis and works once. Access tokens are
 ordinary admin API keys, rotated with one-use refresh tokens; revoking the key
 also prevents further refreshes.
 
+## Fewer tokens
+
+An assistant pays for everything the server sends: the tool definitions once per conversation, and every answer on every
+turn after it. Three things keep that small.
+
+- **Answers are compact.** Empty fields (`null`, `""`, `[]`, `{}`) are left out and the JSON is not pretty-printed; `false`
+  and `0` stay. An answer is cut off past about 32,000 characters, with a hint to ask for less.
+- **The heaviest lists have a short view.** `list_projects`, `list_board_items`, `list_conversations` and `get_me` return
+  ids, keys, status and a clipped text by default (a card is ~500 characters instead of ~1,700, a project ~1 KB instead of
+  ~16 KB). Pass `detail: "full"` for every field of the route's answer: `list_board_items` with `q: "#54"` and
+  `detail: "full"` is one card with its whole description and attachment URLs, and `list_projects` with `detail: "full"`
+  carries each project's look and widget settings. Only the tools that list a `detail` argument take it.
+- **The lean toolset.** Listing all of the tools puts about 90,000 tokens of definitions into the assistant's context
+  before it has done anything. Connect to `https://YOUR-SUPPORT-HOST/mcp?tools=lean` and the server lists three tools
+  instead (about 500 tokens): `find_tools` looks tools up by a few words and returns their definitions (with no query it
+  lists every name), `call_read_tool` runs one that only reads, and `call_write_tool` runs one that changes something.
+  Reads and writes stay separate tools so a client that lets read-only tools run unasked still does, and still asks before a
+  write. A read-only key is offered `find_tools` and `call_read_tool` only. The tools, their arguments and their answers are
+  the same; the assistant just fetches a definition when it needs it. Claude Code already loads tools on demand, so it gains
+  least; claude.ai, Claude Desktop and other clients that load every definition gain most.
+
 ## Left out on purpose
 
 An assistant can do what the panel does, except these, which stay with a signed-in person (or are not a JSON call):

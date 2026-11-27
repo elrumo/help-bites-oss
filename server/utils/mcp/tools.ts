@@ -4,6 +4,8 @@
 // an API key's project limit all apply with nothing re-implemented here.
 // tests/mcp.test.ts checks every tool names a route that exists.
 
+import { DETAIL_PARAM, hasBrief } from './shape'
+
 export type McpParamType = 'string' | 'integer' | 'number' | 'boolean' | 'array' | 'object'
 export type McpParam = {
   type: McpParamType
@@ -2859,6 +2861,7 @@ export function paramLocation(tool: McpTool, name: string): 'path' | 'query' | '
 export function inputSchema(tool: McpTool) {
   const properties: Record<string, Record<string, unknown>> = {}
   for (const [name, { required, in: _in, as: _as, ...schema }] of Object.entries(tool.params)) properties[name] = schema
+  if (hasBrief(tool.name)) properties.detail = { ...DETAIL_PARAM }
   const required = Object.entries(tool.params).filter(([, param]) => param.required).map(([name]) => name)
   return { type: 'object', properties, ...(required.length ? { required } : {}), additionalProperties: false }
 }
@@ -2896,10 +2899,12 @@ function pathProblem(value: string): string {
 /** The call to make for a tool and its arguments, or a sentence saying what is wrong with them (the assistant reads it and retries). */
 export function buildRequest(tool: McpTool, args: unknown): McpRequest | { error: string } {
   const given = (args && typeof args === 'object' && !Array.isArray(args) ? args : {}) as Record<string, unknown>
-  for (const name of Object.keys(given)) if (!(name in tool.params)) return { error: `Unknown argument "${name}". This tool takes: ${Object.keys(tool.params).join(', ') || 'no arguments'}.` }
+  // `detail` is the MCP's own (how much of the answer to keep): it never reaches the route.
+  for (const name of Object.keys(given)) if (!(name in tool.params) && !(name === 'detail' && hasBrief(tool.name))) return { error: `Unknown argument "${name}". This tool takes: ${[...Object.keys(tool.params), ...(hasBrief(tool.name) ? ['detail'] : [])].join(', ') || 'no arguments'}.` }
   let path = tool.path
   const query = new URLSearchParams()
   const body: Record<string, unknown> = {}
+  if (given.detail !== undefined && given.detail !== 'brief' && given.detail !== 'full') return { error: 'Argument "detail" must be one of brief, full.' }
   for (const [name, param] of Object.entries(tool.params)) {
     const value = given[name]
     if (value === undefined || value === null) {

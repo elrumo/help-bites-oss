@@ -54,7 +54,8 @@ export default defineEventHandler(async (event) => {
     return { status: response.status, data }
   }
 
-  const answer = await handleMcpBody(body, call, { readOnly })
+  // `/mcp?tools=lean` lists three lookup-and-run tools instead of every definition (docs/MCP.md, "Fewer tokens").
+  const answer = await handleMcpBody(body, call, { readOnly, lean: getQuery(event).tools === 'lean' })
   if (answer === null) {
     setResponseStatus(event, 202)
     return ''
